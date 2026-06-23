@@ -4,6 +4,8 @@ import {
   vietnamOverviewMapMarkers,
   vietnamOverviewMapPoints,
   vietnamOverviewMetricPointCounts,
+  vietnamOverviewRealtimeMapPoints,
+  vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -130,6 +132,29 @@ describe('Vietnam overview page model', () => {
       bookings: 1,
       done: 1,
       cancel: 0,
+    });
+  });
+
+  it('keeps realtime map points limited to live operating signals', () => {
+    const points = vietnamOverviewRealtimeMapPoints([
+      pointFixture({ id: 'customer-saved-location', kind: 'customers' }),
+      pointFixture({ id: 'active-customer', kind: 'active' }),
+      pointFixture({ id: 'partner-profile-location', kind: 'partners' }),
+      pointFixture({ id: 'online-partner', kind: 'online' }),
+      pointFixture({ id: 'active-booking', kind: 'bookings' }),
+      pointFixture({ id: 'completed-booking', kind: 'done' }),
+      pointFixture({ id: 'cancelled-booking', kind: 'cancel' }),
+    ]);
+
+    expect(points.map((point) => point.id)).toEqual([
+      'active-customer',
+      'online-partner',
+      'active-booking',
+    ]);
+    expect(vietnamOverviewRealtimePointCounts(points)).toMatchObject({
+      active: 1,
+      online: 1,
+      bookings: 1,
     });
   });
 });

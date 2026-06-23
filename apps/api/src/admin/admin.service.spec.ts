@@ -353,35 +353,42 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: 'booking-1',
-            status: BookingStatus.COMPLETED,
-            address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
-            lat: 10.7769,
-            lng: 106.7009,
-            createdAt: now,
-            updatedAt: now,
-            closedAt: now,
-            addressSnapshot: {
-              address: null,
-              addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
-              latitude: 10.7769,
-              longitude: 106.7009,
-            },
-            snapshots: [
-              {
-                id: 'snapshot-1',
-                providerProfileId: 'provider-1',
+        findMany: jest.fn()
+          .mockResolvedValueOnce([
+            {
+              id: 'booking-1',
+              status: BookingStatus.COMPLETED,
+              address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+              lat: 10.7769,
+              lng: 106.7009,
+              createdAt: now,
+              updatedAt: now,
+              closedAt: now,
+              addressSnapshot: {
+                address: null,
                 addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
-                lat: 10.777,
-                lng: 106.701,
-                recordedAt: now,
+                latitude: 10.7769,
+                longitude: 106.7009,
               },
-            ],
-            payment: null,
-          },
-        ]),
+              payment: null,
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              id: 'booking-2',
+              address: '22 Le Thanh Ton, District 1, Ho Chi Minh City',
+              lat: 10.7758,
+              lng: 106.701,
+              createdAt: now,
+              updatedAt: now,
+              addressSnapshot: {
+                address: null,
+                addressText: '22 Le Thanh Ton, District 1, Ho Chi Minh City',
+                latitude: 10.7758,
+                longitude: 106.701,
+              },
+            },
+          ]),
       },
     };
     const service = createAdminService(prisma);
@@ -402,7 +409,7 @@ describe('AdminService query orchestration', () => {
     expect(overview.points).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          kind: 'customers',
+          kind: 'active',
           latitude: 10.7769,
           longitude: 106.7009,
           customerProfileId: 'customer-1',
@@ -414,14 +421,15 @@ describe('AdminService query orchestration', () => {
           providerProfileId: 'provider-1',
         }),
         expect.objectContaining({
-          bookingId: 'booking-1',
-          kind: 'done',
-          latitude: 10.777,
+          bookingId: 'booking-2',
+          kind: 'bookings',
+          latitude: 10.7758,
           longitude: 106.701,
-          source: 'partner-action-location-snapshot',
+          source: 'booking-address-snapshot',
         }),
       ]),
     );
+    expect(overview.points.map((point) => point.kind).sort()).toEqual(['active', 'bookings', 'online']);
     expect(serialized).toContain('latitude');
     expect(serialized).toContain('longitude');
     expect(serialized).not.toContain('currentLat');

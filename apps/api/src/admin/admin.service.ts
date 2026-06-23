@@ -494,7 +494,7 @@ export class AdminService {
       ]),
     );
 
-    const [customers, providers, bookings] = await Promise.all([
+    const [customers, providers, bookings, realtimeBookings] = await Promise.all([
       this.prisma.customerProfile.findMany({
         orderBy: { id: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
@@ -517,7 +517,6 @@ export class AdminService {
               appSessions: {
                 where: {
                   role: Role.CUSTOMER,
-                  ...(dateWhere ? { lastSeenAt: dateWhere } : {}),
                 },
                 orderBy: { lastSeenAt: 'desc' },
                 take: 1,
@@ -566,23 +565,34 @@ export class AdminService {
               longitude: true,
             },
           },
-          snapshots: {
-            orderBy: { recordedAt: 'desc' },
-            take: 1,
-            select: {
-              id: true,
-              providerProfileId: true,
-              addressText: true,
-              lat: true,
-              lng: true,
-              recordedAt: true,
-            },
-          },
           payment: {
             select: {
               amount: true,
               currency: true,
               status: true,
+            },
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: {
+          status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        select: {
+          id: true,
+          address: true,
+          lat: true,
+          lng: true,
+          createdAt: true,
+          updatedAt: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
             },
           },
         },
@@ -607,21 +617,6 @@ export class AdminService {
         ),
       );
       region.customerCount += 1;
-
-      const customerPoint = vietnamOverviewEventPoint({
-        id: `customer:${customer.id}:location:${selectedLocation?.id ?? 'latest'}`,
-        kind: 'customers',
-        label: 'Customer saved service location',
-        latitude: selectedLocation?.latitude,
-        longitude: selectedLocation?.longitude,
-        occurredAt: selectedLocation?.createdAt,
-        source: 'customer-selected-location',
-        addressText: selectedLocation?.addressText,
-        customerProfileId: customer.id,
-      });
-      if (customerPoint && isDateInVietnamOverviewWindow(customerPoint.occurredAt, window)) {
-        points.push(customerPoint);
-      }
 
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
       if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
@@ -660,21 +655,6 @@ export class AdminService {
       );
       region.partnerCount += 1;
 
-      const partnerPoint = vietnamOverviewEventPoint({
-        id: `partner:${provider.id}:current-location`,
-        kind: 'partners',
-        label: provider.displayName,
-        latitude: provider.currentLat,
-        longitude: provider.currentLng,
-        occurredAt: provider.currentLocationUpdatedAt,
-        source: 'partner-current-location',
-        addressText: provider.residentialAddress ?? provider.city,
-        providerProfileId: provider.id,
-      });
-      if (partnerPoint && isDateInVietnamOverviewWindow(partnerPoint.occurredAt, window)) {
-        points.push(partnerPoint);
-      }
-
       if (
         provider.status !== ProviderStatus.OFFLINE &&
         provider.currentLocationUpdatedAt &&
@@ -701,8 +681,6 @@ export class AdminService {
     for (const booking of bookings) {
       const bookingAddressLatitude = booking.addressSnapshot?.latitude ?? booking.lat;
       const bookingAddressLongitude = booking.addressSnapshot?.longitude ?? booking.lng;
-      const bookingAddressText = booking.addressSnapshot?.addressText ?? null;
-      const closeoutSnapshot = booking.snapshots[0];
       const region = ensureVietnamOverviewRegion(
         regions,
         vietnamRegionCodeFromValues(
@@ -720,63 +698,44 @@ export class AdminService {
 
       if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(booking.status)) {
         region.activeBookingCount += 1;
-        const activeBookingPoint = vietnamOverviewEventPoint({
-          id: `booking:${booking.id}:active`,
-          kind: 'bookings',
-          label: 'Active booking service address',
-          latitude: bookingAddressLatitude,
-          longitude: bookingAddressLongitude,
-          occurredAt: latestDate(booking.updatedAt, booking.createdAt),
-          source: 'booking-address-snapshot',
-          addressText: bookingAddressText,
-          bookingId: booking.id,
-        });
-        if (activeBookingPoint) {
-          points.push(activeBookingPoint);
-        }
       }
 
       if (booking.status === BookingStatus.COMPLETED) {
         region.completedBookingCount += 1;
-        const completedBookingPoint = vietnamOverviewEventPoint({
-          id: `booking:${booking.id}:completed`,
-          kind: 'done',
-          label: 'Completed booking closeout location',
-          latitude: closeoutSnapshot?.lat ?? bookingAddressLatitude,
-          longitude: closeoutSnapshot?.lng ?? bookingAddressLongitude,
-          occurredAt: booking.closedAt ?? closeoutSnapshot?.recordedAt ?? booking.updatedAt,
-          source: closeoutSnapshot ? 'partner-action-location-snapshot' : 'booking-address-snapshot',
-          addressText: closeoutSnapshot?.addressText ?? bookingAddressText,
-          bookingId: booking.id,
-          providerProfileId: closeoutSnapshot?.providerProfileId,
-        });
-        if (completedBookingPoint) {
-          points.push(completedBookingPoint);
-        }
       }
 
       if (ADMIN_VIETNAM_CANCELLATION_STATUSES.has(booking.status)) {
         region.cancellationCount += 1;
-        const cancellationPoint = vietnamOverviewEventPoint({
-          id: `booking:${booking.id}:cancelled`,
-          kind: 'cancel',
-          label: 'Cancelled booking review location',
-          latitude: closeoutSnapshot?.lat ?? bookingAddressLatitude,
-          longitude: closeoutSnapshot?.lng ?? bookingAddressLongitude,
-          occurredAt: booking.closedAt ?? closeoutSnapshot?.recordedAt ?? booking.updatedAt,
-          source: closeoutSnapshot ? 'partner-action-location-snapshot' : 'booking-address-snapshot',
-          addressText: closeoutSnapshot?.addressText ?? bookingAddressText,
-          bookingId: booking.id,
-          providerProfileId: closeoutSnapshot?.providerProfileId,
-        });
-        if (cancellationPoint) {
-          points.push(cancellationPoint);
-        }
       }
 
       if (booking.payment && ADMIN_VIETNAM_REVENUE_STATUSES.has(booking.payment.status)) {
         region.revenueAmount += numberValue(booking.payment.amount);
         region.currency = booking.payment.currency || region.currency;
+      }
+    }
+
+    for (const booking of realtimeBookings) {
+      const activeBookingAddressText: string | null =
+        typeof booking.addressSnapshot?.addressText === 'string'
+          ? booking.addressSnapshot.addressText
+          : typeof booking.addressSnapshot?.address === 'string'
+            ? booking.addressSnapshot.address
+            : typeof booking.address === 'string'
+              ? booking.address
+              : null;
+      const activeBookingPoint = vietnamOverviewEventPoint({
+        id: `booking:${booking.id}:active`,
+        kind: 'bookings',
+        label: 'Active booking service address',
+        latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+        longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+        occurredAt: latestDate(booking.updatedAt, booking.createdAt),
+        source: 'booking-address-snapshot',
+        addressText: activeBookingAddressText,
+        bookingId: booking.id,
+      });
+      if (activeBookingPoint) {
+        points.push(activeBookingPoint);
       }
     }
 
@@ -3728,23 +3687,6 @@ function ensureVietnamOverviewRegion(
     revenueAmount: 0,
     currency: 'VND',
   };
-}
-
-function isDateInVietnamOverviewWindow(
-  value: Date | string | null | undefined,
-  window: { startAt: Date | null; endAt: Date | null },
-) {
-  if (!window.startAt || !window.endAt) {
-    return true;
-  }
-
-  const date = value instanceof Date ? value : value ? new Date(value) : null;
-  const timestamp = date?.getTime() ?? Number.NaN;
-  if (!Number.isFinite(timestamp)) {
-    return false;
-  }
-
-  return timestamp >= window.startAt.getTime() && timestamp < window.endAt.getTime();
 }
 
 function vietnamOverviewEventPoint(input: {

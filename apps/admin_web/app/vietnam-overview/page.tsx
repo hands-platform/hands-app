@@ -16,9 +16,9 @@ import {
 import {
   normalizeVietnamOverviewRange,
   type VietnamOverviewMapPoint,
-  vietnamOverviewMetricDotLegend,
-  vietnamOverviewMapPoints,
-  vietnamOverviewMetricPointCounts,
+  vietnamOverviewRealtimeMetricDotLegend,
+  vietnamOverviewRealtimeMapPoints,
+  vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -62,8 +62,8 @@ export default async function VietnamOverviewPage({
     emptyVietnamOverview,
   );
   const regions = overview.regions;
-  const mapPoints = vietnamOverviewMapPoints(overview.points ?? []);
-  const mapPointCounts = vietnamOverviewMetricPointCounts(mapPoints);
+  const mapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
+  const mapPointCounts = vietnamOverviewRealtimePointCounts(mapPoints);
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metrics = [
     {
@@ -116,8 +116,8 @@ export default async function VietnamOverviewPage({
         <div>
           <h1>Vietnam Overview</h1>
           <p className="muted">
-            Stored event-location view for customers, Partners, bookings, completions, and cancellations
-            across Vietnam. No live polling or paid map lookup is used here.
+            Realtime operating map for active customers, online Partners, and active bookings across Vietnam.
+            Period metrics are summarized below without paid map lookup.
           </p>
         </div>
         <div className="actions">
@@ -126,12 +126,53 @@ export default async function VietnamOverviewPage({
         </div>
       </section>
 
+      <section className="card vietnam-overview-map-card">
+        <div className="ops-section-header">
+          <div>
+            <h2>Realtime Vietnam operating map</h2>
+            <p className="muted">
+              The map only shows current operating signals: active customer sessions, online Partner
+              heartbeats, and active booking service addresses. Points outside Vietnam are not rendered.
+            </p>
+          </div>
+          <span className="pill pill-info">Generated {lastGeneratedAt}</span>
+        </div>
+
+        <div className="vietnam-overview-map-layout">
+          <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
+            <div className="vietnam-map-context-chip">
+              <MapPinned size={16} aria-hidden="true" />
+              Realtime dots
+            </div>
+            <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
+              {vietnamOverviewRealtimeMetricDotLegend.map((item) => (
+                <span key={item.key}>
+                  <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
+                  {item.label} {formatNumber(mapPointCounts[item.key])}
+                </span>
+              ))}
+            </div>
+            <VietnamMapOutline />
+            {mapPoints.map((point) => (
+              <EventMapPoint key={point.id} point={point} />
+            ))}
+            {mapPoints.length === 0 ? (
+              <div className="vietnam-map-tile-empty">
+                <ShieldCheck size={22} aria-hidden="true" />
+                <strong>No realtime operating dots loaded</strong>
+                <p className="muted">Check active sessions, Partner heartbeats, or active booking records.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
       <section className="card admin-filter-panel vietnam-overview-filter-panel">
         <div className="admin-filter-panel-header">
           <div>
-            <h2>Overview range</h2>
+            <h2>Period metrics range</h2>
             <p className="muted">
-              Bound the map points and regional counters by the event time stored in the system.
+              The numbers below are bounded by the selected period and use stored event timestamps.
             </p>
           </div>
           <span className="pill pill-info">{overview.rangeLabel}</span>
@@ -149,7 +190,7 @@ export default async function VietnamOverviewPage({
         </div>
       </section>
 
-      <section className="vietnam-overview-metric-grid">
+      <section className="vietnam-overview-metric-grid" aria-label="Period metric summary">
         {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
           <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
             <span className="metric-card-icon">
@@ -164,93 +205,62 @@ export default async function VietnamOverviewPage({
         ))}
       </section>
 
-      <section className="card vietnam-overview-map-card">
+      <section className="card vietnam-overview-region-card">
         <div className="ops-section-header">
           <div>
-            <h2>Vietnam operating map</h2>
+            <h2>Period regional metrics</h2>
             <p className="muted">
-              Every dot is projected from an existing stored coordinate at the time that event was recorded.
-              Points outside Vietnam are not rendered.
+              Numeric distribution by region for {overview.rangeLabel}. This section does not add map dots.
             </p>
           </div>
-          <span className="pill pill-info">Generated {lastGeneratedAt}</span>
         </div>
-
-        <div className="vietnam-overview-map-layout">
-          <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
-            <div className="vietnam-map-context-chip">
-              <MapPinned size={16} aria-hidden="true" />
-              Stored event dots
-            </div>
-            <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
-              {vietnamOverviewMetricDotLegend.map((item) => (
-                <span key={item.key}>
-                  <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
-                  {item.label} {formatNumber(mapPointCounts[item.key])}
-                </span>
-              ))}
-            </div>
-            <VietnamMapOutline />
-            {mapPoints.map((point) => (
-              <EventMapPoint key={point.id} point={point} />
-            ))}
-            {mapPoints.length === 0 ? (
-              <div className="vietnam-map-tile-empty">
-                <ShieldCheck size={22} aria-hidden="true" />
-                <strong>No event-location dots loaded</strong>
-                <p className="muted">Check API availability or seed stored location records.</p>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="admin-table-scroll vietnam-overview-table-wrap">
-            <table className="table vietnam-overview-table">
-              <thead>
-                <tr>
-                  <th>Region</th>
-                  <th>Customers</th>
-                  <th>Active</th>
-                  <th>Partners</th>
-                  <th>Online</th>
-                  <th>Bookings</th>
-                  <th>Done</th>
-                  <th>Cancel</th>
-                  <th>Revenue</th>
+        <div className="admin-table-scroll vietnam-overview-table-wrap">
+          <table className="table vietnam-overview-table">
+            <thead>
+              <tr>
+                <th>Region</th>
+                <th>Customers</th>
+                <th>Active</th>
+                <th>Partners</th>
+                <th>Online</th>
+                <th>Bookings</th>
+                <th>Done</th>
+                <th>Cancel</th>
+                <th>Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {regions.map((region) => (
+                <tr key={region.regionCode}>
+                  <td>
+                    <div className="vietnam-region-name">
+                      <span>{region.shortName}</span>
+                      <strong>{region.regionName}</strong>
+                    </div>
+                  </td>
+                  <td>{formatNumber(region.customerCount)}</td>
+                  <td>{formatNumber(region.activeCustomerCount)}</td>
+                  <td>{formatNumber(region.partnerCount)}</td>
+                  <td>{formatNumber(region.onlinePartnerCount)}</td>
+                  <td>{formatNumber(region.activeBookingCount)}</td>
+                  <td>{formatNumber(region.completedBookingCount)}</td>
+                  <td>{formatNumber(region.cancellationCount)}</td>
+                  <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {regions.map((region) => (
-                  <tr key={region.regionCode}>
-                    <td>
-                      <div className="vietnam-region-name">
-                        <span>{region.shortName}</span>
-                        <strong>{region.regionName}</strong>
-                      </div>
-                    </td>
-                    <td>{formatNumber(region.customerCount)}</td>
-                    <td>{formatNumber(region.activeCustomerCount)}</td>
-                    <td>{formatNumber(region.partnerCount)}</td>
-                    <td>{formatNumber(region.onlinePartnerCount)}</td>
-                    <td>{formatNumber(region.activeBookingCount)}</td>
-                    <td>{formatNumber(region.completedBookingCount)}</td>
-                    <td>{formatNumber(region.cancellationCount)}</td>
-                    <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
-                  </tr>
-                ))}
-                {regions.length === 0 ? (
-                  <tr>
-                    <td colSpan={9}>
-                      <div className="empty-state">
-                        <ShieldCheck size={22} aria-hidden="true" />
-                        <strong>No regional aggregates loaded</strong>
-                        <p className="muted">Check API availability or seed stored address records.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {regions.length === 0 ? (
+                <tr>
+                  <td colSpan={9}>
+                    <div className="empty-state">
+                      <ShieldCheck size={22} aria-hidden="true" />
+                      <strong>No regional aggregates loaded</strong>
+                      <p className="muted">Check API availability or seed stored address records.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
@@ -334,5 +344,5 @@ function formatDateTime(value: string) {
 }
 
 function metricLabel(value: VietnamOverviewMapPoint['kind']) {
-  return vietnamOverviewMetricDotLegend.find((item) => item.key === value)?.label ?? value;
+  return vietnamOverviewRealtimeMetricDotLegend.find((item) => item.key === value)?.label ?? value;
 }

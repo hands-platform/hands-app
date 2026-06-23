@@ -3416,7 +3416,7 @@ a.action-button-card:hover {
   align-items: stretch;
   display: grid;
   gap: 18px;
-  grid-template-columns: minmax(620px, 0.56fr) minmax(620px, 0.44fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .vietnam-region-map {
@@ -3668,6 +3668,11 @@ a.action-button-card:hover {
 .vietnam-overview-table-wrap {
   border-radius: var(--admin-radius-lg);
   margin-top: 0;
+}
+
+.vietnam-overview-region-card {
+  display: grid;
+  gap: 18px;
 }
 
 .vietnam-overview-table {

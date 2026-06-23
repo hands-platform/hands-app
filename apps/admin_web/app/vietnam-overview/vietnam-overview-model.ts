@@ -87,6 +87,15 @@ export const vietnamOverviewMetricDotLegend: Array<{
   { key: 'cancel', label: 'Cancel' },
 ];
 
+export const vietnamOverviewRealtimeMetricDotLegend: Array<{
+  key: VietnamOverviewMetricDotKey;
+  label: string;
+}> = [
+  { key: 'active', label: 'Active customers' },
+  { key: 'online', label: 'Online Partners' },
+  { key: 'bookings', label: 'Active bookings' },
+];
+
 export const vietnamOverviewRangeOptions: Array<{ value: VietnamOverviewRange; label: string }> = [
   { value: 'today', label: 'Today' },
   { value: 'yesterday', label: 'Yesterday' },
@@ -176,6 +185,12 @@ export function vietnamOverviewMapPoints(
     .sort((left, right) => new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime());
 }
 
+export function vietnamOverviewRealtimeMapPoints(
+  points: readonly VietnamOverviewPointInput[] = [],
+): VietnamOverviewMapPoint[] {
+  return vietnamOverviewMapPoints(points.filter((point) => isRealtimeMapPointKind(point.kind)));
+}
+
 export function vietnamOverviewMetricPointCounts(
   points: readonly Pick<VietnamOverviewMapPoint, 'kind'>[],
 ) {
@@ -186,6 +201,22 @@ export function vietnamOverviewMetricPointCounts(
     }),
     {} as Record<VietnamOverviewMetricDotKey, number>,
   );
+}
+
+export function vietnamOverviewRealtimePointCounts(
+  points: readonly Pick<VietnamOverviewMapPoint, 'kind'>[],
+) {
+  return vietnamOverviewRealtimeMetricDotLegend.reduce(
+    (counts, item) => ({
+      ...counts,
+      [item.key]: points.filter((point) => point.kind === item.key).length,
+    }),
+    {} as Record<VietnamOverviewMetricDotKey, number>,
+  );
+}
+
+function isRealtimeMapPointKind(kind: VietnamOverviewMetricDotKey) {
+  return kind === 'active' || kind === 'online' || kind === 'bookings';
 }
 
 function demandCount(region: VietnamOverviewRegionMarkerInput) {
