@@ -31,6 +31,7 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Request Time');
     expect(rendered).toContain('booking');
     expect(rendered).toContain('19 Jun 2026, 14:40');
+    expect(rendered).toContain('Review submitted 16:08 23/02/2026');
     expect(rendered).toContain('Massage Partner');
     expect(rendered).toContain('Visible review');
     expect(rendered).toContain('Customer One');

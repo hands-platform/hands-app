@@ -227,6 +227,9 @@ export function ReviewsTableSection({
                     )}
                   </div>
                   <div className="muted">{row.bookingRequestTimeLabel}</div>
+                  <div className="muted vuexy-review-submitted-line">
+                    Review submitted {row.createdAtLabel}
+                  </div>
                 </td>
                 <td>
                   <AdminPersonCell
