@@ -10752,8 +10752,8 @@ textarea:focus-visible {
   flex: 1 1 520px;
 }
 
-.vuexy-review-sort-select {
-  min-width: 168px;
+.vuexy-review-sort-buttons {
+  flex: 1 1 520px;
 }
 
 .reviews-page .vuexy-review-card .admin-filter-panel-body {

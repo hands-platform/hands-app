@@ -26,6 +26,9 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Last month');
     expect(rendered).toContain('Custom dates');
     expect(rendered).toContain('Newest request');
+    expect(rendered).toContain('Oldest request');
+    expect(rendered).toContain('Highest rating');
+    expect(rendered).toContain('Lowest rating');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Customer review list');
     expect(rendered).toContain('Request Time');
@@ -58,15 +61,18 @@ describe('ReviewsTableSection', () => {
         '/reviews?dateRange=7d',
         '/reviews?dateRange=30d',
         '/reviews?dateRange=custom',
+        '/reviews?sort=oldest',
+        '/reviews?sort=rating-desc',
+        '/reviews?sort=rating-asc',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-form-search vuexy-review-search',
-        'admin-form-select vuexy-review-sort-select',
         'admin-form-select vuexy-review-select',
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
+        'booking-date-filter-buttons vuexy-review-sort-buttons',
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card',
         'admin-person-avatar-shell',
@@ -126,10 +132,17 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Sort: Highest rating');
     expect(rendered).toContain('Search: mai');
     expect(rendered).toContain('Apply dates');
-    expect(hrefsIn(section)).toContain('/reviews?q=mai&sort=rating-desc');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/reviews?q=mai&dateRange=custom&dateFrom=2026-06-10&dateTo=2026-06-17',
+        '/reviews?q=mai&dateRange=custom&dateFrom=2026-06-10&dateTo=2026-06-17&sort=oldest',
+        '/reviews?q=mai&dateRange=custom&dateFrom=2026-06-10&dateTo=2026-06-17&sort=rating-asc',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'booking-custom-date-grid vuexy-review-custom-date-grid',
+        'booking-date-filter-buttons vuexy-review-sort-buttons',
         'booking-date-apply-button',
       ]),
     );

@@ -130,7 +130,7 @@ export function ReviewsTableSection({
             role="group"
             aria-label="Review request date"
           >
-            {REVIEW_DATE_RANGE_OPTIONS.map((option) => (
+            {reviewDateButtonOptions.map((option) => (
               <a
                 key={option.value}
                 aria-current={filters.dateRange === option.value ? 'page' : undefined}
@@ -159,24 +159,34 @@ export function ReviewsTableSection({
               </button>
             </form>
           ) : null}
+          <div
+            className="booking-date-filter-buttons vuexy-review-sort-buttons"
+            role="group"
+            aria-label="Review sort"
+          >
+            {REVIEW_SORT_OPTIONS.map((option) => (
+              <a
+                key={option.value}
+                aria-current={filters.sort === option.value ? 'page' : undefined}
+                className={filters.sort === option.value ? 'is-active' : undefined}
+                href={buildReviewListHref(filters, { sort: option.value })}
+              >
+                {option.label}
+              </a>
+            ))}
+          </div>
           <form action="/reviews" className="vuexy-review-controls">
             <input name="review" type="hidden" value={filters.review} />
             <input name="dateRange" type="hidden" value={filters.dateRange} />
             <input name="dateFrom" type="hidden" value={filters.dateFrom} />
             <input name="dateTo" type="hidden" value={filters.dateTo} />
+            <input name="sort" type="hidden" value={filters.sort} />
             <AdminFormSearch
               className="vuexy-review-search"
               defaultValue={filters.q}
               label="Search Review"
               name="q"
               placeholder="Search Review"
-            />
-            <AdminFormSelect
-              className="vuexy-review-sort-select"
-              defaultValue={filters.sort}
-              label="Sort reviews"
-              name="sort"
-              options={reviewSortOptions}
             />
             <AdminFormSelect
               className="vuexy-review-select"
@@ -352,7 +362,4 @@ const reviewStatusButtonOptions = [
   { label: 'Reported', value: 'reported' },
 ] as const;
 
-const reviewSortOptions = REVIEW_SORT_OPTIONS.map((option) => ({
-  label: option.label,
-  value: option.value,
-}));
+const reviewDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS.filter((option) => option.value !== 'all');
