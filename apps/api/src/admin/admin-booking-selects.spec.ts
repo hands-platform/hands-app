@@ -19,10 +19,10 @@ describe('admin booking selects', () => {
     });
   });
 
-  it('keeps chat presence bounded to the latest message', () => {
+  it('keeps chat presence bounded to recent messages', () => {
     expect(adminChatRoomPresenceSelect.messages).toMatchObject({
-      orderBy: { createdAt: 'desc' },
-      take: 1,
+      orderBy: { createdAt: 'asc' },
+      take: 20,
       select: expect.objectContaining({ body: true, sender: expect.any(Object) }),
     });
   });

@@ -85,9 +85,9 @@ describe('AdminController notification and push actions', () => {
 
     expect(routeMetadata('vietnamOverview')).toEqual({
       method: RequestMethod.GET,
-      path: 'vietnam-overview',
+      path: ['vietnam-overview', 'maps/vietnam-overview'],
     });
-    expect(admin.getVietnamOverview).toHaveBeenCalledWith();
+    expect(admin.getVietnamOverview).toHaveBeenCalledWith(undefined);
   });
 
   it('exposes usage overview as a bounded aggregate GET list', async () => {
@@ -144,7 +144,7 @@ describe('AdminController notification and push actions', () => {
 });
 
 function routeMetadata(methodName: keyof AdminController) {
-  const handler = AdminController.prototype[methodName] as unknown as Function;
+  const handler = AdminController.prototype[methodName] as unknown as (...args: unknown[]) => unknown;
   return {
     method: Reflect.getMetadata(METHOD_METADATA, handler),
     path: Reflect.getMetadata(PATH_METADATA, handler),

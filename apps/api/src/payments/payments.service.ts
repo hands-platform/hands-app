@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
@@ -22,7 +22,6 @@ import {
   isTerminalPaymentStatus,
   momoSignatureCandidates,
   secureEqualHex,
-  sortedKeyValueString,
   stringValue,
   toJsonOrUndefined,
   type PaymentCallbackAttemptInput,

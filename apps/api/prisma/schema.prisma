@@ -193,6 +193,38 @@ enum ProviderWalletLedgerType {
   ADMIN_ADJUSTMENT
 }
 
+enum ReferralAudience {
+  CUSTOMER
+  PARTNER
+}
+
+enum ReferralRewardMode {
+  COMMISSION_PERCENT
+  FIXED_AMOUNT
+}
+
+enum ReferralAttributionStatus {
+  REGISTERED
+  QUALIFIED
+  REWARDED
+  BLOCKED
+  CANCELLED
+}
+
+enum ReferralFraudReviewStatus {
+  CLEAR
+  FLAGGED
+  HELD
+}
+
+enum ReferralRewardStatus {
+  PENDING
+  AVAILABLE
+  HELD
+  REVERSED
+  CANCELLED
+}
+
 enum BookingOpsTaskType {
   CUSTOMER_CONTACTED
   PROVIDER_CONTACTED
@@ -266,26 +298,26 @@ model User {
   providerReportsAssigned  ProviderReport[]           @relation("ProviderReportAssignee")
   providerSanctionsIssued  ProviderSanction[]         @relation("ProviderSanctionIssuer")
   providerSanctionsLifted  ProviderSanction[]         @relation("ProviderSanctionLifter")
-  operationalPolicyUpdates OperationalPolicySetting[]  @relation("OperationalPolicySettingUpdater")
+  operationalPolicyUpdates OperationalPolicySetting[] @relation("OperationalPolicySettingUpdater")
 }
 
 model AppSession {
-  id         String    @id @default(cuid())
-  userId     String
-  role       Role
-  deviceId   String
-  platform   String?
-  appVersion String?
-  deviceLanguage String?
+  id               String    @id @default(cuid())
+  userId           String
+  role             Role
+  deviceId         String
+  platform         String?
+  appVersion       String?
+  deviceLanguage   String?
   lastLoginAddress String?
-  ipAddress  String?
-  active     Boolean   @default(true)
-  lastSeenAt DateTime  @default(now())
-  expiresAt  DateTime?
-  metadata   Json?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
+  ipAddress        String?
+  active           Boolean   @default(true)
+  lastSeenAt       DateTime  @default(now())
+  expiresAt        DateTime?
+  metadata         Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id])
 
   @@unique([userId, role, deviceId])
   @@index([role, active, lastSeenAt])
@@ -293,9 +325,9 @@ model AppSession {
 }
 
 model CustomerProfile {
-  id                String                     @id @default(cuid())
-  userId            String                     @unique
-  user              User                       @relation(fields: [userId], references: [id])
+  id                String                        @id @default(cuid())
+  userId            String                        @unique
+  user              User                          @relation(fields: [userId], references: [id])
   addresses         Json?
   bookings          Booking[]
   bookingSnapshots  BookingAddressSnapshot[]
@@ -303,6 +335,10 @@ model CustomerProfile {
   viewedProviders   CustomerProviderProfileView[]
   reviews           Review[]
   selectedLocations CustomerSelectedLocation[]
+  referralCodes     ReferralCode[]                @relation("CustomerReferralCodeOwner")
+  referralsMade     ReferralAttribution[]         @relation("CustomerReferralReferrer")
+  referralsReceived ReferralAttribution[]         @relation("CustomerReferralReferred")
+  referralRewards   ReferralReward[]              @relation("CustomerReferralWalletOwner")
 }
 
 model CustomerFavoriteProvider {
@@ -337,9 +373,9 @@ model CustomerProviderProfileView {
 }
 
 model ProviderProfile {
-  id                       String                      @id @default(cuid())
-  userId                   String                      @unique
-  user                     User                        @relation(fields: [userId], references: [id])
+  id                       String                        @id @default(cuid())
+  userId                   String                        @unique
+  user                     User                          @relation(fields: [userId], references: [id])
   displayName              String
   legalName                String?
   dateOfBirth              DateTime?
@@ -354,19 +390,19 @@ model ProviderProfile {
   residentialAddress       String?
   city                     String?
   serviceArea              Json?
-  level                    ProviderLevel               @default(LEVEL_1_SIGNUP)
-  status                   ProviderStatus              @default(OFFLINE)
-  ratingAvg                Decimal                     @default(0) @db.Decimal(3, 2)
-  reviewCount              Int                         @default(0)
-  currentLat               Decimal?                    @db.Decimal(10, 7)
-  currentLng               Decimal?                    @db.Decimal(10, 7)
+  level                    ProviderLevel                 @default(LEVEL_1_SIGNUP)
+  status                   ProviderStatus                @default(OFFLINE)
+  ratingAvg                Decimal                       @default(0) @db.Decimal(3, 2)
+  reviewCount              Int                           @default(0)
+  currentLat               Decimal?                      @db.Decimal(10, 7)
+  currentLng               Decimal?                      @db.Decimal(10, 7)
   currentLocationUpdatedAt DateTime?
   nextAvailableAt          DateTime?
   blockedAt                DateTime?
   blockedReason            String?
   trustedAt                DateTime?
   deletedAt                DateTime?
-  updatedAt                DateTime                    @default(now()) @updatedAt
+  updatedAt                DateTime                      @default(now()) @updatedAt
   verification             ProviderVerification?
   kyc                      ProviderKyc?
   documents                ProviderDocument[]
@@ -382,8 +418,8 @@ model ProviderProfile {
   participants             BookingParticipant[]
   favoritedByCustomers     CustomerFavoriteProvider[]
   viewedByCustomers        CustomerProviderProfileView[]
-  preferredBookings        Booking[]                   @relation("PreferredProvider")
-  selectedBookings         Booking[]                   @relation("SelectedProvider")
+  preferredBookings        Booking[]                     @relation("PreferredProvider")
+  selectedBookings         Booking[]                     @relation("SelectedProvider")
   locationSnapshots        LocationSnapshot[]
   reviews                  Review[]
   earnings                 ProviderEarning[]
@@ -391,6 +427,10 @@ model ProviderProfile {
   walletLedgerEntries      ProviderWalletLedgerEntry[]
   reports                  ProviderReport[]
   sanctions                ProviderSanction[]
+  referralCodes            ReferralCode[]                @relation("ProviderReferralCodeOwner")
+  referralsMade            ReferralAttribution[]         @relation("ProviderReferralReferrer")
+  referralsReceived        ReferralAttribution[]         @relation("ProviderReferralReferred")
+  referralRewards          ReferralReward[]              @relation("ProviderReferralWalletOwner")
 }
 
 model ProviderKyc {
@@ -581,13 +621,13 @@ model ProviderDevice {
 }
 
 model CustomerSelectedLocation {
-  id                String          @id @default(cuid())
+  id                String                   @id @default(cuid())
   customerProfileId String
-  latitude          Decimal         @db.Decimal(10, 7)
-  longitude         Decimal         @db.Decimal(10, 7)
+  latitude          Decimal                  @db.Decimal(10, 7)
+  longitude         Decimal                  @db.Decimal(10, 7)
   addressText       String
-  createdAt         DateTime        @default(now())
-  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+  createdAt         DateTime                 @default(now())
+  customerProfile   CustomerProfile          @relation(fields: [customerProfileId], references: [id])
   bookingSnapshots  BookingAddressSnapshot[]
 
   @@index([customerProfileId, createdAt])
@@ -694,9 +734,116 @@ model Booking {
   providerReports     ProviderReport[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
   addressSnapshot     BookingAddressSnapshot?
+  referralRewards     ReferralReward[]
 
   @@index([status, closedAt])
   @@index([closedByRole, closedAt])
+}
+
+model ReferralPolicy {
+  id                    String             @id @default(cuid())
+  audience              ReferralAudience   @unique
+  enabled               Boolean            @default(false)
+  rewardMode            ReferralRewardMode
+  commissionPercentBps  Int?
+  fixedRewardAmount     Int?
+  perRewardCapAmount    Int?
+  totalRewardCapAmount  Int?
+  maxRewardedReferrals  Int?
+  maxRewardsPerReferred Int?
+  holdPeriodDays        Int                @default(7)
+  currency              String             @default("VND")
+  notes                 String?
+  metadata              Json?
+  createdById           String?
+  updatedById           String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([enabled, audience])
+}
+
+model ReferralCode {
+  id                     String                @id @default(cuid())
+  audience               ReferralAudience
+  code                   String                @unique
+  ownerCustomerProfileId String?
+  ownerProviderProfileId String?
+  active                 Boolean               @default(true)
+  metadata               Json?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  ownerCustomerProfile   CustomerProfile?      @relation("CustomerReferralCodeOwner", fields: [ownerCustomerProfileId], references: [id], onDelete: Cascade)
+  ownerProviderProfile   ProviderProfile?      @relation("ProviderReferralCodeOwner", fields: [ownerProviderProfileId], references: [id], onDelete: Cascade)
+  attributions           ReferralAttribution[]
+
+  @@unique([audience, ownerCustomerProfileId])
+  @@unique([audience, ownerProviderProfileId])
+  @@index([audience, active])
+  @@index([ownerCustomerProfileId])
+  @@index([ownerProviderProfileId])
+}
+
+model ReferralAttribution {
+  id                        String                    @id @default(cuid())
+  audience                  ReferralAudience
+  referralCodeId            String
+  referrerCustomerProfileId String?
+  referrerProviderProfileId String?
+  referredCustomerProfileId String?
+  referredProviderProfileId String?
+  installSource             String?
+  platform                  String?
+  status                    ReferralAttributionStatus @default(REGISTERED)
+  fraudReviewStatus         ReferralFraudReviewStatus @default(CLEAR)
+  metadata                  Json?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  referralCode              ReferralCode              @relation(fields: [referralCodeId], references: [id], onDelete: Restrict)
+  referrerCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferrer", fields: [referrerCustomerProfileId], references: [id], onDelete: Cascade)
+  referrerProviderProfile   ProviderProfile?          @relation("ProviderReferralReferrer", fields: [referrerProviderProfileId], references: [id], onDelete: Cascade)
+  referredCustomerProfile   CustomerProfile?          @relation("CustomerReferralReferred", fields: [referredCustomerProfileId], references: [id], onDelete: Cascade)
+  referredProviderProfile   ProviderProfile?          @relation("ProviderReferralReferred", fields: [referredProviderProfileId], references: [id], onDelete: Cascade)
+  rewards                   ReferralReward[]
+
+  @@unique([audience, referredCustomerProfileId])
+  @@unique([audience, referredProviderProfileId])
+  @@index([audience, status, createdAt])
+  @@index([referralCodeId])
+  @@index([referrerCustomerProfileId, createdAt])
+  @@index([referrerProviderProfileId, createdAt])
+}
+
+model ReferralReward {
+  id                           String               @id @default(cuid())
+  attributionId                String
+  qualifyingBookingId          String?
+  walletOwnerCustomerProfileId String?
+  walletOwnerProviderProfileId String?
+  sourceKey                    String               @unique
+  amount                       Int
+  currency                     String               @default("VND")
+  status                       ReferralRewardStatus @default(PENDING)
+  calculationSnapshot          Json
+  walletLedgerReference        String?
+  availableAt                  DateTime?
+  heldAt                       DateTime?
+  reversedAt                   DateTime?
+  cancelledAt                  DateTime?
+  notes                        String?
+  metadata                     Json?
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
+  attribution                  ReferralAttribution  @relation(fields: [attributionId], references: [id], onDelete: Restrict)
+  qualifyingBooking            Booking?             @relation(fields: [qualifyingBookingId], references: [id], onDelete: SetNull)
+  walletOwnerCustomerProfile   CustomerProfile?     @relation("CustomerReferralWalletOwner", fields: [walletOwnerCustomerProfileId], references: [id], onDelete: Cascade)
+  walletOwnerProviderProfile   ProviderProfile?     @relation("ProviderReferralWalletOwner", fields: [walletOwnerProviderProfileId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([attributionId])
+  @@index([qualifyingBookingId])
+  @@index([walletOwnerCustomerProfileId, createdAt])
+  @@index([walletOwnerProviderProfileId, createdAt])
 }
 
 model BookingAddressSnapshot {
@@ -780,21 +927,21 @@ model ChatMessage {
 }
 
 model Payment {
-  id          String        @id @default(cuid())
-  bookingId   String        @unique
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
-  amount      Int
-  currency    String        @default("VND")
-  providerRef String?       @unique
-  rawMeta     Json?
-  booking     Booking       @relation(fields: [bookingId], references: [id])
-  refunds     Refund[]
+  id               String                   @id @default(cuid())
+  bookingId        String                   @unique
+  method           PaymentMethod
+  status           PaymentStatus            @default(PENDING)
+  amount           Int
+  currency         String                   @default("VND")
+  providerRef      String?                  @unique
+  rawMeta          Json?
+  booking          Booking                  @relation(fields: [bookingId], references: [id])
+  refunds          Refund[]
   callbackAttempts PaymentCallbackAttempt[]
 }
 
 model PaymentCallbackAttempt {
-  id                   String         @id @default(cuid())
+  id                   String        @id @default(cuid())
   paymentId            String?
   method               PaymentMethod
   providerRef          String?
@@ -807,8 +954,8 @@ model PaymentCallbackAttempt {
   errorCode            String?
   errorMessage         String?
   rawPayload           Json?
-  createdAt            DateTime       @default(now())
-  payment              Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdAt            DateTime      @default(now())
+  payment              Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([paymentId, createdAt])
   @@index([method, outcome, createdAt])
