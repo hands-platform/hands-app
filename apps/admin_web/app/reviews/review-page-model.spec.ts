@@ -179,7 +179,8 @@ describe('review page model', () => {
       reportReasonValue: 'Needs follow-up',
       reportReasonLabel: 'Reason: Needs follow-up',
       status: 'REPORTED',
-      statusLabel: 'Follow-up',
+      statusClassName: 'review-status-chip review-status-reported',
+      statusLabel: 'Reported',
       statusMeaning: 'Moderation follow-up',
     });
     expect(rows[0]?.bookingRequestTimeLabel).toContain('16 Jun 2026');

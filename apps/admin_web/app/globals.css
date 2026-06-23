@@ -10553,6 +10553,11 @@ textarea:focus-visible {
   color: var(--admin-warning-text);
 }
 
+.review-status-reported {
+  background: var(--admin-danger-soft);
+  color: var(--admin-danger-text);
+}
+
 .review-status-follow-up {
   background: rgba(0, 186, 209, 0.16);
   color: var(--admin-info-text);

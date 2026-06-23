@@ -463,7 +463,7 @@ function reviewStatusLabel(status: string) {
     case 'HIDDEN':
       return 'Held';
     case 'REPORTED':
-      return 'Follow-up';
+      return 'Reported';
     default:
       return status
         .toLowerCase()
@@ -479,6 +479,9 @@ function reviewStatusClassName(status: string) {
   }
   if (status === 'HIDDEN') {
     return 'review-status-chip review-status-held';
+  }
+  if (status === 'REPORTED') {
+    return 'review-status-chip review-status-reported';
   }
   return 'review-status-chip review-status-follow-up';
 }
