@@ -84,6 +84,7 @@ const referralPolicySelect = {
   fixedRewardAmount: true,
   holdPeriodDays: true,
   maxRewardedReferrals: true,
+  maxRewardsPerReferred: true,
   perRewardCapAmount: true,
   rewardMode: true,
   totalRewardCapAmount: true,
@@ -406,12 +407,18 @@ export class ReferralsService {
     if (policy.rewardMode !== ReferralRewardMode.COMMISSION_PERCENT || !policy.commissionPercentBps) {
       return null;
     }
-    const rewardSlotsAvailable = await this.referrerRewardSlotsAvailable({
-      audience: ReferralAudience.CUSTOMER,
-      maxRewardedReferrals: policy.maxRewardedReferrals,
-      walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
-    });
-    if (!rewardSlotsAvailable) {
+    const [referrerSlotsAvailable, referredSlotsAvailable] = await Promise.all([
+      this.referrerRewardSlotsAvailable({
+        audience: ReferralAudience.CUSTOMER,
+        maxRewardedReferrals: policy.maxRewardedReferrals,
+        walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
+      }),
+      this.referredRewardSlotsAvailable({
+        attributionId: attribution.id,
+        maxRewardsPerReferred: policy.maxRewardsPerReferred,
+      }),
+    ]);
+    if (!referrerSlotsAvailable || !referredSlotsAvailable) {
       return null;
     }
 
@@ -460,7 +467,7 @@ export class ReferralsService {
       return null;
     }
 
-    const [alreadyCompletedBookings, rewardSlotsAvailable] = await Promise.all([
+    const [alreadyCompletedBookings, referrerSlotsAvailable, referredSlotsAvailable] = await Promise.all([
       this.prisma.providerEarning.count({
         where: {
           providerProfileId: attribution.referredProviderProfileId,
@@ -473,8 +480,12 @@ export class ReferralsService {
         maxRewardedReferrals: policy.maxRewardedReferrals,
         walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
       }),
+      this.referredRewardSlotsAvailable({
+        attributionId: attribution.id,
+        maxRewardsPerReferred: policy.maxRewardsPerReferred,
+      }),
     ]);
-    if (alreadyCompletedBookings > 0 || !rewardSlotsAvailable) {
+    if (alreadyCompletedBookings > 0 || !referrerSlotsAvailable || !referredSlotsAvailable) {
       return null;
     }
 
@@ -529,6 +540,24 @@ export class ReferralsService {
     });
 
     return rewardCount < input.maxRewardedReferrals;
+  }
+
+  private async referredRewardSlotsAvailable(input: {
+    attributionId: string;
+    maxRewardsPerReferred: number | null;
+  }) {
+    if (!input.maxRewardsPerReferred) {
+      return true;
+    }
+
+    const rewardCount = await this.prisma.referralReward.count({
+      where: {
+        attributionId: input.attributionId,
+        status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
+      },
+    });
+
+    return rewardCount < input.maxRewardsPerReferred;
   }
 
   private async rewardAmountAfterLifetimeCap(
@@ -587,6 +616,7 @@ export class ReferralsService {
           commissionPercentBps: input.policy.commissionPercentBps,
           fixedRewardAmount: input.policy.fixedRewardAmount,
           grossAmount: input.booking.earning.grossAmount,
+          maxRewardsPerReferred: input.policy.maxRewardsPerReferred,
           perRewardCapAmount: input.policy.perRewardCapAmount,
           rewardMode: input.policy.rewardMode,
           totalRewardCapAmount: input.policy.totalRewardCapAmount,
