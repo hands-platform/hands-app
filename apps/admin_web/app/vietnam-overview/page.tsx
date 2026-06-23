@@ -87,6 +87,18 @@ export default async function VietnamOverviewPage({
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metricTotals = activeRegion ?? overview.totals;
   const metricRangeLabel = activeRegion ? activeRegion.regionName : overview.rangeLabel;
+  const regionRealtimeSummary = [
+    { label: 'Active customers', value: formatNumber(allMapPointCounts.active), tone: 'info' },
+    { label: 'Online Partners', value: formatNumber(allMapPointCounts.online), tone: 'success' },
+    { label: 'Active bookings', value: formatNumber(allMapPointCounts.bookings), tone: 'warning' },
+  ];
+  const regionPeriodSummary = [
+    { label: 'Customers', value: formatNumber(metricTotals.customerCount) },
+    { label: 'Partners', value: formatNumber(metricTotals.partnerCount) },
+    { label: 'Completed', value: formatNumber(metricTotals.completedBookingCount) },
+    { label: 'Canceled', value: formatNumber(metricTotals.cancellationCount) },
+    { label: 'Revenue', value: formatCurrency(metricTotals.revenueAmount, metricTotals.currency) },
+  ];
   const metrics = [
     {
       label: 'Customers',
@@ -252,6 +264,36 @@ export default async function VietnamOverviewPage({
           ))}
         </div>
       </section>
+
+      {activeRegion ? (
+        <section className="card vietnam-region-focus-summary-card">
+          <div className="vietnam-region-focus-heading">
+            <span>{activeRegion.shortName}</span>
+            <div>
+              <h2>{activeRegion.regionName}</h2>
+              <p className="muted">
+                Focused operating readout for realtime signals and {overview.rangeLabel} totals.
+              </p>
+            </div>
+          </div>
+          <div className="vietnam-region-focus-summary-grid" aria-label="Focused region summary">
+            {regionRealtimeSummary.map((item) => (
+              <article key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
+                <small>Realtime</small>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </article>
+            ))}
+            {regionPeriodSummary.map((item) => (
+              <article key={item.label} className="vietnam-region-focus-summary-item">
+                <small>{overview.rangeLabel}</small>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="vietnam-overview-metric-grid" aria-label="Period metric summary">
         {metrics.map(({ label, value, detail, icon: Icon, tone }) => (

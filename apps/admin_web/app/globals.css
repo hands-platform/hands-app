@@ -3419,6 +3419,108 @@ a.action-button-card:hover {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.vietnam-region-focus-summary-card {
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.vietnam-region-focus-heading {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.vietnam-region-focus-heading > span {
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--admin-primary-channel) / 0.16),
+    rgb(var(--admin-info-channel) / 0.12)
+  );
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.18);
+  border-radius: var(--admin-radius-lg);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  height: 58px;
+  justify-content: center;
+  letter-spacing: 0;
+}
+
+.vietnam-region-focus-heading h2 {
+  color: var(--admin-text);
+  font-size: 20px;
+  line-height: 26px;
+  margin: 0 0 4px;
+}
+
+.vietnam-region-focus-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.vietnam-region-focus-summary-item {
+  background: rgb(var(--admin-main-channel) / 0.04);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.vietnam-region-focus-summary-item small {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vietnam-region-focus-summary-item strong {
+  color: var(--admin-text);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-region-focus-summary-item span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-region-focus-summary-item.is-info {
+  background: rgb(var(--admin-info-channel) / 0.08);
+  border-color: rgb(var(--admin-info-channel) / 0.16);
+}
+
+.vietnam-region-focus-summary-item.is-success {
+  background: rgb(var(--admin-success-channel) / 0.08);
+  border-color: rgb(var(--admin-success-channel) / 0.16);
+}
+
+.vietnam-region-focus-summary-item.is-warning {
+  background: rgb(var(--admin-warning-channel) / 0.08);
+  border-color: rgb(var(--admin-warning-channel) / 0.18);
+}
+
 .vietnam-region-map {
   background:
     radial-gradient(circle at 68% 20%, rgb(var(--admin-info-channel) / 0.14), transparent 28%),
