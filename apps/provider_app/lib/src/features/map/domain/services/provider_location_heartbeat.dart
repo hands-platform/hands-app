@@ -3,6 +3,8 @@ import 'dart:async';
 class ProviderLocationHeartbeatSnapshot {
   const ProviderLocationHeartbeatSnapshot({
     required this.active,
+    this.interval = ProviderLocationHeartbeat.interval,
+    this.bookingId,
     this.lastAttemptAt,
     this.lastSuccessAt,
     this.nextUpdateAt,
@@ -12,6 +14,8 @@ class ProviderLocationHeartbeatSnapshot {
   });
 
   final bool active;
+  final Duration interval;
+  final String? bookingId;
   final DateTime? lastAttemptAt;
   final DateTime? lastSuccessAt;
   final DateTime? nextUpdateAt;
@@ -21,17 +25,22 @@ class ProviderLocationHeartbeatSnapshot {
 
   ProviderLocationHeartbeatSnapshot copyWith({
     bool? active,
+    Duration? interval,
+    String? bookingId,
     DateTime? lastAttemptAt,
     DateTime? lastSuccessAt,
     DateTime? nextUpdateAt,
     Object? lastError,
     bool clearError = false,
+    bool clearBookingId = false,
     bool clearNextUpdateAt = false,
     int? successCount,
     int? failureCount,
   }) {
     return ProviderLocationHeartbeatSnapshot(
       active: active ?? this.active,
+      interval: interval ?? this.interval,
+      bookingId: clearBookingId ? null : bookingId ?? this.bookingId,
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       lastSuccessAt: lastSuccessAt ?? this.lastSuccessAt,
       nextUpdateAt:
@@ -44,11 +53,16 @@ class ProviderLocationHeartbeatSnapshot {
 }
 
 class ProviderLocationHeartbeat {
-  ProviderLocationHeartbeat(this._updateLocation);
+  ProviderLocationHeartbeat(
+    this._updateLocation, {
+    Future<void> Function(String bookingId)? updateBookingLocation,
+  }) : _updateBookingLocation = updateBookingLocation;
 
   static const interval = Duration(minutes: 60);
+  static const activeBookingInterval = Duration(minutes: 30);
 
   final Future<void> Function() _updateLocation;
+  final Future<void> Function(String bookingId)? _updateBookingLocation;
   final _snapshots =
       StreamController<ProviderLocationHeartbeatSnapshot>.broadcast(sync: true);
   Timer? _timer;
@@ -58,18 +72,40 @@ class ProviderLocationHeartbeat {
   ProviderLocationHeartbeatSnapshot get snapshot => _snapshot;
   Stream<ProviderLocationHeartbeatSnapshot> get snapshots => _snapshots.stream;
 
-  Future<void> start({bool runImmediately = true}) async {
+  Future<void> start({
+    bool runImmediately = true,
+    Duration interval = ProviderLocationHeartbeat.interval,
+    String? bookingId,
+  }) async {
     _timer?.cancel();
     _setSnapshot(_snapshot.copyWith(
       active: true,
+      interval: interval,
+      bookingId: bookingId,
+      clearBookingId: bookingId == null,
       nextUpdateAt: DateTime.now().add(interval),
     ));
     if (runImmediately) {
-      await _runUpdate(rethrowErrors: true);
+      await _runUpdate(
+        rethrowErrors: true,
+        interval: interval,
+        bookingId: bookingId,
+      );
     }
     _timer = Timer.periodic(interval, (_) {
-      unawaited(_runUpdate());
+      unawaited(_runUpdate(interval: interval, bookingId: bookingId));
     });
+  }
+
+  Future<void> startActiveBooking(
+    String bookingId, {
+    bool runImmediately = true,
+  }) {
+    return start(
+      runImmediately: runImmediately,
+      interval: activeBookingInterval,
+      bookingId: bookingId,
+    );
   }
 
   void stop() {
@@ -81,13 +117,20 @@ class ProviderLocationHeartbeat {
     ));
   }
 
-  void recordSuccessfulUpdate({DateTime? at}) {
+  void recordSuccessfulUpdate({
+    DateTime? at,
+    Duration? interval,
+    String? bookingId,
+  }) {
     final succeededAt = at ?? DateTime.now();
+    final nextInterval = interval ?? _snapshot.interval;
     _setSnapshot(_snapshot.copyWith(
       active: true,
+      interval: nextInterval,
+      bookingId: bookingId,
       lastAttemptAt: succeededAt,
       lastSuccessAt: succeededAt,
-      nextUpdateAt: succeededAt.add(interval),
+      nextUpdateAt: succeededAt.add(nextInterval),
       clearError: true,
       successCount: _snapshot.successCount + 1,
     ));
@@ -98,22 +141,36 @@ class ProviderLocationHeartbeat {
     _snapshots.close();
   }
 
-  Future<void> _runUpdate({bool rethrowErrors = false}) async {
+  Future<void> _runUpdate({
+    bool rethrowErrors = false,
+    Duration? interval,
+    String? bookingId,
+  }) async {
     final attemptedAt = DateTime.now();
+    final nextInterval = interval ?? _snapshot.interval;
     _setSnapshot(_snapshot.copyWith(
       active: true,
+      interval: nextInterval,
+      bookingId: bookingId,
       lastAttemptAt: attemptedAt,
-      nextUpdateAt: attemptedAt.add(interval),
+      nextUpdateAt: attemptedAt.add(nextInterval),
     ));
 
     try {
-      await _updateLocation();
-      recordSuccessfulUpdate();
+      final updateBookingLocation = _updateBookingLocation;
+      if (bookingId != null && updateBookingLocation != null) {
+        await updateBookingLocation(bookingId);
+      } else {
+        await _updateLocation();
+      }
+      recordSuccessfulUpdate(interval: nextInterval, bookingId: bookingId);
     } catch (error) {
       final failedAt = DateTime.now();
       _setSnapshot(_snapshot.copyWith(
         active: true,
-        nextUpdateAt: failedAt.add(interval),
+        interval: nextInterval,
+        bookingId: bookingId,
+        nextUpdateAt: failedAt.add(nextInterval),
         lastError: error,
         failureCount: _snapshot.failureCount + 1,
       ));

@@ -42,9 +42,15 @@ final providerRepositoryProvider = Provider<ProviderRepository>((ref) {
 
 final providerLocationHeartbeatProvider =
     Provider<ProviderLocationHeartbeat>((ref) {
-  final heartbeat = ProviderLocationHeartbeat(() async {
-    await ref.read(providerRepositoryProvider).updateLocation();
-  });
+  final repository = ref.read(providerRepositoryProvider);
+  final heartbeat = ProviderLocationHeartbeat(
+    () async {
+      await repository.updateLocation();
+    },
+    updateBookingLocation: (bookingId) async {
+      await repository.updateLocation(bookingId: bookingId);
+    },
+  );
   ref.onDispose(heartbeat.dispose);
   return heartbeat;
 });

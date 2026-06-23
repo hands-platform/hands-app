@@ -208,6 +208,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ? 'Chat is ready.'
           : 'Chat is ready for booking ${this.bookingId}.';
     });
+    final activeBookingId = this.bookingId;
+    final bookingStatus = bookingContext?['status']?.toString();
+    if (activeBookingId != null &&
+        {
+          'MATCHED',
+          'PROVIDER_ON_THE_WAY',
+          'ARRIVED',
+          'IN_SERVICE',
+        }.contains(bookingStatus)) {
+      await ref.read(providerLocationHeartbeatProvider).startActiveBooking(
+            activeBookingId,
+            runImmediately: false,
+          );
+    }
     attachChatListener();
   }
 
@@ -271,6 +285,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             'Current location is required before cancelling this booking. Enable location and try again.');
         return;
       }
+      ref.read(providerLocationHeartbeatProvider).recordSuccessfulUpdate(
+            interval: ProviderLocationHeartbeat.activeBookingInterval,
+            bookingId: activeBookingId,
+          );
       final result = await ref.read(providerRepositoryProvider).cancelBooking(
             activeBookingId,
             note: note,
@@ -295,6 +313,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         };
         statusMessage = nextStatusMessage;
       });
+      final heartbeat = ref.read(providerLocationHeartbeatProvider);
+      await heartbeat.start(runImmediately: false);
+      heartbeat.recordSuccessfulUpdate();
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));
     } finally {
@@ -334,6 +355,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             'Current location is required before completing this booking. Enable location and try again.');
         return;
       }
+      ref.read(providerLocationHeartbeatProvider).recordSuccessfulUpdate(
+            interval: ProviderLocationHeartbeat.activeBookingInterval,
+            bookingId: activeBookingId,
+          );
       await ref.read(providerRepositoryProvider).completeBooking(
             activeBookingId,
             lat: lat,
@@ -350,6 +375,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         };
         statusMessage = nextStatusMessage;
       });
+      final heartbeat = ref.read(providerLocationHeartbeatProvider);
+      await heartbeat.start(runImmediately: false);
+      heartbeat.recordSuccessfulUpdate();
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));
     } finally {
@@ -395,6 +423,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final location = await ref
           .read(providerRepositoryProvider)
           .updateLocation(bookingId: activeBookingId);
+      ref.read(providerLocationHeartbeatProvider).recordSuccessfulUpdate(
+            interval: ProviderLocationHeartbeat.activeBookingInterval,
+            bookingId: activeBookingId,
+          );
       setState(() {
         lastSharedLat = _actionLocationLat(location);
         lastSharedLng = _actionLocationLng(location);

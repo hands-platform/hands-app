@@ -6,6 +6,13 @@ void main() {
     expect(ProviderLocationHeartbeat.interval, const Duration(minutes: 60));
   });
 
+  test('uses a cost-controlled active booking refresh interval', () {
+    expect(
+      ProviderLocationHeartbeat.activeBookingInterval,
+      const Duration(minutes: 30),
+    );
+  });
+
   test('runs an immediate location update by default', () async {
     var calls = 0;
     final heartbeat = ProviderLocationHeartbeat(() async {
@@ -78,5 +85,54 @@ void main() {
     expect(heartbeat.snapshot.successCount, 1);
     expect(heartbeat.snapshot.lastSuccessAt, isNotNull);
     expect(heartbeat.snapshot.active, isFalse);
+  });
+
+  test('records active booking updates on the active booking schedule',
+      () async {
+    final heartbeat = ProviderLocationHeartbeat(() async {});
+    final succeededAt = DateTime(2026, 6, 23, 9);
+
+    await heartbeat.startActiveBooking(
+      'booking-active-1',
+      runImmediately: false,
+    );
+    heartbeat.recordSuccessfulUpdate(
+      at: succeededAt,
+      interval: ProviderLocationHeartbeat.activeBookingInterval,
+      bookingId: 'booking-active-1',
+    );
+    final snapshot = heartbeat.snapshot;
+    heartbeat.stop();
+
+    expect(snapshot.successCount, 1);
+    expect(snapshot.lastSuccessAt, succeededAt);
+    expect(
+      snapshot.nextUpdateAt,
+      succeededAt.add(ProviderLocationHeartbeat.activeBookingInterval),
+    );
+    expect(snapshot.bookingId, 'booking-active-1');
+    expect(
+      snapshot.interval,
+      ProviderLocationHeartbeat.activeBookingInterval,
+    );
+  });
+
+  test('routes active booking heartbeat updates with the booking id', () async {
+    final bookingUpdates = <String>[];
+    var idleCalls = 0;
+    final heartbeat = ProviderLocationHeartbeat(
+      () async {
+        idleCalls += 1;
+      },
+      updateBookingLocation: (bookingId) async {
+        bookingUpdates.add(bookingId);
+      },
+    );
+
+    await heartbeat.startActiveBooking('booking-active-2');
+    heartbeat.stop();
+
+    expect(idleCalls, 0);
+    expect(bookingUpdates, ['booking-active-2']);
   });
 }
