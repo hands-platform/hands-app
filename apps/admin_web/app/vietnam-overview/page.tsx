@@ -16,6 +16,7 @@ import {
 import {
   normalizeVietnamOverviewRange,
   type VietnamOverviewMapMarker,
+  vietnamOverviewMetricDotLegend,
   vietnamOverviewMapMarkers,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
@@ -167,7 +168,8 @@ export default async function VietnamOverviewPage({
             <h2>Vietnam operating map</h2>
             <p className="muted">
               Map overlay using saved region signals only. It avoids paid map lookups while keeping
-              demand, supply, revenue, and cancellation signals visible directly on the Vietnam map.
+              customer, Partner, booking, completion, and cancellation distribution visible directly on
+              the Vietnam map.
             </p>
           </div>
           <span className="pill pill-info">Generated {lastGeneratedAt}</span>
@@ -177,7 +179,15 @@ export default async function VietnamOverviewPage({
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <div className="vietnam-map-context-chip">
               <MapPinned size={16} aria-hidden="true" />
-              Stored address regions
+              Dot distribution by region
+            </div>
+            <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
+              {vietnamOverviewMetricDotLegend.map((item) => (
+                <span key={item.key}>
+                  <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
+                  {item.label}
+                </span>
+              ))}
             </div>
             <VietnamMapOutline />
             {mapMarkers.map((marker) => (
@@ -280,50 +290,48 @@ function RegionMapMarker({ marker }: { marker: VietnamOverviewMapMarker }) {
   const markerStyle = {
     '--marker-x': `${marker.mapXPercent}%`,
     '--marker-y': `${marker.mapYPercent}%`,
-    '--region-intensity': `${marker.intensity}%`,
-  } as CSSProperties & Record<'--marker-x' | '--marker-y' | '--region-intensity', string>;
+  } as CSSProperties & Record<'--marker-x' | '--marker-y', string>;
 
   return (
-    <article
-      className={`vietnam-map-marker-card is-${marker.tone}${marker.featured ? ' is-featured' : ''}`}
+    <div
+      aria-label={`${marker.regionName} distribution dots`}
+      className={`vietnam-map-dot-cluster is-${marker.tone}${marker.featured ? ' is-featured' : ''}`}
       style={markerStyle}
     >
-      <div className="vietnam-map-marker-header">
-        <div>
-          <span>{marker.shortName}</span>
-          <strong>{marker.regionName}</strong>
-        </div>
-        <MapPinned size={20} aria-hidden="true" />
+      <span className="vietnam-map-region-label">{marker.shortName}</span>
+      <div className="vietnam-map-dot-cloud">
+        {marker.metricDots.map((dot, index) => {
+          const offset = metricDotOffsets[index % metricDotOffsets.length];
+          const dotStyle = {
+            '--dot-size': `${dot.size}px`,
+            '--dot-x': `${offset.x}%`,
+            '--dot-y': `${offset.y}%`,
+          } as CSSProperties & Record<'--dot-size' | '--dot-x' | '--dot-y', string>;
+
+          return (
+            <span
+              key={dot.key}
+              aria-label={`${marker.regionName} ${dot.label}: ${formatNumber(dot.value)}`}
+              className={`vietnam-map-metric-dot is-${dot.key}`}
+              style={dotStyle}
+              title={`${marker.regionName} ${dot.label}: ${formatNumber(dot.value)}`}
+            />
+          );
+        })}
       </div>
-      <div className="vietnam-map-marker-stats">
-        <span>
-          <small>Demand</small>
-          <strong>{formatNumber(marker.demandCount)}</strong>
-        </span>
-        <span>
-          <small>Partners</small>
-          <strong>{marker.partnerSummary}</strong>
-        </span>
-        <span>
-          <small>Customers</small>
-          <strong>{formatNumber(marker.activeCustomerCount)} / {formatNumber(marker.customerCount)}</strong>
-        </span>
-        <span>
-          <small>Done</small>
-          <strong>{formatNumber(marker.completedBookingCount)}</strong>
-        </span>
-        <span>
-          <small>Cancel</small>
-          <strong>{formatNumber(marker.cancellationCount)}</strong>
-        </span>
-        <span>
-          <small>Revenue</small>
-          <strong>{formatCurrency(marker.revenueAmount, marker.currency)}</strong>
-        </span>
-      </div>
-    </article>
+    </div>
   );
 }
+
+const metricDotOffsets = [
+  { x: 50, y: 7 },
+  { x: 78, y: 22 },
+  { x: 81, y: 56 },
+  { x: 56, y: 80 },
+  { x: 21, y: 66 },
+  { x: 15, y: 30 },
+  { x: 49, y: 45 },
+] as const;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);

@@ -64,6 +64,27 @@ describe('Vietnam overview page model', () => {
       revenueAmount: 4500000,
       tone: 'high',
     });
+    expect(markers[0].metricDots.map((dot) => dot.key)).toEqual([
+      'customers',
+      'active',
+      'partners',
+      'online',
+      'bookings',
+      'done',
+      'cancel',
+    ]);
+    expect(markers[0].metricDots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'customers', label: 'Customers', value: 24 }),
+        expect.objectContaining({ key: 'active', label: 'Active', value: 12 }),
+        expect.objectContaining({ key: 'partners', label: 'Partners', value: 18 }),
+        expect.objectContaining({ key: 'online', label: 'Online', value: 5 }),
+        expect.objectContaining({ key: 'bookings', label: 'Bookings', value: 6 }),
+        expect.objectContaining({ key: 'done', label: 'Done', value: 10 }),
+        expect.objectContaining({ key: 'cancel', label: 'Cancel', value: 3 }),
+      ]),
+    );
+    expect(markers[0].metricDots[0].size).toBeGreaterThan(markers[0].metricDots[3].size);
     expect(markers[1]).toMatchObject({
       demandCount: 2,
       featured: false,

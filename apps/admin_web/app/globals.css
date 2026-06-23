@@ -3485,139 +3485,129 @@ a.action-button-card:hover {
   stroke-width: 2;
 }
 
-.vietnam-map-marker-card {
-  background:
-    linear-gradient(
-      135deg,
-      rgb(var(--admin-primary-channel) / 0.18) 0 var(--region-intensity),
-      rgb(var(--admin-surface-channel) / 0.96) var(--region-intensity) 100%
-    );
-  border: 1px solid rgb(var(--admin-primary-channel) / 0.24);
+.vietnam-map-dot-legend {
+  align-items: center;
+  background: rgb(var(--admin-surface-channel) / 0.92);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
-  box-shadow: var(--admin-shadow-md);
+  box-shadow: var(--admin-shadow-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: flex-end;
+  max-width: 380px;
+  padding: 10px 12px;
+  position: absolute;
+  right: 22px;
+  top: 22px;
+  z-index: 3;
+}
+
+.vietnam-map-dot-legend span {
+  align-items: center;
+  color: var(--admin-muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  line-height: 16px;
+}
+
+.vietnam-map-legend-dot {
+  border-radius: 999px;
+  display: inline-flex;
+  height: 9px;
+  width: 9px;
+}
+
+.vietnam-map-dot-cluster {
   display: grid;
-  gap: 10px;
+  gap: 4px;
+  justify-items: center;
   left: var(--marker-x);
-  min-width: 252px;
-  padding: 12px;
   position: absolute;
   top: var(--marker-y);
   transform: translate(-50%, -50%);
-  width: 266px;
   z-index: 2;
 }
 
-.vietnam-map-marker-card::before {
-  background: var(--admin-accent);
-  border: 3px solid var(--admin-surface);
-  border-radius: 999px;
-  box-shadow: 0 0 0 6px rgb(var(--admin-primary-channel) / 0.12);
-  content: "";
-  height: 14px;
-  left: 50%;
-  position: absolute;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-  width: 14px;
-}
-
-.vietnam-map-marker-card.is-featured {
-  border-color: rgb(var(--admin-primary-channel) / 0.48);
-  box-shadow:
-    inset 4px 0 0 var(--admin-accent),
-    var(--admin-shadow-lg);
-  width: 286px;
+.vietnam-map-dot-cluster.is-featured {
   z-index: 4;
 }
 
-.vietnam-map-marker-card.is-medium {
-  border-color: rgb(var(--admin-info-channel) / 0.3);
-}
-
-.vietnam-map-marker-card.is-low {
-  background:
-    linear-gradient(
-      135deg,
-      rgb(var(--admin-secondary-channel) / 0.12) 0 var(--region-intensity),
-      rgb(var(--admin-surface-channel) / 0.96) var(--region-intensity) 100%
-    );
-}
-
-.vietnam-map-marker-header {
-  align-items: flex-start;
-  display: flex;
-  gap: 10px;
-  justify-content: space-between;
-  min-width: 0;
-}
-
-.vietnam-map-marker-header > div {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-}
-
-.vietnam-map-marker-header span {
+.vietnam-map-region-label {
   align-items: center;
   background: rgb(var(--admin-primary-channel) / 0.12);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.22);
   border-radius: 999px;
+  box-shadow: var(--admin-shadow-xs);
   color: var(--admin-accent-strong);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  height: 30px;
+  height: 24px;
   justify-content: center;
-  min-width: 42px;
-  padding: 0 10px;
+  min-width: 38px;
+  padding: 0 9px;
+  z-index: 2;
 }
 
-.vietnam-map-marker-header strong {
-  color: var(--admin-text);
-  font-size: 14px;
-  line-height: 20px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.vietnam-map-dot-cloud {
+  height: 82px;
+  position: relative;
+  width: 98px;
 }
 
-.vietnam-map-marker-header svg {
-  color: var(--admin-accent-strong);
-  flex: 0 0 auto;
+.vietnam-map-metric-dot {
+  border: 2px solid rgb(var(--admin-surface-channel) / 0.95);
+  border-radius: 999px;
+  box-shadow:
+    0 8px 18px rgb(var(--admin-shadow-channel) / 0.18),
+    0 0 0 5px rgb(var(--admin-surface-channel) / 0.36);
+  height: var(--dot-size);
+  left: var(--dot-x);
+  min-height: 8px;
+  min-width: 8px;
+  position: absolute;
+  top: var(--dot-y);
+  transform: translate(-50%, -50%);
+  width: var(--dot-size);
 }
 
-.vietnam-map-marker-stats {
-  display: grid;
-  gap: 7px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.vietnam-map-legend-dot.is-customers,
+.vietnam-map-metric-dot.is-customers {
+  background: #7367f0;
 }
 
-.vietnam-map-marker-stats > span {
-  background: rgb(var(--admin-surface-channel) / 0.76);
-  border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  padding: 7px 8px;
+.vietnam-map-legend-dot.is-active,
+.vietnam-map-metric-dot.is-active {
+  background: #00bad1;
 }
 
-.vietnam-map-marker-stats small {
-  color: var(--admin-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 13px;
-  text-transform: uppercase;
+.vietnam-map-legend-dot.is-partners,
+.vietnam-map-metric-dot.is-partners {
+  background: #28c76f;
 }
 
-.vietnam-map-marker-stats strong {
-  color: var(--admin-text);
-  font-size: 13px;
-  line-height: 18px;
-  overflow-wrap: anywhere;
-  white-space: normal;
+.vietnam-map-legend-dot.is-online,
+.vietnam-map-metric-dot.is-online {
+  background: #72e128;
+}
+
+.vietnam-map-legend-dot.is-bookings,
+.vietnam-map-metric-dot.is-bookings {
+  background: #ff9f43;
+}
+
+.vietnam-map-legend-dot.is-done,
+.vietnam-map-metric-dot.is-done {
+  background: #1685ff;
+}
+
+.vietnam-map-legend-dot.is-cancel,
+.vietnam-map-metric-dot.is-cancel {
+  background: #ff4c51;
 }
 
 .vietnam-map-tile-empty {

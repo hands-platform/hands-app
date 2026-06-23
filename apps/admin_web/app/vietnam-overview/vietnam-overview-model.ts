@@ -27,6 +27,7 @@ export type VietnamOverviewMapMarker = {
   readonly intensity: number;
   readonly mapXPercent: number;
   readonly mapYPercent: number;
+  readonly metricDots: readonly VietnamOverviewMetricDot[];
   readonly onlinePartnerCount: number;
   readonly partnerCount: number;
   readonly partnerSummary: string;
@@ -36,6 +37,35 @@ export type VietnamOverviewMapMarker = {
   readonly shortName: string;
   readonly tone: 'high' | 'medium' | 'low';
 };
+
+export type VietnamOverviewMetricDotKey =
+  | 'customers'
+  | 'active'
+  | 'partners'
+  | 'online'
+  | 'bookings'
+  | 'done'
+  | 'cancel';
+
+export type VietnamOverviewMetricDot = {
+  readonly key: VietnamOverviewMetricDotKey;
+  readonly label: string;
+  readonly size: number;
+  readonly value: number;
+};
+
+export const vietnamOverviewMetricDotLegend: Array<{
+  key: VietnamOverviewMetricDotKey;
+  label: string;
+}> = [
+  { key: 'customers', label: 'Customers' },
+  { key: 'active', label: 'Active' },
+  { key: 'partners', label: 'Partners' },
+  { key: 'online', label: 'Online' },
+  { key: 'bookings', label: 'Bookings' },
+  { key: 'done', label: 'Done' },
+  { key: 'cancel', label: 'Cancel' },
+];
 
 export const vietnamOverviewRangeOptions: Array<{ value: VietnamOverviewRange; label: string }> = [
   { value: 'today', label: 'Today' },
@@ -68,6 +98,10 @@ export function vietnamOverviewMapMarkers(
 ): VietnamOverviewMapMarker[] {
   const rankedRegions = [...regions].sort((left, right) => demandCount(right) - demandCount(left));
   const maxDemand = Math.max(1, ...rankedRegions.map(demandCount));
+  const maxMetricValue = Math.max(
+    1,
+    ...rankedRegions.flatMap((region) => vietnamOverviewMetricValues(region).map((metric) => metric.value)),
+  );
 
   return rankedRegions.map((region, index) => {
     const demand = demandCount(region);
@@ -86,6 +120,10 @@ export function vietnamOverviewMapMarkers(
       intensity,
       mapXPercent: mapPosition.x,
       mapYPercent: mapPosition.y,
+      metricDots: vietnamOverviewMetricValues(region).map((metric) => ({
+        ...metric,
+        size: metricDotSize(metric.value, maxMetricValue),
+      })),
       onlinePartnerCount: region.onlinePartnerCount,
       partnerCount: region.partnerCount,
       partnerSummary: `${region.onlinePartnerCount} online / ${region.partnerCount} Partners`,
@@ -100,6 +138,24 @@ export function vietnamOverviewMapMarkers(
 
 function demandCount(region: VietnamOverviewRegionMarkerInput) {
   return region.activeBookingCount + region.completedBookingCount;
+}
+
+function vietnamOverviewMetricValues(region: VietnamOverviewRegionMarkerInput) {
+  return [
+    { key: 'customers', label: 'Customers', value: region.customerCount },
+    { key: 'active', label: 'Active', value: region.activeCustomerCount },
+    { key: 'partners', label: 'Partners', value: region.partnerCount },
+    { key: 'online', label: 'Online', value: region.onlinePartnerCount },
+    { key: 'bookings', label: 'Bookings', value: region.activeBookingCount },
+    { key: 'done', label: 'Done', value: region.completedBookingCount },
+    { key: 'cancel', label: 'Cancel', value: region.cancellationCount },
+  ] satisfies Array<Omit<VietnamOverviewMetricDot, 'size'>>;
+}
+
+function metricDotSize(value: number, maxMetricValue: number) {
+  if (value <= 0) return 8;
+
+  return Math.round(10 + (value / maxMetricValue) * 18);
 }
 
 function vietnamMapPosition(
