@@ -1,6 +1,6 @@
 import {
   normalizeVietnamOverviewRange,
-  vietnamOverviewMapTiles,
+  vietnamOverviewMapMarkers,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -24,11 +24,12 @@ describe('Vietnam overview page model', () => {
     expect(vietnamOverviewHref('all')).toBe('/vietnam-overview?range=all');
   });
 
-  it('builds ranked map tiles from stored region aggregates only', () => {
-    const tiles = vietnamOverviewMapTiles([
+  it('builds ranked positioned map markers from stored region aggregates only', () => {
+    const markers = vietnamOverviewMapMarkers([
       regionFixture({
         activeBookingCount: 1,
         completedBookingCount: 1,
+        customerCount: 9,
         partnerCount: 7,
         regionCode: 'hanoi',
         regionName: 'Hà Nội',
@@ -36,33 +37,46 @@ describe('Vietnam overview page model', () => {
       }),
       regionFixture({
         activeBookingCount: 6,
+        activeCustomerCount: 12,
+        cancellationCount: 3,
         completedBookingCount: 10,
+        customerCount: 24,
         onlinePartnerCount: 5,
         partnerCount: 18,
         regionCode: 'hcm',
         regionName: 'Hồ Chí Minh',
+        revenueAmount: 4500000,
         shortName: 'HCM',
       }),
     ]);
 
-    expect(tiles.map((tile) => tile.regionCode)).toEqual(['hcm', 'hanoi']);
-    expect(tiles[0]).toMatchObject({
+    expect(markers.map((marker) => marker.regionCode)).toEqual(['hcm', 'hanoi']);
+    expect(markers[0]).toMatchObject({
+      activeCustomerCount: 12,
+      cancellationCount: 3,
+      customerCount: 24,
       demandCount: 16,
       featured: true,
       intensity: 100,
+      mapXPercent: 61,
+      mapYPercent: 76,
       partnerSummary: '5 online / 18 Partners',
+      revenueAmount: 4500000,
       tone: 'high',
     });
-    expect(tiles[1]).toMatchObject({
+    expect(markers[1]).toMatchObject({
       demandCount: 2,
       featured: false,
+      mapXPercent: 54,
+      mapYPercent: 20,
       tone: 'low',
     });
-    expect(tiles[1].intensity).toBeGreaterThanOrEqual(12);
+    expect(markers[1].intensity).toBeGreaterThanOrEqual(12);
+    expect(markers[1].mapYPercent).toBeLessThan(markers[0].mapYPercent);
   });
 });
 
-function regionFixture(input: Partial<Parameters<typeof vietnamOverviewMapTiles>[0][number]> = {}) {
+function regionFixture(input: Partial<Parameters<typeof vietnamOverviewMapMarkers>[0][number]> = {}) {
   return {
     activeBookingCount: 0,
     activeCustomerCount: 0,

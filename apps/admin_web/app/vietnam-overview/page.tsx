@@ -15,8 +15,8 @@ import {
 } from '../../lib/admin-api';
 import {
   normalizeVietnamOverviewRange,
-  type VietnamOverviewMapTile,
-  vietnamOverviewMapTiles,
+  type VietnamOverviewMapMarker,
+  vietnamOverviewMapMarkers,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -59,7 +59,7 @@ export default async function VietnamOverviewPage({
     emptyVietnamOverview,
   );
   const regions = overview.regions;
-  const mapTiles = vietnamOverviewMapTiles(regions);
+  const mapMarkers = vietnamOverviewMapMarkers(regions);
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metrics = [
     {
@@ -164,24 +164,29 @@ export default async function VietnamOverviewPage({
       <section className="card vietnam-overview-map-card">
         <div className="ops-section-header">
           <div>
-            <h2>Regional map tiles</h2>
+            <h2>Vietnam operating map</h2>
             <p className="muted">
-              Tile-based view using saved region signals only. This avoids paid map lookups while giving
-              operators a quick read on where demand and supply are concentrated.
+              Map overlay using saved region signals only. It avoids paid map lookups while keeping
+              demand, supply, revenue, and cancellation signals visible directly on the Vietnam map.
             </p>
           </div>
           <span className="pill pill-info">Generated {lastGeneratedAt}</span>
         </div>
 
         <div className="vietnam-overview-map-layout">
-          <div className="vietnam-region-map vietnam-map-tile-grid" aria-label="Vietnam regional map tiles">
-            {mapTiles.map((tile) => (
-              <RegionMapTile key={tile.regionCode} tile={tile} />
+          <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
+            <div className="vietnam-map-context-chip">
+              <MapPinned size={16} aria-hidden="true" />
+              Stored address regions
+            </div>
+            <VietnamMapOutline />
+            {mapMarkers.map((marker) => (
+              <RegionMapMarker key={marker.regionCode} marker={marker} />
             ))}
-            {mapTiles.length === 0 ? (
+            {mapMarkers.length === 0 ? (
               <div className="vietnam-map-tile-empty">
                 <ShieldCheck size={22} aria-hidden="true" />
-                <strong>No regional tiles loaded</strong>
+                <strong>No regional map markers loaded</strong>
                 <p className="muted">Check API availability or seed stored address records.</p>
               </div>
             ) : null}
@@ -241,27 +246,79 @@ export default async function VietnamOverviewPage({
   );
 }
 
-function RegionMapTile({ tile }: { tile: VietnamOverviewMapTile }) {
+function VietnamMapOutline() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="vietnam-map-outline"
+      role="presentation"
+      viewBox="0 0 420 760"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        <linearGradient id="vietnamMapLand" x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stopColor="rgb(115 103 240)" stopOpacity="0.22" />
+          <stop offset="54%" stopColor="rgb(40 199 111)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="rgb(0 207 232)" stopOpacity="0.2" />
+        </linearGradient>
+      </defs>
+      <path
+        className="vietnam-map-shape"
+        d="M246 34 C224 55 213 86 225 117 C239 154 226 184 208 213 C188 244 188 279 207 306 C228 337 224 365 197 398 C169 433 173 474 203 505 C239 542 247 589 226 631 C210 662 223 704 261 730 C297 701 304 659 290 622 C275 582 285 548 314 516 C342 484 340 441 310 409 C284 381 284 344 309 314 C333 286 327 250 300 226 C275 203 270 169 287 138 C306 101 294 63 246 34 Z"
+      />
+      <path
+        className="vietnam-map-coastline"
+        d="M267 55 C279 103 252 147 271 198 C291 251 261 295 279 343 C295 386 332 422 316 472 C304 509 263 544 272 592 C279 634 302 681 265 725"
+      />
+      <circle className="vietnam-map-island" cx="327" cy="675" r="12" />
+      <circle className="vietnam-map-island" cx="349" cy="713" r="8" />
+    </svg>
+  );
+}
+
+function RegionMapMarker({ marker }: { marker: VietnamOverviewMapMarker }) {
+  const markerStyle = {
+    '--marker-x': `${marker.mapXPercent}%`,
+    '--marker-y': `${marker.mapYPercent}%`,
+    '--region-intensity': `${marker.intensity}%`,
+  } as CSSProperties & Record<'--marker-x' | '--marker-y' | '--region-intensity', string>;
+
   return (
     <article
-      className={`vietnam-region-block vietnam-map-tile is-${tile.tone}${tile.featured ? ' is-featured' : ''}`}
-      style={{ '--region-intensity': `${tile.intensity}%` } as CSSProperties & Record<'--region-intensity', string>}
+      className={`vietnam-map-marker-card is-${marker.tone}${marker.featured ? ' is-featured' : ''}`}
+      style={markerStyle}
     >
-      <div className="vietnam-map-tile-heading">
+      <div className="vietnam-map-marker-header">
         <div>
-          <span>{tile.shortName}</span>
-          <strong>{tile.regionName}</strong>
+          <span>{marker.shortName}</span>
+          <strong>{marker.regionName}</strong>
         </div>
         <MapPinned size={20} aria-hidden="true" />
       </div>
-      <div className="vietnam-map-tile-stats">
+      <div className="vietnam-map-marker-stats">
         <span>
           <small>Demand</small>
-          <strong>{formatNumber(tile.demandCount)}</strong>
+          <strong>{formatNumber(marker.demandCount)}</strong>
         </span>
         <span>
-          <small>Supply</small>
-          <strong>{tile.partnerSummary}</strong>
+          <small>Partners</small>
+          <strong>{marker.partnerSummary}</strong>
+        </span>
+        <span>
+          <small>Customers</small>
+          <strong>{formatNumber(marker.activeCustomerCount)} / {formatNumber(marker.customerCount)}</strong>
+        </span>
+        <span>
+          <small>Done</small>
+          <strong>{formatNumber(marker.completedBookingCount)}</strong>
+        </span>
+        <span>
+          <small>Cancel</small>
+          <strong>{formatNumber(marker.cancellationCount)}</strong>
+        </span>
+        <span>
+          <small>Revenue</small>
+          <strong>{formatCurrency(marker.revenueAmount, marker.currency)}</strong>
         </span>
       </div>
     </article>
