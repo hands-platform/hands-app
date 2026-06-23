@@ -131,7 +131,6 @@ import {
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
 import { bookingDetailSectionVisibility } from './booking-detail-section-visibility';
-import { BookingVietnamOverviewTileSection } from './booking-vietnam-overview-tile';
 import { bookingUnifiedDetail } from './booking-unified-detail';
 import {
   BookingUnifiedDetailSection,
@@ -716,8 +715,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingDetailToolbar {...toolbarProps} />
 
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
-
-      <BookingVietnamOverviewTileSection addressLine={addressLine} />
 
       <BookingDetailChatTranscriptSection messages={messages} />
 

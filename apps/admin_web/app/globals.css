@@ -3491,30 +3491,6 @@ a.action-button-card:hover {
   line-height: 18px;
 }
 
-.vietnam-region-map.is-compact {
-  gap: 8px;
-  grid-template-rows: repeat(5, minmax(52px, auto));
-  min-height: 0;
-  padding: 12px;
-}
-
-.vietnam-region-map.is-compact .vietnam-region-block {
-  min-height: 58px;
-  padding: 10px 12px;
-}
-
-.vietnam-region-map.is-compact .vietnam-region-block span {
-  height: 28px;
-  min-width: 40px;
-}
-
-.vietnam-region-block.is-selected {
-  border-color: rgb(var(--admin-primary-channel) / 0.42);
-  box-shadow:
-    inset 3px 0 0 var(--admin-accent),
-    var(--admin-shadow-sm);
-}
-
 .vietnam-region-block.is-rank-1 {
   border-color: rgb(var(--admin-primary-channel) / 0.34);
 }
@@ -4860,55 +4836,6 @@ a.action-button-card:hover {
 .booking-detail-page .detail-grid .setup-stage-item > small {
   align-self: start;
   justify-self: flex-start;
-}
-
-.booking-vietnam-overview-tile-card {
-  display: grid;
-  gap: 16px;
-  overflow: visible;
-}
-
-.booking-vietnam-overview-tile-header {
-  align-items: flex-start;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  min-width: 0;
-}
-
-.booking-vietnam-overview-tile-header h2 {
-  font-size: 18px;
-  line-height: 26px;
-  margin: 4px 0 0;
-}
-
-.booking-vietnam-overview-tile-layout {
-  align-items: stretch;
-  display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(460px, 0.72fr) minmax(280px, 0.28fr);
-  min-width: 0;
-}
-
-.booking-vietnam-overview-tile-copy {
-  align-content: center;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  padding: 18px;
-}
-
-.booking-vietnam-overview-tile-copy strong {
-  color: var(--admin-text);
-  font-size: 22px;
-  line-height: 30px;
-}
-
-.booking-vietnam-overview-tile-copy p {
-  margin: 0;
 }
 
 .booking-unified-summary-card,
