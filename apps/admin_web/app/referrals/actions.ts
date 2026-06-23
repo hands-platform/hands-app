@@ -2,7 +2,23 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { type AdminReferralPolicy, adminPatch } from '../../lib/admin-api';
+import { type AdminReferralPolicy, adminPatch, adminPost } from '../../lib/admin-api';
+
+type ReferralRewardReleaseResult = {
+  readonly releasedCount: number;
+};
+
+export async function releaseAvailableReferralRewards() {
+  await adminPost<ReferralRewardReleaseResult>(
+    '/admin/referrals/rewards/release-available',
+    {},
+    { releasedCount: 0 },
+  );
+
+  revalidatePath('/referrals/customers');
+  revalidatePath('/referrals/partners');
+  revalidatePath('/audit-log');
+}
 
 export async function updateReferralPolicy(formData: FormData) {
   const audience = normalizeReferralAudience(String(formData.get('audience') || ''));

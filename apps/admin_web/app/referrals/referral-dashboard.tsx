@@ -13,7 +13,7 @@ import {
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
-import { updateReferralPolicy } from './actions';
+import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
 
 type ReferralDashboardProps =
@@ -141,6 +141,12 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
           <small className="muted">Manual policy limit for rewardable referred accounts.</small>
         </div>
       </div>
+      <form action={releaseAvailableReferralRewards} className="actions admin-mt-16">
+        <button className="button button-secondary" type="submit">
+          Release ready rewards
+        </button>
+        <span className="muted">Moves hold-window-cleared rewards to AVAILABLE. Wallet credit is separate.</span>
+      </form>
       <ReferralPolicyForm label={label} policy={policy} />
     </AdminFilterPanel>
   );
