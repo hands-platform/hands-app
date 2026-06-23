@@ -3441,10 +3441,39 @@ a.action-button-card:hover {
 
 .vietnam-map-geo-layer {
   aspect-ratio: 8 / 15.5;
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.12);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px rgb(var(--admin-surface-channel) / 0.46);
   height: 100%;
   max-width: calc(100% - 64px);
+  overflow: hidden;
   position: relative;
   width: auto;
+}
+
+.vietnam-map-geo-layer.is-geoapify-map {
+  background:
+    linear-gradient(180deg, rgb(var(--admin-info-channel) / 0.08), transparent 50%),
+    rgb(222 242 248);
+}
+
+.vietnam-map-geo-layer.is-static-map {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.vietnam-geoapify-tile-layer {
+  display: grid;
+  position: absolute;
+  z-index: 1;
+}
+
+.vietnam-geoapify-tile {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .vietnam-map-context-chip {

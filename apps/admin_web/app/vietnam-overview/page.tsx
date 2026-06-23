@@ -15,7 +15,9 @@ import {
 } from '../../lib/admin-api';
 import {
   normalizeVietnamOverviewRange,
+  type VietnamOverviewGeoapifyTileGrid,
   type VietnamOverviewMapPoint,
+  vietnamOverviewGeoapifyTileGrid,
   vietnamOverviewRealtimeMetricDotLegend,
   vietnamOverviewRealtimeMapPoints,
   vietnamOverviewRealtimePointCounts,
@@ -64,6 +66,8 @@ export default async function VietnamOverviewPage({
   const regions = overview.regions;
   const mapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
   const mapPointCounts = vietnamOverviewRealtimePointCounts(mapPoints);
+  const geoapifyTileGrid = vietnamOverviewGeoapifyTileGrid();
+  const hasGeoapifyTileKey = Boolean(process.env.GEOAPIFY_API_KEY?.trim());
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metrics = [
     {
@@ -152,8 +156,14 @@ export default async function VietnamOverviewPage({
                 </span>
               ))}
             </div>
-            <div className="vietnam-map-geo-layer">
-              <VietnamMapOutline />
+            <div
+              className={`vietnam-map-geo-layer ${
+                hasGeoapifyTileKey ? 'is-geoapify-map' : 'is-static-map'
+              }`}
+              style={{ aspectRatio: `${geoapifyTileGrid.viewAspectRatio}` }}
+            >
+              {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
+              {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
               {mapPoints.map((point) => (
                 <EventMapPoint key={point.id} point={point} />
               ))}
@@ -300,6 +310,41 @@ function VietnamMapOutline() {
         vectorEffect="non-scaling-stroke"
       />
     </svg>
+  );
+}
+
+function GeoapifyVietnamTileLayer({
+  tileGrid,
+}: {
+  tileGrid: VietnamOverviewGeoapifyTileGrid;
+}) {
+  const tileLayerStyle = {
+    gridTemplateColumns: `repeat(${tileGrid.cols}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${tileGrid.rows}, minmax(0, 1fr))`,
+    height: `${tileGrid.layerHeightPercent}%`,
+    left: `${tileGrid.layerLeftPercent}%`,
+    top: `${tileGrid.layerTopPercent}%`,
+    width: `${tileGrid.layerWidthPercent}%`,
+  } satisfies CSSProperties;
+
+  return (
+    <div
+      aria-hidden="true"
+      className="vietnam-geoapify-tile-layer"
+      data-map-provider="geoapify"
+      style={tileLayerStyle}
+    >
+      {tileGrid.tiles.map((tile) => (
+        <img
+          key={`${tile.z}-${tile.x}-${tile.y}`}
+          alt=""
+          className="vietnam-geoapify-tile"
+          decoding="async"
+          loading="lazy"
+          src={tile.src}
+        />
+      ))}
+    </div>
   );
 }
 

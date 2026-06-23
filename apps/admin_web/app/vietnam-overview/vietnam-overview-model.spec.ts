@@ -7,7 +7,9 @@ import {
   vietnamOverviewRealtimeMapPoints,
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
+  vietnamOverviewGeoapifyTileGrid,
   vietnamOverviewRangeOptions,
+  isVietnamOverviewGeoapifyTile,
 } from './vietnam-overview-model';
 
 describe('Vietnam overview page model', () => {
@@ -156,6 +158,26 @@ describe('Vietnam overview page model', () => {
       online: 1,
       bookings: 1,
     });
+  });
+
+  it('builds a bounded Geoapify tile grid for the Vietnam overview map only', () => {
+    const tileGrid = vietnamOverviewGeoapifyTileGrid();
+
+    expect(tileGrid.zoom).toBe(7);
+    expect(tileGrid.cols).toBe(4);
+    expect(tileGrid.rows).toBe(7);
+    expect(tileGrid.tiles).toHaveLength(28);
+    expect(tileGrid.viewAspectRatio).toBeGreaterThan(0.49);
+    expect(tileGrid.viewAspectRatio).toBeLessThan(0.5);
+    expect(tileGrid.layerLeftPercent).toBeLessThan(0);
+    expect(tileGrid.layerTopPercent).toBeLessThan(0);
+    expect(tileGrid.layerWidthPercent).toBeGreaterThan(100);
+    expect(tileGrid.layerHeightPercent).toBeGreaterThan(100);
+    expect(tileGrid.tiles.every((tile) => isVietnamOverviewGeoapifyTile(tile.z, tile.x, tile.y))).toBe(
+      true,
+    );
+    expect(isVietnamOverviewGeoapifyTile(7, 99, 55)).toBe(false);
+    expect(isVietnamOverviewGeoapifyTile(8, 100, 55)).toBe(false);
   });
 });
 
