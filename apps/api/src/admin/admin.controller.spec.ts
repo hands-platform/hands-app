@@ -21,6 +21,7 @@ describe('AdminController notification and push actions', () => {
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
     listPartnerDirectoryProviders: jest.fn(),
+    releaseAvailableReferralRewards: jest.fn(),
     retryNotification: jest.fn(),
     updateReferralPolicy: jest.fn(),
   };
@@ -186,6 +187,18 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/partners',
     });
     expect(admin.listPartnerReferralParents).toHaveBeenCalledWith();
+  });
+
+  it('exposes referral reward hold-window release as a POST action', async () => {
+    admin.releaseAvailableReferralRewards.mockResolvedValue({ releasedCount: 2 });
+
+    await expect(controller.releaseAvailableReferralRewards(user)).resolves.toEqual({ releasedCount: 2 });
+
+    expect(routeMetadata('releaseAvailableReferralRewards')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/release-available',
+    });
+    expect(admin.releaseAvailableReferralRewards).toHaveBeenCalledWith('admin-1');
   });
 
   it('exposes a partner referral parent detail only for referral activity drilldown', async () => {

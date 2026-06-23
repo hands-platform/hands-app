@@ -695,6 +695,17 @@ export class AdminService {
     return result;
   }
 
+  async releaseAvailableReferralRewards(actorId: string) {
+    const result = await this.referrals.releaseAvailableRewards();
+
+    await this.writeAudit(actorId, 'referral_reward.release_available', 'referral_rewards:available', {
+      releasedCount: result.releasedCount,
+      walletCreditCreated: false,
+    });
+
+    return result;
+  }
+
   async listCustomerReferralParents() {
     const rows = await this.prisma.customerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },

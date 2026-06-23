@@ -663,6 +663,25 @@ describe('ReferralsService', () => {
     expect(prisma.referralReward.create).not.toHaveBeenCalled();
   });
 
+  it('releases pending referral rewards after the configured hold window', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        updateMany: jest.fn().mockResolvedValue({ count: 2 }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.releaseAvailableRewards(now)).resolves.toEqual({ releasedCount: 2 });
+    expect(prisma.referralReward.updateMany).toHaveBeenCalledWith({
+      data: { status: ReferralRewardStatus.AVAILABLE },
+      where: {
+        availableAt: { lte: now },
+        status: ReferralRewardStatus.PENDING,
+      },
+    });
+  });
+
   it('creates a pending Partner referral reward only on the referred Partner first completed booking', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {

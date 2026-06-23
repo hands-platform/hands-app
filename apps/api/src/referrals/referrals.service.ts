@@ -345,6 +345,18 @@ export class ReferralsService {
     return referralAttributionView(attribution);
   }
 
+  async releaseAvailableRewards(referenceDate = new Date()) {
+    const result = await this.prisma.referralReward.updateMany({
+      data: { status: ReferralRewardStatus.AVAILABLE },
+      where: {
+        availableAt: { lte: referenceDate },
+        status: ReferralRewardStatus.PENDING,
+      },
+    });
+
+    return { releasedCount: result.count };
+  }
+
   async createRewardsForCompletedBooking(bookingId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },

@@ -352,6 +352,35 @@ describe('AdminService query orchestration', () => {
     expect(prisma.referralPolicy.upsert).not.toHaveBeenCalled();
   });
 
+  it('releases available referral rewards without creating wallet ledger entries', async () => {
+    const referrals = {
+      releaseAvailableRewards: jest.fn().mockResolvedValue({ releasedCount: 3 }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(service.releaseAvailableReferralRewards('admin-1')).resolves.toEqual({
+      releasedCount: 3,
+    });
+
+    expect(referrals.releaseAvailableRewards).toHaveBeenCalledWith();
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.release_available',
+        target: 'referral_rewards:available',
+        metadata: {
+          releasedCount: 3,
+          walletCreditCreated: false,
+        },
+      },
+    });
+  });
+
   it('creates referral reward candidates after completed booking closeout', async () => {
     const prisma = {
       adminAuditLog: {

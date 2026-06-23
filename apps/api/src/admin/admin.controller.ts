@@ -94,6 +94,11 @@ export class AdminController {
     return this.admin.updateReferralPolicy(user.id, audience, body);
   }
 
+  @Post('referrals/rewards/release-available')
+  releaseAvailableReferralRewards(@CurrentUser() user: AuthenticatedUser) {
+    return this.admin.releaseAvailableReferralRewards(user.id);
+  }
+
   @Get('referrals/customers')
   customerReferralParents() {
     return this.admin.listCustomerReferralParents();
