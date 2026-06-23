@@ -11,11 +11,12 @@ import {
 import type { CSSProperties } from 'react';
 import {
   AdminVietnamOverview,
-  AdminVietnamOverviewRegion,
   adminGet,
 } from '../../lib/admin-api';
 import {
   normalizeVietnamOverviewRange,
+  type VietnamOverviewMapTile,
+  vietnamOverviewMapTiles,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -58,16 +59,7 @@ export default async function VietnamOverviewPage({
     emptyVietnamOverview,
   );
   const regions = overview.regions;
-  const maxDemand = Math.max(
-    1,
-    ...regions.map((region) => region.activeBookingCount + region.completedBookingCount),
-  );
-  const rankedRegions = [...regions].sort(
-    (left, right) =>
-      right.activeBookingCount +
-      right.completedBookingCount -
-      (left.activeBookingCount + left.completedBookingCount),
-  );
+  const mapTiles = vietnamOverviewMapTiles(regions);
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metrics = [
     {
@@ -172,25 +164,27 @@ export default async function VietnamOverviewPage({
       <section className="card vietnam-overview-map-card">
         <div className="ops-section-header">
           <div>
-            <h2>Regional operating heatmap</h2>
+            <h2>Regional map tiles</h2>
             <p className="muted">
-              Uses saved region signals only. This avoids paid map lookups while giving operators a quick
-              read on where demand and supply are concentrated.
+              Tile-based view using saved region signals only. This avoids paid map lookups while giving
+              operators a quick read on where demand and supply are concentrated.
             </p>
           </div>
           <span className="pill pill-info">Generated {lastGeneratedAt}</span>
         </div>
 
         <div className="vietnam-overview-map-layout">
-          <div className="vietnam-region-map" aria-label="Vietnam regional demand heatmap">
-            {rankedRegions.map((region, index) => (
-              <RegionHeatBlock
-                key={region.regionCode}
-                index={index}
-                maxDemand={maxDemand}
-                region={region}
-              />
+          <div className="vietnam-region-map vietnam-map-tile-grid" aria-label="Vietnam regional map tiles">
+            {mapTiles.map((tile) => (
+              <RegionMapTile key={tile.regionCode} tile={tile} />
             ))}
+            {mapTiles.length === 0 ? (
+              <div className="vietnam-map-tile-empty">
+                <ShieldCheck size={22} aria-hidden="true" />
+                <strong>No regional tiles loaded</strong>
+                <p className="muted">Check API availability or seed stored address records.</p>
+              </div>
+            ) : null}
           </div>
 
           <div className="admin-table-scroll vietnam-overview-table-wrap">
@@ -247,31 +241,29 @@ export default async function VietnamOverviewPage({
   );
 }
 
-function RegionHeatBlock({
-  index,
-  maxDemand,
-  region,
-}: {
-  index: number;
-  maxDemand: number;
-  region: AdminVietnamOverviewRegion;
-}) {
-  const demand = region.activeBookingCount + region.completedBookingCount;
-  const intensity = Math.max(8, Math.round((demand / maxDemand) * 100));
-
+function RegionMapTile({ tile }: { tile: VietnamOverviewMapTile }) {
   return (
     <article
-      className={`vietnam-region-block is-rank-${Math.min(index + 1, 5)}`}
-      style={{ '--region-intensity': `${intensity}%` } as CSSProperties & Record<'--region-intensity', string>}
+      className={`vietnam-region-block vietnam-map-tile is-${tile.tone}${tile.featured ? ' is-featured' : ''}`}
+      style={{ '--region-intensity': `${tile.intensity}%` } as CSSProperties & Record<'--region-intensity', string>}
     >
-      <div>
-        <span>{region.shortName}</span>
-        <strong>{region.regionName}</strong>
+      <div className="vietnam-map-tile-heading">
+        <div>
+          <span>{tile.shortName}</span>
+          <strong>{tile.regionName}</strong>
+        </div>
+        <MapPinned size={20} aria-hidden="true" />
       </div>
-      <MapPinned size={18} aria-hidden="true" />
-      <small>
-        {formatNumber(region.activeBookingCount)} active / {formatNumber(region.partnerCount)} Partners
-      </small>
+      <div className="vietnam-map-tile-stats">
+        <span>
+          <small>Demand</small>
+          <strong>{formatNumber(tile.demandCount)}</strong>
+        </span>
+        <span>
+          <small>Supply</small>
+          <strong>{tile.partnerSummary}</strong>
+        </span>
+      </div>
     </article>
   );
 }
