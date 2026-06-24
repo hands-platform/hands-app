@@ -180,6 +180,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           >
             {props.row.referrals.map((referral) => {
               const referred = referredAccountCell(props.audience, referral);
+              const rewardSummary = referralRewardReviewSummaryFromRewards(referral.rewards);
 
               return (
                 <tr key={referral.id}>
@@ -197,8 +198,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                     <p className="muted">{referral.platform ?? 'No platform captured'}</p>
                   </td>
                   <td>
-                    <strong>{referral.rewards.length}</strong>
-                    <p className="muted">reward record(s)</p>
+                    <ReferralAttributionRewardCell rewardCount={referral.rewards.length} summary={rewardSummary} />
                   </td>
                   <td>
                     <span className="muted">{formatDateTime(referral.createdAt)}</span>
@@ -264,6 +264,38 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReferralAttributionRewardCell({
+  rewardCount,
+  summary,
+}: {
+  readonly rewardCount: number;
+  readonly summary: ReferralRewardReviewSummary;
+}) {
+  const totalAmount =
+    summary.ready.amount +
+    summary.pending.amount +
+    summary.held.amount +
+    summary.credited.amount +
+    summary.closed.amount;
+
+  if (rewardCount === 0) {
+    return <span className="muted">No reward yet</span>;
+  }
+
+  return (
+    <div className="participant-list">
+      {summary.ready.count > 0 ? <StatusBadge tone="success">Ready {summary.ready.count}</StatusBadge> : null}
+      {summary.pending.count > 0 ? <StatusBadge tone="warning">Pending {summary.pending.count}</StatusBadge> : null}
+      {summary.held.count > 0 ? <StatusBadge tone="warning">Held {summary.held.count}</StatusBadge> : null}
+      {summary.credited.count > 0 ? <StatusBadge tone="success">Credited {summary.credited.count}</StatusBadge> : null}
+      {summary.closed.count > 0 ? <StatusBadge tone="neutral">Closed {summary.closed.count}</StatusBadge> : null}
+      <p className="muted">
+        {rewardCount} reward(s) / {formatMoney(totalAmount, 'VND', '0 VND')}
+      </p>
+    </div>
   );
 }
 
@@ -481,6 +513,10 @@ function referralRewardRows(props: ReferralParentDetailPageProps): ReferralRewar
 }
 
 function referralRewardReviewSummary(rows: readonly ReferralRewardRow[]): ReferralRewardReviewSummary {
+  return referralRewardReviewSummaryFromRewards(rows.map(({ reward }) => reward));
+}
+
+function referralRewardReviewSummaryFromRewards(rewards: readonly AdminReferralReward[]): ReferralRewardReviewSummary {
   const mutableSummary = {
     closed: mutableReferralRewardReviewBucket(),
     credited: mutableReferralRewardReviewBucket(),
@@ -489,7 +525,7 @@ function referralRewardReviewSummary(rows: readonly ReferralRewardRow[]): Referr
     ready: mutableReferralRewardReviewBucket(),
   };
 
-  for (const { reward } of rows) {
+  for (const reward of rewards) {
     if (reward.walletLedgerReference || reward.status === 'REWARDED') {
       addReferralRewardReviewAmount(mutableSummary.credited, reward.amount);
     } else if (reward.status === 'AVAILABLE') {

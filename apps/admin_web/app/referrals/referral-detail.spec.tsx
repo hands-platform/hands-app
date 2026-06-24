@@ -117,6 +117,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('/customers/parent-customer');
     expect(markup).toContain('HANDSCUST');
     expect(markup).toContain('Referred Customer');
+    expect(markup).toContain('Credited 1');
+    expect(markup).toContain('1 reward(s) / 25.000 VND');
     expect(markup).toContain('wallet-ledger-1');
     expect(markup).toContain('AVAILABLE');
     expect(markup).not.toContain('Hold reward');
@@ -254,5 +256,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Held for review');
     expect(markup).toContain('1 ready / 1 held');
     expect(markup).toContain('Credit ready rewards or hold suspicious rows.');
+    expect(markup).toContain('Ready 1');
+    expect(markup).toContain('Held 1');
+    expect(markup).toContain('2 reward(s) / 35.000 VND');
   });
 });
