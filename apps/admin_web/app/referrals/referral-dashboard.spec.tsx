@@ -121,6 +121,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('iOS store missing');
     expect(markup).toContain('Public link base missing');
     expect(markup).toContain('Missing setup: REFERRAL_PUBLIC_BASE_URL, REFERRAL_CUSTOMER_IOS_STORE_URL');
+    expect(markup.match(/Missing setup:/g)).toHaveLength(1);
     expect(markup).toContain('Configure store URLs');
     expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');

@@ -455,7 +455,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                 />
               </td>
               <td>
-                <ReferralCodeCell audience="customer" code={row.referralCode} />
+                <ReferralCodeCell code={row.referralCode} />
               </td>
               <td>
                 <ReferralTotalsCell
@@ -519,7 +519,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                 />
               </td>
               <td>
-                <ReferralCodeCell audience="partner" code={row.referralCode} />
+                <ReferralCodeCell code={row.referralCode} />
               </td>
               <td>
                 <ReferralTotalsCell
@@ -553,10 +553,8 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
 }
 
 function ReferralCodeCell({
-  audience,
   code,
 }: {
-  readonly audience: ReferralAudienceSlug;
   readonly code?: { readonly active: boolean; readonly code: string; readonly createdAt: string } | null;
 }) {
   if (!code) {
@@ -570,7 +568,6 @@ function ReferralCodeCell({
         <StatusBadge tone={code.active ? 'success' : 'neutral'}>{code.active ? 'Active' : 'Paused'}</StatusBadge>
         <small className="muted">{formatDateTime(code.createdAt)}</small>
       </div>
-      <ReferralStoreSetupStatus audience={audience} />
     </div>
   );
 }
