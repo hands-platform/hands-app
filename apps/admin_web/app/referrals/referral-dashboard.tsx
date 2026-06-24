@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
@@ -286,7 +287,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
         <AdminDataTable
           className="vuexy-booking-table"
           emptyMessage={<ReferralEmptyState audienceLabel="customer" />}
-          headers={['Parent Customer', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral']}
+          headers={['Parent Customer', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral', 'Actions']}
           rowCount={rows.length}
         >
           {rows.map((row) => (
@@ -322,6 +323,13 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
               <td>
                 <LatestCustomerReferralCell row={row} />
               </td>
+              <td>
+                <ReferralParentActions
+                  audience="customer"
+                  parentId={row.referrer.id}
+                  referralCode={row.referralCode?.code}
+                />
+              </td>
             </tr>
           ))}
         </AdminDataTable>
@@ -343,7 +351,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
         <AdminDataTable
           className="vuexy-booking-table"
           emptyMessage={<ReferralEmptyState audienceLabel="Partner" />}
-          headers={['Parent Partner', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral']}
+          headers={['Parent Partner', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral', 'Actions']}
           rowCount={rows.length}
         >
           {rows.map((row) => (
@@ -379,6 +387,13 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
               <td>
                 <LatestPartnerReferralCell row={row} />
               </td>
+              <td>
+                <ReferralParentActions
+                  audience="partner"
+                  parentId={row.referrer.id}
+                  referralCode={row.referralCode?.code}
+                />
+              </td>
             </tr>
           ))}
         </AdminDataTable>
@@ -398,7 +413,6 @@ function ReferralCodeCell({
     return <span className="muted">No code</span>;
   }
 
-  const shareUrl = referralShareUrl(audience, code.code);
   return (
     <div>
       <strong>{code.code}</strong>
@@ -406,11 +420,53 @@ function ReferralCodeCell({
         <StatusBadge tone={code.active ? 'success' : 'neutral'}>{code.active ? 'Active' : 'Paused'}</StatusBadge>
         <small className="muted">{formatDateTime(code.createdAt)}</small>
       </div>
-      <Link className="text-link admin-mt-8" href={shareUrl}>
-        Referral link
-      </Link>
       <ReferralStoreSetupStatus audience={audience} />
     </div>
+  );
+}
+
+function ReferralParentActions({
+  audience,
+  parentId,
+  referralCode,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly parentId: string;
+  readonly referralCode?: string | null;
+}) {
+  const profileHref = audience === 'partner' ? `/partners/${parentId}` : `/customers/${parentId}`;
+  const actions: ActionMenuItem[] = [
+    {
+      href: referralParentDetailHref(audience, parentId),
+      kind: 'link',
+      label: 'Open referral detail',
+      tone: 'info',
+    },
+    {
+      href: profileHref,
+      kind: 'link',
+      label: 'Open parent profile',
+      tone: 'neutral',
+    },
+  ];
+
+  if (referralCode) {
+    actions.push({
+      href: referralShareUrl(audience, referralCode),
+      kind: 'link',
+      label: 'Open referral link',
+      tone: 'success',
+    });
+  }
+
+  return (
+    <ActionMenu
+      actions={actions}
+      className="referral-parent-action-dropdown"
+      label={`Referral parent actions for ${parentId}`}
+      title="Parent actions"
+      variant="dropdown"
+    />
   );
 }
 

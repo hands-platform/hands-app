@@ -115,6 +115,12 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
+    expect(markup).toContain('Actions');
+    expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
+    expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');
+    expect(markup).toContain('Open referral detail');
+    expect(markup).toContain('Open parent profile');
+    expect(markup).toContain('Open referral link');
   });
 
   it('does not render NaN when referral totals come from an older API shape', () => {
