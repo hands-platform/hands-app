@@ -211,8 +211,10 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('No qualifying booking linked');
     expect(markup.match(/No qualifying booking linked/g)).toHaveLength(1);
     expect(markup).toContain('name="parentId" value="parent-customer"');
-    expect(markup).toContain('placeholder="Operator reason for hold"');
-    expect(markup).toContain('placeholder="Operator reason for reversal"');
+    expect(markup).toContain('placeholder="Operator decision reason"');
+    expect(markup.match(/name="reason"/g)).toHaveLength(1);
+    expect(markup).not.toContain('placeholder="Operator reason for hold"');
+    expect(markup).not.toContain('placeholder="Operator reason for reversal"');
     expect(markup).not.toContain('Hold referral reward for admin review from detail page.');
     expect(markup).not.toContain('Reverse referral reward from detail review.');
   });
@@ -240,7 +242,7 @@ describe('Referral detail presentation', () => {
 
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Credit to wallet');
-    expect(markup).toContain('placeholder="Operator reason for wallet credit"');
+    expect(markup).toContain('placeholder="Operator decision reason"');
     expect(markup).toContain('No wallet ledger yet');
     expect(markup).toContain('Operator reason required for next action');
     expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');

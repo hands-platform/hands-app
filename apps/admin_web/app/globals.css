@@ -8579,6 +8579,11 @@ a.ops-task-card {
   border-bottom: 0;
 }
 
+.referral-reward-action-button-list {
+  display: grid;
+  gap: 6px;
+}
+
 .referral-reward-action-reason {
   color: var(--admin-muted);
   display: grid;

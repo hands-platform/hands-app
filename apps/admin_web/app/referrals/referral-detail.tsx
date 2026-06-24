@@ -57,7 +57,6 @@ type ReferralAttribution =
 type ReferralRewardActionForm = {
   readonly action: (formData: FormData) => Promise<void> | void;
   readonly label: string;
-  readonly placeholder: string;
 };
 
 export function referralParentDetailHref(audience: ReferralAudienceSlug, id: string) {
@@ -515,20 +514,28 @@ function ReferralRewardActions({
       </summary>
       <div className="admin-action-menu action-menu-panel referral-reward-action-panel" role="menu">
         <strong className="action-menu-title">Reward actions</strong>
-        {actions.map((item) => (
-          <form action={item.action} className="admin-action-form referral-reward-action-form" key={item.label} role="none">
-            {hiddenInputs.map((input) => (
-              <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+        <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
+          {hiddenInputs.map((input) => (
+            <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+          ))}
+          <label className="referral-reward-action-reason">
+            <span>Reason</span>
+            <input name="reason" placeholder="Operator decision reason" type="text" />
+          </label>
+          <div className="referral-reward-action-button-list">
+            {actions.map((item) => (
+              <button
+                className="admin-action-item admin-action-button"
+                formAction={item.action}
+                key={item.label}
+                role="menuitem"
+                type="submit"
+              >
+                <span>{item.label}</span>
+              </button>
             ))}
-            <label className="referral-reward-action-reason">
-              <span>Reason</span>
-              <input name="reason" placeholder={item.placeholder} type="text" />
-            </label>
-            <button className="admin-action-item admin-action-button" role="menuitem" type="submit">
-              <span>{item.label}</span>
-            </button>
-          </form>
-        ))}
+          </div>
+        </form>
       </div>
     </details>
   );
@@ -549,7 +556,6 @@ function referralRewardActionItems({
     actions.push({
       action: creditReferralReward,
       label: 'Credit to wallet',
-      placeholder: 'Operator reason for wallet credit',
     });
   }
 
@@ -557,7 +563,6 @@ function referralRewardActionItems({
     actions.push({
       action: holdReferralReward,
       label: 'Hold for review',
-      placeholder: 'Operator reason for hold',
     });
   }
 
@@ -565,7 +570,6 @@ function referralRewardActionItems({
     actions.push({
       action: reverseReferralReward,
       label: 'Reverse reward',
-      placeholder: 'Operator reason for reversal',
     });
   }
 
