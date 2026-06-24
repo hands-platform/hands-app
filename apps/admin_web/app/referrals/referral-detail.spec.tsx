@@ -91,6 +91,28 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('Reverse reward');
   });
 
+  it('summarizes credited referral rewards separately from available candidates', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      totals: {
+        ...customerReferralParent.totals,
+        availableRewardAmount: 0,
+        availableRewardCount: 0,
+        rewardedRewardAmount: 25000,
+        rewardedRewardCount: 1,
+      },
+    };
+
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Credited rewards');
+    expect(markup).toContain('Rewards already posted to wallet ledger entries.');
+    expect(markup).toContain('25.000 VND');
+  });
+
   it('renders hold and reverse actions for uncredited reward candidates', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,

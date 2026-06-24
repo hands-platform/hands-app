@@ -47,23 +47,28 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
   const metrics: AdminPageMetric[] = [
     {
       label: 'Referral sign-ups',
-      value: props.row.totals.referralCount,
+      value: numberOrZero(props.row.totals.referralCount),
       helper: 'Only attributions for this parent account.',
     },
     {
       label: 'Reward records',
-      value: props.row.totals.rewardCount,
+      value: numberOrZero(props.row.totals.rewardCount),
       helper: 'Pending, available, held, reversed, or cancelled rewards.',
     },
     {
       label: 'Available rewards',
-      value: formatMoney(props.row.totals.availableRewardAmount, 'VND', '0 VND'),
+      value: formatMoney(numberOrZero(props.row.totals.availableRewardAmount), 'VND', '0 VND'),
       helper: 'Reward candidates ready for credit, not necessarily wallet-ledgered.',
     },
     {
+      label: 'Credited rewards',
+      value: formatMoney(numberOrZero(props.row.totals.rewardedRewardAmount), 'VND', '0 VND'),
+      helper: 'Rewards already posted to wallet ledger entries.',
+    },
+    {
       label: 'Pending / held',
-      value: `${formatMoney(props.row.totals.pendingRewardAmount, 'VND', '0 VND')} / ${formatMoney(
-        props.row.totals.heldRewardAmount,
+      value: `${formatMoney(numberOrZero(props.row.totals.pendingRewardAmount), 'VND', '0 VND')} / ${formatMoney(
+        numberOrZero(props.row.totals.heldRewardAmount),
         'VND',
         '0 VND',
       )}`,
@@ -129,8 +134,8 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           </div>
           <div>
             <span>Total rewards</span>
-            <strong>{formatMoney(props.row.totals.totalRewardAmount, 'VND', '0 VND')}</strong>
-            <small className="muted">{props.row.totals.rewardCount} reward record(s)</small>
+            <strong>{formatMoney(numberOrZero(props.row.totals.totalRewardAmount), 'VND', '0 VND')}</strong>
+            <small className="muted">{numberOrZero(props.row.totals.rewardCount)} reward record(s)</small>
           </div>
         </div>
       </AdminFilterPanel>
@@ -412,4 +417,8 @@ function rewardStatusTone(status: string): StatusBadgeTone {
 
 function userLabel(user: AdminReferralUserSummary | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? user?.email ?? fallback;
+}
+
+function numberOrZero(value: number | null | undefined) {
+  return Number.isFinite(value) ? Number(value) : 0;
 }
