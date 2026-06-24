@@ -48,6 +48,18 @@ describe('mobile DTOs', () => {
     expect(errors.map((error) => error.property)).toContain('platform');
   });
 
+  it('rejects unsupported mobile push providers', async () => {
+    const dto = plainToInstance(RegisterMobileDeviceDto, {
+      token: 'fcm-token-1',
+      platform: 'IOS',
+      pushProvider: 'apns',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.map((error) => error.property)).toContain('pushProvider');
+  });
+
   it('normalizes app version lookup query values', async () => {
     const dto = plainToInstance(GetMobileAppVersionDto, {
       appType: ' customer ',
@@ -56,6 +68,17 @@ describe('mobile DTOs', () => {
 
     await expect(validate(dto)).resolves.toHaveLength(0);
     expect(dto).toMatchObject({ appType: 'CUSTOMER', platform: 'ANDROID' });
+  });
+
+  it('rejects unsupported app version lookup query values', async () => {
+    const dto = plainToInstance(GetMobileAppVersionDto, {
+      appType: 'partner',
+      platform: 'desktop',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.map((error) => error.property)).toContain('platform');
   });
 
   it('trims unregister payloads', async () => {
