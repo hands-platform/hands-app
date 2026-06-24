@@ -332,6 +332,24 @@ model AppSession {
   @@index([userId, lastSeenAt])
 }
 
+model AppVersionPolicy {
+  id                      String   @id @default(cuid())
+  appType                 String
+  platform                String
+  minimumSupportedVersion String?
+  latestVersion           String?
+  forceUpdate             Boolean  @default(false)
+  updateUrl               String?
+  releaseNotes            String?
+  isActive                Boolean  @default(true)
+  metadata                Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([appType, platform])
+  @@index([appType, platform, isActive])
+}
+
 model CustomerProfile {
   id                  String                        @id @default(cuid())
   userId              String                        @unique
@@ -1250,19 +1268,26 @@ model Notification {
 }
 
 model PushDevice {
-  id         String                 @id @default(cuid())
-  userId     String
-  role       Role                   @default(CUSTOMER)
-  token      String                 @unique
-  platform   String
-  enabled    Boolean                @default(true)
-  lastSeenAt DateTime               @default(now())
-  createdAt  DateTime               @default(now())
-  updatedAt  DateTime               @updatedAt
-  user       User                   @relation(fields: [userId], references: [id])
-  deliveries NotificationDelivery[]
+  id           String                 @id @default(cuid())
+  userId       String
+  role         Role                   @default(CUSTOMER)
+  token        String                 @unique
+  platform     String
+  pushProvider String                 @default("FCM")
+  appVersion   String?
+  osVersion    String?
+  deviceModel  String?
+  locale       String?
+  timezone     String?
+  enabled      Boolean                @default(true)
+  lastSeenAt   DateTime               @default(now())
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  user         User                   @relation(fields: [userId], references: [id])
+  deliveries   NotificationDelivery[]
 
   @@index([userId, role, enabled])
+  @@index([platform, pushProvider, enabled])
 }
 
 model NotificationDelivery {

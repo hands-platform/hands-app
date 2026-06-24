@@ -54,11 +54,34 @@ The partner Flutter app now includes:
 - Tokens are runtime-only and not persisted securely yet.
 - UI is intentionally MVP-plain and close to the reference flow hierarchy, not final branding.
 - Google Maps has been replaced for MVP by MapTiler/MapLibre map rendering and Geoapify address search.
-- Notification setup runs after login and should register FCM tokens when mobile push integration is enabled. Firebase DB/Auth/Firestore remain outside the MVP.
+- Notification setup runs after login and should register FCM tokens through `POST /api/mobile/devices/register` when mobile push integration is enabled. Firebase DB/Auth/Firestore remain outside the MVP.
 - `flutter pub get`, `flutter analyze`, and widget smoke tests pass for both customer and partner apps in the local Windows environment.
 - Android platform folders are generated for both Flutter apps.
 - Customer and Partner apps have been build-installed-launched on `emulator-5554` from an ASCII-only path.
 - Windows Android builds should run from an ASCII-only path such as `C:\dev\massage-on-demand-vn`; the original workspace path contains Korean characters and can trigger Android/Flutter toolchain failures.
+
+## iOS-Ready Backend Foundation
+
+The current backend is prepared to accept future Android, iOS, and Web device registrations without introducing Firebase DB/Auth or any iOS app code:
+
+- `POST /api/mobile/devices/register` requires a customer or Partner JWT and accepts `ANDROID`, `IOS`, or `WEB`.
+- Device registration stores FCM as the push provider plus app/device metadata: app version, OS version, device model, locale, and timezone.
+- Existing notification compatibility routes remain Android/iOS-only for older builds.
+- `GET /api/mobile/app-version?appType=CUSTOMER&platform=IOS` and the equivalent Partner/Android queries provide a per-platform force-update contract.
+
+## Deferred Auth Identity Design
+
+Current auth maps Supabase Auth users to HANDS users through `User.supabaseUserId` and phone-based OTP flows. Apple Login is not implemented in this phase. Before adding Apple or Google identity linking, add a dedicated identity table owned by the NestJS auth boundary, for example:
+
+- `userId`
+- `provider` (`PHONE`, `GOOGLE`, `APPLE`)
+- `providerSubject`
+- `email`
+- `phone`
+- `linkedAt`
+- `lastUsedAt`
+
+Do not add mobile-app-only identity writes that bypass NestJS. Mobile clients should exchange external provider credentials with the NestJS API, and the API should decide whether to link, create, or reject an identity.
 
 ## Mobile Firebase Removal Check
 

@@ -10,7 +10,7 @@ Socket.IO remains the realtime channel while the app is open. FCM is only for ba
 
 ## Device Tokens
 
-Apps register FCM tokens through authenticated API routes:
+Current Android customer/Partner builds can keep registering FCM tokens through the authenticated compatibility routes:
 
 ```http
 PATCH /api/notifications/device-token/register
@@ -25,9 +25,30 @@ Content-Type: application/json
 
 `POST /api/notifications/device-token/register` is kept as an equivalent compatibility route. `DELETE /api/notifications/device-token` disables a token for the authenticated user. A user can only register or disable their own token because the API always takes `userId` and role from the access token.
 
-`platform` accepts `android` or `ios` only. Web push is not part of the HANDS MVP push surface.
+`platform` accepts `android` or `ios` only on these legacy notification routes.
 
-`PushDevice` stores the user, actor role, platform, token, enabled state, last seen time, and created/updated timestamps. Admin views must never expose raw token values.
+New mobile builds should use the platform-neutral device route:
+
+```http
+POST /api/mobile/devices/register
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "token": "fcm-device-token",
+  "platform": "IOS",
+  "pushProvider": "FCM",
+  "appVersion": "1.2.3",
+  "osVersion": "iOS 18",
+  "deviceModel": "iPhone 16",
+  "locale": "vi-VN",
+  "timezone": "Asia/Ho_Chi_Minh"
+}
+```
+
+`POST /api/mobile/devices/register` accepts `ANDROID`, `IOS`, or `WEB` and stores them in the existing `PushDevice` table with `pushProvider=FCM`. iOS is intentionally routed through FCM for now; Firebase Auth/DB remain out of scope. Web tokens are a platform-neutral foundation only, not a separate MVP web-push product surface.
+
+`PushDevice` stores the user, actor role, platform, push provider, app/device metadata, token, enabled state, last seen time, and created/updated timestamps. Admin views must never expose raw token values.
 
 New notification rows should include internal `data.targetRole` metadata (`CUSTOMER` or `PROVIDER`) whenever the recipient surface is known. The retry worker uses that metadata to send push only to enabled devices registered for the matching app role. For older rows without that metadata, the worker may infer a target role only for unambiguous notification types. `targetRole` is an internal routing hint and must stay out of FCM data payloads.
 

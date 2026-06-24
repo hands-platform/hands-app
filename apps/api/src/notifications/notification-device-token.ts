@@ -9,6 +9,12 @@ export type NotificationDeviceTokenUser = {
 export type RegisterDeviceTokenInput = {
   token: string;
   platform: string;
+  pushProvider?: string;
+  appVersion?: string;
+  osVersion?: string;
+  deviceModel?: string;
+  locale?: string;
+  timezone?: string;
 };
 
 export function resolvePushDeviceRole(roles: readonly Role[], activeRole?: Role) {
@@ -37,6 +43,7 @@ export function pushDeviceRegistrationInput(
   lastSeenAt = new Date(),
 ) {
   const role = requirePushDeviceRole(user.roles, user.activeRole);
+  const registrationMetadata = pushDeviceRegistrationMetadata(input);
 
   return {
     where: { token: input.token },
@@ -44,6 +51,7 @@ export function pushDeviceRegistrationInput(
       userId: user.id,
       role,
       platform: input.platform,
+      ...registrationMetadata,
       enabled: true,
       lastSeenAt,
     },
@@ -52,8 +60,20 @@ export function pushDeviceRegistrationInput(
       role,
       token: input.token,
       platform: input.platform,
+      ...registrationMetadata,
       lastSeenAt,
     },
+  };
+}
+
+function pushDeviceRegistrationMetadata(input: RegisterDeviceTokenInput) {
+  return {
+    pushProvider: input.pushProvider ?? 'FCM',
+    ...(input.appVersion ? { appVersion: input.appVersion } : {}),
+    ...(input.osVersion ? { osVersion: input.osVersion } : {}),
+    ...(input.deviceModel ? { deviceModel: input.deviceModel } : {}),
+    ...(input.locale ? { locale: input.locale } : {}),
+    ...(input.timezone ? { timezone: input.timezone } : {}),
   };
 }
 

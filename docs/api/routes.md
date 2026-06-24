@@ -97,6 +97,16 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 
 Device token registration accepts `platform: "android"` or `platform: "ios"` only. FCM data payloads are filtered to routing identifiers and always include the stored `notificationId` plus the stored notification `type` for client routing; full notification details stay in the authenticated in-app notification record.
 
+## Mobile Foundation
+
+- `GET /mobile/app-version?appType=CUSTOMER&platform=ANDROID`
+- `POST /mobile/devices/register`
+- `DELETE /mobile/devices`
+
+`POST /mobile/devices/register` is the platform-neutral device registration route for future customer and Partner mobile builds. It requires a customer or Partner JWT and accepts `platform: "ANDROID"`, `"IOS"`, or `"WEB"`, plus optional `appVersion`, `osVersion`, `deviceModel`, `locale`, and `timezone`. The API stores FCM as the push provider and still derives the owning user and actor role from the authenticated token, not from request body fields.
+
+`GET /mobile/app-version` returns per-app/per-platform force-update policy. Missing inactive policy rows fall back to `forceUpdate: false`, so Android MVP builds are not blocked before operations configures rows.
+
 ## Admin
 
 - `GET /admin/users`

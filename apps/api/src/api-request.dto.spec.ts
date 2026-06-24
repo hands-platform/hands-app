@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AuthController } from './auth/auth.controller';
 import { CustomersController } from './customers/customers.controller';
 import { FilesController } from './files/files.controller';
+import { MobileController } from './mobile/mobile.controller';
 import { NotificationsController } from './notifications/notifications.controller';
 import { ServicesController } from './services/services.controller';
 import { UsersController } from './users/users.controller';
@@ -35,9 +36,9 @@ describe('remaining API request DTO validation', () => {
     expect((bodyMetatype(CustomersController.prototype, 'createReview', 1) as { name?: string })?.name).toBe(
       'CreateCustomerReviewDto',
     );
-    expect((bodyMetatype(FilesController.prototype, 'createPresignedUpload', 1) as { name?: string })?.name).toBe(
-      'CreatePresignedUploadDto',
-    );
+    expect(
+      (bodyMetatype(FilesController.prototype, 'createPresignedUpload', 1) as { name?: string })?.name,
+    ).toBe('CreatePresignedUploadDto');
     expect((bodyMetatype(FilesController.prototype, 'completeUpload', 2) as { name?: string })?.name).toBe(
       'CompleteUploadDto',
     );
@@ -47,6 +48,12 @@ describe('remaining API request DTO validation', () => {
     expect(
       (bodyMetatype(NotificationsController.prototype, 'disableDeviceToken', 1) as { name?: string })?.name,
     ).toBe('DeleteDeviceTokenDto');
+    expect((bodyMetatype(MobileController.prototype, 'registerDevice', 1) as { name?: string })?.name).toBe(
+      'RegisterMobileDeviceDto',
+    );
+    expect((bodyMetatype(MobileController.prototype, 'unregisterDevice', 1) as { name?: string })?.name).toBe(
+      'UnregisterMobileDeviceDto',
+    );
     expect((bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as { name?: string })?.name).toBe(
       'RecordAppSessionDto',
     );
@@ -63,7 +70,11 @@ describe('remaining API request DTO validation', () => {
 
     const coupon = await pipe.transform(
       { code: ' HANDS100 ', serviceId: ' svc-1 ', subtotal: '500000', adminOnly: true },
-      { type: 'body', metatype: bodyMetatype(CustomersController.prototype, 'previewCoupon', 0) as never, data: '' },
+      {
+        type: 'body',
+        metatype: bodyMetatype(CustomersController.prototype, 'previewCoupon', 0) as never,
+        data: '',
+      },
     );
 
     expect(coupon).toHaveProperty('code', 'HANDS100');
@@ -89,7 +100,11 @@ describe('remaining API request DTO validation', () => {
         lastLoginAddress: ' 123 Nguyen Hue, District 1 ',
         ignored: true,
       },
-      { type: 'body', metatype: bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as never, data: '' },
+      {
+        type: 'body',
+        metatype: bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as never,
+        data: '',
+      },
     );
 
     expect(session).toHaveProperty('deviceId', 'hands-device-1');
@@ -98,6 +113,27 @@ describe('remaining API request DTO validation', () => {
     expect(session).toHaveProperty('deviceLanguage', 'vi-VN');
     expect(session).toHaveProperty('lastLoginAddress', '123 Nguyen Hue, District 1');
     expect(session).not.toHaveProperty('ignored');
+
+    const mobileDevice = await pipe.transform(
+      {
+        token: ' fcm-token-ios ',
+        platform: ' ios ',
+        appVersion: ' 1.2.3 ',
+        osVersion: ' iOS 18 ',
+        private: true,
+      },
+      {
+        type: 'body',
+        metatype: bodyMetatype(MobileController.prototype, 'registerDevice', 1) as never,
+        data: '',
+      },
+    );
+
+    expect(mobileDevice).toHaveProperty('token', 'fcm-token-ios');
+    expect(mobileDevice).toHaveProperty('platform', 'IOS');
+    expect(mobileDevice).toHaveProperty('appVersion', '1.2.3');
+    expect(mobileDevice).toHaveProperty('osVersion', 'iOS 18');
+    expect(mobileDevice).not.toHaveProperty('private');
   });
 
   it('rejects invalid enums and required values before service logic runs', async () => {
@@ -129,6 +165,17 @@ describe('remaining API request DTO validation', () => {
       pipe.transform(
         { refreshToken: '' },
         { type: 'body', metatype: bodyMetatype(AuthController.prototype, 'refresh', 0) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { token: 'push-token', platform: 'desktop' },
+        {
+          type: 'body',
+          metatype: bodyMetatype(MobileController.prototype, 'registerDevice', 1) as never,
+          data: '',
+        },
       ),
     ).rejects.toThrow();
   });

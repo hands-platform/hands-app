@@ -4,7 +4,11 @@ import { Queue } from 'bullmq';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { notificationDeliveryFailureCode } from './notification-delivery-failure';
-import { pushDeviceDisableInput, pushDeviceRegistrationInput } from './notification-device-token';
+import {
+  type RegisterDeviceTokenInput,
+  pushDeviceDisableInput,
+  pushDeviceRegistrationInput,
+} from './notification-device-token';
 import { NOTIFICATION_SEND_QUEUE_NAME, notificationSendJob } from './notification-send.queue';
 import { toJson } from './notification-push-payload';
 import type {
@@ -92,7 +96,7 @@ export class NotificationsService {
     });
   }
 
-  registerDeviceToken(user: AuthenticatedUser, input: { token: string; platform: string }) {
+  registerDeviceToken(user: AuthenticatedUser, input: RegisterDeviceTokenInput) {
     return this.prisma.pushDevice.upsert(pushDeviceRegistrationInput(user, input));
   }
 

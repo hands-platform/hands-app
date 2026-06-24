@@ -44,6 +44,7 @@ describe('notification device token helpers', () => {
         userId: 'user-1',
         role: Role.PROVIDER,
         platform: 'android',
+        pushProvider: 'FCM',
         enabled: true,
         lastSeenAt,
       },
@@ -52,7 +53,48 @@ describe('notification device token helpers', () => {
         role: Role.PROVIDER,
         token: 'fcm-token-1',
         platform: 'android',
+        pushProvider: 'FCM',
         lastSeenAt,
+      },
+    });
+  });
+
+  it('adds optional mobile metadata to authenticated token registration input', () => {
+    const lastSeenAt = new Date('2026-06-11T00:00:00.000Z');
+
+    expect(
+      pushDeviceRegistrationInput(
+        { id: 'user-1', roles: [Role.CUSTOMER] },
+        {
+          token: 'fcm-token-1',
+          platform: 'ios',
+          pushProvider: 'FCM',
+          appVersion: '1.2.3',
+          osVersion: 'iOS 18',
+          deviceModel: 'iPhone 16',
+          locale: 'vi-VN',
+          timezone: 'Asia/Ho_Chi_Minh',
+        },
+        lastSeenAt,
+      ),
+    ).toMatchObject({
+      update: {
+        platform: 'ios',
+        pushProvider: 'FCM',
+        appVersion: '1.2.3',
+        osVersion: 'iOS 18',
+        deviceModel: 'iPhone 16',
+        locale: 'vi-VN',
+        timezone: 'Asia/Ho_Chi_Minh',
+      },
+      create: {
+        platform: 'ios',
+        pushProvider: 'FCM',
+        appVersion: '1.2.3',
+        osVersion: 'iOS 18',
+        deviceModel: 'iPhone 16',
+        locale: 'vi-VN',
+        timezone: 'Asia/Ho_Chi_Minh',
       },
     });
   });

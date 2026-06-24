@@ -24,6 +24,7 @@ describe('NotificationsService device tokens', () => {
         userId: 'user-1',
         role: Role.PROVIDER,
         platform: 'android',
+        pushProvider: 'FCM',
         enabled: true,
         lastSeenAt: expect.any(Date),
       },
@@ -32,6 +33,7 @@ describe('NotificationsService device tokens', () => {
         role: Role.PROVIDER,
         token: 'fcm-token-1',
         platform: 'android',
+        pushProvider: 'FCM',
         lastSeenAt: expect.any(Date),
       },
     });

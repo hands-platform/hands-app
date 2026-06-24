@@ -11,6 +11,7 @@ import { FilesModule } from './files/files.module';
 import { HealthModule } from './health/health.module';
 import { LocationsModule } from './locations/locations.module';
 import { MatchingModule } from './matching/matching.module';
+import { MobileModule } from './mobile/mobile.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
     ServicesModule,
     BookingsModule,
     MatchingModule,
+    MobileModule,
     ChatModule,
     PaymentsModule,
     NotificationsModule,
