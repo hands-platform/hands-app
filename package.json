@@ -35,6 +35,7 @@
     "bookings:post-match-cancellation-smoke": "node infra/scripts/post-match-cancellation-smoke.mjs",
     "bookings:list-smoke-seed": "node infra/scripts/booking-list-smoke-seed.mjs",
     "referrals:smoke-seed": "node infra/scripts/referral-smoke-seed.mjs",
+    "referrals:reward-action-smoke": "node infra/scripts/referral-reward-action-smoke.mjs",
     "vietnam:check": "node infra/scripts/check-vietnam-scope.mjs",
     "scope:vietnam": "node infra/scripts/check-vietnam-scope.mjs",
     "check:vietnam-scope": "node infra/scripts/check-vietnam-scope.mjs",
