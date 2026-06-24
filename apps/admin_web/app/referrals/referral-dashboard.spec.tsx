@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import type { AdminCustomerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
+import type { AdminCustomerReferralParent, AdminPartnerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
 import {
   ReferralDashboard,
   buildReferralDashboardFilters,
@@ -24,6 +24,14 @@ const policy: AdminReferralPolicy = {
   rewardMode: 'COMMISSION_PERCENT',
   source: 'stored-policy',
   totalRewardCapAmount: 500000,
+};
+
+const partnerPolicy: AdminReferralPolicy = {
+  ...policy,
+  audience: 'PARTNER',
+  commissionPercentBps: null,
+  fixedRewardAmount: 150000,
+  rewardMode: 'FIXED_AMOUNT',
 };
 
 const rows: AdminCustomerReferralParent[] = [
@@ -246,6 +254,28 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=held"');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=credited"');
     expect(markup).toContain('aria-pressed="true" class="is-active" href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=available"');
+  });
+
+  it('explains when referral filters hide existing parent accounts', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="partner"
+        filters={{ q: 'smoke', reward: 'available', status: 'pending' }}
+        policy={partnerPolicy}
+        rewardQueueSummaries={[]}
+        rows={[] satisfies AdminPartnerReferralParent[]}
+        totalCount={1}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('No matching Partner referral parents');
+    expect(markup).toContain('1 parent account exists, but none match the current filters.');
+    expect(markup).toContain('Search: smoke');
+    expect(markup).toContain('Status: Pending');
+    expect(markup).toContain('Reward: Ready rewards');
+    expect(markup).toContain('href="/referrals/partners"');
+    expect(markup).toContain('Clear referral filters');
+    expect(markup).not.toContain('Parents appear here only after at least one referral attribution is recorded.');
   });
 
   it('renders held reward totals in referral parent rows', () => {

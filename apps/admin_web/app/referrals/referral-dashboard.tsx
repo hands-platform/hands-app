@@ -65,11 +65,24 @@ type ReferralPolicyPanelProps = {
   readonly policy: AdminReferralPolicy;
 };
 
+type ReferralEmptyStateProps = {
+  readonly activeFilters?: readonly string[];
+  readonly audienceLabel: string;
+  readonly clearHref?: string;
+  readonly totalCount?: number;
+};
+
 export function ReferralDashboard(props: ReferralDashboardProps) {
   const title = props.audience === 'customer' ? 'Customer Referrals' : 'Partner Referrals';
   const filters = props.filters ?? defaultReferralDashboardFilters;
   const rewardQueueSummaries = props.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(props.rows);
   const totalCount = props.totalCount ?? props.rows.length;
+  const tableEmptyState: ReferralEmptyStateProps = {
+    activeFilters: referralActiveFilterLabels(filters),
+    audienceLabel: referralAudienceLabel(props.audience),
+    clearHref: referralListPath(props.audience),
+    totalCount,
+  };
   const description =
     props.audience === 'customer'
       ? 'Parent customer accounts with at least one referred customer. Rewards remain controlled by admin policy.'
@@ -138,9 +151,9 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
         totalCount={totalCount}
       />
       {props.audience === 'customer' ? (
-        <CustomerReferralParentTable rows={props.rows} />
+        <CustomerReferralParentTable emptyState={tableEmptyState} rows={props.rows} />
       ) : (
-        <PartnerReferralParentTable rows={props.rows} />
+        <PartnerReferralParentTable emptyState={tableEmptyState} rows={props.rows} />
       )}
     </AdminPageTemplate>
   );
@@ -456,7 +469,13 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
   );
 }
 
-function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCustomerReferralParent[] }) {
+function CustomerReferralParentTable({
+  emptyState,
+  rows,
+}: {
+  readonly emptyState: ReferralEmptyStateProps;
+  readonly rows: readonly AdminCustomerReferralParent[];
+}) {
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
@@ -468,7 +487,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
-          emptyMessage={<ReferralEmptyState audienceLabel="customer" />}
+          emptyMessage={<ReferralEmptyState {...emptyState} />}
           headers={['Parent Customer', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral', 'Actions']}
           rowCount={rows.length}
         >
@@ -522,7 +541,13 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
   );
 }
 
-function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPartnerReferralParent[] }) {
+function PartnerReferralParentTable({
+  emptyState,
+  rows,
+}: {
+  readonly emptyState: ReferralEmptyStateProps;
+  readonly rows: readonly AdminPartnerReferralParent[];
+}) {
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
@@ -534,7 +559,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
-          emptyMessage={<ReferralEmptyState audienceLabel="Partner" />}
+          emptyMessage={<ReferralEmptyState {...emptyState} />}
           headers={['Parent Partner', 'Referral Code', 'Referrals', 'Rewards', 'Latest Referral', 'Actions']}
           rowCount={rows.length}
         >
@@ -774,7 +799,35 @@ function ReferralStatusLine({
   );
 }
 
-function ReferralEmptyState({ audienceLabel }: { readonly audienceLabel: string }) {
+function ReferralEmptyState({
+  activeFilters = [],
+  audienceLabel,
+  clearHref,
+  totalCount = 0,
+}: ReferralEmptyStateProps) {
+  if (activeFilters.length > 0 && totalCount > 0) {
+    return (
+      <>
+        <strong>No matching {audienceLabel} referral parents</strong>
+        <p className="muted">
+          {totalCount} parent account{totalCount === 1 ? ' exists' : 's exist'}, but none match the current filters.
+        </p>
+        <div className="participant-list admin-mt-8" aria-label="Active referral filters">
+          {activeFilters.map((filter) => (
+            <span className="pill pill-warn" key={filter}>
+              {filter}
+            </span>
+          ))}
+        </div>
+        {clearHref ? (
+          <Link className="text-link admin-mt-8" href={clearHref}>
+            Clear referral filters
+          </Link>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <>
       <strong>No {audienceLabel} referral parents yet</strong>
