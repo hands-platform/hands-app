@@ -35,6 +35,7 @@ const ids = {
   customerPendingReward: 'smoke_referral_customer_pending_reward',
   customerAvailableReward: 'smoke_referral_customer_available_reward',
   partnerPendingReward: 'smoke_referral_partner_pending_reward',
+  partnerAvailableReward: 'smoke_referral_partner_available_reward',
 };
 
 const phones = {
@@ -48,6 +49,7 @@ const sourceKeys = {
   customerPending: 'smoke-referral:customer:pending',
   customerAvailable: 'smoke-referral:customer:available',
   partnerPending: 'smoke-referral:partner:pending',
+  partnerAvailable: 'smoke-referral:partner:available',
 };
 
 const pages = [
@@ -380,6 +382,15 @@ async function seedRewards() {
     status: ReferralRewardStatus.PENDING,
     walletOwnerProviderProfileId: ids.partnerParentProfile,
   });
+  await upsertReward({
+    id: ids.partnerAvailableReward,
+    amount: 150000,
+    attributionId: ids.partnerAttribution,
+    availableAt: now,
+    sourceKey: sourceKeys.partnerAvailable,
+    status: ReferralRewardStatus.AVAILABLE,
+    walletOwnerProviderProfileId: ids.partnerParentProfile,
+  });
 }
 
 async function upsertUser({ fullName, id, phone, roles }) {
@@ -516,8 +527,8 @@ async function verifySmokeData() {
     'Customer referral rewards should include pending and available candidates.',
   );
   assertCondition(
-    partnerParent.referralsMade[0]?.rewards.length === 1,
-    'Partner referral rewards should include one pending candidate.',
+    partnerParent.referralsMade[0]?.rewards.length === 2,
+    'Partner referral rewards should include pending and available candidates.',
   );
   assertCondition(
     [...customerParent.referralsMade[0].rewards, ...partnerParent.referralsMade[0].rewards].every(
@@ -539,6 +550,7 @@ async function cleanupSmokeData() {
     ids.customerPendingReward,
     ids.customerAvailableReward,
     ids.partnerPendingReward,
+    ids.partnerAvailableReward,
   ];
 
   await prisma.adminAuditLog.deleteMany({

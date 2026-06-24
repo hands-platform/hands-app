@@ -1,7 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CustomerWalletLedgerType, PrismaClient, ReferralRewardStatus } from '@prisma/client';
+import {
+  CustomerWalletLedgerType,
+  PrismaClient,
+  ProviderWalletLedgerType,
+  ReferralRewardStatus,
+} from '@prisma/client';
 import { loadMergedEnv } from './lib/env-file.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -19,6 +24,7 @@ const adminOtp = nonEmptyString(env.REFERRAL_SMOKE_ADMIN_OTP) ?? nonEmptyString(
 const ids = {
   customerCreditReward: 'smoke_referral_customer_available_reward',
   customerHoldReward: 'smoke_referral_customer_pending_reward',
+  partnerCreditReward: 'smoke_referral_partner_available_reward',
   customerParentProfile: 'smoke_referral_customer_parent_profile',
   partnerReverseReward: 'smoke_referral_partner_pending_reward',
   partnerParentProfile: 'smoke_referral_partner_parent_profile',
@@ -32,6 +38,7 @@ const actionPlan = [
     rewardId: ids.customerHoldReward,
     route: '/admin/referrals/rewards/smoke_referral_customer_pending_reward/hold',
     walletCreditCreated: false,
+    walletOwner: null,
   },
   {
     action: 'referral_reward.credit',
@@ -40,6 +47,16 @@ const actionPlan = [
     rewardId: ids.customerCreditReward,
     route: '/admin/referrals/rewards/smoke_referral_customer_available_reward/credit',
     walletCreditCreated: true,
+    walletOwner: 'CUSTOMER',
+  },
+  {
+    action: 'referral_reward.credit',
+    expectedStatus: ReferralRewardStatus.REWARDED,
+    reason: 'Smoke credit Partner referral reward candidate.',
+    rewardId: ids.partnerCreditReward,
+    route: '/admin/referrals/rewards/smoke_referral_partner_available_reward/credit',
+    walletCreditCreated: true,
+    walletOwner: 'PARTNER',
   },
   {
     action: 'referral_reward.reverse',
@@ -48,6 +65,7 @@ const actionPlan = [
     rewardId: ids.partnerReverseReward,
     route: '/admin/referrals/rewards/smoke_referral_partner_pending_reward/reverse',
     walletCreditCreated: false,
+    walletOwner: null,
   },
 ];
 
@@ -61,12 +79,13 @@ if (dryRun) {
         envFile: { path: envPath, exists: envFileExists },
         ids,
         seedScript: 'referral-smoke-seed.mjs',
-        actions: actionPlan.map(({ action, expectedStatus, rewardId, route, walletCreditCreated }) => ({
+        actions: actionPlan.map(({ action, expectedStatus, rewardId, route, walletCreditCreated, walletOwner }) => ({
           action,
           expectedStatus,
           rewardId,
           route,
           walletCreditCreated,
+          walletOwner,
         })),
       },
       null,
@@ -174,7 +193,7 @@ async function verifyRewardActions() {
     where: {
       sourceKey: {
         in: actionPlan
-          .filter((action) => action.walletCreditCreated)
+          .filter((action) => action.walletOwner === 'CUSTOMER')
           .map((action) => referralWalletCreditSourceKey(action.rewardId)),
       },
     },
@@ -189,6 +208,25 @@ async function verifyRewardActions() {
   });
   const customerWalletLedgersBySourceKey = new Map(
     customerWalletLedgers.map((ledger) => [ledger.sourceKey, ledger]),
+  );
+  const providerWalletLedgers = await prisma.providerWalletLedgerEntry.findMany({
+    where: {
+      sourceKey: {
+        in: actionPlan
+          .filter((action) => action.walletOwner === 'PARTNER')
+          .map((action) => referralWalletCreditSourceKey(action.rewardId)),
+      },
+    },
+    select: {
+      id: true,
+      metadata: true,
+      providerProfileId: true,
+      sourceKey: true,
+      type: true,
+    },
+  });
+  const providerWalletLedgersBySourceKey = new Map(
+    providerWalletLedgers.map((ledger) => [ledger.sourceKey, ledger]),
   );
 
   const auditLogs = await prisma.adminAuditLog.findMany({
@@ -214,28 +252,49 @@ async function verifyRewardActions() {
     );
     const ledgerSourceKey = referralWalletCreditSourceKey(expected.rewardId);
     const customerWalletLedger = customerWalletLedgersBySourceKey.get(ledgerSourceKey);
+    const providerWalletLedger = providerWalletLedgersBySourceKey.get(ledgerSourceKey);
     if (expected.walletCreditCreated) {
       assertCondition(
         typeof reward.walletLedgerReference === 'string' && reward.walletLedgerReference.length > 0,
         `Reward ${expected.rewardId} should have a wallet ledger reference.`,
       );
-      assertCondition(Boolean(customerWalletLedger), `Missing customer wallet ledger ${ledgerSourceKey}.`);
-      assertCondition(
-        customerWalletLedger.id === reward.walletLedgerReference,
-        `Reward ${expected.rewardId} wallet ledger reference mismatch.`,
-      );
-      assertCondition(
-        customerWalletLedger.type === CustomerWalletLedgerType.REFERRAL_REWARD,
-        `Reward ${expected.rewardId} ledger type mismatch.`,
-      );
-      assertCondition(
-        customerWalletLedger.referralRewardId === expected.rewardId,
-        `Reward ${expected.rewardId} ledger should link back to the reward.`,
-      );
-      assertCondition(
-        customerWalletLedger.customerProfileId === ids.customerParentProfile,
-        `Reward ${expected.rewardId} ledger should credit the referral parent customer.`,
-      );
+      if (expected.walletOwner === 'CUSTOMER') {
+        assertCondition(Boolean(customerWalletLedger), `Missing customer wallet ledger ${ledgerSourceKey}.`);
+        assertCondition(
+          customerWalletLedger.id === reward.walletLedgerReference,
+          `Reward ${expected.rewardId} wallet ledger reference mismatch.`,
+        );
+        assertCondition(
+          customerWalletLedger.type === CustomerWalletLedgerType.REFERRAL_REWARD,
+          `Reward ${expected.rewardId} ledger type mismatch.`,
+        );
+        assertCondition(
+          customerWalletLedger.referralRewardId === expected.rewardId,
+          `Reward ${expected.rewardId} ledger should link back to the reward.`,
+        );
+        assertCondition(
+          customerWalletLedger.customerProfileId === ids.customerParentProfile,
+          `Reward ${expected.rewardId} ledger should credit the referral parent customer.`,
+        );
+      } else if (expected.walletOwner === 'PARTNER') {
+        assertCondition(Boolean(providerWalletLedger), `Missing Partner wallet ledger ${ledgerSourceKey}.`);
+        assertCondition(
+          providerWalletLedger.id === reward.walletLedgerReference,
+          `Reward ${expected.rewardId} wallet ledger reference mismatch.`,
+        );
+        assertCondition(
+          providerWalletLedger.type === ProviderWalletLedgerType.REFERRAL_REWARD,
+          `Reward ${expected.rewardId} ledger type mismatch.`,
+        );
+        assertCondition(
+          providerWalletLedger.providerProfileId === ids.partnerParentProfile,
+          `Reward ${expected.rewardId} ledger should credit the referral parent Partner.`,
+        );
+        assertCondition(
+          providerWalletLedger.metadata?.referralRewardId === expected.rewardId,
+          `Reward ${expected.rewardId} ledger metadata should link back to the reward.`,
+        );
+      }
     } else {
       assertCondition(
         reward.walletLedgerReference === null,
