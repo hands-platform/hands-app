@@ -193,6 +193,12 @@ enum ProviderWalletLedgerType {
   ADMIN_ADJUSTMENT
 }
 
+enum CustomerWalletLedgerType {
+  REFERRAL_REWARD
+  REFUND
+  ADMIN_ADJUSTMENT
+}
+
 enum ReferralAudience {
   CUSTOMER
   PARTNER
@@ -325,20 +331,21 @@ model AppSession {
 }
 
 model CustomerProfile {
-  id                String                        @id @default(cuid())
-  userId            String                        @unique
-  user              User                          @relation(fields: [userId], references: [id])
-  addresses         Json?
-  bookings          Booking[]
-  bookingSnapshots  BookingAddressSnapshot[]
-  favoriteProviders CustomerFavoriteProvider[]
-  viewedProviders   CustomerProviderProfileView[]
-  reviews           Review[]
-  selectedLocations CustomerSelectedLocation[]
-  referralCodes     ReferralCode[]                @relation("CustomerReferralCodeOwner")
-  referralsMade     ReferralAttribution[]         @relation("CustomerReferralReferrer")
-  referralsReceived ReferralAttribution[]         @relation("CustomerReferralReferred")
-  referralRewards   ReferralReward[]              @relation("CustomerReferralWalletOwner")
+  id                  String                        @id @default(cuid())
+  userId              String                        @unique
+  user                User                          @relation(fields: [userId], references: [id])
+  addresses           Json?
+  bookings            Booking[]
+  bookingSnapshots    BookingAddressSnapshot[]
+  favoriteProviders   CustomerFavoriteProvider[]
+  viewedProviders     CustomerProviderProfileView[]
+  reviews             Review[]
+  selectedLocations   CustomerSelectedLocation[]
+  referralCodes       ReferralCode[]                @relation("CustomerReferralCodeOwner")
+  referralsMade       ReferralAttribution[]         @relation("CustomerReferralReferrer")
+  referralsReceived   ReferralAttribution[]         @relation("CustomerReferralReferred")
+  referralRewards     ReferralReward[]              @relation("CustomerReferralWalletOwner")
+  walletLedgerEntries CustomerWalletLedgerEntry[]
 }
 
 model CustomerFavoriteProvider {
@@ -693,48 +700,49 @@ model ServicePayoutRule {
 }
 
 model Booking {
-  id                  String                      @id @default(cuid())
-  customerProfileId   String
-  preferredProviderId String?
-  selectedProviderId  String?
-  status              BookingStatus               @default(CREATED)
-  scheduledStartAt    DateTime
-  scheduledEndAt      DateTime
-  address             Json
-  lat                 Decimal                     @db.Decimal(10, 7)
-  lng                 Decimal                     @db.Decimal(10, 7)
-  notes               String?
-  metadata            Json?
-  travelBufferMin     Int                         @default(30)
-  earlyAcceptMin      Int                         @default(20)
-  openedAt            DateTime?
-  expiresAt           DateTime?
-  matchedAt           DateTime?
-  matchSource         BookingMatchSource?
-  closedAt            DateTime?
-  closedByRole        Role?
-  closedReason        String?
-  closedNote          String?
-  createdAt           DateTime                    @default(now())
-  updatedAt           DateTime                    @updatedAt
-  customerProfile     CustomerProfile             @relation(fields: [customerProfileId], references: [id])
-  preferredProvider   ProviderProfile?            @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
-  selectedProvider    ProviderProfile?            @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
-  services            BookingService[]
-  participants        BookingParticipant[]
-  chatRoom            ChatRoom?
-  payment             Payment?
-  review              Review?
-  refunds             Refund[]
-  snapshots           LocationSnapshot[]
-  earning             ProviderEarning?
-  platformFeeLogs     ProviderPlatformFeeLog[]
-  taxLogs             ProviderTaxLog[]
-  opsTasks            BookingOpsTask[]
-  providerReports     ProviderReport[]
-  walletLedgerEntries ProviderWalletLedgerEntry[]
-  addressSnapshot     BookingAddressSnapshot?
-  referralRewards     ReferralReward[]
+  id                          String                      @id @default(cuid())
+  customerProfileId           String
+  preferredProviderId         String?
+  selectedProviderId          String?
+  status                      BookingStatus               @default(CREATED)
+  scheduledStartAt            DateTime
+  scheduledEndAt              DateTime
+  address                     Json
+  lat                         Decimal                     @db.Decimal(10, 7)
+  lng                         Decimal                     @db.Decimal(10, 7)
+  notes                       String?
+  metadata                    Json?
+  travelBufferMin             Int                         @default(30)
+  earlyAcceptMin              Int                         @default(20)
+  openedAt                    DateTime?
+  expiresAt                   DateTime?
+  matchedAt                   DateTime?
+  matchSource                 BookingMatchSource?
+  closedAt                    DateTime?
+  closedByRole                Role?
+  closedReason                String?
+  closedNote                  String?
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
+  customerProfile             CustomerProfile             @relation(fields: [customerProfileId], references: [id])
+  preferredProvider           ProviderProfile?            @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
+  selectedProvider            ProviderProfile?            @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
+  services                    BookingService[]
+  participants                BookingParticipant[]
+  chatRoom                    ChatRoom?
+  payment                     Payment?
+  review                      Review?
+  refunds                     Refund[]
+  snapshots                   LocationSnapshot[]
+  earning                     ProviderEarning?
+  platformFeeLogs             ProviderPlatformFeeLog[]
+  taxLogs                     ProviderTaxLog[]
+  opsTasks                    BookingOpsTask[]
+  providerReports             ProviderReport[]
+  walletLedgerEntries         ProviderWalletLedgerEntry[]
+  customerWalletLedgerEntries CustomerWalletLedgerEntry[]
+  addressSnapshot             BookingAddressSnapshot?
+  referralRewards             ReferralReward[]
 
   @@index([status, closedAt])
   @@index([closedByRole, closedAt])
@@ -815,15 +823,15 @@ model ReferralAttribution {
 }
 
 model ReferralReward {
-  id                           String               @id @default(cuid())
+  id                           String                      @id @default(cuid())
   attributionId                String
   qualifyingBookingId          String?
   walletOwnerCustomerProfileId String?
   walletOwnerProviderProfileId String?
-  sourceKey                    String               @unique
+  sourceKey                    String                      @unique
   amount                       Int
-  currency                     String               @default("VND")
-  status                       ReferralRewardStatus @default(PENDING)
+  currency                     String                      @default("VND")
+  status                       ReferralRewardStatus        @default(PENDING)
   calculationSnapshot          Json
   walletLedgerReference        String?
   availableAt                  DateTime?
@@ -832,12 +840,13 @@ model ReferralReward {
   cancelledAt                  DateTime?
   notes                        String?
   metadata                     Json?
-  createdAt                    DateTime             @default(now())
-  updatedAt                    DateTime             @updatedAt
-  attribution                  ReferralAttribution  @relation(fields: [attributionId], references: [id], onDelete: Restrict)
-  qualifyingBooking            Booking?             @relation(fields: [qualifyingBookingId], references: [id], onDelete: SetNull)
-  walletOwnerCustomerProfile   CustomerProfile?     @relation("CustomerReferralWalletOwner", fields: [walletOwnerCustomerProfileId], references: [id], onDelete: Cascade)
-  walletOwnerProviderProfile   ProviderProfile?     @relation("ProviderReferralWalletOwner", fields: [walletOwnerProviderProfileId], references: [id], onDelete: Cascade)
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+  attribution                  ReferralAttribution         @relation(fields: [attributionId], references: [id], onDelete: Restrict)
+  qualifyingBooking            Booking?                    @relation(fields: [qualifyingBookingId], references: [id], onDelete: SetNull)
+  walletOwnerCustomerProfile   CustomerProfile?            @relation("CustomerReferralWalletOwner", fields: [walletOwnerCustomerProfileId], references: [id], onDelete: Cascade)
+  walletOwnerProviderProfile   ProviderProfile?            @relation("ProviderReferralWalletOwner", fields: [walletOwnerProviderProfileId], references: [id], onDelete: Cascade)
+  customerWalletLedgerEntries  CustomerWalletLedgerEntry[]
 
   @@index([status, createdAt])
   @@index([attributionId])
@@ -1047,6 +1056,30 @@ model ProviderWalletLedgerEntry {
   @@index([bookingId])
   @@index([earningId])
   @@index([payoutBatchId])
+  @@index([type, createdAt])
+}
+
+model CustomerWalletLedgerEntry {
+  id                String                   @id @default(cuid())
+  customerProfileId String
+  bookingId         String?
+  referralRewardId  String?
+  type              CustomerWalletLedgerType
+  sourceKey         String                   @unique
+  amount            Int
+  currency          String                   @default("VND")
+  reference         String?
+  notes             String?
+  metadata          Json?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  customerProfile   CustomerProfile          @relation(fields: [customerProfileId], references: [id])
+  booking           Booking?                 @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  referralReward    ReferralReward?          @relation(fields: [referralRewardId], references: [id], onDelete: SetNull)
+
+  @@index([customerProfileId, createdAt])
+  @@index([bookingId])
+  @@index([referralRewardId])
   @@index([type, createdAt])
 }
 
