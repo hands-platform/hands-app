@@ -71,6 +71,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Credited rewards');
     expect(markup).toContain('15.000 VND');
+    expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Does not create wallet ledger entries');
     expect(markup).toContain('Parent Customer');
