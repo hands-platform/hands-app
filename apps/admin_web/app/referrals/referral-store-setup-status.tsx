@@ -5,7 +5,8 @@ import { referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/re
 
 export function ReferralStoreSetupStatus({ audience }: { readonly audience: ReferralAudienceSlug }) {
   const storeSetup = referralStoreSetupState(audience);
-  const hasMissingSetup = !storeSetup.publicBase || !storeSetup.android || !storeSetup.ios;
+  const missingEnvKeys = referralStoreMissingEnvKeys(audience, storeSetup);
+  const hasMissingSetup = missingEnvKeys.length > 0;
 
   return (
     <>
@@ -21,10 +22,35 @@ export function ReferralStoreSetupStatus({ audience }: { readonly audience: Refe
         </StatusBadge>
       </div>
       {hasMissingSetup ? (
-        <Link className="text-link admin-mt-8" href="/setup#referrals">
-          Configure store URLs
-        </Link>
+        <>
+          <p className="muted admin-mt-8">Missing setup: {missingEnvKeys.join(', ')}</p>
+          <Link className="text-link admin-mt-8" href="/setup#referrals">
+            Configure store URLs
+          </Link>
+        </>
       ) : null}
     </>
   );
+}
+
+function referralStoreMissingEnvKeys(
+  audience: ReferralAudienceSlug,
+  storeSetup: ReturnType<typeof referralStoreSetupState>,
+) {
+  const audienceEnvName = audience === 'partner' ? 'PARTNER' : 'CUSTOMER';
+  const missingEnvKeys: string[] = [];
+
+  if (!storeSetup.publicBase) {
+    missingEnvKeys.push('REFERRAL_PUBLIC_BASE_URL');
+  }
+
+  if (!storeSetup.android) {
+    missingEnvKeys.push(`REFERRAL_${audienceEnvName}_ANDROID_STORE_URL`);
+  }
+
+  if (!storeSetup.ios) {
+    missingEnvKeys.push(`REFERRAL_${audienceEnvName}_IOS_STORE_URL`);
+  }
+
+  return missingEnvKeys;
 }
