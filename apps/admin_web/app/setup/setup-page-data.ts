@@ -291,6 +291,8 @@ export const setupOrder = [
     ],
     commands: [
       'npm.cmd run external:check:referrals',
+      'npm.cmd run referrals:public-link-smoke -- --dry-run',
+      'npm.cmd run referrals:public-link-smoke',
       'Open http://localhost:3101/r/customer/<referral-code>',
       'Open http://localhost:3101/r/partner/<referral-code>',
     ],

@@ -135,7 +135,11 @@ describe('setup page data', () => {
       'REFERRAL_PARTNER_IOS_STORE_URL',
     ]);
     expect(referralSetup?.commands).toEqual(
-      expect.arrayContaining(['npm.cmd run external:check:referrals']),
+      expect.arrayContaining([
+        'npm.cmd run external:check:referrals',
+        'npm.cmd run referrals:public-link-smoke -- --dry-run',
+        'npm.cmd run referrals:public-link-smoke',
+      ]),
     );
   });
 
