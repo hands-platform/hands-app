@@ -29,6 +29,19 @@ describe('notification DTOs', () => {
     });
   });
 
+  it('normalizes uppercase legacy notification platforms from mobile clients', async () => {
+    const dto = plainToInstance(RegisterDeviceTokenDto, {
+      token: ' fcm-token-ios ',
+      platform: ' IOS ',
+    });
+
+    await expect(validate(dto)).resolves.toHaveLength(0);
+    expect(dto).toMatchObject({
+      token: 'fcm-token-ios',
+      platform: 'ios',
+    });
+  });
+
   it('rejects unsupported push platforms before device registration', async () => {
     const dto = plainToInstance(RegisterDeviceTokenDto, {
       token: 'fcm-token-1',

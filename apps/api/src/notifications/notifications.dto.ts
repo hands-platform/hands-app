@@ -7,6 +7,11 @@ function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
+function lowercaseString(value: unknown) {
+  const trimmed = trimString(value);
+  return typeof trimmed === 'string' ? trimmed.toLowerCase() : trimmed;
+}
+
 export class RegisterDeviceTokenDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -14,7 +19,7 @@ export class RegisterDeviceTokenDto {
   @MaxLength(512)
   token!: string;
 
-  @Transform(({ value }) => trimString(value))
+  @Transform(({ value }) => lowercaseString(value))
   @IsIn(devicePlatforms)
   platform!: (typeof devicePlatforms)[number];
 }
