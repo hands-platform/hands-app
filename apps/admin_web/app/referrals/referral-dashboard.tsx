@@ -118,6 +118,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       }
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />
+      <ReferralLinkReadinessPanel audience={props.audience} />
       <ReferralListFilterPanel
         audience={props.audience}
         filteredCount={props.rows.length}
@@ -130,6 +131,38 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
         <PartnerReferralParentTable rows={props.rows} />
       )}
     </AdminPageTemplate>
+  );
+}
+
+function ReferralLinkReadinessPanel({ audience }: { readonly audience: ReferralAudienceSlug }) {
+  const audienceLabel = referralAudienceLabel(audience);
+
+  return (
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16"
+      resultLabel="Store setup"
+      resultTone="info"
+      title="Referral link readiness"
+    >
+      <div className="service-trace-summary">
+        <div>
+          <span>Audience</span>
+          <strong>{audienceLabel}</strong>
+          <small className="muted">
+            {audienceLabel} referral links route visitors to the correct store before attribution starts.
+          </small>
+        </div>
+        <div>
+          <span>Public route</span>
+          <strong>/r/{audience}/:code</strong>
+          <small className="muted">Android and iOS visitors must land on the matching app download page.</small>
+        </div>
+        <div>
+          <span>Setup status</span>
+          <ReferralStoreSetupStatus audience={audience} />
+        </div>
+      </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -785,6 +818,10 @@ export function filterReferralParentRows<T extends ReferralParentRow>(
 
 function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+}
+
+function referralAudienceLabel(audience: ReferralAudienceSlug) {
+  return audience === 'partner' ? 'Partner' : 'Customer';
 }
 
 function referralActiveFilterLabels(filters: ReferralDashboardFilters) {

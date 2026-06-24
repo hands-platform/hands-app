@@ -115,6 +115,8 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
+    expect(markup).toContain('Referral link readiness');
+    expect(markup).toContain('Customer referral links route visitors to the correct store before attribution starts.');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');
     expect(markup).toContain('Public link base missing');
