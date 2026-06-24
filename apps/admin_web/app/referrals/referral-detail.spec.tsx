@@ -179,6 +179,8 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
+    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
+    expect(markup).toContain('aria-label="Referral reward actions for reward-1"');
     expect(markup).toContain('Hold reward');
     expect(markup).toContain('Reverse reward');
     expect(markup).toContain('name="parentId" value="parent-customer"');
@@ -205,6 +207,7 @@ describe('Referral detail presentation', () => {
       ' ',
     );
 
+    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Credit reward');
     expect(markup).toContain('name="reason" value="Credited from referral detail review."');
   });

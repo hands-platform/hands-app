@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
@@ -266,52 +267,92 @@ function ReferralRewardActions({
     return <span className="muted">No action</span>;
   }
 
+  const actions = referralRewardActionItems({
+    audience,
+    canCredit,
+    canHold,
+    canReverse,
+    parentId,
+    rewardId: reward.id,
+  });
+
   return (
-    <div className="actions">
-      {canCredit ? (
-        <form action={creditReferralReward}>
-          <ReferralRewardActionFields
-            audience={audience}
-            parentId={parentId}
-            reason="Credited from referral detail review."
-            rewardId={reward.id}
-          />
-          <button className="button button-primary" type="submit">
-            Credit reward
-          </button>
-        </form>
-      ) : null}
-      {canHold ? (
-        <form action={holdReferralReward}>
-          <ReferralRewardActionFields
-            audience={audience}
-            parentId={parentId}
-            reason="Held from referral detail review."
-            rewardId={reward.id}
-          />
-          <button className="button button-secondary" type="submit">
-            Hold reward
-          </button>
-        </form>
-      ) : null}
-      {canReverse ? (
-        <form action={reverseReferralReward}>
-          <ReferralRewardActionFields
-            audience={audience}
-            parentId={parentId}
-            reason="Reversed from referral detail review."
-            rewardId={reward.id}
-          />
-          <button className="button button-secondary" type="submit">
-            Reverse reward
-          </button>
-        </form>
-      ) : null}
-    </div>
+    <ActionMenu
+      actions={actions}
+      className="referral-reward-action-dropdown"
+      label={`Referral reward actions for ${reward.id}`}
+      title="Reward actions"
+      variant="dropdown"
+    />
   );
 }
 
-function ReferralRewardActionFields({
+function referralRewardActionItems({
+  audience,
+  canCredit,
+  canHold,
+  canReverse,
+  parentId,
+  rewardId,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly canCredit: boolean;
+  readonly canHold: boolean;
+  readonly canReverse: boolean;
+  readonly parentId: string;
+  readonly rewardId: string;
+}): ActionMenuItem[] {
+  const actions: ActionMenuItem[] = [];
+
+  if (canCredit) {
+    actions.push({
+      action: creditReferralReward,
+      hiddenInputs: referralRewardHiddenInputs({
+        audience,
+        parentId,
+        reason: 'Credited from referral detail review.',
+        rewardId,
+      }),
+      kind: 'submit',
+      label: 'Credit reward',
+      tone: 'success',
+    });
+  }
+
+  if (canHold) {
+    actions.push({
+      action: holdReferralReward,
+      hiddenInputs: referralRewardHiddenInputs({
+        audience,
+        parentId,
+        reason: 'Held from referral detail review.',
+        rewardId,
+      }),
+      kind: 'submit',
+      label: 'Hold reward',
+      tone: 'warning',
+    });
+  }
+
+  if (canReverse) {
+    actions.push({
+      action: reverseReferralReward,
+      hiddenInputs: referralRewardHiddenInputs({
+        audience,
+        parentId,
+        reason: 'Reversed from referral detail review.',
+        rewardId,
+      }),
+      kind: 'submit',
+      label: 'Reverse reward',
+      tone: 'danger',
+    });
+  }
+
+  return actions;
+}
+
+function referralRewardHiddenInputs({
   audience,
   parentId,
   reason,
@@ -322,14 +363,12 @@ function ReferralRewardActionFields({
   readonly reason: string;
   readonly rewardId: string;
 }) {
-  return (
-    <>
-      <input name="rewardId" type="hidden" value={rewardId} />
-      <input name="audience" type="hidden" value={audience} />
-      <input name="parentId" type="hidden" value={parentId} />
-      <input name="reason" type="hidden" value={reason} />
-    </>
-  );
+  return [
+    { name: 'rewardId', value: rewardId },
+    { name: 'audience', value: audience },
+    { name: 'parentId', value: parentId },
+    { name: 'reason', value: reason },
+  ] as const;
 }
 
 function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralReward }) {
