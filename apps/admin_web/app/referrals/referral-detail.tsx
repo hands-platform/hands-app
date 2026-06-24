@@ -590,22 +590,45 @@ function referralRewardHiddenInputs({
 
 function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralReward }) {
   const creditState = referralRewardCreditState(reward);
+  const decisionSummary = referralRewardDecisionSummary(reward);
   const evidenceItems = referralRewardDecisionEvidence(reward);
 
   return (
     <div className="participant-list">
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
-      <div className="participant-list referral-reward-decision-evidence">
-        <span className="muted">Decision evidence</span>
-        {evidenceItems.map((item) => (
-          <span className="muted" key={item}>
-            {item}
-          </span>
-        ))}
-      </div>
+      {decisionSummary ? <p className="muted">{decisionSummary}</p> : null}
+      <details className="referral-reward-evidence-details">
+        <summary>Decision evidence</summary>
+        <div className="participant-list referral-reward-decision-evidence">
+          {evidenceItems.map((item) => (
+            <span className="muted" key={item}>
+              {item}
+            </span>
+          ))}
+        </div>
+      </details>
     </div>
   );
+}
+
+function referralRewardDecisionSummary(reward: AdminReferralReward) {
+  if (reward.latestDecision) {
+    const decisionLabel = referralRewardDecisionLabel(reward.latestDecision.action);
+    const actorLabel = userLabel(reward.latestDecision.actor, 'Unknown admin');
+
+    return `Latest decision ${decisionLabel} by ${actorLabel}`;
+  }
+
+  if (reward.walletLedgerReference) {
+    return `Ledger ${reward.walletLedgerReference}`;
+  }
+
+  if (reward.availableAt) {
+    return `Available ${formatDateTime(reward.availableAt)}`;
+  }
+
+  return null;
 }
 
 function referralRewardDecisionEvidence(reward: AdminReferralReward) {

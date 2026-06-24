@@ -134,6 +134,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Credited 1');
     expect(markup).toContain('1 reward(s) / 25.000 VND');
     expect(markup).toContain('wallet-ledger-1');
+    expect(markup).toContain('class="referral-reward-evidence-details"');
+    expect(markup).toContain('<summary>Decision evidence</summary>');
     expect(markup).toContain('Decision evidence');
     expect(markup).toContain('Ledger wallet-ledger-1');
     expect(markup).toContain('Booking booking-1');
