@@ -122,6 +122,9 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Credited 1');
     expect(markup).toContain('1 reward(s) / 25.000 VND');
     expect(markup).toContain('wallet-ledger-1');
+    expect(markup).toContain('Decision evidence');
+    expect(markup).toContain('Ledger wallet-ledger-1');
+    expect(markup).toContain('Booking booking-1');
     expect(markup).toContain('AVAILABLE');
     expect(markup).not.toContain('Hold reward');
     expect(markup).not.toContain('Reverse reward');
@@ -221,6 +224,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Credit to wallet');
     expect(markup).toContain('placeholder="Operator reason for wallet credit"');
+    expect(markup).toContain('No wallet ledger yet');
+    expect(markup).toContain('Operator reason required for next action');
     expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');
   });
 

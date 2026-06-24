@@ -590,13 +590,43 @@ function referralRewardHiddenInputs({
 
 function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralReward }) {
   const creditState = referralRewardCreditState(reward);
+  const evidenceItems = referralRewardDecisionEvidence(reward);
 
   return (
     <div className="participant-list">
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
+      <div className="participant-list referral-reward-decision-evidence">
+        <span className="muted">Decision evidence</span>
+        {evidenceItems.map((item) => (
+          <span className="muted" key={item}>
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
+}
+
+function referralRewardDecisionEvidence(reward: AdminReferralReward) {
+  const evidenceItems = [
+    reward.walletLedgerReference ? `Ledger ${reward.walletLedgerReference}` : 'No wallet ledger yet',
+    reward.qualifyingBookingId ? `Booking ${reward.qualifyingBookingId}` : 'No qualifying booking linked',
+  ];
+
+  if (reward.availableAt) {
+    evidenceItems.push(`Available ${formatDateTime(reward.availableAt)}`);
+  }
+
+  if (!reward.walletLedgerReference && referralRewardRequiresOperatorReason(reward)) {
+    evidenceItems.push('Operator reason required for next action');
+  }
+
+  return evidenceItems;
+}
+
+function referralRewardRequiresOperatorReason(reward: AdminReferralReward) {
+  return reward.status === 'AVAILABLE' || reward.status === 'HELD' || reward.status === 'PENDING';
 }
 
 function ReferralQualifyingBookingCell({ bookingId }: { readonly bookingId?: string | null }) {
