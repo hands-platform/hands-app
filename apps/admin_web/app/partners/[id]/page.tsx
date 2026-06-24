@@ -821,7 +821,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
 
       <PartnerDetailSectionGroup
-        description="Approval, hold, and staff follow-up come first. Secondary digest and index blocks stay available below as reference material."
+        description="Approval, hold, review records, and staff follow-up come first. Secondary digest and index blocks stay available below as reference material."
         eyebrow="Control"
         id="partner-control-section"
         status={`${partnerOperatorCommandQueue.commands.length} command(s)`}
@@ -833,6 +833,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           queue={partnerOperatorCommandQueue}
         />
         <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
+        <AdminReviewRecordsSection
+          basePath={`/partners/${id}`}
+          customerReviews={partnerReviewRecords.customerReviews}
+          description="Customer reviews about this Partner and Partner-written customer evaluations connected to this Partner."
+          id="partner-review-records"
+          partnerEvaluations={partnerReviewRecords.partnerEvaluations}
+          searchParams={detailSearchParams}
+          title="Partner review records"
+        />
         <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
         <PartnerDetailOperatorNotesSection
           notes={partnerOperatorNoteRows}
@@ -898,15 +907,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           id="partner-booking-journey"
           rows={partnerBookingJourneyRows}
           title="Partner booking journey"
-        />
-        <AdminReviewRecordsSection
-          basePath={`/partners/${id}`}
-          customerReviews={partnerReviewRecords.customerReviews}
-          description="Customer reviews about this Partner and Partner-written customer evaluations connected to this Partner."
-          id="partner-review-records"
-          partnerEvaluations={partnerReviewRecords.partnerEvaluations}
-          searchParams={detailSearchParams}
-          title="Partner review records"
         />
         <PartnerDetailBookingGateEvidenceSection
           filteredAttempts={filteredPartnerBookingGateAttempts}
