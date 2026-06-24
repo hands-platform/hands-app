@@ -54,6 +54,9 @@ describe('remaining API request DTO validation', () => {
     expect((bodyMetatype(MobileController.prototype, 'unregisterDevice', 1) as { name?: string })?.name).toBe(
       'UnregisterMobileDeviceDto',
     );
+    expect((bodyMetatype(MobileController.prototype, 'getAppVersion', 0) as { name?: string })?.name).toBe(
+      'GetMobileAppVersionDto',
+    );
     expect((bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as { name?: string })?.name).toBe(
       'RecordAppSessionDto',
     );
@@ -134,6 +137,19 @@ describe('remaining API request DTO validation', () => {
     expect(mobileDevice).toHaveProperty('appVersion', '1.2.3');
     expect(mobileDevice).toHaveProperty('osVersion', 'iOS 18');
     expect(mobileDevice).not.toHaveProperty('private');
+
+    const mobileVersionQuery = await pipe.transform(
+      { appType: ' partner ', platform: ' ios ', ignored: true },
+      {
+        type: 'query',
+        metatype: bodyMetatype(MobileController.prototype, 'getAppVersion', 0) as never,
+        data: '',
+      },
+    );
+
+    expect(mobileVersionQuery).toHaveProperty('appType', 'PARTNER');
+    expect(mobileVersionQuery).toHaveProperty('platform', 'IOS');
+    expect(mobileVersionQuery).not.toHaveProperty('ignored');
   });
 
   it('rejects invalid enums and required values before service logic runs', async () => {
@@ -174,6 +190,17 @@ describe('remaining API request DTO validation', () => {
         {
           type: 'body',
           metatype: bodyMetatype(MobileController.prototype, 'registerDevice', 1) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { appType: 'FRANCHISE', platform: 'IOS' },
+        {
+          type: 'query',
+          metatype: bodyMetatype(MobileController.prototype, 'getAppVersion', 0) as never,
           data: '',
         },
       ),
