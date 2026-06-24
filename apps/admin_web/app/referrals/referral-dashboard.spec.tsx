@@ -102,6 +102,8 @@ describe('ReferralDashboard', () => {
     expect(markup).not.toContain('Release ready rewards');
     expect(markup).not.toContain('Mark ready rewards available');
     expect(markup).toContain('Stage ready reward candidates');
+    expect(markup).toContain('aria-label="Referral policy actions"');
+    expect(markup).toContain('Policy actions');
     expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Credited rewards');
     expect(markup).toContain('15.000 VND');

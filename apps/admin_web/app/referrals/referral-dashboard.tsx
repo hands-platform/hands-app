@@ -155,16 +155,33 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
           <small className="muted">Manual policy limit for rewardable referred accounts.</small>
         </div>
       </div>
-      <form action={releaseAvailableReferralRewards} className="actions admin-mt-16">
-        <button className="button button-secondary" type="submit">
-          Stage ready reward candidates
-        </button>
-        <span className="muted">
-          Moves hold-window-cleared rewards to AVAILABLE. Wallet posting still happens from each reward detail action.
-        </span>
-      </form>
+      <ReferralPolicyActions />
       <ReferralPolicyForm label={label} policy={policy} />
     </AdminFilterPanel>
+  );
+}
+
+function ReferralPolicyActions() {
+  return (
+    <div className="admin-mt-16">
+      <ActionMenu
+        actions={[
+          {
+            action: releaseAvailableReferralRewards,
+            description:
+              'Moves hold-window-cleared rewards to AVAILABLE. Wallet posting still happens from each reward detail action.',
+            kind: 'submit',
+            label: 'Stage ready reward candidates',
+            tone: 'warning',
+          },
+        ]}
+        label="Referral policy actions"
+        title="Policy actions"
+      />
+      <p className="muted admin-mt-8">
+        Moves hold-window-cleared rewards to AVAILABLE. Wallet posting still happens from each reward detail action.
+      </p>
+    </div>
   );
 }
 
