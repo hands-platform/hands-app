@@ -30,7 +30,9 @@ type ReferralParentDetailPageProps =
 
 type ReferralRewardRow = {
   readonly attributionId: string;
+  readonly referredHref: string | null;
   readonly referredLabel: string;
+  readonly referredPhone?: string | null;
   readonly reward: AdminReferralReward;
 };
 
@@ -223,11 +225,19 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             headers={['Referred', 'Reward', 'Status', 'Booking', 'Credit State', 'Created', 'Actions']}
             rowCount={rewardRows.length}
           >
-            {rewardRows.map(({ attributionId, referredLabel, reward }) => (
+            {rewardRows.map(({ attributionId, referredHref, referredLabel, referredPhone, reward }) => (
               <tr key={`${attributionId}:${reward.id}`}>
                 <td>
-                  <strong>{referredLabel}</strong>
-                  <p className="muted">{attributionId}</p>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar"
+                    avatarStatus="offline"
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={referralRewardReferredHelper(referredPhone, attributionId)}
+                    href={referredHref}
+                    label={referredLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
                 </td>
                 <td>
                   <strong>{formatMoney(reward.amount, reward.currency, '0 VND')}</strong>
@@ -494,7 +504,9 @@ function referralRewardRows(props: ReferralParentDetailPageProps): ReferralRewar
 
       return referral.rewards.map((reward) => ({
         attributionId: referral.id,
+        referredHref: referral.referredCustomer ? `/customers/${referral.referredCustomer.id}` : null,
         referredLabel,
+        referredPhone: referral.referredCustomer?.user?.phone,
         reward,
       }));
     });
@@ -506,10 +518,16 @@ function referralRewardRows(props: ReferralParentDetailPageProps): ReferralRewar
 
     return referral.rewards.map((reward) => ({
       attributionId: referral.id,
+      referredHref: referral.referredPartner ? `/partners/${referral.referredPartner.id}` : null,
       referredLabel,
+      referredPhone: referral.referredPartner?.user?.phone,
       reward,
     }));
   });
+}
+
+function referralRewardReferredHelper(phone: string | null | undefined, attributionId: string) {
+  return [phone, `Attribution ${attributionId}`].filter(Boolean).join(' · ');
 }
 
 function referralRewardReviewSummary(rows: readonly ReferralRewardRow[]): ReferralRewardReviewSummary {

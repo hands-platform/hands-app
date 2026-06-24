@@ -117,6 +117,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('/customers/parent-customer');
     expect(markup).toContain('HANDSCUST');
     expect(markup).toContain('Referred Customer');
+    expect(markup.match(/href="\/customers\/referred-customer"/g)).toHaveLength(2);
+    expect(markup).toContain('Attribution attribution-1');
     expect(markup).toContain('Credited 1');
     expect(markup).toContain('1 reward(s) / 25.000 VND');
     expect(markup).toContain('wallet-ledger-1');
