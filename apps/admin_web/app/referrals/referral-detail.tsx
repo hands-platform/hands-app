@@ -50,6 +50,10 @@ type ReferralRewardReviewSummary = {
   readonly ready: ReferralRewardReviewBucket;
 };
 
+type ReferralAttribution =
+  | AdminCustomerReferralParent['referrals'][number]
+  | AdminPartnerReferralParent['referrals'][number];
+
 type ReferralRewardActionForm = {
   readonly action: (formData: FormData) => Promise<void> | void;
   readonly label: string;
@@ -174,6 +178,8 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         summary={reviewSummary}
       />
 
+      <ReferralRewardDecisionTimeline referrals={props.row.referrals} summary={reviewSummary} />
+
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         resultLabel={`${props.row.referrals.length} attribution(s)`}
@@ -275,6 +281,114 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReferralRewardDecisionTimeline({
+  referrals,
+  summary,
+}: {
+  readonly referrals: readonly ReferralAttribution[];
+  readonly summary: ReferralRewardReviewSummary;
+}) {
+  const qualifiedCount = referrals.filter((referral) => referralStatusBucket(referral.status) === 'qualified').length;
+  const reviewCount = referrals.filter((referral) => referral.fraudReviewStatus !== 'CLEAR').length;
+
+  return (
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16"
+      resultLabel={`${summary.ready.count + summary.held.count + summary.pending.count} open reward(s)`}
+      resultTone={summary.held.count > 0 || reviewCount > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info'}
+      title="Reward decision timeline"
+    >
+      <div className="vuexy-basic-timeline referral-reward-decision-timeline">
+        <ReferralRewardDecisionTimelineItem
+          dotTone="primary"
+          helper="Referral link attribution has been recorded for this parent account."
+          meta={[
+            { label: 'Attributions', value: `${referrals.length}` },
+            { label: 'Reward records', value: `${rewardTotalCount(summary)}` },
+          ]}
+          title="Attribution captured"
+          value={`${referrals.length} referred account(s)`}
+        />
+        <ReferralRewardDecisionTimelineItem
+          dotTone={reviewCount > 0 ? 'warning' : 'success'}
+          helper="Only qualified and clear attributions should move toward wallet credit."
+          meta={[
+            { label: 'Qualified', value: `${qualifiedCount}` },
+            { label: 'Needs review', value: `${reviewCount}` },
+          ]}
+          title="Qualification and fraud check"
+          value={`${qualifiedCount} qualified · ${reviewCount} review`}
+        />
+        <ReferralRewardDecisionTimelineItem
+          dotTone={summary.held.count > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info'}
+          helper={`${formatMoney(summary.ready.amount, 'VND', '0 VND')} ready · ${formatMoney(
+            summary.held.amount,
+            'VND',
+            '0 VND',
+          )} held · ${formatMoney(summary.pending.amount, 'VND', '0 VND')} pending`}
+          meta={[
+            { label: 'Ready', value: `${summary.ready.count}` },
+            { label: 'Held', value: `${summary.held.count}` },
+            { label: 'Pending', value: `${summary.pending.count}` },
+          ]}
+          title="Reward queue"
+          value={`${summary.ready.count} ready · ${summary.held.count} held · ${summary.pending.count} pending`}
+        />
+        <ReferralRewardDecisionTimelineItem
+          dotTone={summary.credited.count > 0 ? 'success' : summary.closed.count > 0 ? 'info' : 'primary'}
+          helper="Use row actions for wallet credit, hold, or reversal."
+          meta={[
+            { label: 'Ledger posted', value: `${summary.credited.count}` },
+            { label: 'Closed', value: `${summary.closed.count}` },
+          ]}
+          title="Wallet decision"
+          value={referralRewardNextOperatorAction(summary)}
+        />
+      </div>
+    </AdminFilterPanel>
+  );
+}
+
+function ReferralRewardDecisionTimelineItem({
+  dotTone,
+  helper,
+  meta,
+  title,
+  value,
+}: {
+  readonly dotTone: 'danger' | 'info' | 'primary' | 'success' | 'warning';
+  readonly helper: string;
+  readonly meta: readonly { readonly label: string; readonly value: string }[];
+  readonly title: string;
+  readonly value: string;
+}) {
+  return (
+    <div className="vuexy-basic-timeline-item">
+      <div className="vuexy-basic-timeline-separator">
+        <span className={`vuexy-basic-timeline-dot is-${dotTone}`} />
+        <span className="vuexy-basic-timeline-connector" />
+      </div>
+      <div className="vuexy-basic-timeline-content">
+        <div className="vuexy-basic-timeline-title-row">
+          <div>
+            <h3>{title}</h3>
+            <strong>{value}</strong>
+          </div>
+        </div>
+        <p className="muted">{helper}</p>
+        <div className="vuexy-basic-timeline-meta is-compact">
+          {meta.map((item) => (
+            <div className="vuexy-basic-timeline-meta-item" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -577,6 +691,10 @@ function referralRewardNextOperatorAction(summary: ReferralRewardReviewSummary) 
   return 'No referral reward action needed.';
 }
 
+function rewardTotalCount(summary: ReferralRewardReviewSummary) {
+  return summary.ready.count + summary.pending.count + summary.held.count + summary.credited.count + summary.closed.count;
+}
+
 function referredAccountCell(
   audience: ReferralAudienceSlug,
   referral:
@@ -619,6 +737,12 @@ function referralStatusTone(status: string): StatusBadgeTone {
   if (status === 'REWARDED' || status === 'QUALIFIED') return 'success';
   if (status === 'BLOCKED' || status === 'CANCELLED') return 'danger';
   return 'info';
+}
+
+function referralStatusBucket(status: string) {
+  if (status === 'QUALIFIED' || status === 'REWARDED') return 'qualified';
+  if (status === 'BLOCKED' || status === 'CANCELLED') return 'blocked';
+  return 'pending';
 }
 
 function rewardStatusTone(status: string): StatusBadgeTone {

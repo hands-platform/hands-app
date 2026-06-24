@@ -269,5 +269,12 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Ready 1');
     expect(markup).toContain('Held 1');
     expect(markup).toContain('2 reward(s) / 35.000 VND');
+    expect(markup).toContain('Reward decision timeline');
+    expect(markup).toContain('Attribution captured');
+    expect(markup).toContain('Qualification and fraud check');
+    expect(markup).toContain('Reward queue');
+    expect(markup).toContain('1 ready · 1 held · 0 pending');
+    expect(markup).toContain('Wallet decision');
+    expect(markup).toContain('Use row actions for wallet credit, hold, or reversal.');
   });
 });
