@@ -16,6 +16,19 @@ describe('notification DTOs', () => {
     });
   });
 
+  it('keeps the legacy notification device endpoint open to iOS FCM tokens', async () => {
+    const dto = plainToInstance(RegisterDeviceTokenDto, {
+      token: ' fcm-token-ios ',
+      platform: ' ios ',
+    });
+
+    await expect(validate(dto)).resolves.toHaveLength(0);
+    expect(dto).toMatchObject({
+      token: 'fcm-token-ios',
+      platform: 'ios',
+    });
+  });
+
   it('rejects unsupported push platforms before device registration', async () => {
     const dto = plainToInstance(RegisterDeviceTokenDto, {
       token: 'fcm-token-1',
