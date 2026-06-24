@@ -197,6 +197,22 @@ function ReferralListFilterPanel({
         ) : null
       }
     >
+      <div className="booking-date-filter-bar admin-mb-14" aria-label="Referral reward operation queue">
+        <div className="booking-date-filter-buttons referral-reward-filter-buttons" role="group" aria-label="Referral reward state">
+          {referralRewardQuickFilterOptions.map((option) => (
+            <a
+              key={option.reward}
+              aria-pressed={filters.reward === option.reward}
+              className={filters.reward === option.reward ? 'is-active' : undefined}
+              href={buildReferralListHref(audience, filters, { reward: option.reward })}
+              role="button"
+              title={option.description}
+            >
+              {option.label}
+            </a>
+          ))}
+        </div>
+      </div>
       <form action={referralListPath(audience)} className="vuexy-customer-form">
         <div className="vuexy-customer-filter-grid">
           <div className="vuexy-customer-filter-group is-primary" aria-label="Referral list filters">
@@ -764,6 +780,38 @@ const referralRewardFilterOptions = [
   { label: 'Pending rewards', value: 'pending' },
   { label: 'Held rewards', value: 'held' },
 ] as const;
+
+const referralRewardQuickFilterOptions: readonly {
+  readonly description: string;
+  readonly label: string;
+  readonly reward: ReferralDashboardRewardFilter;
+}[] = [
+  {
+    description: 'Show every referral parent with the current search and status filters.',
+    label: 'All reward queues',
+    reward: 'all',
+  },
+  {
+    description: 'Reward candidates ready for operator wallet credit or hold.',
+    label: 'Ready to credit',
+    reward: 'available',
+  },
+  {
+    description: 'Rewards still waiting for booking, hold-period, or policy checks.',
+    label: 'Pending checks',
+    reward: 'pending',
+  },
+  {
+    description: 'Rewards held for operator fraud, policy, or support review.',
+    label: 'Held review',
+    reward: 'held',
+  },
+  {
+    description: 'Rewards already posted to customer or Partner wallets.',
+    label: 'Credited',
+    reward: 'credited',
+  },
+];
 
 type ReferralParentRow = AdminCustomerReferralParent | AdminPartnerReferralParent;
 

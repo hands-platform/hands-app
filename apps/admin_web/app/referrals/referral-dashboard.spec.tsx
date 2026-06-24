@@ -170,6 +170,28 @@ describe('ReferralDashboard', () => {
     );
   });
 
+  it('renders reward operation quick filters without losing search or referral status', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        filters={{ q: 'smoke', reward: 'available', status: 'pending' }}
+        policy={policy}
+        rows={rows}
+        totalCount={5}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('aria-label="Referral reward operation queue"');
+    expect(markup).toContain('Ready to credit');
+    expect(markup).toContain('Pending checks');
+    expect(markup).toContain('Held review');
+    expect(markup).toContain('Credited');
+    expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending"');
+    expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=held"');
+    expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=credited"');
+    expect(markup).toContain('aria-pressed="true" class="is-active" href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=available"');
+  });
+
   it('filters referral parents by search, referral status, and reward state', () => {
     const qualifiedParent = referralParent({
       code: 'HANDSCUST',
