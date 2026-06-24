@@ -100,10 +100,13 @@ Device token registration accepts `platform: "android"` or `platform: "ios"` onl
 ## Mobile Foundation
 
 - `GET /mobile/app-version?appType=CUSTOMER&platform=ANDROID`
+- `GET /mobile/app-version?appType=PARTNER&platform=IOS`
 - `POST /mobile/devices/register`
 - `DELETE /mobile/devices`
 
 `POST /mobile/devices/register` is the platform-neutral device registration route for future customer and Partner mobile builds. It requires a customer or Partner JWT and accepts `platform: "ANDROID"`, `"IOS"`, or `"WEB"`, plus optional `appVersion`, `osVersion`, `deviceModel`, `locale`, and `timezone`. The API stores FCM as the push provider and still derives the owning user and actor role from the authenticated token, not from request body fields.
+
+`DELETE /mobile/devices` disables the authenticated user's matching token without deleting notification delivery history. Clients should call it on logout or when FCM reports token rotation.
 
 `GET /mobile/app-version` returns per-app/per-platform force-update policy. Missing inactive policy rows fall back to `forceUpdate: false`, so Android MVP builds are not blocked before operations configures rows.
 

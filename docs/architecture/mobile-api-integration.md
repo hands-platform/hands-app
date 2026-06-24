@@ -66,10 +66,11 @@ The current backend is prepared to accept future Android, iOS, and Web device re
 
 - `POST /api/mobile/devices/register` requires a customer or Partner JWT and accepts `ANDROID`, `IOS`, or `WEB`.
 - Device registration stores FCM as the push provider plus app/device metadata: app version, OS version, device model, locale, and timezone.
+- `DELETE /api/mobile/devices` disables the authenticated user's matching token on logout or token rotation while preserving delivery history.
 - Existing notification compatibility routes remain Android/iOS-only for older builds.
 - `GET /api/mobile/app-version?appType=CUSTOMER&platform=IOS` and the equivalent Partner/Android queries provide a per-platform force-update contract.
 - `npm.cmd run prisma:seed --workspace @massage-vn/api` creates inactive-blocking default CUSTOMER/PARTNER Android and iOS app-version rows with `forceUpdate=false`, so mobile builds receive a database-backed policy before operations customizes versions.
-- `npm.cmd run mobile:foundation-smoke` checks the database-backed app-version policies plus customer/Partner Android and iOS device registration, same-token upsert, and unregister behavior without printing raw FCM tokens.
+- `npm.cmd run mobile:foundation-smoke` checks the database-backed app-version policies plus customer/Partner Android, iOS, and Web device registration, same-token upsert, and unregister behavior without printing raw FCM tokens.
 
 ## Deferred Auth Identity Design
 
