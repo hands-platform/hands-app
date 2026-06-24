@@ -75,6 +75,7 @@ const checks = [
 const blockingChecks = checks.filter((check) => check.severity === 'blocker' && !check.ok);
 const readyForAutomaticWalletCredit = blockingChecks.length === 0;
 const decision = readyForAutomaticWalletCredit ? 'ready-for-api-wallet-credit-implementation' : readinessDecision();
+const nextSteps = readinessNextSteps();
 
 console.log(
   JSON.stringify(
@@ -84,17 +85,7 @@ console.log(
       readyForAutomaticWalletCredit,
       decision,
       checks,
-      nextSteps: readyForAutomaticWalletCredit
-        ? [
-            'Implement the audited NestJS admin credit endpoint with idempotent walletLedgerReference linking.',
-            'Add wallet credit and reversal smoke coverage before enabling payout.',
-          ]
-        : [
-            'Add an audited CustomerWalletLedger model before customer referral wallet credit.',
-            'Design Partner wallet credit and reversal source keys before Partner referral wallet credit.',
-            'Add a NestJS admin credit endpoint and smoke before enabling referral payout.',
-            'Keep release, hold, and reverse actions candidate-only until wallet ledger smoke passes.',
-          ],
+      nextSteps,
     },
     null,
     2,
@@ -112,6 +103,30 @@ function readinessDecision() {
     return 'blocked-by-missing-admin-credit-endpoint';
   }
   return 'blocked-by-wallet-credit-readiness-gap';
+}
+
+function readinessNextSteps() {
+  if (readyForAutomaticWalletCredit) {
+    return [
+      'Implement the audited NestJS admin credit endpoint with idempotent walletLedgerReference linking.',
+      'Add wallet credit and reversal smoke coverage before enabling payout.',
+    ];
+  }
+
+  const steps = [];
+
+  if (!hasCustomerWalletLedger(sourceText.schema)) {
+    steps.push('Add an audited CustomerWalletLedger model before customer referral wallet credit.');
+  }
+  if (blockingChecks.some((check) => check.id === 'automatic-release-writes-ledger')) {
+    steps.push('Keep release, hold, and reverse actions candidate-only until wallet ledger smoke passes.');
+  }
+  if (blockingChecks.some((check) => check.id === 'nest-admin-wallet-credit-endpoint')) {
+    steps.push('Add a NestJS admin credit endpoint and smoke before enabling referral payout.');
+  }
+  steps.push('Design Partner wallet credit and reversal source keys before Partner referral wallet credit.');
+
+  return steps;
 }
 
 function hasCustomerWalletLedger(schemaSource) {

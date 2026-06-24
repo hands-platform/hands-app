@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const root = resolve(__dirname, '..', '..', '..', '..');
 
@@ -25,5 +26,22 @@ describe('referral wallet credit readiness contract', () => {
     expect(scriptSource).toContain('nest-admin-wallet-credit-endpoint');
     expect(scriptSource).toContain('blocked-by-missing-admin-credit-endpoint');
     expect(scriptSource).toContain('NestJS admin credit endpoint');
+  });
+
+  it('does not keep resolved customer wallet ledger work in next steps', () => {
+    const output = execFileSync('node', ['infra/scripts/referral-wallet-credit-readiness.mjs'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    const readiness = JSON.parse(output);
+
+    expect(readiness.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'customer-wallet-ledger-model', ok: true }),
+      ]),
+    );
+    expect(readiness.nextSteps).not.toContain(
+      'Add an audited CustomerWalletLedger model before customer referral wallet credit.',
+    );
   });
 });
