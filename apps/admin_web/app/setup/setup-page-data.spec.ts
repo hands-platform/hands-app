@@ -49,6 +49,15 @@ describe('setup page data', () => {
         'Local MinIO upload/read smoke passes for private verification files and public partner media.',
       ]),
     );
+    const supabaseSetup = setupOrder.find((item) => item.id === 'supabase');
+    expect(supabaseSetup?.notes).toEqual(
+      expect.arrayContaining([
+        'Run local:status before relying on local smoke results; it reports API build freshness, live API health, and Admin reachability.',
+      ]),
+    );
+    expect(supabaseSetup?.commands).toEqual(
+      expect.arrayContaining(['npm.cmd run local:status']),
+    );
     const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([

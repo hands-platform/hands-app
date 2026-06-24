@@ -103,9 +103,11 @@ export const setupOrder = [
       'Copy the project URL and anon key from Supabase project settings.',
       'Set the JWT secret on the API so access tokens can be verified server-side.',
       'Keep the service role key server-side only; it is used by admin operations to sync approved partner roles.',
+      'Run local:status before relying on local smoke results; it reports API build freshness, live API health, and Admin reachability.',
       'Run the secret leak guard before every push after editing any local environment file.',
     ],
     commands: [
+      'npm.cmd run local:status',
       'npm.cmd run setup:doctor',
       'npm.cmd run security:secrets',
       'npm.cmd run external:pack',
