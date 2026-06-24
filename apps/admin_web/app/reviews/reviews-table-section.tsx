@@ -56,12 +56,36 @@ export type ReviewTableRow = {
   readonly statusLabel: string;
 };
 
+export type PartnerCustomerEvaluationTableRow = {
+  readonly bookingHref: string | null;
+  readonly bookingLabel: string;
+  readonly bookingRequestTimeLabel: string;
+  readonly commentLabel: string;
+  readonly createdAtLabel: string;
+  readonly customerAvatarStatus: AdminAvatarStatus;
+  readonly customerHref: string | null;
+  readonly customerInitials: string;
+  readonly customerLabel: string;
+  readonly customerPhone: string;
+  readonly id: string;
+  readonly partnerAvatarStatus: AdminAvatarStatus;
+  readonly partnerHref: string | null;
+  readonly partnerHint: string;
+  readonly partnerInitials: string;
+  readonly partnerLabel: string;
+  readonly serviceLabel: string;
+  readonly visibilityLabel: string;
+};
+
 type ReviewsTableSectionProps = {
   readonly csvHref: string;
   readonly emptyMessage: string;
   readonly filters: ReviewFilters;
+  readonly partnerEvaluationPagination: ReviewPagination<PartnerCustomerEvaluationTableRow>;
+  readonly partnerEvaluationRows: readonly PartnerCustomerEvaluationTableRow[];
   readonly pagination: ReviewPagination<ReviewTableRow>;
   readonly rows: readonly ReviewTableRow[];
+  readonly totalPartnerEvaluationCount: number;
   readonly totalReviewCount: number;
 };
 
@@ -69,8 +93,11 @@ export function ReviewsTableSection({
   csvHref,
   emptyMessage,
   filters,
+  partnerEvaluationPagination,
+  partnerEvaluationRows,
   pagination,
   rows,
+  totalPartnerEvaluationCount,
   totalReviewCount,
 }: ReviewsTableSectionProps) {
   const activeFilterLabels = reviewActiveFilterLabels(filters);
@@ -319,6 +346,95 @@ export function ReviewsTableSection({
             totalPages={pagination.totalPages}
           />
         </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
+        description="Text-only notes Partners write about customers after a booking. These are internal operations records, not customer-facing star ratings."
+        id="partner-customer-evaluation-table"
+        resultLabel={`${partnerEvaluationPagination.totalRows} evaluation(s)`}
+        resultTone={partnerEvaluationRows.length > 0 ? 'info' : 'neutral'}
+        title="Partner customer evaluations"
+      >
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table"
+            emptyMessage="No partner-written customer evaluations loaded."
+            headers={['Request Time', 'Partner', 'Customer', 'Customer evaluation', 'Visibility']}
+            rowCount={partnerEvaluationRows.length}
+          >
+            {partnerEvaluationRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <div className="vuexy-booking-id-line">
+                    {row.bookingHref ? (
+                      <Link className="text-link" href={row.bookingHref} title="Open booking detail">
+                        <Eye aria-hidden="true" size={14} />
+                        {row.bookingLabel}
+                      </Link>
+                    ) : (
+                      <span className="muted">{row.bookingLabel}</span>
+                    )}
+                  </div>
+                  <div className="muted">{row.bookingRequestTimeLabel}</div>
+                  <div className="muted vuexy-review-submitted-line">
+                    Evaluation submitted {row.createdAtLabel}
+                  </div>
+                </td>
+                <td>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar is-partner"
+                    avatarStatus={row.partnerAvatarStatus}
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={row.partnerHint}
+                    href={row.partnerHref}
+                    initials={row.partnerInitials}
+                    label={row.partnerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
+                </td>
+                <td>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar"
+                    avatarStatus={row.customerAvatarStatus}
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={row.customerPhone}
+                    href={row.customerHref}
+                    initials={row.customerInitials}
+                    label={row.customerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
+                </td>
+                <td className="vuexy-review-copy-cell">
+                  <p>{row.commentLabel}</p>
+                  <span>{row.serviceLabel}</span>
+                </td>
+                <td className="vuexy-review-visibility-cell">
+                  <span className="review-status-chip review-status-follow-up">Internal</span>
+                  <small>{row.visibilityLabel}</small>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+
+        <div className="vuexy-booking-table-footer vuexy-review-footer">
+          <span>
+            Showing {partnerEvaluationPagination.from} to {partnerEvaluationPagination.to} of{' '}
+            {partnerEvaluationPagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={partnerEvaluationPagination.page}
+            ariaLabel="Partner customer evaluation pages"
+            className="vuexy-review-pagination"
+            hrefForPage={(page) => buildReviewListHref(filters, { page })}
+            pageLinkClassName="vuexy-review-page-link"
+            totalPages={partnerEvaluationPagination.totalPages}
+          />
+        </div>
+        <p className="muted admin-mt-8">Loaded {totalPartnerEvaluationCount} partner evaluation record(s).</p>
       </AdminFilterPanel>
     </>
   );

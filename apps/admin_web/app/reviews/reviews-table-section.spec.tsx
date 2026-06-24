@@ -1,5 +1,9 @@
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
-import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
+import {
+  ReviewsTableSection,
+  type PartnerCustomerEvaluationTableRow,
+  type ReviewTableRow,
+} from './reviews-table-section';
 
 describe('ReviewsTableSection', () => {
   it('renders the Vuexy customer review board with controls, rating, status, and action links', () => {
@@ -7,8 +11,11 @@ describe('ReviewsTableSection', () => {
       csvHref: 'data:text/csv;charset=utf-8,Review',
       emptyMessage: 'No customer reviews loaded.',
       filters: filters(),
+      partnerEvaluationPagination: pagination([buildPartnerEvaluationRow()]),
+      partnerEvaluationRows: [buildPartnerEvaluationRow()],
       pagination: pagination([buildRow()]),
       rows: [buildRow()],
+      totalPartnerEvaluationCount: 1,
       totalReviewCount: 1,
     });
 
@@ -45,6 +52,11 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('App visible');
     expect(rendered).not.toContain('Visible in app');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
+    expect(rendered).toContain('Partner customer evaluations');
+    expect(rendered).toContain('Text-only notes Partners write about customers after a booking.');
+    expect(rendered).toContain('Customer evaluation');
+    expect(rendered).toContain('Customer arrived prepared and confirmed closeout in chat.');
+    expect(rendered).toContain('Internal operations only');
     expect(hrefsIn(section)).toContain('data:text/csv;charset=utf-8,Review');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
@@ -82,6 +94,7 @@ describe('ReviewsTableSection', () => {
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-avatar',
         'vuexy-review-visibility-cell',
+        'table vuexy-data-table vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table',
       ]),
     );
     expect(rowActionPropsIn(section)).toEqual([
@@ -124,8 +137,11 @@ describe('ReviewsTableSection', () => {
         q: 'mai',
         sort: 'rating-desc',
       }),
+      partnerEvaluationPagination: pagination([]),
+      partnerEvaluationRows: [],
       pagination: pagination([buildRow()]),
       rows: [buildRow()],
+      totalPartnerEvaluationCount: 0,
       totalReviewCount: 4,
     });
 
@@ -156,8 +172,11 @@ describe('ReviewsTableSection', () => {
       csvHref: 'data:text/csv;charset=utf-8,Review',
       emptyMessage: 'No customer reviews currently match this queue.',
       filters: filters({ review: 'held' }),
+      partnerEvaluationPagination: pagination([]),
+      partnerEvaluationRows: [],
       pagination: pagination([]),
       rows: [],
+      totalPartnerEvaluationCount: 0,
       totalReviewCount: 3,
     });
 
@@ -224,6 +243,29 @@ function buildRow(): ReviewTableRow {
   };
 }
 
+function buildPartnerEvaluationRow(): PartnerCustomerEvaluationTableRow {
+  return {
+    bookingHref: '/bookings/booking-1',
+    bookingLabel: 'booking',
+    bookingRequestTimeLabel: '19 Jun 2026, 14:40',
+    commentLabel: 'Customer arrived prepared and confirmed closeout in chat.',
+    createdAtLabel: '23 Feb 2026, 16:12',
+    customerAvatarStatus: 'offline',
+    customerHref: '/customers/customer-1',
+    customerInitials: 'CO',
+    customerLabel: 'Customer One',
+    customerPhone: '+84900000000',
+    id: 'partner-evaluation-1',
+    partnerAvatarStatus: 'offline',
+    partnerHref: '/partners/partner-1',
+    partnerHint: 'Text-only customer evaluation',
+    partnerInitials: 'MP',
+    partnerLabel: 'Massage Partner',
+    serviceLabel: 'Aromatherapy',
+    visibilityLabel: 'Internal operations only',
+  };
+}
+
 function filters(input: Partial<ReviewFilters> = {}): ReviewFilters {
   const base: ReviewFilters = {
     page: 1,
@@ -238,7 +280,7 @@ function filters(input: Partial<ReviewFilters> = {}): ReviewFilters {
   return { ...base, ...input };
 }
 
-function pagination(rows: ReviewTableRow[]): ReviewPagination<ReviewTableRow> {
+function pagination<T extends PartnerCustomerEvaluationTableRow | ReviewTableRow>(rows: T[]): ReviewPagination<T> {
   return {
     from: rows.length ? 1 : 0,
     page: 1,

@@ -1,4 +1,4 @@
-import type { AdminReview } from '../../lib/admin-api';
+import type { AdminPartnerCustomerReview, AdminReview } from '../../lib/admin-api';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -8,7 +8,7 @@ import {
 import { formatDateTime, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
-import type { ReviewTableRow } from './reviews-table-section';
+import type { PartnerCustomerEvaluationTableRow, ReviewTableRow } from './reviews-table-section';
 
 export const DEFAULT_REVIEW_PAGE_SIZE = 10;
 export const REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
@@ -127,12 +127,65 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
   }));
 }
 
+export function buildPartnerCustomerReviewTableRows(
+  reviews: readonly AdminPartnerCustomerReview[],
+): PartnerCustomerEvaluationTableRow[] {
+  return reviews.map((review) => ({
+    bookingHref: review.booking?.id ? `/bookings/${review.booking.id}` : null,
+    bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
+    bookingRequestTimeLabel: partnerCustomerReviewRequestTimeLabel(review),
+    commentLabel: review.comment?.trim() || 'No written evaluation',
+    createdAtLabel: formatReviewDate(review.createdAt),
+    customerAvatarStatus: partnerCustomerReviewCustomerAvatarStatus(review),
+    customerHref: review.customerProfile?.id
+      ? `/customers/${review.customerProfile.id}`
+      : review.customerProfileId
+        ? `/customers/${review.customerProfileId}`
+        : null,
+    customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
+    customerLabel:
+      review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
+    customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
+    id: review.id,
+    partnerAvatarStatus: partnerCustomerReviewPartnerAvatarStatus(review),
+    partnerHref: review.providerProfile?.id
+      ? `/partners/${review.providerProfile.id}`
+      : review.providerProfileId
+        ? `/partners/${review.providerProfileId}`
+        : null,
+    partnerHint: 'Text-only customer evaluation',
+    partnerInitials: initials(review.providerProfile?.displayName),
+    partnerLabel: review.providerProfile?.displayName ?? 'Unknown Partner',
+    serviceLabel: partnerCustomerReviewServiceLabel(review),
+    visibilityLabel: 'Internal operations only',
+  }));
+}
+
 function reviewCustomerAvatarStatus(review: AdminReview): AdminAvatarStatus {
   const user = review.customerProfile?.user as ReviewAvatarUserSignal | undefined;
 
   return adminAvatarStatusFromSignals({
     devices: user?.pushDevices,
     sessions: user?.appSessions,
+  });
+}
+
+function partnerCustomerReviewCustomerAvatarStatus(review: AdminPartnerCustomerReview): AdminAvatarStatus {
+  const user = review.customerProfile?.user as ReviewAvatarUserSignal | undefined;
+
+  return adminAvatarStatusFromSignals({
+    devices: user?.pushDevices,
+    sessions: user?.appSessions,
+  });
+}
+
+function partnerCustomerReviewPartnerAvatarStatus(review: AdminPartnerCustomerReview): AdminAvatarStatus {
+  const provider = review.providerProfile as ReviewAvatarProviderSignal | undefined;
+
+  return adminAvatarStatusFromSignals({
+    devices: provider?.devices ?? provider?.user?.pushDevices,
+    fallbackOnline: Boolean(provider?.status?.startsWith('ONLINE')),
+    sessions: provider?.sessions ?? provider?.user?.appSessions,
   });
 }
 
@@ -166,6 +219,18 @@ export function sortReviews(
   });
 }
 
+export function sortPartnerCustomerReviews(
+  reviews: readonly AdminPartnerCustomerReview[],
+  sort: ReviewSortFilter = 'newest',
+): AdminPartnerCustomerReview[] {
+  return [...reviews].sort((left, right) => {
+    if (sort === 'oldest') {
+      return partnerCustomerReviewRequestMs(left) - partnerCustomerReviewRequestMs(right);
+    }
+    return partnerCustomerReviewRequestMs(right) - partnerCustomerReviewRequestMs(left);
+  });
+}
+
 export function buildReviewFilters(params: Record<string, string | string[] | undefined>): ReviewFilters {
   return {
     dateFrom: normalizeDateParam(readParam(params.dateFrom)),
@@ -190,6 +255,23 @@ export function filterReviews(reviews: readonly AdminReview[], filters: ReviewFi
       return false;
     }
     if (query && !searchableReviewText(review).includes(query)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function filterPartnerCustomerReviews(
+  reviews: readonly AdminPartnerCustomerReview[],
+  filters: ReviewFilters,
+): AdminPartnerCustomerReview[] {
+  const query = filters.q.toLowerCase();
+
+  return reviews.filter((review) => {
+    if (!partnerCustomerReviewMatchesDateRange(review, filters)) {
+      return false;
+    }
+    if (query && !searchablePartnerCustomerReviewText(review).includes(query)) {
       return false;
     }
     return true;
@@ -431,7 +513,22 @@ function reviewServiceLabel(review: AdminReview) {
   return services?.length ? services.join(', ') : 'Service not attached';
 }
 
+function partnerCustomerReviewServiceLabel(review: AdminPartnerCustomerReview) {
+  const services = review.booking?.services
+    ?.map((item) => item.service?.name)
+    .filter((name): name is string => Boolean(name));
+
+  return services?.length ? services.join(', ') : 'Service not attached';
+}
+
 function reviewBookingRequestTimeLabel(review: AdminReview) {
+  return formatDateTime(
+    review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt,
+    'No request time',
+  );
+}
+
+function partnerCustomerReviewRequestTimeLabel(review: AdminPartnerCustomerReview) {
   return formatDateTime(
     review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt,
     'No request time',
@@ -444,6 +541,20 @@ function reviewMatchesDateRange(review: AdminReview, filters: ReviewFilters) {
   }
 
   const timestamp = reviewRequestTimestamp(review);
+  if (timestamp === null) {
+    return false;
+  }
+
+  const bounds = reviewDateRangeBounds(filters);
+  return timestamp >= bounds.startMs && timestamp <= bounds.endMs;
+}
+
+function partnerCustomerReviewMatchesDateRange(review: AdminPartnerCustomerReview, filters: ReviewFilters) {
+  if (filters.dateRange === 'all') {
+    return true;
+  }
+
+  const timestamp = partnerCustomerReviewRequestTimestamp(review);
   if (timestamp === null) {
     return false;
   }
@@ -501,6 +612,21 @@ function searchableReviewText(review: AdminReview) {
     reviewServiceLabel(review),
     review.booking?.id ?? '',
     String(review.rating),
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function searchablePartnerCustomerReviewText(review: AdminPartnerCustomerReview) {
+  return [
+    review.id,
+    review.providerProfile?.displayName ?? '',
+    review.customerProfile?.user?.fullName ?? '',
+    review.customerProfile?.user?.phone ?? '',
+    review.comment ?? '',
+    review.reportReason ?? '',
+    partnerCustomerReviewServiceLabel(review),
+    review.booking?.id ?? '',
   ]
     .join(' ')
     .toLowerCase();
@@ -566,7 +692,15 @@ function reviewRequestMs(review: AdminReview) {
   return reviewRequestTimestamp(review) ?? 0;
 }
 
+function partnerCustomerReviewRequestMs(review: AdminPartnerCustomerReview) {
+  return partnerCustomerReviewRequestTimestamp(review) ?? 0;
+}
+
 function reviewRequestTimestamp(review: AdminReview) {
+  return safeDateMs(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt);
+}
+
+function partnerCustomerReviewRequestTimestamp(review: AdminPartnerCustomerReview) {
   return safeDateMs(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt);
 }
 

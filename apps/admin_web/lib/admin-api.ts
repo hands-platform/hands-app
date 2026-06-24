@@ -1106,6 +1106,39 @@ export type AdminReview = {
   };
 };
 
+export type AdminPartnerCustomerReview = {
+  id: string;
+  comment?: string | null;
+  status?: string | null;
+  reportReason?: string | null;
+  createdAt?: string;
+  customerProfileId?: string;
+  providerProfileId?: string;
+  customerProfile?: {
+    id?: string;
+    user?: {
+      fullName?: string | null;
+      phone?: string;
+      appSessions?: AdminAppSession[];
+      pushDevices?: AdminUser['pushDevices'];
+    };
+  };
+  providerProfile?: {
+    id?: string;
+    displayName?: string | null;
+    status?: string | null;
+    user?: AdminProvider['user'];
+    sessions?: AdminProvider['sessions'];
+    devices?: AdminProvider['devices'];
+  };
+  booking?: {
+    id?: string;
+    openedAt?: string | null;
+    createdAt?: string;
+    services?: AdminBooking['services'];
+  };
+};
+
 export type AdminCoupon = {
   id: string;
   code: string;

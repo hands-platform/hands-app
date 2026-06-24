@@ -1,14 +1,17 @@
 import type { AdminReview } from '../../lib/admin-api';
 import {
+  buildPartnerCustomerReviewTableRows,
   buildReviewExportRows,
   buildReviewFilters,
   buildReviewListHref,
   buildReviewTableRows,
   buildSummary,
   emptyReviewMessage,
+  filterPartnerCustomerReviews,
   filterReviews,
   paginateReviewRows,
   reviewFilterDescription,
+  sortPartnerCustomerReviews,
   sortReviews,
 } from './review-page-model';
 
@@ -181,6 +184,74 @@ describe('review page model', () => {
     ]);
   });
 
+  it('builds text-only partner customer evaluation rows without rating actions', () => {
+    const rows = buildPartnerCustomerReviewTableRows([
+      partnerCustomerReview({
+        booking: {
+          id: 'booking-partner-eval-123456',
+          openedAt: '2026-06-19T07:40:00.000Z',
+          services: [{ service: { name: 'Deep Tissue' } }],
+        },
+        comment: 'Customer was ready at the service address and confirmed the finish time in chat.',
+        createdAt: '2026-06-19T09:10:00.000Z',
+        customerProfile: { id: 'customer-1', user: { fullName: 'Customer Hoa', phone: '+8492' } },
+        id: 'partner-eval-123456',
+        providerProfile: { id: 'partner-1', displayName: 'Partner Minh' },
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      bookingHref: '/bookings/booking-partner-eval-123456',
+      bookingLabel: 'booking-',
+      bookingRequestTimeLabel: expect.stringContaining('19 Jun 2026'),
+      commentLabel: 'Customer was ready at the service address and confirmed the finish time in chat.',
+      customerHref: '/customers/customer-1',
+      customerInitials: 'CH',
+      customerLabel: 'Customer Hoa',
+      customerPhone: '+8492',
+      id: 'partner-eval-123456',
+      partnerHref: '/partners/partner-1',
+      partnerInitials: 'PM',
+      partnerLabel: 'Partner Minh',
+      serviceLabel: 'Deep Tissue',
+      visibilityLabel: 'Internal operations only',
+    });
+    expect(rows[0]).not.toHaveProperty('rating');
+    expect(rows[0]).not.toHaveProperty('actions');
+  });
+
+  it('filters and sorts partner customer evaluations by request date and text search', () => {
+    const rows = [
+      partnerCustomerReview({
+        booking: { id: 'older-booking', openedAt: '2026-06-18T07:40:00.000Z' },
+        comment: 'Customer was ready at the lobby.',
+        id: 'older-evaluation',
+        providerProfile: { displayName: 'Partner Hoa' },
+      }),
+      partnerCustomerReview({
+        booking: { id: 'newer-booking', openedAt: '2026-06-19T07:40:00.000Z' },
+        comment: 'Customer changed room after arrival.',
+        customerProfile: { user: { fullName: 'Customer Linh' } },
+        id: 'newer-evaluation',
+      }),
+    ];
+
+    expect(sortPartnerCustomerReviews(rows).map((row) => row.id)).toEqual(['newer-evaluation', 'older-evaluation']);
+    expect(sortPartnerCustomerReviews(rows, 'oldest').map((row) => row.id)).toEqual([
+      'older-evaluation',
+      'newer-evaluation',
+    ]);
+    expect(filterPartnerCustomerReviews(rows, filters({ q: 'linh' })).map((row) => row.id)).toEqual([
+      'newer-evaluation',
+    ]);
+    expect(
+      filterPartnerCustomerReviews(
+        rows,
+        filters({ dateFrom: '2026-06-18', dateRange: 'custom', dateTo: '2026-06-18' }),
+      ).map((row) => row.id),
+    ).toEqual(['older-evaluation']);
+  });
+
   it('paginates rows and builds stable list hrefs', () => {
     const rows = ['a', 'b', 'c', 'd'];
     const pagination = paginateReviewRows(rows, filters({ page: 2, pageSize: 2, q: 'mai', review: 'held' }));
@@ -238,4 +309,12 @@ function review(input: Partial<AdminReview>): AdminReview {
     status: 'PUBLISHED',
     ...input,
   } as AdminReview;
+}
+
+function partnerCustomerReview(input: Record<string, unknown>) {
+  return {
+    id: 'partner-evaluation-1',
+    status: 'INTERNAL',
+    ...input,
+  };
 }
