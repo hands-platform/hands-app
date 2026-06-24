@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminCustomerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
-import { ReferralDashboard } from './referral-dashboard';
+import {
+  ReferralDashboard,
+  buildReferralDashboardFilters,
+  buildReferralListHref,
+  filterReferralParentRows,
+} from './referral-dashboard';
 
 const policy: AdminReferralPolicy = {
   audience: 'CUSTOMER',
@@ -146,4 +151,116 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Credited rewards');
     expect(markup).not.toContain('NaN VND');
   });
+
+  it('normalizes referral list filters and preserves them in list hrefs', () => {
+    const filters = buildReferralDashboardFilters({
+      q: ' Parent ',
+      reward: 'held',
+      status: 'blocked',
+    });
+
+    expect(filters).toEqual({ q: 'Parent', reward: 'held', status: 'blocked' });
+    expect(buildReferralListHref('customer', filters, { reward: 'available' })).toBe(
+      '/referrals/customers?q=Parent&status=blocked&reward=available',
+    );
+  });
+
+  it('filters referral parents by search, referral status, and reward state', () => {
+    const qualifiedParent = referralParent({
+      code: 'HANDSCUST',
+      id: 'parent-qualified',
+      name: 'Qualified Parent',
+      referralStatus: 'QUALIFIED',
+      rewardStatus: 'AVAILABLE',
+    });
+    const blockedParent = referralParent({
+      code: 'BLOCKEDREF',
+      id: 'parent-blocked',
+      name: 'Blocked Parent',
+      referralStatus: 'BLOCKED',
+      rewardStatus: 'HELD',
+    });
+
+    const filtered = filterReferralParentRows('customer', [qualifiedParent, blockedParent], {
+      q: 'blocked',
+      reward: 'held',
+      status: 'blocked',
+    });
+
+    expect(filtered.map((row) => row.referrer.id)).toEqual(['parent-blocked']);
+  });
 });
+
+function referralParent({
+  code,
+  id,
+  name,
+  referralStatus,
+  rewardStatus,
+}: {
+  readonly code: string;
+  readonly id: string;
+  readonly name: string;
+  readonly referralStatus: string;
+  readonly rewardStatus: 'AVAILABLE' | 'HELD';
+}): AdminCustomerReferralParent {
+  return {
+    referrer: {
+      id,
+      user: {
+        fullName: name,
+        id: `${id}-user`,
+        phone: '+84000000002',
+      },
+    },
+    referralCode: {
+      active: true,
+      code,
+      createdAt: '2026-06-24T10:00:00.000Z',
+      id: `${id}-code`,
+    },
+    referrals: [
+      {
+        createdAt: '2026-06-24T11:00:00.000Z',
+        fraudReviewStatus: referralStatus === 'BLOCKED' ? 'REVIEW' : 'CLEAR',
+        id: `${id}-attribution`,
+        platform: 'ANDROID',
+        referredCustomer: {
+          id: `${id}-referred`,
+          user: {
+            fullName: `${name} Friend`,
+            id: `${id}-referred-user`,
+            phone: '+84000000003',
+          },
+        },
+        rewards: [
+          {
+            amount: 10000,
+            createdAt: '2026-06-24T11:10:00.000Z',
+            currency: 'VND',
+            id: `${id}-reward`,
+            status: rewardStatus,
+          },
+        ],
+        status: referralStatus,
+      },
+    ],
+    totals: {
+      availableRewardAmount: rewardStatus === 'AVAILABLE' ? 10000 : 0,
+      availableRewardCount: rewardStatus === 'AVAILABLE' ? 1 : 0,
+      cancelledRewardAmount: 0,
+      cancelledRewardCount: 0,
+      heldRewardAmount: rewardStatus === 'HELD' ? 10000 : 0,
+      heldRewardCount: rewardStatus === 'HELD' ? 1 : 0,
+      pendingRewardAmount: 0,
+      pendingRewardCount: 0,
+      referralCount: 1,
+      rewardedRewardAmount: 0,
+      rewardedRewardCount: 0,
+      reversedRewardAmount: 0,
+      reversedRewardCount: 0,
+      rewardCount: 1,
+      totalRewardAmount: 10000,
+    },
+  };
+}

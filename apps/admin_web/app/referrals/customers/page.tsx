@@ -3,9 +3,21 @@ import type {
   AdminReferralPolicies,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { ReferralDashboard, referralPolicyFallback } from '../referral-dashboard';
+import {
+  ReferralDashboard,
+  buildReferralDashboardFilters,
+  filterReferralParentRows,
+  referralPolicyFallback,
+} from '../referral-dashboard';
 
-export default async function CustomerReferralsPage() {
+type CustomerReferralsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function CustomerReferralsPage({
+  searchParams,
+}: {
+  readonly searchParams?: CustomerReferralsPageSearchParams;
+}) {
+  const filters = buildReferralDashboardFilters(searchParams ? await searchParams : {});
   const [policies, rows] = await Promise.all([
     adminGet<AdminReferralPolicies>('/admin/referrals/policies', {
       customer: referralPolicyFallback('customer'),
@@ -13,6 +25,15 @@ export default async function CustomerReferralsPage() {
     }),
     adminGet<AdminCustomerReferralParent[]>('/admin/referrals/customers', []),
   ]);
+  const filteredRows = filterReferralParentRows('customer', rows, filters);
 
-  return <ReferralDashboard audience="customer" policy={policies.customer} rows={rows} />;
+  return (
+    <ReferralDashboard
+      audience="customer"
+      filters={filters}
+      policy={policies.customer}
+      rows={filteredRows}
+      totalCount={rows.length}
+    />
+  );
 }

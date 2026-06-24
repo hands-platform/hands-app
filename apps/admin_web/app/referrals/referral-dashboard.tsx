@@ -3,6 +3,12 @@ import Link from 'next/link';
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { StatusBadge } from '../../components/status-badge';
@@ -13,21 +19,35 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { readSearchParam } from '../../lib/date-range';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 
+export type ReferralDashboardStatusFilter = 'all' | 'qualified' | 'pending' | 'blocked';
+export type ReferralDashboardRewardFilter = 'all' | 'available' | 'credited' | 'pending' | 'held';
+
+export type ReferralDashboardFilters = {
+  readonly q: string;
+  readonly reward: ReferralDashboardRewardFilter;
+  readonly status: ReferralDashboardStatusFilter;
+};
+
 type ReferralDashboardProps =
   | {
       readonly audience: 'customer';
+      readonly filters?: ReferralDashboardFilters;
       readonly policy: AdminReferralPolicy;
       readonly rows: readonly AdminCustomerReferralParent[];
+      readonly totalCount?: number;
     }
   | {
       readonly audience: 'partner';
+      readonly filters?: ReferralDashboardFilters;
       readonly policy: AdminReferralPolicy;
       readonly rows: readonly AdminPartnerReferralParent[];
+      readonly totalCount?: number;
     };
 
 type ReferralPolicyPanelProps = {
@@ -37,6 +57,8 @@ type ReferralPolicyPanelProps = {
 
 export function ReferralDashboard(props: ReferralDashboardProps) {
   const title = props.audience === 'customer' ? 'Customer Referrals' : 'Partner Referrals';
+  const filters = props.filters ?? defaultReferralDashboardFilters;
+  const totalCount = props.totalCount ?? props.rows.length;
   const description =
     props.audience === 'customer'
       ? 'Parent customer accounts with at least one referred customer. Rewards remain controlled by admin policy.'
@@ -96,12 +118,90 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       }
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />
+      <ReferralListFilterPanel
+        audience={props.audience}
+        filteredCount={props.rows.length}
+        filters={filters}
+        totalCount={totalCount}
+      />
       {props.audience === 'customer' ? (
         <CustomerReferralParentTable rows={props.rows} />
       ) : (
         <PartnerReferralParentTable rows={props.rows} />
       )}
     </AdminPageTemplate>
+  );
+}
+
+function ReferralListFilterPanel({
+  audience,
+  filteredCount,
+  filters,
+  totalCount,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly filteredCount: number;
+  readonly filters: ReferralDashboardFilters;
+  readonly totalCount: number;
+}) {
+  const activeFilters = referralActiveFilterLabels(filters);
+
+  return (
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-customer-filter-card"
+      resultLabel={`${filteredCount} of ${totalCount}`}
+      resultTone={activeFilters.length > 0 ? 'warning' : 'info'}
+      title="Referral list filters"
+      footer={
+        <div className="vuexy-customer-filter-footer">
+          {activeFilters.length > 0 ? (
+            activeFilters.map((filter) => (
+              <span className="pill pill-warn" key={filter}>
+                {filter}
+              </span>
+            ))
+          ) : (
+            <AdminFormControlLink className="vuexy-customer-button is-ghost" href={buildReferralListHref(audience, filters)}>
+              Clear filters
+            </AdminFormControlLink>
+          )}
+        </div>
+      }
+    >
+      <form action={referralListPath(audience)} className="vuexy-customer-form">
+        <div className="vuexy-customer-filter-grid">
+          <div className="vuexy-customer-filter-group is-primary" aria-label="Referral list filters">
+            <AdminFormSearch
+              className="vuexy-customer-search"
+              defaultValue={filters.q}
+              label="Search referrals"
+              name="q"
+              placeholder="Search parent, code, referred account"
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.status}
+              label="Referral status"
+              name="status"
+              options={referralStatusFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.reward}
+              label="Reward state"
+              name="reward"
+              options={referralRewardFilterOptions}
+            />
+          </div>
+          <div className="vuexy-customer-filter-actions" aria-label="Referral filter actions">
+            <AdminFormControlLink className="vuexy-customer-button is-ghost" href={referralListPath(audience)}>
+              Clear
+            </AdminFormControlLink>
+            <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+          </div>
+        </div>
+      </form>
+    </AdminFilterPanel>
   );
 }
 
@@ -616,6 +716,187 @@ function userLabel(user: AdminReferralUserSummary | null | undefined, fallback: 
 
 function numberOrZero(value: number | null | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
+}
+
+const defaultReferralDashboardFilters: ReferralDashboardFilters = {
+  q: '',
+  reward: 'all',
+  status: 'all',
+};
+
+const referralStatusFilterOptions = [
+  { label: 'All statuses', value: 'all' },
+  { label: 'Qualified', value: 'qualified' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Blocked', value: 'blocked' },
+] as const;
+
+const referralRewardFilterOptions = [
+  { label: 'All rewards', value: 'all' },
+  { label: 'Ready rewards', value: 'available' },
+  { label: 'Credited rewards', value: 'credited' },
+  { label: 'Pending rewards', value: 'pending' },
+  { label: 'Held rewards', value: 'held' },
+] as const;
+
+type ReferralParentRow = AdminCustomerReferralParent | AdminPartnerReferralParent;
+
+export function buildReferralDashboardFilters(
+  params: Record<string, string | string[] | undefined>,
+): ReferralDashboardFilters {
+  return {
+    q: readSearchParam(params.q),
+    reward: normalizeReferralRewardFilter(readSearchParam(params.reward)),
+    status: normalizeReferralStatusFilter(readSearchParam(params.status)),
+  };
+}
+
+export function buildReferralListHref(
+  audience: ReferralAudienceSlug,
+  filters: ReferralDashboardFilters,
+  overrides: Partial<ReferralDashboardFilters> = {},
+) {
+  const next: ReferralDashboardFilters = {
+    ...filters,
+    ...overrides,
+  };
+  const params = new URLSearchParams();
+
+  if (next.q) params.set('q', next.q);
+  if (next.status !== 'all') params.set('status', next.status);
+  if (next.reward !== 'all') params.set('reward', next.reward);
+
+  const query = params.toString();
+  return query ? `${referralListPath(audience)}?${query}` : referralListPath(audience);
+}
+
+export function filterReferralParentRows<T extends ReferralParentRow>(
+  audience: ReferralAudienceSlug,
+  rows: readonly T[],
+  filters: ReferralDashboardFilters,
+): T[] {
+  return rows.filter(
+    (row) =>
+      referralParentMatchesSearch(audience, row, filters.q) &&
+      referralParentMatchesStatus(row, filters.status) &&
+      referralParentMatchesReward(row, filters.reward),
+  );
+}
+
+function referralListPath(audience: ReferralAudienceSlug) {
+  return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+}
+
+function referralActiveFilterLabels(filters: ReferralDashboardFilters) {
+  const labels: string[] = [];
+  if (filters.q) labels.push(`Search: ${filters.q}`);
+  if (filters.status !== 'all') labels.push(`Status: ${referralStatusFilterLabel(filters.status)}`);
+  if (filters.reward !== 'all') labels.push(`Reward: ${referralRewardFilterLabel(filters.reward)}`);
+  return labels;
+}
+
+function referralParentMatchesSearch(audience: ReferralAudienceSlug, row: ReferralParentRow, q: string) {
+  if (!q) return true;
+
+  const needle = q.toLowerCase();
+  return referralParentSearchText(audience, row).toLowerCase().includes(needle);
+}
+
+function referralParentSearchText(audience: ReferralAudienceSlug, row: ReferralParentRow) {
+  const referrerUser = row.referrer.user;
+  const chunks = [
+    row.referrer.id,
+    row.referralCode?.code,
+    referrerUser?.fullName,
+    referrerUser?.phone,
+    referrerUser?.email,
+  ];
+
+  if (audience === 'partner') {
+    const partnerRow = row as AdminPartnerReferralParent;
+    chunks.push(partnerRow.referrer.displayName);
+    for (const referral of partnerRow.referrals) {
+      chunks.push(
+        referral.id,
+        referral.status,
+        referral.fraudReviewStatus,
+        referral.installSource,
+        referral.platform,
+        referral.referredPartner?.displayName,
+        referral.referredPartner?.user?.fullName,
+        referral.referredPartner?.user?.phone,
+      );
+    }
+  } else {
+    const customerRow = row as AdminCustomerReferralParent;
+    for (const referral of customerRow.referrals) {
+      chunks.push(
+        referral.id,
+        referral.status,
+        referral.fraudReviewStatus,
+        referral.installSource,
+        referral.platform,
+        referral.referredCustomer?.user?.fullName,
+        referral.referredCustomer?.user?.phone,
+      );
+    }
+  }
+
+  return chunks.filter(Boolean).join(' ');
+}
+
+function referralParentMatchesStatus(row: ReferralParentRow, status: ReferralDashboardStatusFilter) {
+  if (status === 'all') return true;
+  return row.referrals.some((referral) => referralStatusBucket(referral.status) === status);
+}
+
+function referralParentMatchesReward(row: ReferralParentRow, reward: ReferralDashboardRewardFilter) {
+  if (reward === 'all') return true;
+  if (reward === 'available') {
+    return numberOrZero(row.totals.availableRewardCount) > 0 || referralHasRewardStatus(row, 'AVAILABLE');
+  }
+  if (reward === 'credited') {
+    return numberOrZero(row.totals.rewardedRewardCount) > 0 || referralHasRewardStatus(row, 'REWARDED');
+  }
+  if (reward === 'pending') {
+    return numberOrZero(row.totals.pendingRewardCount) > 0 || referralHasRewardStatus(row, 'PENDING');
+  }
+  return numberOrZero(row.totals.heldRewardCount) > 0 || referralHasRewardStatus(row, 'HELD');
+}
+
+function referralHasRewardStatus(row: ReferralParentRow, status: 'AVAILABLE' | 'HELD' | 'PENDING' | 'REWARDED') {
+  return row.referrals.some((referral) => referral.rewards.some((reward) => reward.status === status));
+}
+
+function referralStatusBucket(status: string): ReferralDashboardStatusFilter {
+  if (status === 'QUALIFIED' || status === 'REWARDED') return 'qualified';
+  if (status === 'BLOCKED' || status === 'CANCELLED') return 'blocked';
+  return 'pending';
+}
+
+function normalizeReferralStatusFilter(value: string): ReferralDashboardStatusFilter {
+  return value === 'qualified' || value === 'pending' || value === 'blocked' ? value : 'all';
+}
+
+function normalizeReferralRewardFilter(value: string): ReferralDashboardRewardFilter {
+  return value === 'available' || value === 'credited' || value === 'pending' || value === 'held'
+    ? value
+    : 'all';
+}
+
+function referralStatusFilterLabel(status: ReferralDashboardStatusFilter) {
+  if (status === 'qualified') return 'Qualified';
+  if (status === 'pending') return 'Pending';
+  if (status === 'blocked') return 'Blocked';
+  return 'All statuses';
+}
+
+function referralRewardFilterLabel(reward: ReferralDashboardRewardFilter) {
+  if (reward === 'available') return 'Ready rewards';
+  if (reward === 'credited') return 'Credited rewards';
+  if (reward === 'pending') return 'Pending rewards';
+  if (reward === 'held') return 'Held rewards';
+  return 'All rewards';
 }
 
 export function referralPolicyFallback(audience: 'customer' | 'partner'): AdminReferralPolicy {
