@@ -611,8 +611,11 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
 function referralRewardDecisionEvidence(reward: AdminReferralReward) {
   const evidenceItems = [
     reward.walletLedgerReference ? `Ledger ${reward.walletLedgerReference}` : 'No wallet ledger yet',
-    reward.qualifyingBookingId ? `Booking ${reward.qualifyingBookingId}` : 'No qualifying booking linked',
   ];
+
+  if (reward.qualifyingBookingId) {
+    evidenceItems.push(`Booking ${reward.qualifyingBookingId}`);
+  }
 
   if (reward.availableAt) {
     evidenceItems.push(`Available ${formatDateTime(reward.availableAt)}`);

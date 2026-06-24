@@ -207,6 +207,7 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Reverse reward');
     expect(markup).not.toContain('No booking');
     expect(markup).toContain('No qualifying booking linked');
+    expect(markup.match(/No qualifying booking linked/g)).toHaveLength(1);
     expect(markup).toContain('name="parentId" value="parent-customer"');
     expect(markup).toContain('placeholder="Operator reason for hold"');
     expect(markup).toContain('placeholder="Operator reason for reversal"');
