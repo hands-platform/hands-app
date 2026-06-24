@@ -186,19 +186,15 @@ function ReferralListFilterPanel({
       resultTone={activeFilters.length > 0 ? 'warning' : 'info'}
       title="Referral list filters"
       footer={
-        <div className="vuexy-customer-filter-footer">
-          {activeFilters.length > 0 ? (
-            activeFilters.map((filter) => (
+        activeFilters.length > 0 ? (
+          <div className="vuexy-customer-filter-footer">
+            {activeFilters.map((filter) => (
               <span className="pill pill-warn" key={filter}>
                 {filter}
               </span>
-            ))
-          ) : (
-            <AdminFormControlLink className="vuexy-customer-button is-ghost" href={buildReferralListHref(audience, filters)}>
-              Clear filters
-            </AdminFormControlLink>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : null
       }
     >
       <form action={referralListPath(audience)} className="vuexy-customer-form">
