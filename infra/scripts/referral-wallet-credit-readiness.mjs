@@ -119,12 +119,12 @@ function readinessNextSteps() {
     steps.push('Add an audited CustomerWalletLedger model before customer referral wallet credit.');
   }
   if (blockingChecks.some((check) => check.id === 'automatic-release-writes-ledger')) {
-    steps.push('Keep release, hold, and reverse actions candidate-only until wallet ledger smoke passes.');
+    steps.push('Keep releaseAvailableRewards candidate-only; use the audited admin credit action for wallet posting.');
   }
   if (blockingChecks.some((check) => check.id === 'nest-admin-wallet-credit-endpoint')) {
     steps.push('Add a NestJS admin credit endpoint and smoke before enabling referral payout.');
   }
-  steps.push('Design Partner wallet credit and reversal source keys before Partner referral wallet credit.');
+  steps.push('Keep referral reward wallet credit as an audited admin action until automatic payout is explicitly approved.');
 
   return steps;
 }

@@ -66,5 +66,11 @@ describe('referral wallet credit readiness contract', () => {
     expect(readiness.nextSteps).not.toContain(
       'Add a NestJS admin credit endpoint and smoke before enabling referral payout.',
     );
+    expect(readiness.nextSteps).not.toContain(
+      'Design Partner wallet credit and reversal source keys before Partner referral wallet credit.',
+    );
+    expect(readiness.nextSteps).toContain(
+      'Keep referral reward wallet credit as an audited admin action until automatic payout is explicitly approved.',
+    );
   });
 });
