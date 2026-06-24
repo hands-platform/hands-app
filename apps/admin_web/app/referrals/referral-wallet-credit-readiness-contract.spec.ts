@@ -22,6 +22,8 @@ describe('referral wallet credit readiness contract', () => {
     expect(scriptSource).toContain('without creating wallet ledger entries');
     expect(scriptSource).toContain('blocked-by-missing-customer-wallet-ledger');
     expect(scriptSource).toContain('blocked-by-candidate-only-release');
+    expect(scriptSource).toContain('nest-admin-wallet-credit-endpoint');
+    expect(scriptSource).toContain('blocked-by-missing-admin-credit-endpoint');
     expect(scriptSource).toContain('NestJS admin credit endpoint');
   });
 });

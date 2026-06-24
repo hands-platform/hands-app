@@ -6,7 +6,9 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..', '..');
 
 const sources = {
+  adminController: 'apps/api/src/admin/admin.controller.ts',
   adminRewardSpec: 'apps/api/src/admin/admin.service.spec.ts',
+  adminService: 'apps/api/src/admin/admin.service.ts',
   referralService: 'apps/api/src/referrals/referrals.service.ts',
   schema: 'apps/api/prisma/schema.prisma',
 };
@@ -15,6 +17,7 @@ const sourceText = Object.fromEntries(
   Object.entries(sources).map(([key, path]) => [key, readFileSync(resolve(repoRoot, path), 'utf8')]),
 );
 const automaticReleaseWritesLedger = detectsAutomaticWalletLedgerWrite(sourceText.referralService);
+const hasNestAdminWalletCreditEndpoint = detectsNestAdminWalletCreditEndpoint(sourceText);
 
 const checks = [
   {
@@ -59,11 +62,13 @@ const checks = [
     detail: 'Admin reward hold/reverse tests explicitly guard the current candidate-only behavior.',
   },
   {
-    id: 'nest-api-boundary-required',
-    ok: true,
+    id: 'nest-admin-wallet-credit-endpoint',
+    ok: hasNestAdminWalletCreditEndpoint,
     severity: 'blocker',
     detail:
-      'Future wallet credit must be implemented behind a NestJS admin credit endpoint, not from Admin Web or mobile clients.',
+      hasNestAdminWalletCreditEndpoint
+        ? 'NestJS admin credit endpoint exists for audited referral wallet credit.'
+        : 'Future wallet credit must be implemented behind a NestJS admin credit endpoint, not from Admin Web or mobile clients.',
   },
 ];
 
@@ -103,6 +108,9 @@ function readinessDecision() {
   if (blockingChecks.some((check) => check.id === 'automatic-release-writes-ledger')) {
     return 'blocked-by-candidate-only-release';
   }
+  if (blockingChecks.some((check) => check.id === 'nest-admin-wallet-credit-endpoint')) {
+    return 'blocked-by-missing-admin-credit-endpoint';
+  }
   return 'blocked-by-wallet-credit-readiness-gap';
 }
 
@@ -123,4 +131,15 @@ function detectsAutomaticWalletLedgerWrite(serviceSource) {
     serviceSource.includes('CustomerWalletLedger');
 
   return hasReleasePath && writesReferralLedgerReference && writesPartnerLedger && writesCustomerLedger;
+}
+
+function detectsNestAdminWalletCreditEndpoint(textBySource) {
+  const controllerHasCreditRoute =
+    textBySource.adminController.includes("referrals/rewards/:id/credit") &&
+    textBySource.adminController.includes('creditReferralReward');
+  const serviceHasCreditMethod =
+    textBySource.adminService.includes('creditReferralReward') &&
+    textBySource.adminService.includes('walletLedgerReference');
+
+  return controllerHasCreditRoute && serviceHasCreditMethod;
 }
