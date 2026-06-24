@@ -85,5 +85,33 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Referred Customer');
     expect(markup).toContain('wallet-ledger-1');
     expect(markup).toContain('AVAILABLE');
+    expect(markup).not.toContain('Hold reward');
+    expect(markup).not.toContain('Reverse reward');
+  });
+
+  it('renders hold and reverse actions for uncredited reward candidates', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'PENDING',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Hold reward');
+    expect(markup).toContain('Reverse reward');
+    expect(markup).toContain('name="parentId" value="parent-customer"');
   });
 });

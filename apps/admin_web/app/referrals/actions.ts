@@ -20,6 +20,24 @@ export async function releaseAvailableReferralRewards() {
   revalidatePath('/audit-log');
 }
 
+export async function holdReferralReward(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+
+  await adminPost(`/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/hold`, { reason: input.reason }, null);
+  revalidateReferralRewardDecisionPaths(input);
+}
+
+export async function reverseReferralReward(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+
+  await adminPost(
+    `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/reverse`,
+    { reason: input.reason },
+    null,
+  );
+  revalidateReferralRewardDecisionPaths(input);
+}
+
 export async function updateReferralPolicy(formData: FormData) {
   const audience = normalizeReferralAudience(String(formData.get('audience') || ''));
   const returnTo = audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
@@ -56,6 +74,29 @@ export async function updateReferralPolicy(formData: FormData) {
 
 function normalizeReferralAudience(value: string) {
   return value.trim().toLowerCase() === 'partner' ? 'partner' : 'customer';
+}
+
+function referralRewardDecisionInput(formData: FormData) {
+  const rewardId = String(formData.get('rewardId') || '').trim();
+  if (!rewardId) {
+    throw new Error('Referral reward id is required');
+  }
+
+  return {
+    audience: normalizeReferralAudience(String(formData.get('audience') || '')),
+    parentId: String(formData.get('parentId') || '').trim(),
+    reason: String(formData.get('reason') || '').trim() || 'Updated referral reward candidate from Admin Web.',
+    rewardId,
+  };
+}
+
+function revalidateReferralRewardDecisionPaths(input: ReturnType<typeof referralRewardDecisionInput>) {
+  const basePath = input.audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+  revalidatePath(basePath);
+  if (input.parentId) {
+    revalidatePath(`${basePath}/${encodeURIComponent(input.parentId)}`);
+  }
+  revalidatePath('/audit-log');
 }
 
 function parsePercentBps(value: FormDataEntryValue | null) {

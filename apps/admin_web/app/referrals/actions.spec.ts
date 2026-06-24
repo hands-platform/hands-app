@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { adminPost } from '../../lib/admin-api';
-import { releaseAvailableReferralRewards } from './actions';
+import { holdReferralReward, releaseAvailableReferralRewards, reverseReferralReward } from './actions';
 
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
@@ -32,6 +32,50 @@ describe('referral server actions', () => {
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
       '/referrals/partners',
+      '/audit-log',
+    ]);
+  });
+
+  it('holds a referral reward candidate and refreshes referral detail views', async () => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'HELD' });
+    const formData = new FormData();
+    formData.set('rewardId', 'reward-1');
+    formData.set('audience', 'customer');
+    formData.set('parentId', 'parent-customer');
+    formData.set('reason', ' suspicious signup pattern ');
+
+    await expect(holdReferralReward(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/referrals/rewards/reward-1/hold',
+      { reason: 'suspicious signup pattern' },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/customers',
+      '/referrals/customers/parent-customer',
+      '/audit-log',
+    ]);
+  });
+
+  it('reverses a referral reward candidate and refreshes referral detail views', async () => {
+    mockedAdminPost.mockResolvedValue({ id: 'reward-1', status: 'REVERSED' });
+    const formData = new FormData();
+    formData.set('rewardId', 'reward-1');
+    formData.set('audience', 'partner');
+    formData.set('parentId', 'parent-partner');
+    formData.set('reason', 'invalid attribution');
+
+    await expect(reverseReferralReward(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/referrals/rewards/reward-1/reverse',
+      { reason: 'invalid attribution' },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/partners',
+      '/referrals/partners/parent-partner',
       '/audit-log',
     ]);
   });

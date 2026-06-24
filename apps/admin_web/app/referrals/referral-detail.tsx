@@ -14,6 +14,7 @@ import {
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
+import { holdReferralReward, reverseReferralReward } from './actions';
 
 type ReferralParentDetailPageProps =
   | {
@@ -189,7 +190,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No referral reward records for this parent."
-            headers={['Referred', 'Reward', 'Status', 'Booking', 'Credit State', 'Created']}
+            headers={['Referred', 'Reward', 'Status', 'Booking', 'Credit State', 'Created', 'Actions']}
             rowCount={rewardRows.length}
           >
             {rewardRows.map(({ attributionId, referredLabel, reward }) => (
@@ -220,12 +221,91 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                 <td>
                   <span className="muted">{formatDateTime(reward.createdAt)}</span>
                 </td>
+                <td>
+                  <ReferralRewardActions
+                    audience={props.audience}
+                    parentId={props.row.referrer.id}
+                    reward={reward}
+                  />
+                </td>
               </tr>
             ))}
           </AdminDataTable>
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReferralRewardActions({
+  audience,
+  parentId,
+  reward,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly parentId: string;
+  readonly reward: AdminReferralReward;
+}) {
+  if (reward.walletLedgerReference) {
+    return <span className="muted">Ledger posted</span>;
+  }
+
+  const canHold = reward.status === 'PENDING' || reward.status === 'AVAILABLE';
+  const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
+  if (!canHold && !canReverse) {
+    return <span className="muted">No action</span>;
+  }
+
+  return (
+    <div className="actions">
+      {canHold ? (
+        <form action={holdReferralReward}>
+          <ReferralRewardActionFields
+            audience={audience}
+            parentId={parentId}
+            reason="Held from referral detail review."
+            rewardId={reward.id}
+          />
+          <button className="button button-secondary" type="submit">
+            Hold reward
+          </button>
+        </form>
+      ) : null}
+      {canReverse ? (
+        <form action={reverseReferralReward}>
+          <ReferralRewardActionFields
+            audience={audience}
+            parentId={parentId}
+            reason="Reversed from referral detail review."
+            rewardId={reward.id}
+          />
+          <button className="button button-secondary" type="submit">
+            Reverse reward
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function ReferralRewardActionFields({
+  audience,
+  parentId,
+  reason,
+  rewardId,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly parentId: string;
+  readonly reason: string;
+  readonly rewardId: string;
+}) {
+  return (
+    <>
+      <input name="rewardId" type="hidden" value={rewardId} />
+      <input name="audience" type="hidden" value={audience} />
+      <input name="parentId" type="hidden" value={parentId} />
+      <input name="reason" type="hidden" value={reason} />
+    </>
   );
 }
 
