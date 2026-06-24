@@ -4,9 +4,11 @@ import type { AdminCustomerReferralParent, AdminPartnerReferralParent, AdminRefe
 import {
   ReferralDashboard,
   buildReferralDashboardFilters,
+  buildReferralDashboardPage,
   buildReferralListHref,
   buildReferralRewardQueueSummaries,
   filterReferralParentRows,
+  paginateReferralRows,
 } from './referral-dashboard';
 
 const policy: AdminReferralPolicy = {
@@ -227,6 +229,37 @@ describe('ReferralDashboard', () => {
     expect(buildReferralListHref('customer', filters, { reward: 'available' })).toBe(
       '/referrals/customers?q=Parent&status=blocked&reward=available',
     );
+    expect(buildReferralDashboardPage({ page: '2' })).toBe(2);
+    expect(buildReferralDashboardPage({ page: 'not-a-page' })).toBe(1);
+    expect(buildReferralListHref('customer', filters, {}, 2)).toBe(
+      '/referrals/customers?q=Parent&status=blocked&reward=held&page=2',
+    );
+  });
+
+  it('renders rounded pagination for longer referral parent lists', () => {
+    const longRows = Array.from({ length: 12 }, (_, index) =>
+      referralParent({
+        code: `REF${index}`,
+        id: `parent-${index}`,
+        name: `Parent ${index}`,
+        referralStatus: 'QUALIFIED',
+        rewardStatus: 'AVAILABLE',
+      }),
+    );
+    const page = paginateReferralRows(longRows, 2, 10);
+
+    expect(page.rows.map((row) => row.referrer.id)).toEqual(['parent-10', 'parent-11']);
+    expect(page.currentPage).toBe(2);
+    expect(page.totalPages).toBe(2);
+
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard audience="customer" currentPage={2} policy={policy} rows={longRows} totalCount={12} />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('aria-label="Referral parent pagination"');
+    expect(markup).toContain('Page 2 of 2');
+    expect(markup).toContain('Showing 11-12 of 12');
+    expect(markup).toContain('href="/referrals/customers"');
   });
 
   it('renders reward operation quick filters without losing search or referral status', () => {

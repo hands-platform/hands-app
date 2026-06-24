@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import {
   ReferralDashboard,
   buildReferralDashboardFilters,
+  buildReferralDashboardPage,
   buildReferralRewardQueueSummaries,
   filterReferralParentRows,
   referralPolicyFallback,
@@ -18,7 +19,9 @@ export default async function PartnerReferralsPage({
 }: {
   readonly searchParams?: PartnerReferralsPageSearchParams;
 }) {
-  const filters = buildReferralDashboardFilters(searchParams ? await searchParams : {});
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const filters = buildReferralDashboardFilters(resolvedSearchParams);
+  const currentPage = buildReferralDashboardPage(resolvedSearchParams);
   const [policies, rows] = await Promise.all([
     adminGet<AdminReferralPolicies>('/admin/referrals/policies', {
       customer: referralPolicyFallback('customer'),
@@ -32,6 +35,7 @@ export default async function PartnerReferralsPage({
   return (
     <ReferralDashboard
       audience="partner"
+      currentPage={currentPage}
       filters={filters}
       policy={policies.partner}
       rewardQueueSummaries={buildReferralRewardQueueSummaries(rewardSummaryRows)}

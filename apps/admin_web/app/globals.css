@@ -9444,6 +9444,32 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.referral-pagination {
+  align-items: center;
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.referral-pagination-summary,
+.referral-pagination-page {
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.referral-pagination-buttons {
+  justify-content: flex-end;
+}
+
+.referral-pagination-buttons a.is-disabled {
+  opacity: 0.48;
+  pointer-events: none;
+}
+
 .vuexy-customer-date-filter-group {
   align-items: center;
   background: color-mix(in srgb, var(--admin-surface) 88%, transparent);

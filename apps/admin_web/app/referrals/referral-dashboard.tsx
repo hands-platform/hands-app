@@ -44,10 +44,23 @@ export type ReferralRewardQueueSummary = {
   readonly reward: ReferralDashboardRewardFilter;
 };
 
+const referralListPageSize = 10;
+
+type ReferralPaginationModel<T> = {
+  readonly currentPage: number;
+  readonly endItem: number;
+  readonly rows: readonly T[];
+  readonly startItem: number;
+  readonly totalCount: number;
+  readonly totalPages: number;
+};
+
 type ReferralDashboardProps =
   | {
       readonly audience: 'customer';
       readonly filters?: ReferralDashboardFilters;
+      readonly currentPage?: number;
+      readonly pageSize?: number;
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminCustomerReferralParent[];
@@ -56,6 +69,8 @@ type ReferralDashboardProps =
   | {
       readonly audience: 'partner';
       readonly filters?: ReferralDashboardFilters;
+      readonly currentPage?: number;
+      readonly pageSize?: number;
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminPartnerReferralParent[];
@@ -78,6 +93,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
   const title = props.audience === 'customer' ? 'Customer Referrals' : 'Partner Referrals';
   const filters = props.filters ?? defaultReferralDashboardFilters;
   const rewardQueueSummaries = props.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(props.rows);
+  const pagination = paginateReferralRows(props.rows, props.currentPage ?? 1, props.pageSize ?? referralListPageSize);
   const totalCount = props.totalCount ?? props.rows.length;
   const tableEmptyState: ReferralEmptyStateProps = {
     activeFilters: referralActiveFilterLabels(filters),
@@ -153,9 +169,23 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
         totalCount={totalCount}
       />
       {props.audience === 'customer' ? (
-        <CustomerReferralParentTable emptyState={tableEmptyState} rows={props.rows} />
+        <CustomerReferralParentTable
+          audience={props.audience}
+          emptyState={tableEmptyState}
+          filteredCount={props.rows.length}
+          filters={filters}
+          pagination={pagination}
+          rows={pagination.rows}
+        />
       ) : (
-        <PartnerReferralParentTable emptyState={tableEmptyState} rows={props.rows} />
+        <PartnerReferralParentTable
+          audience={props.audience}
+          emptyState={tableEmptyState}
+          filteredCount={props.rows.length}
+          filters={filters}
+          pagination={pagination}
+          rows={pagination.rows}
+        />
       )}
     </AdminPageTemplate>
   );
@@ -513,17 +543,25 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
 }
 
 function CustomerReferralParentTable({
+  audience,
   emptyState,
+  filteredCount,
+  filters,
+  pagination,
   rows,
 }: {
+  readonly audience: ReferralAudienceSlug;
   readonly emptyState: ReferralEmptyStateProps;
+  readonly filteredCount: number;
+  readonly filters: ReferralDashboardFilters;
+  readonly pagination: ReferralPaginationModel<AdminCustomerReferralParent>;
   readonly rows: readonly AdminCustomerReferralParent[];
 }) {
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
       description="Parent customer accounts only. The full customer directory stays in Customer Management."
-      resultLabel={`${rows.length} parent account(s)`}
+      resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"
       title="Customer referral parents"
     >
@@ -580,22 +618,31 @@ function CustomerReferralParentTable({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <ReferralParentPagination audience={audience} filters={filters} pagination={pagination} />
     </AdminFilterPanel>
   );
 }
 
 function PartnerReferralParentTable({
+  audience,
   emptyState,
+  filteredCount,
+  filters,
+  pagination,
   rows,
 }: {
+  readonly audience: ReferralAudienceSlug;
   readonly emptyState: ReferralEmptyStateProps;
+  readonly filteredCount: number;
+  readonly filters: ReferralDashboardFilters;
+  readonly pagination: ReferralPaginationModel<AdminPartnerReferralParent>;
   readonly rows: readonly AdminPartnerReferralParent[];
 }) {
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
       description="Parent Partner accounts only. The full Partner directory stays in Partners."
-      resultLabel={`${rows.length} parent account(s)`}
+      resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"
       title="Partner referral parents"
     >
@@ -652,7 +699,63 @@ function PartnerReferralParentTable({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <ReferralParentPagination audience={audience} filters={filters} pagination={pagination} />
     </AdminFilterPanel>
+  );
+}
+
+function ReferralParentPagination({
+  audience,
+  filters,
+  pagination,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly filters: ReferralDashboardFilters;
+  readonly pagination: ReferralPaginationModel<ReferralParentRow>;
+}) {
+  if (pagination.totalPages <= 1) {
+    return null;
+  }
+
+  const pageNumbers = buildReferralPaginationPages(pagination.currentPage, pagination.totalPages);
+  const previousPage = Math.max(1, pagination.currentPage - 1);
+  const nextPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
+
+  return (
+    <nav className="referral-pagination" aria-label="Referral parent pagination">
+      <span className="referral-pagination-summary">
+        Showing {pagination.startItem}-{pagination.endItem} of {pagination.totalCount}
+      </span>
+      <div className="booking-date-filter-buttons referral-pagination-buttons">
+        <Link
+          aria-disabled={pagination.currentPage === 1}
+          className={pagination.currentPage === 1 ? 'is-disabled' : undefined}
+          href={buildReferralListHref(audience, filters, {}, previousPage)}
+        >
+          Previous
+        </Link>
+        {pageNumbers.map((page) => (
+          <Link
+            key={page}
+            aria-current={page === pagination.currentPage ? 'page' : undefined}
+            className={page === pagination.currentPage ? 'is-active' : undefined}
+            href={buildReferralListHref(audience, filters, {}, page)}
+          >
+            {page}
+          </Link>
+        ))}
+        <Link
+          aria-disabled={pagination.currentPage === pagination.totalPages}
+          className={pagination.currentPage === pagination.totalPages ? 'is-disabled' : undefined}
+          href={buildReferralListHref(audience, filters, {}, nextPage)}
+        >
+          Next
+        </Link>
+      </div>
+      <span className="referral-pagination-page">
+        Page {pagination.currentPage} of {pagination.totalPages}
+      </span>
+    </nav>
   );
 }
 
@@ -972,10 +1075,16 @@ export function buildReferralDashboardFilters(
   };
 }
 
+export function buildReferralDashboardPage(params: Record<string, string | string[] | undefined>): number {
+  const page = Number.parseInt(readSearchParam(params.page), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
 export function buildReferralListHref(
   audience: ReferralAudienceSlug,
   filters: ReferralDashboardFilters,
   overrides: Partial<ReferralDashboardFilters> = {},
+  page = 1,
 ) {
   const next: ReferralDashboardFilters = {
     ...filters,
@@ -986,9 +1095,33 @@ export function buildReferralListHref(
   if (next.q) params.set('q', next.q);
   if (next.status !== 'all') params.set('status', next.status);
   if (next.reward !== 'all') params.set('reward', next.reward);
+  if (page > 1) params.set('page', String(page));
 
   const query = params.toString();
   return query ? `${referralListPath(audience)}?${query}` : referralListPath(audience);
+}
+
+export function paginateReferralRows<T>(
+  rows: readonly T[],
+  currentPage: number,
+  pageSize = referralListPageSize,
+): ReferralPaginationModel<T> {
+  const safePageSize = Math.max(1, Math.trunc(pageSize));
+  const totalPages = Math.max(1, Math.ceil(rows.length / safePageSize));
+  const page = Math.min(Math.max(1, Math.trunc(currentPage)), totalPages);
+  const startIndex = rows.length > 0 ? (page - 1) * safePageSize : 0;
+  const pageRows = rows.slice(startIndex, startIndex + safePageSize);
+  const startItem = rows.length > 0 ? startIndex + 1 : 0;
+  const endItem = rows.length > 0 ? startIndex + pageRows.length : 0;
+
+  return {
+    currentPage: page,
+    endItem,
+    rows: pageRows,
+    startItem,
+    totalCount: rows.length,
+    totalPages,
+  };
 }
 
 export function filterReferralParentRows<T extends ReferralParentRow>(
@@ -1046,6 +1179,12 @@ function referralListPath(audience: ReferralAudienceSlug) {
 function formatReferralRewardQueueSummary(summary: ReferralRewardQueueSummary | undefined) {
   if (!summary) return `0 · ${formatMoney(0, 'VND', '0 VND')}`;
   return `${summary.count} · ${formatMoney(summary.amount, 'VND', '0 VND')}`;
+}
+
+function buildReferralPaginationPages(currentPage: number, totalPages: number) {
+  const pageCount = Math.min(totalPages, 5);
+  const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - pageCount + 1));
+  return Array.from({ length: pageCount }, (_, index) => startPage + index);
 }
 
 function referralAudienceLabel(audience: ReferralAudienceSlug) {
