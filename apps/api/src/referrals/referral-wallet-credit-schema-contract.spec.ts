@@ -27,6 +27,7 @@ function expectField(block: string, name: string, type: string) {
 describe('referral wallet credit schema contract', () => {
   it('defines an audited Customer wallet ledger for referral reward credits', () => {
     const providerLedgerType = schemaBlock('enum', 'ProviderWalletLedgerType');
+    const rewardStatus = schemaBlock('enum', 'ReferralRewardStatus');
     const customerProfile = schemaBlock('model', 'CustomerProfile');
     const booking = schemaBlock('model', 'Booking');
     const referralReward = schemaBlock('model', 'ReferralReward');
@@ -34,6 +35,7 @@ describe('referral wallet credit schema contract', () => {
     const ledger = schemaBlock('model', 'CustomerWalletLedgerEntry');
 
     expect(providerLedgerType).toContain('REFERRAL_REWARD');
+    expect(rewardStatus).toContain('REWARDED');
     expect(ledgerType).toContain('REFERRAL_REWARD');
     expect(ledgerType).toContain('REFUND');
     expect(ledgerType).toContain('ADMIN_ADJUSTMENT');
@@ -62,8 +64,12 @@ describe('referral wallet credit schema contract', () => {
     const providerLedgerTypeMigration = migrationSqlContaining(
       'ALTER TYPE "ProviderWalletLedgerType" ADD VALUE',
     );
+    const rewardStatusMigration = migrationSqlContaining(
+      'ALTER TYPE "ReferralRewardStatus" ADD VALUE',
+    );
 
     expect(providerLedgerTypeMigration).toContain("'REFERRAL_REWARD'");
+    expect(rewardStatusMigration).toContain("'REWARDED'");
     expect(migration).toContain('CREATE TYPE "CustomerWalletLedgerType"');
     expect(migration).toContain('CREATE TABLE "CustomerWalletLedgerEntry"');
     expect(migration).toContain(

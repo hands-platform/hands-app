@@ -227,6 +227,7 @@ enum ReferralFraudReviewStatus {
 enum ReferralRewardStatus {
   PENDING
   AVAILABLE
+  REWARDED
   HELD
   REVERSED
   CANCELLED
