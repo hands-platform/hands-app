@@ -12,7 +12,7 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
-import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
+import { referralShareUrl, referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
 
@@ -398,6 +398,7 @@ function ReferralCodeCell({
   }
 
   const shareUrl = referralShareUrl(audience, code.code);
+  const storeSetup = referralStoreSetupState(audience);
 
   return (
     <div>
@@ -409,6 +410,14 @@ function ReferralCodeCell({
       <Link className="text-link admin-mt-8" href={shareUrl}>
         Referral link
       </Link>
+      <div className="participant-list admin-mt-8" aria-label="Referral store setup">
+        <StatusBadge tone={storeSetup.android ? 'success' : 'warning'}>
+          Android store {storeSetup.android ? 'ready' : 'missing'}
+        </StatusBadge>
+        <StatusBadge tone={storeSetup.ios ? 'success' : 'warning'}>
+          iOS store {storeSetup.ios ? 'ready' : 'missing'}
+        </StatusBadge>
+      </div>
     </div>
   );
 }

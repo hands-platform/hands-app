@@ -49,6 +49,13 @@ export function referralStoreUrl(
   return appendReferralParams(target, audience, code, platform);
 }
 
+export function referralStoreSetupState(audience: ReferralAudienceSlug, env: ReferralEnv = process.env) {
+  return {
+    android: Boolean(referralStoreBaseUrl(audience, 'android', env)),
+    ios: Boolean(referralStoreBaseUrl(audience, 'ios', env)),
+  };
+}
+
 function referralStoreBaseUrl(
   audience: ReferralAudienceSlug,
   platform: Exclude<ReferralPlatform, 'web'>,

@@ -57,7 +57,39 @@ const rows: AdminCustomerReferralParent[] = [
   },
 ];
 
+const referralStoreEnvKeys = [
+  'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+  'REFERRAL_CUSTOMER_IOS_STORE_URL',
+  'CUSTOMER_ANDROID_STORE_URL',
+  'CUSTOMER_IOS_STORE_URL',
+  'CUSTOMER_ANDROID_APP_URL',
+  'CUSTOMER_IOS_APP_URL',
+] as const;
+
 describe('ReferralDashboard', () => {
+  const originalReferralStoreEnv = new Map<string, string | undefined>();
+
+  beforeEach(() => {
+    for (const key of referralStoreEnvKeys) {
+      originalReferralStoreEnv.set(key, process.env[key]);
+      delete process.env[key];
+    }
+    process.env.REFERRAL_CUSTOMER_ANDROID_STORE_URL =
+      'https://play.google.com/store/apps/details?id=com.massagevn.customer';
+  });
+
+  afterEach(() => {
+    for (const key of referralStoreEnvKeys) {
+      const originalValue = originalReferralStoreEnv.get(key);
+      if (originalValue === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = originalValue;
+      }
+    }
+    originalReferralStoreEnv.clear();
+  });
+
   it('renders policy controls and the hold-window release action', () => {
     const markup = renderToStaticMarkup(
       <ReferralDashboard audience="customer" policy={policy} rows={rows} />,
@@ -75,6 +107,8 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
+    expect(markup).toContain('Android store ready');
+    expect(markup).toContain('iOS store missing');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
   });
