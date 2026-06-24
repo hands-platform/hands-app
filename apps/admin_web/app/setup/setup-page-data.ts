@@ -288,6 +288,7 @@ export const setupOrder = [
       'Android Play Store links carry referral metadata through the referrer parameter.',
       'iOS App Store links need the configured store or deep-link URL and a later app/API attribution handshake.',
       'Run referral claim API smoke after the local API and database are available; it verifies customer and Partner referral attribution through NestJS.',
+      'Run referral reward action smoke before enabling reward payout; it verifies admin hold/reverse decisions and audit evidence without creating wallet credit.',
       'Keep referral rewards disabled until attribution and wallet-credit smoke checks pass.',
     ],
     commands: [
@@ -296,6 +297,8 @@ export const setupOrder = [
       'npm.cmd run referrals:public-link-smoke',
       'npm.cmd run referrals:claim-api-smoke -- --dry-run',
       'npm.cmd run referrals:claim-api-smoke',
+      'npm.cmd run referrals:reward-action-smoke -- --dry-run',
+      'npm.cmd run referrals:reward-action-smoke',
       'Open http://localhost:3101/r/customer/<referral-code>',
       'Open http://localhost:3101/r/partner/<referral-code>',
     ],

@@ -20,5 +20,6 @@ describe('referral smoke seed contract', () => {
     expect(scriptSource).toContain('ReferralRewardStatus.AVAILABLE');
     expect(scriptSource).toContain('walletLedgerReference: null');
     expect(scriptSource).toContain('sourceKey');
+    expect(scriptSource).toContain('referralCodeId: { in: [ids.customerCode, ids.partnerCode] }');
   });
 });

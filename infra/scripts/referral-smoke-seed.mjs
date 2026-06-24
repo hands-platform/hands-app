@@ -548,7 +548,12 @@ async function cleanupSmokeData() {
     where: { OR: [{ id: { in: rewardIds } }, { sourceKey: { in: Object.values(sourceKeys) } }] },
   });
   await prisma.referralAttribution.deleteMany({
-    where: { id: { in: [ids.customerAttribution, ids.partnerAttribution] } },
+    where: {
+      OR: [
+        { id: { in: [ids.customerAttribution, ids.partnerAttribution] } },
+        { referralCodeId: { in: [ids.customerCode, ids.partnerCode] } },
+      ],
+    },
   });
   await prisma.referralCode.deleteMany({
     where: { id: { in: [ids.customerCode, ids.partnerCode] } },
