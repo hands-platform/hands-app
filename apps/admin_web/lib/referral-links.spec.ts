@@ -50,14 +50,15 @@ describe('referral link helpers', () => {
   it('reports per-platform store URL readiness for referral operators', () => {
     expect(
       referralStoreSetupState('customer', {
+        REFERRAL_PUBLIC_BASE_URL: 'https://hands.vn',
         REFERRAL_CUSTOMER_ANDROID_STORE_URL: 'https://play.google.com/store/apps/details?id=com.massagevn.customer',
       }),
-    ).toEqual({ android: true, ios: false });
+    ).toEqual({ android: true, ios: false, publicBase: true });
 
     expect(
       referralStoreSetupState('partner', {
         PARTNER_IOS_APP_URL: 'https://apps.apple.com/app/hands-partner/id123',
       }),
-    ).toEqual({ android: false, ios: true });
+    ).toEqual({ android: false, ios: true, publicBase: false });
   });
 });

@@ -58,6 +58,7 @@ const rows: AdminCustomerReferralParent[] = [
 ];
 
 const referralStoreEnvKeys = [
+  'REFERRAL_PUBLIC_BASE_URL',
   'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
   'REFERRAL_CUSTOMER_IOS_STORE_URL',
   'CUSTOMER_ANDROID_STORE_URL',
@@ -109,6 +110,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');
+    expect(markup).toContain('Public link base missing');
     expect(markup).toContain('Configure store URLs');
     expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
