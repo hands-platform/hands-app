@@ -479,6 +479,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                 <ReferralRewardCell
                   availableAmount={numberOrZero(row.totals.availableRewardAmount)}
                   creditedAmount={numberOrZero(row.totals.rewardedRewardAmount)}
+                  heldAmount={numberOrZero(row.totals.heldRewardAmount)}
                   pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
@@ -543,6 +544,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                 <ReferralRewardCell
                   availableAmount={numberOrZero(row.totals.availableRewardAmount)}
                   creditedAmount={numberOrZero(row.totals.rewardedRewardAmount)}
+                  heldAmount={numberOrZero(row.totals.heldRewardAmount)}
                   pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
@@ -647,10 +649,12 @@ function ReferralTotalsCell({
 function ReferralRewardCell({
   availableAmount,
   creditedAmount,
+  heldAmount,
   pendingAmount,
 }: {
   readonly availableAmount: number;
   readonly creditedAmount: number;
+  readonly heldAmount: number;
   readonly pendingAmount: number;
 }) {
   return (
@@ -658,6 +662,7 @@ function ReferralRewardCell({
       <strong>{formatMoney(availableAmount, 'VND', '0 VND')}</strong>
       <p className="muted">Credited {formatMoney(creditedAmount, 'VND', '0 VND')}</p>
       <p className="muted">Pending {formatMoney(pendingAmount, 'VND', '0 VND')}</p>
+      <p className="muted">Held {formatMoney(heldAmount, 'VND', '0 VND')}</p>
     </div>
   );
 }

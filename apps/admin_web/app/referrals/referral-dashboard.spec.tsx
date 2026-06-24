@@ -192,6 +192,22 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('aria-pressed="true" class="is-active" href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=available"');
   });
 
+  it('renders held reward totals in referral parent rows', () => {
+    const heldParent = referralParent({
+      code: 'HELDREF',
+      id: 'parent-held',
+      name: 'Held Parent',
+      referralStatus: 'BLOCKED',
+      rewardStatus: 'HELD',
+    });
+
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard audience="customer" policy={policy} rows={[heldParent]} />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Held 10.000 VND');
+  });
+
   it('filters referral parents by search, referral status, and reward state', () => {
     const qualifiedParent = referralParent({
       code: 'HANDSCUST',
