@@ -76,4 +76,26 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
   });
+
+  it('does not render NaN when referral totals come from an older API shape', () => {
+    const [legacyRow] = rows.map((row) => ({
+      ...row,
+      totals: {
+        ...row.totals,
+        rewardedRewardAmount: undefined,
+        rewardedRewardCount: undefined,
+      },
+    }));
+
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        policy={policy}
+        rows={[legacyRow as unknown as AdminCustomerReferralParent]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Credited rewards');
+    expect(markup).not.toContain('NaN VND');
+  });
 });

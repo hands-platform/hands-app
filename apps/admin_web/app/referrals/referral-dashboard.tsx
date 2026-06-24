@@ -39,11 +39,17 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
     props.audience === 'customer'
       ? 'Parent customer accounts with at least one referred customer. Rewards remain controlled by admin policy.'
       : 'Parent Partner accounts with at least one referred Partner. Rewards are fixed-amount Partner wallet incentives.';
-  const totalReferrals = props.rows.reduce((total, row) => total + row.totals.referralCount, 0);
-  const availableRewards = props.rows.reduce((total, row) => total + row.totals.availableRewardAmount, 0);
-  const creditedRewards = props.rows.reduce((total, row) => total + row.totals.rewardedRewardAmount, 0);
-  const pendingRewards = props.rows.reduce((total, row) => total + row.totals.pendingRewardAmount, 0);
-  const heldRewards = props.rows.reduce((total, row) => total + row.totals.heldRewardAmount, 0);
+  const totalReferrals = props.rows.reduce((total, row) => total + numberOrZero(row.totals.referralCount), 0);
+  const availableRewards = props.rows.reduce(
+    (total, row) => total + numberOrZero(row.totals.availableRewardAmount),
+    0,
+  );
+  const creditedRewards = props.rows.reduce(
+    (total, row) => total + numberOrZero(row.totals.rewardedRewardAmount),
+    0,
+  );
+  const pendingRewards = props.rows.reduce((total, row) => total + numberOrZero(row.totals.pendingRewardAmount), 0);
+  const heldRewards = props.rows.reduce((total, row) => total + numberOrZero(row.totals.heldRewardAmount), 0);
   const metrics: AdminPageMetric[] = [
     {
       label: 'Parent accounts',
@@ -300,12 +306,15 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                 <ReferralCodeCell audience="customer" code={row.referralCode} />
               </td>
               <td>
-                <ReferralTotalsCell referralCount={row.totals.referralCount} rewardCount={row.totals.rewardCount} />
+                <ReferralTotalsCell
+                  referralCount={numberOrZero(row.totals.referralCount)}
+                  rewardCount={numberOrZero(row.totals.rewardCount)}
+                />
               </td>
               <td>
                 <ReferralRewardCell
-                  availableAmount={row.totals.availableRewardAmount}
-                  pendingAmount={row.totals.pendingRewardAmount}
+                  availableAmount={numberOrZero(row.totals.availableRewardAmount)}
+                  pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
               <td>
@@ -353,12 +362,15 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                 <ReferralCodeCell audience="partner" code={row.referralCode} />
               </td>
               <td>
-                <ReferralTotalsCell referralCount={row.totals.referralCount} rewardCount={row.totals.rewardCount} />
+                <ReferralTotalsCell
+                  referralCount={numberOrZero(row.totals.referralCount)}
+                  rewardCount={numberOrZero(row.totals.rewardCount)}
+                />
               </td>
               <td>
                 <ReferralRewardCell
-                  availableAmount={row.totals.availableRewardAmount}
-                  pendingAmount={row.totals.pendingRewardAmount}
+                  availableAmount={numberOrZero(row.totals.availableRewardAmount)}
+                  pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
               <td>
@@ -521,6 +533,10 @@ function referralStatusTone(status: string) {
 
 function userLabel(user: AdminReferralUserSummary | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? user?.email ?? fallback;
+}
+
+function numberOrZero(value: number | null | undefined) {
+  return Number.isFinite(value) ? Number(value) : 0;
 }
 
 export function referralPolicyFallback(audience: 'customer' | 'partner'): AdminReferralPolicy {
