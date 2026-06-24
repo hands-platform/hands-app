@@ -211,4 +211,48 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Credit reward');
     expect(markup).toContain('name="reason" value="Credited from referral detail review."');
   });
+
+  it('summarizes reward rows into an operator review board', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              id: 'reward-ready',
+              status: 'AVAILABLE',
+              walletLedgerReference: null,
+            },
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              id: 'reward-held',
+              amount: 10000,
+              status: 'HELD',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+      totals: {
+        ...customerReferralParent.totals,
+        heldRewardAmount: 10000,
+        heldRewardCount: 1,
+        rewardCount: 2,
+        totalRewardAmount: 35000,
+      },
+    };
+
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Referral operations board');
+    expect(markup).toContain('Ready to credit');
+    expect(markup).toContain('Held for review');
+    expect(markup).toContain('1 ready / 1 held');
+    expect(markup).toContain('Credit ready rewards or hold suspicious rows.');
+  });
 });

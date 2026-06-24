@@ -34,6 +34,19 @@ type ReferralRewardRow = {
   readonly reward: AdminReferralReward;
 };
 
+type ReferralRewardReviewBucket = {
+  readonly amount: number;
+  readonly count: number;
+};
+
+type ReferralRewardReviewSummary = {
+  readonly closed: ReferralRewardReviewBucket;
+  readonly credited: ReferralRewardReviewBucket;
+  readonly held: ReferralRewardReviewBucket;
+  readonly pending: ReferralRewardReviewBucket;
+  readonly ready: ReferralRewardReviewBucket;
+};
+
 export function referralParentDetailHref(audience: ReferralAudienceSlug, id: string) {
   return `/referrals/${audience === 'partner' ? 'partners' : 'customers'}/${encodeURIComponent(id)}`;
 }
@@ -46,6 +59,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     : userLabel(props.row.referrer.user, 'Unknown customer');
   const profileHref = isPartner ? `/partners/${props.row.referrer.id}` : `/customers/${props.row.referrer.id}`;
   const rewardRows = referralRewardRows(props);
+  const reviewSummary = referralRewardReviewSummary(rewardRows);
   const metrics: AdminPageMetric[] = [
     {
       label: 'Referral sign-ups',
@@ -144,6 +158,12 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           </div>
         </div>
       </AdminFilterPanel>
+
+      <ReferralOperationsBoard
+        referralCount={props.row.referrals.length}
+        rewardCount={rewardRows.length}
+        summary={reviewSummary}
+      />
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
@@ -244,6 +264,59 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReferralOperationsBoard({
+  referralCount,
+  rewardCount,
+  summary,
+}: {
+  readonly referralCount: number;
+  readonly rewardCount: number;
+  readonly summary: ReferralRewardReviewSummary;
+}) {
+  return (
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16"
+      resultLabel={`${summary.ready.count} ready / ${summary.held.count} held`}
+      resultTone={summary.ready.count > 0 ? 'success' : summary.held.count > 0 ? 'warning' : 'info'}
+      title="Referral operations board"
+    >
+      <div className="service-trace-summary">
+        <div>
+          <span>Referred accounts</span>
+          <strong>{referralCount}</strong>
+          <small className="muted">{rewardCount} reward record(s)</small>
+        </div>
+        <ReferralRewardReviewCard label="Ready to credit" summary={summary.ready} />
+        <ReferralRewardReviewCard label="Pending checks" summary={summary.pending} />
+        <ReferralRewardReviewCard label="Held for review" summary={summary.held} />
+        <ReferralRewardReviewCard label="Ledger posted" summary={summary.credited} />
+        <ReferralRewardReviewCard label="Closed rewards" summary={summary.closed} />
+        <div>
+          <span>Next operator action</span>
+          <strong>{referralRewardNextOperatorAction(summary)}</strong>
+          <small className="muted">Use the reward row action menu for the final wallet decision.</small>
+        </div>
+      </div>
+    </AdminFilterPanel>
+  );
+}
+
+function ReferralRewardReviewCard({
+  label,
+  summary,
+}: {
+  readonly label: string;
+  readonly summary: ReferralRewardReviewBucket;
+}) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{summary.count} reward(s)</strong>
+      <small className="muted">{formatMoney(summary.amount, 'VND', '0 VND')}</small>
+    </div>
   );
 }
 
@@ -405,6 +478,49 @@ function referralRewardRows(props: ReferralParentDetailPageProps): ReferralRewar
       reward,
     }));
   });
+}
+
+function referralRewardReviewSummary(rows: readonly ReferralRewardRow[]): ReferralRewardReviewSummary {
+  const mutableSummary = {
+    closed: mutableReferralRewardReviewBucket(),
+    credited: mutableReferralRewardReviewBucket(),
+    held: mutableReferralRewardReviewBucket(),
+    pending: mutableReferralRewardReviewBucket(),
+    ready: mutableReferralRewardReviewBucket(),
+  };
+
+  for (const { reward } of rows) {
+    if (reward.walletLedgerReference || reward.status === 'REWARDED') {
+      addReferralRewardReviewAmount(mutableSummary.credited, reward.amount);
+    } else if (reward.status === 'AVAILABLE') {
+      addReferralRewardReviewAmount(mutableSummary.ready, reward.amount);
+    } else if (reward.status === 'HELD') {
+      addReferralRewardReviewAmount(mutableSummary.held, reward.amount);
+    } else if (reward.status === 'REVERSED' || reward.status === 'CANCELLED') {
+      addReferralRewardReviewAmount(mutableSummary.closed, reward.amount);
+    } else {
+      addReferralRewardReviewAmount(mutableSummary.pending, reward.amount);
+    }
+  }
+
+  return mutableSummary;
+}
+
+function mutableReferralRewardReviewBucket() {
+  return { amount: 0, count: 0 };
+}
+
+function addReferralRewardReviewAmount(bucket: { amount: number; count: number }, amount: number) {
+  bucket.amount += numberOrZero(amount);
+  bucket.count += 1;
+}
+
+function referralRewardNextOperatorAction(summary: ReferralRewardReviewSummary) {
+  if (summary.ready.count > 0) return 'Credit ready rewards or hold suspicious rows.';
+  if (summary.held.count > 0) return 'Review held rewards before release or reversal.';
+  if (summary.pending.count > 0) return 'Wait for booking, hold-period, and fraud checks.';
+  if (summary.closed.count > 0) return 'No wallet action needed for closed rewards.';
+  return 'No referral reward action needed.';
 }
 
 function referredAccountCell(
