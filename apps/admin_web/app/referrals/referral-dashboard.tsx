@@ -155,10 +155,10 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
       </div>
       <form action={releaseAvailableReferralRewards} className="actions admin-mt-16">
         <button className="button button-secondary" type="submit">
-          Mark ready rewards available
+          Stage ready reward candidates
         </button>
         <span className="muted">
-          Moves hold-window-cleared rewards to AVAILABLE. Does not create wallet ledger entries.
+          Moves hold-window-cleared rewards to AVAILABLE. Wallet posting still happens from each reward detail action.
         </span>
       </form>
       <ReferralPolicyForm label={label} policy={policy} />

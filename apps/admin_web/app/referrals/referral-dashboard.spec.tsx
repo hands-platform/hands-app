@@ -67,13 +67,14 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Policy changes are audited');
     expect(markup).not.toContain('read-only here');
     expect(markup).not.toContain('Release ready rewards');
-    expect(markup).toContain('Mark ready rewards available');
+    expect(markup).not.toContain('Mark ready rewards available');
+    expect(markup).toContain('Stage ready reward candidates');
     expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Credited rewards');
     expect(markup).toContain('15.000 VND');
     expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
-    expect(markup).toContain('Does not create wallet ledger entries');
+    expect(markup).toContain('Wallet posting still happens from each reward detail action');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
   });
