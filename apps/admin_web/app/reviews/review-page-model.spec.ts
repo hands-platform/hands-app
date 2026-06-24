@@ -216,7 +216,6 @@ describe('review page model', () => {
       partnerInitials: 'PM',
       partnerLabel: 'Partner Minh',
       serviceLabel: 'Deep Tissue',
-      visibilityLabel: 'Internal operations only',
     });
     expect(rows[0]).not.toHaveProperty('rating');
     expect(rows[0]).not.toHaveProperty('actions');

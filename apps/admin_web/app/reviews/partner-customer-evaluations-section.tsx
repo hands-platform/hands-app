@@ -37,7 +37,6 @@ export type PartnerCustomerEvaluationTableRow = {
   readonly partnerInitials: string;
   readonly partnerLabel: string;
   readonly serviceLabel: string;
-  readonly visibilityLabel: string;
 };
 
 type PartnerCustomerEvaluationsSectionProps = {
@@ -59,7 +58,7 @@ export function PartnerCustomerEvaluationsSection({
     <>
       <AdminFilterPanel
         className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"
-        description="Partner-written customer evaluations are internal text notes. They do not use public customer-facing star ratings."
+        description="Partner-written customer evaluations are internal admin records. Partners can write text only, without customer-facing star ratings."
         id="partner-customer-evaluation-controls"
         resultLabel={`Showing ${pagination.totalRows} of ${totalEvaluationCount}`}
         resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
@@ -155,7 +154,7 @@ export function PartnerCustomerEvaluationsSection({
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
-        description="Text-only notes Partners write about customers after a booking. These are internal operations records, not customer-facing star ratings."
+        description="Text-only notes Partners write about customers after a booking. This page is for admin review only."
         id="partner-customer-evaluation-table"
         resultLabel={`${pagination.totalRows} evaluation(s)`}
         resultTone={rows.length > 0 ? 'info' : 'neutral'}
@@ -165,7 +164,7 @@ export function PartnerCustomerEvaluationsSection({
           <AdminDataTable
             className="vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table"
             emptyMessage="No partner-written customer evaluations loaded."
-            headers={['Request Time', 'Partner', 'Customer', 'Customer evaluation', 'Visibility']}
+            headers={['Request Time', 'Partner', 'Customer', 'Customer evaluation']}
             rowCount={rows.length}
           >
             {rows.map((row) => (
@@ -215,10 +214,6 @@ export function PartnerCustomerEvaluationsSection({
                 <td className="vuexy-review-copy-cell">
                   <p>{row.commentLabel}</p>
                   <span>{row.serviceLabel}</span>
-                </td>
-                <td className="vuexy-review-visibility-cell">
-                  <span className="review-status-chip review-status-follow-up">Internal</span>
-                  <small>{row.visibilityLabel}</small>
                 </td>
               </tr>
             ))}

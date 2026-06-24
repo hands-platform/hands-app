@@ -22,11 +22,14 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(rendered).toContain('Partner');
     expect(rendered).toContain('Customer');
     expect(rendered).toContain('Customer evaluation');
-    expect(rendered).toContain('Visibility');
     expect(rendered).toContain('Customer arrived prepared and confirmed closeout in chat.');
-    expect(rendered).toContain('Internal operations only');
+    expect(rendered).toContain('This page is for admin review only.');
     expect(rendered).not.toContain('Rating');
     expect(rendered).not.toContain('Actions');
+    expect(rendered).not.toContain('Visibility');
+    expect(rendered).not.toContain('Publish');
+    expect(rendered).not.toContain('Hide');
+    expect(rendered).not.toContain('Hold');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings/booking-1',
@@ -69,7 +72,6 @@ function buildRow(): PartnerCustomerEvaluationTableRow {
     partnerInitials: 'MP',
     partnerLabel: 'Massage Partner',
     serviceLabel: 'Aromatherapy',
-    visibilityLabel: 'Internal operations only',
   };
 }
 

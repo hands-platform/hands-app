@@ -36,9 +36,9 @@ export default async function PartnerCustomerEvaluationsPage({
           helper: 'Partner-written customer evaluation records loaded.',
         },
         {
-          label: 'Visible to app',
-          value: '0',
-          helper: 'These records are internal and are not shown as public customer reviews.',
+          label: 'Admin-only',
+          value: 'Internal',
+          helper: 'These records stay in the admin workspace only.',
         },
         {
           label: 'Rating fields',

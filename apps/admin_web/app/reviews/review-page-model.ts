@@ -158,7 +158,6 @@ export function buildPartnerCustomerReviewTableRows(
     partnerInitials: initials(review.providerProfile?.displayName),
     partnerLabel: review.providerProfile?.displayName ?? 'Unknown Partner',
     serviceLabel: partnerCustomerReviewServiceLabel(review),
-    visibilityLabel: 'Internal operations only',
   }));
 }
 
