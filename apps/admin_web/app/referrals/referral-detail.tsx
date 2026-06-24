@@ -247,13 +247,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   <StatusBadge tone={rewardStatusTone(reward.status)}>{reward.status}</StatusBadge>
                 </td>
                 <td>
-                  {reward.qualifyingBookingId ? (
-                    <Link className="text-link" href={`/bookings/${reward.qualifyingBookingId}`}>
-                      {reward.qualifyingBookingId}
-                    </Link>
-                  ) : (
-                    <span className="muted">No booking</span>
-                  )}
+                  <ReferralQualifyingBookingCell bookingId={reward.qualifyingBookingId} />
                 </td>
                 <td>
                   <ReferralCreditStateCell reward={reward} />
@@ -494,6 +488,18 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
     </div>
+  );
+}
+
+function ReferralQualifyingBookingCell({ bookingId }: { readonly bookingId?: string | null }) {
+  if (!bookingId) {
+    return <span className="muted">No qualifying booking linked</span>;
+  }
+
+  return (
+    <Link className="text-link" href={`/bookings/${bookingId}`}>
+      {bookingId}
+    </Link>
   );
 }
 

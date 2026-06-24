@@ -171,6 +171,7 @@ describe('Referral detail presentation', () => {
           rewards: [
             {
               ...customerReferralParent.referrals[0].rewards[0],
+              qualifyingBookingId: null,
               status: 'PENDING',
               walletLedgerReference: null,
             },
@@ -187,6 +188,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('aria-label="Referral reward actions for reward-1"');
     expect(markup).toContain('Hold for review');
     expect(markup).toContain('Reverse reward');
+    expect(markup).not.toContain('No booking');
+    expect(markup).toContain('No qualifying booking linked');
     expect(markup).toContain('name="parentId" value="parent-customer"');
   });
 
