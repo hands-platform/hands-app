@@ -4,6 +4,7 @@ import { MoreVertical } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFormInput } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -518,10 +519,15 @@ function ReferralRewardActions({
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
           ))}
-          <label className="referral-reward-action-reason">
+          <div className="referral-reward-action-reason">
             <span>Reason</span>
-            <input name="reason" placeholder="Operator decision reason" type="text" />
-          </label>
+            <AdminFormInput
+              className="referral-reward-action-reason-input"
+              label="Reward decision reason"
+              name="reason"
+              placeholder="Operator decision reason"
+            />
+          </div>
           <div className="referral-reward-action-button-list">
             {actions.map((item) => (
               <button
