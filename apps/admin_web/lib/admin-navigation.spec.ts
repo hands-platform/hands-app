@@ -95,6 +95,7 @@ describe('admin navigation', () => {
       '/notifications',
       '/files',
       '/reviews',
+      '/reviews/partner-customer-evaluations',
       '/audit-log',
       '/setup',
     ]);

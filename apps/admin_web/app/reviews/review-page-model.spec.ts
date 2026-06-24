@@ -1,6 +1,8 @@
 import type { AdminReview } from '../../lib/admin-api';
 import {
   buildPartnerCustomerReviewTableRows,
+  buildPartnerCustomerEvaluationFilters,
+  buildPartnerCustomerEvaluationListHref,
   buildReviewExportRows,
   buildReviewFilters,
   buildReviewListHref,
@@ -271,6 +273,32 @@ describe('review page model', () => {
         { page: 2 },
       ),
     ).toBe('/reviews?q=mai&pageSize=25&review=held&dateRange=7d&sort=rating-desc&page=2');
+  });
+
+  it('builds stable partner customer evaluation filters and list hrefs', () => {
+    const filters = buildPartnerCustomerEvaluationFilters({
+      dateRange: '7d',
+      page: '2',
+      pageSize: '25',
+      q: 'customer',
+      review: 'held',
+      sort: 'rating-desc',
+    });
+
+    expect(filters).toMatchObject({
+      dateRange: '7d',
+      page: 2,
+      pageSize: 25,
+      q: 'customer',
+      review: '',
+      sort: 'newest',
+    });
+    expect(buildPartnerCustomerEvaluationListHref(filters, { page: 2 })).toBe(
+      '/reviews/partner-customer-evaluations?q=customer&pageSize=25&dateRange=7d&page=2',
+    );
+    expect(buildPartnerCustomerEvaluationListHref(filters, { sort: 'oldest' })).toBe(
+      '/reviews/partner-customer-evaluations?q=customer&pageSize=25&dateRange=7d&sort=oldest',
+    );
   });
 
   it('keeps filter, export, and tone copy stable', () => {

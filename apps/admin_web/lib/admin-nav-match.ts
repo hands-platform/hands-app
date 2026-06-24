@@ -16,6 +16,9 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
     if (hrefPath === '/bookings/completed' || hrefPath === '/bookings/post-match-cancellations') {
       return pathname === hrefPath;
     }
+    if (hrefPath === '/reviews' || hrefPath === '/reviews/partner-customer-evaluations') {
+      return pathname === hrefPath;
+    }
 
     return !search || pathname !== hrefPath;
   }

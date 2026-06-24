@@ -195,6 +195,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Customer review records, app visibility, and moderation follow-up.',
       },
       {
+        href: '/reviews/partner-customer-evaluations',
+        label: 'Partner Evaluations',
+        description: 'Partner-written text evaluations about customers after completed booking work.',
+      },
+      {
         href: '/audit-log',
         label: 'Audit Log',
         description: 'Admin and system audit trail.',

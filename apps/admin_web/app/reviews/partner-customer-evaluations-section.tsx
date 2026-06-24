@@ -1,44 +1,34 @@
 import Link from 'next/link';
-import { Download, Eye, Star, X } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
-  AdminFormControlLink,
   AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
   REVIEW_DATE_RANGE_OPTIONS,
   REVIEW_PAGE_SIZE_OPTIONS,
-  REVIEW_SORT_OPTIONS,
-  buildReviewListHref,
+  buildPartnerCustomerEvaluationListHref,
   reviewDateRangeLabel,
-  reviewFilterDescription,
-  reviewSortLabel,
 } from './review-page-model';
-import { ReviewRowActions } from './review-row-actions';
 
-export type ReviewTableRow = {
-  readonly actionLabel: string;
-  readonly actions: readonly ReviewActionItem[];
-  readonly appVisibilityLabel: string;
+export type PartnerCustomerEvaluationTableRow = {
   readonly bookingHref: string | null;
   readonly bookingLabel: string;
   readonly bookingRequestTimeLabel: string;
   readonly commentLabel: string;
-  readonly commentValue: string;
   readonly createdAtLabel: string;
+  readonly customerAvatarStatus: AdminAvatarStatus;
   readonly customerHref: string | null;
   readonly customerInitials: string;
   readonly customerLabel: string;
-  readonly customerAvatarStatus: AdminAvatarStatus;
   readonly customerPhone: string;
   readonly id: string;
   readonly partnerAvatarStatus: AdminAvatarStatus;
@@ -46,94 +36,58 @@ export type ReviewTableRow = {
   readonly partnerHint: string;
   readonly partnerInitials: string;
   readonly partnerLabel: string;
-  readonly rating: number;
-  readonly ratingLabel: string;
-  readonly reportReasonValue: string;
-  readonly reportReasonLabel: string;
   readonly serviceLabel: string;
-  readonly status: string;
-  readonly statusClassName: string;
-  readonly statusLabel: string;
+  readonly visibilityLabel: string;
 };
 
-type ReviewsTableSectionProps = {
-  readonly csvHref: string;
-  readonly emptyMessage: string;
+type PartnerCustomerEvaluationsSectionProps = {
   readonly filters: ReviewFilters;
-  readonly pagination: ReviewPagination<ReviewTableRow>;
-  readonly rows: readonly ReviewTableRow[];
-  readonly totalReviewCount: number;
+  readonly pagination: ReviewPagination<PartnerCustomerEvaluationTableRow>;
+  readonly rows: readonly PartnerCustomerEvaluationTableRow[];
+  readonly totalEvaluationCount: number;
 };
 
-export function ReviewsTableSection({
-  csvHref,
-  emptyMessage,
+export function PartnerCustomerEvaluationsSection({
   filters,
   pagination,
   rows,
-  totalReviewCount,
-}: ReviewsTableSectionProps) {
-  const activeFilterLabels = reviewActiveFilterLabels(filters);
+  totalEvaluationCount,
+}: PartnerCustomerEvaluationsSectionProps) {
+  const activeFilterLabels = partnerEvaluationActiveFilterLabels(filters);
 
   return (
     <>
       <AdminFilterPanel
         className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"
-        id="customer-review-controls"
-        resultLabel={`Showing ${pagination.totalRows} of ${totalReviewCount}`}
+        description="Partner-written customer evaluations are internal text notes. They do not use public customer-facing star ratings."
+        id="partner-customer-evaluation-controls"
+        resultLabel={`Showing ${pagination.totalRows} of ${totalEvaluationCount}`}
         resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
-        title="Review operation filters"
-        description="Customer-written reviews are published by default. Operators can hold visibility, mark follow-up, or correct rating and review copy."
+        title="Partner customer evaluation filters"
         footer={
-          <div className="vuexy-review-filter-summary">
-            {activeFilterLabels.map((label) => (
-              <span className="pill pill-warn" key={label}>
-                {label}
-              </span>
-            ))}
-            {activeFilterLabels.length > 0 ? (
-              <AdminFormControlLink
-                className="button button-secondary vuexy-review-clear-filter"
-                href={buildReviewListHref(filters, {
-                  dateFrom: '',
-                  dateRange: 'all',
-                  dateTo: '',
-                  q: '',
-                  review: '',
-                  sort: 'newest',
-                })}
-              >
-                <X aria-hidden="true" size={14} />
-                Clear filters
-              </AdminFormControlLink>
-            ) : null}
-          </div>
+          activeFilterLabels.length > 0 ? (
+            <div className="vuexy-review-filter-summary">
+              {activeFilterLabels.map((label) => (
+                <span className="pill pill-warn" key={label}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          ) : null
         }
       >
-        <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Review list filters">
-          <div className="booking-date-filter-buttons" role="group" aria-label="Review status">
-            {reviewStatusButtonOptions.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.review === option.value ? 'page' : undefined}
-                className={filters.review === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, { review: option.value })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+        <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Partner evaluation filters">
           <div
             className="booking-date-filter-buttons vuexy-review-date-buttons"
             role="group"
-            aria-label="Review request date"
+            aria-label="Evaluation request date"
           >
-            {reviewDateButtonOptions.map((option) => (
+            {partnerEvaluationDateButtonOptions.map((option) => (
               <a
                 key={option.value}
                 aria-current={filters.dateRange === option.value ? 'page' : undefined}
                 className={filters.dateRange === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, {
+                href={buildPartnerCustomerEvaluationListHref(filters, {
                   dateFrom: '',
                   dateRange: option.value,
                   dateTo: '',
@@ -144,8 +98,10 @@ export function ReviewsTableSection({
             ))}
           </div>
           {filters.dateRange === 'custom' ? (
-            <form action="/reviews" className="booking-custom-date-grid vuexy-review-custom-date-grid">
-              <input name="review" type="hidden" value={filters.review} />
+            <form
+              action="/reviews/partner-customer-evaluations"
+              className="booking-custom-date-grid vuexy-review-custom-date-grid"
+            >
               <input name="q" type="hidden" value={filters.q} />
               <input name="pageSize" type="hidden" value={filters.pageSize} />
               <input name="sort" type="hidden" value={filters.sort} />
@@ -160,21 +116,20 @@ export function ReviewsTableSection({
           <div
             className="booking-date-filter-buttons vuexy-review-sort-buttons"
             role="group"
-            aria-label="Review sort"
+            aria-label="Evaluation sort"
           >
-            {REVIEW_SORT_OPTIONS.map((option) => (
+            {partnerEvaluationSortOptions.map((option) => (
               <a
                 key={option.value}
                 aria-current={filters.sort === option.value ? 'page' : undefined}
                 className={filters.sort === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, { sort: option.value })}
+                href={buildPartnerCustomerEvaluationListHref(filters, { sort: option.value })}
               >
                 {option.label}
               </a>
             ))}
           </div>
-          <form action="/reviews" className="vuexy-review-controls">
-            <input name="review" type="hidden" value={filters.review} />
+          <form action="/reviews/partner-customer-evaluations" className="vuexy-review-controls">
             <input name="dateRange" type="hidden" value={filters.dateRange} />
             <input name="dateFrom" type="hidden" value={filters.dateFrom} />
             <input name="dateTo" type="hidden" value={filters.dateTo} />
@@ -182,43 +137,35 @@ export function ReviewsTableSection({
             <AdminFormSearch
               className="vuexy-review-search"
               defaultValue={filters.q}
-              label="Search Review"
+              label="Search Evaluation"
               name="q"
-              placeholder="Search Review"
+              placeholder="Search Evaluation"
             />
             <AdminFormSelect
               className="vuexy-review-select"
               defaultValue={String(filters.pageSize)}
               label="Rows per page"
               name="pageSize"
-              options={reviewPageSizeOptions}
+              options={partnerEvaluationPageSizeOptions}
             />
             <AdminFormControlButton className="vuexy-review-button">Apply</AdminFormControlButton>
-            <AdminFormControlLink
-              className="vuexy-review-export"
-              download="hands-customer-reviews.csv"
-              href={csvHref}
-            >
-              <Download aria-hidden="true" size={16} />
-              Export
-            </AdminFormControlLink>
           </form>
         </div>
       </AdminFilterPanel>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
-        description="Review rows use the same table card, rounded pagination, avatars, and operator action pattern as bookings."
-        id="customer-review-table"
-        resultLabel={`${pagination.totalRows} review(s)`}
-        resultTone={activeFilterLabels.length > 0 ? 'warning' : 'neutral'}
-        title="Customer review list"
+        description="Text-only notes Partners write about customers after a booking. These are internal operations records, not customer-facing star ratings."
+        id="partner-customer-evaluation-table"
+        resultLabel={`${pagination.totalRows} evaluation(s)`}
+        resultTone={rows.length > 0 ? 'info' : 'neutral'}
+        title="Partner customer evaluations"
       >
         <AdminTableScroll>
           <AdminDataTable
-            className="vuexy-booking-table vuexy-review-table"
-            emptyMessage={emptyMessage}
-            headers={['Request Time', 'Partner', 'Customer', 'Review', 'Visibility', 'Actions']}
+            className="vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table"
+            emptyMessage="No partner-written customer evaluations loaded."
+            headers={['Request Time', 'Partner', 'Customer', 'Customer evaluation', 'Visibility']}
             rowCount={rows.length}
           >
             {rows.map((row) => (
@@ -236,7 +183,7 @@ export function ReviewsTableSection({
                   </div>
                   <div className="muted">{row.bookingRequestTimeLabel}</div>
                   <div className="muted vuexy-review-submitted-line">
-                    Review submitted {row.createdAtLabel}
+                    Evaluation submitted {row.createdAtLabel}
                   </div>
                 </td>
                 <td>
@@ -266,40 +213,12 @@ export function ReviewsTableSection({
                   />
                 </td>
                 <td className="vuexy-review-copy-cell">
-                  <div aria-label={`Rating ${row.ratingLabel}`} className="vuexy-review-stars">
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <Star
-                        aria-hidden="true"
-                        className={index < row.rating ? 'is-filled' : ''}
-                        key={`${row.id}-star-${index}`}
-                        size={18}
-                      />
-                    ))}
-                  </div>
                   <p>{row.commentLabel}</p>
                   <span>{row.serviceLabel}</span>
-                  {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
                 </td>
                 <td className="vuexy-review-visibility-cell">
-                  <span className={row.statusClassName}>{row.statusLabel}</span>
-                  <small>{row.appVisibilityLabel}</small>
-                </td>
-                <td>
-                  <div className="vuexy-review-actions">
-                    <ReviewRowActions
-                      actions={row.actions}
-                      editReview={{
-                        commentLabel: row.commentLabel,
-                        commentValue: row.commentValue,
-                        rating: row.rating,
-                        ratingLabel: row.ratingLabel,
-                        reportReasonValue: row.reportReasonValue,
-                        reviewId: row.id,
-                        status: row.status,
-                      }}
-                      label={row.actionLabel}
-                    />
-                  </div>
+                  <span className="review-status-chip review-status-follow-up">Internal</span>
+                  <small>{row.visibilityLabel}</small>
                 </td>
               </tr>
             ))}
@@ -312,48 +231,41 @@ export function ReviewsTableSection({
           </span>
           <AdminRoundedPagination
             activePage={pagination.page}
-            ariaLabel="Customer review pages"
+            ariaLabel="Partner customer evaluation pages"
             className="vuexy-review-pagination"
-            hrefForPage={(page) => buildReviewListHref(filters, { page })}
+            hrefForPage={(page) => buildPartnerCustomerEvaluationListHref(filters, { page })}
             pageLinkClassName="vuexy-review-page-link"
             totalPages={pagination.totalPages}
           />
         </div>
       </AdminFilterPanel>
-
     </>
   );
 }
 
-function reviewActiveFilterLabels(filters: ReviewFilters) {
+function partnerEvaluationActiveFilterLabels(filters: ReviewFilters) {
   const labels: string[] = [];
   if (filters.q) {
     labels.push(`Search: ${filters.q}`);
-  }
-  if (filters.review) {
-    labels.push(reviewFilterDescription(filters.review));
   }
   const dateRange = reviewDateRangeLabel(filters);
   if (dateRange) {
     labels.push(dateRange);
   }
-  if (filters.sort !== 'newest') {
-    labels.push(`Sort: ${reviewSortLabel(filters.sort)}`);
+  if (filters.sort === 'oldest') {
+    labels.push('Sort: Oldest request');
   }
   return labels;
 }
 
-const reviewPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({
+const partnerEvaluationPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({
   label: String(option),
   value: String(option),
 }));
 
-const reviewStatusButtonOptions = [
-  { label: 'All', value: '' },
-  { label: 'Published', value: 'published' },
-  { label: 'Held', value: 'held' },
-  { label: 'Follow-up', value: 'follow-up' },
-  { label: 'Reported', value: 'reported' },
-] as const;
+const partnerEvaluationDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS.filter((option) => option.value !== 'all');
 
-const reviewDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS.filter((option) => option.value !== 'all');
+const partnerEvaluationSortOptions = [
+  { value: 'newest', label: 'Newest request' },
+  { value: 'oldest', label: 'Oldest request' },
+] as const;

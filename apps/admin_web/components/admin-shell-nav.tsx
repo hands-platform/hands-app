@@ -49,6 +49,7 @@ const iconByLabel = {
   Notifications: BellRing,
   'Operations Policy': Settings2,
   Partners: HeartHandshake,
+  'Partner Evaluations': MessageSquareText,
   Payments: ReceiptText,
   Payouts: WalletCards,
   'Post-match Cancellations': RefreshCw,

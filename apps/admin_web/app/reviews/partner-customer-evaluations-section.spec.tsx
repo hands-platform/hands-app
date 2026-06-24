@@ -1,0 +1,164 @@
+import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
+import {
+  PartnerCustomerEvaluationsSection,
+  type PartnerCustomerEvaluationTableRow,
+} from './partner-customer-evaluations-section';
+
+describe('PartnerCustomerEvaluationsSection', () => {
+  it('renders partner-written customer evaluations as a text-only review board', () => {
+    const section = PartnerCustomerEvaluationsSection({
+      filters: filters(),
+      pagination: pagination([buildRow()]),
+      rows: [buildRow()],
+      totalEvaluationCount: 1,
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Partner customer evaluation filters');
+    expect(rendered).toContain('Partner customer evaluations');
+    expect(rendered).toContain('Text-only notes Partners write about customers after a booking.');
+    expect(rendered).toContain('Request Time');
+    expect(rendered).toContain('Partner');
+    expect(rendered).toContain('Customer');
+    expect(rendered).toContain('Customer evaluation');
+    expect(rendered).toContain('Visibility');
+    expect(rendered).toContain('Customer arrived prepared and confirmed closeout in chat.');
+    expect(rendered).toContain('Internal operations only');
+    expect(rendered).not.toContain('Rating');
+    expect(rendered).not.toContain('Actions');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/bookings/booking-1',
+        '/customers/customer-1',
+        '/partners/partner-1',
+        '/reviews/partner-customer-evaluations?dateRange=today',
+        '/reviews/partner-customer-evaluations?dateRange=yesterday',
+        '/reviews/partner-customer-evaluations?dateRange=7d',
+        '/reviews/partner-customer-evaluations?dateRange=30d',
+        '/reviews/partner-customer-evaluations?dateRange=custom',
+        '/reviews/partner-customer-evaluations?sort=oldest',
+      ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card',
+        'table vuexy-data-table vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table',
+      ]),
+    );
+  });
+});
+
+function buildRow(): PartnerCustomerEvaluationTableRow {
+  return {
+    bookingHref: '/bookings/booking-1',
+    bookingLabel: 'booking',
+    bookingRequestTimeLabel: '19 Jun 2026, 14:40',
+    commentLabel: 'Customer arrived prepared and confirmed closeout in chat.',
+    createdAtLabel: '23 Feb 2026, 16:12',
+    customerAvatarStatus: 'offline',
+    customerHref: '/customers/customer-1',
+    customerInitials: 'CO',
+    customerLabel: 'Customer One',
+    customerPhone: '+84900000000',
+    id: 'partner-evaluation-1',
+    partnerAvatarStatus: 'offline',
+    partnerHref: '/partners/partner-1',
+    partnerHint: 'Text-only customer evaluation',
+    partnerInitials: 'MP',
+    partnerLabel: 'Massage Partner',
+    serviceLabel: 'Aromatherapy',
+    visibilityLabel: 'Internal operations only',
+  };
+}
+
+function filters(input: Partial<ReviewFilters> = {}): ReviewFilters {
+  const base: ReviewFilters = {
+    page: 1,
+    pageSize: DEFAULT_REVIEW_PAGE_SIZE,
+    q: '',
+    review: '',
+    dateFrom: '',
+    dateRange: 'all',
+    dateTo: '',
+    sort: 'newest',
+  };
+  return { ...base, ...input };
+}
+
+function pagination<T extends PartnerCustomerEvaluationTableRow>(rows: T[]): ReviewPagination<T> {
+  return {
+    from: rows.length ? 1 : 0,
+    page: 1,
+    pageSize: DEFAULT_REVIEW_PAGE_SIZE,
+    rows,
+    to: rows.length,
+    totalPages: 1,
+    totalRows: rows.length,
+  };
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function normalizedText(value: unknown) {
+  return textContent(value).replace(/\s+/g, ' ').trim();
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

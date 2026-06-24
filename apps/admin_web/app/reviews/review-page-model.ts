@@ -8,7 +8,8 @@ import {
 import { formatDateTime, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
-import type { PartnerCustomerEvaluationTableRow, ReviewTableRow } from './reviews-table-section';
+import type { PartnerCustomerEvaluationTableRow } from './partner-customer-evaluations-section';
+import type { ReviewTableRow } from './reviews-table-section';
 
 export const DEFAULT_REVIEW_PAGE_SIZE = 10;
 export const REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
@@ -244,6 +245,18 @@ export function buildReviewFilters(params: Record<string, string | string[] | un
   };
 }
 
+export function buildPartnerCustomerEvaluationFilters(
+  params: Record<string, string | string[] | undefined>,
+): ReviewFilters {
+  const filters = buildReviewFilters(params);
+
+  return {
+    ...filters,
+    review: '',
+    sort: filters.sort === 'oldest' ? 'oldest' : 'newest',
+  };
+}
+
 export function filterReviews(reviews: readonly AdminReview[], filters: ReviewFilters): AdminReview[] {
   const query = filters.q.toLowerCase();
 
@@ -297,6 +310,23 @@ export function paginateReviewRows<T>(rows: readonly T[], filters: ReviewFilters
 }
 
 export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<ReviewFilters> = {}) {
+  return buildReviewHref('/reviews', filters, overrides);
+}
+
+export function buildPartnerCustomerEvaluationListHref(
+  filters: ReviewFilters,
+  overrides: Partial<ReviewFilters> = {},
+) {
+  const nextOverrides: Partial<ReviewFilters> = {
+    ...overrides,
+    review: '',
+    ...(overrides.sort ? { sort: overrides.sort === 'oldest' ? 'oldest' : 'newest' } : {}),
+  };
+
+  return buildReviewHref('/reviews/partner-customer-evaluations', filters, nextOverrides);
+}
+
+function buildReviewHref(basePath: string, filters: ReviewFilters, overrides: Partial<ReviewFilters> = {}) {
   const next: ReviewFilters = {
     ...filters,
     ...overrides,
@@ -329,7 +359,7 @@ export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<R
     params.set('page', String(next.page));
   }
 
-  return params.size ? `/reviews?${params.toString()}` : '/reviews';
+  return params.size ? `${basePath}?${params.toString()}` : basePath;
 }
 
 export function reviewFilterDescription(review: string) {
