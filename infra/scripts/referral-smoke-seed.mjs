@@ -544,6 +544,19 @@ async function cleanupSmokeData() {
   await prisma.adminAuditLog.deleteMany({
     where: { target: { in: rewardIds.map((rewardId) => `referral_reward:${rewardId}`) } },
   });
+  await prisma.customerWalletLedgerEntry.deleteMany({
+    where: {
+      OR: [
+        { referralRewardId: { in: rewardIds } },
+        { sourceKey: { in: rewardIds.map(referralWalletCreditSourceKey) } },
+      ],
+    },
+  });
+  await prisma.providerWalletLedgerEntry.deleteMany({
+    where: {
+      sourceKey: { in: rewardIds.map(referralWalletCreditSourceKey) },
+    },
+  });
   await prisma.referralReward.deleteMany({
     where: { OR: [{ id: { in: rewardIds } }, { sourceKey: { in: Object.values(sourceKeys) } }] },
   });
@@ -584,6 +597,10 @@ function countBy(rows, getKey) {
     counts[key] = (counts[key] ?? 0) + 1;
     return counts;
   }, {});
+}
+
+function referralWalletCreditSourceKey(rewardId) {
+  return `referral:wallet-credit:${rewardId}`;
 }
 
 function assertCondition(condition, message) {
