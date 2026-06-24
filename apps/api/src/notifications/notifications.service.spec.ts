@@ -79,6 +79,25 @@ describe('NotificationsService device tokens', () => {
       data: { enabled: false, lastSeenAt: expect.any(Date) },
     });
   });
+
+  it('returns a safe false result when no authenticated device token is disabled', async () => {
+    const prisma = {
+      pushDevice: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(
+      service.disableDeviceToken({ id: 'user-1', roles: [Role.CUSTOMER] }, { token: 'missing-token' }),
+    ).resolves.toEqual({ ok: false, disabled: 0 });
+
+    expect(prisma.pushDevice.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1', token: 'missing-token' },
+      data: { enabled: false, lastSeenAt: expect.any(Date) },
+    });
+  });
 });
 
 describe('NotificationsService retry queue', () => {
