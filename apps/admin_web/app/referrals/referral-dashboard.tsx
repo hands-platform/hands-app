@@ -104,7 +104,7 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16"
-      description={`${label} policy is read-only here. Future edits should stay behind an admin approval flow.`}
+      description={`${label} policy can be edited here. Policy changes are audited and should stay tied to an operator reason.`}
       resultLabel={policy.enabled ? 'Enabled' : 'Disabled'}
       resultTone={policy.enabled ? 'success' : 'neutral'}
       title="Referral policy"
