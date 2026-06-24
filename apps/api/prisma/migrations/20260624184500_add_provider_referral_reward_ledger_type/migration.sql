@@ -1,0 +1,1 @@
+ALTER TYPE "ProviderWalletLedgerType" ADD VALUE 'REFERRAL_REWARD';

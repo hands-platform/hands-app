@@ -187,6 +187,7 @@ enum PayoutBatchStatus {
 
 enum ProviderWalletLedgerType {
   BOOKING_EARNING
+  REFERRAL_REWARD
   CASH_FEE_DEBT_SETTLED
   PAYOUT_PAID
   REFUND_REVERSAL

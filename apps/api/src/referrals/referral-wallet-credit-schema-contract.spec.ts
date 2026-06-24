@@ -26,12 +26,14 @@ function expectField(block: string, name: string, type: string) {
 
 describe('referral wallet credit schema contract', () => {
   it('defines an audited Customer wallet ledger for referral reward credits', () => {
+    const providerLedgerType = schemaBlock('enum', 'ProviderWalletLedgerType');
     const customerProfile = schemaBlock('model', 'CustomerProfile');
     const booking = schemaBlock('model', 'Booking');
     const referralReward = schemaBlock('model', 'ReferralReward');
     const ledgerType = schemaBlock('enum', 'CustomerWalletLedgerType');
     const ledger = schemaBlock('model', 'CustomerWalletLedgerEntry');
 
+    expect(providerLedgerType).toContain('REFERRAL_REWARD');
     expect(ledgerType).toContain('REFERRAL_REWARD');
     expect(ledgerType).toContain('REFUND');
     expect(ledgerType).toContain('ADMIN_ADJUSTMENT');
@@ -57,7 +59,11 @@ describe('referral wallet credit schema contract', () => {
 
   it('ships a migration for the Customer wallet ledger table and indexes', () => {
     const migration = migrationSqlContaining('CREATE TABLE "CustomerWalletLedgerEntry"');
+    const providerLedgerTypeMigration = migrationSqlContaining(
+      'ALTER TYPE "ProviderWalletLedgerType" ADD VALUE',
+    );
 
+    expect(providerLedgerTypeMigration).toContain("'REFERRAL_REWARD'");
     expect(migration).toContain('CREATE TYPE "CustomerWalletLedgerType"');
     expect(migration).toContain('CREATE TABLE "CustomerWalletLedgerEntry"');
     expect(migration).toContain(
