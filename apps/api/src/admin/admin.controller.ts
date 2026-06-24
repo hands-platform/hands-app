@@ -525,6 +525,11 @@ export class AdminController {
     return this.admin.listReviews();
   }
 
+  @Get('partner-customer-reviews')
+  partnerCustomerReviews() {
+    return this.admin.listPartnerCustomerReviews();
+  }
+
   @Patch('reviews/:id/moderate')
   moderateReview(
     @CurrentUser() user: AuthenticatedUser,

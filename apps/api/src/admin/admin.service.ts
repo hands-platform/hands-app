@@ -3362,6 +3362,45 @@ export class AdminService {
     });
   }
 
+  listPartnerCustomerReviews() {
+    return this.prisma.providerCustomerReview.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        bookingId: true,
+        customerProfileId: true,
+        providerProfileId: true,
+        comment: true,
+        status: true,
+        reportReason: true,
+        moderatedAt: true,
+        createdAt: true,
+        booking: {
+          select: {
+            id: true,
+            openedAt: true,
+            createdAt: true,
+            services: {
+              select: {
+                id: true,
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    durationMin: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+        providerProfile: { select: adminProviderSummarySelect },
+      },
+    });
+  }
+
   async moderateReview(
     actorId: string,
     reviewId: string,

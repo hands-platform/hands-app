@@ -2274,4 +2274,55 @@ describe('AdminService query orchestration', () => {
       },
     });
   });
+
+  it('lists partner customer evaluations with booking and profile summaries', async () => {
+    const prisma = {
+      providerCustomerReview: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'evaluation-1',
+            bookingId: 'booking-1',
+            customerProfileId: 'customer-1',
+            providerProfileId: 'partner-1',
+            comment: 'Customer was ready on arrival.',
+            status: 'PUBLISHED',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      (
+        service as unknown as {
+          listPartnerCustomerReviews: () => Promise<unknown>;
+        }
+      ).listPartnerCustomerReviews(),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: 'evaluation-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'partner-1',
+      }),
+    ]);
+
+    expect(prisma.providerCustomerReview.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: expect.objectContaining({
+        id: true,
+        bookingId: true,
+        customerProfileId: true,
+        providerProfileId: true,
+        comment: true,
+        status: true,
+        reportReason: true,
+        moderatedAt: true,
+        createdAt: true,
+        booking: expect.any(Object),
+        customerProfile: expect.any(Object),
+        providerProfile: expect.any(Object),
+      }),
+    });
+  });
 });

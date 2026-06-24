@@ -342,6 +342,7 @@ model CustomerProfile {
   favoriteProviders   CustomerFavoriteProvider[]
   viewedProviders     CustomerProviderProfileView[]
   reviews             Review[]
+  providerReviews     ProviderCustomerReview[]
   selectedLocations   CustomerSelectedLocation[]
   referralCodes       ReferralCode[]                @relation("CustomerReferralCodeOwner")
   referralsMade       ReferralAttribution[]         @relation("CustomerReferralReferrer")
@@ -431,6 +432,7 @@ model ProviderProfile {
   selectedBookings         Booking[]                     @relation("SelectedProvider")
   locationSnapshots        LocationSnapshot[]
   reviews                  Review[]
+  customerReviews          ProviderCustomerReview[]
   earnings                 ProviderEarning[]
   payoutBatches            ProviderPayoutBatch[]
   walletLedgerEntries      ProviderWalletLedgerEntry[]
@@ -734,6 +736,7 @@ model Booking {
   chatRoom                    ChatRoom?
   payment                     Payment?
   review                      Review?
+  providerCustomerReview      ProviderCustomerReview?
   refunds                     Refund[]
   snapshots                   LocationSnapshot[]
   earning                     ProviderEarning?
@@ -988,6 +991,26 @@ model Review {
   booking           Booking         @relation(fields: [bookingId], references: [id])
   customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
   providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+}
+
+model ProviderCustomerReview {
+  id                String          @id @default(cuid())
+  bookingId         String          @unique
+  customerProfileId String
+  providerProfileId String
+  comment           String?
+  status            ReviewStatus    @default(PUBLISHED)
+  reportReason      String?
+  moderatedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  booking           Booking         @relation(fields: [bookingId], references: [id])
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+
+  @@index([customerProfileId, createdAt])
+  @@index([providerProfileId, createdAt])
+  @@index([status, createdAt])
 }
 
 model ProviderEarning {
