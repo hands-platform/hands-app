@@ -42,7 +42,48 @@ const rows: AdminCustomerReferralParent[] = [
       code: 'HANDSCUST',
       createdAt: '2026-06-24T10:00:00.000Z',
     },
-    referrals: [],
+    referrals: [
+      {
+        createdAt: '2026-06-24T10:30:00.000Z',
+        fraudReviewStatus: 'CLEAR',
+        id: 'attribution-1',
+        installSource: 'referral-link',
+        platform: 'ios',
+        referredCustomer: {
+          id: 'referred-customer',
+          user: {
+            id: 'user-referred',
+            fullName: 'Referred Customer',
+            phone: '+84000000002',
+          },
+        },
+        rewards: [
+          {
+            id: 'reward-1',
+            amount: 25000,
+            availableAt: '2026-06-24T10:40:00.000Z',
+            createdAt: '2026-06-24T10:40:00.000Z',
+            currency: 'VND',
+            latestDecision: {
+              action: 'referral_reward.credit',
+              actor: {
+                id: 'admin-1',
+                fullName: 'Ops Admin',
+                phone: '+84000009999',
+              },
+              createdAt: '2026-06-24T11:00:00.000Z',
+              reason: 'manual payout check',
+              status: 'REWARDED',
+              walletLedgerReference: 'wallet-ledger-1',
+            },
+            qualifyingBookingId: 'booking-1',
+            status: 'REWARDED',
+            walletLedgerReference: 'wallet-ledger-1',
+          },
+        ],
+        status: 'QUALIFIED',
+      },
+    ],
     totals: {
       availableRewardAmount: 25000,
       availableRewardCount: 1,
@@ -131,6 +172,8 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Actions');
     expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
     expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');
+    expect(markup).toContain('Latest Credit by Ops Admin');
+    expect(markup).toContain('manual payout check');
     expect(markup).toContain('Open referral detail');
     expect(markup).toContain('Open parent profile');
     expect(markup).toContain('Open referral link');

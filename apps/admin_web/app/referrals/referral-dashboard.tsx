@@ -16,6 +16,7 @@ import {
   type AdminCustomerReferralParent,
   type AdminPartnerReferralParent,
   type AdminReferralPolicy,
+  type AdminReferralReward,
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
@@ -498,6 +499,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                   availableAmount={numberOrZero(row.totals.availableRewardAmount)}
                   creditedAmount={numberOrZero(row.totals.rewardedRewardAmount)}
                   heldAmount={numberOrZero(row.totals.heldRewardAmount)}
+                  latestDecision={latestReferralRewardDecision(row)}
                   pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
@@ -563,6 +565,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                   availableAmount={numberOrZero(row.totals.availableRewardAmount)}
                   creditedAmount={numberOrZero(row.totals.rewardedRewardAmount)}
                   heldAmount={numberOrZero(row.totals.heldRewardAmount)}
+                  latestDecision={latestReferralRewardDecision(row)}
                   pendingAmount={numberOrZero(row.totals.pendingRewardAmount)}
                 />
               </td>
@@ -668,11 +671,13 @@ function ReferralRewardCell({
   availableAmount,
   creditedAmount,
   heldAmount,
+  latestDecision,
   pendingAmount,
 }: {
   readonly availableAmount: number;
   readonly creditedAmount: number;
   readonly heldAmount: number;
+  readonly latestDecision?: AdminReferralReward['latestDecision'] | null;
   readonly pendingAmount: number;
 }) {
   return (
@@ -681,6 +686,14 @@ function ReferralRewardCell({
       <p className="muted">Credited {formatMoney(creditedAmount, 'VND', '0 VND')}</p>
       <p className="muted">Pending {formatMoney(pendingAmount, 'VND', '0 VND')}</p>
       <p className="muted">Held {formatMoney(heldAmount, 'VND', '0 VND')}</p>
+      {latestDecision ? (
+        <>
+          <p className="muted">
+            Latest {referralRewardDecisionLabel(latestDecision.action)} by {userLabel(latestDecision.actor, 'Unknown admin')}
+          </p>
+          {latestDecision.reason ? <p className="muted">{latestDecision.reason}</p> : null}
+        </>
+      ) : null}
     </div>
   );
 }
@@ -767,6 +780,27 @@ function ReferralEmptyState({ audienceLabel }: { readonly audienceLabel: string 
       <p className="muted">Parents appear here only after at least one referral attribution is recorded.</p>
     </>
   );
+}
+
+function latestReferralRewardDecision(row: ReferralParentRow) {
+  return row.referrals
+    .flatMap((referral) => referral.rewards)
+    .map((reward) => reward.latestDecision)
+    .filter((decision): decision is NonNullable<AdminReferralReward['latestDecision']> => Boolean(decision))
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0] ?? null;
+}
+
+function referralRewardDecisionLabel(action: string) {
+  if (action === 'referral_reward.credit') {
+    return 'Credit';
+  }
+  if (action === 'referral_reward.hold') {
+    return 'Hold';
+  }
+  if (action === 'referral_reward.reverse') {
+    return 'Reverse';
+  }
+  return action;
 }
 
 function referralStatusTone(status: string) {
