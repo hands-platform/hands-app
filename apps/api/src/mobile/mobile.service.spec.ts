@@ -55,6 +55,39 @@ describe('MobileService device registration', () => {
     );
   });
 
+  it('normalizes blank optional device metadata before registration', async () => {
+    const prisma = {};
+    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-3' }) };
+    const service = new MobileService(prisma as never, notifications as never);
+
+    await service.registerDevice(
+      { id: 'customer-user-1', roles: [Role.CUSTOMER] },
+      {
+        token: 'fcm-token-ios',
+        platform: 'IOS',
+        appVersion: '   ',
+        osVersion: '',
+        deviceModel: '  ',
+        locale: '   ',
+        timezone: '',
+      },
+    );
+
+    expect(notifications.registerDeviceToken).toHaveBeenCalledWith(
+      { id: 'customer-user-1', roles: [Role.CUSTOMER] },
+      {
+        token: 'fcm-token-ios',
+        platform: 'ios',
+        pushProvider: 'FCM',
+        appVersion: undefined,
+        osVersion: undefined,
+        deviceModel: undefined,
+        locale: undefined,
+        timezone: undefined,
+      },
+    );
+  });
+
   it('unregisters a device by disabling the authenticated token', async () => {
     const prisma = {};
     const notifications = { disableDeviceToken: jest.fn().mockResolvedValue({ ok: true, disabled: 1 }) };

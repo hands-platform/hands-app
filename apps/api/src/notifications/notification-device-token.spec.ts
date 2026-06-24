@@ -99,6 +99,40 @@ describe('notification device token helpers', () => {
     });
   });
 
+  it('omits undefined optional mobile metadata from authenticated token registration input', () => {
+    const lastSeenAt = new Date('2026-06-11T00:00:00.000Z');
+    const input = pushDeviceRegistrationInput(
+      { id: 'user-1', roles: [Role.CUSTOMER] },
+      {
+        token: 'fcm-token-1',
+        platform: 'ios',
+        pushProvider: 'FCM',
+        appVersion: undefined,
+        osVersion: undefined,
+        deviceModel: undefined,
+        locale: undefined,
+        timezone: undefined,
+      },
+      lastSeenAt,
+    );
+
+    for (const field of ['appVersion', 'osVersion', 'deviceModel', 'locale', 'timezone']) {
+      expect(input.update).not.toHaveProperty(field);
+      expect(input.create).not.toHaveProperty(field);
+    }
+
+    expect(input).toMatchObject({
+      update: {
+        platform: 'ios',
+        pushProvider: 'FCM',
+      },
+      create: {
+        platform: 'ios',
+        pushProvider: 'FCM',
+      },
+    });
+  });
+
   it('rejects registration input without a customer or provider role', () => {
     expect(() =>
       pushDeviceRegistrationInput(
