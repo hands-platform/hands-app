@@ -418,6 +418,11 @@ function ReferralCodeCell({
           iOS store {storeSetup.ios ? 'ready' : 'missing'}
         </StatusBadge>
       </div>
+      {!storeSetup.android || !storeSetup.ios ? (
+        <Link className="text-link admin-mt-8" href="/setup#referrals">
+          Configure store URLs
+        </Link>
+      ) : null}
     </div>
   );
 }

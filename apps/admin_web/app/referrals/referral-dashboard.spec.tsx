@@ -109,6 +109,8 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');
+    expect(markup).toContain('Configure store URLs');
+    expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
   });
