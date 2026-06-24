@@ -53,7 +53,7 @@ const referralStoreEnvKeys = [
   'REFERRAL_PARTNER_IOS_STORE_URL',
 ];
 const referralStoreFix =
-  'Set REFERRAL_PUBLIC_BASE_URL and customer/Partner Android/iOS store URLs before referral link E2E. Keep referral rewards disabled until admin policy and attribution checks pass.';
+  'Set REFERRAL_PUBLIC_BASE_URL and customer/Partner Android/iOS store URLs before referral link E2E. Keep automatic referral payout disabled; use the audited admin credit action for wallet posting until automatic payout is explicitly approved.';
 const validPhases = new Set([
   'advisory',
   'supabase-core',

@@ -283,14 +283,14 @@ export const setupOrder = [
       'REFERRAL_PARTNER_IOS_STORE_URL',
     ],
     notes: [
-      'Admin referral policy can be configured without enabling public referral rewards.',
+      'Admin referral policy can be configured while public app-store sharing stays deferred.',
       'Referral link clicks must not call SMS, maps, push, or payment APIs.',
       'Android Play Store links carry referral metadata through the referrer parameter.',
       'iOS App Store links need the configured store or deep-link URL and a later app/API attribution handshake.',
       'Run referral claim API smoke after the local API and database are available; it verifies customer and Partner referral attribution through NestJS.',
-      'Run referral reward action smoke before enabling reward payout; it verifies admin hold/reverse decisions and audit evidence without creating wallet credit.',
-      'Run referral wallet-credit readiness before payout implementation; it is read-only and must show the remaining ledger/API gap before real wallet credit is enabled.',
-      'Keep referral rewards disabled until attribution and wallet-credit smoke checks pass.',
+      'Run referral reward action smoke before broad referral operations; it verifies admin hold, reverse, and audited wallet credit decisions.',
+      'Run referral wallet-credit readiness as a guardrail; automatic payout must stay disabled unless explicitly approved.',
+      'Reward candidates can be staged in Admin, and wallet posting remains an audited admin credit action.',
     ],
     commands: [
       'npm.cmd run external:check:referrals',

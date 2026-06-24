@@ -148,9 +148,13 @@ describe('setup page data', () => {
     );
     expect(referralSetup?.notes).toEqual(
       expect.arrayContaining([
-        'Run referral wallet-credit readiness before payout implementation; it is read-only and must show the remaining ledger/API gap before real wallet credit is enabled.',
+        'Run referral reward action smoke before broad referral operations; it verifies admin hold, reverse, and audited wallet credit decisions.',
+        'Run referral wallet-credit readiness as a guardrail; automatic payout must stay disabled unless explicitly approved.',
+        'Reward candidates can be staged in Admin, and wallet posting remains an audited admin credit action.',
       ]),
     );
+    expect(referralSetup?.notes.join(' ')).not.toContain('Keep referral rewards disabled');
+    expect(referralSetup?.notes.join(' ')).not.toContain('remaining ledger/API gap');
   });
 
   it('keeps external registration and baseline handoff data populated', () => {
