@@ -9407,6 +9407,43 @@ textarea:focus-visible {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.referral-policy-form-grid {
+  align-items: stretch;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.referral-policy-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.referral-policy-field-full {
+  grid-column: 1 / -1;
+}
+
+.referral-policy-field-label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.referral-policy-input,
+.referral-policy-select,
+.referral-policy-textarea {
+  min-width: 0;
+  width: 100%;
+}
+
+.referral-policy-actions {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .vuexy-customer-date-filter-group {
   align-items: center;
   background: color-mix(in srgb, var(--admin-surface) 88%, transparent);

@@ -153,6 +153,11 @@ describe('ReferralDashboard', () => {
 
     expect(markup).toContain('Customer Referrals');
     expect(markup).toContain('Policy changes are audited');
+    expect(markup).toContain('aria-label="Customer referral policy controls"');
+    expect(markup).toContain('class="vuexy-customer-form referral-policy-form admin-mt-16"');
+    expect(markup).toContain('class="admin-form-input referral-policy-input"');
+    expect(markup).toContain('class="admin-form-textarea referral-policy-textarea"');
+    expect(markup).toContain('class="admin-form-control-button vuexy-customer-button referral-policy-save-button"');
     expect(markup).not.toContain('read-only here');
     expect(markup).not.toContain('Release ready rewards');
     expect(markup).not.toContain('Mark ready rewards available');

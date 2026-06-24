@@ -48,6 +48,7 @@ type AdminFormInputProps = {
   | 'onChange'
   | 'placeholder'
   | 'required'
+  | 'step'
   | 'type'
   | 'value'
 >;
@@ -157,6 +158,7 @@ export function AdminFormInput({
   onChange,
   placeholder,
   required,
+  step,
   type = 'text',
   value,
 }: AdminFormInputProps) {
@@ -174,6 +176,7 @@ export function AdminFormInput({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        step={step}
         type={type}
         value={value}
       />

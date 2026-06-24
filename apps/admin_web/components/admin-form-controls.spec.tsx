@@ -57,6 +57,7 @@ describe('Admin form controls', () => {
       name: 'reason',
       placeholder: 'Clear operator reason',
       required: true,
+      step: 1000,
     });
 
     expect(input.props.className).toBe('admin-form-input partner-reason');
@@ -68,6 +69,7 @@ describe('Admin form controls', () => {
       name: 'reason',
       placeholder: 'Clear operator reason',
       required: true,
+      step: 1000,
       type: 'text',
     });
   });

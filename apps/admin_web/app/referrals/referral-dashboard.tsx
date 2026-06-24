@@ -6,8 +6,10 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -365,105 +367,146 @@ function ReferralPolicyActions() {
 
 function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
   const audience = policy.audience === 'PARTNER' ? 'partner' : 'customer';
+  const formLabel =
+    policy.audience === 'PARTNER' ? 'Partner referral policy controls' : 'Customer referral policy controls';
   const commissionPercentValue =
     policy.commissionPercentBps !== null && policy.commissionPercentBps !== undefined
       ? Number(policy.commissionPercentBps) / 100
       : '';
 
   return (
-    <form action={updateReferralPolicy} className="form-grid compact-form admin-mt-16">
+    <form
+      action={updateReferralPolicy}
+      aria-label={formLabel}
+      className="vuexy-customer-form referral-policy-form admin-mt-16"
+    >
       <input name="audience" type="hidden" value={audience} />
-      <label>
-        <span>Policy status</span>
-        <select defaultValue={policy.enabled ? 'on' : 'off'} name="enabledState">
-          <option value="on">Enabled</option>
-          <option value="off">Disabled</option>
-        </select>
-      </label>
-      {policy.audience === 'CUSTOMER' ? (
-        <label>
-          <span>Reward percent</span>
-          <input
-            defaultValue={commissionPercentValue}
-            min="0"
-            name="commissionPercent"
-            placeholder="5"
-            step="0.01"
-            type="number"
+      <div className="referral-policy-form-grid">
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Policy status</span>
+          <AdminFormSelect
+            className="referral-policy-select"
+            defaultValue={policy.enabled ? 'on' : 'off'}
+            label="Policy status"
+            name="enabledState"
+            options={[
+              { label: 'Enabled', value: 'on' },
+              { label: 'Disabled', value: 'off' },
+            ]}
           />
-        </label>
-      ) : (
-        <label>
-          <span>Fixed reward amount</span>
-          <input
-            defaultValue={policy.fixedRewardAmount ?? ''}
+        </div>
+        {policy.audience === 'CUSTOMER' ? (
+          <div className="referral-policy-field">
+            <span className="referral-policy-field-label">Reward percent</span>
+            <AdminFormInput
+              className="referral-policy-input"
+              defaultValue={commissionPercentValue}
+              label="Reward percent"
+              min="0"
+              name="commissionPercent"
+              placeholder="5"
+              step="0.01"
+              type="number"
+            />
+          </div>
+        ) : (
+          <div className="referral-policy-field">
+            <span className="referral-policy-field-label">Fixed reward amount</span>
+            <AdminFormInput
+              className="referral-policy-input"
+              defaultValue={policy.fixedRewardAmount ?? ''}
+              label="Fixed reward amount"
+              min="0"
+              name="fixedRewardAmount"
+              placeholder="100000"
+              step="1000"
+              type="number"
+            />
+          </div>
+        )}
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Total reward cap</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={policy.totalRewardCapAmount ?? ''}
+            label="Total reward cap"
             min="0"
-            name="fixedRewardAmount"
-            placeholder="100000"
+            name="totalRewardCapAmount"
+            placeholder="Optional"
             step="1000"
             type="number"
           />
-        </label>
-      )}
-      <label>
-        <span>Total reward cap</span>
-        <input
-          defaultValue={policy.totalRewardCapAmount ?? ''}
-          min="0"
-          name="totalRewardCapAmount"
-          placeholder="Optional"
-          step="1000"
-          type="number"
-        />
-      </label>
-      <label>
-        <span>Max rewarded referrals</span>
-        <input
-          defaultValue={policy.maxRewardedReferrals ?? ''}
-          min="0"
-          name="maxRewardedReferrals"
-          placeholder="Optional"
-          type="number"
-        />
-      </label>
-      <label>
-        <span>Max rewards per referred</span>
-        <input
-          defaultValue={policy.maxRewardsPerReferred ?? ''}
-          min="0"
-          name="maxRewardsPerReferred"
-          placeholder="1"
-          type="number"
-        />
-      </label>
-      <label>
-        <span>Hold period days</span>
-        <input defaultValue={policy.holdPeriodDays} min="0" name="holdPeriodDays" type="number" />
-      </label>
-      <label>
-        <span>Currency</span>
-        <input defaultValue={policy.currency} maxLength={8} name="currency" />
-      </label>
-      <label className="full-span">
-        <span>Policy notes</span>
-        <textarea
-          defaultValue={policy.notes ?? ''}
-          name="notes"
-          placeholder={`${label} policy note for operators`}
-          rows={3}
-        />
-      </label>
-      <label className="full-span">
-        <span>Update reason</span>
-        <input
-          name="reason"
-          placeholder="Why this referral policy is being changed"
-        />
-      </label>
-      <div className="actions full-span">
-        <button className="button button-primary" type="submit">
+        </div>
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Max rewarded referrals</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={policy.maxRewardedReferrals ?? ''}
+            label="Max rewarded referrals"
+            min="0"
+            name="maxRewardedReferrals"
+            placeholder="Optional"
+            type="number"
+          />
+        </div>
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Max rewards per referred</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={policy.maxRewardsPerReferred ?? ''}
+            label="Max rewards per referred"
+            min="0"
+            name="maxRewardsPerReferred"
+            placeholder="1"
+            type="number"
+          />
+        </div>
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Hold period days</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={policy.holdPeriodDays}
+            label="Hold period days"
+            min="0"
+            name="holdPeriodDays"
+            type="number"
+          />
+        </div>
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Currency</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={policy.currency}
+            label="Currency"
+            maxLength={8}
+            name="currency"
+          />
+        </div>
+        <div className="referral-policy-field referral-policy-field-full">
+          <span className="referral-policy-field-label">Policy notes</span>
+          <AdminFormTextarea
+            className="referral-policy-textarea"
+            defaultValue={policy.notes ?? ''}
+            label="Policy notes"
+            name="notes"
+            placeholder={`${label} policy note for operators`}
+            rows={3}
+          />
+        </div>
+        <div className="referral-policy-field referral-policy-field-full">
+          <span className="referral-policy-field-label">Update reason</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            label="Update reason"
+            name="reason"
+            placeholder="Why this referral policy is being changed"
+          />
+        </div>
+      </div>
+      <div className="vuexy-customer-filter-actions referral-policy-actions">
+        <AdminFormControlButton className="vuexy-customer-button referral-policy-save-button">
           Save referral policy
-        </button>
+        </AdminFormControlButton>
       </div>
     </form>
   );
