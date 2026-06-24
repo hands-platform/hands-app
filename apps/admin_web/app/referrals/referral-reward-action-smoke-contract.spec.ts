@@ -23,6 +23,10 @@ describe('referral reward action smoke contract', () => {
     expect(scriptSource).toContain('providerWalletLedgerEntry');
     expect(scriptSource).toContain('ReferralRewardStatus.REWARDED');
     expect(scriptSource).toContain('walletCreditCreated');
+    expect(scriptSource).toContain('REFERRAL_SMOKE_ADMIN_WEB_BASE_URL');
+    expect(scriptSource).toContain('verifyAdminWebDecisionEvidence');
+    expect(scriptSource).toContain('Latest decision Credit by');
+    expect(scriptSource).toContain('Smoke credit Partner referral reward candidate.');
     expect(scriptSource).toContain('smoke_referral_customer_parent_profile');
     expect(scriptSource).toContain('smoke_referral_partner_parent_profile');
   });

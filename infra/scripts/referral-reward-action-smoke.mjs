@@ -18,6 +18,9 @@ const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const apiBaseUrl = trimTrailingSlash(
   env.REFERRAL_SMOKE_API_BASE_URL ?? env.API_BASE_URL ?? env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api',
 );
+const adminWebBaseUrl = trimTrailingSlash(
+  env.REFERRAL_SMOKE_ADMIN_WEB_BASE_URL ?? env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101',
+);
 const adminPhone = nonEmptyString(env.REFERRAL_SMOKE_ADMIN_PHONE) ?? nonEmptyString(env.ADMIN_DEMO_PHONE) ?? '+84900000099';
 const adminOtp = nonEmptyString(env.REFERRAL_SMOKE_ADMIN_OTP) ?? nonEmptyString(env.ADMIN_DEMO_OTP) ?? '123456';
 
@@ -75,6 +78,7 @@ if (dryRun) {
       {
         ok: true,
         action: 'reward-action-dry-run',
+        adminWebBaseUrl,
         apiBaseUrl,
         envFile: { path: envPath, exists: envFileExists },
         ids,
@@ -128,15 +132,18 @@ try {
   }
 
   const verification = await verifyRewardActions();
+  const adminWebEvidence = await verifyAdminWebDecisionEvidence();
   console.log(
     JSON.stringify(
       {
         ok: true,
         action: 'reward-action-smoke',
+        adminWebBaseUrl,
         apiBaseUrl,
         envFile: { path: envPath, exists: envFileExists },
         customerParentDetail: `/referrals/customers/${ids.customerParentProfile}`,
         partnerParentDetail: `/referrals/partners/${ids.partnerParentProfile}`,
+        adminWebEvidence,
         verification,
       },
       null,
@@ -148,6 +155,7 @@ try {
     JSON.stringify(
       {
         ok: false,
+        adminWebBaseUrl,
         apiBaseUrl,
         envFile: { path: envPath, exists: envFileExists },
         error: error instanceof Error ? error.message : String(error),
@@ -330,6 +338,56 @@ async function verifyRewardActions() {
   });
 
   return { verified };
+}
+
+async function verifyAdminWebDecisionEvidence() {
+  const customerParentDetail = `/referrals/customers/${ids.customerParentProfile}`;
+  const partnerParentDetail = `/referrals/partners/${ids.partnerParentProfile}`;
+  const pages = [
+    {
+      path: customerParentDetail,
+      expected: [
+        'Decision evidence',
+        'Latest decision Credit by',
+        'Smoke credit referral reward candidate.',
+        'Latest decision Hold by',
+        'Smoke hold referral reward candidate.',
+      ],
+    },
+    {
+      path: partnerParentDetail,
+      expected: [
+        'Decision evidence',
+        'Latest decision Credit by',
+        'Smoke credit Partner referral reward candidate.',
+        'Latest decision Reverse by',
+        'Smoke reverse referral reward candidate.',
+      ],
+    },
+  ];
+
+  const verified = [];
+  for (const page of pages) {
+    const html = await requestAdminWebHtml(page.path);
+    for (const expectedText of page.expected) {
+      assertCondition(
+        html.includes(expectedText),
+        `Admin Web ${page.path} is missing referral reward decision evidence: ${expectedText}`,
+      );
+    }
+    verified.push({ path: page.path, expected: page.expected });
+  }
+
+  return { verified };
+}
+
+async function requestAdminWebHtml(path) {
+  const response = await fetch(`${adminWebBaseUrl}${path}`);
+  const body = await response.text().catch(() => '');
+  if (!response.ok) {
+    throw new Error(`GET ${path} failed from Admin Web: ${response.status} ${body.slice(0, 500)}`);
+  }
+  return body;
 }
 
 async function postJson(path, accessToken, body = {}) {
