@@ -9,6 +9,7 @@ const apiBaseUrl = normalizeApiBaseUrl(env.API_BASE_URL ?? 'http://localhost:300
 const otp = env.MOBILE_FOUNDATION_SMOKE_OTP ?? env.DEV_OTP ?? '123456';
 const customerPhone = env.MOBILE_FOUNDATION_SMOKE_CUSTOMER_PHONE ?? '+84900000001';
 const providerPhone = env.MOBILE_FOUNDATION_SMOKE_PROVIDER_PHONE ?? '+84900000002';
+const deviceRegistrationPlatforms = ['ANDROID', 'IOS', 'WEB'];
 const appVersionChecks = [
   { appType: 'CUSTOMER', platform: 'ANDROID' },
   { appType: 'CUSTOMER', platform: 'IOS' },
@@ -30,6 +31,7 @@ if (dryRun) {
           { role: 'PROVIDER', phone: providerPhone },
         ],
         appVersionChecks,
+        deviceRegistrationPlatforms,
         tokenPrefix: syntheticTokenPrefix,
       },
       null,
@@ -83,7 +85,7 @@ for (const actor of [
     body: JSON.stringify({ refreshToken: auth.refreshToken }),
   });
 
-  for (const platform of ['ANDROID', 'IOS']) {
+  for (const platform of deviceRegistrationPlatforms) {
     const token = `${syntheticTokenPrefix}${actor.role.toLowerCase()}-${platform.toLowerCase()}-${startedAt}`;
     const registeredDevice = await request('/mobile/devices/register', {
       method: 'POST',
@@ -93,7 +95,7 @@ for (const actor of [
         platform,
         pushProvider: 'FCM',
         appVersion: 'smoke-test',
-        osVersion: platform === 'IOS' ? 'iOS smoke' : 'Android smoke',
+        osVersion: smokeOsVersion(platform),
         deviceModel: `${actor.role} ${platform} smoke device`,
         locale: 'vi-VN',
         timezone: 'Asia/Ho_Chi_Minh',
@@ -192,6 +194,16 @@ function assertRegisteredDevice(actor, userId, platform, registeredDevice, token
 
 function normalizeApiBaseUrl(value) {
   return String(value ?? '').replace(/\/+$/, '');
+}
+
+function smokeOsVersion(platform) {
+  if (platform === 'IOS') {
+    return 'iOS smoke';
+  }
+  if (platform === 'WEB') {
+    return 'Web smoke';
+  }
+  return 'Android smoke';
 }
 
 function maskTokenFields(value, token) {
