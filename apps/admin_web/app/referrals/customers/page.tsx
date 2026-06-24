@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import {
   ReferralDashboard,
   buildReferralDashboardFilters,
+  buildReferralRewardQueueSummaries,
   filterReferralParentRows,
   referralPolicyFallback,
 } from '../referral-dashboard';
@@ -25,6 +26,7 @@ export default async function CustomerReferralsPage({
     }),
     adminGet<AdminCustomerReferralParent[]>('/admin/referrals/customers', []),
   ]);
+  const rewardSummaryRows = filterReferralParentRows('customer', rows, { ...filters, reward: 'all' });
   const filteredRows = filterReferralParentRows('customer', rows, filters);
 
   return (
@@ -32,6 +34,7 @@ export default async function CustomerReferralsPage({
       audience="customer"
       filters={filters}
       policy={policies.customer}
+      rewardQueueSummaries={buildReferralRewardQueueSummaries(rewardSummaryRows)}
       rows={filteredRows}
       totalCount={rows.length}
     />

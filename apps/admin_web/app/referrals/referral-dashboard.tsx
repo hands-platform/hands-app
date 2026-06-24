@@ -34,11 +34,18 @@ export type ReferralDashboardFilters = {
   readonly status: ReferralDashboardStatusFilter;
 };
 
+export type ReferralRewardQueueSummary = {
+  readonly amount: number;
+  readonly count: number;
+  readonly reward: ReferralDashboardRewardFilter;
+};
+
 type ReferralDashboardProps =
   | {
       readonly audience: 'customer';
       readonly filters?: ReferralDashboardFilters;
       readonly policy: AdminReferralPolicy;
+      readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminCustomerReferralParent[];
       readonly totalCount?: number;
     }
@@ -46,6 +53,7 @@ type ReferralDashboardProps =
       readonly audience: 'partner';
       readonly filters?: ReferralDashboardFilters;
       readonly policy: AdminReferralPolicy;
+      readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminPartnerReferralParent[];
       readonly totalCount?: number;
     };
@@ -58,6 +66,7 @@ type ReferralPolicyPanelProps = {
 export function ReferralDashboard(props: ReferralDashboardProps) {
   const title = props.audience === 'customer' ? 'Customer Referrals' : 'Partner Referrals';
   const filters = props.filters ?? defaultReferralDashboardFilters;
+  const rewardQueueSummaries = props.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(props.rows);
   const totalCount = props.totalCount ?? props.rows.length;
   const description =
     props.audience === 'customer'
@@ -123,6 +132,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
         audience={props.audience}
         filteredCount={props.rows.length}
         filters={filters}
+        rewardQueueSummaries={rewardQueueSummaries}
         totalCount={totalCount}
       />
       {props.audience === 'customer' ? (
@@ -170,14 +180,19 @@ function ReferralListFilterPanel({
   audience,
   filteredCount,
   filters,
+  rewardQueueSummaries,
   totalCount,
 }: {
   readonly audience: ReferralAudienceSlug;
   readonly filteredCount: number;
   readonly filters: ReferralDashboardFilters;
+  readonly rewardQueueSummaries: readonly ReferralRewardQueueSummary[];
   readonly totalCount: number;
 }) {
   const activeFilters = referralActiveFilterLabels(filters);
+  const rewardSummaryByQueue = new Map<ReferralDashboardRewardFilter, ReferralRewardQueueSummary>(
+    rewardQueueSummaries.map((summary) => [summary.reward, summary]),
+  );
 
   return (
     <AdminFilterPanel
@@ -208,7 +223,10 @@ function ReferralListFilterPanel({
               role="button"
               title={option.description}
             >
-              {option.label}
+              <span>{option.label}</span>
+              <span className="referral-reward-filter-meta">
+                {formatReferralRewardQueueSummary(rewardSummaryByQueue.get(option.reward))}
+              </span>
             </a>
           ))}
         </div>
@@ -862,8 +880,48 @@ export function filterReferralParentRows<T extends ReferralParentRow>(
   );
 }
 
+export function buildReferralRewardQueueSummaries(
+  rows: readonly ReferralParentRow[],
+): readonly ReferralRewardQueueSummary[] {
+  const allSummary = { amount: 0, count: 0, reward: 'all' as const };
+  const availableSummary = { amount: 0, count: 0, reward: 'available' as const };
+  const creditedSummary = { amount: 0, count: 0, reward: 'credited' as const };
+  const pendingSummary = { amount: 0, count: 0, reward: 'pending' as const };
+  const heldSummary = { amount: 0, count: 0, reward: 'held' as const };
+
+  for (const row of rows) {
+    const availableAmount = numberOrZero(row.totals.availableRewardAmount);
+    const creditedAmount = numberOrZero(row.totals.rewardedRewardAmount);
+    const pendingAmount = numberOrZero(row.totals.pendingRewardAmount);
+    const heldAmount = numberOrZero(row.totals.heldRewardAmount);
+    const availableCount = numberOrZero(row.totals.availableRewardCount);
+    const creditedCount = numberOrZero(row.totals.rewardedRewardCount);
+    const pendingCount = numberOrZero(row.totals.pendingRewardCount);
+    const heldCount = numberOrZero(row.totals.heldRewardCount);
+
+    availableSummary.amount += availableAmount;
+    availableSummary.count += availableCount;
+    creditedSummary.amount += creditedAmount;
+    creditedSummary.count += creditedCount;
+    pendingSummary.amount += pendingAmount;
+    pendingSummary.count += pendingCount;
+    heldSummary.amount += heldAmount;
+    heldSummary.count += heldCount;
+    allSummary.amount +=
+      numberOrZero(row.totals.totalRewardAmount) || availableAmount + creditedAmount + pendingAmount + heldAmount;
+    allSummary.count += numberOrZero(row.totals.rewardCount) || availableCount + creditedCount + pendingCount + heldCount;
+  }
+
+  return [allSummary, availableSummary, pendingSummary, heldSummary, creditedSummary];
+}
+
 function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+}
+
+function formatReferralRewardQueueSummary(summary: ReferralRewardQueueSummary | undefined) {
+  if (!summary) return `0 · ${formatMoney(0, 'VND', '0 VND')}`;
+  return `${summary.count} · ${formatMoney(summary.amount, 'VND', '0 VND')}`;
 }
 
 function referralAudienceLabel(audience: ReferralAudienceSlug) {

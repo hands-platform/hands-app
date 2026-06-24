@@ -1492,6 +1492,25 @@ a.action-button-card:hover {
   color: var(--admin-inverse-text);
 }
 
+.referral-reward-filter-buttons a {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 132px;
+  padding-block: 8px;
+}
+
+.referral-reward-filter-meta {
+  color: rgb(var(--admin-main-channel) / 0.56);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.referral-reward-filter-buttons a.is-active .referral-reward-filter-meta {
+  color: rgb(255 255 255 / 0.78);
+}
+
 .booking-custom-date-grid {
   align-items: center;
   display: grid;

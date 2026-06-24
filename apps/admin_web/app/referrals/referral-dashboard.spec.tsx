@@ -5,6 +5,7 @@ import {
   ReferralDashboard,
   buildReferralDashboardFilters,
   buildReferralListHref,
+  buildReferralRewardQueueSummaries,
   filterReferralParentRows,
 } from './referral-dashboard';
 
@@ -171,20 +172,32 @@ describe('ReferralDashboard', () => {
   });
 
   it('renders reward operation quick filters without losing search or referral status', () => {
+    const heldParent = referralParent({
+      code: 'HELDREF',
+      id: 'parent-held',
+      name: 'Held Parent',
+      referralStatus: 'BLOCKED',
+      rewardStatus: 'HELD',
+    });
+
     const markup = renderToStaticMarkup(
       <ReferralDashboard
         audience="customer"
         filters={{ q: 'smoke', reward: 'available', status: 'pending' }}
         policy={policy}
         rows={rows}
+        rewardQueueSummaries={buildReferralRewardQueueSummaries([...rows, heldParent])}
         totalCount={5}
       />,
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('aria-label="Referral reward operation queue"');
     expect(markup).toContain('Ready to credit');
+    expect(markup).toContain('1 · 25.000 VND');
     expect(markup).toContain('Pending checks');
+    expect(markup).toContain('1 · 5.000 VND');
     expect(markup).toContain('Held review');
+    expect(markup).toContain('1 · 10.000 VND');
     expect(markup).toContain('Credited');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending"');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=held"');
