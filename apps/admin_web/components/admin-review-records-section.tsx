@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Eye, Star } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
+import { AdminRoundedPagination } from './admin-rounded-pagination';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -13,8 +14,11 @@ import {
 import type { AdminPartnerCustomerReview, AdminReview } from '../lib/admin-api';
 import { formatDateTime, shortId } from '../lib/admin-format';
 
-const CUSTOMER_REVIEW_HEADERS = ['Booking', 'Request Time', 'Partner', 'Customer', 'Review'] as const;
-const PARTNER_EVALUATION_HEADERS = ['Booking', 'Request Time', 'Partner', 'Customer', 'Evaluation'] as const;
+const CUSTOMER_REVIEW_HEADERS = ['Request Time', 'Partner', 'Customer', 'Review', 'Visibility'] as const;
+const PARTNER_EVALUATION_HEADERS = ['Request Time', 'Partner', 'Customer', 'Customer evaluation'] as const;
+const REVIEW_RECORDS_DETAIL_PAGE_SIZE = 5;
+
+type SearchParamRecord = Record<string, string | string[] | undefined>;
 
 type ReviewAvatarUserSignal = {
   readonly appSessions?: readonly AdminAvatarSessionSignal[];
@@ -29,23 +33,35 @@ type ReviewAvatarProviderSignal = {
 };
 
 type AdminReviewRecordsSectionProps = {
+  readonly basePath?: string;
   readonly customerReviews: readonly AdminReview[];
   readonly description?: string;
   readonly id: string;
   readonly partnerEvaluations: readonly AdminPartnerCustomerReview[];
+  readonly searchParams?: SearchParamRecord;
   readonly title?: string;
 };
 
 export function AdminReviewRecordsSection({
+  basePath,
   customerReviews,
   description = 'Customer-written reviews and Partner-written customer evaluations connected to this record.',
   id,
   partnerEvaluations,
+  searchParams = {},
   title = 'Review records',
 }: AdminReviewRecordsSectionProps) {
   const customerRows = [...customerReviews].sort((left, right) => reviewRecordMs(right) - reviewRecordMs(left));
   const partnerRows = [...partnerEvaluations].sort(
     (left, right) => partnerEvaluationRecordMs(right) - partnerEvaluationRecordMs(left),
+  );
+  const customerPagination = paginateReviewRecordRows(
+    customerRows,
+    readReviewRecordPage(searchParams, 'customerReviewPage'),
+  );
+  const partnerPagination = paginateReviewRecordRows(
+    partnerRows,
+    readReviewRecordPage(searchParams, 'partnerEvaluationPage'),
   );
   const totalRecords = customerRows.length + partnerRows.length;
 
@@ -72,37 +88,43 @@ export function AdminReviewRecordsSection({
               className="vuexy-booking-table vuexy-review-table"
               emptyMessage="No customer review connected to this record."
               headers={CUSTOMER_REVIEW_HEADERS}
-              rowCount={customerRows.length}
+              rowCount={customerPagination.rows.length}
             >
-              {customerRows.map((review) => (
+              {customerPagination.rows.map((review) => (
                 <tr key={review.id}>
-                  <td>{reviewBookingLink(review)}</td>
-                  <td>
-                    <span className="muted">{reviewRequestTimeLabel(review)}</span>
-                    <div className="muted">Reviewed {formatDateTime(review.createdAt, 'No reviewed date')}</div>
-                  </td>
+                  <td>{reviewRequestCell(review)}</td>
                   <td>{reviewPartnerCell(review)}</td>
                   <td>{reviewCustomerCell(review)}</td>
                   <td className="vuexy-review-copy-cell">
-                    <div className="admin-review-rating-line" aria-label={`${review.rating} out of 5`}>
+                    <div aria-label={`${review.rating} out of 5`} className="vuexy-review-stars">
                       {Array.from({ length: 5 }, (_, index) => (
                         <Star
                           aria-hidden="true"
                           className={index < review.rating ? 'is-filled' : undefined}
                           key={`${review.id}-star-${index}`}
-                          size={14}
+                          size={18}
                         />
                       ))}
-                      <strong>{review.rating}/5</strong>
-                      <span className={reviewStatusClassName(review.status)}>{reviewStatusLabel(review.status)}</span>
                     </div>
                     <p>{review.comment?.trim() || 'No written review'}</p>
                     <span>{reviewServiceLabel(review.booking?.services)}</span>
                   </td>
+                  <td className="vuexy-review-visibility-cell">{reviewVisibilityCell(review)}</td>
                 </tr>
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <ReviewRecordsPaginationFooter
+            activePage={customerPagination.page}
+            ariaLabel="Customer review record pages"
+            basePath={basePath}
+            pageKey="customerReviewPage"
+            searchParams={searchParams}
+            totalPages={customerPagination.totalPages}
+            totalRows={customerPagination.totalRows}
+            visibleFrom={customerPagination.from}
+            visibleTo={customerPagination.to}
+          />
         </section>
 
         <section aria-labelledby={`${id}-partner-evaluations-title`} className="admin-review-records-block">
@@ -118,15 +140,11 @@ export function AdminReviewRecordsSection({
               className="vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table"
               emptyMessage="No Partner evaluation connected to this record."
               headers={PARTNER_EVALUATION_HEADERS}
-              rowCount={partnerRows.length}
+              rowCount={partnerPagination.rows.length}
             >
-              {partnerRows.map((review) => (
+              {partnerPagination.rows.map((review) => (
                 <tr key={review.id}>
-                  <td>{partnerEvaluationBookingLink(review)}</td>
-                  <td>
-                    <span className="muted">{partnerEvaluationRequestTimeLabel(review)}</span>
-                    <div className="muted">Logged {formatDateTime(review.createdAt, 'No logged date')}</div>
-                  </td>
+                  <td>{partnerEvaluationRequestCell(review)}</td>
                   <td>{partnerEvaluationPartnerCell(review)}</td>
                   <td>{partnerEvaluationCustomerCell(review)}</td>
                   <td className="vuexy-review-copy-cell">
@@ -137,6 +155,17 @@ export function AdminReviewRecordsSection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <ReviewRecordsPaginationFooter
+            activePage={partnerPagination.page}
+            ariaLabel="Partner customer evaluation record pages"
+            basePath={basePath}
+            pageKey="partnerEvaluationPage"
+            searchParams={searchParams}
+            totalPages={partnerPagination.totalPages}
+            totalRows={partnerPagination.totalRows}
+            visibleFrom={partnerPagination.from}
+            visibleTo={partnerPagination.to}
+          />
         </section>
       </div>
     </AdminFilterPanel>
@@ -176,29 +205,94 @@ export function reviewRecordsForPartner(
   };
 }
 
-function reviewBookingLink(review: AdminReview) {
+function reviewRequestCell(review: AdminReview) {
   const bookingId = reviewRecordBookingId(review);
-  if (!bookingId) {
-    return <span className="muted">No booking link</span>;
-  }
-
   return (
-    <Link className="text-link" href={`/bookings/${bookingId}`}>
-      {shortId(bookingId)}
-    </Link>
+    <>
+      <div className="vuexy-booking-id-line">
+        {bookingId ? (
+          <Link className="text-link" href={`/bookings/${bookingId}`} title="Open booking detail">
+            <Eye aria-hidden="true" size={14} />
+            {shortId(bookingId)}
+          </Link>
+        ) : (
+          <span className="muted">No booking link</span>
+        )}
+      </div>
+      <div className="muted">{reviewRequestTimeLabel(review)}</div>
+      <div className="muted vuexy-review-submitted-line">
+        Review submitted {formatDateTime(review.createdAt, 'No reviewed date')}
+      </div>
+    </>
   );
 }
 
-function partnerEvaluationBookingLink(review: AdminPartnerCustomerReview) {
+function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
   const bookingId = partnerEvaluationBookingId(review);
-  if (!bookingId) {
-    return <span className="muted">No booking link</span>;
-  }
-
   return (
-    <Link className="text-link" href={`/bookings/${bookingId}`}>
-      {shortId(bookingId)}
-    </Link>
+    <>
+      <div className="vuexy-booking-id-line">
+        {bookingId ? (
+          <Link className="text-link" href={`/bookings/${bookingId}`} title="Open booking detail">
+            <Eye aria-hidden="true" size={14} />
+            {shortId(bookingId)}
+          </Link>
+        ) : (
+          <span className="muted">No booking link</span>
+        )}
+      </div>
+      <div className="muted">{partnerEvaluationRequestTimeLabel(review)}</div>
+      <div className="muted vuexy-review-submitted-line">
+        Evaluation submitted {formatDateTime(review.createdAt, 'No logged date')}
+      </div>
+    </>
+  );
+}
+
+function reviewVisibilityCell(review: AdminReview) {
+  return (
+    <>
+      <span className={reviewStatusClassName(review.status)}>{reviewStatusLabel(review.status)}</span>
+      <small>{reviewAppVisibilityLabel(review.status)}</small>
+    </>
+  );
+}
+
+function ReviewRecordsPaginationFooter({
+  activePage,
+  ariaLabel,
+  basePath,
+  pageKey,
+  searchParams,
+  totalPages,
+  totalRows,
+  visibleFrom,
+  visibleTo,
+}: {
+  readonly activePage: number;
+  readonly ariaLabel: string;
+  readonly basePath?: string;
+  readonly pageKey: string;
+  readonly searchParams: SearchParamRecord;
+  readonly totalPages: number;
+  readonly totalRows: number;
+  readonly visibleFrom: number;
+  readonly visibleTo: number;
+}) {
+  return (
+    <div className="vuexy-booking-table-footer vuexy-review-footer">
+      <span>
+        Showing {visibleFrom} to {visibleTo} of {totalRows} entries
+      </span>
+      <AdminRoundedPagination
+        activePage={activePage}
+        ariaLabel={ariaLabel}
+        className="vuexy-review-pagination"
+        hrefForPage={basePath ? (page) => buildReviewRecordPageHref(basePath, searchParams, pageKey, page) : undefined}
+        pageLinkClassName="vuexy-review-page-link"
+        totalPages={totalPages}
+      />
+    </div>
   );
 }
 
@@ -339,6 +433,19 @@ function reviewStatusClassName(status?: string | null) {
   return 'review-status-chip review-status-held';
 }
 
+function reviewAppVisibilityLabel(status?: string | null) {
+  if (status === 'PUBLISHED') {
+    return 'Visible in customer app';
+  }
+  if (status === 'REPORTED') {
+    return 'Needs admin follow-up';
+  }
+  if (status === 'HIDDEN') {
+    return 'Hidden from customer app';
+  }
+  return 'Visibility not mapped';
+}
+
 function reviewRequestTimeLabel(review: AdminReview) {
   return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');
 }
@@ -385,4 +492,58 @@ function reviewServiceLabel(services?: NonNullable<AdminReview['booking']>['serv
     .filter((value): value is string => Boolean(value));
 
   return labels.length > 0 ? labels.join(', ') : 'No service snapshot';
+}
+
+function readReviewRecordPage(params: SearchParamRecord, key: string) {
+  const raw = params[key];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const page = Number(value ?? 1);
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+}
+
+function paginateReviewRecordRows<T>(rows: readonly T[], requestedPage: number) {
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / REVIEW_RECORDS_DETAIL_PAGE_SIZE));
+  const page = Math.min(Math.max(requestedPage, 1), totalPages);
+  const start = (page - 1) * REVIEW_RECORDS_DETAIL_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + REVIEW_RECORDS_DETAIL_PAGE_SIZE);
+  const from = totalRows === 0 ? 0 : start + 1;
+  const to = Math.min(totalRows, start + pageRows.length);
+
+  return {
+    from,
+    page,
+    rows: pageRows,
+    to,
+    totalPages,
+    totalRows,
+  };
+}
+
+function buildReviewRecordPageHref(
+  basePath: string,
+  params: SearchParamRecord,
+  pageKey: string,
+  page: number,
+) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (key === pageKey || value === undefined) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (entry) search.append(key, entry);
+      }
+      continue;
+    }
+    if (value) {
+      search.set(key, value);
+    }
+  }
+  if (page > 1) {
+    search.set(pageKey, String(page));
+  }
+  const query = search.toString();
+  return query ? `${basePath}?${query}` : basePath;
 }

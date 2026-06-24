@@ -414,10 +414,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       />
 
       <AdminReviewRecordsSection
+        basePath={`/customers/${id}`}
         customerReviews={customerReviewRecords.customerReviews}
         description="Customer review records and Partner-written internal evaluations connected to this customer."
         id="customer-review-records"
         partnerEvaluations={customerReviewRecords.partnerEvaluations}
+        searchParams={detailSearchParams}
         title="Customer review records"
       />
 

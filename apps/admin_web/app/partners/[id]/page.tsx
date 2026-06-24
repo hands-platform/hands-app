@@ -900,10 +900,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           title="Partner booking journey"
         />
         <AdminReviewRecordsSection
+          basePath={`/partners/${id}`}
           customerReviews={partnerReviewRecords.customerReviews}
           description="Customer reviews about this Partner and Partner-written customer evaluations connected to this Partner."
           id="partner-review-records"
           partnerEvaluations={partnerReviewRecords.partnerEvaluations}
+          searchParams={detailSearchParams}
           title="Partner review records"
         />
         <PartnerDetailBookingGateEvidenceSection

@@ -205,6 +205,7 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 type BookingDetailPageData = {
@@ -239,8 +240,9 @@ const bookingDetailAuthoritySourceMarkers = [
 
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
-export default async function BookingDetailPage({ params }: PageProps) {
+export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const detailSearchParams = searchParams ? await searchParams : {};
   const {
     booking,
     customerReviews,
@@ -733,10 +735,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
 
       <AdminReviewRecordsSection
+        basePath={`/bookings/${id}`}
         customerReviews={bookingReviewRecords.customerReviews}
         description="Customer review and Partner evaluation records attached to this booking."
         id="booking-review-records"
         partnerEvaluations={bookingReviewRecords.partnerEvaluations}
+        searchParams={detailSearchParams}
         title="Booking review records"
       />
 

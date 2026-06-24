@@ -67,6 +67,32 @@ const partnerEvaluation: AdminPartnerCustomerReview = {
   },
 };
 
+function customerReviewAt(index: number): AdminReview {
+  return {
+    ...customerReview,
+    booking: {
+      ...customerReview.booking,
+      id: `booking_${index}`,
+    },
+    bookingId: `booking_${index}`,
+    createdAt: `2026-06-13T03:${String(index).padStart(2, '0')}:00.000Z`,
+    id: `review_${index}`,
+  };
+}
+
+function partnerEvaluationAt(index: number): AdminPartnerCustomerReview {
+  return {
+    ...partnerEvaluation,
+    booking: {
+      ...partnerEvaluation.booking,
+      id: `booking_${index}`,
+    },
+    bookingId: `booking_${index}`,
+    createdAt: `2026-06-13T04:${String(index).padStart(2, '0')}:00.000Z`,
+    id: `evaluation_${index}`,
+  };
+}
+
 describe('AdminReviewRecordsSection', () => {
   it('renders customer reviews and Partner evaluations together', () => {
     const markup = renderToStaticMarkup(
@@ -79,6 +105,8 @@ describe('AdminReviewRecordsSection', () => {
 
     expect(markup).toContain('Customer reviews');
     expect(markup).toContain('Partner evaluations');
+    expect(markup).toContain('Review submitted');
+    expect(markup).toContain('Evaluation submitted');
     expect(markup).toContain('Great service.');
     expect(markup).toContain('Customer was ready at the service address.');
     expect(markup).toContain('href="/bookings/booking_1"');
@@ -97,10 +125,29 @@ describe('AdminReviewRecordsSection', () => {
 
     expect(markup).toContain('Read-only internal records');
     expect(markup).not.toContain('Actions');
-    expect(markup).not.toContain('Visibility');
     expect(markup).not.toContain('Publish');
     expect(markup).not.toContain('Hold');
     expect(markup).not.toContain('Hide');
+  });
+
+  it('paginates customer reviews and Partner evaluations independently', () => {
+    const markup = renderToStaticMarkup(
+      <AdminReviewRecordsSection
+        basePath="/customers/customer_1"
+        customerReviews={Array.from({ length: 6 }, (_, index) => customerReviewAt(index + 1))}
+        id="test-review-record-pagination"
+        partnerEvaluations={Array.from({ length: 6 }, (_, index) => partnerEvaluationAt(index + 1))}
+        searchParams={{
+          customerReviewPage: '2',
+          partnerEvaluationPage: '2',
+          section: 'full',
+        }}
+      />,
+    );
+
+    expect(markup).toContain('Showing 6 to 6 of 6 entries');
+    expect(markup).toContain('customerReviewPage=2');
+    expect(markup).toContain('partnerEvaluationPage=2');
   });
 
   it('filters review records for booking, customer, and Partner detail pages', () => {
