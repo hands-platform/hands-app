@@ -143,6 +143,12 @@ describe('setup page data', () => {
         'npm.cmd run referrals:claim-api-smoke',
         'npm.cmd run referrals:reward-action-smoke -- --dry-run',
         'npm.cmd run referrals:reward-action-smoke',
+        'npm.cmd run referrals:wallet-credit-readiness',
+      ]),
+    );
+    expect(referralSetup?.notes).toEqual(
+      expect.arrayContaining([
+        'Run referral wallet-credit readiness before payout implementation; it is read-only and must show the remaining ledger/API gap before real wallet credit is enabled.',
       ]),
     );
   });

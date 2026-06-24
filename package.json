@@ -36,6 +36,7 @@
     "bookings:list-smoke-seed": "node infra/scripts/booking-list-smoke-seed.mjs",
     "referrals:smoke-seed": "node infra/scripts/referral-smoke-seed.mjs",
     "referrals:reward-action-smoke": "node infra/scripts/referral-reward-action-smoke.mjs",
+    "referrals:wallet-credit-readiness": "node infra/scripts/referral-wallet-credit-readiness.mjs",
     "referrals:public-link-smoke": "node infra/scripts/referral-public-link-smoke.mjs",
     "referrals:claim-api-smoke": "node infra/scripts/referral-claim-api-smoke.mjs",
     "vietnam:check": "node infra/scripts/check-vietnam-scope.mjs",

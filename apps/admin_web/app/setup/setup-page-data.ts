@@ -289,6 +289,7 @@ export const setupOrder = [
       'iOS App Store links need the configured store or deep-link URL and a later app/API attribution handshake.',
       'Run referral claim API smoke after the local API and database are available; it verifies customer and Partner referral attribution through NestJS.',
       'Run referral reward action smoke before enabling reward payout; it verifies admin hold/reverse decisions and audit evidence without creating wallet credit.',
+      'Run referral wallet-credit readiness before payout implementation; it is read-only and must show the remaining ledger/API gap before real wallet credit is enabled.',
       'Keep referral rewards disabled until attribution and wallet-credit smoke checks pass.',
     ],
     commands: [
@@ -299,6 +300,7 @@ export const setupOrder = [
       'npm.cmd run referrals:claim-api-smoke',
       'npm.cmd run referrals:reward-action-smoke -- --dry-run',
       'npm.cmd run referrals:reward-action-smoke',
+      'npm.cmd run referrals:wallet-credit-readiness',
       'Open http://localhost:3101/r/customer/<referral-code>',
       'Open http://localhost:3101/r/partner/<referral-code>',
     ],
