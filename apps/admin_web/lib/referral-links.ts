@@ -52,8 +52,8 @@ export function referralStoreUrl(
 export function referralStoreSetupState(audience: ReferralAudienceSlug, env: ReferralEnv = process.env) {
   return {
     publicBase: isHttpsUrl(env.REFERRAL_PUBLIC_BASE_URL?.trim()),
-    android: Boolean(referralStoreBaseUrl(audience, 'android', env)),
-    ios: Boolean(referralStoreBaseUrl(audience, 'ios', env)),
+    android: isHttpsUrl(referralStoreBaseUrl(audience, 'android', env)),
+    ios: isHttpsUrl(referralStoreBaseUrl(audience, 'ios', env)),
   };
 }
 
@@ -133,7 +133,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#39;');
 }
 
-function isHttpsUrl(value: string | undefined) {
+function isHttpsUrl(value: string | null | undefined) {
   if (!value) return false;
   try {
     return new URL(value).protocol === 'https:';

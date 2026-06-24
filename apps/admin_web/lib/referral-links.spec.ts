@@ -57,6 +57,7 @@ describe('referral link helpers', () => {
 
     expect(
       referralStoreSetupState('partner', {
+        REFERRAL_PARTNER_ANDROID_STORE_URL: 'not-a-url',
         PARTNER_IOS_APP_URL: 'https://apps.apple.com/app/hands-partner/id123',
       }),
     ).toEqual({ android: false, ios: true, publicBase: false });
