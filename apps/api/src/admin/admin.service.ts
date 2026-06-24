@@ -220,6 +220,12 @@ const adminReferralRewardSelect = {
   createdAt: true,
 } satisfies Prisma.ReferralRewardSelect;
 
+const REFERRAL_REWARD_DECISION_ACTIONS = [
+  'referral_reward.hold',
+  'referral_reward.credit',
+  'referral_reward.reverse',
+] as const;
+
 const adminReferralCodeSelect = {
   id: true,
   code: true,
@@ -318,6 +324,17 @@ type AdminReferralPolicyRecord = {
 };
 
 type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{ select: typeof adminReferralRewardSelect }>;
+
+type AdminReferralRewardLatestDecision = {
+  action: string;
+  actor: AdminAuditLogSummary['actor'];
+  createdAt: Date;
+  reason: string | null;
+  status: string | null;
+  walletLedgerReference: string | null;
+};
+
+type AdminReferralRewardDecisionMap = ReadonlyMap<string, AdminReferralRewardLatestDecision>;
 
 type AdminCustomerReferralParent = Prisma.CustomerProfileGetPayload<{
   select: typeof adminCustomerReferralParentSelect;
@@ -756,8 +773,9 @@ export class AdminService {
       take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
       select: adminCustomerReferralParentSelect,
     });
+    const decisions = await this.listLatestReferralRewardDecisions(adminCustomerReferralRewardIds(rows));
 
-    return rows.map(adminCustomerReferralParentView);
+    return rows.map((row) => adminCustomerReferralParentView(row, decisions));
   }
 
   async getCustomerReferralParent(customerProfileId: string) {
@@ -771,8 +789,9 @@ export class AdminService {
     if (!row) {
       throw new NotFoundException('Customer referral parent was not found');
     }
+    const decisions = await this.listLatestReferralRewardDecisions(adminCustomerReferralRewardIds([row]));
 
-    return adminCustomerReferralParentView(row);
+    return adminCustomerReferralParentView(row, decisions);
   }
 
   async listPartnerReferralParents() {
@@ -782,8 +801,9 @@ export class AdminService {
       take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
       select: adminPartnerReferralParentSelect,
     });
+    const decisions = await this.listLatestReferralRewardDecisions(adminPartnerReferralRewardIds(rows));
 
-    return rows.map(adminPartnerReferralParentView);
+    return rows.map((row) => adminPartnerReferralParentView(row, decisions));
   }
 
   async getPartnerReferralParent(providerProfileId: string) {
@@ -797,8 +817,34 @@ export class AdminService {
     if (!row) {
       throw new NotFoundException('Partner referral parent was not found');
     }
+    const decisions = await this.listLatestReferralRewardDecisions(adminPartnerReferralRewardIds([row]));
 
-    return adminPartnerReferralParentView(row);
+    return adminPartnerReferralParentView(row, decisions);
+  }
+
+  private async listLatestReferralRewardDecisions(rewardIds: readonly string[]) {
+    const targets = [...new Set(rewardIds.map(referralRewardAuditTarget))];
+    if (targets.length === 0) {
+      return new Map<string, AdminReferralRewardLatestDecision>();
+    }
+
+    const logs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: { in: [...REFERRAL_REWARD_DECISION_ACTIONS] },
+        target: { in: targets },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: adminAuditLogSelect,
+    });
+    const decisions = new Map<string, AdminReferralRewardLatestDecision>();
+    for (const log of logs) {
+      const rewardId = referralRewardIdFromAuditTarget(log.target);
+      if (rewardId && !decisions.has(rewardId)) {
+        decisions.set(rewardId, referralRewardLatestDecisionView(log));
+      }
+    }
+
+    return decisions;
   }
 
   async getVietnamOverview(rangeInput?: string) {
@@ -4210,7 +4256,10 @@ function normalizeReferralCurrency(input?: string) {
   return value;
 }
 
-function adminCustomerReferralParentView(row: AdminCustomerReferralParent) {
+function adminCustomerReferralParentView(
+  row: AdminCustomerReferralParent,
+  decisions: AdminReferralRewardDecisionMap = new Map(),
+) {
   const rewards = row.referralsMade.flatMap((referral) => referral.rewards);
 
   return {
@@ -4228,12 +4277,15 @@ function adminCustomerReferralParentView(row: AdminCustomerReferralParent) {
       platform: referral.platform,
       createdAt: referral.createdAt,
       referredCustomer: referral.referredCustomerProfile,
-      rewards: referral.rewards,
+      rewards: referral.rewards.map((reward) => adminReferralRewardView(reward, decisions)),
     })),
   };
 }
 
-function adminPartnerReferralParentView(row: AdminPartnerReferralParent) {
+function adminPartnerReferralParentView(
+  row: AdminPartnerReferralParent,
+  decisions: AdminReferralRewardDecisionMap = new Map(),
+) {
   const rewards = row.referralsMade.flatMap((referral) => referral.rewards);
 
   return {
@@ -4254,9 +4306,62 @@ function adminPartnerReferralParentView(row: AdminPartnerReferralParent) {
       platform: referral.platform,
       createdAt: referral.createdAt,
       referredPartner: referral.referredProviderProfile,
-      rewards: referral.rewards,
+      rewards: referral.rewards.map((reward) => adminReferralRewardView(reward, decisions)),
     })),
   };
+}
+
+function adminReferralRewardView(
+  reward: AdminReferralRewardSummary,
+  decisions: AdminReferralRewardDecisionMap,
+) {
+  const latestDecision = decisions.get(reward.id);
+  return latestDecision ? { ...reward, latestDecision } : reward;
+}
+
+function adminCustomerReferralRewardIds(rows: readonly AdminCustomerReferralParent[]) {
+  return uniqueReferralRewardIds(rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)));
+}
+
+function adminPartnerReferralRewardIds(rows: readonly AdminPartnerReferralParent[]) {
+  return uniqueReferralRewardIds(rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)));
+}
+
+function uniqueReferralRewardIds(rewards: readonly AdminReferralRewardSummary[]) {
+  return [...new Set(rewards.map((reward) => reward.id))];
+}
+
+function referralRewardAuditTarget(rewardId: string) {
+  return `referral_reward:${rewardId}`;
+}
+
+function referralRewardIdFromAuditTarget(target: string) {
+  const prefix = 'referral_reward:';
+  return target.startsWith(prefix) ? target.slice(prefix.length) : null;
+}
+
+function referralRewardLatestDecisionView(log: AdminAuditLogSummary): AdminReferralRewardLatestDecision {
+  const metadata = recordFromJsonValue(log.metadata);
+  return {
+    action: log.action,
+    actor: log.actor,
+    createdAt: log.createdAt,
+    reason: stringFromRecord(metadata, 'reason'),
+    status: stringFromRecord(metadata, 'status'),
+    walletLedgerReference: stringFromRecord(metadata, 'walletLedgerReference'),
+  };
+}
+
+function recordFromJsonValue(value: Prisma.JsonValue | null) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+function stringFromRecord(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 function adminReferralRewardTotals(referralCount: number, rewards: AdminReferralRewardSummary[]) {

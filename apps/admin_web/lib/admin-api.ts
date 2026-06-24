@@ -125,12 +125,22 @@ export type AdminReferralCode = {
   createdAt: string;
 };
 
+export type AdminReferralRewardLatestDecision = {
+  action: string;
+  actor?: AdminReferralUserSummary | null;
+  createdAt: string;
+  reason?: string | null;
+  status?: string | null;
+  walletLedgerReference?: string | null;
+};
+
 export type AdminReferralReward = {
   id: string;
   amount: number;
   availableAt?: string | null;
   createdAt: string;
   currency: string;
+  latestDecision?: AdminReferralRewardLatestDecision | null;
   qualifyingBookingId?: string | null;
   status: AdminReferralRewardStatus;
   walletLedgerReference?: string | null;

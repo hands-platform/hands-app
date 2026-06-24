@@ -618,11 +618,34 @@ function referralRewardDecisionEvidence(reward: AdminReferralReward) {
     evidenceItems.push(`Available ${formatDateTime(reward.availableAt)}`);
   }
 
+  if (reward.latestDecision) {
+    const decisionLabel = referralRewardDecisionLabel(reward.latestDecision.action);
+    const actorLabel = userLabel(reward.latestDecision.actor, 'Unknown admin');
+    evidenceItems.push(`Latest decision ${decisionLabel} by ${actorLabel}`);
+    if (reward.latestDecision.reason) {
+      evidenceItems.push(`Reason ${reward.latestDecision.reason}`);
+    }
+    evidenceItems.push(`Decision time ${formatDateTime(reward.latestDecision.createdAt)}`);
+  }
+
   if (!reward.walletLedgerReference && referralRewardRequiresOperatorReason(reward)) {
     evidenceItems.push('Operator reason required for next action');
   }
 
   return evidenceItems;
+}
+
+function referralRewardDecisionLabel(action: string) {
+  if (action === 'referral_reward.credit') {
+    return 'Credit';
+  }
+  if (action === 'referral_reward.hold') {
+    return 'Hold';
+  }
+  if (action === 'referral_reward.reverse') {
+    return 'Reverse';
+  }
+  return action;
 }
 
 function referralRewardRequiresOperatorReason(reward: AdminReferralReward) {

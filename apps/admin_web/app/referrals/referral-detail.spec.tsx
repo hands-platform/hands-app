@@ -51,6 +51,18 @@ const customerReferralParent: AdminCustomerReferralParent = {
           availableAt: createdAt,
           createdAt,
           currency: 'VND',
+          latestDecision: {
+            action: 'referral_reward.credit',
+            actor: {
+              id: 'admin-1',
+              fullName: 'Ops Admin',
+              phone: '+84000009999',
+            },
+            createdAt: '2026-06-24T11:00:00.000Z',
+            reason: 'manual payout check',
+            status: 'REWARDED',
+            walletLedgerReference: 'wallet-ledger-1',
+          },
           qualifyingBookingId: 'booking-1',
           status: 'AVAILABLE',
           walletLedgerReference: 'wallet-ledger-1',
@@ -125,6 +137,8 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Decision evidence');
     expect(markup).toContain('Ledger wallet-ledger-1');
     expect(markup).toContain('Booking booking-1');
+    expect(markup).toContain('Latest decision Credit by Ops Admin');
+    expect(markup).toContain('Reason manual payout check');
     expect(markup).toContain('AVAILABLE');
     expect(markup).not.toContain('Hold reward');
     expect(markup).not.toContain('Reverse reward');

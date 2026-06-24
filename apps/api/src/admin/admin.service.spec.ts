@@ -562,6 +562,7 @@ describe('AdminService query orchestration', () => {
 
   it('lists only customer referral parents and summarizes reward exposure', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const decisionAt = new Date('2026-06-24T11:00:00.000Z');
     const prisma = {
       customerProfile: {
         findMany: jest.fn().mockResolvedValue([
@@ -618,6 +619,22 @@ describe('AdminService query orchestration', () => {
           },
         ]),
       },
+      adminAuditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'audit-1',
+            action: 'referral_reward.credit',
+            target: 'referral_reward:reward-rewarded',
+            metadata: {
+              reason: 'manual payout check',
+              status: ReferralRewardStatus.REWARDED,
+              walletLedgerReference: 'customer-wallet-ledger-1',
+            },
+            createdAt: decisionAt,
+            actor: { id: 'admin-1', phone: '+84000009999', fullName: 'Ops Admin' },
+          },
+        ]),
+      },
     };
     const service = createAdminService(prisma);
 
@@ -628,6 +645,19 @@ describe('AdminService query orchestration', () => {
         referrals: [
           expect.objectContaining({
             referredCustomer: expect.objectContaining({ id: 'referred-customer' }),
+            rewards: expect.arrayContaining([
+              expect.objectContaining({
+                id: 'reward-rewarded',
+                latestDecision: {
+                  action: 'referral_reward.credit',
+                  actor: { id: 'admin-1', phone: '+84000009999', fullName: 'Ops Admin' },
+                  createdAt: decisionAt,
+                  reason: 'manual payout check',
+                  status: ReferralRewardStatus.REWARDED,
+                  walletLedgerReference: 'customer-wallet-ledger-1',
+                },
+              }),
+            ]),
           }),
         ],
         totals: expect.objectContaining({
@@ -646,6 +676,20 @@ describe('AdminService query orchestration', () => {
         where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
       }),
     );
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      select: expect.objectContaining({
+        action: true,
+        actor: expect.any(Object),
+        createdAt: true,
+        metadata: true,
+        target: true,
+      }),
+      where: {
+        action: { in: ['referral_reward.hold', 'referral_reward.credit', 'referral_reward.reverse'] },
+        target: { in: ['referral_reward:reward-available', 'referral_reward:reward-pending', 'referral_reward:reward-rewarded'] },
+      },
+    });
   });
 
   it('loads one customer referral parent detail only when referral activity exists', async () => {
@@ -746,6 +790,9 @@ describe('AdminService query orchestration', () => {
             },
           ],
         }),
+      },
+      adminAuditLog: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
