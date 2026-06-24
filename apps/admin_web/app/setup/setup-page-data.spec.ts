@@ -139,6 +139,8 @@ describe('setup page data', () => {
         'npm.cmd run external:check:referrals',
         'npm.cmd run referrals:public-link-smoke -- --dry-run',
         'npm.cmd run referrals:public-link-smoke',
+        'npm.cmd run referrals:claim-api-smoke -- --dry-run',
+        'npm.cmd run referrals:claim-api-smoke',
       ]),
     );
   });
