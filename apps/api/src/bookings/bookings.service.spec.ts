@@ -1315,6 +1315,154 @@ describe('BookingsService service completion', () => {
   });
 });
 
+describe('BookingsService partner customer evaluations', () => {
+  it('creates one text-only customer evaluation for a completed booking selected Partner', async () => {
+    const createdReview = {
+      id: 'partner-customer-review-1',
+      bookingId: 'booking-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'partner-1',
+      comment: 'Polite customer and smooth service closeout.',
+      createdAt: new Date('2026-06-01T12:00:00.000Z'),
+    };
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+        }),
+      },
+      providerCustomerReview: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue(createdReview),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.createProviderCustomerReview('booking-1', 'partner-user-1', {
+        comment: '  Polite customer and smooth service closeout.  ',
+      }),
+    ).resolves.toBe(createdReview);
+
+    expect(tx.booking.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      select: {
+        id: true,
+        status: true,
+        customerProfileId: true,
+        selectedProviderId: true,
+      },
+    });
+    expect(tx.providerCustomerReview.findUnique).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1' },
+      select: { id: true },
+    });
+    expect(tx.providerCustomerReview.create).toHaveBeenCalledWith({
+      data: {
+        bookingId: 'booking-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'partner-1',
+        comment: 'Polite customer and smooth service closeout.',
+      },
+    });
+  });
+
+  it('rejects duplicate Partner customer evaluations for the same booking', async () => {
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+        }),
+      },
+      providerCustomerReview: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'existing-review-1' }),
+        create: jest.fn(),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.createProviderCustomerReview('booking-1', 'partner-user-1', {
+        comment: 'Already evaluated.',
+      }),
+    ).rejects.toThrow('Partner customer evaluation already exists for this booking');
+
+    expect(tx.providerCustomerReview.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects Partner customer evaluations before service completion', async () => {
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.IN_SERVICE,
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+        }),
+      },
+      providerCustomerReview: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.createProviderCustomerReview('booking-1', 'partner-user-1', {
+        comment: 'Too early.',
+      }),
+    ).rejects.toThrow('Partner customer evaluation is allowed only after service completion');
+
+    expect(tx.providerCustomerReview.findUnique).not.toHaveBeenCalled();
+    expect(tx.providerCustomerReview.create).not.toHaveBeenCalled();
+  });
+});
+
 describe('BookingsService customer cancellation', () => {
   it('loads the immutable address snapshot before returning a cancelled booking', async () => {
     const cancelledBooking = cancelledBookingWithAddressSnapshot();

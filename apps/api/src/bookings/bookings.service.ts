@@ -2170,6 +2170,51 @@ export class BookingsService {
     return result;
   }
 
+  async createProviderCustomerReview(
+    bookingId: string,
+    providerUserId: string,
+    input: { comment: string },
+  ) {
+    const provider = await this.requireProvider(providerUserId);
+    const comment = normalizeProviderCustomerReviewComment(input.comment);
+
+    return this.prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: {
+          id: true,
+          status: true,
+          customerProfileId: true,
+          selectedProviderId: true,
+        },
+      });
+
+      if (booking.selectedProviderId !== provider.id) {
+        throw new BadRequestException('Partner is not selected for this booking');
+      }
+      if (booking.status !== BookingStatus.COMPLETED) {
+        throw new BadRequestException('Partner customer evaluation is allowed only after service completion');
+      }
+
+      const existingReview = await tx.providerCustomerReview.findUnique({
+        where: { bookingId },
+        select: { id: true },
+      });
+      if (existingReview) {
+        throw new BadRequestException('Partner customer evaluation already exists for this booking');
+      }
+
+      return tx.providerCustomerReview.create({
+        data: {
+          bookingId: booking.id,
+          customerProfileId: booking.customerProfileId,
+          providerProfileId: provider.id,
+          comment,
+        },
+      });
+    });
+  }
+
   private async requireProviderCanCompleteBooking(bookingId: string, providerUserId: string) {
     const provider = await this.requireProvider(providerUserId);
     const bookingBeforeComplete = await this.requireSelectedProvider(bookingId, provider.id);
@@ -2327,6 +2372,17 @@ function cleanProviderCancellationNote(value: string | null | undefined) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 1000) : null;
+}
+
+function normalizeProviderCustomerReviewComment(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    throw new BadRequestException('Partner customer evaluation comment is required');
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new BadRequestException('Partner customer evaluation comment is required');
+  }
+  return trimmed.slice(0, 1000);
 }
 
 function cleanOptionalLocationAddress(value: string | null | undefined) {

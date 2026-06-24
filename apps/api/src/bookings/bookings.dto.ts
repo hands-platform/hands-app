@@ -2,6 +2,7 @@ import {
   Allow,
   IsDefined,
   IsEnum,
+  IsNotEmpty,
   IsISO8601,
   IsNumber,
   IsOptional,
@@ -9,7 +10,12 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaymentMethod, Prisma } from '@prisma/client';
+
+function trimString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : value;
+}
 
 export class CreateCustomerBookingDto {
   @IsString()
@@ -86,4 +92,12 @@ export class CancelProviderBookingDto extends ProviderBookingActionLocationDto {
   @IsString()
   @MaxLength(1000)
   note?: string;
+}
+
+export class CreateProviderCustomerReviewDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  comment!: string;
 }

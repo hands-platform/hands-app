@@ -31,6 +31,15 @@ describe('booking request DTO validation', () => {
     return paramTypes?.[2] as object | undefined;
   }
 
+  function createProviderCustomerReviewBodyMetatype() {
+    const paramTypes = Reflect.getMetadata(
+      'design:paramtypes',
+      BookingsController.prototype,
+      'createProviderCustomerReview',
+    ) as unknown[];
+    return paramTypes?.[2] as object | undefined;
+  }
+
   it('uses a concrete DTO for customer booking creation', () => {
     expect(createCustomerBookingBodyMetatype()?.constructor.name).toBe('Function');
     expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe(
@@ -44,6 +53,12 @@ describe('booking request DTO validation', () => {
     );
     expect((completeProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
       'CompleteProviderBookingDto',
+    );
+  });
+
+  it('uses a concrete DTO for partner customer evaluations', () => {
+    expect((createProviderCustomerReviewBodyMetatype() as { name?: string })?.name).toBe(
+      'CreateProviderCustomerReviewDto',
     );
   });
 
@@ -116,5 +131,28 @@ describe('booking request DTO validation', () => {
       note: 'Customer requested cancellation after matching.',
     });
     expect(transformed).not.toHaveProperty('walletBalance');
+  });
+
+  it('requires text-only partner customer evaluations and trims comments', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        { comment: '   ' },
+        { type: 'body', metatype: createProviderCustomerReviewBodyMetatype() as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    const transformed = await pipe.transform(
+      {
+        comment: '  Polite customer and smooth service closeout.  ',
+        rating: 5,
+      },
+      { type: 'body', metatype: createProviderCustomerReviewBodyMetatype() as never, data: '' },
+    );
+
+    expect(transformed).toEqual({
+      comment: 'Polite customer and smooth service closeout.',
+    });
   });
 });

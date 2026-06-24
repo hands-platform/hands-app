@@ -9,6 +9,7 @@ import {
   CancelProviderBookingDto,
   CompleteProviderBookingDto,
   CreateCustomerBookingDto,
+  CreateProviderCustomerReviewDto,
   SelectBookingProviderDto,
 } from './bookings.dto';
 import { BookingsService } from './bookings.service';
@@ -128,5 +129,16 @@ export class BookingsController {
     @Body() body: CancelProviderBookingDto,
   ) {
     return this.bookings.cancelProviderBooking(bookingId, user.id, body);
+  }
+
+  @Post(['partner/bookings/:id/customer-evaluation', 'provider/bookings/:id/customer-evaluation'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  createProviderCustomerReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bookingId: string,
+    @Body() body: CreateProviderCustomerReviewDto,
+  ) {
+    return this.bookings.createProviderCustomerReview(bookingId, user.id, body);
   }
 }
