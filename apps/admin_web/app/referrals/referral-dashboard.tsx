@@ -717,7 +717,13 @@ function ReferralRewardCell({
           <p className="muted">
             Latest {referralRewardDecisionLabel(latestDecision.action)} by {userLabel(latestDecision.actor, 'Unknown admin')}
           </p>
-          {latestDecision.reason ? <p className="muted">{latestDecision.reason}</p> : null}
+          <details className="referral-parent-reward-decision-details">
+            <summary>Decision details</summary>
+            <div className="participant-list referral-parent-reward-decision-evidence">
+              {latestDecision.reason ? <span className="muted">{latestDecision.reason}</span> : null}
+              <span className="muted">{formatDateTime(latestDecision.createdAt)}</span>
+            </div>
+          </details>
         </>
       ) : null}
     </div>

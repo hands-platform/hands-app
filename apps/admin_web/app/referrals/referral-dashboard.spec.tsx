@@ -181,6 +181,8 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
     expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');
     expect(markup).toContain('Latest Credit by Ops Admin');
+    expect(markup).toContain('class="referral-parent-reward-decision-details"');
+    expect(markup).toContain('<summary>Decision details</summary>');
     expect(markup).toContain('manual payout check');
     expect(markup).toContain('Open referral detail');
     expect(markup).toContain('Open parent profile');

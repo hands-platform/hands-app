@@ -8546,18 +8546,21 @@ a.ops-task-card {
   min-width: 260px;
 }
 
-.referral-reward-evidence-details {
+.referral-reward-evidence-details,
+.referral-parent-reward-decision-details {
   color: var(--admin-muted);
   font-size: 12px;
 }
 
-.referral-reward-evidence-details > summary {
+.referral-reward-evidence-details > summary,
+.referral-parent-reward-decision-details > summary {
   cursor: pointer;
   font-weight: 600;
   list-style-position: inside;
 }
 
-.referral-reward-decision-evidence {
+.referral-reward-decision-evidence,
+.referral-parent-reward-decision-evidence {
   border-left: 2px solid var(--admin-border);
   display: grid;
   gap: 4px;
