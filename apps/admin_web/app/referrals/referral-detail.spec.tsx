@@ -191,6 +191,10 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('No booking');
     expect(markup).toContain('No qualifying booking linked');
     expect(markup).toContain('name="parentId" value="parent-customer"');
+    expect(markup).toContain('placeholder="Operator reason for hold"');
+    expect(markup).toContain('placeholder="Operator reason for reversal"');
+    expect(markup).not.toContain('Hold referral reward for admin review from detail page.');
+    expect(markup).not.toContain('Reverse referral reward from detail review.');
   });
 
   it('renders a wallet credit action only for available uncredited reward candidates', () => {
@@ -216,7 +220,8 @@ describe('Referral detail presentation', () => {
 
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Credit to wallet');
-    expect(markup).toContain('name="reason" value="Credit ready referral reward to wallet after detail review."');
+    expect(markup).toContain('placeholder="Operator reason for wallet credit"');
+    expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');
   });
 
   it('summarizes reward rows into an operator review board', () => {

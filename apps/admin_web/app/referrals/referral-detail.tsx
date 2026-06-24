@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { MoreVertical } from 'lucide-react';
+
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
@@ -47,6 +48,12 @@ type ReferralRewardReviewSummary = {
   readonly held: ReferralRewardReviewBucket;
   readonly pending: ReferralRewardReviewBucket;
   readonly ready: ReferralRewardReviewBucket;
+};
+
+type ReferralRewardActionForm = {
+  readonly action: (formData: FormData) => Promise<void> | void;
+  readonly label: string;
+  readonly placeholder: string;
 };
 
 export function referralParentDetailHref(audience: ReferralAudienceSlug, id: string) {
@@ -377,84 +384,74 @@ function ReferralRewardActions({
   }
 
   const actions = referralRewardActionItems({
-    audience,
     canCredit,
     canHold,
     canReverse,
+  });
+  const hiddenInputs = referralRewardHiddenInputs({
+    audience,
     parentId,
     rewardId: reward.id,
   });
 
   return (
-    <ActionMenu
-      actions={actions}
-      className="referral-reward-action-dropdown"
-      label={`Referral reward actions for ${reward.id}`}
-      title="Reward actions"
-      variant="dropdown"
-    />
+    <details className="admin-action-dropdown referral-reward-action-dropdown">
+      <summary aria-label={`Referral reward actions for ${reward.id}`} className="admin-action-trigger action-menu-trigger">
+        <MoreVertical aria-hidden="true" size={18} />
+      </summary>
+      <div className="admin-action-menu action-menu-panel referral-reward-action-panel" role="menu">
+        <strong className="action-menu-title">Reward actions</strong>
+        {actions.map((item) => (
+          <form action={item.action} className="admin-action-form referral-reward-action-form" key={item.label} role="none">
+            {hiddenInputs.map((input) => (
+              <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+            ))}
+            <label className="referral-reward-action-reason">
+              <span>Reason</span>
+              <input name="reason" placeholder={item.placeholder} type="text" />
+            </label>
+            <button className="admin-action-item admin-action-button" role="menuitem" type="submit">
+              <span>{item.label}</span>
+            </button>
+          </form>
+        ))}
+      </div>
+    </details>
   );
 }
 
 function referralRewardActionItems({
-  audience,
   canCredit,
   canHold,
   canReverse,
-  parentId,
-  rewardId,
 }: {
-  readonly audience: ReferralAudienceSlug;
   readonly canCredit: boolean;
   readonly canHold: boolean;
   readonly canReverse: boolean;
-  readonly parentId: string;
-  readonly rewardId: string;
-}): ActionMenuItem[] {
-  const actions: ActionMenuItem[] = [];
+}): ReferralRewardActionForm[] {
+  const actions: ReferralRewardActionForm[] = [];
 
   if (canCredit) {
     actions.push({
       action: creditReferralReward,
-      hiddenInputs: referralRewardHiddenInputs({
-        audience,
-        parentId,
-        reason: 'Credit ready referral reward to wallet after detail review.',
-        rewardId,
-      }),
-      kind: 'submit',
       label: 'Credit to wallet',
-      tone: 'success',
+      placeholder: 'Operator reason for wallet credit',
     });
   }
 
   if (canHold) {
     actions.push({
       action: holdReferralReward,
-      hiddenInputs: referralRewardHiddenInputs({
-        audience,
-        parentId,
-        reason: 'Hold referral reward for admin review from detail page.',
-        rewardId,
-      }),
-      kind: 'submit',
       label: 'Hold for review',
-      tone: 'warning',
+      placeholder: 'Operator reason for hold',
     });
   }
 
   if (canReverse) {
     actions.push({
       action: reverseReferralReward,
-      hiddenInputs: referralRewardHiddenInputs({
-        audience,
-        parentId,
-        reason: 'Reverse referral reward from detail review.',
-        rewardId,
-      }),
-      kind: 'submit',
       label: 'Reverse reward',
-      tone: 'danger',
+      placeholder: 'Operator reason for reversal',
     });
   }
 
@@ -464,19 +461,16 @@ function referralRewardActionItems({
 function referralRewardHiddenInputs({
   audience,
   parentId,
-  reason,
   rewardId,
 }: {
   readonly audience: ReferralAudienceSlug;
   readonly parentId: string;
-  readonly reason: string;
   readonly rewardId: string;
 }) {
   return [
     { name: 'rewardId', value: rewardId },
     { name: 'audience', value: audience },
     { name: 'parentId', value: parentId },
-    { name: 'reason', value: reason },
   ] as const;
 }
 
