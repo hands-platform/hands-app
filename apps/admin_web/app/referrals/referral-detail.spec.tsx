@@ -114,4 +114,29 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Reverse reward');
     expect(markup).toContain('name="parentId" value="parent-customer"');
   });
+
+  it('renders a wallet credit action only for available uncredited reward candidates', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'AVAILABLE',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Credit reward');
+    expect(markup).toContain('name="reason" value="Credited from referral detail review."');
+  });
 });

@@ -27,6 +27,17 @@ export async function holdReferralReward(formData: FormData) {
   revalidateReferralRewardDecisionPaths(input);
 }
 
+export async function creditReferralReward(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+
+  await adminPost(
+    `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/credit`,
+    { reason: input.reason },
+    null,
+  );
+  revalidateReferralRewardDecisionPaths(input);
+}
+
 export async function reverseReferralReward(formData: FormData) {
   const input = referralRewardDecisionInput(formData);
 

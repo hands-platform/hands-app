@@ -8,7 +8,7 @@ export type ReferralAttributionStatus = 'REGISTERED' | 'QUALIFIED' | 'REWARDED' 
 
 export type ReferralFraudReviewStatus = 'CLEAR' | 'FLAGGED' | 'HELD';
 
-export type ReferralRewardStatus = 'PENDING' | 'AVAILABLE' | 'HELD' | 'REVERSED' | 'CANCELLED';
+export type ReferralRewardStatus = 'PENDING' | 'AVAILABLE' | 'REWARDED' | 'HELD' | 'REVERSED' | 'CANCELLED';
 
 export type ReferralCodeSelfService = {
   id: string;

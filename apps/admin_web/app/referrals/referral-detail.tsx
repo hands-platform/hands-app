@@ -14,7 +14,7 @@ import {
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
-import { holdReferralReward, reverseReferralReward } from './actions';
+import { creditReferralReward, holdReferralReward, reverseReferralReward } from './actions';
 
 type ReferralParentDetailPageProps =
   | {
@@ -251,13 +251,27 @@ function ReferralRewardActions({
   }
 
   const canHold = reward.status === 'PENDING' || reward.status === 'AVAILABLE';
+  const canCredit = reward.status === 'AVAILABLE';
   const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
-  if (!canHold && !canReverse) {
+  if (!canHold && !canCredit && !canReverse) {
     return <span className="muted">No action</span>;
   }
 
   return (
     <div className="actions">
+      {canCredit ? (
+        <form action={creditReferralReward}>
+          <ReferralRewardActionFields
+            audience={audience}
+            parentId={parentId}
+            reason="Credited from referral detail review."
+            rewardId={reward.id}
+          />
+          <button className="button button-primary" type="submit">
+            Credit reward
+          </button>
+        </form>
+      ) : null}
       {canHold ? (
         <form action={holdReferralReward}>
           <ReferralRewardActionFields

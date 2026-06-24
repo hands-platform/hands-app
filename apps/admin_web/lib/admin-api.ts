@@ -40,7 +40,13 @@ export type AdminProviderWalletLedgerType =
   | 'ADMIN_ADJUSTMENT';
 export type AdminReferralAudience = 'CUSTOMER' | 'PARTNER';
 export type AdminReferralRewardMode = 'COMMISSION_PERCENT' | 'FIXED_AMOUNT';
-export type AdminReferralRewardStatus = 'PENDING' | 'AVAILABLE' | 'HELD' | 'REVERSED' | 'CANCELLED';
+export type AdminReferralRewardStatus =
+  | 'PENDING'
+  | 'AVAILABLE'
+  | 'REWARDED'
+  | 'HELD'
+  | 'REVERSED'
+  | 'CANCELLED';
 
 export type AdminUser = {
   id: string;

@@ -47,6 +47,7 @@ const claimResult: ReferralCodeClaimResult = {
 const status: ReferralAttributionStatus = claimResult.status;
 const fraudStatus: ReferralFraudReviewStatus = claimResult.fraudReviewStatus;
 const rewardStatus: ReferralRewardStatus = 'PENDING';
+const rewardedRewardStatus: ReferralRewardStatus = 'REWARDED';
 
 const summaryTotals: ReferralSummaryTotals = {
   availableAmount: 75_000,
@@ -69,4 +70,5 @@ void noReferralCodeYet;
 void status;
 void fraudStatus;
 void rewardStatus;
+void rewardedRewardStatus;
 void summary;
