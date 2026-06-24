@@ -93,6 +93,36 @@ describe('MobileService app versions', () => {
     });
   });
 
+  it('returns a default app version policy when the configured row is inactive', async () => {
+    const prisma = {
+      appVersionPolicy: {
+        findUnique: jest.fn().mockResolvedValue({
+          appType: 'CUSTOMER',
+          platform: 'IOS',
+          minimumSupportedVersion: '9.9.9',
+          latestVersion: '9.9.9',
+          forceUpdate: true,
+          updateUrl: 'https://apps.apple.com/app/hands-customer',
+          releaseNotes: 'Disabled policy should not block clients.',
+          isActive: false,
+        }),
+      },
+    };
+    const notifications = {};
+    const service = new MobileService(prisma as never, notifications as never);
+
+    await expect(service.getAppVersion({ appType: 'CUSTOMER', platform: 'IOS' })).resolves.toEqual({
+      appType: 'CUSTOMER',
+      platform: 'IOS',
+      minimumSupportedVersion: null,
+      latestVersion: null,
+      forceUpdate: false,
+      updateUrl: null,
+      releaseNotes: null,
+      source: 'DEFAULT',
+    });
+  });
+
   it('returns platform-specific iOS app version policy rows', async () => {
     const prisma = {
       appVersionPolicy: {
