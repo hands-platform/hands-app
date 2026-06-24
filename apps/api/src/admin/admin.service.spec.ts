@@ -465,6 +465,51 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('credits an available referral reward candidate to its wallet ledger', async () => {
+    const referrals = {
+      creditRewardCandidate: jest.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: ReferralRewardStatus.REWARDED,
+        walletLedgerReference: 'customer-wallet-ledger-1',
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.creditReferralReward('admin-1', 'reward-1', {
+        reason: ' manual payout check ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.REWARDED,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(referrals.creditRewardCandidate).toHaveBeenCalledWith('reward-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.credit',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          currency: 'VND',
+          reason: 'manual payout check',
+          status: ReferralRewardStatus.REWARDED,
+          walletCreditCreated: true,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        },
+      },
+    });
+  });
+
   it('creates referral reward candidates after completed booking closeout', async () => {
     const prisma = {
       adminAuditLog: {

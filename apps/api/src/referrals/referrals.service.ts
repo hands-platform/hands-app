@@ -2,7 +2,9 @@ import { createHash } from 'crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
+  CustomerWalletLedgerType,
   Prisma,
+  ProviderWalletLedgerType,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralRewardMode,
@@ -112,9 +114,26 @@ const referralRewardSelect = {
   currency: true,
   sourceKey: true,
   status: true,
+  walletLedgerReference: true,
 } satisfies Prisma.ReferralRewardSelect;
 
 type ReferralRewardRecord = Prisma.ReferralRewardGetPayload<{ select: typeof referralRewardSelect }>;
+
+const referralRewardCreditCandidateSelect = {
+  id: true,
+  amount: true,
+  currency: true,
+  qualifyingBookingId: true,
+  sourceKey: true,
+  status: true,
+  walletLedgerReference: true,
+  walletOwnerCustomerProfileId: true,
+  walletOwnerProviderProfileId: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+type ReferralRewardCreditCandidate = Prisma.ReferralRewardGetPayload<{
+  select: typeof referralRewardCreditCandidateSelect;
+}>;
 
 const referralRewardCandidateStateSelect = {
   id: true,
@@ -384,6 +403,62 @@ export class ReferralsService {
 
   async reverseRewardCandidate(rewardId: string) {
     return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED);
+  }
+
+  async creditRewardCandidate(rewardId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({
+        where: { id: rewardId },
+        select: referralRewardCreditCandidateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      this.assertRewardCandidateCanBeCredited(reward);
+
+      const ledgerSourceKey = referralWalletCreditSourceKey(reward.id);
+      const ledger = reward.walletOwnerCustomerProfileId
+        ? await tx.customerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {},
+            create: {
+              amount: reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              customerProfileId: reward.walletOwnerCustomerProfileId,
+              metadata: referralWalletCreditMetadata(reward, 'CUSTOMER'),
+              referralRewardId: reward.id,
+              reference: reward.sourceKey,
+              sourceKey: ledgerSourceKey,
+              type: CustomerWalletLedgerType.REFERRAL_REWARD,
+            },
+            select: { id: true },
+          })
+        : await tx.providerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {},
+            create: {
+              amount: reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              metadata: referralWalletCreditMetadata(reward, 'PARTNER'),
+              providerProfileId: reward.walletOwnerProviderProfileId as string,
+              reference: reward.sourceKey,
+              sourceKey: ledgerSourceKey,
+              type: ProviderWalletLedgerType.REFERRAL_REWARD,
+            },
+            select: { id: true },
+          });
+
+      return tx.referralReward.update({
+        data: {
+          status: ReferralRewardStatus.REWARDED,
+          walletLedgerReference: ledger.id,
+        },
+        where: { id: reward.id },
+        select: referralRewardSelect,
+      });
+    });
   }
 
   async createRewardsForCompletedBooking(bookingId: string) {
@@ -714,6 +789,18 @@ export class ReferralsService {
       }
     }
   }
+
+  private assertRewardCandidateCanBeCredited(reward: ReferralRewardCreditCandidate) {
+    if (reward.walletLedgerReference) {
+      throw new BadRequestException('Referral reward already has a wallet ledger reference');
+    }
+    if (reward.status !== ReferralRewardStatus.AVAILABLE) {
+      throw new BadRequestException('Only available referral rewards can be credited to wallets');
+    }
+    if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
+      throw new BadRequestException('Referral reward does not have a wallet owner');
+    }
+  }
 }
 
 function referralCodeView(code: ReferralCodeRecord) {
@@ -806,6 +893,19 @@ function cappedRewardAmount(amount: number, capAmount: number | null) {
 
 function referralRewardAvailableAt(referenceDate: Date, holdPeriodDays: number) {
   return new Date(referenceDate.getTime() + Math.max(holdPeriodDays, 0) * 24 * 60 * 60 * 1000);
+}
+
+function referralWalletCreditSourceKey(rewardId: string) {
+  return `referral:wallet-credit:${rewardId}`;
+}
+
+function referralWalletCreditMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+  return {
+    bookingId: reward.qualifyingBookingId,
+    referralRewardId: reward.id,
+    rewardSourceKey: reward.sourceKey,
+    walletOwner,
+  };
 }
 
 function referralRewardSourceKey(audience: ReferralAudience, attributionId: string, bookingId: string) {

@@ -35,6 +35,9 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('holdReferralReward', 2) as { name?: string })?.name).toBe(
       'ReferralRewardDecisionDto',
     );
+    expect((bodyMetatype('creditReferralReward', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardDecisionDto',
+    );
     expect((bodyMetatype('reverseReferralReward', 2) as { name?: string })?.name).toBe(
       'ReferralRewardDecisionDto',
     );

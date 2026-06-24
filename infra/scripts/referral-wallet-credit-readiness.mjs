@@ -108,8 +108,8 @@ function readinessDecision() {
 function readinessNextSteps() {
   if (readyForAutomaticWalletCredit) {
     return [
-      'Implement the audited NestJS admin credit endpoint with idempotent walletLedgerReference linking.',
-      'Add wallet credit and reversal smoke coverage before enabling payout.',
+      'Run wallet credit and reversal smoke coverage before enabling automatic referral payout.',
+      'Review whether automatic referral payout should be enabled or remain an admin-controlled action.',
     ];
   }
 
@@ -134,18 +134,47 @@ function hasCustomerWalletLedger(schemaSource) {
 }
 
 function detectsAutomaticWalletLedgerWrite(serviceSource) {
-  const hasReleasePath = serviceSource.includes('releaseAvailableRewards');
-  const writesReferralLedgerReference = serviceSource.includes('walletLedgerReference');
+  const releaseBody = extractFunctionBody(serviceSource, 'releaseAvailableRewards');
+  const hasReleasePath = releaseBody.length > 0;
+  const writesReferralLedgerReference = releaseBody.includes('walletLedgerReference');
   const writesPartnerLedger =
-    serviceSource.includes('providerWalletLedgerEntry.create') ||
-    serviceSource.includes('providerWalletLedgerEntry.upsert') ||
-    serviceSource.includes('ProviderWalletLedgerEntry');
+    releaseBody.includes('providerWalletLedgerEntry.create') ||
+    releaseBody.includes('providerWalletLedgerEntry.upsert') ||
+    releaseBody.includes('ProviderWalletLedgerEntry');
   const writesCustomerLedger =
-    serviceSource.includes('customerWalletLedgerEntry.create') ||
-    serviceSource.includes('customerWalletLedger.create') ||
-    serviceSource.includes('CustomerWalletLedger');
+    releaseBody.includes('customerWalletLedgerEntry.create') ||
+    releaseBody.includes('customerWalletLedgerEntry.upsert') ||
+    releaseBody.includes('customerWalletLedger.create') ||
+    releaseBody.includes('CustomerWalletLedger');
 
   return hasReleasePath && writesReferralLedgerReference && writesPartnerLedger && writesCustomerLedger;
+}
+
+function extractFunctionBody(source, functionName) {
+  const functionStart = source.indexOf(`${functionName}(`);
+  if (functionStart < 0) {
+    return '';
+  }
+
+  const bodyStart = source.indexOf('{', functionStart);
+  if (bodyStart < 0) {
+    return '';
+  }
+
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(bodyStart, index + 1);
+      }
+    }
+  }
+
+  return '';
 }
 
 function detectsNestAdminWalletCreditEndpoint(textBySource) {

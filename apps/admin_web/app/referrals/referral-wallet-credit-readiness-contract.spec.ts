@@ -44,4 +44,27 @@ describe('referral wallet credit readiness contract', () => {
       'Add an audited CustomerWalletLedger model before customer referral wallet credit.',
     );
   });
+
+  it('keeps automatic referral payout blocked while admin credit remains manual', () => {
+    const output = execFileSync('node', ['infra/scripts/referral-wallet-credit-readiness.mjs'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    const readiness = JSON.parse(output);
+
+    expect(readiness.readyForAutomaticWalletCredit).toBe(false);
+    expect(readiness.decision).toBe('blocked-by-candidate-only-release');
+    expect(readiness.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'automatic-release-writes-ledger', ok: false }),
+        expect.objectContaining({ id: 'nest-admin-wallet-credit-endpoint', ok: true }),
+      ]),
+    );
+    expect(readiness.nextSteps).not.toContain(
+      'Implement the audited NestJS admin credit endpoint with idempotent walletLedgerReference linking.',
+    );
+    expect(readiness.nextSteps).not.toContain(
+      'Add a NestJS admin credit endpoint and smoke before enabling referral payout.',
+    );
+  });
 });

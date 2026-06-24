@@ -1,5 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { BookingStatus, ReferralAudience, ReferralRewardMode, ReferralRewardStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  CustomerWalletLedgerType,
+  ProviderWalletLedgerType,
+  ReferralAudience,
+  ReferralRewardMode,
+  ReferralRewardStatus,
+} from '@prisma/client';
 import { ReferralsService } from './referrals.service';
 
 function createService(prisma: unknown) {
@@ -759,6 +766,147 @@ describe('ReferralsService', () => {
     expect(prisma.referralReward.update).toHaveBeenCalledWith({
       data: { status: ReferralRewardStatus.REVERSED },
       where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('credits an available customer referral reward to the customer wallet ledger once', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-1',
+      amount: 25_000,
+      availableAt: now,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-1',
+      sourceKey: 'referral:CUSTOMER:attribution-1:booking-1',
+      status: ReferralRewardStatus.AVAILABLE,
+      walletLedgerReference: null,
+      walletOwnerCustomerProfileId: 'customer-profile-1',
+      walletOwnerProviderProfileId: null,
+    };
+    const ledger = { id: 'customer-wallet-ledger-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: jest.fn().mockResolvedValue(ledger),
+      },
+      providerWalletLedgerEntry: {
+        upsert: jest.fn(),
+      },
+      referralReward: {
+        findUnique: jest.fn().mockResolvedValue(reward),
+        update: jest.fn().mockResolvedValue({
+          ...reward,
+          status: ReferralRewardStatus.REWARDED,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(service.creditRewardCandidate('reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.REWARDED,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-credit:reward-1' },
+        update: {},
+        create: expect.objectContaining({
+          amount: 25_000,
+          bookingId: 'booking-1',
+          currency: 'VND',
+          customerProfileId: 'customer-profile-1',
+          referralRewardId: 'reward-1',
+          reference: 'referral:CUSTOMER:attribution-1:booking-1',
+          sourceKey: 'referral:wallet-credit:reward-1',
+          type: CustomerWalletLedgerType.REFERRAL_REWARD,
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).toHaveBeenCalledWith({
+      data: {
+        status: ReferralRewardStatus.REWARDED,
+        walletLedgerReference: 'customer-wallet-ledger-1',
+      },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('credits an available Partner referral reward to the Partner wallet ledger once', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-2',
+      amount: 50_000,
+      availableAt: now,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-2',
+      sourceKey: 'referral:PARTNER:attribution-2:booking-2',
+      status: ReferralRewardStatus.AVAILABLE,
+      walletLedgerReference: null,
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const ledger = { id: 'provider-wallet-ledger-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: jest.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: jest.fn().mockResolvedValue(ledger),
+      },
+      referralReward: {
+        findUnique: jest.fn().mockResolvedValue(reward),
+        update: jest.fn().mockResolvedValue({
+          ...reward,
+          status: ReferralRewardStatus.REWARDED,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(service.creditRewardCandidate('reward-2')).resolves.toMatchObject({
+      id: 'reward-2',
+      status: ReferralRewardStatus.REWARDED,
+      walletLedgerReference: 'provider-wallet-ledger-1',
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-credit:reward-2' },
+        update: {},
+        create: expect.objectContaining({
+          amount: 50_000,
+          bookingId: 'booking-2',
+          currency: 'VND',
+          providerProfileId: 'provider-profile-1',
+          reference: 'referral:PARTNER:attribution-2:booking-2',
+          sourceKey: 'referral:wallet-credit:reward-2',
+          type: ProviderWalletLedgerType.REFERRAL_REWARD,
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).toHaveBeenCalledWith({
+      data: {
+        status: ReferralRewardStatus.REWARDED,
+        walletLedgerReference: 'provider-wallet-ledger-1',
+      },
+      where: { id: 'reward-2' },
       select: expect.any(Object),
     });
   });

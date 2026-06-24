@@ -21,6 +21,7 @@ describe('AdminController notification and push actions', () => {
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
     listPartnerDirectoryProviders: jest.fn(),
+    creditReferralReward: jest.fn(),
     holdReferralReward: jest.fn(),
     releaseAvailableReferralRewards: jest.fn(),
     reverseReferralReward: jest.fn(),
@@ -216,6 +217,26 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/rewards/:id/hold',
     });
     expect(admin.holdReferralReward).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'review' });
+  });
+
+  it('exposes referral reward wallet credit as a POST action', async () => {
+    admin.creditReferralReward.mockResolvedValue({
+      id: 'reward-1',
+      status: 'REWARDED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    await expect(controller.creditReferralReward(user, 'reward-1', { reason: 'ready' })).resolves.toEqual({
+      id: 'reward-1',
+      status: 'REWARDED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(routeMetadata('creditReferralReward')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/credit',
+    });
+    expect(admin.creditReferralReward).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'ready' });
   });
 
   it('exposes referral reward reverse as a POST action', async () => {

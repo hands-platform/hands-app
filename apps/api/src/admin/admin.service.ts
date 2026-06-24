@@ -720,6 +720,21 @@ export class AdminService {
     return reward;
   }
 
+  async creditReferralReward(actorId: string, rewardId: string, input: { reason?: string } = {}) {
+    const reward = await this.referrals.creditRewardCandidate(rewardId);
+
+    await this.writeAudit(actorId, 'referral_reward.credit', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      walletCreditCreated: true,
+      walletLedgerReference: reward.walletLedgerReference,
+    });
+
+    return reward;
+  }
+
   async reverseReferralReward(actorId: string, rewardId: string, input: { reason?: string } = {}) {
     const reward = await this.referrals.reverseRewardCandidate(rewardId);
 
