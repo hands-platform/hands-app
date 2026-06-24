@@ -46,3 +46,16 @@ export function referralRewardCreditState(reward: AdminReferralReward): Referral
     tone: 'warning',
   };
 }
+
+export function referralRewardDecisionLabel(action: string) {
+  if (action === 'referral_reward.credit') {
+    return 'Credit';
+  }
+  if (action === 'referral_reward.hold') {
+    return 'Hold';
+  }
+  if (action === 'referral_reward.reverse') {
+    return 'Reverse';
+  }
+  return action;
+}

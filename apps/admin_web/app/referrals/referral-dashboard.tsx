@@ -21,6 +21,7 @@ import {
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
+import { referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
@@ -788,19 +789,6 @@ function latestReferralRewardDecision(row: ReferralParentRow) {
     .map((reward) => reward.latestDecision)
     .filter((decision): decision is NonNullable<AdminReferralReward['latestDecision']> => Boolean(decision))
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0] ?? null;
-}
-
-function referralRewardDecisionLabel(action: string) {
-  if (action === 'referral_reward.credit') {
-    return 'Credit';
-  }
-  if (action === 'referral_reward.hold') {
-    return 'Hold';
-  }
-  if (action === 'referral_reward.reverse') {
-    return 'Reverse';
-  }
-  return action;
 }
 
 function referralStatusTone(status: string) {

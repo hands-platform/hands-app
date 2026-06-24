@@ -14,7 +14,7 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
-import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
+import { referralRewardCreditState, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { creditReferralReward, holdReferralReward, reverseReferralReward } from './actions';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
@@ -633,19 +633,6 @@ function referralRewardDecisionEvidence(reward: AdminReferralReward) {
   }
 
   return evidenceItems;
-}
-
-function referralRewardDecisionLabel(action: string) {
-  if (action === 'referral_reward.credit') {
-    return 'Credit';
-  }
-  if (action === 'referral_reward.hold') {
-    return 'Hold';
-  }
-  if (action === 'referral_reward.reverse') {
-    return 'Reverse';
-  }
-  return action;
 }
 
 function referralRewardRequiresOperatorReason(reward: AdminReferralReward) {
