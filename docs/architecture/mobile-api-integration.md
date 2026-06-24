@@ -85,6 +85,32 @@ Current auth maps Supabase Auth users to HANDS users through `User.supabaseUserI
 
 Do not add mobile-app-only identity writes that bypass NestJS. Mobile clients should exchange external provider credentials with the NestJS API, and the API should decide whether to link, create, or reject an identity.
 
+## Deferred Referral Deep Link Design
+
+Referral attribution must stay platform-neutral until customer and Partner iOS apps exist. The backend can already store referral attribution with a platform value, and setup checks reserve separate Android/iOS store URLs for customer and Partner apps. When referral link routing is implemented, keep these rules:
+
+- Referral link clicks should resolve the target app (`CUSTOMER` or `PARTNER`) and detected platform (`ANDROID`, `IOS`, or unknown web fallback) before redirecting to an app store.
+- Link clicks must not create wallet credits, SMS sends, map lookups, push sends, payment callbacks, or booking-side effects.
+- Signup attribution should be claimed by the authenticated mobile app through the NestJS referral API after account creation, not by direct Supabase writes.
+- Customer referral rewards are only eligible after the referred customer completes and pays for an eligible booking under the active admin policy.
+- Partner referral rewards are only eligible after the referred Partner completes the first eligible booking under the active admin policy.
+- Store URLs and public referral base URLs belong in external setup/env checks, not hardcoded mobile or admin code.
+
+Do not add iOS-only referral tables. If more detail is required later, extend the existing referral attribution model with target app, platform, install source, and claim timestamps through NestJS-owned writes.
+
+## Platform-Neutral Location Policy
+
+Partner and customer location collection must not depend on iOS background tracking or Android-only continuous GPS. HANDS location policy is cost-controlled and event-based:
+
+- Customer discovery can be browsed globally, but booking creation requires a confirmed Vietnam service address inside the active service area.
+- Customer current GPS is used only as a safety check; if fresh current GPS is 50km or more away from the selected service address, booking creation is rejected.
+- Partner location is updated when the Partner goes online, while the app is open and online, or at lifecycle points where evidence matters.
+- Idle Partner refreshes should remain coarse and cost-controlled; active booking refreshes should stay bounded by the current policy window.
+- Completion, cancellation, and arrival evidence may capture a point-in-time Partner location only when the action occurs.
+- If GPS is denied or temporarily unavailable, the API may use the last trusted Partner location where the business rule allows it.
+
+Do not introduce background always-on tracking as an iOS requirement. Mobile clients should send explicit location updates to the NestJS API, and the API should decide whether the update is accepted, ignored as too frequent, or used for matching evidence.
+
 ## Mobile Firebase Removal Check
 
 The Flutter apps may use Firebase Messaging for FCM push. They must not use Firebase Realtime Database, Firestore, Firebase Auth, or Firebase Storage. Google service config files must stay outside Git.
