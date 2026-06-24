@@ -824,6 +824,7 @@ function referralRewardTotals(referralCount: number, groups: ReferralRewardSumma
     heldAmount: 0,
     pendingAmount: 0,
     referralCount,
+    rewardedAmount: 0,
     reversedAmount: 0,
     rewardCount: 0,
   };
@@ -840,6 +841,8 @@ function referralRewardTotals(referralCount: number, groups: ReferralRewardSumma
       totals.heldAmount += amount;
     } else if (group.status === ReferralRewardStatus.PENDING) {
       totals.pendingAmount += amount;
+    } else if (group.status === ReferralRewardStatus.REWARDED) {
+      totals.rewardedAmount += amount;
     } else if (group.status === ReferralRewardStatus.REVERSED) {
       totals.reversedAmount += amount;
     }

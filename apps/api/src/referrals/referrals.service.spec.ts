@@ -83,6 +83,7 @@ describe('ReferralsService', () => {
         groupBy: jest.fn().mockResolvedValue([
           { status: 'PENDING', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 25_000 } },
           { status: 'AVAILABLE', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
+          { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 50_000 } },
         ]),
       },
     };
@@ -105,8 +106,9 @@ describe('ReferralsService', () => {
         heldAmount: 0,
         pendingAmount: 25_000,
         referralCount: 2,
+        rewardedAmount: 50_000,
         reversedAmount: 0,
-        rewardCount: 2,
+        rewardCount: 3,
       },
     });
     expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
@@ -406,6 +408,7 @@ describe('ReferralsService', () => {
       referralReward: {
         groupBy: jest.fn().mockResolvedValue([
           { status: 'HELD', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 100_000 } },
+          { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
         ]),
       },
     };
@@ -428,8 +431,9 @@ describe('ReferralsService', () => {
         heldAmount: 100_000,
         pendingAmount: 0,
         referralCount: 3,
+        rewardedAmount: 75_000,
         reversedAmount: 0,
-        rewardCount: 1,
+        rewardCount: 2,
       },
     });
     expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
