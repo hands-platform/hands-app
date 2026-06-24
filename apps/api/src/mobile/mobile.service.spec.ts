@@ -182,6 +182,27 @@ describe('MobileService app versions', () => {
     });
   });
 
+  it('returns a default app version policy for web when no row exists', async () => {
+    const prisma = { appVersionPolicy: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const notifications = {};
+    const service = new MobileService(prisma as never, notifications as never);
+
+    await expect(service.getAppVersion({ appType: 'PARTNER', platform: 'WEB' })).resolves.toEqual({
+      appType: 'PARTNER',
+      platform: 'WEB',
+      minimumSupportedVersion: null,
+      latestVersion: null,
+      forceUpdate: false,
+      updateUrl: null,
+      releaseNotes: null,
+      source: 'DEFAULT',
+    });
+
+    expect(prisma.appVersionPolicy.findUnique).toHaveBeenCalledWith({
+      where: { appType_platform: { appType: 'PARTNER', platform: 'WEB' } },
+    });
+  });
+
   it('returns platform-specific iOS app version policy rows', async () => {
     const prisma = {
       appVersionPolicy: {
