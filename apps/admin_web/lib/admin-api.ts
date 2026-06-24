@@ -1074,6 +1074,7 @@ export type AdminWithholdingLog = {
 
 export type AdminReview = {
   id: string;
+  bookingId?: string;
   rating: number;
   comment?: string | null;
   status: string;
@@ -1108,6 +1109,7 @@ export type AdminReview = {
 
 export type AdminPartnerCustomerReview = {
   id: string;
+  bookingId?: string;
   comment?: string | null;
   status?: string | null;
   reportReason?: string | null;

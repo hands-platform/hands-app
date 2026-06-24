@@ -9151,6 +9151,46 @@ textarea:focus-visible {
   fill: #ff9f43;
 }
 
+.admin-review-records-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-review-records-block {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-review-records-heading {
+  margin-bottom: 0;
+}
+
+.admin-review-records-heading h3 {
+  color: var(--admin-text);
+  font-size: 18px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.admin-review-rating-line {
+  align-items: center;
+  color: rgba(255, 159, 67, 0.32);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.admin-review-rating-line .is-filled {
+  color: #ff9f43;
+  fill: #ff9f43;
+}
+
+.admin-review-rating-line strong {
+  color: var(--admin-text);
+  margin-inline: 4px;
+}
+
 .review-status-chip {
   align-items: center;
   border-radius: 4px;

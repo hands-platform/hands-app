@@ -136,6 +136,10 @@ import {
   BookingUnifiedDetailSection,
   type BookingUnifiedDetailSectionProps,
 } from './booking-unified-detail-section';
+import {
+  AdminReviewRecordsSection,
+  reviewRecordsForBooking,
+} from '../../../components/admin-review-records-section';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -179,7 +183,9 @@ import {
   AdminBookingDetail,
   AdminNotification,
   AdminOperationalPolicySetting,
+  AdminPartnerCustomerReview,
   AdminProvider,
+  AdminReview,
   adminGet,
 } from '../../../lib/admin-api';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
@@ -203,7 +209,9 @@ type PageProps = {
 
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
+  customerReviews: AdminReview[];
   operationalPolicies: AdminOperationalPolicySetting[];
+  partnerEvaluations: AdminPartnerCustomerReview[];
   rawNotifications: AdminNotification[];
   providers: AdminProvider[];
 };
@@ -233,7 +241,14 @@ const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const { booking, operationalPolicies, providers, rawNotifications } = await loadBookingDetailPageData(id);
+  const {
+    booking,
+    customerReviews,
+    operationalPolicies,
+    partnerEvaluations,
+    providers,
+    rawNotifications,
+  } = await loadBookingDetailPageData(id);
 
   if (!booking) {
     notFound();
@@ -683,6 +698,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const unifiedDetailProps: BookingUnifiedDetailSectionProps = {
     unifiedDetail,
   };
+  const bookingReviewRecords = reviewRecordsForBooking(customerReviews, partnerEvaluations, booking.id);
   const sectionVisibility = bookingDetailSectionVisibility({
     hasChatMessages: messageCount > 0,
     hasCloseoutExceptions: closeoutReadiness.openItems.length > 0,
@@ -715,6 +731,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingDetailToolbar {...toolbarProps} />
 
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
+
+      <AdminReviewRecordsSection
+        customerReviews={bookingReviewRecords.customerReviews}
+        description="Customer review and Partner evaluation records attached to this booking."
+        id="booking-review-records"
+        partnerEvaluations={bookingReviewRecords.partnerEvaluations}
+        title="Booking review records"
+      />
 
       <BookingDetailChatTranscriptSection messages={messages} />
 
@@ -821,16 +845,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
 }
 
 async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
-  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
+  const [booking, operationalPolicies, rawNotifications, providers, customerReviews, partnerEvaluations] =
+    await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminNotification[]>(`/admin/bookings/${id}/notifications`, []),
     adminGet<AdminProvider[]>(`/admin/bookings/${id}/marketplace-providers`, []),
+    adminGet<AdminReview[]>('/admin/reviews', []),
+    adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []),
   ]);
 
   return {
     booking,
+    customerReviews,
     operationalPolicies,
+    partnerEvaluations,
     providers,
     rawNotifications,
   };

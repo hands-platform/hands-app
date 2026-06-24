@@ -1,10 +1,20 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { AdminAuditLog, AdminOperationalPolicySetting, AdminProvider } from '../../../lib/admin-api';
+import type {
+  AdminAuditLog,
+  AdminOperationalPolicySetting,
+  AdminPartnerCustomerReview,
+  AdminProvider,
+  AdminReview,
+} from '../../../lib/admin-api';
 import { adminGet, providerDocumentLabel, providerDocumentReviewHint } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import type { ActionMenuItem } from '../../../components/action-menu';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
+import {
+  AdminReviewRecordsSection,
+  reviewRecordsForPartner,
+} from '../../../components/admin-review-records-section';
 import {
   bookingLatestActivityAt,
   bookingRecordCreatedAt,
@@ -424,6 +434,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     return <PartnerDetailFastOverview dispatchPolicy={dispatchPolicy} provider={provider} />;
   }
 
+  const [customerReviews, partnerEvaluations] = await Promise.all([
+    adminGet<AdminReview[]>('/admin/reviews', []),
+    adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []),
+  ]);
+  const partnerReviewRecords = reviewRecordsForPartner(customerReviews, partnerEvaluations, provider.id);
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const partnerDisplayLabel = providerDisplayLabel(provider);
   const cashFeeDebtTotal = cashFeeDebtAmount(provider);
@@ -883,6 +898,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           id="partner-booking-journey"
           rows={partnerBookingJourneyRows}
           title="Partner booking journey"
+        />
+        <AdminReviewRecordsSection
+          customerReviews={partnerReviewRecords.customerReviews}
+          description="Customer reviews about this Partner and Partner-written customer evaluations connected to this Partner."
+          id="partner-review-records"
+          partnerEvaluations={partnerReviewRecords.partnerEvaluations}
+          title="Partner review records"
         />
         <PartnerDetailBookingGateEvidenceSection
           filteredAttempts={filteredPartnerBookingGateAttempts}
