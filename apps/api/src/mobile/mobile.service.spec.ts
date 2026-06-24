@@ -55,6 +55,32 @@ describe('MobileService device registration', () => {
     );
   });
 
+  it('registers a web token through the same platform-neutral device path', async () => {
+    const prisma = {};
+    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-web' }) };
+    const service = new MobileService(prisma as never, notifications as never);
+
+    await service.registerDevice(
+      { id: 'customer-user-1', roles: [Role.CUSTOMER] },
+      {
+        token: 'fcm-token-web',
+        platform: 'WEB',
+        pushProvider: 'FCM',
+        appVersion: 'admin-preview',
+      },
+    );
+
+    expect(notifications.registerDeviceToken).toHaveBeenCalledWith(
+      { id: 'customer-user-1', roles: [Role.CUSTOMER] },
+      expect.objectContaining({
+        token: 'fcm-token-web',
+        platform: 'web',
+        pushProvider: 'FCM',
+        appVersion: 'admin-preview',
+      }),
+    );
+  });
+
   it('normalizes blank optional device metadata before registration', async () => {
     const prisma = {};
     const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-3' }) };
