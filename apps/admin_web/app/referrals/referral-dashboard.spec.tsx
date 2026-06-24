@@ -47,10 +47,12 @@ const rows: AdminCustomerReferralParent[] = [
       pendingRewardAmount: 5000,
       pendingRewardCount: 1,
       referralCount: 1,
+      rewardedRewardAmount: 15000,
+      rewardedRewardCount: 1,
       reversedRewardAmount: 0,
       reversedRewardCount: 0,
       rewardCount: 2,
-      totalRewardAmount: 30000,
+      totalRewardAmount: 45000,
     },
   },
 ];
@@ -67,6 +69,8 @@ describe('ReferralDashboard', () => {
     expect(markup).not.toContain('Release ready rewards');
     expect(markup).toContain('Mark ready rewards available');
     expect(markup).toContain('Reward candidates ready for credit');
+    expect(markup).toContain('Credited rewards');
+    expect(markup).toContain('15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Does not create wallet ledger entries');
     expect(markup).toContain('Parent Customer');

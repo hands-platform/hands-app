@@ -60,6 +60,8 @@ const customerReferralParent: AdminCustomerReferralParent = {
     pendingRewardAmount: 0,
     pendingRewardCount: 0,
     referralCount: 1,
+    rewardedRewardAmount: 0,
+    rewardedRewardCount: 0,
     reversedRewardAmount: 0,
     reversedRewardCount: 0,
     rewardCount: 1,

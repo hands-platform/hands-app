@@ -37,6 +37,7 @@ export type AdminProviderWalletLedgerType =
   | 'CASH_FEE_DEBT_SETTLED'
   | 'PAYOUT_PAID'
   | 'REFUND_REVERSAL'
+  | 'REFERRAL_REWARD'
   | 'ADMIN_ADJUSTMENT';
 export type AdminReferralAudience = 'CUSTOMER' | 'PARTNER';
 export type AdminReferralRewardMode = 'COMMISSION_PERCENT' | 'FIXED_AMOUNT';
@@ -145,6 +146,8 @@ export type AdminReferralTotals = {
   pendingRewardAmount: number;
   pendingRewardCount: number;
   referralCount: number;
+  rewardedRewardAmount: number;
+  rewardedRewardCount: number;
   reversedRewardAmount: number;
   reversedRewardCount: number;
   rewardCount: number;

@@ -41,6 +41,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       : 'Parent Partner accounts with at least one referred Partner. Rewards are fixed-amount Partner wallet incentives.';
   const totalReferrals = props.rows.reduce((total, row) => total + row.totals.referralCount, 0);
   const availableRewards = props.rows.reduce((total, row) => total + row.totals.availableRewardAmount, 0);
+  const creditedRewards = props.rows.reduce((total, row) => total + row.totals.rewardedRewardAmount, 0);
   const pendingRewards = props.rows.reduce((total, row) => total + row.totals.pendingRewardAmount, 0);
   const heldRewards = props.rows.reduce((total, row) => total + row.totals.heldRewardAmount, 0);
   const metrics: AdminPageMetric[] = [
@@ -58,6 +59,11 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       label: 'Ready reward candidates',
       value: formatMoney(availableRewards, props.policy.currency, '0 VND'),
       helper: 'Reward candidates ready for credit. Wallet credit is separate.',
+    },
+    {
+      label: 'Credited rewards',
+      value: formatMoney(creditedRewards, props.policy.currency, '0 VND'),
+      helper: 'Rewards already posted to customer or Partner wallets.',
     },
     {
       label: 'Pending / held',
