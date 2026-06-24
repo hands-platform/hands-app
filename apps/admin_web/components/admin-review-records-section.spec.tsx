@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
   AdminReviewRecordsSection,
+  partnerEvaluationRecordRowKey,
+  reviewRecordRowKey,
   reviewRecordsForBooking,
   reviewRecordsForCustomer,
   reviewRecordsForPartner,
@@ -148,6 +150,40 @@ describe('AdminReviewRecordsSection', () => {
     expect(markup).toContain('Showing 6 to 6 of 6 entries');
     expect(markup).toContain('customerReviewPage=2');
     expect(markup).toContain('partnerEvaluationPage=2');
+  });
+
+  it('builds unique row keys when upstream smoke data repeats record ids', () => {
+    const duplicateCustomerReview = {
+      ...customerReview,
+      booking: {
+        ...customerReview.booking,
+        id: 'booking_2',
+      },
+      bookingId: 'booking_2',
+      createdAt: '2026-06-13T03:03:00.000Z',
+    };
+    const duplicatePartnerEvaluation = {
+      ...partnerEvaluation,
+      booking: {
+        ...partnerEvaluation.booking,
+        id: 'booking_2',
+      },
+      bookingId: 'booking_2',
+      createdAt: '2026-06-13T04:03:00.000Z',
+    };
+
+    expect(
+      new Set([
+        reviewRecordRowKey(customerReview, 0),
+        reviewRecordRowKey(duplicateCustomerReview, 1),
+      ]).size,
+    ).toBe(2);
+    expect(
+      new Set([
+        partnerEvaluationRecordRowKey(partnerEvaluation, 0),
+        partnerEvaluationRecordRowKey(duplicatePartnerEvaluation, 1),
+      ]).size,
+    ).toBe(2);
   });
 
   it('filters review records for booking, customer, and Partner detail pages', () => {

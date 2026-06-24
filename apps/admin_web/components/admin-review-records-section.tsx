@@ -90,8 +90,8 @@ export function AdminReviewRecordsSection({
               headers={CUSTOMER_REVIEW_HEADERS}
               rowCount={customerPagination.rows.length}
             >
-              {customerPagination.rows.map((review) => (
-                <tr key={review.id}>
+              {customerPagination.rows.map((review, index) => (
+                <tr key={reviewRecordRowKey(review, reviewRecordAbsoluteIndex(customerPagination.from, index))}>
                   <td>{reviewRequestCell(review)}</td>
                   <td>{reviewPartnerCell(review)}</td>
                   <td>{reviewCustomerCell(review)}</td>
@@ -142,8 +142,13 @@ export function AdminReviewRecordsSection({
               headers={PARTNER_EVALUATION_HEADERS}
               rowCount={partnerPagination.rows.length}
             >
-              {partnerPagination.rows.map((review) => (
-                <tr key={review.id}>
+              {partnerPagination.rows.map((review, index) => (
+                <tr
+                  key={partnerEvaluationRecordRowKey(
+                    review,
+                    reviewRecordAbsoluteIndex(partnerPagination.from, index),
+                  )}
+                >
                   <td>{partnerEvaluationRequestCell(review)}</td>
                   <td>{partnerEvaluationPartnerCell(review)}</td>
                   <td>{partnerEvaluationCustomerCell(review)}</td>
@@ -203,6 +208,30 @@ export function reviewRecordsForPartner(
     customerReviews: customerReviews.filter((review) => reviewRecordPartnerId(review) === providerProfileId),
     partnerEvaluations: partnerEvaluations.filter((review) => partnerEvaluationPartnerId(review) === providerProfileId),
   };
+}
+
+export function reviewRecordRowKey(review: AdminReview, index: number) {
+  return [
+    'customer-review',
+    review.id,
+    reviewRecordBookingId(review) ?? 'no-booking',
+    reviewRecordCustomerId(review) ?? 'no-customer',
+    reviewRecordPartnerId(review) ?? 'no-partner',
+    review.createdAt ?? 'no-created-at',
+    index,
+  ].join(':');
+}
+
+export function partnerEvaluationRecordRowKey(review: AdminPartnerCustomerReview, index: number) {
+  return [
+    'partner-evaluation',
+    review.id,
+    partnerEvaluationBookingId(review) ?? 'no-booking',
+    partnerEvaluationCustomerId(review) ?? 'no-customer',
+    partnerEvaluationPartnerId(review) ?? 'no-partner',
+    review.createdAt ?? 'no-created-at',
+    index,
+  ].join(':');
 }
 
 function reviewRequestCell(review: AdminReview) {
@@ -518,6 +547,10 @@ function paginateReviewRecordRows<T>(rows: readonly T[], requestedPage: number) 
     totalPages,
     totalRows,
   };
+}
+
+function reviewRecordAbsoluteIndex(from: number, index: number) {
+  return Math.max(0, from - 1) + index;
 }
 
 function buildReviewRecordPageHref(
