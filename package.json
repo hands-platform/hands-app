@@ -65,6 +65,7 @@
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
     "supabase:sql:pack": "node infra/scripts/prepare-supabase-sql-pack.mjs",
     "mobile:architecture:check": "node infra/scripts/check-flutter-architecture.mjs",
+    "mobile:foundation-smoke": "node infra/scripts/mobile-foundation-smoke.mjs",
     "mobile:visible-copy": "node infra/scripts/check-mobile-visible-copy.mjs",
     "auth:supabase-smoke": "node infra/scripts/supabase-auth-smoke.mjs",
     "auth:supabase-phone-smoke": "node infra/scripts/supabase-phone-auth-smoke.mjs",
