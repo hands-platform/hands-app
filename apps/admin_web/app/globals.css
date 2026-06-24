@@ -9030,6 +9030,60 @@ textarea:focus-visible {
   outline-offset: -2px;
 }
 
+.table.vuexy-data-table {
+  background: var(--admin-surface-raised);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--admin-text);
+  margin: 0;
+  width: 100%;
+}
+
+.table.vuexy-data-table th,
+.table.vuexy-data-table td {
+  background: var(--admin-surface-raised);
+  border-bottom: 1px solid var(--admin-border);
+  min-width: 0;
+  padding: 8px 16px;
+  vertical-align: top;
+}
+
+.table.vuexy-data-table th:first-child,
+.table.vuexy-data-table td:first-child,
+.table.vuexy-data-table th:last-child,
+.table.vuexy-data-table td:last-child {
+  padding: 8px 16px;
+}
+
+.table.vuexy-data-table th {
+  background: var(--admin-table-header-bg);
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 500;
+  height: 56px;
+  letter-spacing: 0.2px;
+  line-height: 24px;
+  overflow-wrap: normal;
+  position: relative;
+  text-transform: uppercase;
+  top: 0;
+  word-break: normal;
+  z-index: 2;
+}
+
+.table.vuexy-data-table td {
+  color: var(--admin-muted);
+  font-size: 0.9375rem;
+  height: 50px;
+  line-height: 1.4667;
+  overflow-wrap: anywhere;
+}
+
+.table.vuexy-data-table tbody tr:hover td {
+  background: var(--admin-action-hover);
+}
+
 .sr-only {
   border: 0;
   clip: rect(0, 0, 0, 0);
@@ -10786,7 +10840,7 @@ textarea:focus-visible {
   background: var(--admin-surface-raised);
   border-bottom: 1px solid var(--admin-border);
   min-width: 0;
-  padding: 10px 16px;
+  padding: 8px 16px;
   vertical-align: top;
 }
 
