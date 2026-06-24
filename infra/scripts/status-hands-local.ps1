@@ -98,9 +98,55 @@ function Get-ApiBuildStatus {
   }
 }
 
+function Test-LocalPortListening {
+  param([object]$Port)
+
+  if ($null -eq $Port -or [string]::IsNullOrWhiteSpace([string]$Port)) {
+    return $false
+  }
+
+  $connection = Get-NetTCPConnection -LocalPort ([int]$Port) -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+
+  return [bool]$connection
+}
+
+function Get-HttpProbeStatus {
+  param(
+    [string]$Url,
+    [int[]]$AllowedStatusCodes = @(200),
+    [int]$TimeoutSeconds = 2
+  )
+
+  try {
+    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+    $statusCode = [int]$response.StatusCode
+    return [pscustomobject]@{
+      ok = $AllowedStatusCodes -contains $statusCode
+      status = $statusCode
+      error = $null
+    }
+  } catch {
+    $statusCode = $null
+    if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+      $statusCode = [int]$_.Exception.Response.StatusCode
+    }
+
+    return [pscustomobject]@{
+      ok = $null -ne $statusCode -and $AllowedStatusCodes -contains $statusCode
+      status = $statusCode
+      error = $_.Exception.Message
+    }
+  }
+}
+
 $apiProcess = Get-OptionalProcessById $state.apiPid
 $adminProcess = Get-OptionalProcessById $state.adminPid
 $apiBuildStatus = Get-ApiBuildStatus -Root $RepoRoot
+$apiHealthUrl = "http://localhost:$($state.apiPort)/api/health"
+$adminUrl = "http://localhost:$($state.adminPort)"
+$apiHealthProbe = Get-HttpProbeStatus -Url $apiHealthUrl
+$adminProbe = Get-HttpProbeStatus -Url $adminUrl -AllowedStatusCodes @(200, 307, 308, 404)
 
 [pscustomobject]@{
   appName = $state.appName
@@ -110,11 +156,19 @@ $apiBuildStatus = Get-ApiBuildStatus -Root $RepoRoot
   adminPort = $state.adminPort
   apiRunning = [bool]$apiProcess
   adminRunning = [bool]$adminProcess
+  apiPortListening = Test-LocalPortListening $state.apiPort
+  adminPortListening = Test-LocalPortListening $state.adminPort
+  apiHealthOk = [bool]$apiHealthProbe.ok
+  apiHealthStatus = $apiHealthProbe.status
+  apiHealthError = $apiHealthProbe.error
+  adminReachable = [bool]$adminProbe.ok
+  adminHttpStatus = $adminProbe.status
+  adminHttpError = $adminProbe.error
   startedAt = $state.startedAt
   apiBuildFreshness = $apiBuildStatus.freshness
   apiBuildMessage = $apiBuildStatus.message
   apiSourceUpdatedAt = $apiBuildStatus.sourceUpdatedAt
   apiDistUpdatedAt = $apiBuildStatus.distUpdatedAt
-  apiHealth = "http://localhost:$($state.apiPort)/api/health"
-  adminUrl = "http://localhost:$($state.adminPort)"
+  apiHealth = $apiHealthUrl
+  adminUrl = $adminUrl
 } | ConvertTo-Json -Depth 5
