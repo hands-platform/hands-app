@@ -64,9 +64,11 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Customer Referrals');
     expect(markup).toContain('Policy changes are audited');
     expect(markup).not.toContain('read-only here');
-    expect(markup).toContain('Release ready rewards');
+    expect(markup).not.toContain('Release ready rewards');
+    expect(markup).toContain('Mark ready rewards available');
     expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Wallet credit is separate');
+    expect(markup).toContain('Does not create wallet ledger entries');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
   });

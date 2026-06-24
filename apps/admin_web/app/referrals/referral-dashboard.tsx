@@ -55,9 +55,9 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       helper: 'Registered or qualified referral attributions.',
     },
     {
-      label: 'Available rewards',
+      label: 'Ready reward candidates',
       value: formatMoney(availableRewards, props.policy.currency, '0 VND'),
-      helper: 'Reward candidates ready for credit; wallet ledger is separate.',
+      helper: 'Reward candidates ready for credit. Wallet credit is separate.',
     },
     {
       label: 'Pending / held',
@@ -143,9 +143,11 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
       </div>
       <form action={releaseAvailableReferralRewards} className="actions admin-mt-16">
         <button className="button button-secondary" type="submit">
-          Release ready rewards
+          Mark ready rewards available
         </button>
-        <span className="muted">Moves hold-window-cleared rewards to AVAILABLE. Wallet credit is separate.</span>
+        <span className="muted">
+          Moves hold-window-cleared rewards to AVAILABLE. Does not create wallet ledger entries.
+        </span>
       </form>
       <ReferralPolicyForm label={label} policy={policy} />
     </AdminFilterPanel>
