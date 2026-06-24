@@ -15,6 +15,7 @@ import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { creditReferralReward, holdReferralReward, reverseReferralReward } from './actions';
+import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 
 type ReferralParentDetailPageProps =
   | {
@@ -124,9 +125,12 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           <div>
             <span>Share link</span>
             {props.row.referralCode ? (
-              <Link className="text-link" href={referralShareUrl(props.audience, props.row.referralCode.code)}>
-                Open referral link
-              </Link>
+              <>
+                <Link className="text-link" href={referralShareUrl(props.audience, props.row.referralCode.code)}>
+                  Open referral link
+                </Link>
+                <ReferralStoreSetupStatus audience={props.audience} />
+              </>
             ) : (
               <strong>Not ready</strong>
             )}

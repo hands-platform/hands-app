@@ -4,6 +4,15 @@ import type { AdminCustomerReferralParent } from '../../lib/admin-api';
 import { ReferralParentDetailPage, referralParentDetailHref } from './referral-detail';
 
 const createdAt = '2026-06-24T10:00:00.000Z';
+const referralStoreEnvKeys = [
+  'REFERRAL_PUBLIC_BASE_URL',
+  'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+  'REFERRAL_CUSTOMER_IOS_STORE_URL',
+  'CUSTOMER_ANDROID_STORE_URL',
+  'CUSTOMER_IOS_STORE_URL',
+  'CUSTOMER_ANDROID_APP_URL',
+  'CUSTOMER_IOS_APP_URL',
+] as const;
 
 const customerReferralParent: AdminCustomerReferralParent = {
   referrer: {
@@ -70,6 +79,29 @@ const customerReferralParent: AdminCustomerReferralParent = {
 };
 
 describe('Referral detail presentation', () => {
+  const originalReferralStoreEnv = new Map<string, string | undefined>();
+
+  beforeEach(() => {
+    for (const key of referralStoreEnvKeys) {
+      originalReferralStoreEnv.set(key, process.env[key]);
+      delete process.env[key];
+    }
+    process.env.REFERRAL_CUSTOMER_ANDROID_STORE_URL =
+      'https://play.google.com/store/apps/details?id=com.massagevn.customer';
+  });
+
+  afterEach(() => {
+    for (const key of referralStoreEnvKeys) {
+      const originalValue = originalReferralStoreEnv.get(key);
+      if (originalValue === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = originalValue;
+      }
+    }
+    originalReferralStoreEnv.clear();
+  });
+
   it('builds stable referral parent detail routes', () => {
     expect(referralParentDetailHref('customer', 'parent customer')).toBe('/referrals/customers/parent%20customer');
     expect(referralParentDetailHref('partner', 'parent-partner')).toBe('/referrals/partners/parent-partner');
@@ -89,6 +121,19 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('AVAILABLE');
     expect(markup).not.toContain('Hold reward');
     expect(markup).not.toContain('Reverse reward');
+  });
+
+  it('shows referral public link and store URL readiness on the parent detail', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralParentDetailPage audience="customer" row={customerReferralParent} />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Referral store setup');
+    expect(markup).toContain('Public link base missing');
+    expect(markup).toContain('Android store ready');
+    expect(markup).toContain('iOS store missing');
+    expect(markup).toContain('Configure store URLs');
+    expect(markup).toContain('href="/setup#referrals"');
   });
 
   it('summarizes credited referral rewards separately from available candidates', () => {

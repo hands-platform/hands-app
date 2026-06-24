@@ -12,9 +12,10 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
-import { referralShareUrl, referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
+import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
+import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 
 type ReferralDashboardProps =
   | {
@@ -398,8 +399,6 @@ function ReferralCodeCell({
   }
 
   const shareUrl = referralShareUrl(audience, code.code);
-  const storeSetup = referralStoreSetupState(audience);
-
   return (
     <div>
       <strong>{code.code}</strong>
@@ -410,22 +409,7 @@ function ReferralCodeCell({
       <Link className="text-link admin-mt-8" href={shareUrl}>
         Referral link
       </Link>
-      <div className="participant-list admin-mt-8" aria-label="Referral store setup">
-        <StatusBadge tone={storeSetup.publicBase ? 'success' : 'warning'}>
-          Public link base {storeSetup.publicBase ? 'ready' : 'missing'}
-        </StatusBadge>
-        <StatusBadge tone={storeSetup.android ? 'success' : 'warning'}>
-          Android store {storeSetup.android ? 'ready' : 'missing'}
-        </StatusBadge>
-        <StatusBadge tone={storeSetup.ios ? 'success' : 'warning'}>
-          iOS store {storeSetup.ios ? 'ready' : 'missing'}
-        </StatusBadge>
-      </div>
-      {!storeSetup.publicBase || !storeSetup.android || !storeSetup.ios ? (
-        <Link className="text-link admin-mt-8" href="/setup#referrals">
-          Configure store URLs
-        </Link>
-      ) : null}
+      <ReferralStoreSetupStatus audience={audience} />
     </div>
   );
 }
