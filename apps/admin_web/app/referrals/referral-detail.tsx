@@ -415,11 +415,11 @@ function referralRewardActionItems({
       hiddenInputs: referralRewardHiddenInputs({
         audience,
         parentId,
-        reason: 'Credited from referral detail review.',
+        reason: 'Credit ready referral reward to wallet after detail review.',
         rewardId,
       }),
       kind: 'submit',
-      label: 'Credit reward',
+      label: 'Credit to wallet',
       tone: 'success',
     });
   }
@@ -430,11 +430,11 @@ function referralRewardActionItems({
       hiddenInputs: referralRewardHiddenInputs({
         audience,
         parentId,
-        reason: 'Held from referral detail review.',
+        reason: 'Hold referral reward for admin review from detail page.',
         rewardId,
       }),
       kind: 'submit',
-      label: 'Hold reward',
+      label: 'Hold for review',
       tone: 'warning',
     });
   }
@@ -445,7 +445,7 @@ function referralRewardActionItems({
       hiddenInputs: referralRewardHiddenInputs({
         audience,
         parentId,
-        reason: 'Reversed from referral detail review.',
+        reason: 'Reverse referral reward from detail review.',
         rewardId,
       }),
       kind: 'submit',
