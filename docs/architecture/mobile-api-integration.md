@@ -68,6 +68,7 @@ The current backend is prepared to accept future Android, iOS, and Web device re
 - Device registration stores FCM as the push provider plus app/device metadata: app version, OS version, device model, locale, and timezone.
 - Existing notification compatibility routes remain Android/iOS-only for older builds.
 - `GET /api/mobile/app-version?appType=CUSTOMER&platform=IOS` and the equivalent Partner/Android queries provide a per-platform force-update contract.
+- `npm.cmd run prisma:seed --workspace @massage-vn/api` creates inactive-blocking default CUSTOMER/PARTNER Android and iOS app-version rows with `forceUpdate=false`, so mobile builds receive a database-backed policy before operations customizes versions.
 
 ## Deferred Auth Identity Design
 

@@ -18,6 +18,40 @@ const {
 const prisma = new PrismaClient();
 
 async function main() {
+  const appVersionPolicies = [
+    { appType: 'CUSTOMER', platform: 'ANDROID' },
+    { appType: 'CUSTOMER', platform: 'IOS' },
+    { appType: 'PARTNER', platform: 'ANDROID' },
+    { appType: 'PARTNER', platform: 'IOS' },
+  ];
+
+  await Promise.all(
+    appVersionPolicies.map((policy) =>
+      prisma.appVersionPolicy.upsert({
+        where: {
+          appType_platform: {
+            appType: policy.appType,
+            platform: policy.platform,
+          },
+        },
+        update: {
+          forceUpdate: false,
+          isActive: true,
+          releaseNotes:
+            'Default HANDS mobile version policy. Update from operations tooling before production.',
+        },
+        create: {
+          appType: policy.appType,
+          platform: policy.platform,
+          forceUpdate: false,
+          isActive: true,
+          releaseNotes:
+            'Default HANDS mobile version policy. Update from operations tooling before production.',
+        },
+      }),
+    ),
+  );
+
   const serviceCatalog = [
     {
       id: 'svc-foot-45',
