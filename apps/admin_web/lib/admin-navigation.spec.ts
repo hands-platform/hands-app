@@ -12,6 +12,7 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/operations-handoff')).toBe('Command: Handoff');
     expect(linksByHref.get('/vietnam-overview')).toBe('Command: Vietnam Overview');
     expect(linksByHref.get('/usage-overview')).toBe('Command: Usage Overview');
+    expect(linksByHref.get('/marketing-analytics')).toBe('Command: Marketing Analytics');
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
   });

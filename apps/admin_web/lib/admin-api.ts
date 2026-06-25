@@ -278,6 +278,87 @@ export type AdminUsageOverview = {
   };
 };
 
+export type AdminMarketingOverviewRange = 'today' | 'yesterday' | '7d' | '30d';
+export type AdminMarketingPlatform = 'android' | 'ios' | 'web' | 'unknown';
+export type AdminMarketingSource =
+  | 'meta'
+  | 'google'
+  | 'tiktok'
+  | 'organic'
+  | 'referral'
+  | 'direct'
+  | 'unknown';
+
+export type AdminMarketingRates = {
+  signupRate: number;
+  addressSaveRate: number;
+  bookingCreateRate: number;
+  bookingCompleteRate: number;
+  cancellationRate: number;
+  firstBookingRate: number;
+  repeatBookingRate: number;
+  cpi: number | null;
+  cpa: number | null;
+  roas: number | null;
+};
+
+export type AdminMarketingStats = {
+  firstOpens: number;
+  signups: number;
+  addressSaves: number;
+  bookingCreated: number;
+  bookingCompleted: number;
+  bookingCancelled: number;
+  firstBookingCompleted: number;
+  repeatBookingCompleted: number;
+  grossBookingValue: number;
+  platformFeeRevenue: number;
+  refundAmount: number;
+  adSpend: number;
+  conversionRates: AdminMarketingRates;
+};
+
+export type AdminMarketingFunnelStep = {
+  key: string;
+  label: string;
+  value: number;
+  rateFromPrevious: number | null;
+};
+
+export type AdminMarketingDimensionRow = AdminMarketingStats & {
+  key: string;
+  source?: AdminMarketingSource;
+  platform?: AdminMarketingPlatform;
+  regionCode?: string;
+  regionName?: string;
+  campaignId?: string | null;
+  campaignName?: string | null;
+};
+
+export type AdminMarketingOverview = {
+  generatedAt: string;
+  refreshSeconds: number;
+  source: 'stored-marketing-aggregates';
+  range: AdminMarketingOverviewRange;
+  rangeLabel: string;
+  windowStartAt: string;
+  windowEndAt: string;
+  filters: {
+    source?: AdminMarketingSource | null;
+    platform?: AdminMarketingPlatform | null;
+    regionCode?: string | null;
+    campaignId?: string | null;
+  };
+  totals: AdminMarketingStats;
+  funnel: AdminMarketingFunnelStep[];
+  bySource: AdminMarketingDimensionRow[];
+  byPlatform: AdminMarketingDimensionRow[];
+  byRegion: AdminMarketingDimensionRow[];
+  byCampaign: AdminMarketingDimensionRow[];
+  topInsights: string[];
+  dataGaps: string[];
+};
+
 export type AdminCustomer = {
   id: string;
   userId: string;

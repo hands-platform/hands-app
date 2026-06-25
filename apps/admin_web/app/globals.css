@@ -5834,6 +5834,146 @@ a.action-button-card:hover {
   width: 34px;
 }
 
+.marketing-analytics-filter-panel {
+  gap: 16px;
+}
+
+.marketing-analytics-filter-row {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 110px minmax(0, 1fr);
+}
+
+.marketing-analytics-filter-label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.marketing-analytics-campaign-form {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(280px, 420px) auto;
+  justify-content: start;
+}
+
+.marketing-analytics-campaign-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.marketing-analytics-campaign-form label span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.marketing-analytics-campaign-form input {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text);
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.marketing-funnel-list {
+  display: grid;
+  gap: 10px;
+}
+
+.marketing-funnel-step {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-md);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) 90px 80px;
+  padding: 12px;
+}
+
+.marketing-funnel-dot {
+  background: var(--admin-accent);
+  border-radius: 999px;
+  box-shadow: 0 0 0 5px rgb(var(--admin-primary-channel) / 0.12);
+  height: 10px;
+  width: 10px;
+}
+
+.marketing-funnel-step div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.marketing-funnel-step strong {
+  color: var(--admin-text);
+  font-size: 14px;
+}
+
+.marketing-funnel-step small {
+  color: var(--admin-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketing-funnel-step span:not(.marketing-funnel-dot) {
+  color: var(--admin-text);
+  font-weight: 800;
+  text-align: right;
+}
+
+.marketing-funnel-step em {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-style: normal;
+  text-align: right;
+}
+
+.marketing-insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.marketing-insight-list p {
+  background: rgb(var(--admin-primary-channel) / 0.08);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text);
+  margin: 0;
+  padding: 12px;
+}
+
+.marketing-data-gap-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.marketing-data-gap-list span {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: 999px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.marketing-table-card,
+.marketing-funnel-card,
+.marketing-insight-card {
+  min-height: 100%;
+}
+
+.marketing-analytics-table {
+  min-width: 980px;
+}
+
 .operations-policy-page {
   display: grid;
   gap: 16px;

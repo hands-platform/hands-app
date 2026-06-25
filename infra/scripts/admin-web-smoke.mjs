@@ -10,6 +10,7 @@ const criticalSmokePaths = [
   '/partners',
   '/reviews',
   '/vietnam-overview',
+  '/marketing-analytics',
   '/operations-policy',
   '/setup',
 ];
@@ -147,6 +148,7 @@ const pages = [
       'Start Shift',
       'Calendar',
       'Vietnam Overview',
+      'Marketing Analytics',
       'Command',
       'Bookings',
       'All Bookings',
@@ -184,6 +186,18 @@ const pages = [
   {
     path: '/?range=7d',
     markers: ['HANDS Admin', 'Dashboard date range', 'Last 7 days', 'Hourly booking demand'],
+  },
+  {
+    path: '/marketing-analytics',
+    markers: [
+      'Marketing Analytics',
+      'Marketing filters',
+      'Acquisition funnel',
+      'Source performance',
+      'Region performance',
+      'Campaign performance',
+      'No live ad API',
+    ],
   },
   {
     path: '/bookings',

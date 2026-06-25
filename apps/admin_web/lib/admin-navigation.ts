@@ -36,6 +36,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Stored app usage, Partner searches, requests, and completed-work rankings.',
       },
       {
+        href: '/marketing-analytics',
+        label: 'Marketing Analytics',
+        description: 'Acquisition source, campaign, region, signup, booking, and revenue funnel aggregates.',
+      },
+      {
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',

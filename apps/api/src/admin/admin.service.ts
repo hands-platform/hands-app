@@ -150,6 +150,22 @@ import {
   buildAdminUsageRegionRows,
   normalizeAdminUsageRange,
 } from './admin-usage-overview';
+import {
+  AdminMarketingFilters,
+  adminMarketingDateWhere,
+  adminMarketingRangeWindow,
+  buildMarketingDimensionRows,
+  buildMarketingFunnel,
+  buildMarketingInsights,
+  buildMarketingRegionRows,
+  emptyMarketingStats,
+  normalizeAdminMarketingRange,
+  normalizeMarketingPlatform,
+  normalizeMarketingPlatformFilter,
+  normalizeMarketingSource,
+  normalizeMarketingSourceFilter,
+  withMarketingRates,
+} from './admin-marketing-analytics';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
@@ -166,6 +182,8 @@ const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 500;
+const ADMIN_MARKETING_REGION_LIMIT = 500;
+const ADMIN_MARKETING_CAMPAIGN_LIMIT = 50;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
@@ -1453,6 +1471,357 @@ export class AdminService {
             ),
           ),
       },
+    };
+  }
+
+  async getMarketingOverview(query: {
+    range?: string;
+    source?: string;
+    platform?: string;
+    regionCode?: string;
+    campaignId?: string;
+  } = {}) {
+    const window = adminMarketingRangeWindow(normalizeAdminMarketingRange(query.range));
+    const dateWhere = adminMarketingDateWhere(window);
+    const sourceFilter = normalizeMarketingSourceFilter(query.source);
+    const platformFilter = normalizeMarketingPlatformFilter(query.platform);
+    const regionCodeFilter = query.regionCode
+      ? VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === query.regionCode)?.code ?? null
+      : null;
+    const campaignIdFilter = typeof query.campaignId === 'string' && query.campaignId.trim()
+      ? query.campaignId.trim()
+      : null;
+    const filters: AdminMarketingFilters = {
+      source: sourceFilter,
+      platform: platformFilter,
+      regionCode: regionCodeFilter,
+      campaignId: campaignIdFilter,
+    };
+    const customerSignupWhere = {
+      roles: { has: Role.CUSTOMER },
+      createdAt: dateWhere,
+    } satisfies Prisma.UserWhereInput;
+    const appFirstOpenWhere = {
+      role: Role.CUSTOMER,
+      createdAt: dateWhere,
+    } satisfies Prisma.AppSessionWhereInput;
+    const bookingCreatedWhere = {
+      createdAt: dateWhere,
+    } satisfies Prisma.BookingWhereInput;
+    const bookingCompletedWhere = {
+      status: BookingStatus.COMPLETED,
+      closedAt: dateWhere,
+    } satisfies Prisma.BookingWhereInput;
+    const bookingCancelledWhere = {
+      status: { in: Array.from(ADMIN_VIETNAM_CANCELLATION_STATUSES) },
+      OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }],
+    } satisfies Prisma.BookingWhereInput;
+    const referralAttributionWhere = {
+      audience: ReferralAudience.CUSTOMER,
+      createdAt: dateWhere,
+    } satisfies Prisma.ReferralAttributionWhereInput;
+
+    const [
+      firstOpenPlatformRows,
+      firstOpenCount,
+      signupCount,
+      referralSignupCount,
+      addressSaveCount,
+      bookingCreatedCount,
+      bookingCompletedCount,
+      bookingCancelledCount,
+      grossBookingValue,
+      platformFeeRevenue,
+      refundAmount,
+      firstRepeatCompleted,
+      regionAddressRows,
+      regionBookingCreatedRows,
+      regionBookingCompletedRows,
+      regionBookingCancelledRows,
+      referralCampaignRows,
+    ] = await Promise.all([
+      this.prisma.appSession.groupBy({
+        by: ['platform'],
+        where: appFirstOpenWhere,
+        _count: { _all: true },
+      }),
+      this.prisma.appSession.count({ where: appFirstOpenWhere }),
+      this.prisma.user.count({ where: customerSignupWhere }),
+      this.prisma.referralAttribution.count({ where: referralAttributionWhere }),
+      this.prisma.customerSelectedLocation.count({ where: { createdAt: dateWhere } }),
+      this.prisma.booking.count({ where: bookingCreatedWhere }),
+      this.prisma.booking.count({ where: bookingCompletedWhere }),
+      this.prisma.booking.count({ where: bookingCancelledWhere }),
+      this.prisma.payment.aggregate({
+        where: {
+          status: { in: Array.from(ADMIN_VIETNAM_REVENUE_STATUSES) },
+          booking: bookingCompletedWhere,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.providerPlatformFeeLog.aggregate({
+        where: { createdAt: dateWhere },
+        _sum: { platformFeeAmount: true },
+      }),
+      this.prisma.refund.aggregate({
+        where: { createdAt: dateWhere },
+        _sum: { amount: true },
+      }),
+      this.completedBookingRepeatBreakdown(window),
+      this.prisma.customerSelectedLocation.findMany({
+        where: { createdAt: dateWhere },
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_MARKETING_REGION_LIMIT,
+        select: {
+          addressText: true,
+          latitude: true,
+          longitude: true,
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: bookingCreatedWhere,
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_MARKETING_REGION_LIMIT,
+        select: {
+          address: true,
+          lat: true,
+          lng: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: bookingCompletedWhere,
+        orderBy: { closedAt: 'desc' },
+        take: ADMIN_MARKETING_REGION_LIMIT,
+        select: {
+          address: true,
+          lat: true,
+          lng: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: bookingCancelledWhere,
+        orderBy: { updatedAt: 'desc' },
+        take: ADMIN_MARKETING_REGION_LIMIT,
+        select: {
+          address: true,
+          lat: true,
+          lng: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+      }),
+      this.prisma.referralAttribution.findMany({
+        where: referralAttributionWhere,
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_MARKETING_CAMPAIGN_LIMIT,
+        select: {
+          id: true,
+          installSource: true,
+          platform: true,
+          createdAt: true,
+          referralCode: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+          rewards: {
+            where: {
+              createdAt: dateWhere,
+            },
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const stats = {
+      ...emptyMarketingStats(),
+      firstOpens: firstOpenCount,
+      signups: signupCount,
+      addressSaves: addressSaveCount,
+      bookingCreated: bookingCreatedCount,
+      bookingCompleted: bookingCompletedCount,
+      bookingCancelled: bookingCancelledCount,
+      firstBookingCompleted: firstRepeatCompleted.firstBookingCompleted,
+      repeatBookingCompleted: firstRepeatCompleted.repeatBookingCompleted,
+      grossBookingValue: numberValue(grossBookingValue._sum.amount),
+      platformFeeRevenue: numberValue(platformFeeRevenue._sum.platformFeeAmount),
+      refundAmount: numberValue(refundAmount._sum.amount),
+      adSpend: 0,
+    };
+    const referralRewardCount = referralCampaignRows.reduce(
+      (total, row) => total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
+      0,
+    );
+    const referralRewardAmount = referralCampaignRows.reduce(
+      (total, row) =>
+        total +
+        row.rewards
+          .filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED)
+          .reduce((sum, reward) => sum + numberValue(reward.amount), 0),
+      0,
+    );
+    const unknownStats = {
+      ...stats,
+      signups: Math.max(0, signupCount - referralSignupCount),
+      firstBookingCompleted: Math.max(0, stats.firstBookingCompleted - referralRewardCount),
+      platformFeeRevenue: Math.max(0, stats.platformFeeRevenue - referralRewardAmount),
+    };
+    const referralStats = {
+      ...emptyMarketingStats(),
+      signups: referralSignupCount,
+      firstBookingCompleted: referralRewardCount,
+      platformFeeRevenue: referralRewardAmount,
+    };
+    const sourceRows = buildMarketingDimensionRows(
+      [
+        { source: 'unknown', stats: unknownStats },
+        { source: 'referral', stats: referralStats },
+      ],
+      { source: filters.source },
+    );
+    const campaignRows = buildMarketingDimensionRows(
+      referralCampaignRows.map((row) => ({
+        source: normalizeMarketingSource(row.installSource ?? 'referral'),
+        platform: normalizeMarketingPlatform(row.platform),
+        campaignId: row.referralCode.code,
+        campaignName: `Referral ${row.referralCode.code}`,
+        stats: {
+          signups: 1,
+          firstBookingCompleted: row.rewards.length,
+          platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
+        },
+      })),
+      filters,
+    );
+    const regionRows = buildMarketingRegionRows(
+      [
+        ...regionAddressRows.map((row) => ({
+          regionValues: [row.addressText],
+          coordinates: { latitude: row.latitude, longitude: row.longitude },
+          stats: { addressSaves: 1 },
+        })),
+        ...regionBookingCreatedRows.map((booking) => ({
+          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          coordinates: {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+          stats: { bookingCreated: 1 },
+        })),
+        ...regionBookingCompletedRows.map((booking) => ({
+          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          coordinates: {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+          stats: { bookingCompleted: 1 },
+        })),
+        ...regionBookingCancelledRows.map((booking) => ({
+          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          coordinates: {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+          stats: { bookingCancelled: 1 },
+        })),
+      ],
+      filters,
+    );
+    const platformRows = buildMarketingDimensionRows(
+      firstOpenPlatformRows.map((row) => ({
+        source: 'unknown',
+        platform: normalizeMarketingPlatform(row.platform),
+        stats: { firstOpens: row._count._all },
+      })),
+      filters,
+    );
+
+    return {
+      generatedAt: new Date().toISOString(),
+      refreshSeconds: 300,
+      source: 'stored-marketing-aggregates',
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt.toISOString(),
+      windowEndAt: window.endAt.toISOString(),
+      filters: {
+        source: filters.source ?? null,
+        platform: filters.platform ?? null,
+        regionCode: filters.regionCode ?? null,
+        campaignId: filters.campaignId ?? null,
+      },
+      totals: withMarketingRates(stats),
+      funnel: buildMarketingFunnel(stats),
+      bySource: sourceRows,
+      byPlatform: platformRows,
+      byRegion: regionRows,
+      byCampaign: campaignRows,
+      topInsights: buildMarketingInsights(stats, sourceRows),
+      dataGaps: [
+        'Attribution is currently derived from stored referrals and app sessions; non-referral paid campaign attribution falls back to unknown.',
+        'Manual ad spend import is not enabled yet, so CPI, CPA, and ROAS remain empty until spend rows exist.',
+        'No live ad-network API, MMP, exact customer location, phone number, or ad identifier is returned by this endpoint.',
+      ],
+    };
+  }
+
+  private async completedBookingRepeatBreakdown(window: { startAt: Date; endAt: Date }) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ firstBookingCompleted: bigint | number; repeatBookingCompleted: bigint | number }>
+    >(Prisma.sql`
+      WITH ranked_completed_bookings AS (
+        SELECT
+          "id",
+          "customerProfileId",
+          "closedAt",
+          row_number() OVER (
+            PARTITION BY "customerProfileId"
+            ORDER BY "closedAt" ASC, "id" ASC
+          ) AS rn
+        FROM "Booking"
+        WHERE "status" = 'COMPLETED'
+          AND "closedAt" IS NOT NULL
+      )
+      SELECT
+        COUNT(*) FILTER (WHERE rn = 1)::bigint AS "firstBookingCompleted",
+        COUNT(*) FILTER (WHERE rn > 1)::bigint AS "repeatBookingCompleted"
+      FROM ranked_completed_bookings
+      WHERE "closedAt" >= ${window.startAt}
+        AND "closedAt" < ${window.endAt}
+    `);
+    const row = rows[0];
+
+    return {
+      firstBookingCompleted: numberValue(row?.firstBookingCompleted),
+      repeatBookingCompleted: numberValue(row?.repeatBookingCompleted),
     };
   }
 

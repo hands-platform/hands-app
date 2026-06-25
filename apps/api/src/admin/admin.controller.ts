@@ -81,6 +81,23 @@ export class AdminController {
     return this.admin.getUsageOverview(range);
   }
 
+  @Get('marketing/overview')
+  marketingOverview(
+    @Query('range') range?: string,
+    @Query('source') source?: string,
+    @Query('platform') platform?: string,
+    @Query('regionCode') regionCode?: string,
+    @Query('campaignId') campaignId?: string,
+  ) {
+    return this.admin.getMarketingOverview({
+      range,
+      source,
+      platform,
+      regionCode,
+      campaignId,
+    });
+  }
+
   @Get('referrals/policies')
   referralPolicies() {
     return this.admin.listReferralPolicies();

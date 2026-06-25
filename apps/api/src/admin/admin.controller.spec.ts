@@ -10,6 +10,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
     listFileReviewProviders: jest.fn(),
+    getMarketingOverview: jest.fn(),
     getUsageOverview: jest.fn(),
     getVietnamOverview: jest.fn(),
     getCustomerReferralParent: jest.fn(),
@@ -115,6 +116,29 @@ describe('AdminController notification and push actions', () => {
       path: 'usage-overview',
     });
     expect(admin.getUsageOverview).toHaveBeenCalledWith('month');
+  });
+
+  it('exposes marketing overview as a separate aggregate GET endpoint', async () => {
+    admin.getMarketingOverview.mockResolvedValue({ source: 'stored-marketing-aggregates', bySource: [] });
+
+    await expect(
+      controller.marketingOverview('7d', 'referral', 'ios', 'hcm', 'ref-smoke'),
+    ).resolves.toEqual({
+      source: 'stored-marketing-aggregates',
+      bySource: [],
+    });
+
+    expect(routeMetadata('marketingOverview')).toEqual({
+      method: RequestMethod.GET,
+      path: 'marketing/overview',
+    });
+    expect(admin.getMarketingOverview).toHaveBeenCalledWith({
+      range: '7d',
+      source: 'referral',
+      platform: 'ios',
+      regionCode: 'hcm',
+      campaignId: 'ref-smoke',
+    });
   });
 
   it('exposes referral policy settings as a read-only GET endpoint', async () => {
