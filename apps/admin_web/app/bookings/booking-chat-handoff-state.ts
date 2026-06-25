@@ -3,6 +3,7 @@ import {
   bookingChatQuietNeedsOps as bookingChatQuietNeedsOpsFromFacts,
   bookingChatRepairNeedsOps as bookingChatRepairNeedsOpsFromFacts,
 } from '../../lib/booking-chat-repair-action-state';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 
@@ -25,14 +26,14 @@ export function bookingChatQuietNeedsOps(booking: AdminBooking): boolean {
   return bookingChatQuietNeedsOpsFromFacts({
     status: booking.status,
     hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
+    messageCount: bookingChatMessageCount(booking),
   });
 }
 
 export function bookingHasQuietHandoffChat(booking: AdminBooking): boolean {
   return Boolean(
     booking.chatRoom &&
-      (booking.chatRoom.messages?.length ?? 0) === 0 &&
+      bookingChatMessageCount(booking) === 0 &&
       isHandoffBookingStatus(booking.status),
   );
 }

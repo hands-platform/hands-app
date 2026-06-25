@@ -1,4 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import {
   isPostMatchCancellationAutoApproved,
   isPostMatchCancellationReviewBooking,
@@ -37,7 +38,7 @@ export function bookingPostMatchChatEvidenceRows({
   const feeState = postMatchCancellationFeeState(booking);
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
   const resolution = postMatchCancellationResolution(booking);
-  const retainedMessageCount = messageCount ?? booking.chatRoom?.messages?.length ?? 0;
+  const retainedMessageCount = messageCount ?? bookingChatMessageCount(booking);
 
   return [
     {

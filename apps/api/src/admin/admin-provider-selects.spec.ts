@@ -1,4 +1,5 @@
 import {
+  adminProviderBookingListSummarySelect,
   adminProviderDetailUserSelect,
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
@@ -21,6 +22,22 @@ describe('admin provider selects', () => {
       status: true,
       user: { select: expect.objectContaining({ id: true, phone: true }) },
     });
+  });
+
+  it('keeps booking list provider summaries compact for repeated rows', () => {
+    expect(adminProviderBookingListSummarySelect).toMatchObject({
+      id: true,
+      displayName: true,
+      status: true,
+      currentLocationUpdatedAt: true,
+      user: { select: { id: true, phone: true, fullName: true } },
+    });
+    expect(
+      'ratingAvg' in (adminProviderBookingListSummarySelect as Record<string, unknown>),
+    ).toBe(false);
+    expect(
+      'email' in (adminProviderBookingListSummarySelect.user.select as Record<string, unknown>),
+    ).toBe(false);
   });
 
   it('keeps verification and media selects bounded and review-aware', () => {

@@ -2,6 +2,7 @@ import type { AdminBooking } from '../../lib/admin-api';
 import type { BookingMonitorCheckFlagsInput } from '../../lib/booking-monitor-check-flags';
 import type { BookingPricingPolicySignal } from '../../lib/booking-pricing-policy-signal';
 import { bookingMatchingChatReady } from './booking-chat-handoff-state';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import { providerLocationFreshness } from './booking-location-display';
 import { bookingHasProviderLocation } from './booking-location-ops-inputs';
 
@@ -59,6 +60,6 @@ export function bookingMonitorCheckFlagsInputFromBooking(
       ? providerLocationFreshness(booking, nowMs)
       : 'missing',
     hasChatRoom: bookingMatchingChatReady(booking),
-    chatMessageCount: booking.chatRoom?.messages?.length ?? 0,
+    chatMessageCount: bookingChatMessageCount(booking),
   });
 }

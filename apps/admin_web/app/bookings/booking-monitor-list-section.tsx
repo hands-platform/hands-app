@@ -15,11 +15,12 @@ import {
   type AdminAvatarSessionSignal,
   type AdminAvatarStatus,
 } from '../../lib/admin-avatar-status';
-import type { AdminBooking } from '../../lib/admin-api';
+import type { AdminBooking, AdminChatMessage } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
 import { readAddressText, serviceAddressAreaLabel } from './booking-address-readers';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import { formatBookingDate } from './booking-list-time';
 import {
   bookingPostMatchChatEvidenceRows,
@@ -207,7 +208,14 @@ type BookingCustomerUserLike =
   | null
   | undefined;
 
-type BookingChatMessage = NonNullable<NonNullable<AdminBooking['chatRoom']>['messages']>[number];
+type BookingChatMessage = AdminChatMessage;
+type BookingChatMessagesResponse = {
+  readonly bookingId: string;
+  readonly chatRoomId: string | null;
+  readonly limit: number;
+  readonly messages: readonly BookingChatMessage[];
+  readonly truncated: boolean;
+};
 
 const BOOKING_TABLE_PAGE_SIZE = 10;
 const BOOKING_TABLE_HEADERS = [
@@ -511,7 +519,18 @@ export function BookingPostMatchCancellationChatLayer({
   readonly row: BookingMonitorListRow;
 }) {
   const { booking } = row;
-  const messages = booking.chatRoom?.messages ?? [];
+  const embeddedMessages = booking.chatRoom?.messages ?? [];
+  const [chatState, setChatState] = useState<{
+    readonly error: string | null;
+    readonly loaded: boolean;
+    readonly messages: readonly BookingChatMessage[];
+  }>(() => ({
+    error: null,
+    loaded: embeddedMessages.length > 0,
+    messages: embeddedMessages,
+  }));
+  const listedMessageCount = bookingChatMessageCount(booking);
+  const messages = chatState.messages;
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
   const feeState = postMatchCancellationFeeState(booking);
   const resolution = postMatchCancellationResolution(booking);
@@ -519,8 +538,47 @@ export function BookingPostMatchCancellationChatLayer({
   const evidenceLabel = bookingPostMatchEvidenceLabel(booking);
   const evidenceRows = bookingPostMatchChatEvidenceRows({
     booking,
-    messageCount: messages.length,
+    messageCount: chatState.loaded ? messages.length : listedMessageCount,
   });
+
+  useEffect(() => {
+    if (!booking.chatRoom || embeddedMessages.length > 0) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    setChatState((current) => ({ ...current, error: null, loaded: false }));
+
+    fetch(`/api/admin/bookings/${encodeURIComponent(booking.id)}/chat-messages`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('CHAT_MESSAGES_UNAVAILABLE');
+        }
+        return (await response.json()) as BookingChatMessagesResponse;
+      })
+      .then((payload) => {
+        setChatState({
+          error: null,
+          loaded: true,
+          messages: payload.messages ?? [],
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+        setChatState({
+          error: 'Unable to load retained chat messages. Open booking detail if this persists.',
+          loaded: true,
+          messages: [],
+        });
+      });
+
+    return () => controller.abort();
+  }, [booking.chatRoom, booking.id, embeddedMessages.length]);
 
   return (
     <div className="booking-chat-layer" role="presentation">
@@ -561,7 +619,11 @@ export function BookingPostMatchCancellationChatLayer({
           ))}
         </div>
         <div className="booking-chat-message-list">
-          {messages.length > 0 ? (
+          {!chatState.loaded ? (
+            <div className="booking-chat-empty">Loading retained chat messages...</div>
+          ) : chatState.error ? (
+            <div className="booking-chat-empty">{chatState.error}</div>
+          ) : messages.length > 0 ? (
             messages.map((message) => <BookingChatMessageRow key={message.id} message={message} />)
           ) : (
             <div className="booking-chat-empty">No retained chat messages for this booking.</div>
@@ -1146,7 +1208,7 @@ function bookingPostMatchNeedsReviewMetrics(
     isPostMatchCancellationManualReviewRequired(row.booking),
   ).length;
   const noShowCount = rows.filter((row) => row.booking.status === 'NO_SHOW').length;
-  const missingChatCount = rows.filter((row) => (row.booking.chatRoom?.messages?.length ?? 0) === 0).length;
+  const missingChatCount = rows.filter((row) => bookingChatMessageCount(row.booking) === 0).length;
   const feeHeldCount = rows.filter((row) => postMatchCancellationFeeState(row.booking) === 'held').length;
 
   return [
@@ -1182,7 +1244,7 @@ function bookingReviewReasonPills(booking: AdminBooking): readonly BookingReview
     return [];
   }
 
-  const chatCount = booking.chatRoom?.messages?.length ?? 0;
+  const chatCount = bookingChatMessageCount(booking);
   const reasons: BookingReviewReasonPill[] = [];
 
   if (booking.status === 'NO_SHOW') {

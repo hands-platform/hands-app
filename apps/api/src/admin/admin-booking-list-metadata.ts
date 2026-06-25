@@ -25,6 +25,25 @@ export type AdminBookingListMetadata = {
   readonly statusChangedLabel: string;
 };
 
+const LIST_METADATA_TEXT_FIELDS = ['deviceLanguage', 'customerDeviceLanguage', 'language', 'locale'] as const;
+const LIST_METADATA_MATCHING_POLICY_FIELDS = [
+  'providerResponseWindowMinutes',
+  'marketplaceRadiusMeters',
+  'marketplacePartnerRadiusMeters',
+  'backupProviderRadiusMeters',
+  'marketplaceLocationMaxAgeMinutes',
+  'marketplacePartnerLocationMaxAgeMinutes',
+  'backupProviderLocationMaxAgeMinutes',
+  'marketplaceInvitationLimit',
+  'marketplacePartnerInvitationLimit',
+  'backupProviderInvitationLimit',
+  'preferredAcceptMode',
+  'marketplaceOpenMode',
+  'backupOpenMode',
+  'travelBufferMinutes',
+] as const;
+const LIST_METADATA_ALERT_TRACE_FIELDS = ['stage', 'createdAt', 'notifiedCount'] as const;
+
 const ADDRESS_TEXT_FIELDS = [
   'addressText',
   'address_text',
@@ -57,6 +76,35 @@ export function withAdminBookingListMetadata<T extends AdminBookingListMetadataI
     statusChangedAt: bookingStatusChangedAt(booking),
     statusChangedLabel: bookingStatusChangedLabel(booking),
   };
+}
+
+export function adminBookingListMetadataPayload(metadata: unknown): Record<string, unknown> | null {
+  const record = readRecord(metadata);
+  if (!record) {
+    return null;
+  }
+
+  const payload: Record<string, unknown> = {};
+  copyTextFields(payload, record, LIST_METADATA_TEXT_FIELDS);
+
+  const matchingPolicy = pickKnownFields(
+    readRecord(record.matchingPolicy),
+    LIST_METADATA_MATCHING_POLICY_FIELDS,
+  );
+  if (matchingPolicy) {
+    payload.matchingPolicy = matchingPolicy;
+  }
+
+  const alertTraces = Array.isArray(record.backupNotificationTraces)
+    ? record.backupNotificationTraces
+        .map((trace) => pickKnownFields(readRecord(trace), LIST_METADATA_ALERT_TRACE_FIELDS))
+        .filter((trace): trace is Record<string, unknown> => Boolean(trace))
+    : [];
+  if (alertTraces.length > 0) {
+    payload.backupNotificationTraces = alertTraces;
+  }
+
+  return Object.keys(payload).length > 0 ? payload : null;
 }
 
 export function bookingServiceAddressText(booking: AdminBookingListMetadataInput): string | null {
@@ -166,6 +214,34 @@ function readBookingAddressText(value: unknown): string | null {
 
 function readRecord(value: unknown): AddressRecord | null {
   return value && typeof value === 'object' ? (value as AddressRecord) : null;
+}
+
+function copyTextFields(
+  output: Record<string, unknown>,
+  input: AddressRecord,
+  fields: readonly string[],
+) {
+  for (const field of fields) {
+    const value = trimmedAddressText(input[field]);
+    if (value) {
+      output[field] = value;
+    }
+  }
+}
+
+function pickKnownFields(input: AddressRecord | null, fields: readonly string[]) {
+  if (!input) {
+    return null;
+  }
+
+  const output: Record<string, unknown> = {};
+  for (const field of fields) {
+    const value = input[field];
+    if (value !== null && value !== undefined) {
+      output[field] = value;
+    }
+  }
+  return Object.keys(output).length > 0 ? output : null;
 }
 
 function trimmedAddressText(value: unknown) {

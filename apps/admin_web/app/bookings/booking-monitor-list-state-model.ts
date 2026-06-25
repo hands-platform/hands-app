@@ -3,6 +3,7 @@ import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-
 import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state';
 import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
 import { bookingMatchingChatReady } from './booking-chat-handoff-state';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import {
   bookingLocationPillLabel,
   bookingLocationSignalLabel,
@@ -18,7 +19,7 @@ export function buildBookingMonitorChatState(booking: AdminBooking) {
   return bookingChatListStateFromFacts({
     status: booking.status,
     hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
+    messageCount: bookingChatMessageCount(booking),
   });
 }
 

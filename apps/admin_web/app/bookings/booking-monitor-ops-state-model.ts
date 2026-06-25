@@ -11,6 +11,7 @@ import {
   bookingChatRepairNeedsOps,
   bookingMatchingChatReady,
 } from './booking-chat-handoff-state';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import {
   bookingChatEvidenceNeedsOpsFromReaders,
   bookingDecisionEvidenceMissingFromReaders,
@@ -68,7 +69,7 @@ export function bookingMonitorDecisionEvidenceMissing(booking: AdminBooking, now
   return bookingDecisionEvidenceMissingFromReaders({
     chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
     hasAlertTrace: () => bookingBackupAlertTraceSummary(booking, nowMs).totalNotified > 0,
-    hasChatMessage: () => (booking.chatRoom?.messages?.length ?? 0) > 0,
+    hasChatMessage: () => bookingChatMessageCount(booking) > 0,
     hasProviderLocation: () => bookingHasProviderLocation(booking),
     manualDecisionNeedsOps: () => bookingMonitorManualDecisionNeedsOps(booking),
   });

@@ -315,6 +315,11 @@ export class AdminController {
     return this.admin.listBookingNotifications(id);
   }
 
+  @Get('bookings/:id/chat-messages')
+  bookingChatMessages(@Param('id') id: string) {
+    return this.admin.listBookingChatMessages(id);
+  }
+
   @Get('bookings/:id/marketplace-providers')
   bookingMarketplaceProviders(@Param('id') id: string) {
     return this.admin.listBookingMarketplaceProviders(id);

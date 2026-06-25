@@ -68,6 +68,35 @@ export const adminBookingServiceSummarySelect = {
   },
 } satisfies Prisma.BookingServiceSelect;
 
+export const adminBookingListServiceSummarySelect = {
+  id: true,
+  bookingId: true,
+  serviceId: true,
+  quantity: true,
+  price: true,
+  service: {
+    select: {
+      id: true,
+      serviceGroupKey: true,
+      name: true,
+      durationMin: true,
+      basePrice: true,
+      priceStep: true,
+      active: true,
+      payoutRules: {
+        where: { active: true },
+        orderBy: { customerPrice: 'asc' },
+        select: {
+          customerPrice: true,
+          providerPayoutAmount: true,
+          currency: true,
+          active: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.BookingServiceSelect;
+
 export const adminServiceCatalogSelect = {
   id: true,
   serviceGroupKey: true,

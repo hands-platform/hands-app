@@ -1,5 +1,6 @@
 import {
   ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT,
+  adminAddressSnapshotListSelect,
   adminAddressSnapshotSelect,
   adminBookingListSelect,
   adminBookingOpsTaskSummarySelect,
@@ -17,6 +18,12 @@ describe('admin booking selects', () => {
       latitude: true,
       longitude: true,
       addressText: true,
+    });
+    expect(adminAddressSnapshotListSelect).toEqual({
+      id: true,
+      addressText: true,
+      latitude: true,
+      longitude: true,
     });
   });
 
@@ -37,13 +44,56 @@ describe('admin booking selects', () => {
     });
   });
 
-  it('keeps booking list rows connected to service, payment, and chat context', () => {
+  it('keeps booking list rows connected to service, payment, and bounded chat count context', () => {
     expect(adminBookingListSelect).toMatchObject({
       customerProfile: { select: { id: true, user: expect.any(Object) } },
+      preferredProvider: {
+        select: expect.objectContaining({
+          currentLocationUpdatedAt: true,
+          displayName: true,
+          user: { select: { id: true, phone: true, fullName: true } },
+        }),
+      },
       services: expect.any(Object),
       payment: expect.any(Object),
       earning: expect.any(Object),
-      chatRoom: { select: adminChatRoomPresenceSelect },
+      chatRoom: {
+        select: {
+          id: true,
+          _count: { select: { messages: true } },
+        },
+      },
+    });
+    expect(
+      'messages' in (adminBookingListSelect.chatRoom.select as Record<string, unknown>),
+    ).toBe(false);
+    expect(
+      'email' in (adminBookingListSelect.customerProfile.select.user.select as Record<string, unknown>),
+    ).toBe(false);
+    expect(
+      'roles' in (adminBookingListSelect.customerProfile.select.user.select as Record<string, unknown>),
+    ).toBe(false);
+    expect(
+      'ratingAvg' in (adminBookingListSelect.preferredProvider.select as Record<string, unknown>),
+    ).toBe(false);
+    expect(
+      adminBookingListSelect.services.select.service.select.payoutRules.select,
+    ).toEqual({
+      customerPrice: true,
+      providerPayoutAmount: true,
+      currency: true,
+      active: true,
+    });
+    expect(adminBookingListSelect.earning).toMatchObject({
+      select: {
+        id: true,
+        providerProfileId: true,
+        bookingId: true,
+        netAmount: true,
+        currency: true,
+        status: true,
+        createdAt: true,
+      },
     });
   });
 

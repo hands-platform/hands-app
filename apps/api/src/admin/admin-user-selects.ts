@@ -10,6 +10,12 @@ export const adminUserSummarySelect = {
   updatedAt: true,
 } satisfies Prisma.UserSelect;
 
+export const adminUserIdentitySelect = {
+  id: true,
+  phone: true,
+  fullName: true,
+} satisfies Prisma.UserSelect;
+
 export const adminUserAuthSelect = {
   ...adminUserSummarySelect,
   supabaseUserId: true,

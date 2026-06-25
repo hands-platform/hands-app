@@ -13,6 +13,7 @@ import {
   bookingChatRepairNeedsOps,
   bookingMatchingChatReady,
 } from './booking-chat-handoff-state';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 import { bookingLocationSignalLabel } from './booking-location-display';
 import { bookingLocationNeedsOpsInput } from './booking-location-ops-inputs';
 import {
@@ -38,7 +39,7 @@ export function bookingListActionChipsInput(
     chatState: bookingChatListStateFromFacts({
       status: booking.status,
       hasChatRoom: bookingMatchingChatReady(booking),
-      messageCount: booking.chatRoom?.messages?.length ?? 0,
+      messageCount: bookingChatMessageCount(booking),
     }),
     closeoutNeedsOps,
     locationDetail: bookingLocationSignalLabel(booking, nowMs),

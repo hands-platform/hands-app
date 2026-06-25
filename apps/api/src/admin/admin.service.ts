@@ -50,6 +50,7 @@ import {
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
 import {
+  adminBookingListMetadataPayload,
   withAdminBookingListMetadata,
   withAdminBookingListMetadataList,
 } from './admin-booking-list-metadata';
@@ -66,7 +67,12 @@ import {
   providerReportCreateAuditMetadata,
   providerSanctionCreateAuditMetadata,
 } from './admin-provider-control-helpers';
-import { adminBookingListSelect, adminCustomerBookingListSelect } from './admin-booking-selects';
+import {
+  ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT,
+  adminBookingListSelect,
+  adminChatMessageSummarySelect,
+  adminCustomerBookingListSelect,
+} from './admin-booking-selects';
 import { adminBookingDetailSelect, adminPaymentDetailSelect } from './admin-booking-detail-selects';
 import {
   adminEarningSummarySelect,
@@ -2180,7 +2186,10 @@ export class AdminService {
       take: ADMIN_BOOKING_LIST_LIMIT,
       select: adminBookingListSelect,
     });
-    return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings));
+    return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings)).map((booking) => ({
+      ...booking,
+      metadata: adminBookingListMetadataPayload(booking.metadata),
+    }));
   }
 
   listChatArchive() {
@@ -2262,6 +2271,37 @@ export class AdminService {
       take: ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT,
       select: adminNotificationListSelect,
     });
+  }
+
+  async listBookingChatMessages(bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        chatRoom: {
+          select: {
+            id: true,
+            messages: {
+              orderBy: { createdAt: 'asc' },
+              take: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT + 1,
+              select: adminChatMessageSummarySelect,
+            },
+          },
+        },
+      },
+    });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const retainedMessages = booking.chatRoom?.messages ?? [];
+    return {
+      bookingId: booking.id,
+      chatRoomId: booking.chatRoom?.id ?? null,
+      limit: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT,
+      messages: retainedMessages.slice(0, ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT),
+      truncated: retainedMessages.length > ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT,
+    };
   }
 
   async listBookingMarketplaceProviders(bookingId: string) {

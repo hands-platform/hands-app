@@ -1,12 +1,12 @@
 import { Prisma } from '@prisma/client';
 import {
-  adminEarningSummarySelect,
+  adminEarningListSelect,
   adminPaymentSummarySelect,
   adminRefundSummarySelect,
 } from './admin-payment-selects';
-import { adminProviderSummarySelect } from './admin-provider-selects';
-import { adminBookingServiceSummarySelect } from './admin-service-selects';
-import { adminUserSummarySelect } from './admin-user-selects';
+import { adminProviderBookingListSummarySelect } from './admin-provider-selects';
+import { adminBookingListServiceSummarySelect } from './admin-service-selects';
+import { adminUserIdentitySelect } from './admin-user-selects';
 
 export const adminAddressSnapshotSelect = {
   id: true,
@@ -21,6 +21,13 @@ export const adminAddressSnapshotSelect = {
   createdAt: true,
 } satisfies Prisma.BookingAddressSnapshotSelect;
 
+export const adminAddressSnapshotListSelect = {
+  id: true,
+  addressText: true,
+  latitude: true,
+  longitude: true,
+} satisfies Prisma.BookingAddressSnapshotSelect;
+
 export const adminChatRoomPresenceSelect = {
   id: true,
   messages: {
@@ -33,6 +40,11 @@ export const adminChatRoomPresenceSelect = {
       sender: { select: { id: true, phone: true, fullName: true, roles: true } },
     },
   },
+} satisfies Prisma.ChatRoomSelect;
+
+export const adminChatRoomMessageCountSelect = {
+  id: true,
+  _count: { select: { messages: true } },
 } satisfies Prisma.ChatRoomSelect;
 
 export const adminBookingOpsTaskSummarySelect = {
@@ -58,6 +70,7 @@ export const adminChatMessageSummarySelect = {
 } satisfies Prisma.ChatMessageSelect;
 
 export const ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT = 20;
+export const ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT = 200;
 
 export const adminBookingListSelect = {
   id: true,
@@ -86,7 +99,7 @@ export const adminBookingListSelect = {
       id: true,
       user: {
         select: {
-          ...adminUserSummarySelect,
+          ...adminUserIdentitySelect,
           appSessions: {
             orderBy: { lastSeenAt: 'desc' },
             take: 1,
@@ -96,8 +109,8 @@ export const adminBookingListSelect = {
       },
     },
   },
-  preferredProvider: { select: adminProviderSummarySelect },
-  selectedProvider: { select: adminProviderSummarySelect },
+  preferredProvider: { select: adminProviderBookingListSummarySelect },
+  selectedProvider: { select: adminProviderBookingListSummarySelect },
   participants: {
     orderBy: { joinedAt: 'asc' },
     select: {
@@ -108,19 +121,19 @@ export const adminBookingListSelect = {
       providerStatusAtJoin: true,
       joinedAt: true,
       respondedAt: true,
-      providerProfile: { select: adminProviderSummarySelect },
+      providerProfile: { select: adminProviderBookingListSummarySelect },
     },
   },
-  services: { select: adminBookingServiceSummarySelect },
-  addressSnapshot: { select: adminAddressSnapshotSelect },
+  services: { select: adminBookingListServiceSummarySelect },
+  addressSnapshot: { select: adminAddressSnapshotListSelect },
   payment: { select: adminPaymentSummarySelect },
   refunds: {
     orderBy: { createdAt: 'desc' },
     take: 5,
     select: adminRefundSummarySelect,
   },
-  earning: { select: adminEarningSummarySelect },
-  chatRoom: { select: adminChatRoomPresenceSelect },
+  earning: { select: adminEarningListSelect },
+  chatRoom: { select: adminChatRoomMessageCountSelect },
 } satisfies Prisma.BookingSelect;
 
 export const adminCustomerBookingListSelect = {
@@ -144,10 +157,10 @@ export const adminCustomerBookingListSelect = {
   address: true,
   lat: true,
   lng: true,
-  preferredProvider: { select: adminProviderSummarySelect },
-  selectedProvider: { select: adminProviderSummarySelect },
-  services: { select: adminBookingServiceSummarySelect },
-  addressSnapshot: { select: adminAddressSnapshotSelect },
+  preferredProvider: { select: adminProviderBookingListSummarySelect },
+  selectedProvider: { select: adminProviderBookingListSummarySelect },
+  services: { select: adminBookingListServiceSummarySelect },
+  addressSnapshot: { select: adminAddressSnapshotListSelect },
   payment: { select: adminPaymentSummarySelect },
   refunds: {
     orderBy: { createdAt: 'desc' },

@@ -2,6 +2,7 @@ import { FilePurpose, FileUploadStatus, FileVisibility, Prisma } from '@prisma/c
 import {
   adminPushDeviceSummarySelect,
   adminUserAuthSelect,
+  adminUserIdentitySelect,
   adminUserSummarySelect,
 } from './admin-user-selects';
 
@@ -23,6 +24,17 @@ export const adminProviderSummarySelect = {
   currentLocationUpdatedAt: true,
   blockedAt: true,
   user: { select: adminUserSummarySelect },
+} satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderBookingListSummarySelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  status: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  user: { select: adminUserIdentitySelect },
 } satisfies Prisma.ProviderProfileSelect;
 
 export const adminProviderPublicMediaSelect = {

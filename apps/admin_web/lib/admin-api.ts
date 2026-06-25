@@ -788,7 +788,11 @@ export type AdminBooking = {
     serviceArea?: unknown;
     locationSnapshots?: AdminLocationSnapshot[];
   };
-  chatRoom?: { id: string; messages?: AdminChatMessage[] } | null;
+  chatRoom?: {
+    id: string;
+    _count?: { messages?: number };
+    messages?: AdminChatMessage[];
+  } | null;
 };
 
 export type AdminBookingMatchingEvidence = {

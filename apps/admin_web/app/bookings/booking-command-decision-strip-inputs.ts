@@ -1,5 +1,6 @@
 import type { AdminBooking } from '../../lib/admin-api';
 import type { BookingCommandDecisionStripInput } from '../../lib/booking-command-decision-strip';
+import { bookingChatMessageCount } from './booking-chat-message-count';
 
 type BookingCommandDecisionStripBooking = Pick<
   AdminBooking,
@@ -29,7 +30,7 @@ export function bookingCommandDecisionStripInput(
     marketplaceEligibleCount: signals.marketplaceEligibleCount,
     hasFinalPartner: signals.hasFinalPartner,
     hasChatRoom: signals.hasChatRoom,
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
+    messageCount: bookingChatMessageCount(booking),
     paymentMethod: booking.payment?.method ?? 'NONE',
     paymentStatus: booking.payment?.status ?? 'NONE',
     cashDebtNeedsSettlement: signals.cashDebtNeedsSettlement,

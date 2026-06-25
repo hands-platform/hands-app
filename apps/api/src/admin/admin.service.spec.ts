@@ -14,6 +14,7 @@ import {
   Role,
 } from '@prisma/client';
 import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-selects';
+import { ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT } from './admin-booking-selects';
 import { AdminService } from './admin.service';
 
 function deferred<T>() {
@@ -852,6 +853,60 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+  });
+
+  it('lists retained booking chat messages on demand with a hard limit', async () => {
+    const retainedMessages = Array.from({ length: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT + 1 }, (_, index) => ({
+      id: `message-${index + 1}`,
+      body: `Message ${index + 1}`,
+      createdAt: new Date(`2026-06-13T03:${String(index % 60).padStart(2, '0')}:00.000Z`),
+    }));
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          chatRoom: {
+            id: 'chat-room-1',
+            messages: retainedMessages,
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listBookingChatMessages('booking-1')).resolves.toMatchObject({
+      bookingId: 'booking-1',
+      chatRoomId: 'chat-room-1',
+      limit: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT,
+      messages: retainedMessages.slice(0, ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT),
+      truncated: true,
+    });
+
+    expect(prisma.booking.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        select: expect.objectContaining({
+          chatRoom: {
+            select: expect.objectContaining({
+              messages: expect.objectContaining({
+                take: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT + 1,
+              }),
+            }),
+          },
+        }),
+      }),
+    );
+  });
+
+  it('rejects retained booking chat lookup for unknown bookings', async () => {
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listBookingChatMessages('missing-booking')).rejects.toThrow('Booking not found');
   });
 
   it('lists booking marketplace provider candidates without loading the full Partner directory', async () => {

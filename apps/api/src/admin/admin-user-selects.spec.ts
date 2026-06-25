@@ -3,6 +3,7 @@ import {
   adminNotificationListSelect,
   adminPushDeviceSummarySelect,
   adminUserAuthSelect,
+  adminUserIdentitySelect,
   adminUserListSelect,
   adminUserSummarySelect,
 } from './admin-user-selects';
@@ -19,6 +20,11 @@ describe('admin user selects', () => {
     expect(adminUserAuthSelect).toMatchObject({
       ...adminUserSummarySelect,
       supabaseUserId: true,
+    });
+    expect(adminUserIdentitySelect).toEqual({
+      id: true,
+      phone: true,
+      fullName: true,
     });
   });
 

@@ -179,6 +179,16 @@ export const adminEarningSummarySelect = {
   walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(3),
 } satisfies Prisma.ProviderEarningSelect;
 
+export const adminEarningListSelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  netAmount: true,
+  currency: true,
+  status: true,
+  createdAt: true,
+} satisfies Prisma.ProviderEarningSelect;
+
 export const adminEarningDetailSelect = {
   ...adminEarningSummarySelect,
   platformFeeLogs: adminRecentPlatformFeeLogsSelect(5),
