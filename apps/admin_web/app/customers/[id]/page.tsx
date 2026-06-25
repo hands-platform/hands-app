@@ -111,6 +111,7 @@ const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 4;
+const CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
 
@@ -243,8 +244,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     pushDevices,
     notifications,
   });
+  const activityCsvRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT);
   const filteredActivityCsvHref = buildCsvDataHref(
-    filteredCustomerActivityRecords.map((record) => ({
+    activityCsvRecords.map((record) => ({
       type: record.type,
       date: formatDate(record.at),
       title: record.title,
@@ -570,6 +572,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               className="customer-detail-filter-link"
               download={`hands-customer-${shortId(customer.id)}-activity.csv`}
               href={filteredActivityCsvHref}
+              title={`Exports the first ${CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT} filtered activity rows`}
             >
               <Download aria-hidden="true" size={16} />
               Export activity CSV
