@@ -334,6 +334,8 @@ type PartnerDetailDevice = NonNullable<AdminProvider['devices']>[number];
 type PartnerEarning = NonNullable<ProviderDetail['earnings']>[number];
 type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 
+const PARTNER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
+
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
@@ -622,8 +624,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     canApproveKyc,
     payoutOps,
   });
+  const activityCsvRecords = filteredPartnerActivityRecords.slice(0, PARTNER_ACTIVITY_CSV_EXPORT_LIMIT);
   const filteredActivityCsvHref = buildCsvDataHref(
-    filteredPartnerActivityRecords.map((record) => ({
+    activityCsvRecords.map((record) => ({
       type: record.type,
       date: formatDate(record.at),
       title: record.title,
