@@ -61,7 +61,7 @@ export function buildPartnerBasicProfileRows(
   return [
     { label: 'Display name', value: provider.displayName },
     { label: 'Legal name', value: provider.legalName },
-    { label: 'Activity nickname', value: provider.activityNickname },
+    { label: 'Profile nickname', value: provider.activityNickname },
     {
       label: 'Experience',
       value:

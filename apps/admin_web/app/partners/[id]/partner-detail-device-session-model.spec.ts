@@ -72,26 +72,26 @@ describe('partner detail device session model', () => {
   });
 
   it('maps shared device matches with partner identity evidence', () => {
-    expect(
-      buildPartnerSharedDeviceRows({
-        id: 'provider-1',
-        sharedDeviceMatches: [
-          {
-            blockedAt: null,
-            deviceId: 'shared-device-123456',
-            enabled: false,
-            id: 'match-1',
-            lastSeenAt: '2026-06-13T03:16:00.000Z',
-            platform: 'android',
-            providerProfile: {
-              displayName: 'Other Partner',
-              id: 'provider-2',
-              user: { phone: '+84000000002' },
-            },
+    const rows = buildPartnerSharedDeviceRows({
+      id: 'provider-1',
+      sharedDeviceMatches: [
+        {
+          blockedAt: null,
+          deviceId: 'shared-device-123456',
+          enabled: false,
+          id: 'match-1',
+          lastSeenAt: '2026-06-13T03:16:00.000Z',
+          platform: 'android',
+          providerProfile: {
+            displayName: 'Other Provider',
+            id: 'provider-2',
+            user: { phone: '+84000000002' },
           },
-        ],
-      }),
-    ).toEqual([
+        },
+      ],
+    });
+
+    expect(rows).toEqual([
       expect.objectContaining({
         detail: expect.stringContaining('Other Partner'),
         id: 'match-1',
@@ -99,5 +99,6 @@ describe('partner detail device session model', () => {
         title: expect.stringContaining('shar'),
       }),
     ]);
+    expect(rows[0].detail).not.toContain('Provider');
   });
 });

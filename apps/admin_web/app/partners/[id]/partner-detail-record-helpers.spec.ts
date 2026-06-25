@@ -76,4 +76,23 @@ describe('partner detail record helpers', () => {
       }),
     ).toBe('Operator note');
   });
+
+  it('keeps internal audit metadata ids out of visible note fallback', () => {
+    const text = auditLogNoteText({
+      id: 'audit_2',
+      action: 'provider_sanction.lift',
+      target: 'Partner',
+      metadata: {
+        providerProfileId: 'partner-1',
+        reasonCode: 'AUTO_REVIEW',
+        transferRef: 'Provider payout adjustment',
+      },
+      createdAt: '2026-06-13T03:10:00.000Z',
+    });
+
+    expect(text).toContain('Reason Code: AUTO_REVIEW');
+    expect(text).toContain('Transfer Ref: Partner payout adjustment');
+    expect(text).not.toContain('providerProfileId');
+    expect(text).not.toContain('Provider');
+  });
 });

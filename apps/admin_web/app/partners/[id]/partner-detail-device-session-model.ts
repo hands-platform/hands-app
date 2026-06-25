@@ -72,7 +72,7 @@ export function buildPartnerSharedDeviceRows(
   provider: PartnerDeviceSessionProvider,
 ): PartnerSharedDeviceRow[] {
   return (provider.sharedDeviceMatches ?? []).map((match) => ({
-    detail: `Also used by ${match.providerProfile?.displayName ?? 'another partner'} (${
+    detail: `Also used by ${marketplaceDisplayText(match.providerProfile?.displayName ?? 'another partner')} (${
       match.providerProfile?.user?.phone ?? 'no phone'
     }) / last seen ${formatDate(match.lastSeenAt)}`,
     id: match.id,

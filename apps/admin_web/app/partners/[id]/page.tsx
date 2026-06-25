@@ -2169,9 +2169,9 @@ function buildPartnerActivityRecords(
       type: 'VERIFY',
       at: log.createdAt,
       title: log.action,
-      detail: `${log.fromStatus ?? 'none'} -> ${log.toStatus ?? 'none'} / ${
-        log.actor?.fullName ?? log.actor?.phone ?? 'system'
-      }`,
+      detail: `${log.fromStatus ?? 'none'} -> ${log.toStatus ?? 'none'} / ${marketplaceDisplayText(
+        log.actor?.fullName ?? log.actor?.phone ?? 'system',
+      )}`,
     });
   }
 
@@ -2187,7 +2187,7 @@ function buildPartnerActivityRecords(
       title: bookingGateAttempt ? `Booking create stopped: ${bookingGateAttempt.reasonLabel}` : log.action,
       detail: bookingGateAttempt
         ? `${bookingGateAttempt.gateLabel} / ${bookingGateAttempt.detail}`
-        : `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditLogNoteText(log)}`,
+        : `${marketplaceDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System')} / ${auditLogNoteText(log)}`,
     });
   }
 
@@ -4096,7 +4096,9 @@ function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerA
 
 function buildPartnerOperatorNoteRows(logs: AdminAuditLog[]): PartnerOperatorNoteRow[] {
   return logs.slice(0, 6).map((log) => ({
-    actorTargetLabel: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${log.target}`,
+    actorTargetLabel: `${marketplaceDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System')} / ${marketplaceDisplayText(
+      log.target,
+    )}`,
     createdLabel: formatDate(log.createdAt),
     id: log.id,
     note: auditLogNoteText(log),

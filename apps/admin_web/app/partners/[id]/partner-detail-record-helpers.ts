@@ -1,4 +1,5 @@
 import type { AdminAuditLog } from '../../../lib/admin-api';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { dateValue } from './partner-detail-format';
 
 export type PartnerDetailBooking = {
@@ -205,7 +206,34 @@ export function auditLogNoteText(log: AdminAuditLog) {
   const metadata = readMetadataObject(log.metadata);
   const note = metadata.note ?? metadata.preset ?? metadata.reason ?? metadata.summary ?? metadata.status;
   if (typeof note === 'string' && note.trim()) {
-    return trimText(note.trim(), 140);
+    return trimText(marketplaceDisplayText(note.trim()), 140);
   }
-  return trimText(JSON.stringify(log.metadata ?? { action: log.action }), 140);
+  return trimText(safeAuditMetadataText(metadata) || 'Action details recorded', 140);
+}
+
+function safeAuditMetadataText(metadata: Record<string, unknown>) {
+  return Object.entries(metadata)
+    .flatMap(([key, value]) => {
+      if (isInternalAuditMetadataKey(key) || value === null || value === undefined) return [];
+      if (typeof value === 'object') return [];
+      const label = humanizeAuditMetadataKey(key);
+      const displayValue = marketplaceDisplayText(String(value).trim());
+      return displayValue ? [`${label}: ${displayValue}`] : [];
+    })
+    .slice(0, 3)
+    .join(' / ');
+}
+
+function isInternalAuditMetadataKey(key: string) {
+  return /(?:^|_)?id$/i.test(key) || key.toLowerCase().includes('providerprofile');
+}
+
+function humanizeAuditMetadataKey(key: string) {
+  return marketplaceDisplayText(
+    key
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .replace(/^./, (char) => char.toUpperCase()),
+  );
 }

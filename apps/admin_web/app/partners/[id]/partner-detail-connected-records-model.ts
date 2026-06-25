@@ -1,5 +1,6 @@
 import type { AdminAuditLog } from '../../../lib/admin-api';
 import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
+import { auditLogNoteText } from './partner-detail-record-helpers';
 import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
 
 const PARTNER_OPS_NOTE_ACTION = 'provider.ops_note.add';
@@ -147,21 +148,6 @@ function pillClass(tone: PartnerConnectedRecordPayoutOps['tone']) {
   if (tone === 'done') return 'pill-success';
   if (tone === 'blocked') return 'pill-danger';
   return 'pill-warn';
-}
-
-function auditLogNoteText(log: AdminAuditLog) {
-  const metadata = readMetadataObject(log.metadata);
-  const note = metadata.note ?? metadata.preset ?? metadata.reason ?? metadata.summary ?? metadata.status;
-  if (typeof note === 'string' && note.trim()) {
-    return trimText(note.trim(), 140);
-  }
-  return trimText(JSON.stringify(log.metadata ?? { action: log.action }), 140);
-}
-
-function readMetadataObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
 }
 
 function trimText(value: string, maxLength: number) {
