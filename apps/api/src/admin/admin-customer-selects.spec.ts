@@ -1,6 +1,7 @@
 import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
 import {
   ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
+  ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
   ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT,
   ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
   ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT,
@@ -33,7 +34,7 @@ describe('admin customer selects', () => {
     });
     expect(adminCustomerDetailSelect.selectedLocations).toMatchObject({ take: 25 });
     expect(adminCustomerDetailSelect.bookings).toMatchObject({
-      take: 100,
+      take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
       select: adminCustomerDetailBookingSelect,
     });
     expect(adminCustomerDetailSelect.reviews).toMatchObject({

@@ -1,4 +1,5 @@
 import {
+  ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT,
   adminAddressSnapshotSelect,
   adminBookingListSelect,
   adminBookingOpsTaskSummarySelect,
@@ -50,7 +51,7 @@ describe('admin booking selects', () => {
     expect(adminCustomerBookingListSelect.chatRoom).toMatchObject({ select: { id: true } });
     expect(adminCustomerDetailBookingSelect.walletLedgerEntries).toMatchObject({ take: 5 });
     expect(adminCustomerDetailBookingSelect.chatRoom.select.messages).toMatchObject({
-      take: 100,
+      take: ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT,
       select: adminChatMessageSummarySelect,
     });
   });

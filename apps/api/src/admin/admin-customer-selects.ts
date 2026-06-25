@@ -30,6 +30,7 @@ export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 25;
 export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 25;
 export const ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT = 25;
 export const ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT = 25;
+export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 25;
 
 const adminCustomerDetailReviewBookingSelect = {
   id: true,
@@ -105,7 +106,7 @@ export const adminCustomerDetailSelect = {
   },
   bookings: {
     orderBy: { createdAt: 'desc' },
-    take: 100,
+    take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
     select: adminCustomerDetailBookingSelect,
   },
   reviews: {

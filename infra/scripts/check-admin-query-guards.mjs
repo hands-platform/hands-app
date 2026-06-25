@@ -3,12 +3,14 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
 const adminServicePath = resolve(root, 'apps/api/src/admin/admin.service.ts');
+const adminCustomerSelectsPath = resolve(root, 'apps/api/src/admin/admin-customer-selects.ts');
 const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-provider-profile-selects.ts');
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
+const adminCustomerSelectsSource = readFileSync(adminCustomerSelectsPath, 'utf8');
 const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
@@ -122,6 +124,22 @@ if (!adminServiceSource.includes('take: ADMIN_CUSTOMER_LIST_LIMIT,')) {
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Customer list query must apply ADMIN_CUSTOMER_LIST_LIMIT.',
+  });
+}
+
+if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 25;')) {
+  violations.push({
+    area: 'admin customer detail query',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
+    message: 'Customer detail booking relations must keep a 25-row guard.',
+  });
+}
+
+if (!adminCustomerSelectsSource.includes('take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,')) {
+  violations.push({
+    area: 'admin customer detail query',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
+    message: 'Customer detail booking query must apply ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT.',
   });
 }
 
