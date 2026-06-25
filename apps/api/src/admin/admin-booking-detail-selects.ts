@@ -21,6 +21,43 @@ import { adminUserSummarySelect } from './admin-user-selects';
 
 export const ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT = 200;
 
+const adminBookingDetailReviewBookingSelect = {
+  id: true,
+  openedAt: true,
+  createdAt: true,
+  services: { select: adminBookingServiceSummarySelect },
+} satisfies Prisma.BookingSelect;
+
+const adminBookingDetailReviewSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  rating: true,
+  comment: true,
+  status: true,
+  reportReason: true,
+  createdAt: true,
+  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+  providerProfile: { select: adminBookingDetailProviderSelect },
+  booking: { select: adminBookingDetailReviewBookingSelect },
+} satisfies Prisma.ReviewSelect;
+
+const adminBookingDetailProviderCustomerReviewSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  comment: true,
+  status: true,
+  reportReason: true,
+  moderatedAt: true,
+  createdAt: true,
+  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+  providerProfile: { select: adminBookingDetailProviderSelect },
+  booking: { select: adminBookingDetailReviewBookingSelect },
+} satisfies Prisma.ProviderCustomerReviewSelect;
+
 export const adminBookingDetailSelect = {
   id: true,
   customerProfileId: true,
@@ -76,7 +113,8 @@ export const adminBookingDetailSelect = {
     orderBy: { createdAt: 'desc' },
     select: adminRefundSummarySelect,
   },
-  review: true,
+  review: { select: adminBookingDetailReviewSelect },
+  providerCustomerReview: { select: adminBookingDetailProviderCustomerReviewSelect },
   addressSnapshot: { select: adminAddressSnapshotSelect },
   earning: { select: adminEarningDetailSelect },
   platformFeeLogs: adminRecentPlatformFeeLogsSelect(5),

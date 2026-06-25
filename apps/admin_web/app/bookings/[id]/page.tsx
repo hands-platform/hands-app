@@ -183,9 +183,7 @@ import {
   AdminBookingDetail,
   AdminNotification,
   AdminOperationalPolicySetting,
-  AdminPartnerCustomerReview,
   AdminProvider,
-  AdminReview,
   adminGet,
 } from '../../../lib/admin-api';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
@@ -210,9 +208,7 @@ type PageProps = {
 
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
-  customerReviews: AdminReview[];
   operationalPolicies: AdminOperationalPolicySetting[];
-  partnerEvaluations: AdminPartnerCustomerReview[];
   rawNotifications: AdminNotification[];
   providers: AdminProvider[];
 };
@@ -245,9 +241,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const detailSearchParams = searchParams ? await searchParams : {};
   const {
     booking,
-    customerReviews,
     operationalPolicies,
-    partnerEvaluations,
     providers,
     rawNotifications,
   } = await loadBookingDetailPageData(id);
@@ -700,7 +694,11 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const unifiedDetailProps: BookingUnifiedDetailSectionProps = {
     unifiedDetail,
   };
-  const bookingReviewRecords = reviewRecordsForBooking(customerReviews, partnerEvaluations, booking.id);
+  const bookingReviewRecords = reviewRecordsForBooking(
+    booking.review ? [booking.review] : [],
+    booking.providerCustomerReview ? [booking.providerCustomerReview] : [],
+    booking.id,
+  );
   const sectionVisibility = bookingDetailSectionVisibility({
     hasChatMessages: messageCount > 0,
     hasCloseoutExceptions: closeoutReadiness.openItems.length > 0,
@@ -849,21 +847,16 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
 }
 
 async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
-  const [booking, operationalPolicies, rawNotifications, providers, customerReviews, partnerEvaluations] =
-    await Promise.all([
+  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminNotification[]>(`/admin/bookings/${id}/notifications`, []),
     adminGet<AdminProvider[]>(`/admin/bookings/${id}/marketplace-providers`, []),
-    adminGet<AdminReview[]>('/admin/reviews', []),
-    adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []),
   ]);
 
   return {
     booking,
-    customerReviews,
     operationalPolicies,
-    partnerEvaluations,
     providers,
     rawNotifications,
   };

@@ -13,6 +13,20 @@ describe('admin booking detail selects', () => {
       selectedProvider: { select: adminBookingDetailProviderSelect },
       payment: expect.any(Object),
       opsTasks: expect.any(Object),
+      providerCustomerReview: {
+        select: expect.objectContaining({
+          bookingId: true,
+          customerProfileId: true,
+          providerProfileId: true,
+        }),
+      },
+      review: {
+        select: expect.objectContaining({
+          bookingId: true,
+          customerProfileId: true,
+          providerProfileId: true,
+        }),
+      },
       snapshots: { take: 10 },
     });
   });

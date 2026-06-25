@@ -22,7 +22,6 @@ import {
   AdminChatMessage,
   AdminCustomerDetail,
   AdminNotification,
-  AdminPartnerCustomerReview,
   AdminReview,
   adminGet,
 } from '../../../lib/admin-api';
@@ -121,17 +120,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
-  const [customer, customerReviews, partnerEvaluations] = await Promise.all([
-    adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null),
-    adminGet<AdminReview[]>('/admin/reviews', []),
-    adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []),
-  ]);
+  const customer = await adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null);
 
   if (!customer) {
     notFound();
   }
 
-  const customerReviewRecords = reviewRecordsForCustomer(customerReviews, partnerEvaluations, customer.id);
+  const customerReviewRecords = reviewRecordsForCustomer(
+    customer.reviews ?? [],
+    customer.providerReviews ?? [],
+    customer.id,
+  );
   const bookings = customer.bookings ?? [];
   const wallet = customerWalletSummary(bookings);
   const bookingStats = buildBookingStats(bookings);

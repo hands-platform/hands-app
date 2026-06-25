@@ -324,6 +324,7 @@ export type AdminCustomer = {
   }>;
   bookings?: AdminBooking[];
   reviews?: AdminReview[];
+  providerReviews?: AdminPartnerCustomerReview[];
   favoriteProviders?: Array<{
     id: string;
     providerProfileId: string;
@@ -812,6 +813,7 @@ export type AdminBookingDetail = AdminBooking & {
   openedAt?: string | null;
   refunds?: AdminRefund[];
   review?: AdminReview | null;
+  providerCustomerReview?: AdminPartnerCustomerReview | null;
   earning?: AdminEarning | null;
   snapshots?: AdminLocationSnapshot[];
   opsTasks?: AdminBookingOpsTask[];

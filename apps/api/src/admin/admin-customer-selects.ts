@@ -28,6 +28,45 @@ export const adminCustomerNotificationSelect = {
 export const ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT = 10;
 export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 25;
 export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 25;
+export const ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT = 25;
+export const ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT = 25;
+
+const adminCustomerDetailReviewBookingSelect = {
+  id: true,
+  openedAt: true,
+  createdAt: true,
+  services: { select: adminBookingServiceSummarySelect },
+} satisfies Prisma.BookingSelect;
+
+const adminCustomerDetailReviewSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  rating: true,
+  comment: true,
+  status: true,
+  reportReason: true,
+  createdAt: true,
+  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+  providerProfile: { select: adminProviderSummarySelect },
+  booking: { select: adminCustomerDetailReviewBookingSelect },
+} satisfies Prisma.ReviewSelect;
+
+const adminCustomerDetailProviderReviewSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  comment: true,
+  status: true,
+  reportReason: true,
+  moderatedAt: true,
+  createdAt: true,
+  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+  providerProfile: { select: adminProviderSummarySelect },
+  booking: { select: adminCustomerDetailReviewBookingSelect },
+} satisfies Prisma.ProviderCustomerReviewSelect;
 
 export const adminCustomerDetailSelect = {
   id: true,
@@ -71,17 +110,13 @@ export const adminCustomerDetailSelect = {
   },
   reviews: {
     orderBy: { createdAt: 'desc' },
-    take: 25,
-    select: {
-      id: true,
-      rating: true,
-      comment: true,
-      status: true,
-      reportReason: true,
-      createdAt: true,
-      providerProfile: { select: adminProviderSummarySelect },
-      booking: { select: { id: true, services: { select: adminBookingServiceSummarySelect } } },
-    },
+    take: ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT,
+    select: adminCustomerDetailReviewSelect,
+  },
+  providerReviews: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT,
+    select: adminCustomerDetailProviderReviewSelect,
   },
   favoriteProviders: {
     orderBy: { createdAt: 'desc' },
