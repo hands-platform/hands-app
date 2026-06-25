@@ -1,13 +1,35 @@
 import { Prisma } from '@prisma/client';
 import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
+import { adminProviderBookingListSummarySelect } from './admin-provider-selects';
 import { adminBookingServiceSummarySelect } from './admin-service-selects';
-import { adminProviderSummarySelect } from './admin-provider-selects';
 import {
-  adminAppSessionSummarySelect,
-  adminNotificationDeliverySelect,
   adminPushDeviceSummarySelect,
+  adminUserIdentitySelect,
   adminUserSummarySelect,
 } from './admin-user-selects';
+
+export const ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT = 20;
+
+const adminCustomerNotificationDeliverySelect = {
+  id: true,
+  notificationId: true,
+  pushDeviceId: true,
+  provider: true,
+  status: true,
+  attemptedAt: true,
+} satisfies Prisma.NotificationDeliverySelect;
+
+const adminCustomerDetailAppSessionSelect = {
+  id: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  deviceLanguage: true,
+  lastLoginAddress: true,
+  ipAddress: true,
+  active: true,
+  lastSeenAt: true,
+} satisfies Prisma.AppSessionSelect;
 
 export const adminCustomerNotificationSelect = {
   id: true,
@@ -21,7 +43,7 @@ export const adminCustomerNotificationSelect = {
   deliveries: {
     orderBy: { attemptedAt: 'desc' },
     take: 5,
-    select: adminNotificationDeliverySelect,
+    select: adminCustomerNotificationDeliverySelect,
   },
 } satisfies Prisma.NotificationSelect;
 
@@ -49,8 +71,8 @@ const adminCustomerDetailReviewSelect = {
   status: true,
   reportReason: true,
   createdAt: true,
-  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-  providerProfile: { select: adminProviderSummarySelect },
+  customerProfile: { select: { id: true, user: { select: adminUserIdentitySelect } } },
+  providerProfile: { select: adminProviderBookingListSummarySelect },
   booking: { select: adminCustomerDetailReviewBookingSelect },
 } satisfies Prisma.ReviewSelect;
 
@@ -64,8 +86,8 @@ const adminCustomerDetailProviderReviewSelect = {
   reportReason: true,
   moderatedAt: true,
   createdAt: true,
-  customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-  providerProfile: { select: adminProviderSummarySelect },
+  customerProfile: { select: { id: true, user: { select: adminUserIdentitySelect } } },
+  providerProfile: { select: adminProviderBookingListSummarySelect },
   booking: { select: adminCustomerDetailReviewBookingSelect },
 } satisfies Prisma.ProviderCustomerReviewSelect;
 
@@ -79,7 +101,7 @@ export const adminCustomerDetailSelect = {
       appSessions: {
         orderBy: { lastSeenAt: 'desc' },
         take: 20,
-        select: adminAppSessionSummarySelect,
+        select: adminCustomerDetailAppSessionSelect,
       },
       pushDevices: {
         orderBy: { updatedAt: 'desc' },
@@ -88,7 +110,7 @@ export const adminCustomerDetailSelect = {
       },
       notifications: {
         orderBy: { createdAt: 'desc' },
-        take: 50,
+        take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
         select: adminCustomerNotificationSelect,
       },
     },
@@ -126,7 +148,7 @@ export const adminCustomerDetailSelect = {
       id: true,
       providerProfileId: true,
       createdAt: true,
-      providerProfile: { select: adminProviderSummarySelect },
+      providerProfile: { select: adminProviderBookingListSummarySelect },
     },
   },
   viewedProviders: {
@@ -138,7 +160,7 @@ export const adminCustomerDetailSelect = {
       firstViewedAt: true,
       lastViewedAt: true,
       viewCount: true,
-      providerProfile: { select: adminProviderSummarySelect },
+      providerProfile: { select: adminProviderBookingListSummarySelect },
     },
   },
 } satisfies Prisma.CustomerProfileSelect;

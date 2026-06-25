@@ -26,7 +26,7 @@ describe('admin customer selects', () => {
       lastLoginAddress: true,
     });
     expect(adminCustomerDetailSelect.user.select.notifications).toMatchObject({
-      take: 50,
+      take: 20,
       select: adminCustomerNotificationSelect,
     });
     expect(adminCustomerDetailSelect.user.select.pushDevices).toMatchObject({
@@ -71,5 +71,54 @@ describe('admin customer selects', () => {
         }),
       }),
     });
+  });
+
+  it('keeps customer detail notification delivery payload compact', () => {
+    expect(adminCustomerNotificationSelect.deliveries.select).toMatchObject({
+      id: true,
+      provider: true,
+      status: true,
+      attemptedAt: true,
+    });
+    expect(adminCustomerNotificationSelect.deliveries.select).not.toHaveProperty('response');
+    expect(adminCustomerNotificationSelect.deliveries.select).not.toHaveProperty('pushDevice');
+  });
+
+  it('keeps customer detail review people payload compact', () => {
+    expect(adminCustomerDetailSelect.reviews.select).toMatchObject({
+      customerProfile: { select: { id: true, user: { select: { id: true, phone: true, fullName: true } } } },
+      providerProfile: {
+        select: expect.objectContaining({
+          id: true,
+          displayName: true,
+          status: true,
+          user: { select: { id: true, phone: true, fullName: true } },
+        }),
+      },
+    });
+    expect(adminCustomerDetailSelect.reviews.select.providerProfile.select).not.toHaveProperty('ratingAvg');
+    expect(adminCustomerDetailSelect.reviews.select.customerProfile.select.user.select).not.toHaveProperty('email');
+    expect(adminCustomerDetailSelect.providerReviews.select.providerProfile.select).not.toHaveProperty('ratingAvg');
+    expect(adminCustomerDetailSelect.providerReviews.select.customerProfile.select.user.select).not.toHaveProperty(
+      'email',
+    );
+  });
+
+  it('keeps customer detail app session payload focused on visible evidence', () => {
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).toMatchObject({
+      id: true,
+      deviceId: true,
+      platform: true,
+      appVersion: true,
+      deviceLanguage: true,
+      lastLoginAddress: true,
+      ipAddress: true,
+      active: true,
+      lastSeenAt: true,
+    });
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('userId');
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('expiresAt');
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('createdAt');
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('updatedAt');
   });
 });
