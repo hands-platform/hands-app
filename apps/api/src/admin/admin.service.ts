@@ -148,6 +148,7 @@ import {
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
+const ADMIN_USER_LIST_LIMIT = 500;
 const ADMIN_CUSTOMER_LIST_LIMIT = 500;
 const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;
 const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
@@ -463,6 +464,7 @@ export class AdminService {
   listUsers() {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
+      take: ADMIN_USER_LIST_LIMIT,
       select: adminUserListSelect,
     });
   }

@@ -1268,7 +1268,7 @@ function customerBookingPartnerHelper(
   if (selectedPartner) return `Matched Partner / ${participantCount} participating`;
   if (preferredPartner) return `Requested Partner / ${participantCount} participating`;
   if (participantCount > 0) return `${participantCount} participating`;
-  return 'No Partner activity';
+  return 'No matching participation';
 }
 
 function customerBookingStateLabel(booking: AdminBookingDetail) {

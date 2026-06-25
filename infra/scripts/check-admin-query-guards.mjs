@@ -152,27 +152,27 @@ if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT 
   });
 }
 
-if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list booking relations must keep a 50-row guard.',
+    message: 'Compact partner list booking relations must keep a 15-row guard.',
   });
 }
 
-if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list participant relations must keep a 50-row guard.',
+    message: 'Compact partner list participant relations must keep a 15-row guard.',
   });
 }
 
-if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 10;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list earning relations must keep a 30-row guard.',
+    message: 'Compact partner list earning relations must keep a 10-row guard.',
   });
 }
 

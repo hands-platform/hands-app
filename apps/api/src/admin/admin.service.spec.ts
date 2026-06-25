@@ -37,6 +37,24 @@ function createAdminService(prisma: unknown, deps: { earnings?: unknown; notific
 }
 
 describe('AdminService query orchestration', () => {
+  it('bounds the admin user list used by the operations dashboard', async () => {
+    const prisma = {
+      user: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listUsers()).resolves.toEqual([]);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+    );
+  });
+
   it('adds server-computed matching evidence to booking list rows', async () => {
     const openedAt = new Date('2026-06-10T09:30:00.000Z');
     const prisma = {

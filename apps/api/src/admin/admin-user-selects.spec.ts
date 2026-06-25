@@ -36,7 +36,7 @@ describe('admin user selects', () => {
   it('keeps notification and app session list selects connected to safe user summaries', () => {
     expect(adminNotificationListSelect).toMatchObject({
       user: { select: expect.objectContaining({ id: true, phone: true }) },
-      deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' } }),
+      deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 10 }),
     });
     expect(adminAppSessionListSelect.user.select).toMatchObject({
       id: true,

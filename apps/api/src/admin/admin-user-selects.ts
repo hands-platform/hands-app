@@ -145,6 +145,7 @@ export const adminNotificationListSelect = {
   user: { select: adminNotificationUserSelect },
   deliveries: {
     orderBy: { attemptedAt: 'desc' },
+    take: 10,
     select: adminNotificationDeliverySelect,
   },
 } satisfies Prisma.NotificationSelect;

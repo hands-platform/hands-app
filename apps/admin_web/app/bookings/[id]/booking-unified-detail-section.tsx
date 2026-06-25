@@ -154,6 +154,12 @@ function BookingUnifiedFinanceLedgerRow({ row }: { readonly row: BookingUnifiedD
 
 function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow }) {
   const detail = row.person && row.detail === row.person.helper ? null : row.detail;
+  const openRecordLabel =
+    row.label === 'Customer'
+      ? 'Open customer record'
+      : row.label.includes('Partner')
+        ? 'Open Partner'
+        : 'Open record';
   const className = [
     'booking-unified-info-card',
     row.people?.length ? 'is-wide' : null,
@@ -170,9 +176,9 @@ function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow
       {row.person ? <BookingUnifiedPerson person={row.person} /> : <BookingUnifiedValue row={row} />}
       {detail ? <p className="muted">{detail}</p> : null}
       {row.people?.length ? <BookingUnifiedPeople people={row.people} /> : null}
-      {row.href && !row.person ? (
+      {row.href ? (
         <Link className="text-link booking-unified-open-link" href={row.href}>
-          Open record
+          {openRecordLabel}
         </Link>
       ) : null}
     </div>
