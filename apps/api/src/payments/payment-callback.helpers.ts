@@ -7,13 +7,25 @@ const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
   PaymentStatus.REFUNDED,
   PaymentStatus.RELEASED,
 ]);
+const REDACTED_PAYMENT_CALLBACK_VALUE = '[REDACTED]';
+const REDACTED_PAYMENT_CALLBACK_KEYS = new Set([
+  'accesskey',
+  'apikey',
+  'apisecret',
+  'secret',
+  'securehash',
+  'securehashtype',
+  'signature',
+  'vnpsecurehash',
+  'vnpsecurehashtype',
+]);
 
 export function callbackRawMeta(
   rawMeta: Record<string, unknown>,
   verification: { verified: boolean; mode: string },
 ) {
   return {
-    ...rawMeta,
+    ...redactPaymentCallbackPayload(rawMeta),
     callbackReceivedAt: new Date().toISOString(),
     callbackSignatureVerified: verification.verified,
     callbackVerificationMode: verification.mode,
@@ -84,8 +96,17 @@ export function callbackAttemptCreateData(input: PaymentCallbackAttemptInput) {
     callbackAmount: input.callbackAmount ?? undefined,
     errorCode: input.errorCode ?? undefined,
     errorMessage: input.errorMessage ?? undefined,
-    rawPayload: toJsonOrUndefined(input.rawPayload ?? {}),
+    rawPayload: toJsonOrUndefined(redactPaymentCallbackPayload(input.rawPayload ?? {})),
   };
+}
+
+export function redactPaymentCallbackPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) => [
+      key,
+      isRedactedPaymentCallbackKey(key) ? REDACTED_PAYMENT_CALLBACK_VALUE : redactPaymentCallbackValue(value),
+    ]),
+  );
 }
 
 export function callbackAmountVnd(method: PaymentMethod, body: Record<string, unknown>) {
@@ -211,4 +232,21 @@ function numberValue(value: unknown) {
 
 function phpUrlEncode(value: string) {
   return encodeURIComponent(value).replace(/%20/g, '+');
+}
+
+function redactPaymentCallbackValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactPaymentCallbackValue);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return redactPaymentCallbackPayload(value as Record<string, unknown>);
+}
+
+function isRedactedPaymentCallbackKey(key: string) {
+  return REDACTED_PAYMENT_CALLBACK_KEYS.has(key.replace(/[^a-z0-9]/gi, '').toLowerCase());
 }

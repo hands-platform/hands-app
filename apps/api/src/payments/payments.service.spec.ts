@@ -32,7 +32,9 @@ describe('PaymentsService callbacks', () => {
 
     const result = await service.handleCallback(PaymentMethod.CASH, {
       providerRef: 'cash-booking-1',
+      signature: 'gateway-signature',
       status: 'CAPTURED',
+      vnp_SecureHash: 'gateway-secure-hash',
     });
 
     expect(result).toEqual({ ok: true, replay: false, payment: payment({ status: PaymentStatus.CAPTURED }) });
@@ -40,10 +42,12 @@ describe('PaymentsService callbacks', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           rawMeta: expect.objectContaining({
-            callbackSignatureVerified: true,
-            callbackVerificationMode: 'cash-internal',
-            providerRef: 'cash-booking-1',
-          }),
+          callbackSignatureVerified: true,
+          callbackVerificationMode: 'cash-internal',
+          providerRef: 'cash-booking-1',
+          signature: '[REDACTED]',
+          vnp_SecureHash: '[REDACTED]',
+        }),
           status: PaymentStatus.CAPTURED,
         }),
         where: { id: 'payment-1' },
@@ -56,6 +60,12 @@ describe('PaymentsService callbacks', () => {
         paymentId: 'payment-1',
         providerRef: 'cash-booking-1',
         providerStatus: PaymentStatus.CAPTURED,
+        rawPayload: {
+          providerRef: 'cash-booking-1',
+          signature: '[REDACTED]',
+          status: 'CAPTURED',
+          vnp_SecureHash: '[REDACTED]',
+        },
         signatureVerified: true,
         verificationMode: 'cash-internal',
       }),

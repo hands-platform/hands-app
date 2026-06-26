@@ -13,6 +13,7 @@ import {
   hmacHex,
   isTerminalPaymentStatus,
   momoSignatureCandidates,
+  redactPaymentCallbackPayload,
   secureEqualHex,
   sortedKeyValueString,
   stringValue,
@@ -28,8 +29,14 @@ describe('payment callback helpers', () => {
   it('builds callback raw metadata with verification details', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
 
-    expect(callbackRawMeta({ providerRef: 'momo-booking-1' }, { verified: true, mode: 'momo-hmac' })).toEqual({
+    expect(
+      callbackRawMeta(
+        { providerRef: 'momo-booking-1', signature: 'gateway-signature' },
+        { verified: true, mode: 'momo-hmac' },
+      ),
+    ).toEqual({
       providerRef: 'momo-booking-1',
+      signature: '[REDACTED]',
       callbackReceivedAt: '2026-06-11T00:00:00.000Z',
       callbackSignatureVerified: true,
       callbackVerificationMode: 'momo-hmac',
@@ -86,7 +93,10 @@ describe('payment callback helpers', () => {
         paymentId: null,
         providerRef: '',
         providerStatus: null,
-        rawPayload: { recordedAt: new Date('2026-06-11T00:00:00.000Z') },
+        rawPayload: {
+          recordedAt: new Date('2026-06-11T00:00:00.000Z'),
+          vnp_SecureHash: 'gateway-secure-hash',
+        },
         signatureVerified: null,
       }),
     ).toEqual({
@@ -99,9 +109,40 @@ describe('payment callback helpers', () => {
       callbackAmount: undefined,
       errorCode: undefined,
       errorMessage: undefined,
-      rawPayload: { recordedAt: '2026-06-11T00:00:00.000Z' },
+      rawPayload: {
+        recordedAt: '2026-06-11T00:00:00.000Z',
+        vnp_SecureHash: '[REDACTED]',
+      },
       signatureVerified: undefined,
       verificationMode: undefined,
+    });
+  });
+
+  it('redacts callback payload signing material recursively without removing evidence', () => {
+    expect(
+      redactPaymentCallbackPayload({
+        amount: '300000',
+        api_secret: 'api-secret',
+        orderId: 'booking-1',
+        signature: 'momo-signature',
+        nested: {
+          accessKey: 'access-key',
+          providerRef: 'provider-ref-1',
+          vnp_SecureHashType: 'sha512',
+        },
+        attempts: [{ secure_hash: 'nested-hash', status: '00' }],
+      }),
+    ).toEqual({
+      amount: '300000',
+      api_secret: '[REDACTED]',
+      orderId: 'booking-1',
+      signature: '[REDACTED]',
+      nested: {
+        accessKey: '[REDACTED]',
+        providerRef: 'provider-ref-1',
+        vnp_SecureHashType: '[REDACTED]',
+      },
+      attempts: [{ secure_hash: '[REDACTED]', status: '00' }],
     });
   });
 
