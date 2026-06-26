@@ -156,6 +156,8 @@ const REVERSIBLE_REWARD_CANDIDATE_STATUSES = new Set<ReferralRewardStatus>([
   ReferralRewardStatus.HELD,
 ]);
 
+const REFERRAL_CLAIM_PLATFORMS = new Set(['android', 'ios', 'web']);
+
 type ClaimReferralCodeInput = {
   code: string;
   installSource?: string;
@@ -857,7 +859,7 @@ function normalizeReferralClaim(input: ClaimReferralCodeInput) {
   return {
     code,
     installSource: normalizeOptionalText(input.installSource),
-    platform: normalizeOptionalText(input.platform),
+    platform: normalizeReferralPlatform(input.platform),
   };
 }
 
@@ -873,6 +875,15 @@ function normalizeRequiredText(value: string) {
 function normalizeOptionalText(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeReferralPlatform(value: string | undefined) {
+  const platform = normalizeOptionalText(value);
+  if (platform && !REFERRAL_CLAIM_PLATFORMS.has(platform)) {
+    throw new BadRequestException('Referral platform must be android, ios, or web');
+  }
+
+  return platform;
 }
 
 function referralCodeForOwner(audience: ReferralAudience, ownerProfileId: string) {

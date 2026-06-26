@@ -229,6 +229,37 @@ describe('ReferralsService', () => {
     );
   });
 
+  it('rejects customer referral claims with unsupported platforms before writing attribution', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+      },
+      referralAttribution: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.CUSTOMER,
+          code: 'HCUSTOMER',
+          ownerCustomerProfileId: 'referrer-customer-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.claimCustomerReferralCode('user-1', {
+        code: 'HCUSTOMER',
+        platform: ' blackberry ',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.referralCode.findFirst).not.toHaveBeenCalled();
+    expect(prisma.referralAttribution.create).not.toHaveBeenCalled();
+  });
+
   it('returns the existing customer referral attribution without creating a duplicate', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
