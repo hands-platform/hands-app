@@ -24,7 +24,6 @@ import {
   createCalendarEventId,
   createSeedEvents,
   filterCalendarEvents,
-  formatDateTime,
   fromCalendarEventInput,
   normalizeCalendarDraft,
   toCalendarEventInput,
@@ -48,21 +47,33 @@ export function CalendarClient() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const storedEvents = globalThis.localStorage?.getItem(CALENDAR_STORAGE_KEY);
+    let cancelled = false;
 
-    if (storedEvents) {
-      try {
-        setEvents(JSON.parse(storedEvents) as CalendarEventRecord[]);
-        setHydrated(true);
+    queueMicrotask(() => {
+      if (cancelled) {
         return;
-      } catch {
-        globalThis.localStorage.removeItem(CALENDAR_STORAGE_KEY);
       }
-    }
 
-    const seedEvents = createSeedEvents(new Date());
-    setEvents(seedEvents);
-    setHydrated(true);
+      const storedEvents = globalThis.localStorage?.getItem(CALENDAR_STORAGE_KEY);
+
+      if (storedEvents) {
+        try {
+          setEvents(JSON.parse(storedEvents) as CalendarEventRecord[]);
+          setHydrated(true);
+          return;
+        } catch {
+          globalThis.localStorage.removeItem(CALENDAR_STORAGE_KEY);
+        }
+      }
+
+      const seedEvents = createSeedEvents(new Date());
+      setEvents(seedEvents);
+      setHydrated(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
