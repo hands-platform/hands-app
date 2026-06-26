@@ -3,6 +3,7 @@ import {
   buildPartnerCustomerReviewTableRows,
   buildPartnerCustomerEvaluationFilters,
   buildPartnerCustomerEvaluationListHref,
+  buildReviewExportHref,
   buildReviewExportRows,
   buildReviewFilters,
   buildReviewListHref,
@@ -272,6 +273,11 @@ describe('review page model', () => {
         { page: 2 },
       ),
     ).toBe('/reviews?q=mai&pageSize=25&review=held&dateRange=7d&sort=rating-desc&page=2');
+    expect(
+      buildReviewExportHref(
+        filters({ dateRange: '7d', page: 2, pageSize: 25, q: 'mai', review: 'held', sort: 'rating-desc' }),
+      ),
+    ).toBe('/reviews/export?q=mai&review=held&dateRange=7d&sort=rating-desc');
   });
 
   it('builds stable partner customer evaluation filters and list hrefs', () => {

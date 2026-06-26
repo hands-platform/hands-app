@@ -325,6 +325,13 @@ export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<R
   return buildReviewHref('/reviews', filters, overrides);
 }
 
+export function buildReviewExportHref(filters: ReviewFilters) {
+  return buildReviewHref('/reviews/export', filters, {
+    page: 1,
+    pageSize: DEFAULT_REVIEW_PAGE_SIZE,
+  });
+}
+
 export function buildPartnerCustomerEvaluationListHref(
   filters: ReviewFilters,
   overrides: Partial<ReviewFilters> = {},

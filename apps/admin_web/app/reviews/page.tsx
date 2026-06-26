@@ -2,13 +2,11 @@ import type { AdminReview } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
 import { buildReviewModerationConfirmation, readReviewModerationStatus } from './review-action-confirmation';
 import {
-  REVIEW_EXPORT_COLUMNS,
-  buildReviewExportRows,
+  buildReviewExportHref,
   buildReviewFilters,
   buildReviewTableRows,
   buildSummary,
@@ -30,7 +28,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
   const summary = buildSummary(allReviews);
   const reviewRows = buildReviewTableRows(pagination.rows);
   const reviewRowPagination = { ...pagination, rows: reviewRows };
-  const reviewCsvHref = buildCsvDataHref(buildReviewExportRows(reviews), [...REVIEW_EXPORT_COLUMNS]);
+  const reviewCsvHref = buildReviewExportHref(filters);
   const confirmation =
     readSearchParam(params.confirm) === 'moderate'
       ? buildReviewModerationConfirmation(
