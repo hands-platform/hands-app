@@ -22,7 +22,6 @@ import {
   AdminChatMessage,
   AdminCustomerDetail,
   AdminNotification,
-  AdminReview,
   adminGet,
 } from '../../../lib/admin-api';
 import {
@@ -72,10 +71,7 @@ import {
   orderCustomerActivityRecords,
   readDetailActivityOrder,
 } from './customer-detail-filters';
-import {
-  customerBookingAddressEvidenceLabel,
-  customerSelectedLocationDetail,
-} from './customer-detail-location-copy';
+import { customerSelectedLocationDetail } from './customer-detail-location-copy';
 import {
   CustomerBookingOperationBoard,
   type CustomerBookingOperationGroup,
@@ -110,7 +106,11 @@ const ACTIVE_STATUSES = [
 const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 4;
+const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 3;
+const CUSTOMER_CHAT_ROOM_MESSAGE_PREVIEW_LIMIT = 6;
+const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
+const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
+const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
 const CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
@@ -127,6 +127,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     notFound();
   }
 
+  const currentTimeMs = new Date().getTime();
   const customerReviewRecords = reviewRecordsForCustomer(
     customer.reviews ?? [],
     customer.providerReviews ?? [],
@@ -139,18 +140,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const latestBooking = bookings[0];
   const activeBooking = bookings.find((booking) => ACTIVE_STATUSES.includes(booking.status));
   const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
-  const latestChatBooking = bookings.find((booking) => booking.chatRoom);
-  const latestPaymentBooking = bookings.find((booking) => booking.payment);
-  const latestRefundBooking = bookings.find(
-    (booking) => (booking.payment?.refunds?.length ?? 0) > 0 || (booking.refunds?.length ?? 0) > 0,
-  );
-  const latestAddressSnapshotBooking = bookings.find((booking) => booking.addressSnapshot);
-  const latestOpsBooking = bookings.find(
-    (booking) => bookingOpsTaskCount(booking) > 0 || bookingAuditLogCount(booking) > 0,
-  );
-  const latestPartnerBooking = bookings.find(
-    (booking) => booking.selectedProviderId || booking.preferredProviderId,
-  );
   const appSessions = customer.user?.appSessions ?? [];
   const latestSession = appSessions[0];
   const pushDevices = customer.user?.pushDevices ?? [];
@@ -162,12 +151,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   });
   const notifications = customer.user?.notifications ?? [];
   const activityPlan = buildCustomerActivityPlan(bookings, wallet, bookingStats, addresses);
-  const chatRooms = bookings.filter((booking) => booking.chatRoom);
-  const chatMessageCount = chatRooms.reduce(
-    (sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0),
-    0,
-  );
-  const customerPaymentCount = bookings.filter((booking) => booking.payment).length;
   const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
   const filteredBookings = bookings.filter((booking) =>
@@ -223,6 +206,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredAuditLogs = recentAuditLogs.filter((log) =>
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
+  const visibleNotifications = filteredNotifications.slice(0, CUSTOMER_NOTIFICATION_PREVIEW_LIMIT);
+  const visibleAuditLogs = filteredAuditLogs.slice(0, CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT);
   const bookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(recentAuditLogs, customer.id);
   const filteredBookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(
     filteredAuditLogs,
@@ -243,6 +228,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     latestSession,
     pushDevices,
     notifications,
+    currentTimeMs,
   });
   const activityCsvRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT);
   const filteredActivityCsvHref = buildCsvDataHref(
@@ -274,7 +260,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
     latestSession
-      ? Date.now() - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
+      ? currentTimeMs - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
         ? 'In app now'
         : 'Recent session saved'
       : 'No app session',
@@ -453,7 +439,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </p>
         ) : (
           <div className="setup-stage-list admin-mt-14">
-            {filteredBookingCreateGateAttempts.slice(0, 12).map((attempt) => (
+            {filteredBookingCreateGateAttempts.slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT).map((attempt) => (
               <div className="setup-stage-item" key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
                 <div>
@@ -834,9 +820,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <AdminDataTable
             emptyMessage={null}
             headers={CUSTOMER_NOTIFICATION_HEADERS}
-            rowCount={filteredNotifications.slice(0, 20).length}
+            rowCount={visibleNotifications.length}
           >
-            {filteredNotifications.slice(0, 20).map((notification) => (
+            {visibleNotifications.map((notification) => (
               <tr key={notification.id}>
                 <td>
                   <strong>{displayMarketplaceText(notification.title)}</strong>
@@ -861,9 +847,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <AdminDataTable
             emptyMessage={null}
             headers={CUSTOMER_AUDIT_TRAIL_HEADERS}
-            rowCount={filteredAuditLogs.slice(0, 20).length}
+            rowCount={visibleAuditLogs.length}
           >
-            {filteredAuditLogs.slice(0, 20).map((log) => (
+            {visibleAuditLogs.map((log) => (
               <tr key={log.id}>
                 <td>{log.action}</td>
                 <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
@@ -891,6 +877,8 @@ function CustomerChatHistoryRoomCard({
   const filteredMessages = readChatMessages(booking).filter((message) =>
     isWithinDetailDateFilter(message.createdAt, dateFilters),
   );
+  const visibleMessages = filteredMessages.slice(-CUSTOMER_CHAT_ROOM_MESSAGE_PREVIEW_LIMIT);
+  const hiddenMessageCount = Math.max(0, filteredMessages.length - visibleMessages.length);
 
   return (
     <div className="card customer-chat-history-room-card">
@@ -915,13 +903,19 @@ function CustomerChatHistoryRoomCard({
         </div>
       </div>
       <div className="admin-grid-gap-8 admin-mt-10">
-        {filteredMessages.map((message) => (
+        {visibleMessages.map((message) => (
           <div className="ops-task-note" key={message.id}>
             <strong>{message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}</strong>
             <p>{message.body}</p>
             <p className="muted">{formatDate(message.createdAt)}</p>
           </div>
         ))}
+        {hiddenMessageCount > 0 ? (
+          <p className="muted">
+            Showing latest {visibleMessages.length} of {filteredMessages.length} messages. Open full chat
+            archive for the complete transcript.
+          </p>
+        ) : null}
         {filteredMessages.length === 0 ? (
           <p className="muted">No messages in this date filter, but the room belongs to this period.</p>
         ) : null}
@@ -1289,6 +1283,7 @@ function buildCustomerOperatorCommandQueue({
   latestSession,
   pushDevices,
   notifications,
+  currentTimeMs,
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
@@ -1296,6 +1291,7 @@ function buildCustomerOperatorCommandQueue({
   latestSession?: AdminAppSession;
   pushDevices: CustomerPushDevice[];
   notifications: AdminNotification[];
+  currentTimeMs: number;
 }) {
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status));
   const activeBooking = activeBookings[0];
@@ -1317,7 +1313,7 @@ function buildCustomerOperatorCommandQueue({
   const enabledPushDevices = pushDevices?.filter((device) => device.enabled) ?? [];
   const unreadNotifications = notifications?.filter((notification) => !notification.readAt) ?? [];
   const lastSeenMs = latestSession ? dateMs(latestSession.lastSeenAt) : 0;
-  const staleSession = !latestSession || Date.now() - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
+  const staleSession = !latestSession || currentTimeMs - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
   const missingAddress = addresses.length === 0;
   const commands: CustomerOperatorCommand[] = [];
 
@@ -1716,12 +1712,18 @@ function customerCountryName(region: string) {
     JP: 'Japan',
     KR: 'South Korea',
     SG: 'Singapore',
-    TH: 'Thailand',
-    US: 'United States',
     VN: 'Vietnam',
   };
 
-  return countryNames[region] ?? region;
+  return countryNames[region] ?? displayCustomerDetailRegionName(region);
+}
+
+function displayCustomerDetailRegionName(region: string) {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(region) ?? region;
+  } catch {
+    return region;
+  }
 }
 
 function readCustomerGenderLabel(customer: AdminCustomerDetail) {
@@ -2036,15 +2038,6 @@ function partnerAvatarStatusFromProviderStatus(
   if (providerStatus.includes('ONLINE') || providerStatus.includes('AVAILABLE')) return 'online';
   if (providerStatus.includes('DELETED') || providerStatus.includes('REMOVED')) return 'app-deleted';
   return 'offline';
-}
-
-function preferredPartnerDisplayName(booking: AdminBookingDetail) {
-  return displayMarketplaceText(
-    booking.preferredProvider?.displayName ??
-      booking.preferredProvider?.user?.fullName ??
-      booking.preferredProvider?.user?.phone ??
-      'No Partner',
-  );
 }
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
@@ -2389,16 +2382,6 @@ function buildCustomerBookingGateAttemptRows(
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
 }
 
-function bookingOpsTaskCount(booking: unknown) {
-  const record = booking && typeof booking === 'object' ? (booking as { opsTasks?: unknown }) : {};
-  return Array.isArray(record.opsTasks) ? record.opsTasks.length : 0;
-}
-
-function bookingAuditLogCount(booking: unknown) {
-  const record = booking && typeof booking === 'object' ? (booking as { auditLogs?: unknown }) : {};
-  return Array.isArray(record.auditLogs) ? record.auditLogs.length : 0;
-}
-
 function bookingTotal(booking: AdminBookingDetail) {
   return (booking.services ?? []).reduce(
     (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
@@ -2411,8 +2394,6 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
 }
-
-const bookingAddressEvidenceLabel = customerBookingAddressEvidenceLabel;
 
 function mostCommonLabel(values: string[]) {
   const counts = new Map<string, number>();
@@ -2445,20 +2426,6 @@ function bookingClosureLabel(booking: AdminBookingDetail) {
   const reason = booking.closedReason ? booking.closedReason.replace(/_/g, ' ') : 'no reason saved';
   const note = booking.closedNote ? ` / ${compactText(booking.closedNote, 90)}` : '';
   return `${actor} closure / ${reason}${note}`;
-}
-
-function bookingChatArchiveLabel(booking: AdminBookingDetail) {
-  if (booking.chatRoom) {
-    if (booking.status === 'COMPLETED') return 'Archived for admin after completion';
-    if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
-      return 'Live customer and Partner room';
-    }
-    return 'Chat room retained';
-  }
-  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)) {
-    return 'Follow up: matched bookings should have chat';
-  }
-  return 'No match chat yet';
 }
 
 function bookingStatusPillClass(status: string) {
