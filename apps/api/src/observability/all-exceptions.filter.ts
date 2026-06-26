@@ -7,12 +7,17 @@ type RequestWithId = {
   url?: string;
 };
 
+function requestPathWithoutQuery(request: RequestWithId) {
+  return (request.originalUrl ?? request.url ?? '').split('?')[0];
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const response = context.getResponse();
     const request = context.getRequest<RequestWithId>();
+    const path = requestPathWithoutQuery(request);
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
@@ -32,7 +37,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message,
       requestId: request.requestId,
-      path: request.originalUrl ?? request.url,
+      path,
       timestamp: new Date().toISOString(),
     };
 
@@ -42,7 +47,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         event: 'http_exception',
         requestId: request.requestId,
         method: request.method,
-        path: request.originalUrl ?? request.url,
+        path,
         statusCode: status,
         error: exception instanceof Error ? exception.message : String(exception),
       }),
