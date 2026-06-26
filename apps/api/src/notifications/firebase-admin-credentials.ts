@@ -58,6 +58,26 @@ export function configuredFirebaseCredentialKeys(config: FirebaseCredentialConfi
   ].filter((key): key is string => Boolean(key));
 }
 
+export function firebaseProjectIdFromConfig(config: FirebaseCredentialConfig) {
+  if (config.serviceAccountJson) {
+    return parseFirebaseServiceAccount(config.serviceAccountJson).projectId;
+  }
+
+  if (config.projectId) {
+    return config.projectId;
+  }
+
+  if (config.googleApplicationCredentials) {
+    return parseFirebaseServiceAccountFile(config.googleApplicationCredentials).projectId;
+  }
+
+  return undefined;
+}
+
+export function parseFirebaseServiceAccountFile(path: string) {
+  return parseFirebaseServiceAccount(readFileSync(resolve(path), 'utf8'));
+}
+
 function existingApplicationDefaultCredentials(value?: string) {
   if (!value || !existsSync(resolve(value))) {
     return false;

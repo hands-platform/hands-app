@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { applicationDefault, cert, getApps, initializeApp, type App } from 'firebase-admin/app';
-import { getMessaging, type Messaging } from 'firebase-admin/messaging';
+import { GoogleAuth, JWT } from 'google-auth-library';
 import {
+  firebaseProjectIdFromConfig,
   firebaseCredentialReadiness,
   parseFirebaseServiceAccount,
   readFirebaseCredentialConfig,
@@ -12,6 +12,7 @@ import { firebaseFailureCode, isPermanentTokenError, safeErrorMessage } from './
 import { resolvePushProvider, type PushProvider } from './push-provider';
 
 export const FCM_ANDROID_NOTIFICATION_CHANNEL_ID = 'hands_priority_alerts';
+const FCM_MESSAGING_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
 
 export type PushMessage = {
   token: string;
@@ -31,8 +32,6 @@ export type PushSendResult = {
 
 @Injectable()
 export class PushDeliveryService {
-  private messaging?: Messaging;
-
   constructor(private readonly config: ConfigService) {}
 
   async send(message: PushMessage): Promise<PushSendResult> {
@@ -80,28 +79,44 @@ export class PushDeliveryService {
     }
 
     try {
-      const messaging = this.getMessagingClient();
-      const messageId = await messaging.send({
-        token: message.token,
-        notification: {
-          title: message.title,
-          body: message.body,
+      const { accessToken, projectId } = await this.fcmAccess();
+      const response = await fetch(fcmSendUrl(projectId), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-        data: message.data ?? {},
-        android: {
-          priority: 'high',
-          notification: {
-            channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
-          },
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
+        body: JSON.stringify({
+          message: {
+            token: message.token,
+            notification: {
+              title: message.title,
+              body: message.body,
+            },
+            data: message.data ?? {},
+            android: {
+              priority: 'high',
+              notification: {
+                channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  sound: 'default',
+                },
+              },
             },
           },
-        },
+        }),
       });
+
+      if (!response.ok) {
+        throw await fcmHttpError(response);
+      }
+
+      const result = (await response.json()) as { name?: unknown };
+      const messageId = typeof result.name === 'string' ? result.name : 'fcm-message-sent';
 
       return {
         provider: 'FCM',
@@ -137,16 +152,18 @@ export class PushDeliveryService {
     };
   }
 
-  private getMessagingClient() {
-    if (this.messaging) {
-      return this.messaging;
+  private async fcmAccess() {
+    const { config } = this.fcmReadiness();
+    const projectId = firebaseProjectIdFromConfig(config);
+    const accessToken = await fcmAccessToken(config);
+
+    if (!projectId) {
+      throw Object.assign(new Error('FCM project ID is missing from server credentials.'), {
+        code: 'PUSH_PROVIDER_NOT_CONFIGURED',
+      });
     }
 
-    const { config } = this.fcmReadiness();
-    const app =
-      getApps().find((candidate) => candidate.name === 'hands-fcm') ?? initializeFirebaseApp(config);
-    this.messaging = getMessaging(app);
-    return this.messaging;
+    return { accessToken, projectId };
   }
 
   private readFirebaseConfig(): FirebaseCredentialConfig {
@@ -154,26 +171,95 @@ export class PushDeliveryService {
   }
 }
 
-function initializeFirebaseApp(config: FirebaseCredentialConfig): App {
+async function fcmAccessToken(config: FirebaseCredentialConfig) {
   if (config.serviceAccountJson) {
-    return initializeApp(
-      { credential: cert(parseFirebaseServiceAccount(config.serviceAccountJson)) },
-      'hands-fcm',
-    );
+    return serviceAccountAccessToken(parseFirebaseServiceAccount(config.serviceAccountJson));
   }
 
   if (config.projectId && config.clientEmail && config.privateKey) {
-    return initializeApp(
-      {
-        credential: cert({
-          projectId: config.projectId,
-          clientEmail: config.clientEmail,
-          privateKey: config.privateKey,
-        }),
-      },
-      'hands-fcm',
-    );
+    return serviceAccountAccessToken({
+      projectId: config.projectId,
+      clientEmail: config.clientEmail,
+      privateKey: config.privateKey,
+    });
   }
 
-  return initializeApp({ credential: applicationDefault() }, 'hands-fcm');
+  if (config.googleApplicationCredentials) {
+    const auth = new GoogleAuth({
+      keyFile: config.googleApplicationCredentials,
+      scopes: [FCM_MESSAGING_SCOPE],
+    });
+    const client = await auth.getClient();
+    return normalizeAccessToken(await client.getAccessToken());
+  }
+
+  throw Object.assign(new Error('FCM server credentials are missing.'), {
+    code: 'PUSH_PROVIDER_NOT_CONFIGURED',
+  });
+}
+
+async function serviceAccountAccessToken(serviceAccount: {
+  projectId?: string;
+  clientEmail?: string;
+  privateKey?: string;
+}) {
+  const client = new JWT({
+    email: serviceAccount.clientEmail,
+    key: serviceAccount.privateKey,
+    scopes: [FCM_MESSAGING_SCOPE],
+  });
+
+  return normalizeAccessToken(await client.getAccessToken());
+}
+
+function normalizeAccessToken(value: unknown) {
+  if (typeof value === 'string' && value) {
+    return value;
+  }
+
+  if (value && typeof value === 'object' && 'token' in value) {
+    const token = (value as { token?: unknown }).token;
+    if (typeof token === 'string' && token) {
+      return token;
+    }
+  }
+
+  throw Object.assign(new Error('FCM access token could not be created.'), {
+    code: 'PUSH_PROVIDER_NOT_CONFIGURED',
+  });
+}
+
+function fcmSendUrl(projectId: string) {
+  return `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/messages:send`;
+}
+
+async function fcmHttpError(response: Response) {
+  const payload = await readFcmErrorPayload(response);
+  const fcmError = payload?.error;
+  const code = fcmErrorCode(fcmError) ?? fcmError?.status ?? `HTTP_${response.status}`;
+  const reason = fcmError?.message ?? `FCM request failed with HTTP ${response.status}.`;
+
+  return Object.assign(new Error(reason), { code });
+}
+
+async function readFcmErrorPayload(response: Response) {
+  try {
+    return (await response.json()) as {
+      error?: {
+        status?: string;
+        message?: string;
+        details?: Array<Record<string, unknown>>;
+      };
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function fcmErrorCode(error?: { details?: Array<Record<string, unknown>> }) {
+  const detail = error?.details?.find(
+    (candidate) => typeof candidate.errorCode === 'string' && candidate.errorCode.length > 0,
+  );
+
+  return typeof detail?.errorCode === 'string' ? detail.errorCode : undefined;
 }

@@ -4,31 +4,54 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID, PushDeliveryService } from './push-delivery.service';
 
-const mockMessagingSend = jest.fn();
+const mockJwtGetAccessToken = jest.fn();
+const mockGoogleAuthGetAccessToken = jest.fn();
+const mockGoogleAuthGetClient = jest.fn();
+const mockFetch = jest.fn();
+const originalFetch = global.fetch;
 
-jest.mock('firebase-admin/app', () => ({
-  applicationDefault: jest.fn(() => ({ type: 'applicationDefault' })),
-  cert: jest.fn((credential) => ({ credential })),
-  getApps: jest.fn(() => []),
-  initializeApp: jest.fn(() => ({ name: 'hands-fcm' })),
-}));
-
-jest.mock('firebase-admin/messaging', () => ({
-  getMessaging: jest.fn(() => ({ send: mockMessagingSend })),
+jest.mock('google-auth-library', () => ({
+  GoogleAuth: jest.fn().mockImplementation(() => ({
+    getClient: mockGoogleAuthGetClient,
+  })),
+  JWT: jest.fn().mockImplementation(() => ({
+    getAccessToken: mockJwtGetAccessToken,
+  })),
 }));
 
 function pushService(env: Record<string, string | undefined>) {
   return new PushDeliveryService(new ConfigService(env));
 }
 
+function fcmResponse(body: unknown, ok = true, status = 200) {
+  return {
+    ok,
+    status,
+    json: jest.fn().mockResolvedValue(body),
+  } as unknown as Response;
+}
+
 describe('PushDeliveryService', () => {
   let tempDir: string | undefined;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockJwtGetAccessToken.mockResolvedValue({ token: 'jwt-access-token' });
+    mockGoogleAuthGetAccessToken.mockResolvedValue({ token: 'google-auth-access-token' });
+    mockGoogleAuthGetClient.mockResolvedValue({ getAccessToken: mockGoogleAuthGetAccessToken });
+    mockFetch.mockResolvedValue(fcmResponse({ name: 'projects/hands-demo/messages/firebase-message-1' }));
+    global.fetch = mockFetch as unknown as typeof fetch;
+  });
 
   afterEach(() => {
     if (tempDir) {
       rmSync(tempDir, { recursive: true, force: true });
       tempDir = undefined;
     }
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   const message = {
@@ -114,12 +137,18 @@ describe('PushDeliveryService', () => {
   });
 
   it('masks raw FCM tokens from provider error messages', async () => {
-    mockMessagingSend.mockRejectedValueOnce(
-      Object.assign(
-        new Error(
-          'Requested entity was not found: registration token: fcm-demo-token. Raw token fcm-demo-token rejected.',
-        ),
-        { code: 'messaging/registration-token-not-registered' },
+    mockFetch.mockResolvedValueOnce(
+      fcmResponse(
+        {
+          error: {
+            status: 'NOT_FOUND',
+            message:
+              'Requested entity was not found: registration token: fcm-demo-token. Raw token fcm-demo-token rejected.',
+            details: [{ errorCode: 'UNREGISTERED' }],
+          },
+        },
+        false,
+        404,
       ),
     );
 
@@ -134,7 +163,7 @@ describe('PushDeliveryService', () => {
       provider: 'FCM',
       status: 'FAILED',
       disableDevice: true,
-      failureCode: 'messaging/registration-token-not-registered',
+      failureCode: 'UNREGISTERED',
       response: {
         reason: 'Requested entity was not found: registration token [masked]. Raw token [masked] rejected.',
       },
@@ -143,10 +172,16 @@ describe('PushDeliveryService', () => {
   });
 
   it('disables invalid FCM registration tokens returned as invalid-argument', async () => {
-    mockMessagingSend.mockRejectedValueOnce(
-      Object.assign(
-        new Error('The registration token fcm-demo-token not a valid FCM registration token'),
-        { code: 'messaging/invalid-argument' },
+    mockFetch.mockResolvedValueOnce(
+      fcmResponse(
+        {
+          error: {
+            status: 'INVALID_ARGUMENT',
+            message: 'The registration token fcm-demo-token not a valid FCM registration token',
+          },
+        },
+        false,
+        400,
       ),
     );
 
@@ -161,7 +196,7 @@ describe('PushDeliveryService', () => {
       provider: 'FCM',
       status: 'FAILED',
       disableDevice: true,
-      failureCode: 'messaging/invalid-argument',
+      failureCode: 'INVALID_ARGUMENT',
       response: {
         reason: 'The registration token [masked] not a valid FCM registration token',
       },
@@ -170,8 +205,6 @@ describe('PushDeliveryService', () => {
   });
 
   it('sends Android FCM notifications through the HANDS priority channel', async () => {
-    mockMessagingSend.mockResolvedValueOnce('firebase-message-1');
-
     await expect(
       pushService({
         PUSH_PROVIDER: 'fcm',
@@ -182,18 +215,28 @@ describe('PushDeliveryService', () => {
     ).resolves.toMatchObject({
       provider: 'FCM',
       status: 'SENT',
-      response: { messageId: 'firebase-message-1' },
+      response: { messageId: 'projects/hands-demo/messages/firebase-message-1' },
     });
 
-    expect(mockMessagingSend).toHaveBeenLastCalledWith(
+    expect(mockFetch).toHaveBeenLastCalledWith(
+      'https://fcm.googleapis.com/v1/projects/hands-demo/messages:send',
       expect.objectContaining({
-        android: expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer jwt-access-token',
+        }),
+        body: expect.stringContaining(FCM_ANDROID_NOTIFICATION_CHANNEL_ID),
+      }),
+    );
+    const lastRequest = mockFetch.mock.calls[mockFetch.mock.calls.length - 1]?.[1] as RequestInit;
+    expect(JSON.parse(String(lastRequest.body))).toMatchObject({
+      message: {
+        android: {
           priority: 'high',
           notification: {
             channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
           },
-        }),
-      }),
-    );
+        },
+      },
+    });
   });
 });

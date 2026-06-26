@@ -6,14 +6,17 @@ Last reviewed: 2026-06-27
 
 ## Current Audit Summary
 
-- Current result: 25 moderate vulnerabilities, 0 high, 0 low, 0 critical.
+- Current result: 19 moderate vulnerabilities, 0 high, 0 low, 0 critical.
 - Recently resolved by `d0066806 chore(deps): pin safe security overrides`:
   - `@babel/core` pinned to `7.29.7`.
   - `form-data` pinned to `2.5.6`.
   - `multer` pinned to `2.2.0`.
-- Remaining vulnerabilities fall into two dependency families:
+- Resolved on 2026-06-27:
+  - Removed API runtime dependency on `firebase-admin`.
+  - Replaced Firebase Admin messaging with FCM HTTP v1 delivery using `google-auth-library`.
+  - Removed the `firebase-admin -> @google-cloud/storage -> gaxios/teeny-request -> uuid` audit chain from the lockfile.
+- Remaining vulnerabilities fall into one dependency family:
   - Jest/Istanbul test tooling through `js-yaml`.
-  - Firebase Admin's transitive Google Cloud Storage dependency chain.
 
 ## Remaining Risk Register
 
@@ -31,46 +34,50 @@ Last reviewed: 2026-06-27
 - 2026-06-27 override check: forcing `@istanbuljs/load-nyc-config -> js-yaml@^4.2.0` left the npm tree in an `invalid` state (`npm ls js-yaml @istanbuljs/load-nyc-config --all` failed), so the override was reverted.
 - Suggested test or smoke check: `just safe-check`, API test suite, Admin test suite, and coverage command if coverage config changes later.
 
-### Firebase Admin / Google Cloud Storage Transitive Chain
+### Resolved: Firebase Admin / Google Cloud Storage Transitive Chain
 
 - File path: `apps/api/package.json`, `package-lock.json`, `apps/api/src/notifications/push-delivery.service.ts`, `apps/api/src/notifications/firebase-admin-credentials.ts`, `apps/api/src/health/health.service.ts`
 - Module/page/service name: API notification push delivery and Firebase Admin credential health check
 - Issue type: dependency vulnerability, production dependency transitive package
 - Severity: medium
-- Current behavior: `firebase-admin@14.1.0` is installed for FCM. It depends on `@google-cloud/storage@7.21.0`, which still brings vulnerable transitive packages reported through `gaxios`, `retry-request`, `teeny-request`, and `uuid`.
+- Previous behavior: `firebase-admin@14.1.0` was installed for FCM. It depended on `@google-cloud/storage@7.21.0`, which brought vulnerable transitive packages reported through `gaxios`, `retry-request`, `teeny-request`, and `uuid`.
+- Current behavior: API push delivery calls FCM HTTP v1 directly with `google-auth-library@10.7.0`; `firebase-admin`, `@google-cloud/storage`, and `uuid` are no longer present in the package-lock dependency tree.
 - Why it matters: this is a production dependency family, so it has higher attention than the Jest tooling chain. However, current HANDS runtime code uses Firebase Admin for app initialization and messaging, not Firebase Storage.
 - Evidence:
   - `npm view firebase-admin version` returned `14.1.0`.
   - `npm view @google-cloud/storage version` returned `7.21.0`.
   - Repository search found no runtime use of `admin.storage`, `getStorage`, `bucket(`, `firebase-admin/storage`, or direct `@google-cloud/storage` imports.
-  - FCM-related code imports `firebase-admin/app` and `firebase-admin/messaging`.
-- Risk to speed/cost/business correctness: low current business risk if HANDS continues to use Firebase only as an FCM delivery network; higher future risk if Firebase Storage APIs are introduced without revisiting this audit.
-- Recommended fix: do not apply npm's suggested force fix. Track upstream Firebase Admin / Google Cloud Storage releases. Keep FCM usage isolated to messaging-only code paths and avoid adding Firebase Storage usage unless a fresh audit confirms a safe package chain.
-- Safe code change now: no. The npm fix path proposes `firebase-admin@10.3.0`, a major downgrade from the current latest `14.1.0`.
+  - FCM-related code used to import `firebase-admin/app` and `firebase-admin/messaging`; it now imports `google-auth-library`.
+- Risk to speed/cost/business correctness: reduced. HANDS still uses Firebase only as an FCM delivery network and avoids Firebase Storage runtime coupling.
+- Recommended fix: keep FCM usage isolated to HTTP v1 messaging-only code paths and avoid adding Firebase Storage usage unless a fresh audit confirms a safe package chain.
+- Safe code change now: completed.
 - 2026-06-27 override check: `gaxios@6.7.1` and `teeny-request@9.0.0` both depend on `uuid@^9`, while the advisory fix requires `uuid>=11.1.1`. Do not force an override across this runtime dependency boundary without a dedicated Firebase/Admin messaging regression task.
-- Suggested test or smoke check: notification service unit tests, FCM environment contract check, `just safe-check`, and a production dependency audit after the next Firebase Admin release.
+- 2026-06-27 implementation check: `npm ls firebase-admin @google-cloud/storage gaxios teeny-request retry-request uuid google-auth-library --all` shows only `@massage-vn/api -> google-auth-library@10.7.0 -> gaxios@7.1.5`.
+- Suggested test or smoke check: notification service unit tests, FCM environment contract check, `just safe-check`, and a production dependency audit after future push delivery dependency changes.
 
 ## Guardrails
 
 - Do not use Firebase DB/Auth for HANDS business data or authentication.
-- Keep Firebase Admin limited to FCM delivery unless a separate approved design expands it.
+- Keep Firebase limited to FCM delivery unless a separate approved design expands it.
 - Do not add Firebase Storage or Google Cloud Storage runtime use without updating this audit and the performance/cost risk register.
 - Do not run `npm audit fix --force` for the remaining findings; current automated remediation proposes unsafe downgrade paths.
 - Treat future dependency updates as small PR-sized tasks with `just safe-check` before commit.
 
 ## Recommended Follow-up Tasks
 
-1. Create a dependency watch task for Firebase Admin / Google Cloud Storage transitive fixes.
-2. Create a separate Jest/ts-jest upgrade spike that validates API and Admin test behavior before changing versions.
-3. Add a CI note or docs reminder that residual audit findings are known and classified, not ignored.
-4. Re-run `npm audit --workspaces --audit-level=moderate` after each dependency bump and update this file if the count or risk changes.
+1. Create a separate Jest/ts-jest upgrade spike that validates API and Admin test behavior before changing versions.
+2. Add a CI note or docs reminder that residual audit findings are known and classified, not ignored.
+3. Re-run `npm audit --workspaces --audit-level=moderate` after each dependency bump and update this file if the count or risk changes.
 
 ## Verification Captured
 
-- `npm audit --workspaces --audit-level=moderate --json`: exits non-zero with 25 moderate vulnerabilities, 0 high, 0 low, 0 critical.
-- `npm audit --audit-level=moderate`: exits non-zero with the same 25 moderate findings; automated remediation still requires `--force`.
+- `npm audit --workspaces --audit-level=moderate --json`: previously exited non-zero with 25 moderate vulnerabilities, 0 high, 0 low, 0 critical.
+- `npm audit --audit-level=moderate`: now exits non-zero with 19 moderate findings; automated remediation still requires `--force`.
 - `npm ls js-yaml @istanbuljs/load-nyc-config --all`: valid after reverting the attempted `js-yaml` override.
 - `rg -n "admin\.storage|getStorage|bucket\(|@google-cloud/storage|firebase-admin/storage" apps packages infra docs --glob '!**/node_modules/**'`: no matches.
 - `npm view firebase-admin version`: `14.1.0`.
 - `npm view @google-cloud/storage version`: `7.21.0`.
-- `just safe-check`: passed after the safe override commit that reduced audit exposure.
+- `npm.cmd run test --workspace @massage-vn/api -- push-delivery.service.spec.ts firebase-admin-credentials.spec.ts`: passed.
+- `npm.cmd run typecheck --workspace @massage-vn/api`: passed.
+- `npm.cmd run fcm:env-contract`: passed.
+- `npm.cmd run verify:api:fast`: passed.
