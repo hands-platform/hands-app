@@ -231,7 +231,7 @@ function appendTextParam(params: URLSearchParams, key: string, value: string) {
 
 function normalizeCustomerCountryFilter(value: string) {
   const normalized = value.toUpperCase();
-  const allowed = ['VN', 'KR', 'JP', 'CN', 'SG', 'TH', 'US', 'UNKNOWN'];
+  const allowed = ['VN', 'KR', 'JP', 'CN', 'SG', 'UNKNOWN'];
   return allowed.includes(normalized) ? normalized : '';
 }
 
@@ -247,9 +247,7 @@ function customerCountryFilterLabel(country: string) {
     JP: 'Japan',
     KR: 'South Korea',
     SG: 'Singapore',
-    TH: 'Thailand',
     UNKNOWN: 'Unknown country',
-    US: 'United States',
     VN: 'Vietnam',
   };
   return labels[country] ?? country;

@@ -27,7 +27,6 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const allRows = customers.map(buildCustomerRow);
   const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
   const allSummary = buildCustomerSummary(allRows);
-  const summary = buildCustomerSummary(rows);
   const activeFilters = buildCustomerActiveFilters(filters);
   const metrics = buildCustomerManagementMetrics(allSummary);
   const pagination = paginateCustomerRows(rows, filters);

@@ -220,8 +220,6 @@ const countryFilterOptions = [
   { label: 'Japan', value: 'JP' },
   { label: 'China', value: 'CN' },
   { label: 'Singapore', value: 'SG' },
-  { label: 'Thailand', value: 'TH' },
-  { label: 'United States', value: 'US' },
   { label: 'Unknown country', value: 'UNKNOWN' },
 ] as const;
 

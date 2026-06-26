@@ -404,12 +404,18 @@ function customerDeviceLanguageCountryLabel(label: string) {
     JP: 'Japan',
     KR: 'South Korea',
     SG: 'Singapore',
-    TH: 'Thailand',
-    US: 'United States',
     VN: 'Vietnam',
   };
   const code = customerDeviceLanguageCountryCode(label);
-  return names[code] ?? 'Unknown country';
+  return names[code] ?? (code === 'UNKNOWN' ? 'Unknown country' : displayCustomerRegionName(code));
+}
+
+function displayCustomerRegionName(region: string) {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(region) ?? region;
+  } catch {
+    return region;
+  }
 }
 
 function readCustomerGender(customer: AdminCustomer) {
