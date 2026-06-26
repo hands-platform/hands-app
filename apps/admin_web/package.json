@@ -10,27 +10,27 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@fullcalendar/core": "^6.1.20",
-    "@fullcalendar/daygrid": "^6.1.20",
-    "@fullcalendar/interaction": "^6.1.20",
-    "@fullcalendar/list": "^6.1.20",
-    "@fullcalendar/react": "^6.1.20",
-    "@fullcalendar/timegrid": "^6.1.20",
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/interaction": "^6.1.21",
+    "@fullcalendar/list": "^6.1.21",
+    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21",
     "lucide-react": "^0.542.0",
-    "next": "^16.0.0",
-    "react": "^19.1.1",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
     "react-datepicker": "^9.1.0",
-    "react-dom": "^19.1.1",
+    "react-dom": "^19.2.7",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "@types/node": "^24.3.0",
-    "@types/react": "^19.1.12",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.1.9",
     "jest": "^29.7.0",
-    "tailwindcss": "^4.1.12",
-    "ts-jest": "^29.4.5",
+    "tailwindcss": "^4.3.1",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.9.2"
   }
 }
