@@ -5,9 +5,22 @@ module.exports = {
   testMatch: ['**/*.spec.ts'],
   transform: {
     '^.+\\.ts$': [
-      'ts-jest',
+      '@swc/jest',
       {
-        tsconfig: '<rootDir>/tsconfig.spec.json',
+        jsc: {
+          parser: {
+            syntax: 'typescript',
+            decorators: true,
+          },
+          transform: {
+            decoratorMetadata: true,
+          },
+          target: 'es2022',
+          keepClassNames: true,
+        },
+        module: {
+          type: 'commonjs',
+        },
       },
     ],
   },
