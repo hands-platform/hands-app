@@ -3,6 +3,7 @@ import type {
   AdminBookingMatchSource,
   AdminBookingMatchingEvidence,
 } from './admin-api';
+import { getAdminAccessToken } from './admin-api';
 
 describe('admin api contract types', () => {
   it('keeps persisted booking match source closed to the API enum values', () => {
@@ -27,5 +28,26 @@ describe('admin api contract types', () => {
 
     expect(booking.matchSource).toBe('FIRST_PICK_ACCEPTED_FIRST');
     expect(matchingEvidence.matchSource).toBe('CUSTOMER_SELECTED_PARTNER');
+  });
+});
+
+describe('admin api auth guard', () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    jest.restoreAllMocks();
+  });
+
+  it('does not use the local demo OTP fallback in production', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: undefined,
+      NODE_ENV: 'production',
+    };
+    const fetchMock = jest.spyOn(global, 'fetch');
+
+    await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is required in production');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

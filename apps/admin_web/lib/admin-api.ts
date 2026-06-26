@@ -1608,6 +1608,9 @@ export async function getAdminAccessToken() {
   if (process.env.ADMIN_ACCESS_TOKEN) {
     return process.env.ADMIN_ACCESS_TOKEN;
   }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ADMIN_ACCESS_TOKEN is required in production');
+  }
 
   const now = Date.now();
   if (cachedAdminToken && cachedAdminToken.expiresAt > now + ADMIN_TOKEN_REFRESH_SKEW_MS) {
