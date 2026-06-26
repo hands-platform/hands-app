@@ -16,7 +16,7 @@ import {
 
 describe('booking gate helpers', () => {
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('accepts finite coordinate ranges before Vietnam service-area validation', () => {
@@ -26,7 +26,7 @@ describe('booking gate helpers', () => {
   });
 
   it('normalizes a fresh customer app location', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
 
     expect(
       normalizeBookingAttemptCurrentLocation(
@@ -46,7 +46,7 @@ describe('booking gate helpers', () => {
   });
 
   it('ignores stale, future, invalid, and disabled customer app locations', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
 
     expect(
       normalizeBookingAttemptCurrentLocation(

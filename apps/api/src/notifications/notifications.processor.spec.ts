@@ -8,10 +8,10 @@ describe('NotificationRetryProcessor', () => {
   it('skips missing notifications without sending push delivery', async () => {
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
-    const pushDelivery = { send: jest.fn() };
+    const pushDelivery = { send: vi.fn() };
     const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
 
     await expect(processor.process({ data: { notificationId: 'missing' } } as never)).resolves.toEqual({
@@ -24,7 +24,7 @@ describe('NotificationRetryProcessor', () => {
   it('skips notifications without enabled push devices before resolving partner-alert policy', async () => {
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking available',
@@ -37,10 +37,10 @@ describe('NotificationRetryProcessor', () => {
         }),
       },
       operationalPolicySetting: {
-        findUnique: jest.fn(),
+        findUnique: vi.fn(),
       },
     };
-    const pushDelivery = { send: jest.fn() };
+    const pushDelivery = { send: vi.fn() };
     const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
 
     await expect(
@@ -74,7 +74,7 @@ describe('NotificationRetryProcessor', () => {
   it('routes partner alert notifications through FCM only when policy selects FCM push', async () => {
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking available',
@@ -87,17 +87,17 @@ describe('NotificationRetryProcessor', () => {
         }),
       },
       operationalPolicySetting: {
-        findUnique: jest.fn().mockResolvedValue({ value: 'FCM_FOR_ALL_BOOKINGS' }),
+        findUnique: vi.fn().mockResolvedValue({ value: 'FCM_FOR_ALL_BOOKINGS' }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
         callback({
-          notificationDelivery: { create: jest.fn() },
-          pushDevice: { update: jest.fn() },
+          notificationDelivery: { create: vi.fn() },
+          pushDevice: { update: vi.fn() },
         }),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'FCM',
         status: 'SENT',
         disableDevice: false,
@@ -118,7 +118,7 @@ describe('NotificationRetryProcessor', () => {
   it('routes partner alert notifications to in-app delivery when policy has not enabled FCM', async () => {
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking available',
@@ -131,17 +131,17 @@ describe('NotificationRetryProcessor', () => {
         }),
       },
       operationalPolicySetting: {
-        findUnique: jest.fn().mockResolvedValue({ value: 'IN_APP_WITH_PUSH_LATER' }),
+        findUnique: vi.fn().mockResolvedValue({ value: 'IN_APP_WITH_PUSH_LATER' }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
         callback({
-          notificationDelivery: { create: jest.fn() },
-          pushDevice: { update: jest.fn() },
+          notificationDelivery: { create: vi.fn() },
+          pushDevice: { update: vi.fn() },
         }),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'IN_APP_ONLY',
         status: 'SKIPPED',
         disableDevice: false,
@@ -162,7 +162,7 @@ describe('NotificationRetryProcessor', () => {
   it('sends non partner alerts without reading partner alert policy', async () => {
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Payment update',
@@ -175,17 +175,17 @@ describe('NotificationRetryProcessor', () => {
         }),
       },
       operationalPolicySetting: {
-        findUnique: jest.fn(),
+        findUnique: vi.fn(),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
         callback({
-          notificationDelivery: { create: jest.fn() },
-          pushDevice: { update: jest.fn() },
+          notificationDelivery: { create: vi.fn() },
+          pushDevice: { update: vi.fn() },
         }),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'FCM',
         status: 'SENT',
         disableDevice: false,
@@ -207,15 +207,15 @@ describe('NotificationRetryProcessor', () => {
   it('sends only target-role push devices when notification data carries targetRole', async () => {
     const tx = {
       notificationDelivery: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
       pushDevice: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Earning created',
@@ -230,12 +230,12 @@ describe('NotificationRetryProcessor', () => {
           },
         }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
         callback(tx),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'FCM',
         status: 'SENT',
         disableDevice: false,
@@ -263,10 +263,10 @@ describe('NotificationRetryProcessor', () => {
   it('sends only the recent push-device budget for one notification job', async () => {
     const tx = {
       notificationDelivery: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
       pushDevice: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const devices = Array.from({ length: 12 }, (_, index) => ({
@@ -276,7 +276,7 @@ describe('NotificationRetryProcessor', () => {
     }));
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking update',
@@ -288,12 +288,12 @@ describe('NotificationRetryProcessor', () => {
           },
         }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
         callback(tx),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'FCM',
         status: 'SENT',
         disableDevice: false,
@@ -322,15 +322,15 @@ describe('NotificationRetryProcessor', () => {
   it('records one delivery result per enabled push device without disabling transient failures', async () => {
     const tx = {
       notificationDelivery: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
       pushDevice: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking update',
@@ -345,12 +345,12 @@ describe('NotificationRetryProcessor', () => {
           },
         }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
         callback(tx),
       ),
     };
     const pushDelivery = {
-      send: jest
+      send: vi
         .fn()
         .mockResolvedValueOnce({
           provider: 'FCM',
@@ -411,15 +411,15 @@ describe('NotificationRetryProcessor', () => {
   it('disables a push device after a permanent FCM token failure', async () => {
     const tx = {
       notificationDelivery: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
       pushDevice: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const prisma = {
       notification: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'notification-1',
           userId: 'user-1',
           title: 'Booking update',
@@ -436,12 +436,12 @@ describe('NotificationRetryProcessor', () => {
           },
         }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
         callback(tx),
       ),
     };
     const pushDelivery = {
-      send: jest.fn().mockResolvedValue({
+      send: vi.fn().mockResolvedValue({
         provider: 'FCM',
         status: 'FAILED',
         disableDevice: true,

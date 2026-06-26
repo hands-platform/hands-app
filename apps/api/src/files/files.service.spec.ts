@@ -8,20 +8,20 @@ describe('FilesService upload security', () => {
   function createService() {
     const prisma = {
       fileAsset: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'file-1', ...data })),
-        findUnique: jest.fn(),
-        update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'file-1', ...data })),
+        create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'file-1', ...data })),
+        findUnique: vi.fn(),
+        update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'file-1', ...data })),
       },
       providerProfile: {
-        findUnique: jest.fn(),
+        findUnique: vi.fn(),
       },
     };
     const s3 = {
-      bucketForVisibility: jest.fn().mockReturnValue('hands-public'),
-      configurationNote: jest.fn().mockReturnValue('Upload with PUT before the presigned URL expires.'),
-      presign: jest.fn().mockReturnValue('https://storage.example/upload'),
-      publicUrl: jest.fn().mockImplementation((key: string) => `https://cdn.example/${key}`),
-      storageMode: jest.fn().mockReturnValue('s3-compatible-presigned'),
+      bucketForVisibility: vi.fn().mockReturnValue('hands-public'),
+      configurationNote: vi.fn().mockReturnValue('Upload with PUT before the presigned URL expires.'),
+      presign: vi.fn().mockReturnValue('https://storage.example/upload'),
+      publicUrl: vi.fn().mockImplementation((key: string) => `https://cdn.example/${key}`),
+      storageMode: vi.fn().mockReturnValue('s3-compatible-presigned'),
     };
     return { prisma, s3, service: new FilesService(prisma as never, s3 as never) };
   }

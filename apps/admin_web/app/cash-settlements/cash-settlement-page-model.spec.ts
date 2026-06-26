@@ -12,11 +12,11 @@ const NOW = Date.parse('2026-06-10T09:00:00.000Z');
 
 describe('cash settlement page model', () => {
   beforeEach(() => {
-    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+    vi.spyOn(Date, 'now').mockReturnValue(NOW);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('builds open cash debt rows and summary without changing settlement state', () => {

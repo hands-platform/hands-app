@@ -3,12 +3,12 @@ import { DEFAULT_PROVIDER_OPS_POLICY, providerLocationStatus } from './partner-l
 
 describe('partner list ops policy', () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('uses the 90 minute low-cost location stale threshold by default', () => {
     const now = new Date('2026-06-07T10:00:00.000Z').getTime();
-    jest.spyOn(Date, 'now').mockReturnValue(now);
+    vi.spyOn(Date, 'now').mockReturnValue(now);
 
     expect(DEFAULT_PROVIDER_OPS_POLICY.staleLocationMinutes).toBe(90);
     expect(

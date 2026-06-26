@@ -4,7 +4,7 @@ import { MobileService } from './mobile.service';
 describe('MobileService device registration', () => {
   it('registers an Android device through the shared notification token upsert path', async () => {
     const prisma = {};
-    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-1' }) };
+    const notifications = { registerDeviceToken: vi.fn().mockResolvedValue({ id: 'device-1' }) };
     const service = new MobileService(prisma as never, notifications as never);
 
     await expect(
@@ -39,7 +39,7 @@ describe('MobileService device registration', () => {
 
   it('registers an iOS device without changing the active provider role', async () => {
     const prisma = {};
-    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-2' }) };
+    const notifications = { registerDeviceToken: vi.fn().mockResolvedValue({ id: 'device-2' }) };
     const service = new MobileService(prisma as never, notifications as never);
     const user = { id: 'multi-role-user', activeRole: Role.PROVIDER, roles: [Role.CUSTOMER, Role.PROVIDER] };
 
@@ -57,7 +57,7 @@ describe('MobileService device registration', () => {
 
   it('registers a web token through the same platform-neutral device path', async () => {
     const prisma = {};
-    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-web' }) };
+    const notifications = { registerDeviceToken: vi.fn().mockResolvedValue({ id: 'device-web' }) };
     const service = new MobileService(prisma as never, notifications as never);
 
     await service.registerDevice(
@@ -83,7 +83,7 @@ describe('MobileService device registration', () => {
 
   it('normalizes blank optional device metadata before registration', async () => {
     const prisma = {};
-    const notifications = { registerDeviceToken: jest.fn().mockResolvedValue({ id: 'device-3' }) };
+    const notifications = { registerDeviceToken: vi.fn().mockResolvedValue({ id: 'device-3' }) };
     const service = new MobileService(prisma as never, notifications as never);
 
     await service.registerDevice(
@@ -116,7 +116,7 @@ describe('MobileService device registration', () => {
 
   it('unregisters a device by disabling the authenticated token', async () => {
     const prisma = {};
-    const notifications = { disableDeviceToken: jest.fn().mockResolvedValue({ ok: true, disabled: 1 }) };
+    const notifications = { disableDeviceToken: vi.fn().mockResolvedValue({ ok: true, disabled: 1 }) };
     const service = new MobileService(prisma as never, notifications as never);
 
     await expect(
@@ -132,7 +132,7 @@ describe('MobileService device registration', () => {
 
 describe('MobileService app versions', () => {
   it('returns a default app version policy when no row exists', async () => {
-    const prisma = { appVersionPolicy: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const prisma = { appVersionPolicy: { findUnique: vi.fn().mockResolvedValue(null) } };
     const notifications = {};
     const service = new MobileService(prisma as never, notifications as never);
 
@@ -155,7 +155,7 @@ describe('MobileService app versions', () => {
   it('returns a default app version policy when the configured row is inactive', async () => {
     const prisma = {
       appVersionPolicy: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           appType: 'CUSTOMER',
           platform: 'IOS',
           minimumSupportedVersion: '9.9.9',
@@ -183,7 +183,7 @@ describe('MobileService app versions', () => {
   });
 
   it('returns a default app version policy for web when no row exists', async () => {
-    const prisma = { appVersionPolicy: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const prisma = { appVersionPolicy: { findUnique: vi.fn().mockResolvedValue(null) } };
     const notifications = {};
     const service = new MobileService(prisma as never, notifications as never);
 
@@ -206,7 +206,7 @@ describe('MobileService app versions', () => {
   it('returns platform-specific iOS app version policy rows', async () => {
     const prisma = {
       appVersionPolicy: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           appType: 'PARTNER',
           platform: 'IOS',
           minimumSupportedVersion: '1.0.0',

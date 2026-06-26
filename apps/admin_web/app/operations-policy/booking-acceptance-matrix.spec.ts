@@ -4,11 +4,11 @@ import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 
 describe('booking acceptance matrix builder', () => {
   beforeEach(() => {
-    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-06-13T03:00:00.000Z'));
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-06-13T03:00:00.000Z'));
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('builds aligned control cards and current Partner readiness impact', () => {

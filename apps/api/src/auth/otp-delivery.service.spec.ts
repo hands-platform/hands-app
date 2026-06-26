@@ -6,7 +6,7 @@ const originalFetch = global.fetch;
 
 function config(values: Record<string, string> = {}) {
   return {
-    get: jest.fn((key: string) => values[key]),
+    get: vi.fn((key: string) => values[key]),
   } as unknown as ConfigService;
 }
 
@@ -15,7 +15,7 @@ function service(values: Record<string, string> = {}) {
 }
 
 function mockFetch(response: Partial<Response> = { ok: true }) {
-  const fetchMock = jest.fn().mockResolvedValue(response) as jest.MockedFunction<typeof fetch>;
+  const fetchMock = vi.fn().mockResolvedValue(response) as ReturnType<typeof vi.fn> & typeof fetch;
   global.fetch = fetchMock;
   return fetchMock;
 }
@@ -23,12 +23,12 @@ function mockFetch(response: Partial<Response> = { ok: true }) {
 describe('OtpDeliveryService', () => {
   afterEach(() => {
     global.fetch = originalFetch;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('keeps local OTP delivery on the dev provider without calling SMS HTTP', async () => {
     const fetchMock = mockFetch();
-    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    const logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation();
 
     await expect(service({ SMS_PROVIDER: 'dev' }).deliverOtp('+84900000001', '123456')).resolves.toEqual({
       provider: 'dev',
@@ -76,7 +76,7 @@ describe('OtpDeliveryService', () => {
     const fetchMock = mockFetch({
       ok: true,
       status: 200,
-      text: jest.fn().mockResolvedValue(JSON.stringify({ messages: [{ status: '0' }] })),
+      text: vi.fn().mockResolvedValue(JSON.stringify({ messages: [{ status: '0' }] })),
     });
 
     await expect(
@@ -111,11 +111,11 @@ describe('OtpDeliveryService', () => {
   });
 
   it('fails safely when Vonage accepts the HTTP request but rejects the message', async () => {
-    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     mockFetch({
       ok: true,
       status: 200,
-      text: jest
+      text: vi
         .fn()
         .mockResolvedValue(
           JSON.stringify({ messages: [{ status: '4', 'error-text': 'rejected +84900000001 otp 654321' }] }),
@@ -138,11 +138,11 @@ describe('OtpDeliveryService', () => {
   });
 
   it('fails generic HTTP SMS without logging provider response contents', async () => {
-    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     mockFetch({
       ok: false,
       status: 503,
-      text: jest.fn().mockResolvedValue('provider rejected +84900000001 otp 654321 secret details'),
+      text: vi.fn().mockResolvedValue('provider rejected +84900000001 otp 654321 secret details'),
     });
 
     await expect(

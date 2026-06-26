@@ -39,7 +39,7 @@ describe('AdminRoundedPagination', () => {
       activePage: 1,
       ariaLabel: 'Pre-match pages',
       className: 'vuexy-booking-pagination',
-      onPageChange: jest.fn(),
+      onPageChange: vi.fn(),
       pageLinkClassName: 'vuexy-booking-page-link',
       totalPages: 2,
     });

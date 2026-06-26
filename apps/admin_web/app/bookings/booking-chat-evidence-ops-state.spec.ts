@@ -9,12 +9,12 @@ function chatReaders(
   overrides: Partial<BookingChatEvidenceNeedsOpsReaders> = {},
 ): BookingChatEvidenceNeedsOpsReaders {
   return {
-    chatQuietNeedsOps: jest.fn(() => false),
+    chatQuietNeedsOps: vi.fn(() => false),
     chatReady: true,
-    chatRepairNeedsOps: jest.fn(() => false),
-    decisionEvidenceMissing: jest.fn(() => false),
-    manualDecisionNeedsOps: jest.fn(() => false),
-    refundReviewNeedsOps: jest.fn(() => false),
+    chatRepairNeedsOps: vi.fn(() => false),
+    decisionEvidenceMissing: vi.fn(() => false),
+    manualDecisionNeedsOps: vi.fn(() => false),
+    refundReviewNeedsOps: vi.fn(() => false),
     ...overrides,
   };
 }
@@ -23,11 +23,11 @@ function decisionReaders(
   overrides: Partial<BookingDecisionEvidenceMissingReaders> = {},
 ): BookingDecisionEvidenceMissingReaders {
   return {
-    chatRepairNeedsOps: jest.fn(() => false),
-    hasAlertTrace: jest.fn(() => false),
-    hasChatMessage: jest.fn(() => false),
-    hasProviderLocation: jest.fn(() => false),
-    manualDecisionNeedsOps: jest.fn(() => false),
+    chatRepairNeedsOps: vi.fn(() => false),
+    hasAlertTrace: vi.fn(() => false),
+    hasChatMessage: vi.fn(() => false),
+    hasProviderLocation: vi.fn(() => false),
+    manualDecisionNeedsOps: vi.fn(() => false),
     ...overrides,
   };
 }
@@ -35,8 +35,8 @@ function decisionReaders(
 describe('bookingChatEvidenceNeedsOpsFromReaders', () => {
   it('short-circuits on chat repair evidence', () => {
     const readers = chatReaders({
-      chatRepairNeedsOps: jest.fn(() => true),
-      decisionEvidenceMissing: jest.fn(() => true),
+      chatRepairNeedsOps: vi.fn(() => true),
+      decisionEvidenceMissing: vi.fn(() => true),
     });
 
     expect(bookingChatEvidenceNeedsOpsFromReaders(readers)).toBe(true);

@@ -6,23 +6,23 @@ import { LocationsGateway } from './locations.gateway';
 describe('LocationsGateway provider location updates', () => {
   function createGateway() {
     const redisState = {
-      getProviderLocation: jest.fn().mockResolvedValue(null),
-      setProviderLocation: jest.fn().mockResolvedValue(undefined),
+      getProviderLocation: vi.fn().mockResolvedValue(null),
+      setProviderLocation: vi.fn().mockResolvedValue(undefined),
     };
     const socketAuth = {
-      requireUser: jest.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }),
-      authenticate: jest.fn(),
+      requireUser: vi.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }),
+      authenticate: vi.fn(),
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
       },
     };
-    const emit = jest.fn();
-    const to = jest.fn().mockReturnValue({ emit });
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
     const gateway = new LocationsGateway(redisState as never, socketAuth as never, prisma as never);
     gateway.server = { to } as never;
 

@@ -22,7 +22,7 @@ const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('review server actions', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedAdminPatch.mockResolvedValue(undefined);
   });
 

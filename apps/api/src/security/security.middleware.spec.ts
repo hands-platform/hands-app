@@ -26,10 +26,10 @@ describe('security middleware', () => {
   });
 
   it('rate limits auth routes by client, method, and path without query strings', () => {
-    const next = jest.fn();
-    const json = jest.fn();
-    const setHeader = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const next = vi.fn();
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const status = vi.fn(() => ({ json }));
     const middleware = rateLimitMiddleware({
       max: 2,
       pathPattern: /^\/api\/auth\//,
@@ -56,10 +56,10 @@ describe('security middleware', () => {
   });
 
   it('rate limits auth routes by a stable path depth when callers configure one', () => {
-    const next = jest.fn();
-    const json = jest.fn();
-    const setHeader = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const next = vi.fn();
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const status = vi.fn(() => ({ json }));
     const middleware = rateLimitMiddleware({
       max: 2,
       pathPattern: /^\/api\/auth\//,
@@ -87,8 +87,8 @@ describe('security middleware', () => {
   });
 
   it('sets browser hardening headers and only sends HSTS in production', () => {
-    const next = jest.fn();
-    const setHeader = jest.fn();
+    const next = vi.fn();
+    const setHeader = vi.fn();
 
     process.env.NODE_ENV = 'development';
     securityHeadersMiddleware({}, { setHeader }, next);

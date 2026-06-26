@@ -5,10 +5,10 @@ import { MatchingGateway } from './matching.gateway';
 describe('MatchingGateway admin booking realtime', () => {
   it('joins admin sockets to the booking monitor room', async () => {
     const gateway = new MatchingGateway(
-      { authenticate: jest.fn().mockResolvedValue({ id: 'admin-user', roles: [Role.ADMIN] }) } as never,
+      { authenticate: vi.fn().mockResolvedValue({ id: 'admin-user', roles: [Role.ADMIN] }) } as never,
       {} as never,
     );
-    const client = { join: jest.fn() };
+    const client = { join: vi.fn() };
 
     await gateway.handleConnection(client as never);
 
@@ -18,8 +18,8 @@ describe('MatchingGateway admin booking realtime', () => {
 
   it('mirrors booking lifecycle events to the admin booking monitor room', () => {
     const gateway = new MatchingGateway({} as never, {} as never);
-    const emit = jest.fn();
-    const to = jest.fn().mockReturnValue({ emit });
+    const emit = vi.fn();
+    const to = vi.fn().mockReturnValue({ emit });
     gateway.server = { to } as never;
     const payload = { bookingId: 'booking-1' };
 
@@ -33,17 +33,17 @@ describe('MatchingGateway admin booking realtime', () => {
   it('does not join customer sockets to bookings they do not own', async () => {
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const gateway = new MatchingGateway(
-      { requireUser: jest.fn().mockReturnValue({ id: 'customer-user-1', roles: [Role.CUSTOMER] }) } as never,
+      { requireUser: vi.fn().mockReturnValue({ id: 'customer-user-1', roles: [Role.CUSTOMER] }) } as never,
       prisma as never,
     );
-    const client = { join: jest.fn() };
+    const client = { join: vi.fn() };
 
     await expect(gateway.joinBookingRoom(client as never, { bookingId: 'booking-for-another-customer' })).resolves.toEqual({
       ok: false,
@@ -60,17 +60,17 @@ describe('MatchingGateway admin booking realtime', () => {
   it('joins provider sockets to bookings where they are participants', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1' }),
       },
     };
     const gateway = new MatchingGateway(
-      { requireUser: jest.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }) } as never,
+      { requireUser: vi.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }) } as never,
       prisma as never,
     );
-    const client = { join: jest.fn() };
+    const client = { join: vi.fn() };
 
     await expect(gateway.joinBookingRoom(client as never, { bookingId: 'booking-1' })).resolves.toEqual({ ok: true });
 

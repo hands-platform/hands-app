@@ -76,39 +76,39 @@ describe('BookingsService booking creation', () => {
     };
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       massageService: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
       },
       booking: {
-        create: jest.fn().mockResolvedValue(booking),
-        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
-        update: jest.fn().mockResolvedValue({}),
+        create: vi.fn().mockResolvedValue(booking),
+        findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
+        update: vi.fn().mockResolvedValue({}),
       },
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
-      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
-      registerActiveBooking: jest.fn(),
-      scheduleBookingTimeout: jest.fn(),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
     };
     const matchingGateway = {
-      emitBookingOpened: jest.fn(),
-      emitBackupBookingAvailable: jest.fn(),
+      emitBookingOpened: vi.fn(),
+      emitBackupBookingAvailable: vi.fn(),
     };
     const payments = {
-      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
-      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
-      scheduleStatusCheck: jest.fn(),
+      buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: vi.fn(),
     };
-    const notifications = { create: jest.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -211,45 +211,45 @@ describe('BookingsService booking creation', () => {
     };
     const prisma = {
       adminAuditLog: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       massageService: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
       },
       booking: {
-        create: jest.fn().mockResolvedValue(booking),
-        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
-        update: jest.fn().mockResolvedValue({}),
+        create: vi.fn().mockResolvedValue(booking),
+        findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
+        update: vi.fn().mockResolvedValue({}),
       },
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue({
+      getPolicy: vi.fn().mockResolvedValue({
         ...matchingPolicy(),
         backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
       }),
-      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
-      registerActiveBooking: jest.fn(),
-      scheduleBookingTimeout: jest.fn(),
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
     };
     const matchingGateway = {
-      emitBookingOpened: jest.fn(),
-      emitBackupBookingAvailable: jest.fn(),
+      emitBookingOpened: vi.fn(),
+      emitBackupBookingAvailable: vi.fn(),
     };
     const payments = {
-      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
-      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
-      scheduleStatusCheck: jest.fn(),
+      buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: vi.fn(),
     };
-    const notifications = { create: jest.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -366,24 +366,24 @@ describe('BookingsService booking creation', () => {
     });
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       massageService: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(massageService()),
       },
       servicePayoutRule: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'rule-1' }),
       },
       booking: {
-        create: jest.fn().mockResolvedValue(booking),
-        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
-        update: jest.fn().mockResolvedValue({}),
+        create: vi.fn().mockResolvedValue(booking),
+        findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
+        update: vi.fn().mockResolvedValue({}),
       },
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([cleanPartner, negativeWalletPartner]),
+        findMany: vi.fn().mockResolvedValue([cleanPartner, negativeWalletPartner]),
       },
       providerEarning: {
-        groupBy: jest.fn().mockResolvedValue([
+        groupBy: vi.fn().mockResolvedValue([
           {
             providerProfileId: 'negative-wallet-partner',
             _sum: { netAmount: -120000 },
@@ -392,21 +392,21 @@ describe('BookingsService booking creation', () => {
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
-      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
-      registerActiveBooking: jest.fn(),
-      scheduleBookingTimeout: jest.fn(),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
     };
     const matchingGateway = {
-      emitBookingOpened: jest.fn(),
-      emitBackupBookingAvailable: jest.fn(),
+      emitBookingOpened: vi.fn(),
+      emitBackupBookingAvailable: vi.fn(),
     };
     const payments = {
-      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
-      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
-      scheduleStatusCheck: jest.fn(),
+      buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: vi.fn(),
     };
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -463,40 +463,40 @@ describe('BookingsService final partner selection', () => {
     const matchedBooking = matchedBookingWithAddressSnapshot();
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
           preferredProviderId: 'partner-1',
         }),
-        update: jest.fn().mockResolvedValue(matchedBooking),
+        update: vi.fn().mockResolvedValue(matchedBooking),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           bookingId: 'booking-1',
           providerProfileId: 'partner-1',
           status: ParticipantStatus.ACCEPTED,
         }),
       },
-      adminAuditLog: { create: jest.fn() },
+      adminAuditLog: { create: vi.fn() },
       providerEarning: {
-        aggregate: jest.fn(),
+        aggregate: vi.fn(),
       },
     };
     const transaction = attachTransaction(prisma);
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn().mockReturnValue({
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn().mockReturnValue({
         bookingId: 'booking-1',
         event: 'booking.matched',
         booking: matchedBooking,
       }),
     };
-    const matchingGateway = { emitBookingMatched: jest.fn() };
-    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitBookingMatched: vi.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -529,7 +529,7 @@ describe('BookingsService final partner selection', () => {
   });
 
   it('allows the customer to select a joined marketplace partner when wallet is clear', async () => {
-    const adminAuditLogCreate = jest.fn();
+    const adminAuditLogCreate = vi.fn();
     const marketplacePartner = approvedPartner({
       id: 'marketplace-partner',
       userId: 'marketplace-user-1',
@@ -547,40 +547,40 @@ describe('BookingsService final partner selection', () => {
     };
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
           preferredProviderId: 'first-pick-partner',
         }),
-        update: jest.fn().mockResolvedValue(matchedBooking),
+        update: vi.fn().mockResolvedValue(matchedBooking),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           bookingId: 'booking-1',
           providerProfileId: 'marketplace-partner',
           status: ParticipantStatus.JOINED,
         }),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
       adminAuditLog: { create: adminAuditLogCreate },
     };
     const transaction = attachTransaction(prisma);
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn().mockReturnValue({
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn().mockReturnValue({
         bookingId: 'booking-1',
         event: 'booking.matched',
         booking: matchedBooking,
       }),
     };
-    const matchingGateway = { emitBookingMatched: jest.fn() };
-    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitBookingMatched: vi.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -667,36 +667,36 @@ describe('BookingsService final partner selection', () => {
     });
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
           preferredProviderId: 'first-pick-partner',
         }),
-        update: jest.fn().mockRejectedValue(raceError),
+        update: vi.fn().mockRejectedValue(raceError),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           bookingId: 'booking-1',
           providerProfileId: marketplacePartner.id,
           status: ParticipantStatus.JOINED,
         }),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
-      adminAuditLog: { create: jest.fn() },
+      adminAuditLog: { create: vi.fn() },
     };
     const transaction = attachTransaction(prisma);
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn(),
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn(),
     };
-    const matchingGateway = { emitBookingMatched: jest.fn() };
-    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitBookingMatched: vi.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -730,31 +730,31 @@ describe('BookingsService final partner selection', () => {
   it('blocks customer final selection for a preferred first-pick partner until that partner accepts', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
           preferredProviderId: 'first-pick-partner',
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           bookingId: 'booking-1',
           providerProfileId: 'first-pick-partner',
           status: ParticipantStatus.JOINED,
         }),
       },
       providerEarning: {
-        aggregate: jest.fn(),
+        aggregate: vi.fn(),
       },
     };
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn(),
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn(),
     };
     const service = new BookingsService(
       prisma as never,
@@ -786,36 +786,36 @@ describe('BookingsService final partner selection', () => {
     };
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
           preferredProviderId: 'first-pick-partner',
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           bookingId: 'booking-1',
           providerProfileId: 'marketplace-partner',
           status: ParticipantStatus.JOINED,
         }),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -70000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -70000 } }),
       },
-      adminAuditLog: { create: jest.fn() },
+      adminAuditLog: { create: vi.fn() },
     };
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.matched' }),
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.matched' }),
     };
     prisma.booking.update.mockResolvedValue(selectedBooking);
-    const notifications = { create: jest.fn() };
-    const matchingGateway = { emitBookingMatched: jest.fn() };
+    const notifications = { create: vi.fn() };
+    const matchingGateway = { emitBookingMatched: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -855,22 +855,22 @@ describe('BookingsService provider service lifecycle', () => {
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           selectedProviderId: 'partner-1',
           status: BookingStatus.ARRIVED,
         }),
-        update: jest.fn().mockResolvedValue(startedBooking),
+        update: vi.fn().mockResolvedValue(startedBooking),
       },
     };
-    const notifications = { create: jest.fn() };
-    const matchingGateway = { emitServiceStarted: jest.fn() };
+    const notifications = { create: vi.fn() };
+    const matchingGateway = { emitServiceStarted: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       {} as never,
@@ -914,7 +914,7 @@ describe('BookingsService provider service lifecycle', () => {
   });
 
   it('auto-approves partner post-match cancellations inside the 15-minute window', async () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-01T10:10:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-01T10:10:00.000Z'));
     const earning = {
       id: 'earning-1',
       bookingId: 'booking-1',
@@ -925,7 +925,7 @@ describe('BookingsService provider service lifecycle', () => {
     };
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.MATCHED,
           notes: null,
@@ -933,26 +933,26 @@ describe('BookingsService provider service lifecycle', () => {
           selectedProviderId: 'partner-1',
           earning,
         }),
-        update: jest.fn().mockResolvedValue(providerCancelledBooking()),
+        update: vi.fn().mockResolvedValue(providerCancelledBooking()),
       },
       providerEarning: {
-        update: jest.fn().mockResolvedValue({ ...earning, status: EarningStatus.CANCELLED, netAmount: 0 }),
+        update: vi.fn().mockResolvedValue({ ...earning, status: EarningStatus.CANCELLED, netAmount: 0 }),
       },
-      providerWalletLedgerEntry: { upsert: jest.fn() },
-      adminAuditLog: { create: jest.fn() },
+      providerWalletLedgerEntry: { upsert: vi.fn() },
+      adminAuditLog: { create: vi.fn() },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       locationSnapshot: {
-        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
       },
-      $transaction: jest.fn((callback) => callback(tx)),
+      $transaction: vi.fn((callback) => callback(tx)),
     };
-    const matching = { closeBooking: jest.fn() };
-    const matchingGateway = { emitBookingExpired: jest.fn() };
-    const notifications = { create: jest.fn() };
+    const matching = { closeBooking: vi.fn() };
+    const matchingGateway = { emitBookingExpired: vi.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1024,19 +1024,19 @@ describe('BookingsService provider service lifecycle', () => {
         }),
       );
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 
   it('rejects partner post-match cancellations before closeout when action location is missing', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       locationSnapshot: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
-      $transaction: jest.fn(),
+      $transaction: vi.fn(),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1056,10 +1056,10 @@ describe('BookingsService provider service lifecycle', () => {
   });
 
   it('queues partner post-match cancellations after 15 minutes for admin review', async () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-01T10:16:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-01T10:16:00.000Z'));
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.ARRIVED,
           notes: null,
@@ -1067,24 +1067,24 @@ describe('BookingsService provider service lifecycle', () => {
           selectedProviderId: 'partner-1',
           earning: null,
         }),
-        update: jest.fn().mockResolvedValue(providerCancelledBooking()),
+        update: vi.fn().mockResolvedValue(providerCancelledBooking()),
       },
-      providerEarning: { update: jest.fn() },
-      providerWalletLedgerEntry: { upsert: jest.fn() },
-      adminAuditLog: { create: jest.fn() },
+      providerEarning: { update: vi.fn() },
+      providerWalletLedgerEntry: { upsert: vi.fn() },
+      adminAuditLog: { create: vi.fn() },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       locationSnapshot: {
-        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
       },
-      $transaction: jest.fn((callback) => callback(tx)),
+      $transaction: vi.fn((callback) => callback(tx)),
     };
-    const matching = { closeBooking: jest.fn() };
-    const matchingGateway = { emitBookingExpired: jest.fn() };
-    const notifications = { create: jest.fn() };
+    const matching = { closeBooking: vi.fn() };
+    const matchingGateway = { emitBookingExpired: vi.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1146,7 +1146,7 @@ describe('BookingsService provider service lifecycle', () => {
         }),
       );
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 });
@@ -1156,10 +1156,10 @@ describe('BookingsService service completion', () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest
+        findUniqueOrThrow: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'booking-1',
@@ -1169,23 +1169,23 @@ describe('BookingsService service completion', () => {
           .mockResolvedValueOnce({
             customerProfile: { userId: 'customer-user-1' },
           }),
-        update: jest.fn().mockResolvedValue(completedBooking),
-        count: jest.fn().mockResolvedValue(2),
+        update: vi.fn().mockResolvedValue(completedBooking),
+        count: vi.fn().mockResolvedValue(2),
       },
       locationSnapshot: {
-        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
       },
     };
     const matching = {
-      completeBooking: jest.fn().mockReturnValue({
+      completeBooking: vi.fn().mockReturnValue({
         bookingId: 'booking-1',
         event: 'service.completed',
         booking: completedBooking,
       }),
     };
-    const matchingGateway = { emitServiceCompleted: jest.fn() };
-    const notifications = { create: jest.fn() };
-    const earnings = { createForCompletedBooking: jest.fn() };
+    const matchingGateway = { emitServiceCompleted: vi.fn() };
+    const notifications = { create: vi.fn() };
+    const earnings = { createForCompletedBooking: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1223,10 +1223,10 @@ describe('BookingsService service completion', () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest
+        findUniqueOrThrow: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'booking-1',
@@ -1236,23 +1236,23 @@ describe('BookingsService service completion', () => {
           .mockResolvedValueOnce({
             customerProfile: { userId: 'customer-user-1' },
           }),
-        update: jest.fn().mockResolvedValue(completedBooking),
-        count: jest.fn().mockResolvedValue(2),
+        update: vi.fn().mockResolvedValue(completedBooking),
+        count: vi.fn().mockResolvedValue(2),
       },
       locationSnapshot: {
-        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
       },
     };
     const matching = {
-      completeBooking: jest.fn().mockReturnValue({
+      completeBooking: vi.fn().mockReturnValue({
         bookingId: 'booking-1',
         event: 'service.completed',
         booking: completedBooking,
       }),
     };
-    const matchingGateway = { emitServiceCompleted: jest.fn() };
-    const notifications = { create: jest.fn() };
-    const earnings = { createForCompletedBooking: jest.fn() };
+    const matchingGateway = { emitServiceCompleted: vi.fn() };
+    const notifications = { create: vi.fn() };
+    const earnings = { createForCompletedBooking: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1283,18 +1283,18 @@ describe('BookingsService service completion', () => {
   it('rejects completion before closeout when Partner action location is missing', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           selectedProviderId: 'partner-1',
           status: BookingStatus.IN_SERVICE,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
       locationSnapshot: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
     };
     const service = new BookingsService(
@@ -1327,7 +1327,7 @@ describe('BookingsService partner customer evaluations', () => {
     };
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'customer-1',
@@ -1335,15 +1335,15 @@ describe('BookingsService partner customer evaluations', () => {
         }),
       },
       providerCustomerReview: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue(createdReview),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(createdReview),
       },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
-      $transaction: jest.fn((callback) => callback(tx)),
+      $transaction: vi.fn((callback) => callback(tx)),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1386,7 +1386,7 @@ describe('BookingsService partner customer evaluations', () => {
   it('rejects duplicate Partner customer evaluations for the same booking', async () => {
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'customer-1',
@@ -1394,15 +1394,15 @@ describe('BookingsService partner customer evaluations', () => {
         }),
       },
       providerCustomerReview: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'existing-review-1' }),
-        create: jest.fn(),
+        findUnique: vi.fn().mockResolvedValue({ id: 'existing-review-1' }),
+        create: vi.fn(),
       },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
-      $transaction: jest.fn((callback) => callback(tx)),
+      $transaction: vi.fn((callback) => callback(tx)),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1425,7 +1425,7 @@ describe('BookingsService partner customer evaluations', () => {
   it('rejects Partner customer evaluations before service completion', async () => {
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.IN_SERVICE,
           customerProfileId: 'customer-1',
@@ -1433,15 +1433,15 @@ describe('BookingsService partner customer evaluations', () => {
         }),
       },
       providerCustomerReview: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
+        findUnique: vi.fn(),
+        create: vi.fn(),
       },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
-      $transaction: jest.fn((callback) => callback(tx)),
+      $transaction: vi.fn((callback) => callback(tx)),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1468,10 +1468,10 @@ describe('BookingsService customer cancellation', () => {
     const cancelledBooking = cancelledBookingWithAddressSnapshot();
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
       },
       booking: {
-        findFirstOrThrow: jest.fn().mockResolvedValue({
+        findFirstOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           status: BookingStatus.OPEN_MATCHING,
@@ -1481,15 +1481,15 @@ describe('BookingsService customer cancellation', () => {
           participants: [],
           payment: { id: 'payment-1' },
         }),
-        update: jest.fn().mockResolvedValue(cancelledBooking),
+        update: vi.fn().mockResolvedValue(cancelledBooking),
       },
     };
-    const matching = { closeBooking: jest.fn() };
-    const matchingGateway = { emitBookingExpired: jest.fn() };
+    const matching = { closeBooking: vi.fn() };
+    const matchingGateway = { emitBookingExpired: vi.fn() };
     const payments = {
-      release: jest.fn().mockResolvedValue(cancelledBooking.payment),
+      release: vi.fn().mockResolvedValue(cancelledBooking.payment),
     };
-    const notifications = { create: jest.fn() };
+    const notifications = { create: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1537,17 +1537,17 @@ describe('BookingsService marketplace participation', () => {
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findMany: jest.fn().mockResolvedValue([openBooking]),
+        findMany: vi.fn().mockResolvedValue([openBooking]),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1571,14 +1571,14 @@ describe('BookingsService marketplace participation', () => {
   it('hides new open requests while the partner has unfinished selected work', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(
+        findUnique: vi.fn().mockResolvedValue(
           approvedPartner({
             selectedBookings: [{ id: 'active-booking-1', status: BookingStatus.IN_SERVICE }],
           }),
         ),
       },
       booking: {
-        findMany: jest.fn(),
+        findMany: vi.fn(),
       },
     };
     const service = new BookingsService(
@@ -1596,7 +1596,7 @@ describe('BookingsService marketplace participation', () => {
   });
 
   it('allows a negative-wallet partner to join before final acceptance', async () => {
-    const bookingParticipantUpsert = jest.fn().mockResolvedValue({
+    const bookingParticipantUpsert = vi.fn().mockResolvedValue({
       id: 'participant-1',
       bookingId: 'booking-1',
       providerProfileId: 'partner-1',
@@ -1606,31 +1606,31 @@ describe('BookingsService marketplace participation', () => {
     });
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest
+        findUniqueOrThrow: vi
           .fn()
           .mockResolvedValueOnce(openMarketplaceBooking())
           .mockResolvedValueOnce({ customerProfile: { userId: 'customer-user-1' } }),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
       },
       bookingParticipant: {
         upsert: bookingParticipantUpsert,
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue({
+      getPolicy: vi.fn().mockResolvedValue({
         ...matchingPolicy(),
         backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
       }),
-      registerParticipant: jest.fn(),
-      joinBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
+      registerParticipant: vi.fn(),
+      joinBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
     };
-    const notifications = { create: jest.fn() };
-    const matchingGateway = { emitProviderJoined: jest.fn() };
+    const notifications = { create: vi.fn() };
+    const matchingGateway = { emitProviderJoined: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1651,7 +1651,7 @@ describe('BookingsService marketplace participation', () => {
   });
 
   it('does not apply the marketplace wallet gate to the preferred first-pick partner', async () => {
-    const bookingParticipantUpsert = jest.fn().mockResolvedValue({
+    const bookingParticipantUpsert = vi.fn().mockResolvedValue({
       id: 'participant-1',
       bookingId: 'booking-1',
       providerProfileId: 'partner-1',
@@ -1661,28 +1661,28 @@ describe('BookingsService marketplace participation', () => {
     });
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest
+        findUniqueOrThrow: vi
           .fn()
           .mockResolvedValueOnce(openFirstPickBooking())
           .mockResolvedValueOnce({ customerProfile: { userId: 'customer-user-1' } }),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
       },
       bookingParticipant: {
         upsert: bookingParticipantUpsert,
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
-      registerParticipant: jest.fn(),
-      joinBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      registerParticipant: vi.fn(),
+      joinBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
     };
-    const notifications = { create: jest.fn() };
-    const matchingGateway = { emitProviderJoined: jest.fn() };
+    const notifications = { create: vi.fn() };
+    const matchingGateway = { emitProviderJoined: vi.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -1702,10 +1702,10 @@ describe('BookingsService marketplace participation', () => {
   });
 
   it('blocks marketplace participation outside the booking-address radius', async () => {
-    const bookingParticipantUpsert = jest.fn();
+    const bookingParticipantUpsert = vi.fn();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(
+        findUnique: vi.fn().mockResolvedValue(
           approvedPartner({
             currentLat: 10.0,
             currentLng: 106.0,
@@ -1713,19 +1713,19 @@ describe('BookingsService marketplace participation', () => {
         ),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue(openMarketplaceBooking()),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(openMarketplaceBooking()),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
       bookingParticipant: {
         upsert: bookingParticipantUpsert,
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
-      registerParticipant: jest.fn(),
-      joinBooking: jest.fn(),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      registerParticipant: vi.fn(),
+      joinBooking: vi.fn(),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1748,13 +1748,13 @@ describe('BookingsService marketplace participation', () => {
 
 describe('BookingsService partner response wallet gates', () => {
   it('blocks a marketplace partner with a negative wallet before accepting the request', async () => {
-    const bookingParticipantUpdate = jest.fn();
+    const bookingParticipantUpdate = vi.fn();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           ...openMarketplaceBooking(),
           customerProfile: { userId: 'customer-user-1' },
           preferredProvider: null,
@@ -1764,11 +1764,11 @@ describe('BookingsService partner response wallet gates', () => {
         }),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'participant-1' }),
         update: bookingParticipantUpdate,
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
       },
     };
     const service = new BookingsService(
@@ -1803,8 +1803,8 @@ describe('BookingsService partner response wallet gates', () => {
   });
 
   it('matches the booking when the preferred first-pick partner accepts first', async () => {
-    const bookingParticipantUpdate = jest.fn();
-    const adminAuditLogCreate = jest.fn();
+    const bookingParticipantUpdate = vi.fn();
+    const adminAuditLogCreate = vi.fn();
     const matchedBooking = {
       ...openFirstPickBooking(),
       status: BookingStatus.MATCHED,
@@ -1817,10 +1817,10 @@ describe('BookingsService partner response wallet gates', () => {
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           ...openFirstPickBooking(),
           customerProfile: { userId: 'customer-user-1' },
           preferredProvider: approvedPartner(),
@@ -1828,22 +1828,22 @@ describe('BookingsService partner response wallet gates', () => {
           chatRoom: null,
           services: [{ serviceId: 'service-1' }],
         }),
-        update: jest.fn().mockResolvedValue(matchedBooking),
+        update: vi.fn().mockResolvedValue(matchedBooking),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'participant-1' }),
         update: bookingParticipantUpdate,
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
       },
       adminAuditLog: { create: adminAuditLogCreate },
     };
     const transaction = attachTransaction(prisma);
-    const notifications = { create: jest.fn() };
+    const notifications = { create: vi.fn() };
     const matching = {
-      closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn().mockReturnValue({
+      closeBooking: vi.fn(),
+      selectFinalProvider: vi.fn().mockReturnValue({
         bookingId: 'booking-1',
         event: 'booking.matched',
         matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
@@ -1851,8 +1851,8 @@ describe('BookingsService partner response wallet gates', () => {
       }),
     };
     const matchingGateway = {
-      emitBookingMatched: jest.fn(),
-      emitProviderAccepted: jest.fn(),
+      emitBookingMatched: vi.fn(),
+      emitProviderAccepted: vi.fn(),
     };
     const service = new BookingsService(
       prisma as never,
@@ -1941,18 +1941,18 @@ describe('BookingsService partner response wallet gates', () => {
         longitude: 106.7009,
       },
     };
-    const bookingParticipantUpdate = jest.fn();
+    const bookingParticipantUpdate = vi.fn();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(firstPickPartner),
-        findMany: jest.fn().mockResolvedValue([nearbyBackupPartner]),
+        findUnique: vi.fn().mockResolvedValue(firstPickPartner),
+        findMany: vi.fn().mockResolvedValue([nearbyBackupPartner]),
       },
       providerEarning: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
       booking: {
-        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({ metadata: {} }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           ...openFirstPickBooking(),
           ...staleMutableCoordinates,
           customerProfile: { userId: 'customer-user-1' },
@@ -1961,7 +1961,7 @@ describe('BookingsService partner response wallet gates', () => {
           chatRoom: null,
           services: [{ serviceId: 'service-1' }],
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           ...openFirstPickBooking(),
           ...staleMutableCoordinates,
           customerProfile: { userId: 'customer-user-1' },
@@ -1972,19 +1972,19 @@ describe('BookingsService partner response wallet gates', () => {
         }),
       },
       bookingParticipant: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'participant-1' }),
         update: bookingParticipantUpdate,
       },
     };
     const matching = {
-      closeBooking: jest.fn(),
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
-      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
-      registerActiveBooking: jest.fn(),
-      scheduleBookingTimeout: jest.fn(),
+      closeBooking: vi.fn(),
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
     };
-    const matchingGateway = { emitBackupBookingAvailable: jest.fn() };
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const matchingGateway = { emitBackupBookingAvailable: vi.fn() };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const service = new BookingsService(
       prisma as never,
       matching as never,
@@ -2192,7 +2192,7 @@ function matchingPolicy() {
 }
 
 function attachTransaction<T extends Record<string, unknown>>(client: T) {
-  const transaction = jest.fn(async (callback: (transactionClient: T) => Promise<unknown>) =>
+  const transaction = vi.fn(async (callback: (transactionClient: T) => Promise<unknown>) =>
     callback(client),
   );
   Object.assign(client, { $transaction: transaction });

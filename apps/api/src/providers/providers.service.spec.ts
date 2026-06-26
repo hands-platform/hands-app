@@ -38,14 +38,14 @@ describe('ProvidersService nearby discovery', () => {
   it('requests only published review ratings in public nearby discovery', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([nearbyProviderFixture()]),
+        findMany: vi.fn().mockResolvedValue([nearbyProviderFixture()]),
       },
     };
     const service = new ProvidersService(
       prisma as never,
       {} as never,
       {
-        get: jest.fn(),
+        get: vi.fn(),
       } as never,
     );
 
@@ -78,7 +78,7 @@ describe('ProvidersService nearby discovery', () => {
   it('does not expose private review or media storage fields in public partner detail', async () => {
     const prisma = {
       providerProfile: {
-        findFirstOrThrow: jest.fn().mockResolvedValue({
+        findFirstOrThrow: vi.fn().mockResolvedValue({
           id: 'partner-hcm',
           displayName: 'Linh Wellness',
           user: {
@@ -128,7 +128,7 @@ describe('ProvidersService nearby discovery', () => {
       prisma as never,
       {} as never,
       {
-        get: jest.fn(),
+        get: vi.fn(),
       } as never,
     );
 
@@ -163,19 +163,19 @@ describe('ProvidersService nearby discovery', () => {
 
 describe('ProvidersService location updates', () => {
   it('links action-time partner location snapshots to the booking context', async () => {
-    const setProviderLocation = jest.fn();
-    const getProviderLocation = jest.fn().mockResolvedValue(null);
+    const setProviderLocation = vi.fn();
+    const getProviderLocation = vi.fn().mockResolvedValue(null);
     const prisma = {
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
       },
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'partner-1',
           blockedAt: null,
           blockedReason: null,
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'partner-1',
           currentLat: 10.7769,
           currentLng: 106.7009,
@@ -186,7 +186,7 @@ describe('ProvidersService location updates', () => {
     const service = new ProvidersService(
       prisma as never,
       { getProviderLocation, setProviderLocation } as never,
-      { get: jest.fn() } as never,
+      { get: vi.fn() } as never,
     );
 
     await service.updateLocation('provider-user-1', {
@@ -225,21 +225,21 @@ describe('ProvidersService location updates', () => {
   it('rejects booking-linked partner locations for unrelated bookings', async () => {
     const prisma = {
       booking: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'partner-1',
           blockedAt: null,
           blockedReason: null,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const service = new ProvidersService(
       prisma as never,
-      { setProviderLocation: jest.fn() } as never,
-      { get: jest.fn() } as never,
+      { setProviderLocation: vi.fn() } as never,
+      { get: vi.fn() } as never,
     );
 
     await expect(
@@ -255,21 +255,21 @@ describe('ProvidersService location updates', () => {
   it('rejects booking-linked partner locations after the booking is no longer active', async () => {
     const prisma = {
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED }),
       },
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'partner-1',
           blockedAt: null,
           blockedReason: null,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const service = new ProvidersService(
       prisma as never,
-      { getProviderLocation: jest.fn(), setProviderLocation: jest.fn() } as never,
-      { get: jest.fn() } as never,
+      { getProviderLocation: vi.fn(), setProviderLocation: vi.fn() } as never,
+      { get: vi.fn() } as never,
     );
 
     await expect(
@@ -284,27 +284,27 @@ describe('ProvidersService location updates', () => {
 
   it('skips too-frequent idle partner location writes before touching Postgres', async () => {
     const now = new Date();
-    const getProviderLocation = jest.fn().mockResolvedValue({
+    const getProviderLocation = vi.fn().mockResolvedValue({
       lat: 10.7769,
       lng: 106.7009,
       recordedAt: now.toISOString(),
     });
-    const setProviderLocation = jest.fn();
+    const setProviderLocation = vi.fn();
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'partner-1',
           blockedAt: null,
           blockedReason: null,
           currentLocationUpdatedAt: now,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const service = new ProvidersService(
       prisma as never,
       { getProviderLocation, setProviderLocation } as never,
-      { get: jest.fn() } as never,
+      { get: vi.fn() } as never,
     );
 
     const result = await service.updateLocation('provider-user-1', {
@@ -324,30 +324,30 @@ describe('ProvidersService location updates', () => {
 
   it('skips too-frequent active booking partner location writes before touching Postgres', async () => {
     const now = new Date();
-    const getProviderLocation = jest.fn().mockResolvedValue({
+    const getProviderLocation = vi.fn().mockResolvedValue({
       lat: 10.7769,
       lng: 106.7009,
       recordedAt: now.toISOString(),
     });
-    const setProviderLocation = jest.fn();
+    const setProviderLocation = vi.fn();
     const prisma = {
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
       },
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'partner-1',
           blockedAt: null,
           blockedReason: null,
           currentLocationUpdatedAt: now,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const service = new ProvidersService(
       prisma as never,
       { getProviderLocation, setProviderLocation } as never,
-      { get: jest.fn() } as never,
+      { get: vi.fn() } as never,
     );
 
     const result = await service.updateLocation('provider-user-1', {
@@ -371,12 +371,12 @@ function createServiceWithNearbyProviders(providers: unknown[]) {
   return new ProvidersService(
     {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue(providers),
+        findMany: vi.fn().mockResolvedValue(providers),
       },
     } as never,
     {} as never,
     {
-      get: jest.fn(),
+      get: vi.fn(),
     } as never,
   );
 }

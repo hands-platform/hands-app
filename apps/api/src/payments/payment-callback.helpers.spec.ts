@@ -23,11 +23,11 @@ import {
 
 describe('payment callback helpers', () => {
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('builds callback raw metadata with verification details', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-11T00:00:00.000Z'));
 
     expect(
       callbackRawMeta(

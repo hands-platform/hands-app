@@ -36,7 +36,7 @@ describe('admin api auth guard', () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('does not use the local demo OTP fallback in production', async () => {
@@ -45,7 +45,7 @@ describe('admin api auth guard', () => {
       ADMIN_ACCESS_TOKEN: undefined,
       NODE_ENV: 'production',
     };
-    const fetchMock = jest.spyOn(global, 'fetch');
+    const fetchMock = vi.spyOn(global, 'fetch');
 
     await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is required in production');
     expect(fetchMock).not.toHaveBeenCalled();

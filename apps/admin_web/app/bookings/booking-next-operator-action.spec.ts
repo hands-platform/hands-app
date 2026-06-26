@@ -91,12 +91,12 @@ describe('bookingNextOperatorActionFromFacts', () => {
 
   it('does not read lower-priority readers after a payment action matches', () => {
     const input = {
-      cashDebtNeedsOps: jest.fn(() => true),
-      completedCloseoutNeedsOps: jest.fn(() => false),
-      firstPickPending: jest.fn(() => true),
-      locationNeedsOps: jest.fn(() => true),
-      matchingChatReady: jest.fn(() => false),
-      paymentNeedsOps: jest.fn(() => true),
+      cashDebtNeedsOps: vi.fn(() => true),
+      completedCloseoutNeedsOps: vi.fn(() => false),
+      firstPickPending: vi.fn(() => true),
+      locationNeedsOps: vi.fn(() => true),
+      matchingChatReady: vi.fn(() => false),
+      paymentNeedsOps: vi.fn(() => true),
       status: 'OPEN_MATCHING',
     } satisfies BookingNextOperatorActionInput;
 

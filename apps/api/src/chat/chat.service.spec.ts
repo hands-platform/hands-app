@@ -6,7 +6,7 @@ describe('ChatService access control', () => {
   it('does not allow admin access to a missing chat room', async () => {
     const prisma = {
       chatRoom: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = new ChatService(prisma as never);
@@ -28,7 +28,7 @@ describe('ChatService access control', () => {
   it('allows admin access when the chat room exists', async () => {
     const prisma = {
       chatRoom: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'chat-room-1',
           booking: {
             customerProfileId: 'customer-1',
@@ -50,7 +50,7 @@ describe('ChatService access control', () => {
   it('allows only the customer and final selected partner to access a booking chat room', async () => {
     const prisma = {
       chatRoom: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'chat-room-1',
           booking: {
             customerProfileId: 'customer-1',
@@ -59,10 +59,10 @@ describe('ChatService access control', () => {
         }),
       },
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       providerProfile: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({ id: 'selected-partner' })
           .mockResolvedValueOnce({ id: 'joined-but-not-selected' }),
@@ -107,11 +107,11 @@ describe('ChatService access control', () => {
 describe('ChatService message validation', () => {
   it('notifies the other booking chat participant without exposing message text', async () => {
     const notifications = {
-      create: jest.fn().mockResolvedValue({ id: 'notification-1' }),
+      create: vi.fn().mockResolvedValue({ id: 'notification-1' }),
     };
     const prisma = {
       chatRoom: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'chat-room-1',
@@ -129,10 +129,10 @@ describe('ChatService message validation', () => {
           }),
       },
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       chatMessage: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: 'message-1',
           chatRoomId: 'chat-room-1',
           senderId: 'customer-user',
@@ -163,7 +163,7 @@ describe('ChatService message validation', () => {
   it('rejects oversized realtime chat messages at the service boundary', async () => {
     const prisma = {
       chatRoom: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'chat-room-1',
           booking: {
             customerProfileId: 'customer-1',
@@ -172,7 +172,7 @@ describe('ChatService message validation', () => {
         }),
       },
       chatMessage: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
     };
     const service = new ChatService(prisma as never);
@@ -191,7 +191,7 @@ describe('ChatService message validation', () => {
   it('rejects oversized chat attachment metadata at the service boundary', async () => {
     const prisma = {
       chatRoom: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'chat-room-1',
           booking: {
             customerProfileId: 'customer-1',
@@ -200,7 +200,7 @@ describe('ChatService message validation', () => {
         }),
       },
       chatMessage: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
     };
     const service = new ChatService(prisma as never);

@@ -34,11 +34,11 @@ function partner(overrides = {}) {
 
 describe('booking marketplace supply', () => {
   beforeEach(() => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-07T00:05:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-06-07T00:05:00.000Z'));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('keeps negative-wallet partners visible while marking the final gate hold', () => {

@@ -39,7 +39,7 @@ function fcmResponse(body: unknown, ok = true, status = 200) {
   return {
     ok,
     status,
-    json: jest.fn().mockResolvedValue(body),
+    json: vi.fn().mockResolvedValue(body),
   } as unknown as Response;
 }
 
@@ -47,7 +47,7 @@ describe('PushDeliveryService', () => {
   let tempDir: string | undefined;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockJwtGetAccessToken.mockResolvedValue({ token: 'jwt-access-token' });
     mockGoogleAuthGetAccessToken.mockResolvedValue({ token: 'google-auth-access-token' });
     mockGoogleAuthGetClient.mockResolvedValue({ getAccessToken: mockGoogleAuthGetAccessToken });

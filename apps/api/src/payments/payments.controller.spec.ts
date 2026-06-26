@@ -11,17 +11,17 @@ import type { PaymentsService } from './payments.service';
 
 describe('PaymentsController', () => {
   const payments = {
-    capture: jest.fn(),
-    handleCallback: jest.fn(),
-    refund: jest.fn(),
-    releaseForAdmin: jest.fn(),
-    syncStatusForAdmin: jest.fn(),
+    capture: vi.fn(),
+    handleCallback: vi.fn(),
+    refund: vi.fn(),
+    releaseForAdmin: vi.fn(),
+    syncStatusForAdmin: vi.fn(),
   };
   const controller = new PaymentsController(payments as unknown as PaymentsService);
   const admin = { id: 'admin-1', roles: [Role.ADMIN] } as AuthenticatedUser;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('keeps payment callback public but enum-constrains the provider method parameter', async () => {

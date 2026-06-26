@@ -11,15 +11,15 @@ import type { MobileService } from './mobile.service';
 
 describe('MobileController', () => {
   const mobile = {
-    getAppVersion: jest.fn(),
-    registerDevice: jest.fn(),
-    unregisterDevice: jest.fn(),
+    getAppVersion: vi.fn(),
+    registerDevice: vi.fn(),
+    unregisterDevice: vi.fn(),
   };
   const controller = new MobileController(mobile as unknown as MobileService);
   const user = { id: 'user-1', roles: [Role.CUSTOMER] } as AuthenticatedUser;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('exposes app-version as a public platform read endpoint', async () => {

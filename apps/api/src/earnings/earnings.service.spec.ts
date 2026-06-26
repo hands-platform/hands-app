@@ -5,7 +5,7 @@ describe('EarningsService payout batches', () => {
   it('excludes post-match cancellation fee holds from cash settlement debt lists', async () => {
     const prisma = {
       providerEarning: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = new EarningsService(prisma as never);
@@ -31,7 +31,7 @@ describe('EarningsService payout batches', () => {
   it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
     const prisma = {
       providerEarning: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = new EarningsService(prisma as never);
@@ -73,19 +73,19 @@ describe('EarningsService payout batches', () => {
     };
     const tx = {
       providerPayoutBatch: {
-        update: jest.fn().mockResolvedValue({ ...existingBatch, status: PayoutBatchStatus.FAILED }),
-        findUniqueOrThrow: jest.fn().mockResolvedValue(returnedBatch),
+        update: vi.fn().mockResolvedValue({ ...existingBatch, status: PayoutBatchStatus.FAILED }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(returnedBatch),
       },
     };
     const prisma = {
       providerPayoutBatch: {
-        findUnique: jest.fn().mockResolvedValue(existingBatch),
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const service = new EarningsService(prisma as never, notifications as never);
 
     await expect(
@@ -118,19 +118,19 @@ describe('EarningsService payout batches', () => {
     };
     const tx = {
       providerPayoutBatch: {
-        update: jest.fn().mockResolvedValue(returnedBatch),
-        findUniqueOrThrow: jest.fn().mockResolvedValue(returnedBatch),
+        update: vi.fn().mockResolvedValue(returnedBatch),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(returnedBatch),
       },
     };
     const prisma = {
       providerPayoutBatch: {
-        findUnique: jest.fn().mockResolvedValue(existingBatch),
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const service = new EarningsService(prisma as never, notifications as never);
 
     await expect(
@@ -165,32 +165,32 @@ describe('EarningsService payout batches', () => {
     };
     const tx = {
       providerSanction: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       providerEarning: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 380000 } }),
-        updateMany: jest.fn(),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 380000 } }),
+        updateMany: vi.fn(),
       },
       providerPayoutBatch: {
-        update: jest.fn().mockResolvedValue(paidBatch),
-        findUniqueOrThrow: jest.fn().mockResolvedValue(paidBatch),
+        update: vi.fn().mockResolvedValue(paidBatch),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(paidBatch),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn(),
+        upsert: vi.fn(),
       },
       withholdingLog: {
-        updateMany: jest.fn(),
+        updateMany: vi.fn(),
       },
     };
     const prisma = {
       providerPayoutBatch: {
-        findUnique: jest.fn().mockResolvedValue(existingBatch),
+        findUnique: vi.fn().mockResolvedValue(existingBatch),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const service = new EarningsService(prisma as never, notifications as never);
 
     await expect(

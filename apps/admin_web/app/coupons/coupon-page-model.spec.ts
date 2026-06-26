@@ -16,11 +16,11 @@ const NOW = Date.parse('2026-06-10T09:00:00.000Z');
 
 describe('coupon page model', () => {
   beforeEach(() => {
-    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+    vi.spyOn(Date, 'now').mockReturnValue(NOW);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('classifies coupon date windows and review state', () => {

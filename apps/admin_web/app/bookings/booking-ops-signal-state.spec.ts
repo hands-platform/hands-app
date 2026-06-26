@@ -5,11 +5,11 @@ import {
 
 function input(overrides: Partial<BookingOpsSignalStateInput> = {}): BookingOpsSignalStateInput {
   return {
-    backupSelected: jest.fn(() => false),
-    cashDebtNeedsOps: jest.fn(() => false),
-    firstPickPending: jest.fn(() => false),
+    backupSelected: vi.fn(() => false),
+    cashDebtNeedsOps: vi.fn(() => false),
+    firstPickPending: vi.fn(() => false),
     marketplaceParticipantCount: 1,
-    matchingChatReady: jest.fn(() => true),
+    matchingChatReady: vi.fn(() => true),
     payment: null,
     status: 'MATCHED',
     ...overrides,

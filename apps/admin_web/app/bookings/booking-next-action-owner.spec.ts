@@ -33,9 +33,9 @@ describe('bookingNextActionOwnerFromFacts', () => {
 
   it('does not read finance readers when the flag title already routes to Finance', () => {
     const input = {
-      completedCloseoutNeedsOps: jest.fn(() => false),
+      completedCloseoutNeedsOps: vi.fn(() => false),
       flagTitle: 'Payment reference missing',
-      paymentNeedsOps: jest.fn(() => false),
+      paymentNeedsOps: vi.fn(() => false),
       status: 'NO_SHOW',
     } satisfies BookingNextActionOwnerInput;
 

@@ -13,14 +13,14 @@ function booking(input: Partial<AdminBooking>): AdminBooking {
 
 function readers(): BookingNextActionInputReaders {
   return {
-    cashDebtNeedsOps: jest.fn(() => false),
-    completedCloseoutNeedsOps: jest.fn(() => false),
-    firstPickPending: jest.fn(() => false),
+    cashDebtNeedsOps: vi.fn(() => false),
+    completedCloseoutNeedsOps: vi.fn(() => false),
+    firstPickPending: vi.fn(() => false),
     flagSeverity: 'high',
     flagTitle: 'Payment reference missing',
-    locationNeedsOps: jest.fn(() => false),
-    matchingChatReady: jest.fn(() => true),
-    paymentNeedsOps: jest.fn(() => false),
+    locationNeedsOps: vi.fn(() => false),
+    matchingChatReady: vi.fn(() => true),
+    paymentNeedsOps: vi.fn(() => false),
     status: 'MATCHED',
   };
 }

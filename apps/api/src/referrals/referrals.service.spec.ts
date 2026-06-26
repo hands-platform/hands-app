@@ -18,11 +18,11 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       referralCode: {
-        create: jest.fn(),
-        findFirst: jest.fn().mockResolvedValue({
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -49,10 +49,10 @@ describe('ReferralsService', () => {
   it('returns null when a customer profile exists but has no referral code yet', async () => {
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -64,13 +64,13 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       referralAttribution: {
-        count: jest.fn().mockResolvedValue(2),
+        count: vi.fn().mockResolvedValue(2),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -80,7 +80,7 @@ describe('ReferralsService', () => {
         }),
       },
       referralReward: {
-        groupBy: jest.fn().mockResolvedValue([
+        groupBy: vi.fn().mockResolvedValue([
           { status: 'PENDING', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 25_000 } },
           { status: 'AVAILABLE', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
           { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 50_000 } },
@@ -129,10 +129,10 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       referralCode: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -140,7 +140,7 @@ describe('ReferralsService', () => {
           createdAt,
           updatedAt: createdAt,
         }),
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -163,10 +163,10 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'referred-customer-1' }),
       },
       referralAttribution: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: 'attribution-1',
           audience: ReferralAudience.CUSTOMER,
           referralCodeId: 'code-1',
@@ -180,10 +180,10 @@ describe('ReferralsService', () => {
           updatedAt: createdAt,
           referralCode: { id: 'code-1', code: 'HCUSTOMER' },
         }),
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -232,14 +232,14 @@ describe('ReferralsService', () => {
   it('rejects customer referral claims with unsupported platforms before writing attribution', async () => {
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'referred-customer-1' }),
       },
       referralAttribution: {
-        create: jest.fn(),
-        findFirst: jest.fn().mockResolvedValue(null),
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -264,11 +264,11 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'referred-customer-1' }),
       },
       referralAttribution: {
-        create: jest.fn(),
-        findFirst: jest.fn().mockResolvedValue({
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({
           id: 'attribution-1',
           audience: ReferralAudience.CUSTOMER,
           referralCodeId: 'code-1',
@@ -282,7 +282,7 @@ describe('ReferralsService', () => {
         }),
       },
       referralCode: {
-        findFirst: jest.fn(),
+        findFirst: vi.fn(),
       },
     };
     const service = createService(prisma);
@@ -298,14 +298,14 @@ describe('ReferralsService', () => {
   it('rejects customer self-referral claims', async () => {
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-profile-1' }),
       },
       referralAttribution: {
-        create: jest.fn(),
-        findFirst: jest.fn().mockResolvedValue(null),
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.CUSTOMER,
@@ -326,10 +326,10 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       referralCode: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.PARTNER,
@@ -337,7 +337,7 @@ describe('ReferralsService', () => {
           createdAt,
           updatedAt: createdAt,
         }),
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -360,10 +360,10 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'referred-partner-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'referred-partner-1' }),
       },
       referralAttribution: {
-        create: jest.fn().mockResolvedValue({
+        create: vi.fn().mockResolvedValue({
           id: 'attribution-1',
           audience: ReferralAudience.PARTNER,
           referralCodeId: 'code-1',
@@ -377,10 +377,10 @@ describe('ReferralsService', () => {
           updatedAt: createdAt,
           referralCode: { id: 'code-1', code: 'HPARTNER' },
         }),
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.PARTNER,
@@ -421,13 +421,13 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       referralAttribution: {
-        count: jest.fn().mockResolvedValue(3),
+        count: vi.fn().mockResolvedValue(3),
       },
       referralCode: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'code-1',
           active: true,
           audience: ReferralAudience.PARTNER,
@@ -437,7 +437,7 @@ describe('ReferralsService', () => {
         }),
       },
       referralReward: {
-        groupBy: jest.fn().mockResolvedValue([
+        groupBy: vi.fn().mockResolvedValue([
           { status: 'HELD', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 100_000 } },
           { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
         ]),
@@ -486,7 +486,7 @@ describe('ReferralsService', () => {
     const availableAt = new Date('2026-06-29T10:00:00.000Z');
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'referred-customer-1',
@@ -501,10 +501,10 @@ describe('ReferralsService', () => {
         }),
       },
       providerEarning: {
-        count: jest.fn().mockResolvedValue(1),
+        count: vi.fn().mockResolvedValue(1),
       },
       referralAttribution: {
-        findFirst: jest
+        findFirst: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'customer-attribution-1',
@@ -515,7 +515,7 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralPolicy: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({
             audience: ReferralAudience.CUSTOMER,
@@ -531,8 +531,8 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralReward: {
-        count: jest.fn().mockResolvedValue(0),
-        create: jest.fn().mockResolvedValue({
+        count: vi.fn().mockResolvedValue(0),
+        create: vi.fn().mockResolvedValue({
           id: 'reward-1',
           amount: 15_000,
           currency: 'VND',
@@ -540,7 +540,7 @@ describe('ReferralsService', () => {
           sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
           availableAt,
         }),
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -571,7 +571,7 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'referred-customer-1',
@@ -586,7 +586,7 @@ describe('ReferralsService', () => {
         }),
       },
       referralAttribution: {
-        findFirst: jest
+        findFirst: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'customer-attribution-1',
@@ -597,7 +597,7 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralPolicy: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({
             audience: ReferralAudience.CUSTOMER,
@@ -614,16 +614,16 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralReward: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 490_000 } }),
-        count: jest.fn().mockResolvedValue(0),
-        create: jest.fn().mockResolvedValue({
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 490_000 } }),
+        count: vi.fn().mockResolvedValue(0),
+        create: vi.fn().mockResolvedValue({
           id: 'reward-1',
           amount: 10_000,
           currency: 'VND',
           status: ReferralRewardStatus.PENDING,
           sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
         }),
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -647,7 +647,7 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-2',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'referred-customer-1',
@@ -662,7 +662,7 @@ describe('ReferralsService', () => {
         }),
       },
       referralAttribution: {
-        findFirst: jest
+        findFirst: vi
           .fn()
           .mockResolvedValueOnce({
             id: 'customer-attribution-1',
@@ -673,7 +673,7 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralPolicy: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce({
             audience: ReferralAudience.CUSTOMER,
@@ -691,9 +691,9 @@ describe('ReferralsService', () => {
           .mockResolvedValueOnce(null),
       },
       referralReward: {
-        count: jest.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(1),
-        create: jest.fn(),
-        findUnique: jest.fn().mockResolvedValue(null),
+        count: vi.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(1),
+        create: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -709,7 +709,7 @@ describe('ReferralsService', () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       referralReward: {
-        updateMany: jest.fn().mockResolvedValue({ count: 2 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 2 }),
       },
     };
     const service = createService(prisma);
@@ -728,12 +728,12 @@ describe('ReferralsService', () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       referralReward: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'reward-1',
           status: ReferralRewardStatus.PENDING,
           walletLedgerReference: null,
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'reward-1',
           amount: 25000,
           availableAt: now,
@@ -759,12 +759,12 @@ describe('ReferralsService', () => {
   it('rejects reward candidate state changes after wallet credit exists', async () => {
     const prisma = {
       referralReward: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'reward-1',
           status: ReferralRewardStatus.AVAILABLE,
           walletLedgerReference: 'wallet-ledger-1',
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
     const service = createService(prisma);
@@ -777,12 +777,12 @@ describe('ReferralsService', () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       referralReward: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'reward-1',
           status: ReferralRewardStatus.HELD,
           walletLedgerReference: null,
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'reward-1',
           amount: 25000,
           availableAt: now,
@@ -822,14 +822,14 @@ describe('ReferralsService', () => {
     const ledger = { id: 'customer-wallet-ledger-1' };
     const tx = {
       customerWalletLedgerEntry: {
-        upsert: jest.fn().mockResolvedValue(ledger),
+        upsert: vi.fn().mockResolvedValue(ledger),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn(),
+        upsert: vi.fn(),
       },
       referralReward: {
-        findUnique: jest.fn().mockResolvedValue(reward),
-        update: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
           ...reward,
           status: ReferralRewardStatus.REWARDED,
           walletLedgerReference: ledger.id,
@@ -837,7 +837,7 @@ describe('ReferralsService', () => {
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };
@@ -893,14 +893,14 @@ describe('ReferralsService', () => {
     const ledger = { id: 'provider-wallet-ledger-1' };
     const tx = {
       customerWalletLedgerEntry: {
-        upsert: jest.fn(),
+        upsert: vi.fn(),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn().mockResolvedValue(ledger),
+        upsert: vi.fn().mockResolvedValue(ledger),
       },
       referralReward: {
-        findUnique: jest.fn().mockResolvedValue(reward),
-        update: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
           ...reward,
           status: ReferralRewardStatus.REWARDED,
           walletLedgerReference: ledger.id,
@@ -908,7 +908,7 @@ describe('ReferralsService', () => {
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };
@@ -950,7 +950,7 @@ describe('ReferralsService', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           customerProfileId: 'customer-1',
@@ -965,10 +965,10 @@ describe('ReferralsService', () => {
         }),
       },
       providerEarning: {
-        count: jest.fn().mockResolvedValue(0),
+        count: vi.fn().mockResolvedValue(0),
       },
       referralAttribution: {
-        findFirst: jest
+        findFirst: vi
           .fn()
           .mockResolvedValueOnce(null)
           .mockResolvedValueOnce({
@@ -979,7 +979,7 @@ describe('ReferralsService', () => {
           }),
       },
       referralPolicy: {
-        findUnique: jest
+        findUnique: vi
           .fn()
           .mockResolvedValueOnce(null)
           .mockResolvedValueOnce({
@@ -995,15 +995,15 @@ describe('ReferralsService', () => {
           }),
       },
       referralReward: {
-        count: jest.fn().mockResolvedValue(0),
-        create: jest.fn().mockResolvedValue({
+        count: vi.fn().mockResolvedValue(0),
+        create: vi.fn().mockResolvedValue({
           id: 'reward-1',
           amount: 80_000,
           currency: 'VND',
           status: ReferralRewardStatus.PENDING,
           sourceKey: 'referral:PARTNER:partner-attribution-1:booking-1',
         }),
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);
@@ -1031,7 +1031,7 @@ describe('ReferralsService', () => {
   it('rejects referral reward creation for non-completed bookings', async () => {
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.MATCHED,
           customerProfileId: 'customer-1',
@@ -1049,7 +1049,7 @@ describe('ReferralsService', () => {
   it('rejects referral code lookup when the role profile is missing', async () => {
     const prisma = {
       customerProfile: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createService(prisma);

@@ -40,21 +40,21 @@ describe('ProviderOnboardingService bank account submission', () => {
     };
     const tx = {
       providerBankAccount: {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        create: jest.fn().mockResolvedValue(createdAccount),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        create: vi.fn().mockResolvedValue(createdAccount),
       },
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(providerProfile),
+        findUnique: vi.fn().mockResolvedValue(providerProfile),
       },
       providerBankAccount: {
-        create: jest.fn().mockResolvedValue(createdAccount),
+        create: vi.fn().mockResolvedValue(createdAccount),
       },
       providerVerificationLog: {
-        create: jest.fn().mockResolvedValue({ id: 'log-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'log-1' }),
       },
-      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
     };

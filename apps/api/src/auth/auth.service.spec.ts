@@ -28,7 +28,7 @@ describe('AuthService OTP production guard', () => {
     const { otpDelivery, redisState, service } = createOtpService({
       NODE_ENV: 'production',
       redisState: {
-        setOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+        setOtp: vi.fn().mockRejectedValue(new Error('redis down')),
       },
     });
 
@@ -40,11 +40,11 @@ describe('AuthService OTP production guard', () => {
   });
 
   it('does not log Redis connection details when production OTP storage fails', async () => {
-    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { service } = createOtpService({
       NODE_ENV: 'production',
       redisState: {
-        setOtp: jest.fn().mockRejectedValue(new Error('redis://:super-secret@localhost:6379 unavailable')),
+        setOtp: vi.fn().mockRejectedValue(new Error('redis://:super-secret@localhost:6379 unavailable')),
       },
     });
 
@@ -58,11 +58,11 @@ describe('AuthService OTP production guard', () => {
   });
 
   it('does not log Redis connection details when non-production OTP storage falls back', async () => {
-    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { service } = createOtpService({
       NODE_ENV: 'development',
       redisState: {
-        setOtp: jest.fn().mockRejectedValue(new Error('redis://:dev-secret@localhost:6379 unavailable')),
+        setOtp: vi.fn().mockRejectedValue(new Error('redis://:dev-secret@localhost:6379 unavailable')),
       },
     });
 
@@ -76,11 +76,11 @@ describe('AuthService OTP production guard', () => {
   });
 
   it('does not log Redis connection details when non-production OTP lookup falls back', async () => {
-    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { prisma, service } = createOtpService({
       NODE_ENV: 'development',
       redisState: {
-        getOtp: jest.fn().mockRejectedValue(new Error('redis://:lookup-secret@localhost:6379 unavailable')),
+        getOtp: vi.fn().mockRejectedValue(new Error('redis://:lookup-secret@localhost:6379 unavailable')),
       },
     });
 
@@ -95,12 +95,12 @@ describe('AuthService OTP production guard', () => {
   });
 
   it('does not log Redis connection details when non-production OTP consume falls back', async () => {
-    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { prisma, service } = createOtpService({
       NODE_ENV: 'development',
       redisState: {
-        getOtp: jest.fn().mockResolvedValue('123456'),
-        consumeOtp: jest.fn().mockRejectedValue(new Error('redis://:consume-secret@localhost:6379 unavailable')),
+        getOtp: vi.fn().mockResolvedValue('123456'),
+        consumeOtp: vi.fn().mockRejectedValue(new Error('redis://:consume-secret@localhost:6379 unavailable')),
       },
     });
     prisma.user.findUnique.mockResolvedValue(null);
@@ -119,7 +119,7 @@ describe('AuthService OTP production guard', () => {
     const { prisma, service } = createOtpService({
       NODE_ENV: 'production',
       redisState: {
-        getOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+        getOtp: vi.fn().mockRejectedValue(new Error('redis down')),
       },
     });
 
@@ -133,8 +133,8 @@ describe('AuthService OTP production guard', () => {
     const { prisma, service } = createOtpService({
       NODE_ENV: 'production',
       redisState: {
-        getOtp: jest.fn().mockResolvedValue('123456'),
-        consumeOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+        getOtp: vi.fn().mockResolvedValue('123456'),
+        consumeOtp: vi.fn().mockRejectedValue(new Error('redis down')),
       },
     });
 
@@ -211,18 +211,18 @@ describe('AuthService Supabase exchange', () => {
 function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
   const signedPayloads: unknown[] = [];
   const jwt = {
-    verify: jest.fn().mockReturnValue(refreshPayload),
-    sign: jest.fn((payload: unknown) => {
+    verify: vi.fn().mockReturnValue(refreshPayload),
+    sign: vi.fn((payload: unknown) => {
       signedPayloads.push(payload);
       return `signed-token-${signedPayloads.length}`;
     }),
   };
   const prisma = {
     user: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'user-1', roles }),
+      findUnique: vi.fn().mockResolvedValue({ id: 'user-1', roles }),
     },
   };
-  const config = { get: jest.fn().mockReturnValue(undefined) };
+  const config = { get: vi.fn().mockReturnValue(undefined) };
 
   return {
     service: new AuthService(
@@ -242,32 +242,32 @@ function createOtpService({
   redisState: redisStateOverrides,
 }: {
   NODE_ENV?: string;
-  redisState?: Partial<Record<'consumeOtp' | 'getOtp' | 'setOtp', jest.Mock>>;
+  redisState?: Partial<Record<'consumeOtp' | 'getOtp' | 'setOtp', ReturnType<typeof vi.fn>>>;
 }) {
   const jwt = {
-    sign: jest.fn().mockReturnValue('signed-token'),
-    verify: jest.fn(),
+    sign: vi.fn().mockReturnValue('signed-token'),
+    verify: vi.fn(),
   };
   const prisma = {
     user: {
-      findUnique: jest.fn(),
-      upsert: jest.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
     },
   };
   const config = {
-    get: jest.fn((key: string) => (key === 'NODE_ENV' ? NODE_ENV : undefined)),
+    get: vi.fn((key: string) => (key === 'NODE_ENV' ? NODE_ENV : undefined)),
   };
   const redisState = {
-    consumeOtp: jest.fn().mockResolvedValue(undefined),
-    getOtp: jest.fn().mockResolvedValue(null),
-    setOtp: jest.fn().mockResolvedValue(undefined),
+    consumeOtp: vi.fn().mockResolvedValue(undefined),
+    getOtp: vi.fn().mockResolvedValue(null),
+    setOtp: vi.fn().mockResolvedValue(undefined),
     ...redisStateOverrides,
   };
   const otpDelivery = {
-    deliverOtp: jest.fn().mockResolvedValue({ provider: 'sms', status: 'DELIVERED' }),
+    deliverOtp: vi.fn().mockResolvedValue({ provider: 'sms', status: 'DELIVERED' }),
   };
   const authTokens = {
-    authenticateSupabaseBearerToken: jest.fn(),
+    authenticateSupabaseBearerToken: vi.fn(),
   };
 
   return {

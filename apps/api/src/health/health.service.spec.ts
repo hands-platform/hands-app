@@ -6,7 +6,7 @@ import { HealthService } from './health.service';
 
 function config(values: Record<string, string> = {}) {
   return {
-    get: jest.fn((key: string) => values[key]),
+    get: vi.fn((key: string) => values[key]),
   } as unknown as ConfigService;
 }
 

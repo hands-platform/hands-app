@@ -52,10 +52,10 @@ describe('AuthTokenService Supabase roles', () => {
 
 function createService(payload: Record<string, unknown>) {
   const jwt = {
-    verify: jest.fn().mockReturnValue(payload),
+    verify: vi.fn().mockReturnValue(payload),
   };
   const config = {
-    get: jest.fn((key: string) => {
+    get: vi.fn((key: string) => {
       if (key === 'SUPABASE_JWT_SECRET') {
         return 'supabase-jwt-secret';
       }
@@ -67,14 +67,14 @@ function createService(payload: Record<string, unknown>) {
   };
   const prisma = {
     user: {
-      findUnique: jest.fn().mockResolvedValue(null),
-      create: jest.fn(({ data }) =>
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn(({ data }) =>
         Promise.resolve({
           id: 'user-1',
           roles: data.roles,
         }),
       ),
-      update: jest.fn(({ data }) =>
+      update: vi.fn(({ data }) =>
         Promise.resolve({
           id: 'user-1',
           roles: data.roles?.set ?? [],

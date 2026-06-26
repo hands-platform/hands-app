@@ -51,10 +51,10 @@ describe('bookingNextActionPriorityFromFacts', () => {
 
   it('does not read lower priority signals once a higher priority fact matches', () => {
     const input = {
-      completedCloseoutNeedsOps: jest.fn(() => false),
+      completedCloseoutNeedsOps: vi.fn(() => false),
       flagSeverity: 'high',
-      locationNeedsOps: jest.fn(() => false),
-      paymentNeedsOps: jest.fn(() => false),
+      locationNeedsOps: vi.fn(() => false),
+      paymentNeedsOps: vi.fn(() => false),
       status: 'OPEN_MATCHING',
     } satisfies BookingNextActionPriorityInput;
 

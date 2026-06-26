@@ -1,7 +1,7 @@
 import { requestIdMiddleware } from './request-id.middleware';
 
 describe('requestIdMiddleware', () => {
-  const consoleLog = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+  const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
   afterEach(() => {
     consoleLog.mockClear();
@@ -13,11 +13,11 @@ describe('requestIdMiddleware', () => {
 
   it('rejects unsafe incoming request ids before writing headers or logs', () => {
     const finishCallbacks: Array<() => void> = [];
-    const setHeader = jest.fn();
+    const setHeader = vi.fn();
     const response = {
       statusCode: 200,
       setHeader,
-      on: jest.fn((event: 'finish', callback: () => void) => {
+      on: vi.fn((event: 'finish', callback: () => void) => {
         finishCallbacks.push(callback);
       }),
     };
@@ -35,7 +35,7 @@ describe('requestIdMiddleware', () => {
       },
     };
 
-    requestIdMiddleware(request, response, jest.fn());
+    requestIdMiddleware(request, response, vi.fn());
     finishCallbacks[0]?.();
 
     const requestId = setHeader.mock.calls[0]?.[1];

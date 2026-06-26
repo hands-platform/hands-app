@@ -7,35 +7,35 @@ describe('CustomersService reviews', () => {
   it('creates a published review, trims empty comment to null, and recalculates published rating only', async () => {
     const tx = {
       review: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({
           id: 'review-1',
           bookingId: 'booking-1',
           status: 'PUBLISHED',
         }),
-        aggregate: jest.fn().mockResolvedValue({
+        aggregate: vi.fn().mockResolvedValue({
           _avg: { rating: 4.5 },
           _count: { rating: 2 },
         }),
       },
       providerProfile: {
-        update: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'partner-1' }),
       },
     };
 
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           selectedProviderId: 'partner-1',
           status: BookingStatus.COMPLETED,
         }),
       },
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
 
     const service = new CustomersService(prisma as never);
@@ -80,28 +80,28 @@ describe('CustomersService reviews', () => {
   it('rejects duplicate review creation for the same booking with a clear error', async () => {
     const tx = {
       review: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'review-existing' }),
-        create: jest.fn(),
-        aggregate: jest.fn(),
+        findUnique: vi.fn().mockResolvedValue({ id: 'review-existing' }),
+        create: vi.fn(),
+        aggregate: vi.fn(),
       },
       providerProfile: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
     };
 
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           customerProfileId: 'customer-1',
           selectedProviderId: 'partner-1',
           status: BookingStatus.COMPLETED,
         }),
       },
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
 
     const service = new CustomersService(prisma as never);
@@ -124,10 +124,10 @@ describe('CustomersService favorite partners', () => {
   it('lists favorite partners for the authenticated customer', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       customerFavoriteProvider: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'favorite-1',
             providerProfileId: 'partner-1',
@@ -160,13 +160,13 @@ describe('CustomersService favorite partners', () => {
   it('saves a favorite partner with an idempotent upsert', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       providerProfile: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
       },
       customerFavoriteProvider: {
-        upsert: jest.fn().mockResolvedValue({
+        upsert: vi.fn().mockResolvedValue({
           id: 'favorite-1',
           providerProfileId: 'partner-1',
         }),
@@ -212,13 +212,13 @@ describe('CustomersService favorite partners', () => {
   it('removes a favorite partner without touching other favorite rows', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       providerProfile: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
       },
       customerFavoriteProvider: {
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -240,14 +240,14 @@ describe('CustomersService favorite partners', () => {
   it('rejects favorite changes for a missing or unavailable partner', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       providerProfile: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       customerFavoriteProvider: {
-        upsert: jest.fn(),
-        deleteMany: jest.fn(),
+        upsert: vi.fn(),
+        deleteMany: vi.fn(),
       },
     };
 
@@ -266,10 +266,10 @@ describe('CustomersService viewed partners', () => {
   it('lists recently viewed partners for the authenticated customer', async () => {
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       customerProviderProfileView: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'view-1',
             providerProfileId: 'partner-1',
@@ -300,16 +300,16 @@ describe('CustomersService viewed partners', () => {
 
   it('records a partner profile view with an idempotent count update', async () => {
     const now = new Date('2026-06-22T09:30:00.000Z');
-    jest.useFakeTimers().setSystemTime(now);
+    vi.useFakeTimers().setSystemTime(now);
     const prisma = {
       customerProfile: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
       providerProfile: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'partner-1' }),
       },
       customerProviderProfileView: {
-        upsert: jest.fn().mockResolvedValue({
+        upsert: vi.fn().mockResolvedValue({
           id: 'view-1',
           providerProfileId: 'partner-1',
           viewCount: 3,
@@ -356,6 +356,6 @@ describe('CustomersService viewed partners', () => {
       }),
     );
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

@@ -22,7 +22,7 @@ const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('referral server actions', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('releases hold-window referral rewards and refreshes referral admin views', async () => {

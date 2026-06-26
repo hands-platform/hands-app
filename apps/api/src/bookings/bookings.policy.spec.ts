@@ -120,13 +120,13 @@ describe('booking policy helpers', () => {
 
   it('checks partner location freshness for marketplace participation', () => {
     const now = Date.now();
-    jest.spyOn(Date, 'now').mockReturnValue(now);
+    vi.spyOn(Date, 'now').mockReturnValue(now);
 
     expect(providerLocationFreshEnough(new Date(now - 9 * 60_000), 10)).toBe(true);
     expect(providerLocationFreshEnough(new Date(now - 11 * 60_000), 10)).toBe(false);
     expect(providerLocationFreshEnough('not-a-date', 10)).toBe(false);
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('formats marketplace radius for partner-facing block messages', () => {
@@ -148,7 +148,7 @@ describe('booking policy helpers', () => {
 
   it('keeps marketplace participation open when legacy delayed policy values are present', () => {
     const openedAt = new Date('2026-06-07T01:00:00.000Z');
-    jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 9 * 60_000);
+    vi.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 9 * 60_000);
 
     expect(
       isMarketplaceParticipationWindowOpen(
@@ -157,7 +157,7 @@ describe('booking policy helpers', () => {
       ),
     ).toBe(true);
 
-    jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 10 * 60_000);
+    vi.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 10 * 60_000);
 
     expect(
       isMarketplaceParticipationWindowOpen(
@@ -166,7 +166,7 @@ describe('booking policy helpers', () => {
       ),
     ).toBe(true);
 
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('keeps marketplace participation open even when legacy delayed opening evidence is missing', () => {

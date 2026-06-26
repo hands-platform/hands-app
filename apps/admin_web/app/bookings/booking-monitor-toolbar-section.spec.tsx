@@ -5,7 +5,7 @@ describe('BookingMonitorToolbarSection', () => {
   it('renders live update controls when realtime is enabled', () => {
     const section = BookingMonitorToolbarSection({
       liveUpdates: true,
-      onToggleLiveUpdates: jest.fn(),
+      onToggleLiveUpdates: vi.fn(),
     });
     const rendered = normalizedText(section);
 
@@ -19,7 +19,7 @@ describe('BookingMonitorToolbarSection', () => {
   it('shows resume copy when realtime is paused', () => {
     const section = BookingMonitorToolbarSection({
       liveUpdates: false,
-      onToggleLiveUpdates: jest.fn(),
+      onToggleLiveUpdates: vi.fn(),
     });
 
     expect(normalizedText(section)).toContain('Resume live');
@@ -29,7 +29,7 @@ describe('BookingMonitorToolbarSection', () => {
     const section = BookingMonitorToolbarSection({
       liveUpdates: true,
       description: 'Completed booking workspace for closeout.',
-      onToggleLiveUpdates: jest.fn(),
+      onToggleLiveUpdates: vi.fn(),
       title: 'Completed Bookings',
     });
     const rendered = normalizedText(section);

@@ -5,10 +5,10 @@ describe('NotificationsService device tokens', () => {
   it('registers an FCM token for the authenticated provider user', async () => {
     const prisma = {
       pushDevice: {
-        upsert: jest.fn().mockResolvedValue({ id: 'device-1' }),
+        upsert: vi.fn().mockResolvedValue({ id: 'device-1' }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(
@@ -42,10 +42,10 @@ describe('NotificationsService device tokens', () => {
   it('keeps provider app token registration on the active provider role for multi-role users', async () => {
     const prisma = {
       pushDevice: {
-        upsert: jest.fn().mockResolvedValue({ id: 'device-1' }),
+        upsert: vi.fn().mockResolvedValue({ id: 'device-1' }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await service.registerDeviceToken(
@@ -64,10 +64,10 @@ describe('NotificationsService device tokens', () => {
   it('disables only the authenticated user device token', async () => {
     const prisma = {
       pushDevice: {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(
@@ -83,10 +83,10 @@ describe('NotificationsService device tokens', () => {
   it('returns a safe false result when no authenticated device token is disabled', async () => {
     const prisma = {
       pushDevice: {
-        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(
@@ -112,10 +112,10 @@ describe('NotificationsService retry queue', () => {
     const notification = { id: 'notification-1' };
     const prisma = {
       notification: {
-        create: jest.fn().mockResolvedValue(notification),
+        create: vi.fn().mockResolvedValue(notification),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(
@@ -148,10 +148,10 @@ describe('NotificationsService retry queue', () => {
     const notification = { id: 'notification-1' };
     const prisma = {
       notification: {
-        create: jest.fn().mockResolvedValue(notification),
+        create: vi.fn().mockResolvedValue(notification),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await service.create({
@@ -173,10 +173,10 @@ describe('NotificationsService retry queue', () => {
   it('re-enqueues an existing notification with the standard retry policy', async () => {
     const prisma = {
       notification: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'notification-1', deliveries: [] }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'notification-1', deliveries: [] }),
       },
     };
-    const queue = { add: jest.fn().mockResolvedValue({ id: 'queued-retry-job-1' }) };
+    const queue = { add: vi.fn().mockResolvedValue({ id: 'queued-retry-job-1' }) };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(service.retry('notification-1')).resolves.toEqual({
@@ -221,7 +221,7 @@ describe('NotificationsService retry queue', () => {
   it('returns latest delivery evidence when retrying a recovered notification', async () => {
     const prisma = {
       notification: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'notification-1',
           deliveries: [
             {
@@ -241,7 +241,7 @@ describe('NotificationsService retry queue', () => {
         }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(service.retry('notification-1')).resolves.toEqual({
@@ -271,7 +271,7 @@ describe('NotificationsService retry queue', () => {
   it('returns latest delivery failure code when retrying a failed notification', async () => {
     const prisma = {
       notification: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'notification-1',
           deliveries: [
             {
@@ -287,7 +287,7 @@ describe('NotificationsService retry queue', () => {
         }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(service.retry('notification-1')).resolves.toMatchObject({

@@ -4,11 +4,11 @@ import { buildPolicySimulation, formatDistance } from './policy-simulation';
 
 describe('policy simulation builder', () => {
   beforeEach(() => {
-    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-06-13T03:00:00.000Z'));
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-06-13T03:00:00.000Z'));
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('builds ready simulator rows from nearby fresh online Partners', () => {

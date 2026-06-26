@@ -73,7 +73,7 @@ describe('PaymentsService callbacks', () => {
   });
 
   it('notifies the booking customer after an accepted payment status update', async () => {
-    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
     const { service } = createService({
       existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
       notificationLookupPayment: {
@@ -175,10 +175,10 @@ function createService({
 }: {
   existingPayment: ReturnType<typeof payment> | null;
   notificationLookupPayment?: unknown;
-  notifications?: { create: jest.Mock };
+  notifications?: { create: ReturnType<typeof vi.fn> };
   updatedPayment?: ReturnType<typeof payment>;
 }) {
-  const findUnique = jest.fn();
+  const findUnique = vi.fn();
   if (notificationLookupPayment) {
     findUnique.mockResolvedValueOnce(existingPayment).mockResolvedValueOnce(notificationLookupPayment);
   } else {
@@ -187,15 +187,15 @@ function createService({
   const prisma = {
     payment: {
       findUnique,
-      findUniqueOrThrow: jest.fn(),
-      update: jest.fn().mockResolvedValue(updatedPayment ?? existingPayment),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn().mockResolvedValue(updatedPayment ?? existingPayment),
     },
     paymentCallbackAttempt: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
   };
-  const config = { get: jest.fn() };
-  const queue = { add: jest.fn() };
+  const config = { get: vi.fn() };
+  const queue = { add: vi.fn() };
 
   return {
     prisma,
@@ -229,10 +229,10 @@ function payment({ status }: { status: PaymentStatus }) {
 
 function cashAdapter() {
   return {
-    authorize: jest.fn(),
-    checkStatus: jest.fn(),
+    authorize: vi.fn(),
+    checkStatus: vi.fn(),
     method: PaymentMethod.CASH,
-    parseCallback: jest.fn((payload: unknown) => {
+    parseCallback: vi.fn((payload: unknown) => {
       const body = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {};
       return {
         providerRef: String(body.providerRef ?? ''),
@@ -240,16 +240,16 @@ function cashAdapter() {
         status: body.status === 'CAPTURED' ? PaymentStatus.CAPTURED : PaymentStatus.AUTHORIZED,
       };
     }),
-    release: jest.fn(),
+    release: vi.fn(),
   };
 }
 
 function placeholderAdapter(method: PaymentMethod) {
   return {
-    authorize: jest.fn(),
-    checkStatus: jest.fn(),
+    authorize: vi.fn(),
+    checkStatus: vi.fn(),
     method,
-    parseCallback: jest.fn(),
-    release: jest.fn(),
+    parseCallback: vi.fn(),
+    release: vi.fn(),
   };
 }

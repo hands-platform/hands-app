@@ -2,11 +2,11 @@ import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } fr
 
 describe('admin date range helpers', () => {
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('uses Vietnam business day for the Today filter', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-05-01T17:30:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-05-01T17:30:00.000Z'));
 
     expect(isInDateRange('2026-05-01T17:05:00.000Z', 'today')).toBe(true);
     expect(isInDateRange('2026-05-02T16:59:00.000Z', 'today')).toBe(true);

@@ -49,8 +49,8 @@ describe('BookingMonitorFiltersSection', () => {
         { label: 'Last month', value: '30d' },
         { label: 'Custom dates', value: 'custom' },
       ],
-      onDateRangeFilterChange: jest.fn(),
-      onViewChange: jest.fn(),
+      onDateRangeFilterChange: vi.fn(),
+      onViewChange: vi.fn(),
       view: 'active',
       viewCounts: new Map([
         ['active', 3],
@@ -104,7 +104,7 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[4],
           baseVisibleBookingCount: 0,
-          onViewChange: jest.fn(),
+          onViewChange: vi.fn(),
           view: 'no-show',
           viewCounts: new Map([
             ['active', 3],
@@ -133,10 +133,10 @@ describe('BookingMonitorFiltersSection', () => {
       customDateTo: '2026-06-19',
       dateRangeFilter: 'custom',
       dateRangeFilterOptions: [{ label: 'Custom dates', value: 'custom' }],
-      onCustomDateFromChange: jest.fn(),
-      onCustomDateToChange: jest.fn(),
-      onDateRangeFilterChange: jest.fn(),
-      onViewChange: jest.fn(),
+      onCustomDateFromChange: vi.fn(),
+      onCustomDateToChange: vi.fn(),
+      onDateRangeFilterChange: vi.fn(),
+      onViewChange: vi.fn(),
       view: 'all',
       viewCounts: new Map(),
       viewOptions,
@@ -160,7 +160,7 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[2],
           baseVisibleBookingCount: 2,
-          onViewChange: jest.fn(),
+          onViewChange: vi.fn(),
           view: 'closeout',
           viewCounts: new Map([
             ['active', 3],
@@ -187,7 +187,7 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[2],
           baseVisibleBookingCount: 2,
-          onViewChange: jest.fn(),
+          onViewChange: vi.fn(),
           showEmptyViewOptions: true,
           view: 'closeout',
           viewCounts: new Map([

@@ -41,7 +41,7 @@ describe('AdminService query orchestration', () => {
   it('bounds the admin user list used by the operations dashboard', async () => {
     const prisma = {
       user: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -56,11 +56,63 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('keeps audit log list bounded by default', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listAuditLogs()).resolves.toEqual([]);
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: expect.objectContaining({
+        action: true,
+        actor: expect.any(Object),
+        createdAt: true,
+        metadata: true,
+        target: true,
+      }),
+    });
+  });
+
+  it('filters audit logs by action and clamps requested limits', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listAuditLogs({
+        action: ' booking.create.rejected ',
+        take: '250',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: { action: 'booking.create.rejected' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: expect.objectContaining({
+        action: true,
+        actor: expect.any(Object),
+        createdAt: true,
+        metadata: true,
+        target: true,
+      }),
+    });
+  });
+
   it('adds server-computed matching evidence to booking list rows', async () => {
     const openedAt = new Date('2026-06-10T09:30:00.000Z');
     const prisma = {
       booking: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'booking-1',
             status: BookingStatus.OPEN_MATCHING,
@@ -119,7 +171,7 @@ describe('AdminService query orchestration', () => {
     const matchedAt = new Date('2026-06-10T10:00:00.000Z');
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.MATCHED,
           preferredProviderId: 'first-pick-partner',
@@ -138,7 +190,7 @@ describe('AdminService query orchestration', () => {
         }),
       },
       adminAuditLog: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -179,7 +231,7 @@ describe('AdminService query orchestration', () => {
     ] as const;
     const prisma = {
       booking: {
-        findMany: jest.fn().mockResolvedValue(
+        findMany: vi.fn().mockResolvedValue(
           rows.map(([status]) => ({
             id: `booking-${status}`,
             status,
@@ -208,7 +260,7 @@ describe('AdminService query orchestration', () => {
   it('includes persisted matching decision fields in booking list queries', async () => {
     const prisma = {
       booking: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -228,7 +280,7 @@ describe('AdminService query orchestration', () => {
   it('includes persisted matching decision fields in booking detail queries', async () => {
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createAdminService(prisma);
@@ -255,7 +307,7 @@ describe('AdminService query orchestration', () => {
   it('returns disabled referral defaults when no admin policy exists yet', async () => {
     const prisma = {
       referralPolicy: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -283,11 +335,11 @@ describe('AdminService query orchestration', () => {
     const updatedAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
       referralPolicy: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        upsert: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({
           id: 'policy-customer',
           audience: ReferralAudience.CUSTOMER,
           enabled: true,
@@ -355,8 +407,8 @@ describe('AdminService query orchestration', () => {
   it('rejects mismatched referral reward modes for the audience', async () => {
     const prisma = {
       referralPolicy: {
-        findUnique: jest.fn(),
-        upsert: jest.fn(),
+        findUnique: vi.fn(),
+        upsert: vi.fn(),
       },
     };
     const service = createAdminService(prisma);
@@ -373,46 +425,46 @@ describe('AdminService query orchestration', () => {
 
   it('includes manual marketing spend in overview cost metrics', async () => {
     const prisma = {
-      $queryRaw: jest.fn().mockResolvedValue([
+      $queryRaw: vi.fn().mockResolvedValue([
         {
           firstBookingCompleted: 1n,
           repeatBookingCompleted: 1n,
         },
       ]),
       appSession: {
-        groupBy: jest.fn().mockResolvedValue([{ platform: 'ANDROID', _count: { _all: 2 } }]),
-        count: jest.fn().mockResolvedValue(2),
+        groupBy: vi.fn().mockResolvedValue([{ platform: 'ANDROID', _count: { _all: 2 } }]),
+        count: vi.fn().mockResolvedValue(2),
       },
       user: {
-        count: jest.fn().mockResolvedValue(2),
+        count: vi.fn().mockResolvedValue(2),
       },
       referralAttribution: {
-        count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
       },
       customerSelectedLocation: {
-        count: jest.fn().mockResolvedValue(2),
-        findMany: jest.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn().mockResolvedValue([]),
       },
       booking: {
-        count: jest
+        count: vi
           .fn()
           .mockResolvedValueOnce(2)
           .mockResolvedValueOnce(2)
           .mockResolvedValueOnce(0),
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
       payment: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1_200_000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 1_200_000 } }),
       },
       providerPlatformFeeLog: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { platformFeeAmount: 300_000 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { platformFeeAmount: 300_000 } }),
       },
       refund: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       marketingSpendDaily: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             spendDate: new Date('2026-06-20T00:00:00.000Z'),
             source: 'google',
@@ -473,10 +525,10 @@ describe('AdminService query orchestration', () => {
     const spendDate = new Date('2026-06-20T00:00:00.000Z');
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
       marketingSpendDaily: {
-        upsert: jest.fn().mockResolvedValue({
+        upsert: vi.fn().mockResolvedValue({
           id: 'spend-1',
           spendDate,
           source: 'google',
@@ -544,11 +596,11 @@ describe('AdminService query orchestration', () => {
 
   it('releases available referral rewards without creating wallet ledger entries', async () => {
     const referrals = {
-      releaseAvailableRewards: jest.fn().mockResolvedValue({ releasedCount: 3 }),
+      releaseAvailableRewards: vi.fn().mockResolvedValue({ releasedCount: 3 }),
     };
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const service = createAdminService(prisma, { referrals });
@@ -573,7 +625,7 @@ describe('AdminService query orchestration', () => {
 
   it('holds a referral reward candidate without creating wallet ledger entries', async () => {
     const referrals = {
-      holdRewardCandidate: jest.fn().mockResolvedValue({
+      holdRewardCandidate: vi.fn().mockResolvedValue({
         id: 'reward-1',
         amount: 25000,
         currency: 'VND',
@@ -582,7 +634,7 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const service = createAdminService(prisma, { referrals });
@@ -615,7 +667,7 @@ describe('AdminService query orchestration', () => {
 
   it('reverses a referral reward candidate without creating wallet ledger entries', async () => {
     const referrals = {
-      reverseRewardCandidate: jest.fn().mockResolvedValue({
+      reverseRewardCandidate: vi.fn().mockResolvedValue({
         id: 'reward-1',
         amount: 25000,
         currency: 'VND',
@@ -624,7 +676,7 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const service = createAdminService(prisma, { referrals });
@@ -657,7 +709,7 @@ describe('AdminService query orchestration', () => {
 
   it('credits an available referral reward candidate to its wallet ledger', async () => {
     const referrals = {
-      creditRewardCandidate: jest.fn().mockResolvedValue({
+      creditRewardCandidate: vi.fn().mockResolvedValue({
         id: 'reward-1',
         amount: 25000,
         currency: 'VND',
@@ -667,7 +719,7 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const service = createAdminService(prisma, { referrals });
@@ -703,27 +755,27 @@ describe('AdminService query orchestration', () => {
   it('creates referral reward candidates after completed booking closeout', async () => {
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.COMPLETED,
           notes: null,
           selectedProviderId: 'partner-1',
           payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
         }),
-        update: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'booking-1' }),
       },
     };
     const earnings = {
-      createForCompletedBooking: jest.fn().mockResolvedValue({
+      createForCompletedBooking: vi.fn().mockResolvedValue({
         id: 'earning-1',
         netAmount: 700_000,
       }),
     };
     const referrals = {
-      createRewardsForCompletedBooking: jest.fn().mockResolvedValue({
+      createRewardsForCompletedBooking: vi.fn().mockResolvedValue({
         customerReward: { id: 'customer-reward-1' },
         partnerReward: null,
       }),
@@ -755,7 +807,7 @@ describe('AdminService query orchestration', () => {
     const decisionAt = new Date('2026-06-24T11:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'parent-customer',
             user: { id: 'user-parent', phone: '+84000000001', fullName: 'Parent Customer' },
@@ -810,7 +862,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       adminAuditLog: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'audit-1',
             action: 'referral_reward.credit',
@@ -886,7 +938,7 @@ describe('AdminService query orchestration', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'parent-customer',
           user: { id: 'user-parent', phone: '+84000000001', fullName: 'Parent Customer' },
           referralCodes: [{ id: 'code-1', code: 'HANDSCUST', active: true, createdAt }],
@@ -929,7 +981,7 @@ describe('AdminService query orchestration', () => {
   it('rejects customer referral parent detail when the customer has no referral activity', async () => {
     const prisma = {
       customerProfile: {
-        findFirst: jest.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createAdminService(prisma);
@@ -943,7 +995,7 @@ describe('AdminService query orchestration', () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: vi.fn().mockResolvedValue({
           id: 'parent-partner',
           displayName: 'Parent Partner',
           level: 2,
@@ -982,7 +1034,7 @@ describe('AdminService query orchestration', () => {
         }),
       },
       adminAuditLog: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1006,7 +1058,7 @@ describe('AdminService query orchestration', () => {
   it('lists booking notification evidence by booking id without loading the global notification board', async () => {
     const prisma = {
       notification: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1034,7 +1086,7 @@ describe('AdminService query orchestration', () => {
     }));
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           chatRoom: {
             id: 'chat-room-1',
@@ -1072,7 +1124,7 @@ describe('AdminService query orchestration', () => {
   it('rejects retained booking chat lookup for unknown bookings', async () => {
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
       },
     };
     const service = createAdminService(prisma);
@@ -1083,7 +1135,7 @@ describe('AdminService query orchestration', () => {
   it('lists booking marketplace provider candidates without loading the full Partner directory', async () => {
     const prisma = {
       booking: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValue({
           id: 'booking-1',
           preferredProviderId: 'preferred-partner',
           selectedProviderId: 'selected-partner',
@@ -1097,7 +1149,7 @@ describe('AdminService query orchestration', () => {
         }),
       },
       providerProfile: {
-        findMany: jest
+        findMany: vi
           .fn()
           .mockResolvedValueOnce([{ id: 'preferred-partner' }, { id: 'selected-partner' }])
           .mockResolvedValueOnce([{ id: 'selected-partner' }, { id: 'nearby-partner' }]),
@@ -1142,7 +1194,7 @@ describe('AdminService query orchestration', () => {
     const now = new Date();
     const prisma = {
       customerProfile: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'customer-1',
             addresses: ['85/9 Pham Viet Chanh, Ho Chi Minh City'],
@@ -1167,7 +1219,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'provider-1',
             displayName: 'Smoke Partner',
@@ -1182,7 +1234,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
-        findMany: jest.fn()
+        findMany: vi.fn()
           .mockResolvedValueOnce([
             {
               id: 'booking-1',
@@ -1292,10 +1344,10 @@ describe('AdminService query orchestration', () => {
     const latestWorkAt = new Date('2026-06-20T10:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
       },
       providerEarning: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([
             {
@@ -1330,9 +1382,9 @@ describe('AdminService query orchestration', () => {
           ]),
       },
       adminAuditLog: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      $queryRaw: vi.fn().mockResolvedValue([]),
     };
     const service = createAdminService(prisma);
 
@@ -1356,15 +1408,15 @@ describe('AdminService query orchestration', () => {
     const latestBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
       },
       providerEarning: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
       adminAuditLog: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
-      $queryRaw: jest
+      $queryRaw: vi
         .fn()
         .mockResolvedValueOnce([
           {
@@ -1419,7 +1471,7 @@ describe('AdminService query orchestration', () => {
   it('keeps provider list booking relation windows narrow after summary aggregation', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1440,7 +1492,7 @@ describe('AdminService query orchestration', () => {
   it('keeps provider list booking relation payload compact after summary aggregation', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1568,10 +1620,10 @@ describe('AdminService query orchestration', () => {
     const latestBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Directory Partner' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Directory Partner' }]),
       },
       providerEarning: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([])
@@ -1585,9 +1637,9 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce([]),
       },
       adminAuditLog: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
-      $queryRaw: jest
+      $queryRaw: vi
         .fn()
         .mockResolvedValueOnce([
           {
@@ -1644,7 +1696,7 @@ describe('AdminService query orchestration', () => {
   it('lists file review providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1682,10 +1734,10 @@ describe('AdminService query orchestration', () => {
   it('lists operations policy providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Policy Partner' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Policy Partner' }]),
       },
       providerEarning: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([])
@@ -1742,10 +1794,10 @@ describe('AdminService query orchestration', () => {
   it('lists operations handoff providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Handoff Partner' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Handoff Partner' }]),
       },
       providerEarning: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([])
@@ -1809,10 +1861,10 @@ describe('AdminService query orchestration', () => {
   it('lists partner control providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Control Partner' }]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Control Partner' }]),
       },
       providerEarning: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([])
@@ -1877,7 +1929,7 @@ describe('AdminService query orchestration', () => {
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');
     const prisma = {
       customerProfile: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'customer-1',
             userId: 'user-1',
@@ -1886,7 +1938,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
-        groupBy: jest
+        groupBy: vi
           .fn()
           .mockResolvedValueOnce([
             {
@@ -1907,9 +1959,9 @@ describe('AdminService query orchestration', () => {
           ]),
       },
       adminAuditLog: {
-        groupBy: jest.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
       },
-      $queryRaw: jest.fn().mockResolvedValue([]),
+      $queryRaw: vi.fn().mockResolvedValue([]),
     };
     const service = createAdminService(prisma);
 
@@ -1930,7 +1982,7 @@ describe('AdminService query orchestration', () => {
   it('includes persisted matching decision fields in partner overview booking queries', async () => {
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'provider-1' }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
       },
     };
     const service = createAdminService(prisma);
@@ -1966,13 +2018,13 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       providerProfile: {
-        findUnique: jest.fn().mockResolvedValue(providerProfile),
+        findUnique: vi.fn().mockResolvedValue(providerProfile),
       },
       providerDevice: {
-        findMany: jest.fn().mockReturnValue(sharedDevices.promise),
+        findMany: vi.fn().mockReturnValue(sharedDevices.promise),
       },
       adminAuditLog: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -1997,13 +2049,13 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       payment: {
-        findUnique: jest.fn().mockResolvedValue(payment),
+        findUnique: vi.fn().mockResolvedValue(payment),
       },
       paymentCallbackAttempt: {
-        findMany: jest.fn().mockReturnValue(callbackAttempts.promise),
+        findMany: vi.fn().mockReturnValue(callbackAttempts.promise),
       },
       adminAuditLog: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -2022,11 +2074,11 @@ describe('AdminService query orchestration', () => {
   it('audits notification retry requests after enqueueing the retry job', async () => {
     const prisma = {
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const notifications = {
-      retry: jest.fn().mockResolvedValue({
+      retry: vi.fn().mockResolvedValue({
         latestDelivery: {
           attemptedAt: '2026-06-13T10:23:00.000Z',
           failureCode: 'messaging/mismatched-credential',
@@ -2111,7 +2163,7 @@ describe('AdminService query orchestration', () => {
   it('lists notification delivery evidence without exposing raw push tokens', async () => {
     const prisma = {
       notification: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const service = createAdminService(prisma);
@@ -2167,7 +2219,7 @@ describe('AdminService query orchestration', () => {
   it('audits push device enablement without recording raw push tokens', async () => {
     const prisma = {
       pushDevice: {
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'push-device-1',
           platform: 'ios',
           token: 'raw-fcm-token',
@@ -2175,7 +2227,7 @@ describe('AdminService query orchestration', () => {
         }),
       },
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const service = createAdminService(prisma);
@@ -2207,7 +2259,7 @@ describe('AdminService query orchestration', () => {
   it('approves post-match cancellations and restores unpaid partner earning', async () => {
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.CANCELLED,
           notes: null,
@@ -2226,28 +2278,28 @@ describe('AdminService query orchestration', () => {
             status: EarningStatus.PENDING,
           },
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.CANCELLED,
           closedReason: 'post_match_cancellation_approved',
         }),
       },
       providerEarning: {
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'earning-1',
           status: EarningStatus.CANCELLED,
           netAmount: 0,
         }),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn().mockResolvedValue({ id: 'ledger-1' }),
+        upsert: vi.fn().mockResolvedValue({ id: 'ledger-1' }),
       },
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = createAdminService(prisma);
 
@@ -2333,7 +2385,7 @@ describe('AdminService query orchestration', () => {
   it('holds post-match cancellations without restoring the partner fee deduction', async () => {
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.CANCELLED,
           notes: 'existing note',
@@ -2352,24 +2404,24 @@ describe('AdminService query orchestration', () => {
             status: EarningStatus.PENDING,
           },
         }),
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.CANCELLED,
           closedReason: 'post_match_cancellation_fee_held',
         }),
       },
       providerEarning: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn(),
+        upsert: vi.fn(),
       },
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = createAdminService(prisma);
 
@@ -2409,7 +2461,7 @@ describe('AdminService query orchestration', () => {
   it('rejects post-match cancellation decisions for pre-match cancellations', async () => {
     const tx = {
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: 'booking-1',
           status: BookingStatus.CANCELLED,
           notes: null,
@@ -2421,20 +2473,20 @@ describe('AdminService query orchestration', () => {
           closedNote: null,
           earning: null,
         }),
-        update: jest.fn(),
+        update: vi.fn(),
       },
       providerEarning: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
       providerWalletLedgerEntry: {
-        upsert: jest.fn(),
+        upsert: vi.fn(),
       },
       adminAuditLog: {
-        create: jest.fn(),
+        create: vi.fn(),
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = createAdminService(prisma);
 
@@ -2448,25 +2500,25 @@ describe('AdminService query orchestration', () => {
   it('moderates a review, recalculates published rating, and writes an audit log', async () => {
     const tx = {
       review: {
-        update: jest.fn().mockResolvedValue({
+        update: vi.fn().mockResolvedValue({
           id: 'review-1',
           providerProfileId: 'partner-1',
           status: 'HIDDEN',
         }),
-        aggregate: jest.fn().mockResolvedValue({
+        aggregate: vi.fn().mockResolvedValue({
           _avg: { rating: 4 },
           _count: { rating: 3 },
         }),
       },
       providerProfile: {
-        update: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'partner-1' }),
       },
       adminAuditLog: {
-        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
     };
     const prisma = {
-      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = createAdminService(prisma);
 
@@ -2522,7 +2574,7 @@ describe('AdminService query orchestration', () => {
   it('lists partner customer evaluations with booking and profile summaries', async () => {
     const prisma = {
       providerCustomerReview: {
-        findMany: jest.fn().mockResolvedValue([
+        findMany: vi.fn().mockResolvedValue([
           {
             id: 'evaluation-1',
             bookingId: 'booking-1',

@@ -30,7 +30,7 @@ describe('BookingMonitorBlockedCreateSection', () => {
         },
       ],
       gateFilter: 'service-area',
-      onGateFilterChange: jest.fn(),
+      onGateFilterChange: vi.fn(),
       orderedBookingCreateRejections: [log],
       visibleBookingCreateRejections: [log],
     });
@@ -53,7 +53,7 @@ describe('BookingMonitorBlockedCreateSection', () => {
   });
 
   it('wires clear and gate triage actions', () => {
-    const onGateFilterChange = jest.fn();
+    const onGateFilterChange = vi.fn();
     const section = BookingMonitorBlockedCreateSection({
       bookingGateTriage: [
         {

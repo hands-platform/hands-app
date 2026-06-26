@@ -8,33 +8,33 @@ import type { AdminService } from './admin.service';
 
 describe('AdminController notification and push actions', () => {
   const admin = {
-    enablePushDevice: jest.fn(),
-    listFileReviewProviders: jest.fn(),
-    getMarketingOverview: jest.fn(),
-    getUsageOverview: jest.fn(),
-    getVietnamOverview: jest.fn(),
-    getCustomerReferralParent: jest.fn(),
-    getPartnerReferralParent: jest.fn(),
-    listCustomerReferralParents: jest.fn(),
-    listPartnerReferralParents: jest.fn(),
-    listReferralPolicies: jest.fn(),
-    listOperationsHandoffProviders: jest.fn(),
-    listOperationsPolicyProviders: jest.fn(),
-    listPartnerControlProviders: jest.fn(),
-    listPartnerDirectoryProviders: jest.fn(),
-    creditReferralReward: jest.fn(),
-    holdReferralReward: jest.fn(),
-    releaseAvailableReferralRewards: jest.fn(),
-    reverseReferralReward: jest.fn(),
-    retryNotification: jest.fn(),
-    updateReferralPolicy: jest.fn(),
-    upsertMarketingSpendDaily: jest.fn(),
+    enablePushDevice: vi.fn(),
+    listFileReviewProviders: vi.fn(),
+    getMarketingOverview: vi.fn(),
+    getUsageOverview: vi.fn(),
+    getVietnamOverview: vi.fn(),
+    getCustomerReferralParent: vi.fn(),
+    getPartnerReferralParent: vi.fn(),
+    listCustomerReferralParents: vi.fn(),
+    listPartnerReferralParents: vi.fn(),
+    listReferralPolicies: vi.fn(),
+    listOperationsHandoffProviders: vi.fn(),
+    listOperationsPolicyProviders: vi.fn(),
+    listPartnerControlProviders: vi.fn(),
+    listPartnerDirectoryProviders: vi.fn(),
+    creditReferralReward: vi.fn(),
+    holdReferralReward: vi.fn(),
+    releaseAvailableReferralRewards: vi.fn(),
+    reverseReferralReward: vi.fn(),
+    retryNotification: vi.fn(),
+    updateReferralPolicy: vi.fn(),
+    upsertMarketingSpendDaily: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('exposes push device enablement as a POST action and delegates with actor id', async () => {

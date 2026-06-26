@@ -2,7 +2,7 @@ import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-
 
 describe('bookingAlertEvidenceNeedsOpsFromFacts', () => {
   it('matches existing alert batches without reading the stage', () => {
-    const stageKey = jest.fn(() => 'first-pick' as const);
+    const stageKey = vi.fn(() => 'first-pick' as const);
 
     expect(
       bookingAlertEvidenceNeedsOpsFromFacts({
@@ -16,7 +16,7 @@ describe('bookingAlertEvidenceNeedsOpsFromFacts', () => {
   });
 
   it('matches open matching bookings with no participants without reading the stage', () => {
-    const stageKey = jest.fn(() => 'first-pick' as const);
+    const stageKey = vi.fn(() => 'first-pick' as const);
 
     expect(
       bookingAlertEvidenceNeedsOpsFromFacts({
@@ -50,7 +50,7 @@ describe('bookingAlertEvidenceNeedsOpsFromFacts', () => {
       }),
     ).toBe(false);
 
-    const stageKey = jest.fn(() => 'marketplace' as const);
+    const stageKey = vi.fn(() => 'marketplace' as const);
     expect(
       bookingAlertEvidenceNeedsOpsFromFacts({
         alertBatchCount: 0,

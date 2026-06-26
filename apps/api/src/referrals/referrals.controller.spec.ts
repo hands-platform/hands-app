@@ -8,20 +8,20 @@ import type { ReferralsService } from './referrals.service';
 
 describe('ReferralsController', () => {
   const referrals = {
-    claimCustomerReferralCode: jest.fn(),
-    claimPartnerReferralCode: jest.fn(),
-    getCustomerReferralCode: jest.fn(),
-    getCustomerReferralSummary: jest.fn(),
-    getPartnerReferralCode: jest.fn(),
-    getPartnerReferralSummary: jest.fn(),
-    issueCustomerReferralCode: jest.fn(),
-    issuePartnerReferralCode: jest.fn(),
+    claimCustomerReferralCode: vi.fn(),
+    claimPartnerReferralCode: vi.fn(),
+    getCustomerReferralCode: vi.fn(),
+    getCustomerReferralSummary: vi.fn(),
+    getPartnerReferralCode: vi.fn(),
+    getPartnerReferralSummary: vi.fn(),
+    issueCustomerReferralCode: vi.fn(),
+    issuePartnerReferralCode: vi.fn(),
   };
   const controller = new ReferralsController(referrals as unknown as ReferralsService);
   const user = { id: 'user-1', roles: [Role.CUSTOMER] } as AuthenticatedUser;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('exposes existing customer referral code as a read-only customer endpoint', async () => {

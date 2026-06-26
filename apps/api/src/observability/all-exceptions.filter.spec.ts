@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 
 describe('AllExceptionsFilter', () => {
-  const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
   afterEach(() => {
     consoleError.mockClear();
@@ -14,8 +14,8 @@ describe('AllExceptionsFilter', () => {
   });
 
   it('does not expose query strings in error response paths or logs', () => {
-    const json = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
     const response = { status };
     const request = {
       method: 'GET',
@@ -48,8 +48,8 @@ describe('AllExceptionsFilter', () => {
   });
 
   it('does not expose unexpected internal error messages in responses or logs', () => {
-    const json = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
     const response = { status };
     const request = {
       method: 'POST',

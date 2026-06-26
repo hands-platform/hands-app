@@ -28,7 +28,7 @@ describe('Firebase Admin credential helpers', () => {
 
   it('reads trimmed Firebase credential fields from config', () => {
     const config = {
-      get: jest.fn((key: string) => {
+      get: vi.fn((key: string) => {
         const values: Record<string, string> = {
           FIREBASE_PROJECT_ID: ' hands-demo ',
           FIREBASE_CLIENT_EMAIL: ' firebase-admin@example.test ',
