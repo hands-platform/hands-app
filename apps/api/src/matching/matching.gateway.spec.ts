@@ -29,4 +29,62 @@ describe('MatchingGateway admin booking realtime', () => {
     expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.adminBookings());
     expect(emit).toHaveBeenCalledWith('booking.matched', payload);
   });
+
+  it('does not join customer sockets to bookings they do not own', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const gateway = new MatchingGateway(
+      { requireUser: jest.fn().mockReturnValue({ id: 'customer-user-1', roles: [Role.CUSTOMER] }) } as never,
+      prisma as never,
+    );
+    const client = { join: jest.fn() };
+
+    await expect(gateway.joinBookingRoom(client as never, { bookingId: 'booking-for-another-customer' })).resolves.toEqual({
+      ok: false,
+      error: 'BOOKING_ROOM_FORBIDDEN',
+    });
+
+    expect(client.join).not.toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-for-another-customer'));
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: { id: 'booking-for-another-customer', customerProfileId: 'customer-profile-1' },
+      select: { id: true },
+    });
+  });
+
+  it('joins provider sockets to bookings where they are participants', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+      },
+    };
+    const gateway = new MatchingGateway(
+      { requireUser: jest.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }) } as never,
+      prisma as never,
+    );
+    const client = { join: jest.fn() };
+
+    await expect(gateway.joinBookingRoom(client as never, { bookingId: 'booking-1' })).resolves.toEqual({ ok: true });
+
+    expect(client.join).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        OR: [
+          { preferredProviderId: 'provider-profile-1' },
+          { selectedProviderId: 'provider-profile-1' },
+          { participants: { some: { providerProfileId: 'provider-profile-1' } } },
+        ],
+      },
+      select: { id: true },
+    });
+  });
 });
