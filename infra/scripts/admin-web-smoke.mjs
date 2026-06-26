@@ -402,7 +402,7 @@ const pages = [
       'Owner decision backlog',
       'Current decision pressure',
       'Action gate policy checklist',
-      'Booking action evidence',
+      'Action gate policies are aligned',
       'Cash fee clearance',
       'Payout batch cycle',
       'Policy enforcement trace',
