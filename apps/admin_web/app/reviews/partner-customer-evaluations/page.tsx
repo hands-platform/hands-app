@@ -43,7 +43,7 @@ export default async function PartnerCustomerEvaluationsPage({
         {
           label: 'Rating fields',
           value: 'None',
-          helper: 'Partners write text only; there is no star score for customers.',
+          helper: 'Partners write text only; customers do not receive star ratings here.',
         },
       ]}
       title="Partner Customer Evaluations"
