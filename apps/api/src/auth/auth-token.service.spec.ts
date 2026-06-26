@@ -33,6 +33,21 @@ describe('AuthTokenService Supabase roles', () => {
       externalUserId: 'supabase-user-2',
     });
   });
+
+  it('rejects unexpected Supabase audiences before syncing user records', async () => {
+    const { prisma, service } = createService({
+      sub: 'supabase-user-3',
+      aud: 'anon',
+      phone: '+84900000003',
+      app_metadata: { role: Role.CUSTOMER },
+    });
+
+    await expect(service.authenticateSupabaseBearerToken('supabase-token', [Role.CUSTOMER])).rejects.toThrow(
+      'Invalid Supabase token audience',
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
 });
 
 function createService(payload: Record<string, unknown>) {

@@ -115,6 +115,20 @@ describe('AuthService refresh', () => {
   });
 });
 
+describe('AuthService Supabase exchange', () => {
+  it('rejects admin role exchanges before authenticating Supabase tokens', async () => {
+    const { authTokens, service } = createOtpService({});
+
+    await expect(
+      service.exchangeSupabaseSession({
+        supabaseAccessToken: 'supabase-token',
+        role: Role.ADMIN,
+      }),
+    ).rejects.toThrow('Supabase mobile exchange only supports CUSTOMER or PROVIDER roles');
+    expect(authTokens.authenticateSupabaseBearerToken).not.toHaveBeenCalled();
+  });
+});
+
 function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
   const signedPayloads: unknown[] = [];
   const jwt = {
