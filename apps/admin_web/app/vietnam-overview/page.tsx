@@ -8,6 +8,7 @@ import {
   WalletCards,
   XCircle,
 } from 'lucide-react';
+import Image from 'next/image';
 import type { CSSProperties } from 'react';
 import {
   AdminVietnamOverview,
@@ -646,14 +647,17 @@ function GeoapifyVietnamTileLayer({
       style={tileLayerStyle}
     >
       {tileGrid.tiles.map((tile) => (
-        <img
+        <Image
           key={`${tile.z}-${tile.x}-${tile.y}`}
           alt=""
           className="vietnam-geoapify-tile"
-          decoding="async"
           draggable={false}
+          height={256}
           loading="lazy"
+          sizes="25vw"
           src={tile.src}
+          unoptimized
+          width={256}
         />
       ))}
     </div>
@@ -782,12 +786,12 @@ function vietnamRegionOperatingScore(region: AdminVietnamOverview['regions'][num
   );
 }
 
-function vietnamRegionLoadLevel(score: number, maxScore: number) {
-  const ratio = maxScore > 0 ? score / maxScore : 0;
+function vietnamRegionLoadLevel(loadValue: number, maxLoadValue: number) {
+  const ratio = maxLoadValue > 0 ? loadValue / maxLoadValue : 0;
 
   if (ratio >= 0.66) return 'high';
   if (ratio >= 0.33) return 'medium';
-  if (score > 0) return 'low';
+  if (loadValue > 0) return 'low';
   return 'quiet';
 }
 
