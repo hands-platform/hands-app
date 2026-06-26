@@ -44,6 +44,7 @@ describe('notification page model', () => {
       failedDeliveries: 1,
       failedNotifications: 1,
       pendingNotifications: 1,
+      retrySignalNotifications: 3,
       sentDeliveries: 2,
       skippedDeliveries: 1,
       skippedNotifications: 1,

@@ -131,6 +131,7 @@ export type NotificationDeliveryStats = {
   readonly failedDeliveries: number;
   readonly failedNotifications: number;
   readonly pendingNotifications: number;
+  readonly retrySignalNotifications: number;
   readonly sentDeliveries: number;
   readonly skippedDeliveries: number;
   readonly skippedNotifications: number;
@@ -432,7 +433,7 @@ export function buildNotificationSummary(
   return {
     disabledDevices: deliveryStats.disabledDevices,
     failed: deliveryStats.failedNotifications,
-    needsRetry: notifications.filter((notification) => hasRetrySignal(notification)).length,
+    needsRetry: deliveryStats.retrySignalNotifications,
     noShow: notifications.filter((notification) => notification.type === 'booking.no_show').length,
     payoutSetup: notifications.filter(
       (notification) => notification.type === 'provider.payout_setup_required',
@@ -447,15 +448,66 @@ export function buildNotificationSummary(
 export function buildNotificationDeliveryStats(
   notifications: readonly AdminNotification[],
 ): NotificationDeliveryStats {
+  const disabledDeviceIds = new Set<string>();
+  let failedDeliveries = 0;
+  let failedNotifications = 0;
+  let pendingNotifications = 0;
+  let retrySignalNotifications = 0;
+  let sentDeliveries = 0;
+  let skippedDeliveries = 0;
+  let skippedNotifications = 0;
+  let stalePushDeviceDeliveries = 0;
+
+  for (const notification of notifications) {
+    const deliveries = notificationDeliveries(notification);
+    const latest = newestDeliveries(deliveries)[0];
+    let hasStaleDelivery = false;
+
+    if (deliveries.length === 0) {
+      pendingNotifications += 1;
+    }
+
+    if (latest?.status === 'FAILED') {
+      failedNotifications += 1;
+    }
+    if (latest?.status === 'SKIPPED') {
+      skippedNotifications += 1;
+    }
+
+    for (const delivery of deliveries) {
+      if (delivery.status === 'FAILED') {
+        failedDeliveries += 1;
+      } else if (delivery.status === 'SENT') {
+        sentDeliveries += 1;
+      } else if (delivery.status === 'SKIPPED') {
+        skippedDeliveries += 1;
+      }
+
+      if (delivery.pushDevice?.enabled === false) {
+        disabledDeviceIds.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
+      }
+
+      if (isStaleNotificationPushDeviceDelivery(delivery)) {
+        stalePushDeviceDeliveries += 1;
+        hasStaleDelivery = true;
+      }
+    }
+
+    if (latest?.status === 'FAILED' || latest?.pushDevice?.enabled === false || hasStaleDelivery) {
+      retrySignalNotifications += 1;
+    }
+  }
+
   return {
-    disabledDevices: countDisabledDevices(notifications),
-    failedDeliveries: countDeliveries(notifications, 'FAILED'),
-    failedNotifications: countNotificationsWithDeliveryStatus(notifications, 'FAILED'),
-    pendingNotifications: countPendingNotifications(notifications),
-    sentDeliveries: countDeliveries(notifications, 'SENT'),
-    skippedDeliveries: countDeliveries(notifications, 'SKIPPED'),
-    skippedNotifications: countNotificationsWithDeliveryStatus(notifications, 'SKIPPED'),
-    stalePushDeviceDeliveries: countStalePushDeviceDeliveries(notifications),
+    disabledDevices: disabledDeviceIds.size,
+    failedDeliveries,
+    failedNotifications,
+    pendingNotifications,
+    retrySignalNotifications,
+    sentDeliveries,
+    skippedDeliveries,
+    skippedNotifications,
+    stalePushDeviceDeliveries,
   };
 }
 
@@ -728,18 +780,6 @@ function deliveryFailureCodeLabel(delivery: AdminNotificationDelivery) {
   return failureCode ? notificationFailureCodeLabel(failureCode) : '-';
 }
 
-function countDeliveries(notifications: readonly AdminNotification[], status: string) {
-  return notifications.reduce(
-    (total, notification) =>
-      total + notificationDeliveries(notification).filter((delivery) => delivery.status === status).length,
-    0,
-  );
-}
-
-function countNotificationsWithDeliveryStatus(notifications: readonly AdminNotification[], status: string) {
-  return notifications.filter((notification) => hasLatestDeliveryStatus(notification, status)).length;
-}
-
 function deliveryStatusClassName(status: string) {
   if (status === 'FAILED') {
     return 'pill pill-warn';
@@ -751,30 +791,6 @@ function deliveryStatusClassName(status: string) {
     return 'pill pill-info';
   }
   return 'pill pill-neutral';
-}
-
-function countDisabledDevices(notifications: readonly AdminNotification[]) {
-  const ids = new Set<string>();
-  for (const notification of notifications) {
-    for (const delivery of notificationDeliveries(notification)) {
-      if (delivery.pushDevice?.enabled === false) {
-        ids.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
-      }
-    }
-  }
-  return ids.size;
-}
-
-function countPendingNotifications(notifications: readonly AdminNotification[]) {
-  return notifications.filter(hasNoDeliveryAttempts).length;
-}
-
-function countStalePushDeviceDeliveries(notifications: readonly AdminNotification[]) {
-  return notifications.reduce(
-    (total, notification) =>
-      total + notificationDeliveries(notification).filter(isStaleNotificationPushDeviceDelivery).length,
-    0,
-  );
 }
 
 function hasStalePushDeviceDelivery(notification: AdminNotification) {
