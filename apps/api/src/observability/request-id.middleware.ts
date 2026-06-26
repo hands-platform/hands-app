@@ -16,13 +16,19 @@ type ResponseLike = {
 
 type Next = () => void;
 
+const SAFE_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+
 function requestPathWithoutQuery(req: RequestLike) {
   return (req.originalUrl ?? req.url ?? '').split('?')[0];
 }
 
+function safeIncomingRequestId(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate && SAFE_REQUEST_ID_PATTERN.test(candidate) ? candidate : undefined;
+}
+
 export function requestIdMiddleware(req: RequestLike, res: ResponseLike, next: Next) {
-  const incoming = req.headers?.['x-request-id'];
-  const requestId = Array.isArray(incoming) ? incoming[0] : incoming || randomUUID();
+  const requestId = safeIncomingRequestId(req.headers?.['x-request-id']) || randomUUID();
   const startedAt = Date.now();
 
   req.requestId = requestId;
