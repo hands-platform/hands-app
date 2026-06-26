@@ -64,12 +64,14 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const [settings, bookings, providers, auditLogs] = await Promise.all([
+  const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminProvider[]>('/admin/operations-policy/providers', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=operational_policy.update&take=20', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
   ]);
+  const auditLogs = [...policyAuditLogs, ...bookingGateAuditLogs];
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;

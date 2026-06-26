@@ -271,7 +271,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminNotification[]>('/admin/notifications', []),
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
     adminGet<AdminAppSession[]>('/admin/app-sessions', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
     apiGet<AdminExternalReadiness>('/health/external', {
       ok: false,
       timestamp: new Date(0).toISOString(),
