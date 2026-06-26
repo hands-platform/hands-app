@@ -1605,8 +1605,15 @@ export function adminRealtimeSocketBaseUrl() {
 }
 
 export async function getAdminAccessToken() {
-  if (process.env.ADMIN_ACCESS_TOKEN) {
-    return process.env.ADMIN_ACCESS_TOKEN;
+  const configuredToken = process.env.ADMIN_ACCESS_TOKEN;
+  if (configuredToken) {
+    const expiresAt = readJwtExpiry(configuredToken);
+    if (!expiresAt || expiresAt > Date.now() + ADMIN_TOKEN_REFRESH_SKEW_MS) {
+      return configuredToken;
+    }
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_ACCESS_TOKEN is expired');
+    }
   }
   if (process.env.NODE_ENV === 'production') {
     throw new Error('ADMIN_ACCESS_TOKEN is required in production');

@@ -50,4 +50,37 @@ describe('admin api auth guard', () => {
     await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is required in production');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('refreshes an expired local admin token instead of serving empty admin data', async () => {
+    const freshToken = testJwt(Math.floor(Date.now() / 1000) + 600);
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: testJwt(Math.floor(Date.now() / 1000) - 60),
+      NODE_ENV: 'development',
+    };
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ accessToken: freshToken }), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      }),
+    );
+
+    await expect(getAdminAccessToken()).resolves.toBe(freshToken);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/auth/verify-otp'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
 });
+
+function testJwt(exp: number) {
+  return [
+    base64UrlJson({ alg: 'none', typ: 'JWT' }),
+    base64UrlJson({ exp }),
+    'signature',
+  ].join('.');
+}
+
+function base64UrlJson(value: unknown) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
