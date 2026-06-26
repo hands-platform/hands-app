@@ -299,7 +299,11 @@ export type AdminMarketingRates = {
   repeatBookingRate: number;
   cpi: number | null;
   cpa: number | null;
+  cpaSignup: number | null;
+  cpaBookingCreated: number | null;
+  cpaBookingCompleted: number | null;
   roas: number | null;
+  platformFeeRoas: number | null;
 };
 
 export type AdminMarketingStats = {

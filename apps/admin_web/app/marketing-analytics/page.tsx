@@ -9,6 +9,8 @@ import {
   MousePointerClick,
   Send,
   Smartphone,
+  Target,
+  TrendingUp,
   UserPlus,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -56,7 +58,11 @@ const emptyStats: AdminMarketingStats = {
     repeatBookingRate: 0,
     cpi: null,
     cpa: null,
+    cpaSignup: null,
+    cpaBookingCreated: null,
+    cpaBookingCompleted: null,
     roas: null,
+    platformFeeRoas: null,
   },
 };
 
@@ -130,6 +136,27 @@ export default async function MarketingAnalyticsPage({
       value: formatNumber(overview.totals.bookingCompleted),
       detail: `${formatPercent(overview.totals.conversionRates.bookingCompleteRate)} completion rate`,
       icon: CheckCircle2,
+      tone: 'success',
+    },
+    {
+      label: 'Ad spend',
+      value: formatCurrency(overview.totals.adSpend),
+      detail: 'Manual daily spend rows',
+      icon: BadgeDollarSign,
+      tone: 'warning',
+    },
+    {
+      label: 'CPA completed booking',
+      value: formatNullableCurrency(overview.totals.conversionRates.cpaBookingCompleted),
+      detail: 'Ad spend / completed bookings',
+      icon: Target,
+      tone: 'info',
+    },
+    {
+      label: 'ROAS',
+      value: formatNullableMultiplier(overview.totals.conversionRates.roas),
+      detail: 'Gross booking value / ad spend',
+      icon: TrendingUp,
       tone: 'success',
     },
     {
@@ -490,6 +517,7 @@ function MarketingTable({
               <th>Completed</th>
               <th>Cancel</th>
               <th>Ad spend</th>
+              <th>CPA done</th>
               <th>Fee revenue</th>
               <th>ROAS</th>
             </tr>
@@ -514,13 +542,14 @@ function MarketingTable({
                 <td>{formatNumber(row.bookingCompleted)}</td>
                 <td>{formatNumber(row.bookingCancelled)}</td>
                 <td>{formatCurrency(row.adSpend)}</td>
+                <td>{formatNullableCurrency(row.conversionRates.cpaBookingCompleted)}</td>
                 <td>{formatCurrency(row.platformFeeRevenue)}</td>
-                <td>{formatNullableNumber(row.conversionRates.roas)}</td>
+                <td>{formatNullableMultiplier(row.conversionRates.roas)}</td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={9}>
+                <td colSpan={10}>
                   <div className="empty-state">
                     <BarChart3 size={20} aria-hidden="true" />
                     <strong>{emptyMessage}</strong>
@@ -581,6 +610,10 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
 
+function formatDecimal(value: number) {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', {
     currency: 'VND',
@@ -593,6 +626,10 @@ function formatPercent(value: number) {
   return `${formatNumber(value)}%`;
 }
 
-function formatNullableNumber(value: number | null) {
-  return value === null ? 'n/a' : formatNumber(value);
+function formatNullableCurrency(value: number | null) {
+  return value === null ? 'n/a' : formatCurrency(value);
+}
+
+function formatNullableMultiplier(value: number | null) {
+  return value === null ? 'n/a' : `${formatDecimal(value)}x`;
 }

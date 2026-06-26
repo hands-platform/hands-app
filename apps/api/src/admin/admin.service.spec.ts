@@ -444,8 +444,10 @@ describe('AdminService query orchestration', () => {
     });
     expect(overview.totals.conversionRates).toMatchObject({
       cpi: 300_000,
-      cpa: 600_000,
-      roas: 0.5,
+      cpa: 300_000,
+      cpaBookingCompleted: 300_000,
+      platformFeeRoas: 0.5,
+      roas: 2,
     });
     expect(overview.bySource).toEqual([
       expect.objectContaining({

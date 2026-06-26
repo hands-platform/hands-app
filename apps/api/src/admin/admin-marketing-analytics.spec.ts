@@ -59,7 +59,32 @@ describe('admin marketing analytics helpers', () => {
     expect(stats.conversionRates.signupRate).toBe(0);
     expect(stats.conversionRates.cpi).toBeNull();
     expect(stats.conversionRates.cpa).toBeNull();
+    expect(stats.conversionRates.cpaSignup).toBeNull();
+    expect(stats.conversionRates.cpaBookingCreated).toBeNull();
+    expect(stats.conversionRates.cpaBookingCompleted).toBeNull();
     expect(stats.conversionRates.roas).toBeNull();
+    expect(stats.conversionRates.platformFeeRoas).toBeNull();
+  });
+
+  it('calculates spend efficiency from completed bookings and gross booking value', () => {
+    const stats = withMarketingRates({
+      ...emptyMarketingStats(),
+      firstOpens: 100,
+      signups: 20,
+      bookingCreated: 10,
+      bookingCompleted: 4,
+      grossBookingValue: 2_000_000,
+      platformFeeRevenue: 400_000,
+      adSpend: 1_000_000,
+    });
+
+    expect(stats.conversionRates.cpi).toBe(10_000);
+    expect(stats.conversionRates.cpaSignup).toBe(50_000);
+    expect(stats.conversionRates.cpaBookingCreated).toBe(100_000);
+    expect(stats.conversionRates.cpaBookingCompleted).toBe(250_000);
+    expect(stats.conversionRates.cpa).toBe(250_000);
+    expect(stats.conversionRates.roas).toBe(2);
+    expect(stats.conversionRates.platformFeeRoas).toBe(0.4);
   });
 
   it('aggregates source, campaign, and region rows without personal fields', () => {

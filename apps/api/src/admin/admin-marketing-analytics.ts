@@ -55,7 +55,11 @@ export type AdminMarketingRates = {
   repeatBookingRate: number;
   cpi: number | null;
   cpa: number | null;
+  cpaSignup: number | null;
+  cpaBookingCreated: number | null;
+  cpaBookingCompleted: number | null;
   roas: number | null;
+  platformFeeRoas: number | null;
 };
 
 export type AdminMarketingStatsWithRates = AdminMarketingStats & {
@@ -264,6 +268,8 @@ export function addMarketingStats(
 }
 
 export function withMarketingRates(stats: AdminMarketingStats): AdminMarketingStatsWithRates {
+  const cpaBookingCompleted = costPer(stats.adSpend, stats.bookingCompleted);
+
   return {
     ...stats,
     conversionRates: {
@@ -275,8 +281,12 @@ export function withMarketingRates(stats: AdminMarketingStats): AdminMarketingSt
       firstBookingRate: percent(stats.firstBookingCompleted, stats.signups),
       repeatBookingRate: percent(stats.repeatBookingCompleted, stats.bookingCompleted),
       cpi: costPer(stats.adSpend, stats.firstOpens),
-      cpa: costPer(stats.adSpend, stats.firstBookingCompleted),
-      roas: ratio(stats.platformFeeRevenue, stats.adSpend),
+      cpa: cpaBookingCompleted,
+      cpaSignup: costPer(stats.adSpend, stats.signups),
+      cpaBookingCreated: costPer(stats.adSpend, stats.bookingCreated),
+      cpaBookingCompleted,
+      roas: ratio(stats.grossBookingValue, stats.adSpend),
+      platformFeeRoas: ratio(stats.platformFeeRevenue, stats.adSpend),
     },
   };
 }
