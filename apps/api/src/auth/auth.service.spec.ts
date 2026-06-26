@@ -1,6 +1,52 @@
 import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 
+describe('AuthService OTP production guard', () => {
+  it('rejects production OTP requests when Redis cannot store the OTP', async () => {
+    const { otpDelivery, redisState, service } = createOtpService({
+      NODE_ENV: 'production',
+      redisState: {
+        setOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+      },
+    });
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER })).rejects.toThrow(
+      'OTP service is temporarily unavailable',
+    );
+    expect(redisState.setOtp).toHaveBeenCalled();
+    expect(otpDelivery.deliverOtp).not.toHaveBeenCalled();
+  });
+
+  it('rejects production OTP verification when Redis lookup is unavailable', async () => {
+    const { prisma, service } = createOtpService({
+      NODE_ENV: 'production',
+      redisState: {
+        getOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+      },
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER }),
+    ).rejects.toThrow('OTP service is temporarily unavailable');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects production OTP verification when Redis cannot consume a valid OTP', async () => {
+    const { prisma, service } = createOtpService({
+      NODE_ENV: 'production',
+      redisState: {
+        getOtp: jest.fn().mockResolvedValue('123456'),
+        consumeOtp: jest.fn().mockRejectedValue(new Error('redis down')),
+      },
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER }),
+    ).rejects.toThrow('OTP service is temporarily unavailable');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+});
+
 describe('AuthService refresh', () => {
   it('preserves the active provider role from refresh tokens', async () => {
     const { service, signedPayloads } = createService(
@@ -76,5 +122,56 @@ function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
       {} as never,
     ),
     signedPayloads,
+  };
+}
+
+function createOtpService({
+  NODE_ENV,
+  redisState: redisStateOverrides,
+}: {
+  NODE_ENV?: string;
+  redisState?: Partial<Record<'consumeOtp' | 'getOtp' | 'setOtp', jest.Mock>>;
+}) {
+  const jwt = {
+    sign: jest.fn().mockReturnValue('signed-token'),
+    verify: jest.fn(),
+  };
+  const prisma = {
+    user: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+    },
+  };
+  const config = {
+    get: jest.fn((key: string) => (key === 'NODE_ENV' ? NODE_ENV : undefined)),
+  };
+  const redisState = {
+    consumeOtp: jest.fn().mockResolvedValue(undefined),
+    getOtp: jest.fn().mockResolvedValue(null),
+    setOtp: jest.fn().mockResolvedValue(undefined),
+    ...redisStateOverrides,
+  };
+  const otpDelivery = {
+    deliverOtp: jest.fn().mockResolvedValue({ provider: 'sms', status: 'DELIVERED' }),
+  };
+  const authTokens = {
+    authenticateSupabaseBearerToken: jest.fn(),
+  };
+
+  return {
+    authTokens,
+    config,
+    jwt,
+    otpDelivery,
+    prisma,
+    redisState,
+    service: new AuthService(
+      prisma as never,
+      jwt as never,
+      config as never,
+      redisState as never,
+      otpDelivery as never,
+      authTokens as never,
+    ),
   };
 }

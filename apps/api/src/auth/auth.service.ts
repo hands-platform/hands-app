@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
@@ -34,7 +34,7 @@ export class AuthService {
   ) {}
 
   async requestOtp(input: { phone: string; role?: Role }) {
-    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+    const isProduction = this.isProduction();
     const otp = isProduction ? this.generateOtp() : this.devOtp();
     await this.storeOtp(input.phone, otp);
     const delivery = await this.otpDelivery.deliverOtp(input.phone, otp);
@@ -193,7 +193,7 @@ export class AuthService {
 
   private async assertValidOtp(phone: string, otp: string) {
     const storedOtp = await this.getStoredOtp(phone);
-    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+    const isProduction = this.isProduction();
     const devFallbackAllowed = !isProduction && otp === this.devOtp();
 
     if (storedOtp ? otp !== storedOtp : !devFallbackAllowed) {
@@ -207,6 +207,10 @@ export class AuthService {
     try {
       await this.redisState.setOtp(phone, otp);
     } catch (error) {
+      if (this.isProduction()) {
+        this.logger.warn(`Redis OTP store unavailable. ${(error as Error).message}`);
+        throw new ServiceUnavailableException('OTP service is temporarily unavailable');
+      }
       this.logger.warn(
         `Redis OTP store unavailable; using in-memory OTP fallback. ${(error as Error).message}`,
       );
@@ -221,6 +225,10 @@ export class AuthService {
         return otp;
       }
     } catch (error) {
+      if (this.isProduction()) {
+        this.logger.warn(`Redis OTP lookup unavailable. ${(error as Error).message}`);
+        throw new ServiceUnavailableException('OTP service is temporarily unavailable');
+      }
       this.logger.warn(
         `Redis OTP lookup unavailable; checking in-memory OTP fallback. ${(error as Error).message}`,
       );
@@ -242,8 +250,16 @@ export class AuthService {
     try {
       await this.redisState.consumeOtp(phone);
     } catch (error) {
+      if (this.isProduction()) {
+        this.logger.warn(`Redis OTP consume unavailable. ${(error as Error).message}`);
+        throw new ServiceUnavailableException('OTP service is temporarily unavailable');
+      }
       this.logger.warn(`Redis OTP consume unavailable. ${(error as Error).message}`);
     }
+  }
+
+  private isProduction() {
+    return this.config.get<string>('NODE_ENV') === 'production';
   }
 
   private generateOtp() {
