@@ -13,6 +13,7 @@ import {
   buildNotificationPageModel,
   notificationFilterDescription,
   notificationFilterLinks,
+  buildNotificationListHref,
 } from './notification-page-model';
 import { NotificationsTableSection } from './notifications-table-section';
 
@@ -85,6 +86,8 @@ export default async function NotificationsPage({
 
         <NotificationsTableSection
           emptyMessage={emptyNotificationMessage(model.filters.review, model.filters.booking, shortId)}
+          hrefForPage={(page) => buildNotificationListHref(model.filters, { page })}
+          pagination={model.notificationPagination}
           rows={model.notificationRows}
         />
       </div>

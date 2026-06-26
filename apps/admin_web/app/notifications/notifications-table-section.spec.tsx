@@ -167,6 +167,30 @@ describe('NotificationsTableSection', () => {
 
     expect(textContent(section)).toContain('No notifications currently match this queue.');
   });
+
+  it('renders rounded pagination when table pagination is provided', () => {
+    const section = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      hrefForPage: (page) => `/notifications?page=${page}`,
+      pagination: {
+        from: 21,
+        page: 2,
+        rows: [buildRow()],
+        to: 21,
+        totalPages: 5,
+        totalRows: 81,
+      },
+      rows: [buildRow()],
+    });
+
+    expect(normalizedText(section)).toContain('Showing 21 to 21 of 81 entries');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/notifications?page=1', '/notifications?page=2', '/notifications?page=5']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['vuexy-booking-table-footer notification-table-footer']),
+    );
+  });
 });
 
 function buildRow(): NotificationTableRow {

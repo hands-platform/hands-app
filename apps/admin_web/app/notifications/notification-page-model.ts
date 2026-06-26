@@ -57,6 +57,15 @@ type BuildNotificationPageModelInput = {
   readonly params: NotificationPageParams;
 };
 
+export type NotificationTablePagination = {
+  readonly from: number;
+  readonly page: number;
+  readonly rows: readonly NotificationTableRow[];
+  readonly to: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
+};
+
 const PARTNER_ALERT_TYPES = [
   'booking.requested',
   'booking.backup_available',
@@ -65,6 +74,7 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
+const NOTIFICATION_TABLE_PAGE_SIZE = 20;
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'customers or Partners with disabled push devices.',
   failed: 'latest delivery attempts that returned an FCM push failure.',
@@ -188,6 +198,24 @@ export function buildNotificationFilters(params: Record<string, string | string[
   };
 }
 
+export function buildNotificationListHref(
+  filters: { readonly booking: string; readonly review: string },
+  options: { readonly page?: number } = {},
+) {
+  const query = new URLSearchParams();
+  if (filters.review) {
+    query.set('review', filters.review);
+  }
+  if (filters.booking) {
+    query.set('booking', filters.booking);
+  }
+  if (options.page && options.page > 1) {
+    query.set('page', String(options.page));
+  }
+  const value = query.toString();
+  return value ? `/notifications?${value}` : '/notifications';
+}
+
 export function buildNotificationPageModel({
   notifications: rawNotifications,
   operationalPolicies,
@@ -204,6 +232,11 @@ export function buildNotificationPageModel({
   );
   const fcmSmokeReadiness = buildNotificationFcmSmokeReadiness(allNotifications);
   const reviewState = buildNotificationReviewState(filters.review);
+  const allNotificationRows = buildNotificationTableRows(notifications, filters);
+  const notificationPagination = paginateNotificationRows(
+    allNotificationRows,
+    readNotificationTablePage(params.page),
+  );
 
   return {
     activeBookingId: filters.booking,
@@ -223,13 +256,40 @@ export function buildNotificationPageModel({
     filters,
     fcmSmokeReadiness,
     metrics: buildNotificationMetrics(allNotifications.length, summary, channelSummary),
-    notificationRows: buildNotificationTableRows(notifications, filters),
+    notificationPagination,
+    notificationRows: notificationPagination.rows,
     notifications,
     opsQueue: buildNotificationDeliveryOpsQueue(allNotifications),
     partnerAlertSmokeFallback,
     reviewRunbook: reviewState.runbook,
     summary,
   };
+}
+
+export function paginateNotificationRows(
+  rows: readonly NotificationTableRow[],
+  requestedPage: number,
+  pageSize = NOTIFICATION_TABLE_PAGE_SIZE,
+): NotificationTablePagination {
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const start = (page - 1) * pageSize;
+  const pageRows = rows.slice(start, start + pageSize);
+
+  return {
+    from: totalRows === 0 ? 0 : start + 1,
+    page,
+    rows: pageRows,
+    to: Math.min(totalRows, start + pageRows.length),
+    totalPages,
+    totalRows,
+  };
+}
+
+function readNotificationTablePage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
 }
 
 export function buildNotificationReviewState(review: string) {
@@ -1106,10 +1166,6 @@ function asRecord(value: unknown) {
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
-}
-
-function hasDeliveryStatus(notification: AdminNotification, status: string) {
-  return notificationDeliveries(notification).some((delivery) => delivery.status === status);
 }
 
 function hasLatestDeliveryStatus(notification: AdminNotification, status: string) {

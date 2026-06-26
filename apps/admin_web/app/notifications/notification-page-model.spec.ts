@@ -5,6 +5,7 @@ import {
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
   buildNotificationFcmSmokeReadiness,
+  buildNotificationListHref,
   buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
   buildNotificationReviewState,
@@ -766,6 +767,34 @@ describe('notification page model', () => {
     expect(model.summary).toMatchObject({ failed: 1, sent: 1 });
   });
 
+  it('paginates notification table rows without changing metrics or filtered totals', () => {
+    const notifications = Array.from({ length: 25 }, (_, index) =>
+      notification({
+        createdAt: `2026-06-${String(index + 1).padStart(2, '0')}T10:00:00.000Z`,
+        deliveries: [],
+        id: `notification-${index + 1}`,
+        type: 'booking.requested',
+      }),
+    );
+
+    const model = buildNotificationPageModel({
+      notifications,
+      operationalPolicies: [],
+      params: { page: '2' },
+    });
+
+    expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(25);
+    expect(model.notifications).toHaveLength(25);
+    expect(model.notificationRows).toHaveLength(5);
+    expect(model.notificationPagination).toMatchObject({
+      from: 21,
+      page: 2,
+      to: 25,
+      totalPages: 2,
+      totalRows: 25,
+    });
+  });
+
   it('builds the FCM route model with retry confirmation guidance', () => {
     const model = buildNotificationPageModel({
       notifications: [
@@ -1118,6 +1147,13 @@ describe('notification page model', () => {
       booking: 'booking-1',
       review: 'failed',
     });
+    expect(buildNotificationListHref({ booking: 'booking-1', review: 'failed' }, { page: 2 })).toBe(
+      '/notifications?review=failed&booking=booking-1&page=2',
+    );
+    expect(buildNotificationListHref({ booking: 'booking-1', review: 'failed' }, { page: 1 })).toBe(
+      '/notifications?review=failed&booking=booking-1',
+    );
+    expect(buildNotificationListHref({ booking: '', review: '' })).toBe('/notifications');
     expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
       href: '/notifications?review=partner-alerts',
       label: 'Partner alerts',
