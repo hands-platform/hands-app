@@ -97,7 +97,7 @@ function normalizeRequiredText(value: string) {
 
 export function pushDeviceDisableInput(userId: string, token: string, lastSeenAt = new Date()) {
   return {
-    where: { userId, token },
+    where: { userId, token: normalizeRequiredText(token) },
     data: { enabled: false, lastSeenAt },
   };
 }

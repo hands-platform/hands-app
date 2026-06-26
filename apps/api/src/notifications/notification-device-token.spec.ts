@@ -145,7 +145,7 @@ describe('notification device token helpers', () => {
   it('builds authenticated token disable input', () => {
     const lastSeenAt = new Date('2026-06-11T00:00:00.000Z');
 
-    expect(pushDeviceDisableInput('user-1', 'fcm-token-1', lastSeenAt)).toEqual({
+    expect(pushDeviceDisableInput('user-1', ' fcm-token-1 ', lastSeenAt)).toEqual({
       where: { userId: 'user-1', token: 'fcm-token-1' },
       data: { enabled: false, lastSeenAt },
     });
