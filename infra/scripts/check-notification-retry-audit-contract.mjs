@@ -1,10 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const apiRetryAudit = readSource('apps/api/src/notifications/notification-retry-audit.ts');
 const apiNotificationsService = readSource('apps/api/src/notifications/notifications.service.ts');
-const adminAuditLog = readSource('apps/admin_web/app/audit-log/page.tsx');
+const adminAuditLog = readSources([
+  'apps/admin_web/app/audit-log/page.tsx',
+  'apps/admin_web/app/audit-log/page-content.tsx',
+]);
 const fcmPushSmoke = readSource('infra/scripts/fcm-push-smoke.mjs');
 
 const retryAuditMetadataKeys = [
@@ -113,6 +116,13 @@ console.log(JSON.stringify(result, null, 2));
 
 function readSource(relativePath) {
   return readFileSync(resolve(repoRoot, relativePath), 'utf8');
+}
+
+function readSources(relativePaths) {
+  return relativePaths
+    .filter((relativePath) => existsSync(resolve(repoRoot, relativePath)))
+    .map(readSource)
+    .join('\n');
 }
 
 function missingKeys(source, keys) {
