@@ -30,6 +30,11 @@ function extractBearerToken(header: string | string[] | undefined) {
     return undefined;
   }
 
-  const [scheme, token] = value.split(' ');
+  const parts = value.trim().split(/\s+/);
+  if (parts.length !== 2) {
+    return undefined;
+  }
+
+  const [scheme, token] = parts;
   return scheme === 'Bearer' ? token : undefined;
 }
