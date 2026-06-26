@@ -2,6 +2,7 @@
 
 Date: 2026-06-26
 Scope: residual `npm audit --workspaces --audit-level=moderate` findings after safe dependency overrides.
+Last reviewed: 2026-06-27
 
 ## Current Audit Summary
 
@@ -27,6 +28,7 @@ Scope: residual `npm audit --workspaces --audit-level=moderate` findings after s
 - Risk to speed/cost/business correctness: low runtime business risk, medium developer tooling risk if untrusted YAML is fed into test/coverage config paths.
 - Recommended fix: keep the current Jest stack for now, then schedule a separate dev-toolchain upgrade task for Jest/ts-jest/Istanbul once npm offers a safe non-downgrade remediation path.
 - Safe code change now: no. The npm fix path proposes major/downgrade changes such as older Jest or `ts-jest@27.0.3`, which can break the existing test setup.
+- 2026-06-27 override check: forcing `@istanbuljs/load-nyc-config -> js-yaml@^4.2.0` left the npm tree in an `invalid` state (`npm ls js-yaml @istanbuljs/load-nyc-config --all` failed), so the override was reverted.
 - Suggested test or smoke check: `just safe-check`, API test suite, Admin test suite, and coverage command if coverage config changes later.
 
 ### Firebase Admin / Google Cloud Storage Transitive Chain
@@ -45,6 +47,7 @@ Scope: residual `npm audit --workspaces --audit-level=moderate` findings after s
 - Risk to speed/cost/business correctness: low current business risk if HANDS continues to use Firebase only as an FCM delivery network; higher future risk if Firebase Storage APIs are introduced without revisiting this audit.
 - Recommended fix: do not apply npm's suggested force fix. Track upstream Firebase Admin / Google Cloud Storage releases. Keep FCM usage isolated to messaging-only code paths and avoid adding Firebase Storage usage unless a fresh audit confirms a safe package chain.
 - Safe code change now: no. The npm fix path proposes `firebase-admin@10.3.0`, a major downgrade from the current latest `14.1.0`.
+- 2026-06-27 override check: `gaxios@6.7.1` and `teeny-request@9.0.0` both depend on `uuid@^9`, while the advisory fix requires `uuid>=11.1.1`. Do not force an override across this runtime dependency boundary without a dedicated Firebase/Admin messaging regression task.
 - Suggested test or smoke check: notification service unit tests, FCM environment contract check, `just safe-check`, and a production dependency audit after the next Firebase Admin release.
 
 ## Guardrails
@@ -65,6 +68,8 @@ Scope: residual `npm audit --workspaces --audit-level=moderate` findings after s
 ## Verification Captured
 
 - `npm audit --workspaces --audit-level=moderate --json`: exits non-zero with 25 moderate vulnerabilities, 0 high, 0 low, 0 critical.
+- `npm audit --audit-level=moderate`: exits non-zero with the same 25 moderate findings; automated remediation still requires `--force`.
+- `npm ls js-yaml @istanbuljs/load-nyc-config --all`: valid after reverting the attempted `js-yaml` override.
 - `rg -n "admin\.storage|getStorage|bucket\(|@google-cloud/storage|firebase-admin/storage" apps packages infra docs --glob '!**/node_modules/**'`: no matches.
 - `npm view firebase-admin version`: `14.1.0`.
 - `npm view @google-cloud/storage version`: `7.21.0`.
