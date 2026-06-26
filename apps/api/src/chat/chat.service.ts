@@ -3,7 +3,7 @@ import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { MAX_CHAT_MESSAGE_BODY_LENGTH } from './chat.policy';
+import { MAX_CHAT_ATTACHMENTS_JSON_LENGTH, MAX_CHAT_MESSAGE_BODY_LENGTH } from './chat.policy';
 
 @Injectable()
 export class ChatService {
@@ -36,13 +36,14 @@ export class ChatService {
     if (trimmedBody.length > MAX_CHAT_MESSAGE_BODY_LENGTH) {
       throw new BadRequestException(`Message body must be ${MAX_CHAT_MESSAGE_BODY_LENGTH} characters or fewer`);
     }
+    const attachments = serializeChatAttachments(input.attachments);
 
     const message = await this.prisma.chatMessage.create({
       data: {
         chatRoomId,
         senderId: user.id,
         body: trimmedBody,
-        attachments: input.attachments === undefined ? undefined : JSON.parse(JSON.stringify(input.attachments)),
+        attachments,
       },
       include: { sender: { select: { id: true, fullName: true, roles: true } } },
     });
@@ -141,5 +142,18 @@ export class ChatService {
       });
     }
   }
+}
+
+function serializeChatAttachments(attachments: unknown) {
+  if (attachments === undefined) {
+    return undefined;
+  }
+
+  const serialized = JSON.stringify(attachments);
+  if (serialized.length > MAX_CHAT_ATTACHMENTS_JSON_LENGTH) {
+    throw new BadRequestException('Chat attachment metadata is too large');
+  }
+
+  return JSON.parse(serialized);
 }
 

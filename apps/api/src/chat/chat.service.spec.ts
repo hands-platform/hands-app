@@ -187,4 +187,35 @@ describe('ChatService message validation', () => {
 
     expect(prisma.chatMessage.create).not.toHaveBeenCalled();
   });
+
+  it('rejects oversized chat attachment metadata at the service boundary', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+      chatMessage: {
+        create: jest.fn(),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        {
+          text: 'Please review this attachment',
+          attachments: [{ id: 'file-1', note: 'x'.repeat(5000) }],
+        },
+      ),
+    ).rejects.toThrow('Chat attachment metadata is too large');
+
+    expect(prisma.chatMessage.create).not.toHaveBeenCalled();
+  });
 });
