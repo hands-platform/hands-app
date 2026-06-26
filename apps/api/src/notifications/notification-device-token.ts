@@ -43,14 +43,16 @@ export function pushDeviceRegistrationInput(
   lastSeenAt = new Date(),
 ) {
   const role = requirePushDeviceRole(user.roles, user.activeRole);
+  const token = normalizeRequiredText(input.token);
+  const platform = normalizeRequiredText(input.platform).toLowerCase();
   const registrationMetadata = pushDeviceRegistrationMetadata(input);
 
   return {
-    where: { token: input.token },
+    where: { token },
     update: {
       userId: user.id,
       role,
-      platform: input.platform,
+      platform,
       ...registrationMetadata,
       enabled: true,
       lastSeenAt,
@@ -58,8 +60,8 @@ export function pushDeviceRegistrationInput(
     create: {
       userId: user.id,
       role,
-      token: input.token,
-      platform: input.platform,
+      token,
+      platform,
       ...registrationMetadata,
       lastSeenAt,
     },
@@ -83,6 +85,14 @@ function requirePushDeviceRole(roles: readonly Role[], activeRole?: Role) {
     throw new Error('Push device registration requires a customer or provider role');
   }
   return role;
+}
+
+function normalizeRequiredText(value: string) {
+  const normalized = value.trim();
+  if (!normalized) {
+    throw new Error('Push device registration requires token and platform');
+  }
+  return normalized;
 }
 
 export function pushDeviceDisableInput(userId: string, token: string, lastSeenAt = new Date()) {

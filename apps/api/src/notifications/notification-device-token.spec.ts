@@ -35,7 +35,7 @@ describe('notification device token helpers', () => {
     expect(
       pushDeviceRegistrationInput(
         { id: 'user-1', roles: [Role.PROVIDER] },
-        { token: 'fcm-token-1', platform: 'android' },
+        { token: ' fcm-token-1 ', platform: ' ANDROID ' },
         lastSeenAt,
       ),
     ).toEqual({
