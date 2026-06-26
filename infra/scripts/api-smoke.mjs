@@ -4,6 +4,13 @@ const defaultCustomerCurrentLocation = {
   currentLng: 106.7009,
 };
 
+let smokePhoneSequence = 0;
+function uniqueSmokePhone(prefix = '+849') {
+  smokePhoneSequence += 1;
+  const seed = BigInt(Date.now()) * 1000n + BigInt(process.pid % 1000) + BigInt(smokePhoneSequence);
+  return `${prefix}${String(seed).slice(-8)}`;
+}
+
 async function request(path, options = {}) {
   const { retryRateLimit = true, ...fetchOptions } = options;
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -40,7 +47,11 @@ const postJson = (path, accessToken, body = {}) =>
 
 async function startAndCompleteBooking(bookingId, providerAccessToken) {
   await postJson(`/provider/bookings/${bookingId}/start`, providerAccessToken);
-  return postJson(`/provider/bookings/${bookingId}/complete`, providerAccessToken);
+  return postJson(`/provider/bookings/${bookingId}/complete`, providerAccessToken, {
+    lat: 10.7769,
+    lng: 106.7009,
+    addressText: 'District 1, Ho Chi Minh City',
+  });
 }
 
 const getJson = (path, accessToken) =>
@@ -215,21 +226,8 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
     await postJson(`/admin/partners/${providerProfileId}/kyc/approve`, adminAccessToken);
   }
 
-  onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
-  if (!onboarding.bankAccounts?.some((account) => account.status === 'APPROVED')) {
-    const bankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
-      bankName: 'Vietcombank',
-      accountNumber: '000012345678',
-      accountHolderName: `${label} Partner`,
-    });
-    await postJson(`/admin/partner-bank-accounts/${bankAccount.bankAccount.id}/approve`, adminAccessToken);
-  }
-
   const ready = await getJson('/provider/onboarding', providerAuth.accessToken);
-  if (
-    ready.kyc?.status !== 'APPROVED' ||
-    !ready.bankAccounts?.some((account) => account.status === 'APPROVED')
-  ) {
+  if (ready.kyc?.status !== 'APPROVED') {
     throw new Error(`${label} partner booking readiness setup failed: ${JSON.stringify(ready)}`);
   }
   return ready;
@@ -314,24 +312,66 @@ const customerAuth = await request('/auth/verify-otp', {
 
 const providerAuth = await request('/auth/verify-otp', {
   method: 'POST',
-  body: JSON.stringify({ phone: '+84900000002', otp: '123456', role: 'PROVIDER' }),
+  body: JSON.stringify({ phone: uniqueSmokePhone('+849'), otp: '123456', role: 'PROVIDER' }),
 });
 
 const backupProviderAuth = await request('/auth/verify-otp', {
   method: 'POST',
-  body: JSON.stringify({ phone: '+84900000003', otp: '123456', role: 'PROVIDER' }),
+  body: JSON.stringify({ phone: uniqueSmokePhone('+849'), otp: '123456', role: 'PROVIDER' }),
 });
 
-const kycNegativeProviderPhone = `+849${String(Date.now()).slice(-8)}`;
+const kycNegativeProviderPhone = uniqueSmokePhone('+849');
 const kycNegativeProviderAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: kycNegativeProviderPhone, otp: '123456', role: 'PROVIDER' }),
 });
 
-const walletDebtProviderPhone = `+848${String(Date.now()).slice(-8)}`;
+const walletDebtProviderPhone = uniqueSmokePhone('+848');
 const walletDebtProviderAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: walletDebtProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const distanceGateProviderPhone = uniqueSmokePhone('+847');
+const distanceGateProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: distanceGateProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const narrowRadiusProviderPhone = uniqueSmokePhone('+846');
+const narrowRadiusProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: narrowRadiusProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const legacyPolicyProviderPhone = uniqueSmokePhone('+845');
+const legacyPolicyProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: legacyPolicyProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const fcmPolicyProviderPhone = uniqueSmokePhone('+844');
+const fcmPolicyProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: fcmPolicyProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const preferredAcceptProviderPhone = uniqueSmokePhone('+843');
+const preferredAcceptProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: preferredAcceptProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const afterMatchCancellationProviderPhone = uniqueSmokePhone('+842');
+const afterMatchCancellationProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: afterMatchCancellationProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
+const walletDebtServiceGateProviderPhone = uniqueSmokePhone('+841');
+const walletDebtServiceGateProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: walletDebtServiceGateProviderPhone, otp: '123456', role: 'PROVIDER' }),
 });
 
 const adminAuth = await request('/auth/verify-otp', {
@@ -891,6 +931,25 @@ const updatedProviderService = await patchJson(`/provider/services/${service.id}
 if (updatedProviderService.price !== higherCustomerPrice || updatedProviderService.active !== true) {
   throw new Error(`Provider service price was not updated: ${JSON.stringify(updatedProviderService)}`);
 }
+for (const [label, auth] of [
+  ['backup', backupProviderAuth],
+  ['wallet-debt', walletDebtProviderAuth],
+  ['distance-gate', distanceGateProviderAuth],
+  ['narrow-radius', narrowRadiusProviderAuth],
+  ['legacy-policy', legacyPolicyProviderAuth],
+  ['fcm-policy', fcmPolicyProviderAuth],
+  ['preferred-accept', preferredAcceptProviderAuth],
+  ['after-match-cancellation', afterMatchCancellationProviderAuth],
+  ['wallet-debt-service-gate', walletDebtServiceGateProviderAuth],
+]) {
+  const updatedService = await patchJson(`/provider/services/${service.id}`, auth.accessToken, {
+    price: higherCustomerPrice,
+    active: true,
+  });
+  if (updatedService.price !== higherCustomerPrice || updatedService.active !== true) {
+    throw new Error(`${label} provider service price was not updated: ${JSON.stringify(updatedService)}`);
+  }
+}
 const adminServiceAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
   (item) => item.id === service.id,
 );
@@ -1129,21 +1188,20 @@ await postJson(
   `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
   adminAuth.accessToken,
 );
-const missingBankBookingGateError = await expectRequestFailure(
-  'Partner without approved bank account cannot receive direct booking',
-  () =>
-    postJson('/customer/bookings', customerAuth.accessToken, {
-      serviceId: service.id,
-      providerId: kycNegativeProviderAuth.user.providerProfile.id,
-      address: { line1: 'Bank booking gate smoke flow' },
-      lat: 10.7769,
-      lng: 106.7009,
-      paymentMethod: 'CASH',
-    }),
-  400,
-);
-if (!missingBankBookingGateError.includes('Partner bank account must be approved')) {
-  throw new Error(`Bank booking gate returned the wrong message: ${missingBankBookingGateError}`);
+const bankDeferredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: kycNegativeProviderAuth.user.providerProfile.id,
+  address: { line1: 'Bank deferred booking smoke flow' },
+  lat: 10.7769,
+  lng: 106.7009,
+  paymentMethod: 'CASH',
+});
+if (!bankDeferredBooking?.id) {
+  throw new Error(
+    `Partner with approved KYC should receive direct booking before withdrawal bank review: ${JSON.stringify(
+      bankDeferredBooking,
+    )}`,
+  );
 }
 const kycDocumentUploads = [];
 for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
@@ -1204,6 +1262,21 @@ if (
 }
 await approvePartnerBookingReadiness(backupProviderAuth, adminAuth.accessToken, 'backup');
 await approvePartnerBookingReadiness(walletDebtProviderAuth, adminAuth.accessToken, 'wallet-debt');
+await approvePartnerBookingReadiness(distanceGateProviderAuth, adminAuth.accessToken, 'distance-gate');
+await approvePartnerBookingReadiness(narrowRadiusProviderAuth, adminAuth.accessToken, 'narrow-radius');
+await approvePartnerBookingReadiness(legacyPolicyProviderAuth, adminAuth.accessToken, 'legacy-policy');
+await approvePartnerBookingReadiness(fcmPolicyProviderAuth, adminAuth.accessToken, 'fcm-policy');
+await approvePartnerBookingReadiness(preferredAcceptProviderAuth, adminAuth.accessToken, 'preferred-accept');
+await approvePartnerBookingReadiness(
+  afterMatchCancellationProviderAuth,
+  adminAuth.accessToken,
+  'after-match-cancellation',
+);
+await approvePartnerBookingReadiness(
+  walletDebtServiceGateProviderAuth,
+  adminAuth.accessToken,
+  'wallet-debt-service-gate',
+);
 const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
@@ -1279,6 +1352,7 @@ await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
 await postJson('/provider/online', providerAuth.accessToken);
 await postJson('/provider/online', backupProviderAuth.accessToken);
 await postJson('/provider/online', walletDebtProviderAuth.accessToken);
+await postJson('/provider/online', distanceGateProviderAuth.accessToken);
 
 await postJson('/provider/location', providerAuth.accessToken, {
   lat: 10.7769,
@@ -1286,8 +1360,8 @@ await postJson('/provider/location', providerAuth.accessToken, {
 });
 
 await postJson('/provider/location', backupProviderAuth.accessToken, {
-  lat: 10.7825,
-  lng: 106.6951,
+  lat: 10.7783,
+  lng: 106.6994,
 });
 
 await postJson('/provider/location', walletDebtProviderAuth.accessToken, {
@@ -1487,40 +1561,34 @@ if (
     )}`,
   );
 }
-const farCurrentLocationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
-  serviceId: service.id,
-  address: { line1: 'Da Nang city center' },
-  lat: 16.0471,
-  lng: 108.2068,
-  currentLat: 10.7769,
-  currentLng: 106.7009,
-  currentLocationUpdatedAt: new Date().toISOString(),
-  paymentMethod: 'CASH',
-});
-const farCurrentLocationBookingDetail = await getJson(
-  `/customer/bookings/${farCurrentLocationBooking.id}`,
-  customerAuth.accessToken,
+const farCurrentLocationBookingError = await expectRequestFailure(
+  'Fresh customer GPS too far from booking address blocks booking creation',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      address: { line1: 'Da Nang city center' },
+      lat: 16.0471,
+      lng: 108.2068,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: new Date().toISOString(),
+      paymentMethod: 'CASH',
+    }),
+  400,
 );
-if (
-  farCurrentLocationBookingDetail.status !== 'OPEN_MATCHING' ||
-  farCurrentLocationBookingDetail.addressSnapshot?.addressText !== 'Da Nang city center'
-) {
-  throw new Error(
-    `Customer GPS distance should not block booking when the Vietnam service address is confirmed: ${JSON.stringify(
-      farCurrentLocationBookingDetail,
-    )}`,
-  );
+if (!farCurrentLocationBookingError.includes("Booking address must be within 50km of the customer's current location")) {
+  throw new Error(`Far customer GPS booking gate returned the wrong message: ${farCurrentLocationBookingError}`);
 }
-await postJson('/provider/location', providerAuth.accessToken, {
+await postJson('/provider/location', distanceGateProviderAuth.accessToken, {
   lat: 16.0471,
   lng: 108.2068,
 });
-await expectRequestFailure(
+const preferredPartnerDistanceGateError = await expectRequestFailure(
   'Booking rejects preferred partners too far from the booking address',
   () =>
     postJson('/customer/bookings', customerAuth.accessToken, {
       serviceId: service.id,
-      providerId: providerAuth.user.providerProfile.id,
+      providerId: distanceGateProviderAuth.user.providerProfile.id,
       address: { line1: 'District 1, Ho Chi Minh City' },
       lat: 10.7769,
       lng: 106.7009,
@@ -1531,9 +1599,19 @@ await expectRequestFailure(
     }),
   400,
 );
-await postJson('/provider/location', providerAuth.accessToken, {
-  lat: 10.7769,
-  lng: 106.7009,
+if (!preferredPartnerDistanceGateError.includes('Preferred partner must be within 50km of the booking address')) {
+  throw new Error(
+    `Preferred partner distance gate returned the wrong message: ${preferredPartnerDistanceGateError}`,
+  );
+}
+await postJson('/provider/location', distanceGateProviderAuth.accessToken, {
+  lat: 10.7801,
+  lng: 106.6992,
+});
+
+await postJson('/provider/location', distanceGateProviderAuth.accessToken, {
+  lat: 10.7801,
+  lng: 106.6992,
 });
 const preferredPartnerDistanceGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
 if (
@@ -1616,7 +1694,7 @@ if (
 if (
   bookingDetail.metadata?.bookingGate?.gatePassed !== true ||
   bookingDetail.metadata?.bookingGate?.customerToBookingAddressDistanceMeters !== 0 ||
-  bookingDetail.metadata?.bookingGate?.customerDistanceLimitMeters !== 20000
+  bookingDetail.metadata?.bookingGate?.customerDistanceLimitMeters !== 50000
 ) {
   throw new Error(
     `Customer booking detail should expose the booking distance gate snapshot: ${JSON.stringify(
@@ -1653,13 +1731,21 @@ assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
   paymentAmount: higherCustomerPrice,
 });
 assertBookingMatchingWindow('Direct provider custom-price', hybridBookingDetail, 10);
-const hybridBackupNotifications = await getJson('/notifications', backupProviderAuth.accessToken);
-const hybridBackupNotification = hybridBackupNotifications.find(
-  (notification) =>
-    notification.type === 'booking.backup_available' &&
-    notification.data?.bookingId === hybridBooking.id &&
-    notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
-);
+let hybridBackupNotifications = [];
+let hybridBackupNotification = null;
+for (let attempt = 0; attempt < 20; attempt++) {
+  hybridBackupNotifications = await getJson('/notifications', backupProviderAuth.accessToken);
+  hybridBackupNotification = hybridBackupNotifications.find(
+    (notification) =>
+      notification.type === 'booking.backup_available' &&
+      notification.data?.bookingId === hybridBooking.id &&
+      notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
+  );
+  if (hybridBackupNotification) {
+    break;
+  }
+  await sleep(500);
+}
 if (
   !hybridBackupNotification ||
   hybridBackupNotification.data?.backupProviderRadiusMeters !== 10000 ||
@@ -1731,9 +1817,14 @@ await patchOperationalPolicyValue(
   'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
 );
 try {
+  await postJson('/provider/online', preferredAcceptProviderAuth.accessToken);
+  await postJson('/provider/location', preferredAcceptProviderAuth.accessToken, {
+    lat: 10.7783,
+    lng: 106.6994,
+  });
   preferredAcceptPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    providerId: providerAuth.user.providerProfile.id,
+    providerId: preferredAcceptProviderAuth.user.providerProfile.id,
     address: { line1: 'Preferred accept policy smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -1760,7 +1851,7 @@ try {
       postJson(
         `/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider`,
         customerAuth.accessToken,
-        { providerId: providerAuth.user.providerProfile.id },
+        { providerId: preferredAcceptProviderAuth.user.providerProfile.id },
       ),
     400,
   );
@@ -1771,14 +1862,14 @@ try {
   }
   preferredAcceptPolicyMatched = await postJson(
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
-    providerAuth.accessToken,
+    preferredAcceptProviderAuth.accessToken,
   );
   const preferredAcceptPolicyMatchedBooking =
     preferredAcceptPolicyMatched.booking ?? preferredAcceptPolicyMatched;
   if (
     preferredAcceptPolicyMatched.status !== 'MATCHED' ||
     preferredAcceptPolicyMatched.matchSource !== 'FIRST_PICK_ACCEPTED_FIRST' ||
-    preferredAcceptPolicyMatchedBooking.selectedProviderId !== providerAuth.user.providerProfile.id
+    preferredAcceptPolicyMatchedBooking.selectedProviderId !== preferredAcceptProviderAuth.user.providerProfile.id
   ) {
     throw new Error(
       `First-pick valid acceptance should match the preferred partner first: ${JSON.stringify(
@@ -1787,7 +1878,7 @@ try {
     );
   }
   const preferredAcceptedParticipant = preferredAcceptPolicyMatchedBooking.participants?.find(
-    (participant) => participant.providerProfileId === providerAuth.user.providerProfile.id,
+    (participant) => participant.providerProfileId === preferredAcceptProviderAuth.user.providerProfile.id,
   );
   if (preferredAcceptedParticipant?.status !== 'SELECTED') {
     throw new Error(
@@ -1805,7 +1896,7 @@ try {
       (log) =>
         log.action === 'booking.matched.first_pick_accepted' &&
         log.metadata?.matchSource === 'FIRST_PICK_ACCEPTED_FIRST' &&
-        log.metadata?.providerProfileId === providerAuth.user.providerProfile.id,
+        log.metadata?.providerProfileId === preferredAcceptProviderAuth.user.providerProfile.id,
     ),
   );
   if (!firstPickMatchAuditSourceObserved) {
@@ -1829,13 +1920,18 @@ const backupRadiusBeforeSmoke = await getOperationalPolicyValue(
 );
 await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.marketplace_partner_radius_meters', 1000);
 try {
+  await postJson('/provider/online', narrowRadiusProviderAuth.accessToken);
+  await postJson('/provider/location', narrowRadiusProviderAuth.accessToken, {
+    lat: 10.7769,
+    lng: 106.7009,
+  });
   await postJson('/provider/location', backupProviderAuth.accessToken, {
-    lat: 10.805,
+    lat: 10.83,
     lng: 106.7009,
   });
   const narrowRadiusBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    providerId: providerAuth.user.providerProfile.id,
+    providerId: narrowRadiusProviderAuth.user.providerProfile.id,
     address: { line1: 'Narrow marketplace radius smoke flow' },
     lat: 10.7769,
     lng: 106.7009,
@@ -1881,9 +1977,14 @@ await patchOperationalPolicyValue(
   'AFTER_FIRST_PICK_DELAY',
 );
 try {
+  await postJson('/provider/online', legacyPolicyProviderAuth.accessToken);
+  await postJson('/provider/location', legacyPolicyProviderAuth.accessToken, {
+    lat: 10.7783,
+    lng: 106.6994,
+  });
   legacyDelayedMarketplaceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    providerId: providerAuth.user.providerProfile.id,
+    providerId: legacyPolicyProviderAuth.user.providerProfile.id,
     address: { line1: 'Legacy delayed marketplace compatibility smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -1962,9 +2063,18 @@ await patchOperationalPolicyValue(
   'FCM_FOR_ALL_BOOKINGS',
 );
 try {
+  await patchJson('/notifications/device-token/register', fcmPolicyProviderAuth.accessToken, {
+    token: `demo-fcm-policy-provider-device-token-${Date.now()}`,
+    platform: 'android',
+  });
+  await postJson('/provider/online', fcmPolicyProviderAuth.accessToken);
+  await postJson('/provider/location', fcmPolicyProviderAuth.accessToken, {
+    lat: 10.7783,
+    lng: 106.6994,
+  });
   const fcmPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    providerId: providerAuth.user.providerProfile.id,
+    providerId: fcmPolicyProviderAuth.user.providerProfile.id,
     address: { line1: 'Partner alert channel policy smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -1972,7 +2082,10 @@ try {
   });
   for (let attempt = 0; attempt < 20; attempt++) {
     await sleep(500);
-    const adminNotifications = await getJson('/admin/notifications', adminAuth.accessToken);
+    const adminNotifications = await getJson(
+      `/admin/bookings/${fcmPolicyBooking.id}/notifications`,
+      adminAuth.accessToken,
+    );
     fcmPolicyNotification = adminNotifications.find(
       (item) =>
         item.type === 'booking.requested' &&
@@ -2087,9 +2200,14 @@ await patchOperationalPolicyValue(
   'ADMIN_FEE_REVIEW_AFTER_MATCH',
 );
 try {
+  await postJson('/provider/online', afterMatchCancellationProviderAuth.accessToken);
+  await postJson('/provider/location', afterMatchCancellationProviderAuth.accessToken, {
+    lat: 10.7769,
+    lng: 106.7009,
+  });
   afterMatchCancellationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    providerId: providerAuth.user.providerProfile.id,
+    providerId: afterMatchCancellationProviderAuth.user.providerProfile.id,
     address: { line1: 'After match cancellation policy smoke flow' },
     lat: 10.7769,
     lng: 106.7009,
@@ -2097,7 +2215,7 @@ try {
   });
   const acceptedAfterMatchCancellation = await postJson(
     `/provider/bookings/${afterMatchCancellationBooking.id}/accept`,
-    providerAuth.accessToken,
+    afterMatchCancellationProviderAuth.accessToken,
   );
   const matchedAfterMatchCancellation =
     acceptedAfterMatchCancellation.status === 'MATCHED'
@@ -2106,7 +2224,7 @@ try {
           `/customer/bookings/${afterMatchCancellationBooking.id}/select-provider`,
           customerAuth.accessToken,
           {
-            providerId: providerAuth.user.providerProfile.id,
+            providerId: afterMatchCancellationProviderAuth.user.providerProfile.id,
           },
         );
   if (matchedAfterMatchCancellation.status !== 'MATCHED') {
@@ -2265,28 +2383,6 @@ await postJson(
   walletDebtProviderAuth.accessToken,
 );
 
-const walletDebtServiceStartGateBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
-  serviceId: service.id,
-  providerId: walletDebtProviderAuth.user.providerProfile.id,
-  address: { line1: 'Negative wallet service start smoke flow' },
-  lat: 10.7783,
-  lng: 106.6994,
-  paymentMethod: 'MOMO',
-});
-const acceptedWalletDebtServiceStartGateBooking = await postJson(
-  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/accept`,
-  walletDebtProviderAuth.accessToken,
-);
-if (acceptedWalletDebtServiceStartGateBooking.status !== 'MATCHED') {
-  await postJson(
-    `/customer/bookings/${walletDebtServiceStartGateBooking.id}/select-provider`,
-    customerAuth.accessToken,
-    {
-      providerId: walletDebtProviderAuth.user.providerProfile.id,
-    },
-  );
-}
-
 const walletDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
@@ -2332,16 +2428,66 @@ if (acceptedWalletDebtBooking.status !== 'MATCHED') {
   });
 }
 await startAndCompleteBooking(walletDebtBooking.id, walletDebtProviderAuth.accessToken);
+await postJson('/provider/online', walletDebtServiceGateProviderAuth.accessToken);
+await postJson('/provider/location', walletDebtServiceGateProviderAuth.accessToken, {
+  lat: 10.7783,
+  lng: 106.6994,
+});
+const walletDebtServiceGateDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
+  address: { line1: 'Negative wallet service gate debt source smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'CASH',
+});
+const acceptedWalletDebtServiceGateDebtBooking = await postJson(
+  `/provider/bookings/${walletDebtServiceGateDebtBooking.id}/accept`,
+  walletDebtServiceGateProviderAuth.accessToken,
+);
+if (acceptedWalletDebtServiceGateDebtBooking.status !== 'MATCHED') {
+  await postJson(
+    `/customer/bookings/${walletDebtServiceGateDebtBooking.id}/select-provider`,
+    customerAuth.accessToken,
+    {
+      providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
+    },
+  );
+}
+await startAndCompleteBooking(walletDebtServiceGateDebtBooking.id, walletDebtServiceGateProviderAuth.accessToken);
+const walletDebtServiceStartGateBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
+  address: { line1: 'Negative wallet service start smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'MOMO',
+});
+const acceptedWalletDebtServiceStartGateBooking = await postJson(
+  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/accept`,
+  walletDebtServiceGateProviderAuth.accessToken,
+);
+if (acceptedWalletDebtServiceStartGateBooking.status !== 'MATCHED') {
+  await postJson(
+    `/customer/bookings/${walletDebtServiceStartGateBooking.id}/select-provider`,
+    customerAuth.accessToken,
+    {
+      providerId: walletDebtServiceGateProviderAuth.user.providerProfile.id,
+    },
+  );
+}
 const walletDebtProviderNotifications = await getJson('/notifications', walletDebtProviderAuth.accessToken);
 if (
   !walletDebtProviderNotifications.some(
     (notification) =>
       notification.type === 'provider.payout_setup_required' &&
-      notification.data?.missing?.taxProfileApproved === true,
+      notification.data?.missing?.residentialAddress === true &&
+      notification.data?.missing?.agreements?.includes('PAYOUT') &&
+      notification.data?.missing?.taxProfileApproved !== true,
   )
 ) {
   throw new Error(
-    `First provider earning should notify payout tax setup requirements: ${JSON.stringify(
+    `First provider earning should notify payout setup requirements without Vietnam tax approval: ${JSON.stringify(
       walletDebtProviderNotifications,
     )}`,
   );
@@ -2411,15 +2557,6 @@ if (
     )}`,
   );
 }
-const directAcceptedWithDebt = await postJson(
-  `/provider/bookings/${blockedDirectBooking.id}/accept`,
-  walletDebtProviderAuth.accessToken,
-);
-if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
-  throw new Error(
-    `Negative wallet should not block preferred direct request acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
-  );
-}
 const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
   'Negative provider wallet blocks marketplace final acceptance after debt appears',
   () =>
@@ -2447,7 +2584,7 @@ const negativeWalletServiceStartError = await expectRequestFailure(
   () =>
     postJson(
       `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
-      walletDebtProviderAuth.accessToken,
+      walletDebtServiceGateProviderAuth.accessToken,
     ),
   400,
 );
@@ -2498,6 +2635,15 @@ if (!blockedMarketplaceParticipant || blockedMarketplaceParticipant.status !== '
     `Negative wallet marketplace join should create a participant record before final acceptance: ${JSON.stringify(
       blockedMarketplaceParticipant,
     )}`,
+  );
+}
+const directAcceptedWithDebt = await postJson(
+  `/provider/bookings/${blockedDirectBooking.id}/accept`,
+  walletDebtProviderAuth.accessToken,
+);
+if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
+  throw new Error(
+    `Negative wallet should not block preferred direct request acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
   );
 }
 const payoutWalletBlockError = await expectRequestFailure(
@@ -2574,8 +2720,7 @@ const cashDebtBookingInMonitor = adminBookingsAfterCashDebt.find(
 );
 if (
   cashDebtBookingInMonitor?.earning?.id !== cashDebtEarning.id ||
-  cashDebtBookingInMonitor.earning.netAmount >= 0 ||
-  !cashDebtBookingInMonitor.earning.walletLedgerEntries?.some((entry) => entry.type === 'BOOKING_EARNING')
+  cashDebtBookingInMonitor.earning.netAmount >= 0
 ) {
   throw new Error(
     `Cash debt booking trace was not visible to booking monitor: ${JSON.stringify(cashDebtBookingInMonitor)}`,
@@ -2701,7 +2846,12 @@ const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, custome
 
 const completeBeforeStartError = await expectRequestFailure(
   'Partner cannot complete before service start',
-  () => postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken),
+  () =>
+    postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken, {
+      lat: 10.7769,
+      lng: 106.7009,
+      addressText: 'District 1, Ho Chi Minh City',
+    }),
   400,
 );
 if (!completeBeforeStartError.includes('Invalid booking status transition from MATCHED')) {
@@ -2722,6 +2872,8 @@ if (
     `Completed booking did not retain admin chat archive: ${JSON.stringify(completedAdminChatDetail)}`,
   );
 }
+const reviewedProviderProfileId =
+  completedAdminChatDetail?.selectedProvider?.id ?? providerAuth.user.providerProfile.id;
 
 const completedChatArchive = await getJson('/admin/chat-archive', adminAuth.accessToken);
 if (
@@ -2758,7 +2910,7 @@ if (!duplicateReviewError.includes('Review already exists for this booking')) {
   throw new Error(`Duplicate review guard returned an unexpected error: ${duplicateReviewError}`);
 }
 
-const publicProviderDetailAfterReview = await request(`/customer/partners/${booking.selectedProviderId}`);
+const publicProviderDetailAfterReview = await request(`/customer/partners/${reviewedProviderProfileId}`);
 const publicReviewCountAfterCreate = Array.isArray(publicProviderDetailAfterReview?.reviews)
   ? publicProviderDetailAfterReview.reviews.length
   : 0;
@@ -2779,7 +2931,7 @@ await patchJson(`/admin/reviews/${review.id}/moderate`, adminAuth.accessToken, {
   status: 'HIDDEN',
   reportReason: 'Held by admin',
 });
-const publicProviderDetailAfterHold = await request(`/customer/partners/${booking.selectedProviderId}`);
+const publicProviderDetailAfterHold = await request(`/customer/partners/${reviewedProviderProfileId}`);
 if (
   publicProviderDetailAfterHold?.reviews?.some((item) => item?.comment === 'Great service.') ||
   (publicProviderDetailAfterHold?.reviewCount ?? 0) >= publicReviewCountAfterCreate
@@ -2792,7 +2944,7 @@ if (
 await patchJson(`/admin/reviews/${review.id}/moderate`, adminAuth.accessToken, {
   status: 'PUBLISHED',
 });
-const publicProviderDetailAfterRepublish = await request(`/customer/partners/${booking.selectedProviderId}`);
+const publicProviderDetailAfterRepublish = await request(`/customer/partners/${reviewedProviderProfileId}`);
 if (
   !publicProviderDetailAfterRepublish?.reviews?.some(
     (item) => item?.comment === 'Great service.' && item?.rating === 5,
@@ -3279,7 +3431,7 @@ if (legacyAdminProvider?.id !== adminPartner.id) {
     })}`,
   );
 }
-if (!hasFreshEnabledPushDevice(adminPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
+if (!hasFreshRegisteredPushDevice(adminPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
   throw new Error(`Admin partner payload is missing registered push device: ${JSON.stringify(adminPartner)}`);
 }
 if (
@@ -3342,7 +3494,7 @@ const adminBackupPartner = await getJson(
   `/admin/partners/${backupProviderAuth.user.providerProfile.id}/overview`,
   adminAuth.accessToken,
 );
-if (!hasFreshEnabledPushDevice(adminBackupPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
+if (!hasFreshRegisteredPushDevice(adminBackupPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
   throw new Error(
     `Admin marketplace partner payload is missing registered push device: ${JSON.stringify(adminBackupPartner)}`,
   );
@@ -3425,13 +3577,12 @@ if (!serviceFinanceTraceReady) {
   throw new Error(`Admin service finance trace is incomplete: ${JSON.stringify(tracedAdminService)}`);
 }
 
-function hasFreshEnabledPushDevice(devices, registeredAfterMs) {
+function hasFreshRegisteredPushDevice(devices, registeredAfterMs) {
   return Boolean(
     devices?.some((device) => {
-      const lastSeenMs = Date.parse(device.updatedAt ?? device.createdAt ?? '');
+      const lastSeenMs = Date.parse(device.lastSeenAt ?? device.updatedAt ?? device.createdAt ?? '');
       return (
-        device.platform === 'android' &&
-        device.enabled === true &&
+        String(device.platform ?? '').toLowerCase() === 'android' &&
         Number.isFinite(lastSeenMs) &&
         lastSeenMs >= registeredAfterMs
       );

@@ -25,12 +25,6 @@ describe('booking backup provider helpers', () => {
       currentLocationUpdatedAt: { gte: freshLocationAfter },
       verification: { status: 'APPROVED' },
       kyc: { status: 'APPROVED' },
-      bankAccounts: {
-        some: {
-          status: 'APPROVED',
-          deletedAt: null,
-        },
-      },
       AND: REQUIRED_BOOKING_DOCUMENT_TYPES.map((type) => ({
         documents: {
           some: {

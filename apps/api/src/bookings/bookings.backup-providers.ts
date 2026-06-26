@@ -1,7 +1,6 @@
 import {
   ParticipantStatus,
   Prisma,
-  ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderKycStatus,
   ProviderStatus,
@@ -31,12 +30,6 @@ export function backupProviderCandidateWhere(input: {
     currentLocationUpdatedAt: { gte: input.freshLocationAfter },
     verification: { status: VerificationStatus.APPROVED },
     kyc: { status: ProviderKycStatus.APPROVED },
-    bankAccounts: {
-      some: {
-        status: ProviderBankAccountStatus.APPROVED,
-        deletedAt: null,
-      },
-    },
     AND: REQUIRED_BOOKING_DOCUMENT_TYPES.map((type) => ({
       documents: {
         some: {
