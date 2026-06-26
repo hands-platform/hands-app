@@ -4857,29 +4857,24 @@ function normalizeMarketingSpendCampaignId(value: unknown) {
 }
 
 function adminAuditLogListLimit(value: number | string | null | undefined): number {
-  if (value === null || value === undefined || value === '') {
-    return ADMIN_AUDIT_LOG_LIST_LIMIT;
-  }
-
-  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
-  if (!Number.isFinite(numeric)) {
-    return ADMIN_AUDIT_LOG_LIST_LIMIT;
-  }
-
-  return Math.min(Math.max(Math.trunc(numeric), 1), ADMIN_AUDIT_LOG_LIST_LIMIT);
+  return boundedAdminListLimit(value, ADMIN_AUDIT_LOG_LIST_LIMIT);
 }
 
 function adminBookingListLimit(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_BOOKING_LIST_LIMIT);
+}
+
+function boundedAdminListLimit(value: number | string | null | undefined, max: number): number {
   if (value === null || value === undefined || value === '') {
-    return ADMIN_BOOKING_LIST_LIMIT;
+    return max;
   }
 
   const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
   if (!Number.isFinite(numeric)) {
-    return ADMIN_BOOKING_LIST_LIMIT;
+    return max;
   }
 
-  return Math.min(Math.max(Math.trunc(numeric), 1), ADMIN_BOOKING_LIST_LIMIT);
+  return Math.min(Math.max(Math.trunc(numeric), 1), max);
 }
 
 function normalizeMarketingSpendAmount(value: unknown) {
