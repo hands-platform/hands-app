@@ -12,6 +12,10 @@ type PresignInput = {
   providerVerificationId?: string;
 };
 
+const ALLOWED_UPLOAD_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'video/mp4']);
+const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+const VIDEO_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+
 @Injectable()
 export class FilesService {
   constructor(
@@ -20,22 +24,23 @@ export class FilesService {
   ) {}
 
   async createPresignedUpload(user: AuthenticatedUser, input: PresignInput) {
-    const providerVerificationId = await this.resolveProviderVerificationId(user, input);
-    this.validateUploadRequest(user, { ...input, providerVerificationId });
+    const normalizedInput = { ...input, contentType: normalizeContentType(input.contentType) };
+    const providerVerificationId = await this.resolveProviderVerificationId(user, normalizedInput);
+    this.validateUploadRequest(user, { ...normalizedInput, providerVerificationId });
 
-    const extension = extensionForContentType(input.contentType);
-    const key = `${input.visibility.toLowerCase()}/${input.purpose}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${extension}`;
-    const bucket = this.s3.bucketForVisibility(input.visibility);
+    const extension = extensionForContentType(normalizedInput.contentType);
+    const key = `${normalizedInput.visibility.toLowerCase()}/${normalizedInput.purpose}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${extension}`;
+    const bucket = this.s3.bucketForVisibility(normalizedInput.visibility);
 
     const file = await this.prisma.fileAsset.create({
       data: {
         key,
-        contentType: input.contentType,
-        purpose: toFilePurpose(input.purpose),
-        visibility: input.visibility,
+        contentType: normalizedInput.contentType,
+        purpose: toFilePurpose(normalizedInput.purpose),
+        visibility: normalizedInput.visibility,
         ownerUserId: user.id,
         providerVerificationId,
-        url: input.visibility === FileVisibility.PUBLIC ? this.s3.publicUrl(key) : null,
+        url: normalizedInput.visibility === FileVisibility.PUBLIC ? this.s3.publicUrl(key) : null,
       },
     });
     const presignedPutUrl = this.s3.presign({ method: 'PUT', key, bucket, expiresInSeconds: 900 });
@@ -46,7 +51,7 @@ export class FilesService {
         method: 'PUT',
         url: presignedPutUrl ?? `/storage-upload-placeholder/${key}`,
         headers: {
-          'content-type': input.contentType,
+          'content-type': normalizedInput.contentType,
         },
       },
       storageMode: this.s3.storageMode(),
@@ -108,6 +113,9 @@ export class FilesService {
     if (input.sizeBytes !== undefined && (!Number.isInteger(sizeBytes) || sizeBytes < 0)) {
       throw new BadRequestException('sizeBytes must be a non-negative integer');
     }
+    if (input.sizeBytes !== undefined && sizeBytes > maxUploadSizeBytesForContentType(file.contentType)) {
+      throw new BadRequestException('Uploaded file exceeds the allowed size for its type');
+    }
 
     return this.prisma.fileAsset.update({
       where: { id: fileId },
@@ -146,8 +154,8 @@ export class FilesService {
   }
 
   private validateUploadRequest(user: AuthenticatedUser, input: PresignInput) {
-    if (!input.contentType.startsWith('image/') && !input.contentType.startsWith('video/')) {
-      throw new BadRequestException('Only image and video uploads are allowed in MVP');
+    if (!ALLOWED_UPLOAD_CONTENT_TYPES.has(input.contentType)) {
+      throw new BadRequestException('Only JPEG, PNG, WebP, and MP4 uploads are allowed in MVP');
     }
 
     if (input.purpose === 'provider-verification') {
@@ -193,6 +201,10 @@ export class FilesService {
   }
 }
 
+function normalizeContentType(contentType: string) {
+  return contentType.trim().toLowerCase();
+}
+
 function toFilePurpose(purpose: PresignInput['purpose']) {
   if (purpose === 'provider-gallery') {
     return FilePurpose.PROVIDER_GALLERY;
@@ -204,6 +216,10 @@ function toFilePurpose(purpose: PresignInput['purpose']) {
     return FilePurpose.PROFILE_IMAGE;
   }
   return FilePurpose.PROVIDER_VERIFICATION;
+}
+
+function maxUploadSizeBytesForContentType(contentType: string) {
+  return normalizeContentType(contentType) === 'video/mp4' ? VIDEO_UPLOAD_MAX_BYTES : IMAGE_UPLOAD_MAX_BYTES;
 }
 
 function extensionForContentType(contentType: string) {
