@@ -46,4 +46,34 @@ describe('AllExceptionsFilter', () => {
     expect(consoleError.mock.calls[0][0]).not.toContain('otp=123456');
     expect(consoleError.mock.calls[0][0]).not.toContain('phone=');
   });
+
+  it('does not expose unexpected internal error messages in responses or logs', () => {
+    const json = jest.fn();
+    const status = jest.fn(() => ({ json }));
+    const response = { status };
+    const request = {
+      method: 'POST',
+      originalUrl: '/api/payments/callback',
+      requestId: 'request-2',
+    };
+    const host = {
+      switchToHttp: () => ({
+        getRequest: () => request,
+        getResponse: () => response,
+      }),
+    };
+
+    new AllExceptionsFilter().catch(new Error('database password=super-secret leaked'), host as never);
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Internal server error',
+        path: '/api/payments/callback',
+        requestId: 'request-2',
+      }),
+    );
+    expect(consoleError.mock.calls[0][0]).not.toContain('super-secret');
+    expect(consoleError.mock.calls[0][0]).not.toContain('password=');
+  });
 });

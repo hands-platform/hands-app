@@ -18,19 +18,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = context.getResponse();
     const request = context.getRequest<RequestWithId>();
     const path = requestPathWithoutQuery(request);
-    const status =
-      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
+    const isHttpException = exception instanceof HttpException;
+    const status = isHttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const exceptionResponse = isHttpException ? exception.getResponse() : undefined;
     const exceptionBody =
       typeof exceptionResponse === 'object' && exceptionResponse !== null && !Array.isArray(exceptionResponse)
         ? (exceptionResponse as Record<string, unknown>)
         : {};
     const message =
-      typeof exceptionResponse === 'object' && exceptionResponse !== null && 'message' in exceptionResponse
+      !isHttpException
+        ? 'Internal server error'
+        : typeof exceptionResponse === 'object' && exceptionResponse !== null && 'message' in exceptionResponse
         ? (exceptionResponse as { message: unknown }).message
-        : exception instanceof Error
-          ? exception.message
-          : 'Internal server error';
+        : 'Internal server error';
 
     const body = {
       ...exceptionBody,
@@ -49,7 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         method: request.method,
         path,
         statusCode: status,
-        error: exception instanceof Error ? exception.message : String(exception),
+        error: isHttpException && exception instanceof Error ? exception.message : 'Internal server error',
       }),
     );
 
