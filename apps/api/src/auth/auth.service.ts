@@ -214,14 +214,12 @@ export class AuthService {
   private async storeOtp(phone: string, otp: string) {
     try {
       await this.redisState.setOtp(phone, otp);
-    } catch (error) {
+    } catch {
       if (this.isProduction()) {
         this.logger.warn('Redis OTP store unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
-      this.logger.warn(
-        `Redis OTP store unavailable; using in-memory OTP fallback. ${(error as Error).message}`,
-      );
+      this.logger.warn('Redis OTP store unavailable; using in-memory OTP fallback.');
       this.fallbackOtps.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
     }
   }
@@ -232,14 +230,12 @@ export class AuthService {
       if (otp) {
         return otp;
       }
-    } catch (error) {
+    } catch {
       if (this.isProduction()) {
         this.logger.warn('Redis OTP lookup unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
-      this.logger.warn(
-        `Redis OTP lookup unavailable; checking in-memory OTP fallback. ${(error as Error).message}`,
-      );
+      this.logger.warn('Redis OTP lookup unavailable; checking in-memory OTP fallback.');
     }
 
     const fallback = this.fallbackOtps.get(phone);
@@ -257,12 +253,12 @@ export class AuthService {
     this.fallbackOtps.delete(phone);
     try {
       await this.redisState.consumeOtp(phone);
-    } catch (error) {
+    } catch {
       if (this.isProduction()) {
         this.logger.warn('Redis OTP consume unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
-      this.logger.warn(`Redis OTP consume unavailable. ${(error as Error).message}`);
+      this.logger.warn('Redis OTP consume unavailable.');
     }
   }
 

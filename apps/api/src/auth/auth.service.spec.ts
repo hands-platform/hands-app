@@ -57,6 +57,64 @@ describe('AuthService OTP production guard', () => {
     warn.mockRestore();
   });
 
+  it('does not log Redis connection details when non-production OTP storage falls back', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { service } = createOtpService({
+      NODE_ENV: 'development',
+      redisState: {
+        setOtp: jest.fn().mockRejectedValue(new Error('redis://:dev-secret@localhost:6379 unavailable')),
+      },
+    });
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER })).resolves.toMatchObject({
+      status: 'OTP_REQUESTED',
+    });
+
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('dev-secret');
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('redis://');
+    warn.mockRestore();
+  });
+
+  it('does not log Redis connection details when non-production OTP lookup falls back', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { prisma, service } = createOtpService({
+      NODE_ENV: 'development',
+      redisState: {
+        getOtp: jest.fn().mockRejectedValue(new Error('redis://:lookup-secret@localhost:6379 unavailable')),
+      },
+    });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '000000', role: Role.CUSTOMER }),
+    ).rejects.toThrow('Invalid OTP');
+
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('lookup-secret');
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('redis://');
+    warn.mockRestore();
+  });
+
+  it('does not log Redis connection details when non-production OTP consume falls back', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { prisma, service } = createOtpService({
+      NODE_ENV: 'development',
+      redisState: {
+        getOtp: jest.fn().mockResolvedValue('123456'),
+        consumeOtp: jest.fn().mockRejectedValue(new Error('redis://:consume-secret@localhost:6379 unavailable')),
+      },
+    });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.upsert.mockResolvedValue({ id: 'user-1', roles: [Role.CUSTOMER] });
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.CUSTOMER }),
+    ).resolves.toMatchObject({ otpAccepted: true });
+
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('consume-secret');
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('redis://');
+    warn.mockRestore();
+  });
+
   it('rejects production OTP verification when Redis lookup is unavailable', async () => {
     const { prisma, service } = createOtpService({
       NODE_ENV: 'production',
