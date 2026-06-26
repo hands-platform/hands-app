@@ -329,8 +329,9 @@ export class AdminController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
     @Query('statusGroup') statusGroup?: string,
+    @Query('take') take?: string,
   ) {
-    return this.admin.listBookings({ dateFrom, dateRange, dateTo, statusGroup });
+    return this.admin.listBookings({ dateFrom, dateRange, dateTo, statusGroup, take });
   }
 
   @Get('chat-archive')

@@ -305,6 +305,23 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('uses a bounded requested booking list limit', async () => {
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listBookings({ take: '25' });
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 25,
+      }),
+    );
+  });
+
   it('includes persisted matching decision fields in booking detail queries', async () => {
     const prisma = {
       booking: {

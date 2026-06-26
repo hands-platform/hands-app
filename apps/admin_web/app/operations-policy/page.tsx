@@ -66,7 +66,7 @@ export default async function OperationsPolicyPage({
   const params = (await searchParams) ?? {};
   const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
-    adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminBooking[]>('/admin/bookings?take=50', []),
     adminGet<AdminProvider[]>('/admin/operations-policy/providers', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs?action=operational_policy.update&take=20', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),

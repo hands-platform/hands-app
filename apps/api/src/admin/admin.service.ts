@@ -200,6 +200,7 @@ type AdminBookingListQuery = {
   readonly dateRange?: string;
   readonly dateTo?: string;
   readonly statusGroup?: string;
+  readonly take?: number | string | null;
 };
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
@@ -2822,7 +2823,7 @@ export class AdminService {
     const bookings = await this.prisma.booking.findMany({
       where: adminBookingListWhere(query),
       orderBy: { createdAt: 'desc' },
-      take: ADMIN_BOOKING_LIST_LIMIT,
+      take: adminBookingListLimit(query.take),
       select: adminBookingListSelect,
     });
     return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings)).map((booking) => ({
@@ -4866,6 +4867,19 @@ function adminAuditLogListLimit(value: number | string | null | undefined): numb
   }
 
   return Math.min(Math.max(Math.trunc(numeric), 1), ADMIN_AUDIT_LOG_LIST_LIMIT);
+}
+
+function adminBookingListLimit(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_BOOKING_LIST_LIMIT;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return ADMIN_BOOKING_LIST_LIMIT;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 1), ADMIN_BOOKING_LIST_LIMIT);
 }
 
 function normalizeMarketingSpendAmount(value: unknown) {
