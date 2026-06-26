@@ -210,6 +210,7 @@ export function adminPartnerMarketplaceBlocked(
   provider: AdminPartnerMarketplaceReadinessProvider,
   _policy: { hardWalletBlock?: boolean } = {},
 ) {
+  void _policy;
   return adminPartnerAccountNeedsFollowUp(provider) || !adminPartnerIdentityReady(provider);
 }
 

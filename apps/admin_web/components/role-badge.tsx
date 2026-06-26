@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { Bot, HeartHandshake, ShieldCheck, UserRound } from 'lucide-react';
 
 type RoleBadgeProps = {
@@ -43,7 +44,7 @@ export function RoleBadge({ role }: RoleBadgeProps) {
 
   return (
     <span className={roleBadgeClassName(role)}>
-      <Icon aria-hidden="true" size={14} strokeWidth={2.2} />
+      {createElement(Icon, { 'aria-hidden': true, size: 14, strokeWidth: 2.2 })}
       {displayRoleLabel(role)}
     </span>
   );

@@ -33,7 +33,17 @@ export function AdminThemeToggle() {
   const [theme, setTheme] = useState<AdminTheme>('light');
 
   useEffect(() => {
-    setTheme(getCurrentTheme());
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setTheme(getCurrentTheme());
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const changeTheme = (nextTheme: AdminTheme) => {

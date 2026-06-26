@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { createElement } from 'react';
 import { Activity, BellRing, CheckCircle2, CircleDollarSign, ListChecks, ShieldCheck, UsersRound } from 'lucide-react';
 
 type MetricCardProps = {
@@ -28,7 +29,7 @@ export function MetricCard({ label, value, helper, href }: MetricCardProps) {
   const content = (
     <div className="metric-card">
       <span className="metric-card-icon" aria-hidden="true">
-        <Icon size={20} strokeWidth={2.2} />
+        {createElement(Icon, { size: 20, strokeWidth: 2.2 })}
       </span>
       <div className="metric-card-content">
         <p>{label}</p>

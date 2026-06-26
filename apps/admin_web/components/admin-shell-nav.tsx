@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { createElement } from 'react';
 import {
   Activity,
   BadgeCheck,
@@ -15,7 +16,6 @@ import {
   HeartHandshake,
   LifeBuoy,
   ListChecks,
-  MapPinned,
   MessageSquareText,
   PackageCheck,
   ReceiptText,
@@ -73,7 +73,7 @@ function navIcon(label: string) {
 function NavIcon({ label }: { readonly label: string }) {
   const Icon = navIcon(label);
 
-  return <Icon aria-hidden="true" size={18} strokeWidth={2} />;
+  return createElement(Icon, { 'aria-hidden': true, size: 18, strokeWidth: 2 });
 }
 
 export function AdminShellNav({ sections }: AdminShellNavProps) {
