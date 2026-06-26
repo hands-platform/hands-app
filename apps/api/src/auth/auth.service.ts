@@ -34,6 +34,7 @@ export class AuthService {
   ) {}
 
   async requestOtp(input: { phone: string; role?: Role }) {
+    const role = this.assertMobileAuthRole(input.role ?? Role.CUSTOMER);
     const isProduction = this.isProduction();
     const otp = isProduction ? this.generateOtp() : this.devOtp();
     await this.storeOtp(input.phone, otp);
@@ -41,7 +42,7 @@ export class AuthService {
 
     return {
       phone: input.phone,
-      role: input.role ?? Role.CUSTOMER,
+      role,
       status: 'OTP_REQUESTED',
       delivery,
       ...(isProduction ? {} : { devOtp: otp }),
@@ -49,8 +50,8 @@ export class AuthService {
   }
 
   async verifyOtp(input: { phone: string; otp: string; role?: Role }) {
+    const role = this.assertMobileAuthRole(input.role ?? Role.CUSTOMER);
     await this.assertValidOtp(input.phone, input.otp);
-    const role = input.role ?? Role.CUSTOMER;
     const existing = await this.prisma.user.findUnique({
       where: { phone: input.phone },
       include: { customerProfile: true, providerProfile: true },
@@ -155,6 +156,13 @@ export class AuthService {
   private assertExchangeRole(role: Role): MobileExchangeRole {
     if (!MOBILE_EXCHANGE_ROLES.includes(role as MobileExchangeRole)) {
       throw new UnauthorizedException('Supabase mobile exchange only supports CUSTOMER or PROVIDER roles');
+    }
+    return role as MobileExchangeRole;
+  }
+
+  private assertMobileAuthRole(role: Role): MobileExchangeRole {
+    if (!MOBILE_EXCHANGE_ROLES.includes(role as MobileExchangeRole)) {
+      throw new UnauthorizedException('Mobile auth only supports CUSTOMER or PROVIDER roles');
     }
     return role as MobileExchangeRole;
   }

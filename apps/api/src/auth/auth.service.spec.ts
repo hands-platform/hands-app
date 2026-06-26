@@ -3,6 +3,27 @@ import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 
 describe('AuthService OTP production guard', () => {
+  it('rejects admin OTP requests before storing or delivering OTPs', async () => {
+    const { otpDelivery, redisState, service } = createOtpService({});
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.ADMIN })).rejects.toThrow(
+      'Mobile auth only supports CUSTOMER or PROVIDER roles',
+    );
+    expect(redisState.setOtp).not.toHaveBeenCalled();
+    expect(otpDelivery.deliverOtp).not.toHaveBeenCalled();
+  });
+
+  it('rejects admin OTP verification before reading or consuming OTPs', async () => {
+    const { prisma, redisState, service } = createOtpService({});
+
+    await expect(
+      service.verifyOtp({ phone: '+84900000000', otp: '123456', role: Role.ADMIN }),
+    ).rejects.toThrow('Mobile auth only supports CUSTOMER or PROVIDER roles');
+    expect(redisState.getOtp).not.toHaveBeenCalled();
+    expect(redisState.consumeOtp).not.toHaveBeenCalled();
+    expect(prisma.user.upsert).not.toHaveBeenCalled();
+  });
+
   it('rejects production OTP requests when Redis cannot store the OTP', async () => {
     const { otpDelivery, redisState, service } = createOtpService({
       NODE_ENV: 'production',
