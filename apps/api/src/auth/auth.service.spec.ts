@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 
@@ -15,6 +16,24 @@ describe('AuthService OTP production guard', () => {
     );
     expect(redisState.setOtp).toHaveBeenCalled();
     expect(otpDelivery.deliverOtp).not.toHaveBeenCalled();
+  });
+
+  it('does not log Redis connection details when production OTP storage fails', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { service } = createOtpService({
+      NODE_ENV: 'production',
+      redisState: {
+        setOtp: jest.fn().mockRejectedValue(new Error('redis://:super-secret@localhost:6379 unavailable')),
+      },
+    });
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER })).rejects.toThrow(
+      'OTP service is temporarily unavailable',
+    );
+
+    expect(warn).toHaveBeenCalledWith('Redis OTP store unavailable.');
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('super-secret');
+    warn.mockRestore();
   });
 
   it('rejects production OTP verification when Redis lookup is unavailable', async () => {

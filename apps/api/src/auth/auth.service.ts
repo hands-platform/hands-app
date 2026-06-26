@@ -208,7 +208,7 @@ export class AuthService {
       await this.redisState.setOtp(phone, otp);
     } catch (error) {
       if (this.isProduction()) {
-        this.logger.warn(`Redis OTP store unavailable. ${(error as Error).message}`);
+        this.logger.warn('Redis OTP store unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
       this.logger.warn(
@@ -226,7 +226,7 @@ export class AuthService {
       }
     } catch (error) {
       if (this.isProduction()) {
-        this.logger.warn(`Redis OTP lookup unavailable. ${(error as Error).message}`);
+        this.logger.warn('Redis OTP lookup unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
       this.logger.warn(
@@ -251,7 +251,7 @@ export class AuthService {
       await this.redisState.consumeOtp(phone);
     } catch (error) {
       if (this.isProduction()) {
-        this.logger.warn(`Redis OTP consume unavailable. ${(error as Error).message}`);
+        this.logger.warn('Redis OTP consume unavailable.');
         throw new ServiceUnavailableException('OTP service is temporarily unavailable');
       }
       this.logger.warn(`Redis OTP consume unavailable. ${(error as Error).message}`);
