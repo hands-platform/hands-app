@@ -31,6 +31,12 @@ describe('admin request DTO validation', () => {
     );
   });
 
+  it('uses a concrete DTO for manual marketing spend upserts', () => {
+    expect((bodyMetatype('upsertMarketingSpendDaily', 1) as { name?: string })?.name).toBe(
+      'UpsertMarketingSpendDailyDto',
+    );
+  });
+
   it('uses concrete DTOs for referral reward state changes', () => {
     expect((bodyMetatype('holdReferralReward', 2) as { name?: string })?.name).toBe(
       'ReferralRewardDecisionDto',
@@ -81,6 +87,32 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('currency', 'vnd');
     expect(transformed).toHaveProperty('reason', 'referral policy setup');
     expect(transformed).not.toHaveProperty('payoutImmediately');
+  });
+
+  it('normalizes manual marketing spend fields and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        spendDate: ' 2026-06-20 ',
+        source: ' Google Ads ',
+        platform: ' ANDROID ',
+        regionCode: ' hcm ',
+        campaignId: ' launch-hcm ',
+        campaignName: ' Launch HCMC ',
+        spendAmount: '600000',
+        currency: ' vnd ',
+        notes: ' manual import ',
+        adNetworkToken: 'do-not-store',
+      },
+      { type: 'body', metatype: bodyMetatype('upsertMarketingSpendDaily', 1) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('spendDate', '2026-06-20');
+    expect(transformed).toHaveProperty('source', 'Google Ads');
+    expect(transformed).toHaveProperty('spendAmount', 600000);
+    expect(transformed).toHaveProperty('currency', 'vnd');
+    expect(transformed).not.toHaveProperty('adNetworkToken');
   });
 
   it('normalizes referral reward decision reasons and strips payout fields', async () => {

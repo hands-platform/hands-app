@@ -5880,6 +5880,48 @@ a.action-button-card:hover {
   padding: 0 12px;
 }
 
+.marketing-spend-panel {
+  gap: 16px;
+}
+
+.marketing-spend-form {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) 140px;
+}
+
+.marketing-spend-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.marketing-spend-form label span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.marketing-spend-form input,
+.marketing-spend-form select {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text);
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.marketing-spend-notes {
+  grid-column: span 2;
+}
+
+.marketing-spend-submit {
+  min-height: 38px;
+}
+
 .marketing-funnel-list {
   display: grid;
   gap: 10px;
@@ -5971,7 +6013,7 @@ a.action-button-card:hover {
 }
 
 .marketing-analytics-table {
-  min-width: 980px;
+  min-width: 1080px;
 }
 
 .operations-policy-page {

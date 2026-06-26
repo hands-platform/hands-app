@@ -28,6 +28,7 @@ describe('AdminController notification and push actions', () => {
     reverseReferralReward: jest.fn(),
     retryNotification: jest.fn(),
     updateReferralPolicy: jest.fn(),
+    upsertMarketingSpendDaily: jest.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -139,6 +140,28 @@ describe('AdminController notification and push actions', () => {
       regionCode: 'hcm',
       campaignId: 'ref-smoke',
     });
+  });
+
+  it('exposes manual marketing spend upserts as an audited POST action', async () => {
+    const body = {
+      spendDate: '2026-06-20',
+      source: 'Google Ads',
+      platform: 'ANDROID',
+      regionCode: 'hcm',
+      campaignId: 'launch-hcm',
+      spendAmount: 600000,
+    };
+    admin.upsertMarketingSpendDaily.mockResolvedValue({ id: 'marketing-spend-1' });
+
+    await expect(controller.upsertMarketingSpendDaily(user, body)).resolves.toEqual({
+      id: 'marketing-spend-1',
+    });
+
+    expect(routeMetadata('upsertMarketingSpendDaily')).toEqual({
+      method: RequestMethod.POST,
+      path: 'marketing/spend-daily',
+    });
+    expect(admin.upsertMarketingSpendDaily).toHaveBeenCalledWith('admin-1', body);
   });
 
   it('exposes referral policy settings as a read-only GET endpoint', async () => {

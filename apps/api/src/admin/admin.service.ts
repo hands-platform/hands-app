@@ -139,10 +139,12 @@ import {
 } from './admin-user-selects';
 import {
   VIETNAM_REGION_BUCKETS,
+  VietnamRegionCode,
   adminVietnamOverviewDateWhere,
   adminVietnamOverviewRangeWindow,
   normalizeAdminVietnamOverviewRange,
   vietnamRegionCodeFromValues,
+  vietnamRegionLabel,
 } from './admin-vietnam-region-overview';
 import {
   adminUsageDateWhere,
@@ -151,6 +153,7 @@ import {
   normalizeAdminUsageRange,
 } from './admin-usage-overview';
 import {
+  AdminMarketingDimensionInput,
   AdminMarketingFilters,
   adminMarketingDateWhere,
   adminMarketingRangeWindow,
@@ -184,6 +187,7 @@ const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 500;
 const ADMIN_MARKETING_REGION_LIMIT = 500;
 const ADMIN_MARKETING_CAMPAIGN_LIMIT = 50;
+const ADMIN_MARKETING_SPEND_LIMIT = 500;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
@@ -1520,6 +1524,13 @@ export class AdminService {
       audience: ReferralAudience.CUSTOMER,
       createdAt: dateWhere,
     } satisfies Prisma.ReferralAttributionWhereInput;
+    const marketingSpendWhere = {
+      spendDate: dateWhere,
+      ...(sourceFilter ? { source: sourceFilter } : {}),
+      ...(platformFilter ? { platform: platformFilter } : {}),
+      ...(regionCodeFilter ? { regionCode: regionCodeFilter } : {}),
+      ...(campaignIdFilter ? { campaignId: campaignIdFilter } : {}),
+    } satisfies Prisma.MarketingSpendDailyWhereInput;
 
     const [
       firstOpenPlatformRows,
@@ -1539,6 +1550,7 @@ export class AdminService {
       regionBookingCompletedRows,
       regionBookingCancelledRows,
       referralCampaignRows,
+      marketingSpendRows,
     ] = await Promise.all([
       this.prisma.appSession.groupBy({
         by: ['platform'],
@@ -1659,7 +1671,35 @@ export class AdminService {
           },
         },
       }),
+      this.prisma.marketingSpendDaily.findMany({
+        where: marketingSpendWhere,
+        orderBy: [{ spendDate: 'desc' }, { updatedAt: 'desc' }],
+        take: ADMIN_MARKETING_SPEND_LIMIT,
+        select: {
+          spendDate: true,
+          source: true,
+          platform: true,
+          regionCode: true,
+          campaignId: true,
+          campaignName: true,
+          spendAmount: true,
+          currency: true,
+        },
+      }),
     ]);
+    const marketingSpendDimensionRows: AdminMarketingDimensionInput[] = marketingSpendRows.map((row) => {
+      const regionCode = normalizeMarketingSpendRegionCode(row.regionCode, { allowAll: true });
+      return {
+        source: normalizeMarketingSource(row.source),
+        platform: normalizeMarketingPlatform(row.platform),
+        regionCode: regionCode ?? undefined,
+        regionName: regionCode ? vietnamRegionLabel(regionCode) : undefined,
+        campaignId: row.campaignId === 'all' ? null : row.campaignId,
+        campaignName: row.campaignName,
+        stats: { adSpend: numberValue(row.spendAmount) },
+      };
+    });
+    const manualAdSpend = marketingSpendRows.reduce((total, row) => total + numberValue(row.spendAmount), 0);
 
     const stats = {
       ...emptyMarketingStats(),
@@ -1674,7 +1714,7 @@ export class AdminService {
       grossBookingValue: numberValue(grossBookingValue._sum.amount),
       platformFeeRevenue: numberValue(platformFeeRevenue._sum.platformFeeAmount),
       refundAmount: numberValue(refundAmount._sum.amount),
-      adSpend: 0,
+      adSpend: manualAdSpend,
     };
     const referralRewardCount = referralCampaignRows.reduce(
       (total, row) => total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
@@ -1704,21 +1744,25 @@ export class AdminService {
       [
         { source: 'unknown', stats: unknownStats },
         { source: 'referral', stats: referralStats },
+        ...marketingSpendDimensionRows,
       ],
       { source: filters.source },
     );
     const campaignRows = buildMarketingDimensionRows(
-      referralCampaignRows.map((row) => ({
-        source: normalizeMarketingSource(row.installSource ?? 'referral'),
-        platform: normalizeMarketingPlatform(row.platform),
-        campaignId: row.referralCode.code,
-        campaignName: `Referral ${row.referralCode.code}`,
-        stats: {
-          signups: 1,
-          firstBookingCompleted: row.rewards.length,
-          platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
-        },
-      })),
+      [
+        ...referralCampaignRows.map((row) => ({
+          source: normalizeMarketingSource(row.installSource ?? 'referral'),
+          platform: normalizeMarketingPlatform(row.platform),
+          campaignId: row.referralCode.code,
+          campaignName: `Referral ${row.referralCode.code}`,
+          stats: {
+            signups: 1,
+            firstBookingCompleted: row.rewards.length,
+            platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
+          },
+        })),
+        ...marketingSpendDimensionRows,
+      ],
       filters,
     );
     const regionRows = buildMarketingRegionRows(
@@ -1752,15 +1796,22 @@ export class AdminService {
           },
           stats: { bookingCancelled: 1 },
         })),
+        ...marketingSpendRows.map((row) => ({
+          regionValues: [row.regionCode === 'all' ? null : vietnamRegionLabel(row.regionCode)],
+          stats: { adSpend: numberValue(row.spendAmount) },
+        })),
       ],
       filters,
     );
     const platformRows = buildMarketingDimensionRows(
-      firstOpenPlatformRows.map((row) => ({
-        source: 'unknown',
-        platform: normalizeMarketingPlatform(row.platform),
-        stats: { firstOpens: row._count._all },
-      })),
+      [
+        ...firstOpenPlatformRows.map((row) => ({
+          source: 'unknown' as const,
+          platform: normalizeMarketingPlatform(row.platform),
+          stats: { firstOpens: row._count._all },
+        })),
+        ...marketingSpendDimensionRows,
+      ],
       filters,
     );
 
@@ -1787,10 +1838,77 @@ export class AdminService {
       topInsights: buildMarketingInsights(stats, sourceRows),
       dataGaps: [
         'Attribution is currently derived from stored referrals and app sessions; non-referral paid campaign attribution falls back to unknown.',
-        'Manual ad spend import is not enabled yet, so CPI, CPA, and ROAS remain empty until spend rows exist.',
+        'Manual ad spend rows are supported; paid campaign install attribution still needs mobile/deep-link capture before source-level conversion is exact.',
         'No live ad-network API, MMP, exact customer location, phone number, or ad identifier is returned by this endpoint.',
       ],
     };
+  }
+
+  async upsertMarketingSpendDaily(
+    actorId: string,
+    input: {
+      spendDate?: string;
+      source?: string;
+      platform?: string;
+      regionCode?: string;
+      campaignId?: string;
+      campaignName?: string | null;
+      spendAmount?: number;
+      currency?: string;
+      notes?: string | null;
+    },
+  ) {
+    const spendDate = normalizeMarketingSpendDate(input.spendDate);
+    const source = normalizeMarketingSpendSource(input.source);
+    const platform = normalizeMarketingSpendPlatform(input.platform);
+    const regionCode = normalizeMarketingSpendRegionCode(input.regionCode);
+    const campaignId = normalizeMarketingSpendCampaignId(input.campaignId);
+    const spendAmount = normalizeMarketingSpendAmount(input.spendAmount);
+    const currency = normalizeNullable(input.currency)?.toUpperCase() ?? 'VND';
+    const campaignName = normalizeNullable(input.campaignName);
+    const notes = normalizeNullable(input.notes);
+    const row = await this.prisma.marketingSpendDaily.upsert({
+      where: {
+        spendDate_source_platform_regionCode_campaignId: {
+          spendDate,
+          source,
+          platform,
+          regionCode,
+          campaignId,
+        },
+      },
+      create: {
+        spendDate,
+        source,
+        platform,
+        regionCode,
+        campaignId,
+        campaignName,
+        spendAmount,
+        currency,
+        notes,
+        createdById: actorId,
+        updatedById: actorId,
+      },
+      update: {
+        campaignName,
+        spendAmount,
+        currency,
+        notes,
+        updatedById: actorId,
+      },
+    });
+    await this.writeAudit(
+      actorId,
+      'marketing_spend_daily.upsert',
+      `marketing_spend_daily:${source}:${platform}:${regionCode}:${campaignId}:${marketingSpendDateKey(spendDate)}`,
+      {
+        spendAmount,
+        currency,
+      },
+    );
+
+    return row;
   }
 
   private async completedBookingRepeatBreakdown(window: { startAt: Date; endAt: Date }) {
@@ -4516,6 +4634,80 @@ function numberValue(value: unknown) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeMarketingSpendDate(value: unknown) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    throw new BadRequestException('Marketing spend date must use YYYY-MM-DD');
+  }
+
+  const date = new Date(`${value.trim()}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('Marketing spend date is invalid');
+  }
+
+  return date;
+}
+
+function marketingSpendDateKey(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function normalizeMarketingSpendSource(value: unknown) {
+  const source = normalizeMarketingSource(value);
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (source === 'unknown' && raw !== 'unknown') {
+    throw new BadRequestException('Marketing spend source is unsupported');
+  }
+
+  return source;
+}
+
+function normalizeMarketingSpendPlatform(value: unknown) {
+  if (value === undefined || value === null || `${value}`.trim() === '') {
+    return 'unknown';
+  }
+
+  const platform = normalizeMarketingPlatform(value);
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (platform === 'unknown' && raw !== 'unknown') {
+    throw new BadRequestException('Marketing spend platform is unsupported');
+  }
+
+  return platform;
+}
+
+function normalizeMarketingSpendRegionCode(value: unknown, options: { allowAll: true }): VietnamRegionCode | null;
+function normalizeMarketingSpendRegionCode(value?: unknown, options?: { allowAll?: false }): VietnamRegionCode | 'all';
+function normalizeMarketingSpendRegionCode(
+  value: unknown,
+  options: { allowAll?: boolean } = {},
+): VietnamRegionCode | 'all' | null {
+  if (value === undefined || value === null || `${value}`.trim() === '' || `${value}`.trim() === 'all') {
+    return options.allowAll ? null : 'all';
+  }
+
+  const normalized = `${value}`.trim();
+  const regionCode = VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === normalized)?.code;
+  if (!regionCode) {
+    throw new BadRequestException('Marketing spend region is unsupported');
+  }
+
+  return regionCode;
+}
+
+function normalizeMarketingSpendCampaignId(value: unknown) {
+  const normalized = value === undefined || value === null ? null : normalizeNullable(String(value));
+  return normalized ?? 'all';
+}
+
+function normalizeMarketingSpendAmount(value: unknown) {
+  const amount = numberValue(value);
+  if (!Number.isInteger(amount) || amount < 0) {
+    throw new BadRequestException('Marketing spend amount must be a positive integer or zero');
+  }
+
+  return amount;
 }
 
 function ensureVietnamOverviewRegion(

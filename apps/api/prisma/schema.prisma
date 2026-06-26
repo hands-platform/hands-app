@@ -878,6 +878,29 @@ model ReferralReward {
   @@index([walletOwnerProviderProfileId, createdAt])
 }
 
+model MarketingSpendDaily {
+  id           String   @id @default(cuid())
+  spendDate    DateTime
+  source       String
+  platform     String   @default("unknown")
+  regionCode   String   @default("all")
+  campaignId   String   @default("all")
+  campaignName String?
+  spendAmount  Int
+  currency     String   @default("VND")
+  notes        String?
+  metadata     Json?
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([spendDate, source, platform, regionCode, campaignId])
+  @@index([spendDate, source, platform])
+  @@index([campaignId, spendDate])
+  @@index([regionCode, spendDate])
+}
+
 model BookingAddressSnapshot {
   id                 String                    @id @default(cuid())
   bookingId          String                    @unique

@@ -32,6 +32,7 @@ import {
   UpdatePartnerReportDto,
   UpdatePayoutBatchDto,
   UpdateServicePayoutRuleDto,
+  UpsertMarketingSpendDailyDto,
   UpsertServicePayoutRuleDto,
 } from './admin.dto';
 import { AdminService } from './admin.service';
@@ -96,6 +97,11 @@ export class AdminController {
       regionCode,
       campaignId,
     });
+  }
+
+  @Post('marketing/spend-daily')
+  upsertMarketingSpendDaily(@CurrentUser() user: AuthenticatedUser, @Body() body: UpsertMarketingSpendDailyDto) {
+    return this.admin.upsertMarketingSpendDaily(user.id, body);
   }
 
   @Get('referrals/policies')

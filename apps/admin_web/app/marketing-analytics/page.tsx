@@ -27,6 +27,7 @@ import {
   marketingAnalyticsSourceOptions,
   normalizeMarketingAnalyticsFilters,
 } from './marketing-analytics-model';
+import { upsertMarketingSpendDaily } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -221,6 +222,8 @@ export default async function MarketingAnalyticsPage({
         </form>
       </section>
 
+      <ManualSpendForm filters={filters} />
+
       <section className="vietnam-overview-metric-grid">
         {cards.map(({ label, value, detail, icon: Icon, tone }) => (
           <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
@@ -281,6 +284,88 @@ export default async function MarketingAnalyticsPage({
         />
       </section>
     </div>
+  );
+}
+
+function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMarketingAnalyticsFilters> }) {
+  const defaultSpendDate = new Date().toISOString().slice(0, 10);
+
+  return (
+    <section className="card admin-filter-panel marketing-spend-panel">
+      <div className="admin-filter-panel-header">
+        <div>
+          <h2>Manual daily spend</h2>
+          <p className="muted">
+            Enter bounded daily spend by source, platform, region, and campaign. This keeps ad-network
+            API costs out of the MVP while still enabling CPI, CPA, and ROAS checks.
+          </p>
+        </div>
+        <span className="pill pill-warning">Manual input</span>
+      </div>
+      <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
+        <label>
+          <span>Date</span>
+          <input type="date" name="spendDate" defaultValue={defaultSpendDate} required />
+        </label>
+        <label>
+          <span>Source</span>
+          <select name="source" defaultValue={filters.source ?? 'google'} required>
+            {marketingAnalyticsSourceOptions
+              .filter((option) => option.value !== 'all' && option.value !== 'unknown')
+              .map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          <span>Platform</span>
+          <select name="platform" defaultValue={filters.platform ?? 'android'}>
+            {marketingAnalyticsPlatformOptions
+              .filter((option) => option.value !== 'all')
+              .map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          <span>Region</span>
+          <select name="regionCode" defaultValue={filters.regionCode ?? 'all'}>
+            {marketingAnalyticsRegionOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Campaign ID</span>
+          <input name="campaignId" defaultValue={filters.campaignId ?? ''} placeholder="launch-hcm" />
+        </label>
+        <label>
+          <span>Campaign name</span>
+          <input name="campaignName" placeholder="Launch HCMC" />
+        </label>
+        <label>
+          <span>Spend amount</span>
+          <input inputMode="numeric" name="spendAmount" placeholder="600000" required />
+        </label>
+        <label>
+          <span>Currency</span>
+          <input name="currency" defaultValue="VND" />
+        </label>
+        <label className="marketing-spend-notes">
+          <span>Notes</span>
+          <input name="notes" placeholder="Manual import note" />
+        </label>
+        <button className="booking-date-apply-button marketing-spend-submit" type="submit">
+          Save spend
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -404,6 +489,7 @@ function MarketingTable({
               <th>Created</th>
               <th>Completed</th>
               <th>Cancel</th>
+              <th>Ad spend</th>
               <th>Fee revenue</th>
               <th>ROAS</th>
             </tr>
@@ -427,13 +513,14 @@ function MarketingTable({
                 <td>{formatNumber(row.bookingCreated)}</td>
                 <td>{formatNumber(row.bookingCompleted)}</td>
                 <td>{formatNumber(row.bookingCancelled)}</td>
+                <td>{formatCurrency(row.adSpend)}</td>
                 <td>{formatCurrency(row.platformFeeRevenue)}</td>
                 <td>{formatNullableNumber(row.conversionRates.roas)}</td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <div className="empty-state">
                     <BarChart3 size={20} aria-hidden="true" />
                     <strong>{emptyMessage}</strong>

@@ -371,6 +371,175 @@ describe('AdminService query orchestration', () => {
     expect(prisma.referralPolicy.upsert).not.toHaveBeenCalled();
   });
 
+  it('includes manual marketing spend in overview cost metrics', async () => {
+    const prisma = {
+      $queryRaw: jest.fn().mockResolvedValue([
+        {
+          firstBookingCompleted: 1n,
+          repeatBookingCompleted: 1n,
+        },
+      ]),
+      appSession: {
+        groupBy: jest.fn().mockResolvedValue([{ platform: 'ANDROID', _count: { _all: 2 } }]),
+        count: jest.fn().mockResolvedValue(2),
+      },
+      user: {
+        count: jest.fn().mockResolvedValue(2),
+      },
+      referralAttribution: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      customerSelectedLocation: {
+        count: jest.fn().mockResolvedValue(2),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      booking: {
+        count: jest
+          .fn()
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(0),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      payment: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1_200_000 } }),
+      },
+      providerPlatformFeeLog: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { platformFeeAmount: 300_000 } }),
+      },
+      refund: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      marketingSpendDaily: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            spendDate: new Date('2026-06-20T00:00:00.000Z'),
+            source: 'google',
+            platform: 'android',
+            regionCode: 'hcm',
+            campaignId: 'launch-hcm',
+            campaignName: 'Launch HCMC',
+            spendAmount: 600_000,
+            currency: 'VND',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getMarketingOverview({
+      range: '7d',
+      source: 'google',
+      platform: 'android',
+      regionCode: 'hcm',
+      campaignId: 'launch-hcm',
+    });
+
+    expect(overview.totals).toMatchObject({
+      adSpend: 600_000,
+      firstOpens: 2,
+      signups: 2,
+      bookingCompleted: 2,
+    });
+    expect(overview.totals.conversionRates).toMatchObject({
+      cpi: 300_000,
+      cpa: 600_000,
+      roas: 0.5,
+    });
+    expect(overview.bySource).toEqual([
+      expect.objectContaining({
+        source: 'google',
+        platform: 'android',
+        campaignId: 'launch-hcm',
+        adSpend: 600_000,
+      }),
+    ]);
+    expect(prisma.marketingSpendDaily.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          source: 'google',
+          platform: 'android',
+          regionCode: 'hcm',
+          campaignId: 'launch-hcm',
+        }),
+      }),
+    );
+  });
+
+  it('upserts manual marketing spend and writes an audit trail', async () => {
+    const spendDate = new Date('2026-06-20T00:00:00.000Z');
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      marketingSpendDaily: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'spend-1',
+          spendDate,
+          source: 'google',
+          platform: 'android',
+          regionCode: 'hcm',
+          campaignId: 'launch-hcm',
+          campaignName: 'Launch HCMC',
+          spendAmount: 600_000,
+          currency: 'VND',
+          notes: 'manual import',
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.upsertMarketingSpendDaily('admin-1', {
+        spendDate: '2026-06-20',
+        source: 'Google Ads',
+        platform: 'ANDROID',
+        regionCode: 'hcm',
+        campaignId: ' launch-hcm ',
+        campaignName: ' Launch HCMC ',
+        spendAmount: 600_000,
+        notes: ' manual import ',
+      }),
+    ).resolves.toMatchObject({
+      source: 'google',
+      platform: 'android',
+      campaignId: 'launch-hcm',
+      spendAmount: 600_000,
+    });
+
+    expect(prisma.marketingSpendDaily.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          spendDate_source_platform_regionCode_campaignId: {
+            spendDate,
+            source: 'google',
+            platform: 'android',
+            regionCode: 'hcm',
+            campaignId: 'launch-hcm',
+          },
+        },
+        create: expect.objectContaining({
+          createdById: 'admin-1',
+          spendAmount: 600_000,
+        }),
+        update: expect.objectContaining({
+          updatedById: 'admin-1',
+          spendAmount: 600_000,
+        }),
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'marketing_spend_daily.upsert',
+          actorId: 'admin-1',
+          target: 'marketing_spend_daily:google:android:hcm:launch-hcm:2026-06-20',
+        }),
+      }),
+    );
+  });
+
   it('releases available referral rewards without creating wallet ledger entries', async () => {
     const referrals = {
       releaseAvailableRewards: jest.fn().mockResolvedValue({ releasedCount: 3 }),

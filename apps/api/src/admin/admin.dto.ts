@@ -601,6 +601,63 @@ export class UpdateReferralPolicyDto {
   reason?: string;
 }
 
+export class UpsertMarketingSpendDailyDto {
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(10)
+  spendDate!: string;
+
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  source!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(30)
+  platform?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(40)
+  regionCode?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  campaignId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  campaignName?: string | null;
+
+  @IsDefined()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  spendAmount!: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  notes?: string | null;
+}
+
 export class ReferralRewardDecisionDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
