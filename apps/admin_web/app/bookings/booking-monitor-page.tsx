@@ -96,7 +96,7 @@ const bookingMonitorRouteConfig = {
 export async function renderBookingMonitorRoute({ kind, searchParams }: BookingMonitorRouteProps) {
   const params = await searchParams;
   const [bookings, auditLogs, policySettings] = await Promise.all([
-    adminGet<AdminBooking[]>(bookingListApiPath(params), []),
+    adminGet<AdminBooking[]>(bookingListApiPath(params, kind), []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
@@ -141,17 +141,33 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
   );
 }
 
-function bookingListApiPath(params: Record<string, string | string[] | undefined> | undefined) {
+function bookingListApiPath(
+  params: Record<string, string | string[] | undefined> | undefined,
+  kind: BookingMonitorRouteKind,
+) {
   const searchParams = new URLSearchParams();
   const dateRange = readSingleSearchParam(params?.dateRange) ?? 'today';
 
   searchParams.set('dateRange', dateRange);
+  searchParams.set('statusGroup', bookingListStatusGroup(kind));
   if (dateRange === 'custom') {
     setOptionalSearchParam(searchParams, 'dateFrom', readSingleSearchParam(params?.dateFrom) ?? '');
     setOptionalSearchParam(searchParams, 'dateTo', readSingleSearchParam(params?.dateTo) ?? '');
   }
 
   return `/admin/bookings?${searchParams.toString()}`;
+}
+
+function bookingListStatusGroup(kind: BookingMonitorRouteKind) {
+  switch (kind) {
+    case 'completed':
+      return 'completed';
+    case 'postMatchCancellations':
+      return 'post-match-cancellations';
+    case 'all':
+    default:
+      return 'realtime';
+  }
 }
 
 function searchParamEntries(params: Record<string, string | string[] | undefined> | undefined) {

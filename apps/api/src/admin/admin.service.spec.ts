@@ -277,6 +277,34 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('narrows admin booking list rows by route status group', async () => {
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listBookings({ statusGroup: 'realtime' });
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: {
+            in: [
+              BookingStatus.CREATED,
+              BookingStatus.OPEN_MATCHING,
+              BookingStatus.MATCHED,
+              BookingStatus.PROVIDER_ON_THE_WAY,
+              BookingStatus.ARRIVED,
+              BookingStatus.IN_SERVICE,
+            ],
+          },
+        },
+      }),
+    );
+  });
+
   it('includes persisted matching decision fields in booking detail queries', async () => {
     const prisma = {
       booking: {

@@ -199,6 +199,7 @@ type AdminBookingListQuery = {
   readonly dateFrom?: string;
   readonly dateRange?: string;
   readonly dateTo?: string;
+  readonly statusGroup?: string;
 };
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
@@ -514,6 +515,55 @@ function adminBookingListDateWhere(query: AdminBookingListQuery): Prisma.Booking
       { expiresAt: dateRange },
     ],
   };
+}
+
+function adminBookingListWhere(query: AdminBookingListQuery): Prisma.BookingWhereInput | undefined {
+  const filters = [
+    adminBookingListDateWhere(query),
+    adminBookingListStatusGroupWhere(query.statusGroup),
+  ].filter((filter): filter is Prisma.BookingWhereInput => Boolean(filter));
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+
+  if (filters.length === 1) {
+    return filters[0];
+  }
+
+  return { AND: filters };
+}
+
+function adminBookingListStatusGroupWhere(statusGroup?: string): Prisma.BookingWhereInput | undefined {
+  switch (statusGroup) {
+    case 'realtime':
+      return {
+        status: {
+          in: [
+            BookingStatus.CREATED,
+            BookingStatus.OPEN_MATCHING,
+            BookingStatus.MATCHED,
+            BookingStatus.PROVIDER_ON_THE_WAY,
+            BookingStatus.ARRIVED,
+            BookingStatus.IN_SERVICE,
+          ],
+        },
+      };
+    case 'completed':
+      return {
+        status: {
+          in: [BookingStatus.COMPLETED, BookingStatus.EXPIRED, BookingStatus.REFUNDED],
+        },
+      };
+    case 'post-match-cancellations':
+      return {
+        status: {
+          in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW],
+        },
+      };
+    default:
+      return undefined;
+  }
 }
 
 function adminBookingListDateBounds(query: AdminBookingListQuery) {
@@ -2770,7 +2820,7 @@ export class AdminService {
 
   async listBookings(query: AdminBookingListQuery = {}) {
     const bookings = await this.prisma.booking.findMany({
-      where: adminBookingListDateWhere(query),
+      where: adminBookingListWhere(query),
       orderBy: { createdAt: 'desc' },
       take: ADMIN_BOOKING_LIST_LIMIT,
       select: adminBookingListSelect,
