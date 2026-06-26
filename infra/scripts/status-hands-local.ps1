@@ -146,7 +146,7 @@ $apiBuildStatus = Get-ApiBuildStatus -Root $RepoRoot
 $apiHealthUrl = "http://localhost:$($state.apiPort)/api/health"
 $adminUrl = "http://localhost:$($state.adminPort)"
 $apiHealthProbe = Get-HttpProbeStatus -Url $apiHealthUrl
-$adminProbe = Get-HttpProbeStatus -Url $adminUrl -AllowedStatusCodes @(200, 307, 308, 404)
+$adminProbe = Get-HttpProbeStatus -Url $adminUrl -AllowedStatusCodes @(200, 307, 308, 404) -TimeoutSeconds 10
 
 [pscustomobject]@{
   appName = $state.appName
