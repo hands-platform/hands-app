@@ -224,7 +224,8 @@ export function buildNotificationPageModel({
   const filters = buildNotificationFilters(params);
   const allNotifications = sortNotifications(rawNotifications);
   const notifications = filterNotifications(allNotifications, filters);
-  const summary = buildNotificationSummary(allNotifications);
+  const deliveryStats = buildNotificationDeliveryStats(allNotifications);
+  const summary = buildNotificationSummary(allNotifications, deliveryStats);
   const channelSummary = buildNotificationChannelSummary(allNotifications, operationalPolicies);
   const partnerAlertSmokeFallback = buildNotificationPartnerAlertSmokeFallback(
     allNotifications,
@@ -259,7 +260,7 @@ export function buildNotificationPageModel({
     notificationPagination,
     notificationRows: notificationPagination.rows,
     notifications,
-    opsQueue: buildNotificationDeliveryOpsQueue(allNotifications),
+    opsQueue: buildNotificationDeliveryOpsQueue(allNotifications, deliveryStats),
     partnerAlertSmokeFallback,
     reviewRunbook: reviewState.runbook,
     summary,
@@ -329,8 +330,19 @@ export function buildNotificationMetrics(
 }
 
 export function sortNotifications(notifications: readonly AdminNotification[]) {
+  const priorities = new Map<AdminNotification, number>();
+  const priorityFor = (notification: AdminNotification) => {
+    const cached = priorities.get(notification);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const priority = notificationPriority(notification);
+    priorities.set(notification, priority);
+    return priority;
+  };
+
   return [...notifications].sort((left, right) => {
-    const signalDiff = notificationPriority(right) - notificationPriority(left);
+    const signalDiff = priorityFor(right) - priorityFor(left);
     if (signalDiff !== 0) {
       return signalDiff;
     }
@@ -345,22 +357,23 @@ export function buildNotificationTableRows(
   return notifications.map((notification) => {
     const partnerProfile = notification.user?.providerProfile;
     const partnerLabel = notificationPartnerLabel(partnerProfile);
+    const deliveryHealth = notificationDeliveryHealth(notification);
 
     return {
       actionLabel: `Notification actions for ${shortId(notification.id)}`,
-      actions: notificationActionMenuItems(notification, actionContext),
+      actions: notificationActionMenuItems(notification, actionContext, deliveryHealth),
       body: marketplaceDisplayText(notification.body),
       bookingDataHint: notificationDataHint(notification),
       createdAtLabel: formatDateTime(notification.createdAt),
       deliveryRows: buildNotificationDeliveryRows(notification, actionContext),
       id: notification.id,
-      opsHint: opsHint(notification),
-      opsSignal: opsSignal(notification),
+      opsHint: opsHint(notification, deliveryHealth),
+      opsSignal: deliveryHealth.signalLabel,
       partnerHref: partnerProfile ? `/partners/${partnerProfile.id}` : null,
       partnerLabel,
       partnerStatus: partnerProfile?.status ?? null,
       relativeCreatedAtLabel: formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' }),
-      signalClassName: signalClass(notification),
+      signalClassName: deliveryHealth.signalClassName,
       title: marketplaceDisplayText(notification.title),
       typeLabel: marketplaceDisplayText(humanizeType(notification.type)),
       typeMeaning: typeMeaning(notification.type),
@@ -412,9 +425,10 @@ function notificationPartnerLabel(
   return name.startsWith('Partner ') ? name : `Partner ${name}`;
 }
 
-export function buildNotificationSummary(notifications: readonly AdminNotification[]): NotificationSummary {
-  const deliveryStats = buildNotificationDeliveryStats(notifications);
-
+export function buildNotificationSummary(
+  notifications: readonly AdminNotification[],
+  deliveryStats = buildNotificationDeliveryStats(notifications),
+): NotificationSummary {
   return {
     disabledDevices: deliveryStats.disabledDevices,
     failed: deliveryStats.failedNotifications,
@@ -447,8 +461,8 @@ export function buildNotificationDeliveryStats(
 
 export function buildNotificationDeliveryOpsQueue(
   notifications: readonly AdminNotification[],
+  deliveryStats = buildNotificationDeliveryStats(notifications),
 ): NotificationDeliveryOpsQueueItem[] {
-  const deliveryStats = buildNotificationDeliveryStats(notifications);
   const queueItems: NotificationDeliveryOpsQueueItem[] = [
     {
       count: deliveryStats.failedNotifications,
@@ -855,9 +869,9 @@ function notificationPriority(notification: AdminNotification) {
 function notificationActionMenuItems(
   notification: AdminNotification,
   actionContext: NotificationActionReturnContext,
+  deliveryHealth = notificationDeliveryHealth(notification),
 ): readonly ActionMenuItem[] {
   const bookingId = notificationBookingId(notification);
-  const deliveryHealth = notificationDeliveryHealth(notification);
   const actions: ActionMenuItem[] = [];
 
   if (bookingId) {
@@ -989,22 +1003,14 @@ function notificationBookingId(notification: AdminNotification) {
   return readString(data?.bookingId) ?? '';
 }
 
-function signalClass(notification: AdminNotification) {
-  return notificationDeliveryHealth(notification).signalClassName;
-}
-
-function opsSignal(notification: AdminNotification) {
-  return notificationDeliveryHealth(notification).signalLabel;
-}
-
-function opsHint(notification: AdminNotification) {
-  const baseHint = opsHintBase(notification);
+function opsHint(notification: AdminNotification, deliveryHealth = notificationDeliveryHealth(notification)) {
+  const baseHint = opsHintBase(notification, deliveryHealth);
   const latestAttemptLabel = latestDeliveryAttemptLabel(notification);
   return latestAttemptLabel ? `${baseHint} Latest attempt ${latestAttemptLabel}.` : baseHint;
 }
 
-function opsHintBase(notification: AdminNotification) {
-  return notificationDeliveryHealth(notification).hint;
+function opsHintBase(notification: AdminNotification, deliveryHealth = notificationDeliveryHealth(notification)) {
+  return deliveryHealth.hint;
 }
 
 function latestDeliveryAttemptLabel(notification: AdminNotification) {
