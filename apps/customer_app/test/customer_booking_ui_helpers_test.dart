@@ -201,7 +201,7 @@ void main() {
     });
   });
 
-  group('provider review summary', () {
+  group('Partner review summary', () {
     test('prefers aggregate rating and review count from the public API', () {
       final provider = {
         'ratingAvg': 4.7,

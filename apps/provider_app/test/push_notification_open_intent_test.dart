@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/src/features/notification/domain/entities/push_notification_open_intent.dart';
 
 void main() {
-  test('provider notification opens chat when chatRoomId is present', () {
+  test('Partner notification opens chat when chatRoomId is present', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',
       'chatRoomId': ' chat-room-1 ',
@@ -14,7 +14,7 @@ void main() {
     expect(intent.hasBooking, isTrue);
   });
 
-  test('provider notification opens earnings for payout payloads', () {
+  test('Partner notification opens earnings for payout payloads', () {
     final intent = PushNotificationOpenIntent.fromData({
       'payoutBatchId': 'payout-batch-1',
       'providerProfileId': 'provider-1',
@@ -25,7 +25,7 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
-  test('provider notification uses earning type before booking fallback', () {
+  test('Partner notification uses earning type before booking fallback', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',
       'type': 'earning.created',
@@ -35,7 +35,7 @@ void main() {
     expect(intent.bookingId, 'booking-1');
   });
 
-  test('provider notification opens booking from booking payload', () {
+  test('Partner notification opens booking from booking payload', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',
       'providerProfileId': 'provider-1',
@@ -46,7 +46,7 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
-  test('provider notification falls back to notification center', () {
+  test('Partner notification falls back to notification center', () {
     final intent = PushNotificationOpenIntent.fromData({
       'chatRoomId': '',
       'unused': 123,

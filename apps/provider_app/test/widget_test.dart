@@ -6,10 +6,20 @@ import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
 import 'package:provider_app/src/features/chat/presentation/provider_chat_location_helpers.dart';
 import 'package:provider_app/src/features/earnings/presentation/provider_earnings_screen.dart';
+import 'package:provider_app/src/features/notification/data/datasources/in_app_notification_token_datasource.dart';
+import 'package:provider_app/src/features/notification/presentation/providers/notification_providers.dart';
 
 void main() {
   testWidgets('renders partner requests screen', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: ProviderApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          pushTokenDataSourceProvider
+              .overrideWithValue(InAppNotificationTokenDataSource()),
+        ],
+        child: const ProviderApp(),
+      ),
+    );
 
     expect(find.text('Booking requests'), findsOneWidget);
     expect(find.text('Demo partner login'), findsOneWidget);

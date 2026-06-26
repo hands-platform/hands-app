@@ -5,7 +5,8 @@ export 'provider_onboarding_form_inputs.dart';
 import 'provider_onboarding_form_inputs.dart';
 import 'provider_onboarding_form_widgets.dart';
 
-const partnerBankCorrectionDefaultReason = '입금 정보가 정확하지 않아 입금이 되지 않습니다';
+const partnerBankCorrectionDefaultReason =
+    'Withdrawal bank information is incorrect, so the payout cannot be sent.';
 
 Future<ProviderBasicProfileInput?> showProviderBasicProfileSheet(
   BuildContext context, {
@@ -665,7 +666,7 @@ String bankAccountFormDescription({
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
     final prefix = reason == null || reason.isEmpty
-        ? '$partnerBankCorrectionDefaultReason.'
+        ? partnerBankCorrectionDefaultReason
         : 'Rejected: $reason.';
     return '$prefix Correct the Vietnamese bank account details and submit again for admin approval.';
   }

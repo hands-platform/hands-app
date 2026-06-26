@@ -5,7 +5,7 @@ import 'package:provider_app/src/features/notification/data/datasources/push_tok
 import 'package:provider_app/src/features/notification/data/repositories/push_notification_repository_impl.dart';
 
 void main() {
-  test('provider registers remote FCM tokens through the API', () async {
+  test('Partner registers remote FCM tokens through the API', () async {
     final remoteDataSource = _RecordingNotificationRemoteDataSource();
     final repository = PushNotificationRepositoryImpl(
       pushTokenDataSource: _FakePushTokenDataSource(
@@ -22,7 +22,7 @@ void main() {
     expect(remoteDataSource.registeredTokens.single.platform, 'android');
   });
 
-  test('provider skips remote registration for in-app-only tokens', () async {
+  test('Partner skips remote registration for in-app-only tokens', () async {
     final remoteDataSource = _RecordingNotificationRemoteDataSource();
     final repository = PushNotificationRepositoryImpl(
       pushTokenDataSource: _FakePushTokenDataSource(

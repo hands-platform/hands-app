@@ -58,7 +58,7 @@ void main() {
     );
     expect(
       providerBankAccountStepDetail(status: 'REJECTED'),
-      '입금 정보가 정확하지 않아 입금이 되지 않습니다. Update the bank details and submit again.',
+      'Withdrawal bank information is incorrect, so the payout cannot be sent. Update the bank details and submit again.',
     );
     expect(
       providerBankAccountStepDetail(status: 'PENDING_REVIEW'),
@@ -225,7 +225,7 @@ void main() {
     );
     expect(
       bankAccountFormDescription(status: 'REJECTED'),
-      startsWith('입금 정보가 정확하지 않아 입금이 되지 않습니다.'),
+      startsWith('Withdrawal bank information is incorrect, so the payout cannot be sent.'),
     );
     expect(
       taxProfileFormDescription(

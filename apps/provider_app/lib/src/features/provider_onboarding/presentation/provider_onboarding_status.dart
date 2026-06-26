@@ -1,6 +1,7 @@
 import 'widgets/provider_document_upload_slots.dart';
 
-const partnerBankCorrectionDefaultReason = '입금 정보가 정확하지 않아 입금이 되지 않습니다';
+const partnerBankCorrectionDefaultReason =
+    'Withdrawal bank information is incorrect, so the payout cannot be sent.';
 
 class ProviderOnboardingPriority {
   const ProviderOnboardingPriority({
@@ -442,7 +443,7 @@ String providerBankAccountStepDetail({
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
     final prefix = reason == null || reason.isEmpty
-        ? '$partnerBankCorrectionDefaultReason.'
+        ? partnerBankCorrectionDefaultReason
         : 'Rejected: $reason.';
     return '$prefix Update the bank details and submit again.';
   }

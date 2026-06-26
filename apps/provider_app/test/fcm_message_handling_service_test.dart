@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/src/core/fcm_message_handling_service.dart';
 
 void main() {
-  test('provider local notification payload keeps push data as strings', () {
+  test('Partner local notification payload keeps push data as strings', () {
     final notificationOpen = FcmNotificationOpen.fromLocalPayload(
       '{"messageId":"message-1","data":{"bookingId":"booking-1","payoutBatchId":42}}',
     );
@@ -15,7 +15,7 @@ void main() {
     });
   });
 
-  test('provider local notification payload ignores malformed data', () {
+  test('Partner local notification payload ignores malformed data', () {
     final notificationOpen =
         FcmNotificationOpen.fromLocalPayload('not-json-payload');
 
