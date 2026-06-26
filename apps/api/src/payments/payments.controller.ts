@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseEnumPipe, Post, UseGuards } from '@nestjs/common';
 import { PaymentMethod, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -40,7 +40,7 @@ export class PaymentsController {
   }
 
   @Post('payments/:method/callback')
-  callback(@Param('method') method: PaymentMethod, @Body() body: unknown) {
+  callback(@Param('method', new ParseEnumPipe(PaymentMethod)) method: PaymentMethod, @Body() body: unknown) {
     return this.payments.handleCallback(method, body);
   }
 }
