@@ -13,7 +13,7 @@ const ADDRESS_TEXT_FIELDS = [
 const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
 const ADDRESS_LABEL_FIELDS = ['label', 'name'] as const;
 const COORDINATE_PAIR_TEXT_RE = /^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/;
-const COUNTRY_SUFFIX_RE = /(?:,?\s*(?:Vietnam|Viet Nam|Việt Nam|베트남))\.?$/iu;
+const COUNTRY_SUFFIX_RE = /(?:,?\s*(?:Vietnam|Viet Nam|Việt Nam|\uBCB0\uD2B8\uB0A8))\.?$/iu;
 const TRAILING_POSTAL_CODE_RE = /\s+\d{4,6}$/;
 
 export function coordinatePairLabel(lat: unknown, lng: unknown) {

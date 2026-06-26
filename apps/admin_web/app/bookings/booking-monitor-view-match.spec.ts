@@ -1,28 +1,10 @@
 import type { BookingMonitorViewMatchReaders } from './booking-monitor-view-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 
-const trueReaderNames = [
-  'activeStatus',
-  'addressNeedsOps',
-  'cashDebtNeedsOps',
-  'chatEvidenceNeedsOps',
-  'chatLive',
-  'chatRepairNeedsOps',
-  'closeoutNeedsOps',
-  'decisionEvidenceMissing',
-  'highPriorityCheck',
-  'locationNeedsOps',
-  'manualDecisionNeedsOps',
-  'matchingEscalationNeedsOps',
-  'noSupply',
-  'paymentNeedsOps',
-  'postMatchCancellation',
-  'pricingPolicyNeedsOps',
-  'refundReviewNeedsOps',
-] as const;
+type TrueReaderName = Exclude<keyof BookingMonitorViewMatchReaders, 'stageKey' | 'status'>;
 
 function buildReaders(
-  overrides: Partial<Record<(typeof trueReaderNames)[number], boolean>> & {
+  overrides: Partial<Record<TrueReaderName, boolean>> & {
     stageKey?: ReturnType<BookingMonitorViewMatchReaders['stageKey']>;
     status?: string;
   } = {},

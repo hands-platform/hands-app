@@ -157,10 +157,7 @@ export function BookingMonitorFiltersSection({
               aria-pressed={dateRangeFilter === option.value}
               className={dateRangeFilter === option.value ? 'is-active' : undefined}
               href={dateRangeHrefFor(option.value)}
-              onClick={(event) => {
-                event.preventDefault();
-                onDateRangeFilterChange(option.value);
-              }}
+              onClick={() => onDateRangeFilterChange(option.value)}
               role="button"
             >
               {option.label}

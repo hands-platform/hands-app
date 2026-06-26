@@ -7,6 +7,8 @@ import {
   type BookingMonitorListRow,
 } from './booking-monitor-list-section';
 
+const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
+
 describe('BookingMonitorListSection', () => {
   it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
@@ -94,7 +96,7 @@ describe('BookingMonitorListSection', () => {
       },
       customerProfileId: 'customer_123',
       address: {
-        formattedAddress: 'Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남',
+        formattedAddress: `Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}`,
       },
       addressSnapshot: {
         address: {
@@ -274,10 +276,10 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('aria-label="Service type: Foot Massage"');
     expect(markup).toContain('vuexy-booking-address-cell');
     expect(markup).toContain(
-      'title="Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남"',
+      `title="Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}"`,
     );
     expect(markup).toContain(
-      'aria-label="Service address: Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남"',
+      `aria-label="Service address: Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}"`,
     );
     expect(markup).toContain('vuexy-booking-state-cell');
     expect(markup).toContain('aria-label="State changed: Matching opened at"');

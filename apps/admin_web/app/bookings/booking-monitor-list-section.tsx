@@ -547,7 +547,12 @@ export function BookingPostMatchCancellationChatLayer({
     }
 
     const controller = new AbortController();
-    setChatState((current) => ({ ...current, error: null, loaded: false }));
+
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) {
+        setChatState((current) => ({ ...current, error: null, loaded: false }));
+      }
+    });
 
     fetch(`/api/admin/bookings/${encodeURIComponent(booking.id)}/chat-messages`, {
       cache: 'no-store',
@@ -1028,12 +1033,18 @@ function bookingCountryName(region: string) {
     JP: 'Japan',
     KR: 'South Korea',
     SG: 'Singapore',
-    TH: 'Thailand',
-    US: 'United States',
     VN: 'Vietnam',
   };
 
-  return countryNames[region] ?? region;
+  return countryNames[region] ?? displayRegionName(region);
+}
+
+function displayRegionName(region: string) {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(region) ?? region;
+  } catch {
+    return region;
+  }
 }
 
 function countryFlagFromRegion(region: string) {

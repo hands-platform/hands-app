@@ -78,7 +78,7 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
       readOptionalString(metadata.bookingAddressText) ??
       'Address not recorded',
     customerDistanceLabel: formatGateDistance(
-      'Customer current location',
+      'Optional customer GPS',
       customerDistance,
       customerDistanceLimit,
     ),

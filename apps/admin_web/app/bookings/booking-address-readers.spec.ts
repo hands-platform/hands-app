@@ -1,5 +1,7 @@
 import { coordinatePairLabel, readAddressText, serviceAddressAreaLabel } from './booking-address-readers';
 
+const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
+
 describe('booking address readers', () => {
   it('formats coordinate pairs to four decimals when both values are finite', () => {
     expect(coordinatePairLabel(10.7769, '106.7009')).toBe('10.7769, 106.7009');
@@ -47,24 +49,32 @@ describe('booking address readers', () => {
   });
 
   it('summarizes booking service addresses to area and city for list views', () => {
-    expect(serviceAddressAreaLabel('Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남')).toBe(
+    expect(
+      serviceAddressAreaLabel(
+        `Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 ${KOREAN_VIETNAM_COUNTRY}`,
+      ),
+    ).toBe('Cầu Giấy, Hà Nội');
+    expect(serviceAddressAreaLabel(`159 P. Chùa Láng, Láng, Hà Nội 100000 ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
+      'Láng, Hà Nội',
+    );
+    expect(serviceAddressAreaLabel(`Ngõ 86 Duy Tân, Cầu Giấy, Hà Nội 100000 ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
       'Cầu Giấy, Hà Nội',
     );
-    expect(serviceAddressAreaLabel('159 P. Chùa Láng, Láng, Hà Nội 100000 베트남')).toBe('Láng, Hà Nội');
-    expect(serviceAddressAreaLabel('Ngõ 86 Duy Tân, Cầu Giấy, Hà Nội 100000 베트남')).toBe(
+    expect(serviceAddressAreaLabel(`Ng. 91 P. Chùa Láng, Láng, Hà Nội, ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
+      'Láng, Hà Nội',
+    );
+    expect(serviceAddressAreaLabel(`7C Ng. 445 Đ. Nguyễn Khang, Cầu Giấy, Hà Nội, ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
       'Cầu Giấy, Hà Nội',
     );
-    expect(serviceAddressAreaLabel('Ng. 91 P. Chùa Láng, Láng, Hà Nội, 베트남')).toBe('Láng, Hà Nội');
-    expect(serviceAddressAreaLabel('7C Ng. 445 Đ. Nguyễn Khang, Cầu Giấy, Hà Nội, 베트남')).toBe(
-      'Cầu Giấy, Hà Nội',
-    );
-    expect(serviceAddressAreaLabel('85/9 Phạm Viết Chánh, Thạnh Mỹ Tây, Hồ Chí Minh 700000 베트남')).toBe(
-      'Thạnh Mỹ Tây, Hồ Chí Minh',
-    );
-    expect(serviceAddressAreaLabel('Hẻm 1 Đ. Số 9, Khu Phố 4, An Khánh, Hồ Chí Minh, 베트남')).toBe(
+    expect(
+      serviceAddressAreaLabel(
+        `85/9 Phạm Viết Chánh, Thạnh Mỹ Tây, Hồ Chí Minh 700000 ${KOREAN_VIETNAM_COUNTRY}`,
+      ),
+    ).toBe('Thạnh Mỹ Tây, Hồ Chí Minh');
+    expect(serviceAddressAreaLabel(`Hẻm 1 Đ. Số 9, Khu Phố 4, An Khánh, Hồ Chí Minh, ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
       'An Khánh, Hồ Chí Minh',
     );
-    expect(serviceAddressAreaLabel('32 Phan Huy Ích, Vũng Tàu, Hồ Chí Minh 790000 베트남')).toBe(
+    expect(serviceAddressAreaLabel(`32 Phan Huy Ích, Vũng Tàu, Hồ Chí Minh 790000 ${KOREAN_VIETNAM_COUNTRY}`)).toBe(
       'Vũng Tàu, Hồ Chí Minh',
     );
     expect(serviceAddressAreaLabel('22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City')).toBe(

@@ -1,23 +1,10 @@
 import type { BookingMonitorEvidenceMatchReaders } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 
-const booleanReaderNames = [
-  'activeStatus',
-  'addressNeedsOps',
-  'alertEvidenceNeedsOps',
-  'cashDebtNeedsOps',
-  'chatLive',
-  'chatRepairNeedsOps',
-  'closeoutNeedsOps',
-  'hasFinalPartner',
-  'hasProviderLocation',
-  'locationNeedsOps',
-  'paymentNeedsOps',
-  'terminalStatus',
-] as const;
+type BooleanReaderName = Exclude<keyof BookingMonitorEvidenceMatchReaders, 'status'>;
 
 function buildReaders(
-  overrides: Partial<Record<(typeof booleanReaderNames)[number], boolean>> & {
+  overrides: Partial<Record<BooleanReaderName, boolean>> & {
     status?: string;
   } = {},
 ): BookingMonitorEvidenceMatchReaders {
