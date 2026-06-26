@@ -25,7 +25,7 @@ export class JwtAuthGuard implements CanActivate {
 }
 
 function extractBearerToken(header: string | string[] | undefined) {
-  const value = Array.isArray(header) ? header[0] : header;
+  const value = Array.isArray(header) ? (header.length === 1 ? header[0] : undefined) : header;
   if (!value) {
     return undefined;
   }

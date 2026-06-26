@@ -13,6 +13,17 @@ describe('JwtAuthGuard bearer token parsing', () => {
     expect(authTokens.authenticateBearerToken).not.toHaveBeenCalled();
   });
 
+  it('rejects duplicate authorization headers instead of trusting the first value', async () => {
+    const authTokens = {
+      authenticateBearerToken: jest.fn(),
+    };
+    const request = { headers: { authorization: ['Bearer token-1', 'Bearer token-2'] } };
+    const guard = new JwtAuthGuard(authTokens as never);
+
+    await expect(guard.canActivate(executionContextFor(request))).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(authTokens.authenticateBearerToken).not.toHaveBeenCalled();
+  });
+
   it('authenticates a single bearer token and attaches the user', async () => {
     const authenticatedUser = { id: 'user-1', roles: [] };
     const authTokens = {
