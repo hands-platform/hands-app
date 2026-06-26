@@ -17,6 +17,8 @@ type AttentionFlag = {
 
 type NotificationTrace = {
   metrics: SummaryCard[];
+  totalBackupBatches?: number;
+  totalRows?: number;
   backupBatches: Array<{
     id: string;
     signal: string;
@@ -106,6 +108,12 @@ export function BookingAlertTraceSection({
   bookingId,
   notificationTrace,
 }: BookingAlertTraceSectionProps) {
+  const totalRows = notificationTrace.totalRows ?? notificationTrace.rows.length;
+  const totalBackupBatches =
+    notificationTrace.totalBackupBatches ?? notificationTrace.backupBatches.length;
+  const hiddenRows = Math.max(totalRows - notificationTrace.rows.length, 0);
+  const hiddenBatches = Math.max(totalBackupBatches - notificationTrace.backupBatches.length, 0);
+
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -164,6 +172,13 @@ export function BookingAlertTraceSection({
           whether the booking created first-pick or marketplace availability alerts.
         </p>
       ) : null}
+      {hiddenRows + hiddenBatches > 0 && (
+        <p className="muted admin-mt-10">
+          Showing latest {notificationTrace.rows.length} of {totalRows} notification row(s) and latest{' '}
+          {notificationTrace.backupBatches.length} of {totalBackupBatches} marketplace batch(es). Open the
+          notification board for the full delivery history.
+        </p>
+      )}
     </section>
   );
 }

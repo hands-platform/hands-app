@@ -42,6 +42,34 @@ describe('BookingActivityPanel', () => {
     expect(markup).not.toContain('setup-stage-item');
   });
 
+  it('shows the full activity count when only preview rows are rendered', () => {
+    const markup = renderToStaticMarkup(
+      <BookingActivityPanel
+        records={[
+          {
+            id: 'activity-1',
+            type: 'ALERT',
+            at: '2026-06-19T14:40:00.000Z',
+            title: 'Notification sent',
+            detail: 'Partner invite delivery recorded.',
+          },
+        ]}
+        summary={[
+          {
+            label: 'Ops and alerts',
+            value: '12',
+            helper: 'Operator notes, audit events, and notification delivery events.',
+          },
+        ]}
+        totalRecordCount={12}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('12 event(s)');
+    expect(markup).toContain('Showing latest 1 of 12 events in-page.');
+    expect(markup).toContain('Notification sent');
+  });
+
   it('renders the empty state with the same record row structure', () => {
     const markup = renderToStaticMarkup(
       <BookingActivityPanel

@@ -3,7 +3,7 @@ import type { AdminChatMessage } from '../../../lib/admin-api';
 import { BookingDetailChatTranscriptSection } from './booking-detail-chat-transcript-section';
 
 describe('BookingDetailChatTranscriptSection', () => {
-  it('renders all booking chat messages in the visible booking detail flow', () => {
+  it('renders booking chat messages in the visible booking detail flow', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailChatTranscriptSection
         messages={[
@@ -23,7 +23,7 @@ describe('BookingDetailChatTranscriptSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Customer and Partner chat history');
-    expect(rendered).toContain('Retained booking chat transcript.');
+    expect(rendered).toContain('Latest retained booking chat transcript preview.');
     expect(rendered).toContain('2 messages');
     expect(rendered).toContain('Customer requested the room change.');
     expect(rendered).toContain('Partner confirmed arrival.');
@@ -31,6 +31,24 @@ describe('BookingDetailChatTranscriptSection', () => {
     expect(rendered).toContain('Partner Linh');
     expect(markup).toContain('id="booking-chat-history"');
     expect(markup).toContain('booking-chat-transcript-panel');
+  });
+
+  it('keeps the full message count while rendering a compact transcript preview', () => {
+    const markup = renderToStaticMarkup(
+      <BookingDetailChatTranscriptSection
+        archiveHref="/chat-archive?q=booking-1"
+        messages={[
+          chatMessageFixture({ id: 'message-2', body: 'Latest visible message.' }),
+        ]}
+        totalMessages={8}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('8 messages');
+    expect(rendered).toContain('Latest visible message.');
+    expect(rendered).toContain('Showing latest 1 of 8 messages.');
+    expect(markup).toContain('href="/chat-archive?q=booking-1"');
   });
 
   it('renders a compact empty state', () => {

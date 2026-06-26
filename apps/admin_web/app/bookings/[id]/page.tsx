@@ -235,6 +235,12 @@ const bookingDetailAuthoritySourceMarkers = [
 ] as const;
 
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
+const BOOKING_DETAIL_CHAT_PREVIEW_LIMIT = 12;
+const BOOKING_DETAIL_NOTIFICATION_BATCH_PREVIEW_LIMIT = 4;
+const BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT = 12;
+const BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT = 24;
+const BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT = 40;
+const BOOKING_DETAIL_OPERATING_TIMELINE_PREVIEW_LIMIT = 18;
 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -254,6 +260,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
   const messageCount = messages.length;
+  const visibleMessages = latestItems(messages, BOOKING_DETAIL_CHAT_PREVIEW_LIMIT);
   const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
   const toolbarProps = bookingDetailToolbarProps({ booking, finalPartnerSummary });
@@ -288,6 +295,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const customerWaitPanel = bookingCustomerWaitPanel(booking, marketplaceSupply, operationalPolicies);
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, marketplaceSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
+  const visibleNotificationTrace = bookingNotificationTracePreview(notificationTrace);
   const notificationCount = notificationTrace.rows.length;
   const marketplaceAlertBatchCount = notificationTrace.backupBatches.length;
   const matchingRuleSnapshot = bookingDetailMatchingRuleSnapshot({
@@ -309,7 +317,11 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     humanizeNotificationType,
   });
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
-  const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
+  const visibleBookingActivityRecords = firstItems(bookingActivityRecords, BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT);
+  const bookingActivityCsvHref = buildBookingActivityCsvHref(
+    booking,
+    firstItems(bookingActivityRecords, BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT),
+  );
   const marketplaceWalletEvidence = bookingMarketplaceWalletEvidence({
     booking,
     marketplaceSupply,
@@ -372,9 +384,13 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     addressLine,
     addressPin,
     latestLocation,
-    messages,
-    notifications: rawNotifications,
+    messages: visibleMessages,
+    notifications: firstItems(rawNotifications, BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT),
   });
+  const visibleOperatingTimeline = firstItems(
+    operatingTimeline,
+    BOOKING_DETAIL_OPERATING_TIMELINE_PREVIEW_LIMIT,
+  );
   const communicationMovementHandoff = bookingCommunicationMovementHandoff({
     booking,
     latestLocation,
@@ -618,8 +634,9 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     timelineStages: bookingDetailFlowStages(booking),
   };
   const activityPanelProps: BookingActivityPanelProps = {
-    records: bookingActivityRecords,
+    records: visibleBookingActivityRecords,
     summary: bookingActivitySummary,
+    totalRecordCount: activityRecordCount,
   };
   const financeCommandCenterProps: BookingFinanceCommandCenterSectionProps = {
     financeFlags,
@@ -631,7 +648,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   };
   const alertTraceProps: BookingAlertTraceSectionProps = {
     bookingId: booking.id,
-    notificationTrace,
+    notificationTrace: visibleNotificationTrace,
   };
   const operationsAuditTraceProps: BookingOperationsAuditTraceSectionProps = {
     bookingId: booking.id,
@@ -661,7 +678,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     operatingSnapshot,
   };
   const operatingTimelineProps: BookingOperatingTimelineSectionProps = {
-    operatingTimeline,
+    operatingTimeline: visibleOperatingTimeline,
   };
   const communicationMovementHandoffProps: BookingCommunicationMovementHandoffSectionProps = {
     communicationMovementHandoff,
@@ -742,7 +759,11 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         title="Booking review records"
       />
 
-      <BookingDetailChatTranscriptSection messages={messages} />
+      <BookingDetailChatTranscriptSection
+        archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+        messages={visibleMessages}
+        totalMessages={messageCount}
+      />
 
       <BookingDetailLifecycleListSection booking={booking} />
 
@@ -859,5 +880,23 @@ async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageD
     operationalPolicies,
     providers,
     rawNotifications,
+  };
+}
+
+function firstItems<T>(items: readonly T[], limit: number): T[] {
+  return items.length > limit ? items.slice(0, limit) : [...items];
+}
+
+function latestItems<T>(items: readonly T[], limit: number): T[] {
+  return items.length > limit ? items.slice(-limit) : [...items];
+}
+
+function bookingNotificationTracePreview(trace: ReturnType<typeof bookingNotificationTrace>) {
+  return {
+    ...trace,
+    backupBatches: firstItems(trace.backupBatches, BOOKING_DETAIL_NOTIFICATION_BATCH_PREVIEW_LIMIT),
+    rows: firstItems(trace.rows, BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT),
+    totalBackupBatches: trace.backupBatches.length,
+    totalRows: trace.rows.length,
   };
 }

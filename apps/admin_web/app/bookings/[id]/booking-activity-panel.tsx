@@ -61,17 +61,20 @@ export function BookingFullRecordIndex({
 export function BookingActivityPanel({
   records,
   summary,
+  totalRecordCount = records.length,
 }: BookingActivityPanelProps) {
+  const hiddenRecordCount = Math.max(totalRecordCount - records.length, 0);
+
   return (
     <section className="card admin-mt-16" id="booking-activity">
       <div className="ops-section-header">
         <div>
           <h2>Booking chronological activity</h2>
           <p className="muted">
-            Date-sorted operational event trail for this booking.
+            Latest date-sorted operational event trail for this booking.
           </p>
         </div>
-        <span className="pill pill-info">{records.length} event(s)</span>
+        <span className="pill pill-info">{totalRecordCount} event(s)</span>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {summary.map((item) => (
@@ -114,6 +117,12 @@ export function BookingActivityPanel({
           </div>
         )}
       </div>
+      {hiddenRecordCount > 0 && (
+        <p className="muted admin-mt-10">
+          Showing latest {records.length} of {totalRecordCount} events in-page. Use the activity CSV or linked
+          audit/notification boards for the full operational trail.
+        </p>
+      )}
     </section>
   );
 }
@@ -121,4 +130,5 @@ export function BookingActivityPanel({
 export type BookingActivityPanelProps = {
   records: BookingActivityRecord[];
   summary: BookingActivitySummaryItem[];
+  totalRecordCount?: number;
 };
