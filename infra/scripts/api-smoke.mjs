@@ -1877,6 +1877,15 @@ try {
       )}`,
     );
   }
+  const firstPickDidNotSelectOtherProvider =
+    preferredAcceptPolicyMatchedBooking.selectedProviderId !== providerAuth.user.providerProfile.id;
+  if (!firstPickDidNotSelectOtherProvider) {
+    throw new Error(
+      `First-pick valid acceptance should not select a different partner: ${JSON.stringify(
+        preferredAcceptPolicyMatched,
+      )}`,
+    );
+  }
   const preferredAcceptedParticipant = preferredAcceptPolicyMatchedBooking.participants?.find(
     (participant) => participant.providerProfileId === preferredAcceptProviderAuth.user.providerProfile.id,
   );
@@ -2487,7 +2496,7 @@ if (
   )
 ) {
   throw new Error(
-    `First provider earning should notify payout setup requirements without Vietnam tax approval: ${JSON.stringify(
+    `First provider earning should notify payout tax setup requirements: ${JSON.stringify(
       walletDebtProviderNotifications,
     )}`,
   );
