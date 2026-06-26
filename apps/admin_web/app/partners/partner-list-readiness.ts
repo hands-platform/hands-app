@@ -143,7 +143,7 @@ export function providerReviewIssues(
     issues.push({ label: 'document pending', severity: 'medium' });
   }
   if (partnerTaxNeedsReview(provider)) {
-    issues.push({ label: `legacy tax ${taxStatus}`, severity: 'medium' });
+    issues.push({ label: `tax record ${taxStatus}`, severity: 'medium' });
   }
   if (partnerHasFirstRevenueSignal(provider) && !provider.residentialAddress?.trim()) {
     issues.push({ label: 'withdrawal address missing', severity: 'high' });

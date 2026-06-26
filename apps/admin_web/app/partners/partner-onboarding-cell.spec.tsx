@@ -150,7 +150,7 @@ describe('PartnerOnboardingCell', () => {
             accountNumberMasked: '****1234',
             bankName: 'Vietcombank',
             id: 'bank-rejected',
-            rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
+            rejectionReason: 'Withdrawal bank information is incorrect, so the payout cannot be sent.',
             status: 'REJECTED',
           },
         ],
@@ -166,7 +166,9 @@ describe('PartnerOnboardingCell', () => {
     const rendered = normalizedText(cell);
 
     expect(rendered).toContain('Withdrawal detail correction resubmitted');
-    expect(rendered).toContain('Previous issue: 입금 정보가 정확하지 않아 입금이 되지 않습니다');
+    expect(rendered).toContain(
+      'Previous issue: Withdrawal bank information is incorrect, so the payout cannot be sent.',
+    );
     expect(rendered).toContain('Vietcombank / ****5678 / Linh Nguyen');
     expect(rendered).toContain('Review bank');
   });

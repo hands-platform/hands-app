@@ -149,8 +149,3 @@ function pillClass(tone: PartnerConnectedRecordPayoutOps['tone']) {
   if (tone === 'blocked') return 'pill-danger';
   return 'pill-warn';
 }
-
-function trimText(value: string, maxLength: number) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
-}

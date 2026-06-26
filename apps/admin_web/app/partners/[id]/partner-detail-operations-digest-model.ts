@@ -18,7 +18,6 @@ export type PartnerOperationsDigestRow = {
   readonly tone: string;
 };
 
-type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 type PartnerOperationsDigestEarning = {
   readonly booking?: { readonly payment?: { readonly method?: string | null } | null } | null;
   readonly createdAt?: string | null;

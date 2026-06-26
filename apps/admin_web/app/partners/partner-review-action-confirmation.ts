@@ -57,7 +57,8 @@ const REVIEW_REASON_INPUT_LIMITS = {
   minLength: 12,
 } as const;
 
-const BANK_CORRECTION_DEFAULT_REASON = '입금 정보가 정확하지 않아 입금이 되지 않습니다';
+const BANK_CORRECTION_DEFAULT_REASON =
+  'Withdrawal bank information is incorrect, so the payout cannot be sent.';
 
 export function partnerReviewActionConfirmHref(
   providerId: string,

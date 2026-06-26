@@ -94,7 +94,7 @@ describe('partner list actions', () => {
             bankName: 'VCB',
             accountHolderName: 'Nguyen Thi Linh',
             isPrimary: false,
-            rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
+            rejectionReason: 'Withdrawal bank information is incorrect, so the payout cannot be sent.',
             status: 'REJECTED',
           },
         ],

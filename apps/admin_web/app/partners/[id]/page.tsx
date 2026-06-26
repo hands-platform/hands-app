@@ -979,7 +979,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </PartnerDetailSectionGroup>
 
       <PartnerDetailSectionGroup
-        description="Level 2 approval evidence comes first. Finance-only withdrawal, wallet, and legacy tax records stay available below without blocking matching readiness."
+        description="Level 2 approval evidence comes first. Finance-only withdrawal, wallet, and finance records stay available below without blocking matching readiness."
         eyebrow="Dossier"
         id="partner-dossier-section"
         status={

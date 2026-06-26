@@ -4,6 +4,8 @@ import {
   buildPartnerUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 
+const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
+
 describe('partner detail summary rail model', () => {
   it('builds partner operator first-read rows', () => {
     const rows = buildPartnerOperatorFirstRead({
@@ -199,7 +201,7 @@ describe('partner detail summary rail model', () => {
         {
           booking: {
             address: {
-              formattedAddress: '85/9 Phạm Viết Chánh, Thạnh Mỹ Tây, Hồ Chí Minh 700000 베트남',
+              formattedAddress: `85/9 Phạm Viết Chánh, Thạnh Mỹ Tây, Hồ Chí Minh 700000 ${KOREAN_VIETNAM_COUNTRY}`,
             },
             createdAt: '2026-06-14T03:02:00.000Z',
             id: 'booking-2',

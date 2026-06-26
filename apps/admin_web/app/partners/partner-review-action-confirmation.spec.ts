@@ -76,7 +76,7 @@ describe('partner review action confirmation', () => {
 
     expect(confirmation?.textInputs).toEqual([
       {
-        defaultValue: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
+        defaultValue: 'Withdrawal bank information is incorrect, so the payout cannot be sent.',
         label: 'Reason',
         maxLength: 500,
         minLength: 12,

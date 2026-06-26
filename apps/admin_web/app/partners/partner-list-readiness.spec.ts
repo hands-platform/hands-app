@@ -51,7 +51,7 @@ describe('partner list readiness', () => {
     );
   });
 
-  it('reports account, identity, bank, location, push, auth, report, and control blockers', () => {
+  it('reports account, identity, location, push, auth, report, and control blockers', () => {
     const provider = partner({
       bankAccounts: [
         { id: 'bank-1', bankName: 'VCB', accountHolderName: 'Linh', isPrimary: true, status: 'REJECTED' },
@@ -103,7 +103,6 @@ describe('partner list readiness', () => {
         { label: 'KYC REJECTED', severity: 'high' },
         { label: 'identity docs 3/3 missing', severity: 'high' },
         { label: 'document rejected', severity: 'high' },
-        { label: 'bank REJECTED', severity: 'high' },
         { label: 'location missing', severity: 'high' },
         { label: 'push missing', severity: 'medium' },
         { label: 'Supabase role pending', severity: 'medium' },
