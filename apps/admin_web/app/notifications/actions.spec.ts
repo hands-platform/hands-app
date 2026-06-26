@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPost } from '../../lib/admin-api';
@@ -7,21 +8,21 @@ import {
   sanitizeNotificationReturnHref,
 } from './notification-action-return-href';
 
-jest.mock('next/cache', () => ({
-  revalidatePath: jest.fn(),
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
 }));
 
-jest.mock('next/navigation', () => ({
-  redirect: jest.fn(),
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
 }));
 
-jest.mock('../../lib/admin-api', () => ({
-  adminPost: jest.fn(),
+vi.mock('../../lib/admin-api', () => ({
+  adminPost: vi.fn(),
 }));
 
-const mockedAdminPost = jest.mocked(adminPost);
-const mockedRedirect = jest.mocked(redirect);
-const mockedRevalidatePath = jest.mocked(revalidatePath);
+const mockedAdminPost = vi.mocked(adminPost);
+const mockedRedirect = vi.mocked(redirect);
+const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('notification server actions', () => {
   beforeEach(() => {

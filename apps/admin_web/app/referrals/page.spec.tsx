@@ -1,9 +1,10 @@
+import { vi } from 'vitest';
 import { redirect } from 'next/navigation';
 
 import ReferralsPage from './page';
 
-jest.mock('next/navigation', () => ({
-  redirect: jest.fn(),
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
 }));
 
 describe('ReferralsPage', () => {

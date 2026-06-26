@@ -2,21 +2,33 @@ import { ConfigService } from '@nestjs/config';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { vi } from 'vitest';
 import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID, PushDeliveryService } from './push-delivery.service';
 
-const mockJwtGetAccessToken = jest.fn();
-const mockGoogleAuthGetAccessToken = jest.fn();
-const mockGoogleAuthGetClient = jest.fn();
-const mockFetch = jest.fn();
+const {
+  mockFetch,
+  mockGoogleAuthGetAccessToken,
+  mockGoogleAuthGetClient,
+  mockJwtGetAccessToken,
+} = vi.hoisted(() => ({
+  mockFetch: vi.fn(),
+  mockGoogleAuthGetAccessToken: vi.fn(),
+  mockGoogleAuthGetClient: vi.fn(),
+  mockJwtGetAccessToken: vi.fn(),
+}));
 const originalFetch = global.fetch;
 
-jest.mock('google-auth-library', () => ({
-  GoogleAuth: jest.fn().mockImplementation(() => ({
-    getClient: mockGoogleAuthGetClient,
-  })),
-  JWT: jest.fn().mockImplementation(() => ({
-    getAccessToken: mockJwtGetAccessToken,
-  })),
+vi.mock('google-auth-library', () => ({
+  GoogleAuth: vi.fn().mockImplementation(function GoogleAuth() {
+    return {
+      getClient: mockGoogleAuthGetClient,
+    };
+  }),
+  JWT: vi.fn().mockImplementation(function JWT() {
+    return {
+      getAccessToken: mockJwtGetAccessToken,
+    };
+  }),
 }));
 
 function pushService(env: Record<string, string | undefined>) {

@@ -67,11 +67,11 @@ safe-check:
 
 # Focused API wallet and booking tests.
 api-focused-wallet:
-    npm.cmd run test --workspace @massage-vn/api -- bookings.service.spec.ts provider-wallet.policy.spec.ts --runInBand
+    npm.cmd run test --workspace @massage-vn/api -- bookings.service.spec.ts provider-wallet.policy.spec.ts
 
 # Focused Admin shared component tests.
 admin-components:
-    npm.cmd run test --workspace @massage-vn/admin-web -- action-menu.spec.tsx filter-bar.spec.tsx money-text.spec.tsx status-badge.spec.tsx --runInBand
+    npm.cmd run test --workspace @massage-vn/admin-web -- action-menu.spec.tsx filter-bar.spec.tsx money-text.spec.tsx status-badge.spec.tsx
 
 # Lightweight smoke readiness check. Does not run full smoke.
 smoke-status:

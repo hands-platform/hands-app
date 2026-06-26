@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { adminPost } from '../../../lib/admin-api';
 import {
@@ -5,16 +6,16 @@ import {
   holdPostMatchCancellationFromDetail,
 } from './actions';
 
-jest.mock('next/cache', () => ({
-  revalidatePath: jest.fn(),
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
 }));
 
-jest.mock('../../../lib/admin-api', () => ({
-  adminPost: jest.fn(),
+vi.mock('../../../lib/admin-api', () => ({
+  adminPost: vi.fn(),
 }));
 
-const mockedAdminPost = jest.mocked(adminPost);
-const mockedRevalidatePath = jest.mocked(revalidatePath);
+const mockedAdminPost = vi.mocked(adminPost);
+const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('booking detail server actions', () => {
   beforeEach(() => {

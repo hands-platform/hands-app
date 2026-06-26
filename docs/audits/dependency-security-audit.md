@@ -6,7 +6,7 @@ Last reviewed: 2026-06-27
 
 ## Current Audit Summary
 
-- Current result: 18 moderate vulnerabilities, 0 high, 0 low, 0 critical.
+- Current result: 0 vulnerabilities.
 - Recently resolved by `d0066806 chore(deps): pin safe security overrides`:
   - `@babel/core` pinned to `7.29.7`.
   - `form-data` pinned to `2.5.6`.
@@ -15,26 +15,28 @@ Last reviewed: 2026-06-27
   - Removed API runtime dependency on `firebase-admin`.
   - Replaced Firebase Admin messaging with FCM HTTP v1 delivery using `google-auth-library`.
   - Removed the `firebase-admin -> @google-cloud/storage -> gaxios/teeny-request -> uuid` audit chain from the lockfile.
-  - Replaced API and Admin test transforms from `ts-jest` to `@swc/jest`.
-  - Removed `ts-jest` and its direct dev-only dependency chain from `apps/api` and `apps/admin_web`.
-- Remaining vulnerabilities fall into one dependency family:
-  - Jest/Istanbul test tooling through `js-yaml`.
+  - Replaced API and Admin Jest test runners with Vitest.
+  - Removed `jest`, `@swc/jest`, obsolete Jest config files, and the Jest/Istanbul/js-yaml audit chain from `apps/api` and `apps/admin_web`.
+  - Kept `@types/jest` temporarily as a zero-vulnerability compatibility shim for existing spec type annotations while tests run on Vitest.
+- Remaining vulnerabilities: none reported by npm audit.
 
 ## Remaining Risk Register
 
-### Jest / Istanbul / js-yaml Tooling Chain
+### Resolved: Jest / Istanbul / js-yaml Tooling Chain
 
 - File path: `package-lock.json`, root `package.json`, `apps/api/package.json`, `apps/admin_web/package.json`
 - Module/page/service name: test toolchain (`jest`, `@jest/transform`, `babel-plugin-istanbul`, `@istanbuljs/load-nyc-config`, `js-yaml`)
 - Issue type: dependency vulnerability, development/test tooling
 - Severity: medium
-- Current behavior: Jest 29 pulls Istanbul coverage tooling through its own transform stack, which pulls `js-yaml <=4.1.1`.
+- Previous behavior: Jest 29 pulled Istanbul coverage tooling through its own transform stack, which pulled `js-yaml <=4.1.1`.
+- Current behavior: API and Admin tests run through Vitest. Jest and `@swc/jest` are no longer installed as workspace dev dependencies.
 - Why it matters: the advisory is a YAML parsing denial-of-service risk. In this repo it is reachable through local test tooling, not the production API or Admin runtime.
 - Risk to speed/cost/business correctness: low runtime business risk, medium developer tooling risk if untrusted YAML is fed into test/coverage config paths.
-- Recommended fix: keep the current Jest stack for now, then schedule a separate dev-toolchain upgrade or runner migration task once npm offers a safe non-downgrade remediation path.
-- Safe code change now: partially completed. `ts-jest` was safely replaced by `@swc/jest` after full API and Admin test verification; the residual audit chain remains in Jest itself. The npm fix path still proposes a breaking Jest downgrade.
+- Recommended fix: completed. Keep the Vitest runner and avoid reintroducing Jest/Istanbul unless a future audit confirms the dependency chain is safe.
+- Safe code change now: completed.
 - 2026-06-27 override check: forcing `@istanbuljs/load-nyc-config -> js-yaml@^4.2.0` left the npm tree in an `invalid` state (`npm ls js-yaml @istanbuljs/load-nyc-config --all` failed), so the override was reverted.
 - 2026-06-27 transform check: replacing `ts-jest` with `@swc/jest@0.2.38` in API and Admin reduced full audit findings from 19 to 18 without changing runtime application code.
+- 2026-06-27 runner migration check: replacing Jest with Vitest preserved the full API and Admin test suites and reduced npm audit to 0 vulnerabilities.
 - Suggested test or smoke check: `just safe-check`, API test suite, Admin test suite, and coverage command if coverage config changes later.
 
 ### Resolved: Firebase Admin / Google Cloud Storage Transitive Chain
@@ -63,21 +65,21 @@ Last reviewed: 2026-06-27
 - Do not use Firebase DB/Auth for HANDS business data or authentication.
 - Keep Firebase limited to FCM delivery unless a separate approved design expands it.
 - Do not add Firebase Storage or Google Cloud Storage runtime use without updating this audit and the performance/cost risk register.
-- Do not run `npm audit fix --force` for the remaining findings; current automated remediation proposes unsafe downgrade paths.
+- Do not run `npm audit fix --force` for future findings without reviewing the proposed dependency direction; the previous Jest remediation proposed an unsafe downgrade path.
 - Treat future dependency updates as small PR-sized tasks with `just safe-check` before commit.
 
 ## Recommended Follow-up Tasks
 
-1. Create a separate Jest/Istanbul upgrade or test-runner migration spike that validates API and Admin test behavior before changing versions.
-2. Add a CI note or docs reminder that residual audit findings are known and classified, not ignored.
+1. Replace the remaining `jest.*` spec helper references with direct `vi.*` imports in small batches, then remove `@types/jest`.
+2. Add coverage only through a Vitest coverage provider after a fresh audit check.
 3. Re-run `npm audit --workspaces --audit-level=moderate` after each dependency bump and update this file if the count or risk changes.
 
 ## Verification Captured
 
 - `npm audit --workspaces --audit-level=moderate --json`: previously exited non-zero with 25 moderate vulnerabilities, 0 high, 0 low, 0 critical.
-- `npm audit --audit-level=moderate`: now exits non-zero with 18 moderate findings; automated remediation still requires `--force`.
+- `npm audit --audit-level=moderate`: now exits zero with 0 vulnerabilities after the Vitest migration.
 - `npm ls js-yaml @istanbuljs/load-nyc-config --all`: valid after reverting the attempted `js-yaml` override.
-- `npm ls ts-jest @swc/jest @swc/core @istanbuljs/load-nyc-config js-yaml --all`: no `ts-jest` remains; API and Admin both use `@swc/jest@0.2.38`.
+- `npm ls jest @swc/jest @swc/core @types/jest vitest --all`: no workspace `jest` or `@swc/jest` remains; API and Admin both use `vitest@4.1.9`; `@swc/core` remains only as an `@nestjs/cli` transitive dependency.
 - `rg -n "admin\.storage|getStorage|bucket\(|@google-cloud/storage|firebase-admin/storage" apps packages infra docs --glob '!**/node_modules/**'`: no matches.
 - `npm view firebase-admin version`: `14.1.0`.
 - `npm view @google-cloud/storage version`: `7.21.0`.
@@ -85,7 +87,9 @@ Last reviewed: 2026-06-27
 - `npm.cmd run typecheck --workspace @massage-vn/api`: passed.
 - `npm.cmd run fcm:env-contract`: passed.
 - `npm.cmd run verify:api:fast`: passed.
-- `npm.cmd run test --workspace @massage-vn/api -- --runInBand`: passed, 97 suites / 625 tests.
-- `npm.cmd run test --workspace @massage-vn/admin-web -- --runInBand`: passed, 594 suites / 1831 tests.
+- `npm.cmd run test --workspace @massage-vn/api`: passed with Vitest, 97 files / 625 tests.
+- `npm.cmd run test --workspace @massage-vn/admin-web`: passed with Vitest, 594 files / 1831 tests.
 - `npm.cmd run typecheck --workspace @massage-vn/api`: passed.
 - `npm.cmd run typecheck --workspace @massage-vn/admin-web`: passed.
+- `npm.cmd audit --workspaces --audit-level=moderate`: passed with 0 vulnerabilities.
+- `npm.cmd run verify:node:fast`: passed. API/Admin tests, typecheck, lint, admin query guards, visible copy, contracts, Prisma validate, and shared-types typecheck passed; API/Admin builds skipped by `-SkipBuild`.

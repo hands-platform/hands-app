@@ -1,23 +1,24 @@
+import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPatch } from '../../lib/admin-api';
 import { moderateReview } from './actions';
 
-jest.mock('next/cache', () => ({
-  revalidatePath: jest.fn(),
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
 }));
 
-jest.mock('next/navigation', () => ({
-  redirect: jest.fn(),
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
 }));
 
-jest.mock('../../lib/admin-api', () => ({
-  adminPatch: jest.fn(),
+vi.mock('../../lib/admin-api', () => ({
+  adminPatch: vi.fn(),
 }));
 
-const mockedAdminPatch = jest.mocked(adminPatch);
-const mockedRedirect = jest.mocked(redirect);
-const mockedRevalidatePath = jest.mocked(revalidatePath);
+const mockedAdminPatch = vi.mocked(adminPatch);
+const mockedRedirect = vi.mocked(redirect);
+const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('review server actions', () => {
   beforeEach(() => {
