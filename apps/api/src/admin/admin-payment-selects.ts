@@ -43,7 +43,6 @@ export const adminPaymentSummarySelect = {
   amount: true,
   currency: true,
   providerRef: true,
-  rawMeta: true,
   refunds: {
     orderBy: { createdAt: 'desc' },
     take: 5,

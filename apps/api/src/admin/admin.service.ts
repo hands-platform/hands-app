@@ -193,6 +193,13 @@ const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
+const ADMIN_AUDIT_LOG_LIST_LIMIT = 100;
+
+type AdminBookingListQuery = {
+  readonly dateFrom?: string;
+  readonly dateRange?: string;
+  readonly dateTo?: string;
+};
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -334,6 +341,11 @@ const adminPartnerReferralParentSelect = {
 } satisfies Prisma.ProviderProfileSelect;
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+
+type AdminAuditLogListOptions = {
+  action?: string | null;
+  take?: number | string | null;
+};
 
 type AdminReferralPolicyRecord = {
   id: string;
@@ -477,6 +489,95 @@ type PostMatchCancellationDecision = 'APPROVED' | 'HELD';
 type AdminBookingMarketplaceProvider = Prisma.ProviderProfileGetPayload<{
   select: typeof adminBookingMarketplaceProviderSelect;
 }>;
+
+function adminBookingListDateWhere(query: AdminBookingListQuery): Prisma.BookingWhereInput | undefined {
+  const bounds = adminBookingListDateBounds(query);
+  if (!bounds) {
+    return undefined;
+  }
+
+  const dateRange: { gte?: Date; lte?: Date } = {};
+  if (Number.isFinite(bounds.startMs)) {
+    dateRange.gte = new Date(bounds.startMs);
+  }
+  if (Number.isFinite(bounds.endMs)) {
+    dateRange.lte = new Date(bounds.endMs);
+  }
+
+  return {
+    OR: [
+      { openedAt: dateRange },
+      { createdAt: dateRange },
+      { updatedAt: dateRange },
+      { matchedAt: dateRange },
+      { closedAt: dateRange },
+      { expiresAt: dateRange },
+    ],
+  };
+}
+
+function adminBookingListDateBounds(query: AdminBookingListQuery) {
+  const nowMs = Date.now();
+  const todayStartMs = startOfLocalDay(nowMs);
+  const todayEndMs = endOfLocalDay(todayStartMs);
+
+  switch (query.dateRange) {
+    case 'today':
+      return { startMs: todayStartMs, endMs: todayEndMs };
+    case 'yesterday': {
+      const startMs = addLocalDays(todayStartMs, -1);
+      return { startMs, endMs: endOfLocalDay(startMs) };
+    }
+    case '7d':
+      return { startMs: addLocalDays(todayStartMs, -6), endMs: todayEndMs };
+    case '30d':
+      return { startMs: addLocalDays(todayStartMs, -29), endMs: todayEndMs };
+    case 'custom':
+      return adminBookingListCustomDateBounds(query.dateFrom, query.dateTo);
+    default:
+      return undefined;
+  }
+}
+
+function adminBookingListCustomDateBounds(dateFrom?: string, dateTo?: string) {
+  const fromMs = parseAdminBookingListDate(dateFrom);
+  const toMs = parseAdminBookingListDate(dateTo);
+
+  if (fromMs === null && toMs === null) {
+    return undefined;
+  }
+
+  const startMs = fromMs ?? Number.NEGATIVE_INFINITY;
+  const endMs = toMs === null ? Number.POSITIVE_INFINITY : endOfLocalDay(toMs);
+
+  return startMs <= endMs ? { startMs, endMs } : { startMs: endMs, endMs: startMs };
+}
+
+function parseAdminBookingListDate(value?: string) {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  const timestamp = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function startOfLocalDay(timestamp: number) {
+  const date = new Date(timestamp);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function endOfLocalDay(startMs: number) {
+  return addLocalDays(startMs, 1) - 1;
+}
+
+function addLocalDays(timestamp: number, days: number) {
+  const date = new Date(timestamp);
+  date.setDate(date.getDate() + days);
+  return date.getTime();
+}
 
 @Injectable()
 export class AdminService {
@@ -2667,8 +2768,9 @@ export class AdminService {
     return { ok: true, file: updated };
   }
 
-  async listBookings() {
+  async listBookings(query: AdminBookingListQuery = {}) {
     const bookings = await this.prisma.booking.findMany({
+      where: adminBookingListDateWhere(query),
       orderBy: { createdAt: 'desc' },
       take: ADMIN_BOOKING_LIST_LIMIT,
       select: adminBookingListSelect,
@@ -4039,10 +4141,12 @@ export class AdminService {
     return coupon;
   }
 
-  listAuditLogs() {
+  listAuditLogs(options: AdminAuditLogListOptions = {}) {
+    const action = normalizeNullable(options.action);
     return this.prisma.adminAuditLog.findMany({
+      ...(action ? { where: { action } } : {}),
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: adminAuditLogListLimit(options.take),
       select: adminAuditLogSelect,
     });
   }
@@ -4699,6 +4803,19 @@ function normalizeMarketingSpendRegionCode(
 function normalizeMarketingSpendCampaignId(value: unknown) {
   const normalized = value === undefined || value === null ? null : normalizeNullable(String(value));
   return normalized ?? 'all';
+}
+
+function adminAuditLogListLimit(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_AUDIT_LOG_LIST_LIMIT;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return ADMIN_AUDIT_LOG_LIST_LIMIT;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 1), ADMIN_AUDIT_LOG_LIST_LIMIT);
 }
 
 function normalizeMarketingSpendAmount(value: unknown) {

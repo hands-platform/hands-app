@@ -1,5 +1,5 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
-import { buildAuditLogTableRows } from './page';
+import { buildAuditLogTableRows } from './page-content';
 
 describe('audit log page model', () => {
   it('surfaces FCM sent evidence for notification retry audit rows', () => {

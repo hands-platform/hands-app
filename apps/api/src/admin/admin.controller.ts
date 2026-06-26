@@ -324,8 +324,12 @@ export class AdminController {
   }
 
   @Get('bookings')
-  bookings() {
-    return this.admin.listBookings();
+  bookings(
+    @Query('dateRange') dateRange?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.admin.listBookings({ dateFrom, dateRange, dateTo });
   }
 
   @Get('chat-archive')
@@ -587,8 +591,8 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  auditLogs() {
-    return this.admin.listAuditLogs();
+  auditLogs(@Query('action') action?: string, @Query('take') take?: string) {
+    return this.admin.listAuditLogs({ action, take });
   }
 
   @Post('operations-handoff/note')

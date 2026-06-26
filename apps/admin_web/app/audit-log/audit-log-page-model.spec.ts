@@ -1,4 +1,4 @@
-import { buildAuditCommandBoard, buildAuditFilters, buildAuditLogTableRows } from './page';
+import { buildAuditCommandBoard, buildAuditFilters, buildAuditLogTableRows } from './page-content';
 
 describe('audit log page model', () => {
   it('accepts legacy query links as audit search input', () => {

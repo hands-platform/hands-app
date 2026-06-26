@@ -76,6 +76,7 @@ describe('admin booking selects', () => {
     expect(
       'ratingAvg' in (adminBookingListSelect.preferredProvider.select as Record<string, unknown>),
     ).toBe(false);
+    expect('rawMeta' in (adminBookingListSelect.payment.select as Record<string, unknown>)).toBe(false);
     expect(
       adminBookingListSelect.services.select.service.select.payoutRules.select,
     ).toEqual({
