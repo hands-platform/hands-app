@@ -1,8 +1,65 @@
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
+import jwt from 'jsonwebtoken';
+import { PrismaClient, Role } from '@prisma/client';
+
+import { loadMergedEnv } from './lib/env-file.mjs';
+
+const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
+const { env } = loadMergedEnv(envFile);
+if (env.DATABASE_URL && !process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = env.DATABASE_URL;
+}
+
+const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
 const defaultCustomerCurrentLocation = {
   currentLat: 10.7769,
   currentLng: 106.7009,
 };
+
+function jwtAccessSecretFromEnv(sourceEnv) {
+  const trimmed = sourceEnv.JWT_ACCESS_SECRET?.trim();
+  if (trimmed && !['change-me', 'changeme', 'secret', 'password'].includes(trimmed.toLowerCase())) {
+    return trimmed;
+  }
+  if (sourceEnv.NODE_ENV === 'production') {
+    throw new Error('JWT_ACCESS_SECRET must be configured before running API smoke in production.');
+  }
+  return 'dev-access-secret';
+}
+
+async function createSmokeAdminAuth() {
+  const prisma = new PrismaClient();
+  const phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099';
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { phone } });
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            fullName: existing.fullName ?? 'HANDS Smoke Admin',
+            roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN])) },
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            phone,
+            fullName: 'HANDS Smoke Admin',
+            roles: [Role.ADMIN],
+          },
+        });
+
+    return {
+      user,
+      accessToken: jwt.sign(
+        { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
+        jwtAccessSecretFromEnv(env),
+        { expiresIn: '30m' },
+      ),
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
 let smokePhoneSequence = 0;
 function uniqueSmokePhone(prefix = '+849') {
@@ -374,10 +431,7 @@ const walletDebtServiceGateProviderAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: walletDebtServiceGateProviderPhone, otp: '123456', role: 'PROVIDER' }),
 });
 
-const adminAuth = await request('/auth/verify-otp', {
-  method: 'POST',
-  body: JSON.stringify({ phone: '+84900000099', otp: '123456', role: 'ADMIN' }),
-});
+const adminAuth = await createSmokeAdminAuth();
 
 await assertOperationalPolicyMetadata(adminAuth.accessToken);
 
