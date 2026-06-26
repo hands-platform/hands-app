@@ -203,19 +203,26 @@ export function sortReviews(
   reviews: readonly AdminReview[],
   sort: ReviewSortFilter = 'newest',
 ): AdminReview[] {
+  const requestMs = new Map<AdminReview, number>();
+  const priority = new Map<AdminReview, number>();
+  const rating = new Map<AdminReview, number>();
+  const requestTime = (review: AdminReview) => cachedValue(requestMs, review, reviewRequestMs);
+  const priorityValue = (review: AdminReview) => cachedValue(priority, review, reviewPriority);
+  const ratingValue = (review: AdminReview) => cachedValue(rating, review, ratingSortValue);
+
   return [...reviews].sort((left, right) => {
     if (sort === 'oldest') {
-      return reviewRequestMs(left) - reviewRequestMs(right);
+      return requestTime(left) - requestTime(right);
     }
     if (sort === 'rating-desc') {
-      return ratingSortValue(right) - ratingSortValue(left) || reviewRequestMs(right) - reviewRequestMs(left);
+      return ratingValue(right) - ratingValue(left) || requestTime(right) - requestTime(left);
     }
     if (sort === 'rating-asc') {
-      return ratingSortValue(left) - ratingSortValue(right) || reviewRequestMs(right) - reviewRequestMs(left);
+      return ratingValue(left) - ratingValue(right) || requestTime(right) - requestTime(left);
     }
 
-    const signalDiff = reviewPriority(left) - reviewPriority(right);
-    return signalDiff || reviewRequestMs(right) - reviewRequestMs(left);
+    const signalDiff = priorityValue(left) - priorityValue(right);
+    return signalDiff || requestTime(right) - requestTime(left);
   });
 }
 
@@ -223,11 +230,15 @@ export function sortPartnerCustomerReviews(
   reviews: readonly AdminPartnerCustomerReview[],
   sort: ReviewSortFilter = 'newest',
 ): AdminPartnerCustomerReview[] {
+  const requestMs = new Map<AdminPartnerCustomerReview, number>();
+  const requestTime = (review: AdminPartnerCustomerReview) =>
+    cachedValue(requestMs, review, partnerCustomerReviewRequestMs);
+
   return [...reviews].sort((left, right) => {
     if (sort === 'oldest') {
-      return partnerCustomerReviewRequestMs(left) - partnerCustomerReviewRequestMs(right);
+      return requestTime(left) - requestTime(right);
     }
-    return partnerCustomerReviewRequestMs(right) - partnerCustomerReviewRequestMs(left);
+    return requestTime(right) - requestTime(left);
   });
 }
 
@@ -258,12 +269,13 @@ export function buildPartnerCustomerEvaluationFilters(
 
 export function filterReviews(reviews: readonly AdminReview[], filters: ReviewFilters): AdminReview[] {
   const query = filters.q.toLowerCase();
+  const dateBounds = reviewDateRangeBoundsForFilter(filters);
 
   return reviews.filter((review) => {
     if (filters.review && !reviewMatchesFilter(review, filters.review)) {
       return false;
     }
-    if (!reviewMatchesDateRange(review, filters)) {
+    if (!reviewMatchesDateRange(review, dateBounds)) {
       return false;
     }
     if (query && !searchableReviewText(review).includes(query)) {
@@ -278,9 +290,10 @@ export function filterPartnerCustomerReviews(
   filters: ReviewFilters,
 ): AdminPartnerCustomerReview[] {
   const query = filters.q.toLowerCase();
+  const dateBounds = reviewDateRangeBoundsForFilter(filters);
 
   return reviews.filter((review) => {
-    if (!partnerCustomerReviewMatchesDateRange(review, filters)) {
+    if (!partnerCustomerReviewMatchesDateRange(review, dateBounds)) {
       return false;
     }
     if (query && !searchablePartnerCustomerReviewText(review).includes(query)) {
@@ -410,18 +423,38 @@ export function emptyReviewMessage(review: string) {
 }
 
 export function buildSummary(reviews: readonly AdminReview[]) {
-  const rated = reviews.filter((review) => Number.isFinite(review.rating));
+  let held = 0;
+  let published = 0;
+  let reported = 0;
+  let followUp = 0;
+  let ratingCount = 0;
+  let ratingTotal = 0;
+
+  for (const review of reviews) {
+    if (Number.isFinite(review.rating)) {
+      ratingCount += 1;
+      ratingTotal += review.rating;
+    }
+    if (review.status === 'HIDDEN') {
+      held += 1;
+    }
+    if (review.status === 'PUBLISHED') {
+      published += 1;
+    }
+    if (review.status === 'REPORTED') {
+      reported += 1;
+    }
+    if (review.status === 'REPORTED' || Boolean(review.reportReason?.trim())) {
+      followUp += 1;
+    }
+  }
 
   return {
-    averageRating:
-      rated.length > 0
-        ? (rated.reduce((sum, review) => sum + review.rating, 0) / rated.length).toFixed(1)
-        : '0.0',
-    held: reviews.filter((review) => review.status === 'HIDDEN').length,
-    published: reviews.filter((review) => review.status === 'PUBLISHED').length,
-    reported: reviews.filter((review) => review.status === 'REPORTED').length,
-    followUp: reviews.filter((review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()))
-      .length,
+    averageRating: ratingCount > 0 ? (ratingTotal / ratingCount).toFixed(1) : '0.0',
+    held,
+    published,
+    reported,
+    followUp,
     total: reviews.length,
   };
 }
@@ -564,8 +597,20 @@ function partnerCustomerReviewRequestTimeLabel(review: AdminPartnerCustomerRevie
   );
 }
 
-function reviewMatchesDateRange(review: AdminReview, filters: ReviewFilters) {
+type ReviewDateRangeBounds = {
+  readonly startMs: number;
+  readonly endMs: number;
+};
+
+function reviewDateRangeBoundsForFilter(filters: ReviewFilters): ReviewDateRangeBounds | null {
   if (filters.dateRange === 'all') {
+    return null;
+  }
+  return reviewDateRangeBounds(filters);
+}
+
+function reviewMatchesDateRange(review: AdminReview, bounds: ReviewDateRangeBounds | null) {
+  if (!bounds) {
     return true;
   }
 
@@ -574,12 +619,14 @@ function reviewMatchesDateRange(review: AdminReview, filters: ReviewFilters) {
     return false;
   }
 
-  const bounds = reviewDateRangeBounds(filters);
   return timestamp >= bounds.startMs && timestamp <= bounds.endMs;
 }
 
-function partnerCustomerReviewMatchesDateRange(review: AdminPartnerCustomerReview, filters: ReviewFilters) {
-  if (filters.dateRange === 'all') {
+function partnerCustomerReviewMatchesDateRange(
+  review: AdminPartnerCustomerReview,
+  bounds: ReviewDateRangeBounds | null,
+) {
+  if (!bounds) {
     return true;
   }
 
@@ -588,7 +635,6 @@ function partnerCustomerReviewMatchesDateRange(review: AdminPartnerCustomerRevie
     return false;
   }
 
-  const bounds = reviewDateRangeBounds(filters);
   return timestamp >= bounds.startMs && timestamp <= bounds.endMs;
 }
 
@@ -743,6 +789,20 @@ function safeDateMs(value?: string | null) {
 
 function ratingSortValue(review: AdminReview) {
   return Number.isFinite(review.rating) ? review.rating : -1;
+}
+
+function cachedValue<T extends object>(
+  cache: Map<T, number>,
+  item: T,
+  calculate: (item: T) => number,
+) {
+  const existing = cache.get(item);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const value = calculate(item);
+  cache.set(item, value);
+  return value;
 }
 
 function parseDateInput(value: string) {
