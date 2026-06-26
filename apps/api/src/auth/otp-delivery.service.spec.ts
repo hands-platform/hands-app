@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpDeliveryService } from './otp-delivery.service';
 
@@ -22,16 +23,20 @@ function mockFetch(response: Partial<Response> = { ok: true }) {
 describe('OtpDeliveryService', () => {
   afterEach(() => {
     global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
   it('keeps local OTP delivery on the dev provider without calling SMS HTTP', async () => {
     const fetchMock = mockFetch();
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 
     await expect(service({ SMS_PROVIDER: 'dev' }).deliverOtp('+84900000001', '123456')).resolves.toEqual({
       provider: 'dev',
       status: 'DELIVERED_DEV',
     });
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('Dev OTP delivery prepared for phone ending 0001.');
+    expect(logSpy.mock.calls.flat().join(' ')).not.toContain('+84900000001');
   });
 
   it('uses the generic HTTP SMS adapter for configured custom provider aliases', async () => {
@@ -106,10 +111,15 @@ describe('OtpDeliveryService', () => {
   });
 
   it('fails safely when Vonage accepts the HTTP request but rejects the message', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     mockFetch({
       ok: true,
       status: 200,
-      text: jest.fn().mockResolvedValue(JSON.stringify({ messages: [{ status: '4' }] })),
+      text: jest
+        .fn()
+        .mockResolvedValue(
+          JSON.stringify({ messages: [{ status: '4', 'error-text': 'rejected +84900000001 otp 654321' }] }),
+        ),
     });
 
     await expect(
@@ -121,6 +131,34 @@ describe('OtpDeliveryService', () => {
         SMS_SENDER_ID: 'HANDS',
       }).deliverOtp('+84900000001', '654321'),
     ).rejects.toThrow('SMS service failed to send OTP');
+    const logged = warnSpy.mock.calls.flat().join(' ');
+    expect(logged).toContain('Vonage SMS failed with 200.');
+    expect(logged).not.toContain('+84900000001');
+    expect(logged).not.toContain('654321');
+  });
+
+  it('fails generic HTTP SMS without logging provider response contents', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    mockFetch({
+      ok: false,
+      status: 503,
+      text: jest.fn().mockResolvedValue('provider rejected +84900000001 otp 654321 secret details'),
+    });
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'custom',
+        SMS_API_URL: 'https://api.example.test/sms',
+        SMS_API_KEY: 'test-sms-api-key',
+        SMS_SENDER_ID: 'HANDS',
+      }).deliverOtp('+84900000001', '654321'),
+    ).rejects.toThrow('SMS service failed to send OTP');
+
+    const logged = warnSpy.mock.calls.flat().join(' ');
+    expect(logged).toContain('SMS service failed with 503.');
+    expect(logged).not.toContain('+84900000001');
+    expect(logged).not.toContain('654321');
+    expect(logged).not.toContain('secret details');
   });
 
   it('rejects unsupported SMS provider values instead of silently using dev OTP', async () => {

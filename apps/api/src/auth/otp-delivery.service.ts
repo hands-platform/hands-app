@@ -14,7 +14,7 @@ export class OtpDeliveryService {
   async deliverOtp(phone: string, otp: string) {
     const provider = this.provider();
     if (provider === 'dev') {
-      this.logger.log(`Dev OTP delivery prepared for ${phone}.`);
+      this.logger.log(`Dev OTP delivery prepared for phone ending ${phoneLogSuffix(phone)}.`);
       return { provider, status: 'DELIVERED_DEV' };
     }
     if (provider === 'vonage') {
@@ -47,8 +47,7 @@ export class OtpDeliveryService {
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      this.logger.warn(`SMS service failed with ${response.status}: ${body.slice(0, 200)}`);
+      this.logger.warn(`SMS service failed with ${response.status}.`);
       throw new ServiceUnavailableException('SMS service failed to send OTP');
     }
 
@@ -83,7 +82,7 @@ export class OtpDeliveryService {
 
     const responseBody = await response.text().catch(() => '');
     if (!response.ok || !vonageSmsAccepted(responseBody)) {
-      this.logger.warn(`Vonage SMS failed with ${response.status}: ${responseBody.slice(0, 200)}`);
+      this.logger.warn(`Vonage SMS failed with ${response.status}.`);
       throw new ServiceUnavailableException('SMS service failed to send OTP');
     }
 
@@ -103,6 +102,11 @@ export class OtpDeliveryService {
     }
     throw new ServiceUnavailableException('Unsupported SMS provider');
   }
+}
+
+function phoneLogSuffix(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  return digits.slice(-4) || 'unknown';
 }
 
 function vonageSmsAccepted(body: string) {
