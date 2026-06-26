@@ -18,6 +18,7 @@ type RateLimitOptions = {
   windowMs: number;
   max: number;
   pathPattern: RegExp;
+  keyPathDepth?: number;
 };
 
 type Bucket = {
@@ -36,7 +37,7 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
     }
 
     const now = Date.now();
-    const key = `${clientId(req)}:${req.method ?? 'GET'}:${path.split('?')[0]}`;
+    const key = `${clientId(req)}:${req.method ?? 'GET'}:${pathKey(path, options.keyPathDepth)}`;
     const bucket = buckets.get(key);
     const active = bucket && bucket.resetAt > now ? bucket : { count: 0, resetAt: now + options.windowMs };
     active.count += 1;
@@ -66,6 +67,21 @@ function clientId(req: RequestLike) {
   const forwardedFor = req.headers?.['x-forwarded-for'];
   const firstForwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
   return firstForwarded?.split(',')[0]?.trim() || req.ip || 'unknown';
+}
+
+function pathKey(path: string, keyPathDepth?: number) {
+  const pathname = path.split('?')[0] || '/';
+
+  if (!keyPathDepth || keyPathDepth <= 0) {
+    return pathname;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length <= keyPathDepth) {
+    return pathname;
+  }
+
+  return `/${segments.slice(0, keyPathDepth).join('/')}`;
 }
 
 function cleanupExpired(now: number) {

@@ -55,6 +55,37 @@ describe('security middleware', () => {
     );
   });
 
+  it('rate limits auth routes by a stable path depth when callers configure one', () => {
+    const next = jest.fn();
+    const json = jest.fn();
+    const setHeader = jest.fn();
+    const status = jest.fn(() => ({ json }));
+    const middleware = rateLimitMiddleware({
+      max: 2,
+      pathPattern: /^\/api\/auth\//,
+      windowMs: 60_000,
+      keyPathDepth: 3,
+    });
+    const req = (suffix: string) => ({
+      headers: { 'x-forwarded-for': '198.51.100.22' },
+      method: 'POST',
+      originalUrl: `/api/auth/verify-otp/${suffix}?attempt=${suffix}`,
+    });
+
+    middleware(req('first'), { setHeader, status }, next);
+    middleware(req('second'), { setHeader, status }, next);
+    middleware(req('third'), { setHeader, status }, next);
+
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(status).toHaveBeenCalledWith(429);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Too many requests',
+        statusCode: 429,
+      }),
+    );
+  });
+
   it('sets browser hardening headers and only sends HSTS in production', () => {
     const next = jest.fn();
     const setHeader = jest.fn();

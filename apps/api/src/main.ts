@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors({ origin: corsOriginFromEnv(), credentials: true, exposedHeaders: ['x-request-id'] });
   app.use(securityHeadersMiddleware);
   app.use(requestIdMiddleware);
-  app.use(rateLimitMiddleware({ windowMs: 60_000, max: 30, pathPattern: /^\/api\/auth\// }));
+  app.use(rateLimitMiddleware({ windowMs: 60_000, max: 30, pathPattern: /^\/api\/auth\//, keyPathDepth: 3 }));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
   app.setGlobalPrefix('api');
