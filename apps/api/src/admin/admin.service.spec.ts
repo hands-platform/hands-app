@@ -2447,6 +2447,34 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('counts notification summary with the same date window without loading rows', async () => {
+    const prisma = {
+      notification: {
+        count: vi.fn().mockResolvedValue(2400),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.notificationSummary({
+        from: '2026-06-27T00:00:00.000Z',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      totalCount: 2400,
+      generatedAt: expect.any(String),
+    });
+
+    expect(prisma.notification.count).toHaveBeenCalledWith({
+      where: {
+        createdAt: {
+          gte: new Date('2026-06-27T00:00:00.000Z'),
+          lt: new Date('2026-06-28T00:00:00.000Z'),
+        },
+      },
+    });
+  });
+
   it('rejects invalid notification board date windows', () => {
     const prisma = {
       notification: {

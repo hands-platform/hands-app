@@ -41,7 +41,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('The latest send attempt failed.');
     expect(rendered).toContain('Next action: Open delivery evidence before retry.');
     expect(rendered).toContain('Active booking trace: book-1234');
-    expect(rendered).toContain('Showing 2 of 10 / Last 7 days');
+    expect(rendered).toContain('Showing 2 loaded row(s) of 10 total / Last 7 days');
     expect(rendered).toContain('Clear filter');
     expect(rendered).toContain('Booking book-1234');
     expect(rendered).toContain('Today');
@@ -77,7 +77,7 @@ describe('NotificationFilterBoardSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Showing 10 of 10 / Today');
+    expect(rendered).toContain('Showing 10 loaded row(s) of 10 total / Today');
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(

@@ -1438,6 +1438,11 @@ export type AdminNotification = {
   }>;
 };
 
+export type AdminNotificationBoardSummary = {
+  generatedAt: string;
+  totalCount: number;
+};
+
 export type AdminNotificationTemplateTranslation = {
   id: string;
   templateId: string;

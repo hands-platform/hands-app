@@ -1,4 +1,8 @@
-import type { AdminNotification, AdminOperationalPolicySetting } from '../../lib/admin-api';
+import type {
+  AdminNotification,
+  AdminNotificationBoardSummary,
+  AdminOperationalPolicySetting,
+} from '../../lib/admin-api';
 import type { AdminPageMetric } from '../../components/admin-page-template';
 import type { ActionMenuItem } from '../../components/action-menu';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
@@ -52,6 +56,7 @@ import type { NotificationTableRow } from './notification-table-row';
 type NotificationPageParams = Record<string, string | string[] | undefined>;
 
 type BuildNotificationPageModelInput = {
+  readonly notificationSummary?: AdminNotificationBoardSummary | null;
   readonly notifications: readonly AdminNotification[];
   readonly operationalPolicies: readonly AdminOperationalPolicySetting[];
   readonly params: NotificationPageParams;
@@ -254,6 +259,20 @@ export function buildNotificationApiHref(params: Record<string, string | string[
   return `/admin/notifications?${query.toString()}`;
 }
 
+export function buildNotificationSummaryApiHref(params: Record<string, string | string[] | undefined>) {
+  const filters = buildNotificationFilters(params);
+  const query = new URLSearchParams();
+  const window = notificationDateRangeWindow(filters.range);
+  if (window.from) {
+    query.set('from', window.from.toISOString());
+  }
+  if (window.to) {
+    query.set('to', window.to.toISOString());
+  }
+  const value = query.toString();
+  return value ? `/admin/notifications/summary?${value}` : '/admin/notifications/summary';
+}
+
 export function notificationDateRangeLabel(range: NotificationDateRange) {
   if (range === 'today') {
     return 'Today';
@@ -303,12 +322,15 @@ function startOfLocalDay(value: Date) {
 }
 
 export function buildNotificationPageModel({
+  notificationSummary,
   notifications: rawNotifications,
   operationalPolicies,
   params,
 }: BuildNotificationPageModelInput) {
   const filters = buildNotificationFilters(params);
   const allNotifications = sortNotifications(rawNotifications);
+  const loadedCount = allNotifications.length;
+  const totalCount = notificationSummary?.totalCount ?? loadedCount;
   const notifications = filterNotifications(allNotifications, filters);
   const deliveryStats = buildNotificationDeliveryStats(allNotifications);
   const summary = buildNotificationSummary(allNotifications, deliveryStats);
@@ -342,7 +364,8 @@ export function buildNotificationPageModel({
     ),
     filters,
     fcmSmokeReadiness,
-    metrics: buildNotificationMetrics(allNotifications.length, summary, channelSummary),
+    loadedCount,
+    metrics: buildNotificationMetrics(totalCount, summary, channelSummary),
     notificationPagination,
     notificationRows: notificationPagination.rows,
     notifications,
@@ -350,6 +373,7 @@ export function buildNotificationPageModel({
     partnerAlertSmokeFallback,
     reviewRunbook: reviewState.runbook,
     summary,
+    totalCount,
   };
 }
 
@@ -392,7 +416,11 @@ export function buildNotificationMetrics(
   channelSummary: NotificationChannelSummary,
 ): readonly AdminPageMetric[] {
   return [
-    { label: 'Total', value: totalCount, helper: 'Notification rows loaded.' },
+    {
+      label: 'Total',
+      value: totalCount,
+      helper: 'Notification rows in the selected date range. The table stays bounded for operations speed.',
+    },
     {
       label: 'Needs retry',
       value: summary.needsRetry,

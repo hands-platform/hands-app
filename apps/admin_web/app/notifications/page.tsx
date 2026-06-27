@@ -1,4 +1,8 @@
-import type { AdminNotification, AdminOperationalPolicySetting } from '../../lib/admin-api';
+import type {
+  AdminNotification,
+  AdminNotificationBoardSummary,
+  AdminOperationalPolicySetting,
+} from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -11,6 +15,7 @@ import { NotificationFilterBoardSection } from './notification-filter-board-sect
 import {
   emptyNotificationMessage,
   buildNotificationApiHref,
+  buildNotificationSummaryApiHref,
   buildNotificationPageModel,
   notificationFilterDescription,
   notificationFilterLinks,
@@ -28,12 +33,14 @@ export default async function NotificationsPage({
   searchParams?: NotificationsPageSearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const [rawNotifications, operationalPolicies] = await Promise.all([
+  const [rawNotifications, notificationSummary, operationalPolicies] = await Promise.all([
     adminGet<AdminNotification[]>(buildNotificationApiHref(params), []),
+    adminGet<AdminNotificationBoardSummary | null>(buildNotificationSummaryApiHref(params), null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const diagnosticsMode = readSearchParam(params.diagnostics) === 'full' ? 'full' : 'compact';
   const model = buildNotificationPageModel({
+    notificationSummary,
     notifications: rawNotifications,
     operationalPolicies,
     params,
@@ -106,7 +113,7 @@ export default async function NotificationsPage({
               range: link.range,
             }),
           }))}
-          totalCount={model.allNotifications.length}
+          totalCount={model.totalCount}
         />
 
         <NotificationsTableSection

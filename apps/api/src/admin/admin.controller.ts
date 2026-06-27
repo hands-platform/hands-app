@@ -631,6 +631,11 @@ export class AdminController {
     return this.admin.listNotifications({ from, take, to });
   }
 
+  @Get('notifications/summary')
+  notificationSummary(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.admin.notificationSummary({ from, to });
+  }
+
   @Get('notifications/templates')
   notificationTemplates() {
     return this.admin.listNotificationTemplates();

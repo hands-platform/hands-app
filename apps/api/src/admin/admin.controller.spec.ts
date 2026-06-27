@@ -21,6 +21,7 @@ describe('AdminController notification and push actions', () => {
     listOperationsHandoffProviders: vi.fn(),
     listOperationsPolicyProviders: vi.fn(),
     listNotifications: vi.fn(),
+    notificationSummary: vi.fn(),
     listNotificationTemplates: vi.fn(),
     listPartnerControlProviders: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
@@ -88,6 +89,23 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listNotifications).toHaveBeenCalledWith({
       from: '2026-06-27T00:00:00.000Z',
       take: '25',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes notification summary as a separate aggregate endpoint', async () => {
+    admin.notificationSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 2400 });
+
+    await expect(
+      controller.notificationSummary('2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+    ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 2400 });
+
+    expect(routeMetadata('notificationSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'notifications/summary',
+    });
+    expect(admin.notificationSummary).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
       to: '2026-06-28T00:00:00.000Z',
     });
   });

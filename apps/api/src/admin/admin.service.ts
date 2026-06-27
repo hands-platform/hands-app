@@ -4533,6 +4533,19 @@ export class AdminService {
     return this.prisma.notification.findMany(args);
   }
 
+  async notificationSummary(options: { readonly from?: string; readonly to?: string } = {}) {
+    const where = notificationBoardDateWhere(options);
+    const args: Prisma.NotificationCountArgs = {};
+    if (where) {
+      args.where = where;
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount: await this.prisma.notification.count(args),
+    };
+  }
+
   async listNotificationTemplates() {
     await this.ensureDefaultNotificationTemplates();
 

@@ -76,7 +76,7 @@ export function NotificationFilterBoardSection({
         </>
       }
       id="notification-operation-filters"
-      resultLabel={`Showing ${filteredCount} of ${totalCount} / ${activeRangeLabel}`}
+      resultLabel={`Showing ${filteredCount} loaded row(s) of ${totalCount} total / ${activeRangeLabel}`}
       resultTone={isFiltered ? 'warning' : 'success'}
       title="Notification operation filters"
       footer={
