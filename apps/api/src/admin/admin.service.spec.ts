@@ -13,6 +13,10 @@ import {
   ReferralRewardStatus,
   Role,
 } from '@prisma/client';
+import {
+  DEFAULT_NOTIFICATION_TEMPLATES,
+  NOTIFICATION_TEMPLATE_LOCALES,
+} from '../notifications/notification-template-catalog';
 import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-selects';
 import { ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT } from './admin-booking-selects';
 import { AdminService } from './admin.service';
@@ -26,7 +30,10 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function createAdminService(prisma: unknown, deps: { earnings?: unknown; notifications?: unknown; referrals?: unknown } = {}) {
+function createAdminService(
+  prisma: unknown,
+  deps: { earnings?: unknown; notifications?: unknown; referrals?: unknown } = {},
+) {
   return new AdminService(
     prisma as never,
     (deps.earnings ?? {}) as never,
@@ -105,6 +112,129 @@ describe('AdminService query orchestration', () => {
         metadata: true,
         target: true,
       }),
+    });
+  });
+
+  it('attaches recent coupon booking usage to coupon list rows', async () => {
+    const coupon = {
+      active: true,
+      code: 'WELCOME10',
+      description: 'Welcome campaign',
+      discount: { type: 'percent', value: 10 },
+      endsAt: null,
+      id: 'coupon-1',
+      startsAt: null,
+    };
+    const booking = {
+      closedAt: null,
+      createdAt: new Date('2026-06-12T09:00:00.000Z'),
+      customerProfile: {
+        user: {
+          email: 'demo@example.com',
+          fullName: 'Demo Customer',
+          phone: '+84000000000',
+        },
+      },
+      id: 'booking-1',
+      payment: {
+        amount: 270000,
+        currency: 'VND',
+        method: 'CASH',
+        rawMeta: {
+          couponCode: 'WELCOME10',
+          couponId: 'coupon-1',
+          discountAmount: 30000,
+          originalAmount: 300000,
+        },
+        status: PaymentStatus.AUTHORIZED,
+      },
+      scheduledStartAt: new Date('2026-06-12T10:00:00.000Z'),
+      selectedProvider: {
+        displayName: 'Smoke Partner',
+        user: {
+          fullName: 'Partner User',
+          phone: '+84111111111',
+        },
+      },
+      services: [
+        {
+          price: 300000,
+          service: {
+            durationMin: 60,
+            name: 'Massage',
+          },
+        },
+      ],
+      status: BookingStatus.OPEN_MATCHING,
+    };
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([booking]),
+      },
+      coupon: {
+        findMany: vi.fn().mockResolvedValue([coupon]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCoupons()).resolves.toEqual([
+      expect.objectContaining({
+        code: 'WELCOME10',
+        usageBookings: [
+          expect.objectContaining({
+            amount: 270000,
+            bookingId: 'booking-1',
+            customerName: 'Demo Customer',
+            discountAmount: 30000,
+            partnerName: 'Smoke Partner',
+            serviceName: 'Massage / 60 min',
+          }),
+        ],
+      }),
+    ]);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+        where: { payment: { isNot: null } },
+      }),
+    );
+  });
+
+  it('deletes coupons and writes an audit entry', async () => {
+    const coupon = {
+      active: true,
+      code: 'WELCOME10',
+      description: null,
+      discount: { type: 'percent', value: 10 },
+      endsAt: null,
+      id: 'coupon-1',
+      startsAt: null,
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      coupon: {
+        delete: vi.fn().mockResolvedValue(coupon),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.deleteCoupon('admin-1', 'coupon-1')).resolves.toEqual({
+      couponId: 'coupon-1',
+      ok: true,
+    });
+
+    expect(prisma.coupon.delete).toHaveBeenCalledWith({ where: { id: 'coupon-1' } });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'coupon.delete',
+        actorId: 'admin-1',
+        metadata: { code: 'WELCOME10' },
+        target: 'coupon:coupon-1',
+      },
     });
   });
 
@@ -492,11 +622,7 @@ describe('AdminService query orchestration', () => {
         findMany: vi.fn().mockResolvedValue([]),
       },
       booking: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(2)
-          .mockResolvedValueOnce(2)
-          .mockResolvedValueOnce(0),
+        count: vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(2).mockResolvedValueOnce(0),
         findMany: vi.fn().mockResolvedValue([]),
       },
       payment: {
@@ -974,7 +1100,13 @@ describe('AdminService query orchestration', () => {
       }),
       where: {
         action: { in: ['referral_reward.hold', 'referral_reward.credit', 'referral_reward.reverse'] },
-        target: { in: ['referral_reward:reward-available', 'referral_reward:reward-pending', 'referral_reward:reward-rewarded'] },
+        target: {
+          in: [
+            'referral_reward:reward-available',
+            'referral_reward:reward-pending',
+            'referral_reward:reward-rewarded',
+          ],
+        },
       },
     });
   });
@@ -1124,11 +1256,14 @@ describe('AdminService query orchestration', () => {
   });
 
   it('lists retained booking chat messages on demand with a hard limit', async () => {
-    const retainedMessages = Array.from({ length: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT + 1 }, (_, index) => ({
-      id: `message-${index + 1}`,
-      body: `Message ${index + 1}`,
-      createdAt: new Date(`2026-06-13T03:${String(index % 60).padStart(2, '0')}:00.000Z`),
-    }));
+    const retainedMessages = Array.from(
+      { length: ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT + 1 },
+      (_, index) => ({
+        id: `message-${index + 1}`,
+        body: `Message ${index + 1}`,
+        createdAt: new Date(`2026-06-13T03:${String(index % 60).padStart(2, '0')}:00.000Z`),
+      }),
+    );
     const prisma = {
       booking: {
         findUnique: vi.fn().mockResolvedValue({
@@ -1279,7 +1414,8 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
-        findMany: vi.fn()
+        findMany: vi
+          .fn()
           .mockResolvedValueOnce([
             {
               id: 'booking-1',
@@ -1422,7 +1558,11 @@ describe('AdminService query orchestration', () => {
             {
               providerProfileId: 'provider-1',
               _count: { _all: 3 },
-              _max: { paidAt: latestWorkAt, availableAt: null, createdAt: new Date('2026-06-19T10:00:00.000Z') },
+              _max: {
+                paidAt: latestWorkAt,
+                availableAt: null,
+                createdAt: new Date('2026-06-19T10:00:00.000Z'),
+              },
             },
           ]),
       },
@@ -1572,6 +1712,7 @@ describe('AdminService query orchestration', () => {
         select: {
           id: true,
           name: true,
+          nameTranslations: true,
           active: true,
         },
       },
@@ -2218,10 +2359,11 @@ describe('AdminService query orchestration', () => {
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: 60,
         select: expect.objectContaining({
           deliveries: expect.objectContaining({
             orderBy: { attemptedAt: 'desc' },
+            take: 3,
             select: expect.objectContaining({
               provider: true,
               pushDevice: {
@@ -2259,6 +2401,288 @@ describe('AdminService query orchestration', () => {
     );
     const select = prisma.notification.findMany.mock.calls[0]?.[0]?.select;
     expect(JSON.stringify(select)).not.toContain('token');
+  });
+
+  it('caps notification board take to the board maximum', async () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({ take: '500' });
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 100,
+      }),
+    );
+  });
+
+  it('filters notification board rows by an explicit date range', async () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({
+      from: '2026-06-27T00:00:00.000Z',
+      take: '25',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 25,
+        where: {
+          createdAt: {
+            gte: new Date('2026-06-27T00:00:00.000Z'),
+            lt: new Date('2026-06-28T00:00:00.000Z'),
+          },
+        },
+      }),
+    );
+  });
+
+  it('rejects invalid notification board date windows', () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    expect(() =>
+      service.listNotifications({
+        from: '2026-06-28T00:00:00.000Z',
+        to: '2026-06-27T00:00:00.000Z',
+      }),
+    ).toThrow('Notification date range is invalid');
+    expect(prisma.notification.findMany).not.toHaveBeenCalled();
+  });
+
+  it('seeds editable notification templates before listing the catalog', async () => {
+    const prisma = {
+      notificationTemplate: {
+        findMany: vi.fn().mockResolvedValue([{ key: 'booking.matched', translations: [] }]),
+        upsert: vi.fn().mockResolvedValue({ id: 'template-row' }),
+      },
+      notificationTemplateTranslation: {
+        createMany: vi.fn().mockResolvedValue({ count: NOTIFICATION_TEMPLATE_LOCALES.length }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listNotificationTemplates()).resolves.toEqual([
+      { key: 'booking.matched', translations: [] },
+    ]);
+
+    expect(prisma.notificationTemplate.upsert).toHaveBeenCalledTimes(DEFAULT_NOTIFICATION_TEMPLATES.length);
+    expect(prisma.notificationTemplateTranslation.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          body: expect.any(String),
+          locale: 'en',
+          templateId: 'template-row',
+          title: expect.any(String),
+        }),
+      ]),
+      skipDuplicates: true,
+    });
+    expect(prisma.notificationTemplate.findMany).toHaveBeenCalledWith({
+      orderBy: [{ audience: 'asc' }, { key: 'asc' }],
+      include: {
+        translations: { orderBy: { locale: 'asc' } },
+      },
+    });
+  });
+
+  it('previews manual push recipients only for users with active devices in the selected role', async () => {
+    const prisma = {
+      user: {
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'customer-user-1',
+            phone: '+84000000000',
+            fullName: 'Demo Customer',
+            roles: [Role.CUSTOMER],
+            pushDevices: [{ id: 'push-device-1', platform: 'ios', role: Role.CUSTOMER }],
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewAdminPushCampaign({
+        targetRole: Role.CUSTOMER,
+        title: 'HANDS update',
+        body: 'Your booking update is ready.',
+      }),
+    ).resolves.toMatchObject({
+      targetRole: Role.CUSTOMER,
+      targetSegment: 'all',
+      appDestination: 'notificationCenter',
+      recipientCount: 2,
+      willSendCount: 2,
+      capped: false,
+    });
+
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: {
+        roles: { has: Role.CUSTOMER },
+        pushDevices: { some: { enabled: true, role: Role.CUSTOMER } },
+      },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 5,
+        where: {
+          roles: { has: Role.CUSTOMER },
+          pushDevices: { some: { enabled: true, role: Role.CUSTOMER } },
+        },
+      }),
+    );
+  });
+
+  it('previews manual push customer segments with booking and session filters', async () => {
+    const prisma = {
+      user: {
+        count: vi.fn().mockResolvedValue(3),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewAdminPushCampaign({
+        targetRole: Role.CUSTOMER,
+        targetSegment: 'customer_completed_last_7_days',
+        title: 'Welcome back',
+        body: 'Thanks for completing your recent booking.',
+      }),
+    ).resolves.toMatchObject({
+      targetRole: Role.CUSTOMER,
+      targetSegment: 'customer_completed_last_7_days',
+      recipientCount: 3,
+    });
+
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          {
+            roles: { has: Role.CUSTOMER },
+            pushDevices: { some: { enabled: true, role: Role.CUSTOMER } },
+          },
+          {
+            customerProfile: {
+              is: {
+                bookings: {
+                  some: {
+                    status: BookingStatus.COMPLETED,
+                    OR: [
+                      { closedAt: { gte: expect.any(Date) } },
+                      { closedAt: null, updatedAt: { gte: expect.any(Date) } },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  it('rejects manual push campaigns to admin accounts', async () => {
+    const service = createAdminService({});
+
+    await expect(
+      service.previewAdminPushCampaign({
+        targetRole: Role.ADMIN,
+        title: 'Admin test',
+        body: 'No admin pushes from this workspace.',
+      }),
+    ).rejects.toThrow('Manual push target role must be CUSTOMER or PROVIDER');
+  });
+
+  it('creates manual push campaigns through persistent notifications and audit logs', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      adminPushCampaign: {
+        create: vi.fn().mockResolvedValue({
+          id: 'campaign-1',
+          targetRole: Role.PROVIDER,
+          recipientCount: 2,
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'campaign-1',
+          notificationCount: 2,
+          recipients: [],
+        }),
+      },
+      adminPushCampaignRecipient: {
+        create: vi.fn().mockResolvedValue({ id: 'recipient-1' }),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'partner-user-1' }, { id: 'partner-user-2' }]),
+      },
+    };
+    const notifications = {
+      create: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 'notification-1' })
+        .mockResolvedValueOnce({ id: 'notification-2' }),
+    };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(
+      service.createAdminPushCampaign('admin-1', {
+        targetRole: Role.PROVIDER,
+        appDestination: 'earnings',
+        locale: 'vi',
+        title: 'Partner update',
+        body: 'A new HANDS update is ready.',
+      }),
+    ).resolves.toMatchObject({ id: 'campaign-1', notificationCount: 2 });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 100,
+        where: {
+          roles: { has: Role.PROVIDER },
+          pushDevices: { some: { enabled: true, role: Role.PROVIDER } },
+        },
+      }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith({
+      userId: 'partner-user-1',
+      targetRole: Role.PROVIDER,
+      type: 'admin.push.broadcast',
+      resolveTemplate: false,
+      title: 'Partner update',
+      body: 'A new HANDS update is ready.',
+      data: {
+        campaignId: 'campaign-1',
+        source: 'admin_manual_push',
+        targetSegment: 'all',
+        destination: 'earnings',
+      },
+    });
+    expect(prisma.adminPushCampaignRecipient.create).toHaveBeenCalledTimes(2);
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'admin_push_campaign.create',
+        actorId: 'admin-1',
+        target: 'admin_push_campaign:campaign-1',
+      }),
+    });
   });
 
   it('audits push device enablement without recording raw push tokens', async () => {

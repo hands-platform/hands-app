@@ -19,10 +19,11 @@ export type SetupGroupDetail = {
 };
 
 type SetupGroupDetailSectionProps = {
+  readonly commandMode?: 'full' | 'summary';
   readonly groups: readonly SetupGroupDetail[];
 };
 
-export function SetupGroupDetailSection({ groups }: SetupGroupDetailSectionProps) {
+export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupGroupDetailSectionProps) {
   return (
     <section className="stack admin-mt-16">
       {groups.map((group) => {
@@ -99,12 +100,36 @@ export function SetupGroupDetailSection({ groups }: SetupGroupDetailSectionProps
                 Run from <code>C:\dev\massage-on-demand-vn</code>. Values inside angle brackets must be
                 replaced locally.
               </p>
-              <SetupCommandList groupId={group.id} commands={group.commands} />
+              {commandMode === 'summary' ? (
+                <SetupCommandSummary commands={group.commands} groupId={group.id} />
+              ) : (
+                <SetupCommandList groupId={group.id} commands={group.commands} />
+              )}
             </div>
           </div>
         );
       })}
     </section>
+  );
+}
+
+function SetupCommandSummary({
+  commands,
+  groupId,
+}: {
+  readonly commands: readonly string[];
+  readonly groupId: string;
+}) {
+  return (
+    <div className="setup-command-summary">
+      <p className="muted">
+        Full command packs are hidden from the default setup payload. Use the first command above for the
+        immediate check, or open the full command list when you are actively working this setup group.
+      </p>
+      <a className="pill pill-neutral" href={`/setup?commands=all#${groupId}`}>
+        Show full command set ({commands.length})
+      </a>
+    </div>
   );
 }
 

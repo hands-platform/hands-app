@@ -47,6 +47,15 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
+  test('customer notification opens explicit app destination without ids', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'destination': 'profile',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.profile);
+    expect(intent.hasBooking, isFalse);
+  });
+
   test('customer notification falls back to notification center', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': ' ',

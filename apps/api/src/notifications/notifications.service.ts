@@ -16,12 +16,18 @@ import type {
   NotificationRetryAuditLatestDelivery,
   NotificationRetryAuditResult,
 } from './notification-retry-audit';
+import {
+  type NotificationTemplateLocale,
+  isNotificationTemplateLocale,
+} from './notification-template-catalog';
 import { notificationDataWithTargetRole, type NotificationTargetRole } from './notification-target-role';
 
 type CreateNotificationInput = {
   userId: string;
   targetRole?: NotificationTargetRole;
   type: string;
+  locale?: string;
+  resolveTemplate?: boolean;
   title: string;
   body: string;
   data?: unknown;
@@ -41,12 +47,16 @@ export class NotificationsService {
 
   async create(input: CreateNotificationInput) {
     const data = notificationDataWithTargetRole(input.data, input.targetRole);
+    const copy =
+      input.resolveTemplate === false
+        ? { title: input.title, body: input.body }
+        : await this.resolveNotificationCopy(input);
     const notification = await this.prisma.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
-        title: input.title,
-        body: input.body,
+        title: copy.title,
+        body: copy.body,
         data: data === undefined ? undefined : toJson(data),
       },
     });
@@ -106,6 +116,61 @@ export class NotificationsService {
     return { ok: result.count > 0, disabled: result.count };
   }
 
+  private async resolveNotificationCopy(input: CreateNotificationInput) {
+    const locale = await this.resolveNotificationLocale(input);
+    const template = await this.prisma.notificationTemplate.findUnique({
+      where: { key: input.type },
+      select: {
+        enabled: true,
+        translations: {
+          where: { locale: { in: [locale, 'en'] } },
+          select: {
+            locale: true,
+            title: true,
+            body: true,
+          },
+        },
+      },
+    });
+
+    if (!template?.enabled) {
+      return { title: input.title, body: input.body };
+    }
+
+    const translation =
+      template.translations.find((item) => item.locale === locale) ??
+      template.translations.find((item) => item.locale === 'en');
+    if (!translation) {
+      return { title: input.title, body: input.body };
+    }
+
+    return {
+      title: renderNotificationTemplateText(translation.title, input.data),
+      body: renderNotificationTemplateText(translation.body, input.data),
+    };
+  }
+
+  private async resolveNotificationLocale(
+    input: CreateNotificationInput,
+  ): Promise<NotificationTemplateLocale> {
+    if (input.locale && isNotificationTemplateLocale(input.locale)) {
+      return input.locale;
+    }
+
+    const pushDevice = await this.prisma.pushDevice.findFirst({
+      where: {
+        userId: input.userId,
+        enabled: true,
+        ...(input.targetRole ? { role: input.targetRole } : {}),
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { locale: true },
+    });
+
+    const pushDeviceLocale = pushDevice?.locale ?? null;
+    return pushDeviceLocale && isNotificationTemplateLocale(pushDeviceLocale) ? pushDeviceLocale : 'en';
+  }
+
   private async enqueueNotificationSend(notificationId: string): Promise<NotificationRetryAuditJobSummary> {
     const job = notificationSendJob(notificationId);
     const queuedJob = await this.notificationQueue.add(job.name, job.data, job.options);
@@ -118,6 +183,29 @@ export class NotificationsService {
       queuedJobId: queuedJob?.id ? String(queuedJob.id) : null,
     };
   }
+}
+
+function renderNotificationTemplateText(template: string, data: unknown) {
+  const record = readPlainRecord(data);
+  if (!record) {
+    return template;
+  }
+
+  return template.replace(/\{([a-zA-Z0-9_.-]+)\}/g, (match, key: string) => {
+    const value = record[key];
+    return isTemplateScalar(value) ? String(value) : match;
+  });
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function isTemplateScalar(value: unknown): value is string | number | boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
 function retryJobBackoffMs(backoff: ReturnType<typeof notificationSendJob>['options']['backoff']) {

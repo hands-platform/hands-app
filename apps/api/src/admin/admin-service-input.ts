@@ -3,10 +3,12 @@ import { Prisma } from '@prisma/client';
 import { normalizeNullable, slugify } from './admin-text-helpers';
 
 export const PRICE_STEP_UNIT_VND = 100000;
+const SERVICE_NAME_TRANSLATION_KEYS = ['en', 'vi', 'ko', 'ja', 'zh'] as const;
 
 export function normalizeServiceDurationSetInput(input: {
   serviceGroupKey?: string;
   name?: string;
+  nameTranslations?: unknown;
   priceStep?: number;
   displayOrder?: number;
   durations?: Array<{
@@ -47,6 +49,7 @@ export function normalizeServiceInput(
   input: {
     serviceGroupKey?: string | null;
     name?: string;
+    nameTranslations?: unknown;
     description?: string | null;
     durationMin?: number;
     basePrice?: number;
@@ -97,6 +100,10 @@ export function normalizeServiceInput(
   return {
     serviceGroupKey: normalizedGroupKey,
     name: name ?? undefined,
+    nameTranslations:
+      input.nameTranslations === undefined
+        ? undefined
+        : normalizeServiceNameTranslationsForPrisma(input.nameTranslations),
     description: input.description === undefined ? undefined : normalizeNullable(input.description),
     durationMin,
     basePrice: input.basePrice,
@@ -104,6 +111,41 @@ export function normalizeServiceInput(
     displayOrder: input.displayOrder,
     active: input.active,
   };
+}
+
+export function normalizeServiceNameTranslations(input: unknown) {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  if (typeof input !== 'object' || Array.isArray(input)) {
+    throw new BadRequestException('Service name translations must be an object');
+  }
+
+  const translations: Record<string, string> = {};
+  for (const key of SERVICE_NAME_TRANSLATION_KEYS) {
+    const value = (input as Record<string, unknown>)[key];
+    if (value === null || value === undefined) {
+      continue;
+    }
+    if (typeof value !== 'string') {
+      throw new BadRequestException('Service translated names must be text');
+    }
+    const normalized = value.trim();
+    if (!normalized) {
+      continue;
+    }
+    if (normalized.length > 120) {
+      throw new BadRequestException('Service translated names must be 120 characters or fewer');
+    }
+    translations[key] = normalized;
+  }
+
+  return Object.keys(translations).length ? translations : null;
+}
+
+function normalizeServiceNameTranslationsForPrisma(input: unknown) {
+  const translations = normalizeServiceNameTranslations(input);
+  return translations === null ? Prisma.JsonNull : (translations as Prisma.InputJsonValue);
 }
 
 export function normalizeServicePayoutRuleInput(

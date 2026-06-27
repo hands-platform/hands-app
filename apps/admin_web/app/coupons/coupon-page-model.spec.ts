@@ -1,6 +1,7 @@
 import type { AdminCoupon } from '../../lib/admin-api';
 import {
   buildCampaignCommandBoard,
+  buildCouponCreateNotice,
   buildCouponPageModel,
   buildCouponTableRows,
   campaignToneClass,
@@ -24,7 +25,9 @@ describe('coupon page model', () => {
   });
 
   it('classifies coupon date windows and review state', () => {
-    expect(couponWindowState(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe('scheduled');
+    expect(couponWindowState(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe(
+      'scheduled',
+    );
     expect(couponWindowState(coupon({ active: true, endsAt: '2026-06-09T09:00:00.000Z' }))).toBe('expired');
     expect(couponWindowState(coupon({ active: false }))).toBe('draft');
     expect(couponWindowState(coupon({ active: true }))).toBe('live');
@@ -63,7 +66,7 @@ describe('coupon page model', () => {
     ]);
   });
 
-  it('builds coupon table rows and toggle actions', () => {
+  it('builds coupon table rows with edit defaults and booking usage', () => {
     const rows = buildCouponTableRows([
       coupon({
         active: true,
@@ -71,29 +74,48 @@ describe('coupon page model', () => {
         description: 'Welcome campaign',
         discount: { type: 'percent', value: 10 },
         id: 'coupon-row-1',
+        usageBookings: [
+          {
+            amount: 270000,
+            bookingId: 'booking-1',
+            currency: 'VND',
+            customerName: 'Demo Customer',
+            discountAmount: 30000,
+            partnerName: 'Smoke Partner',
+            requestTime: '2026-06-12T09:00:00.000Z',
+            serviceName: 'Massage / 60 min',
+            status: 'OPEN_MATCHING',
+          },
+        ],
       }),
     ]);
 
     expect(rows[0]).toMatchObject({
+      active: true,
       checkoutHint: 'Checkout preview and booking payment authorization should apply this discount.',
       code: 'WELCOME10',
       description: 'Welcome campaign',
       discountLabel: '10% off',
       lowerCode: 'welcome10',
+      percentValue: '10',
       statusLabel: 'ACTIVE',
+      usageBookings: [
+        expect.objectContaining({
+          amountLabel: '270.000 VND',
+          bookingHref: '/bookings/booking-1',
+          customerLabel: 'Demo Customer',
+          discountLabel: '30.000 VND',
+          partnerLabel: 'Smoke Partner',
+        }),
+      ],
     });
-    expect(rows[0]?.actions[0]).toEqual(
-      expect.objectContaining({
-        href: '/coupons?confirm=toggle&couponId=coupon-row-1',
-        label: 'Pause',
-        tone: 'danger',
-      }),
-    );
   });
 
   it('keeps status, discount, and tone labels stable', () => {
     expect(couponStatusLabel(coupon({ active: false }))).toBe('PAUSED');
-    expect(couponStatusLabel(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe('SCHEDULED');
+    expect(couponStatusLabel(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe(
+      'SCHEDULED',
+    );
     expect(formatDiscount({ type: 'percent', value: '15' })).toBe('15% off');
     expect(formatDiscount(null)).toBe('Unknown');
     expect(campaignToneClass('warn')).toBe('signal-warn');
@@ -112,6 +134,46 @@ describe('coupon page model', () => {
 
     expect(board[0]).toMatchObject({ coupons: live, status: 'Live', tone: 'info' });
     expect(board[3]).toMatchObject({ coupons: [], status: 'Needs decision', tone: 'ok' });
+  });
+
+  it('builds create notices for missing input, saved coupons, and failed codes', () => {
+    expect(buildCouponCreateNotice({ notice: 'missing-required' })).toMatchObject({
+      title: 'Coupon was not created',
+      tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ created: '2', notice: 'created' })).toMatchObject({
+      detail: '2 coupon(s) are now available in the coupon list.',
+      tone: 'success',
+    });
+    expect(buildCouponCreateNotice({ created: '1', failed: '1', notice: 'partial' })).toMatchObject({
+      title: 'Some coupons need attention',
+      tone: 'warning',
+    });
+    expect(buildCouponCreateNotice({ failed: '2', notice: 'failed' })).toMatchObject({
+      title: 'Coupon creation failed',
+      tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ notice: 'admin-auth' })).toMatchObject({
+      title: 'Admin session expired',
+      tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ notice: 'invalid-date' })).toMatchObject({
+      title: 'Coupon date value is invalid',
+      tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ notice: 'updated' })).toMatchObject({
+      title: 'Coupon updated',
+      tone: 'success',
+    });
+    expect(buildCouponCreateNotice({ notice: 'deleted' })).toMatchObject({
+      title: 'Coupon deleted',
+      tone: 'success',
+    });
+    expect(buildCouponCreateNotice({ notice: 'delete-failed' })).toMatchObject({
+      title: 'Coupon deletion failed',
+      tone: 'danger',
+    });
+    expect(buildCouponCreateNotice({ notice: 'unknown' })).toBeNull();
   });
 });
 

@@ -13,6 +13,7 @@ describe('notification push payload helpers', () => {
       toPushData({
         bookingId: 'booking-1',
         chatRoomId: 'chat-1',
+        destination: 'booking',
         payoutBatchId: 'payout-batch-1',
         providerProfileId: 'provider-1',
         reason: 'Internal operator note',
@@ -22,6 +23,7 @@ describe('notification push payload helpers', () => {
     ).toEqual({
       bookingId: 'booking-1',
       chatRoomId: 'chat-1',
+      destination: 'booking',
       payoutBatchId: 'payout-batch-1',
       providerProfileId: 'provider-1',
     });

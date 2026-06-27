@@ -4,6 +4,7 @@ type ServiceCatalogOption = {
   id: string;
   serviceGroupKey?: string | null;
   name: string;
+  nameTranslations?: unknown;
   description?: string | null;
   durationMin: number;
   basePrice: number;
@@ -15,6 +16,7 @@ export function groupServiceCatalogOptions<T extends ServiceCatalogOption>(optio
   const groups = new Map<string, T[]>();
   const names = new Map<string, string>();
   const descriptions = new Map<string, string | null>();
+  const translations = new Map<string, unknown>();
 
   for (const option of options) {
     const key = serviceCatalogGroupKey(option);
@@ -24,6 +26,9 @@ export function groupServiceCatalogOptions<T extends ServiceCatalogOption>(optio
     }
     if (!descriptions.has(key)) {
       descriptions.set(key, option.description ?? null);
+    }
+    if (!translations.has(key)) {
+      translations.set(key, option.nameTranslations ?? null);
     }
   }
 
@@ -42,10 +47,13 @@ export function groupServiceCatalogOptions<T extends ServiceCatalogOption>(optio
     return {
       key,
       name: names.get(key) ?? 'Service',
+      nameTranslations: translations.get(key) ?? null,
       description: descriptions.get(key) ?? null,
       durationSummary: sortedOptions.map((option) => `${option.durationMin} min`).join(', '),
       activeOptionCount: activeOptions.length,
-      missingStandardDurations: STANDARD_DURATION_OPTIONS.filter((duration) => !activeDurations.has(duration)),
+      missingStandardDurations: STANDARD_DURATION_OPTIONS.filter(
+        (duration) => !activeDurations.has(duration),
+      ),
       minBasePrice: prices.length ? Math.min(...prices) : null,
       maxBasePrice: prices.length ? Math.max(...prices) : null,
       payoutRuleCount: sortedOptions.reduce((sum, option) => sum + (option.payoutRules?.length ?? 0), 0),

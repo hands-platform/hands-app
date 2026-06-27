@@ -57,6 +57,14 @@ type BuildNotificationPageModelInput = {
   readonly params: NotificationPageParams;
 };
 
+export type NotificationDateRange = 'all' | 'today' | 'yesterday' | '7d' | '30d';
+
+export type NotificationFilters = {
+  readonly booking: string;
+  readonly range: NotificationDateRange;
+  readonly review: string;
+};
+
 export type NotificationTablePagination = {
   readonly from: number;
   readonly page: number;
@@ -75,6 +83,18 @@ const PARTNER_ALERT_TYPES = [
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 const NOTIFICATION_TABLE_PAGE_SIZE = 20;
+const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
+const NOTIFICATION_API_TAKE = 100;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const notificationDateRangeLinks = [
+  { label: 'Today', range: 'today' },
+  { label: 'Previous day', range: 'yesterday' },
+  { label: 'Last 7 days', range: '7d' },
+  { label: 'Last 30 days', range: '30d' },
+  { label: 'All loaded', range: 'all' },
+] as const satisfies readonly { label: string; range: NotificationDateRange }[];
+
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'customers or Partners with disabled push devices.',
   failed: 'latest delivery attempts that returned an FCM push failure.',
@@ -196,14 +216,18 @@ export function buildNotificationFilters(params: Record<string, string | string[
   return {
     review: readSearchParam(params.review),
     booking: readSearchParam(params.booking),
+    range: normalizeNotificationDateRange(readSearchParam(params.range)),
   };
 }
 
 export function buildNotificationListHref(
-  filters: { readonly booking: string; readonly review: string },
+  filters: { readonly booking: string; readonly range?: NotificationDateRange; readonly review: string },
   options: { readonly page?: number } = {},
 ) {
   const query = new URLSearchParams();
+  if (filters.range && filters.range !== 'today') {
+    query.set('range', filters.range);
+  }
   if (filters.review) {
     query.set('review', filters.review);
   }
@@ -215,6 +239,67 @@ export function buildNotificationListHref(
   }
   const value = query.toString();
   return value ? `/notifications?${value}` : '/notifications';
+}
+
+export function buildNotificationApiHref(params: Record<string, string | string[] | undefined>) {
+  const filters = buildNotificationFilters(params);
+  const query = new URLSearchParams({ take: String(NOTIFICATION_API_TAKE) });
+  const window = notificationDateRangeWindow(filters.range);
+  if (window.from) {
+    query.set('from', window.from.toISOString());
+  }
+  if (window.to) {
+    query.set('to', window.to.toISOString());
+  }
+  return `/admin/notifications?${query.toString()}`;
+}
+
+export function notificationDateRangeLabel(range: NotificationDateRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === 'yesterday') {
+    return 'Previous day';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All loaded';
+}
+
+function normalizeNotificationDateRange(value: string): NotificationDateRange {
+  if (value === 'all' || value === 'today' || value === 'yesterday' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'today';
+}
+
+function notificationDateRangeWindow(range: NotificationDateRange, now = new Date()) {
+  const todayStart = startOfLocalDay(now);
+  const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
+
+  if (range === 'today') {
+    return { from: todayStart, to: tomorrowStart };
+  }
+  if (range === 'yesterday') {
+    return { from: new Date(todayStart.getTime() - DAY_MS), to: todayStart };
+  }
+  if (range === '7d') {
+    return { from: new Date(todayStart.getTime() - 6 * DAY_MS), to: tomorrowStart };
+  }
+  if (range === '30d') {
+    return { from: new Date(todayStart.getTime() - 29 * DAY_MS), to: tomorrowStart };
+  }
+  return {};
+}
+
+function startOfLocalDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
 export function buildNotificationPageModel({
@@ -366,6 +451,7 @@ export function buildNotificationTableRows(
       body: marketplaceDisplayText(notification.body),
       bookingDataHint: notificationDataHint(notification),
       createdAtLabel: formatDateTime(notification.createdAt),
+      deliveryAttemptCount: notificationDeliveries(notification).length,
       deliveryRows: buildNotificationDeliveryRows(notification, actionContext),
       id: notification.id,
       opsHint: opsHint(notification, deliveryHealth),
@@ -484,7 +570,9 @@ export function buildNotificationDeliveryStats(
       }
 
       if (delivery.pushDevice?.enabled === false) {
-        disabledDeviceIds.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
+        disabledDeviceIds.add(
+          delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`,
+        );
       }
 
       if (isStaleNotificationPushDeviceDelivery(delivery)) {
@@ -742,27 +830,29 @@ function buildNotificationDeliveryRows(
   notification: AdminNotification,
   actionContext: NotificationActionReturnContext,
 ): NotificationDeliveryRow[] {
-  return newestDeliveries(notificationDeliveries(notification)).map((delivery) => ({
-    attemptedAtLabel: formatDateTime(delivery.attemptedAt),
-    deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
-    deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
-      ? formatDateTime(delivery.pushDevice.lastSeenAt)
-      : '-',
-    deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
-    enableDeviceHref:
-      delivery.pushDevice?.enabled === false && delivery.pushDevice.id
-        ? enablePushDeviceConfirmHref(delivery.pushDevice.id, actionContext)
-        : null,
-    failureCodeLabel: deliveryFailureCodeLabel(delivery),
-    failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
-    httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
-    id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
-    platformLabel: delivery.pushDevice?.platform ?? 'device',
-    provider: delivery.provider,
-    recoveryHintLabel: deliveryRecoveryHintLabel(delivery),
-    status: delivery.status,
-    statusClassName: deliveryStatusClassName(delivery.status),
-  }));
+  return newestDeliveries(notificationDeliveries(notification))
+    .slice(0, NOTIFICATION_TABLE_DELIVERY_LIMIT)
+    .map((delivery) => ({
+      attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+      deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
+      deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
+        ? formatDateTime(delivery.pushDevice.lastSeenAt)
+        : '-',
+      deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
+      enableDeviceHref:
+        delivery.pushDevice?.enabled === false && delivery.pushDevice.id
+          ? enablePushDeviceConfirmHref(delivery.pushDevice.id, actionContext)
+          : null,
+      failureCodeLabel: deliveryFailureCodeLabel(delivery),
+      failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
+      httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
+      id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
+      platformLabel: delivery.pushDevice?.platform ?? 'device',
+      provider: delivery.provider,
+      recoveryHintLabel: deliveryRecoveryHintLabel(delivery),
+      status: delivery.status,
+      statusClassName: deliveryStatusClassName(delivery.status),
+    }));
 }
 
 function deliveryRecoveryHintLabel(delivery: AdminNotificationDelivery) {
@@ -1025,7 +1115,10 @@ function opsHint(notification: AdminNotification, deliveryHealth = notificationD
   return latestAttemptLabel ? `${baseHint} Latest attempt ${latestAttemptLabel}.` : baseHint;
 }
 
-function opsHintBase(notification: AdminNotification, deliveryHealth = notificationDeliveryHealth(notification)) {
+function opsHintBase(
+  notification: AdminNotification,
+  deliveryHealth = notificationDeliveryHealth(notification),
+) {
   return deliveryHealth.hint;
 }
 

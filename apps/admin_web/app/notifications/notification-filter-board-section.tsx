@@ -1,10 +1,17 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import type { NotificationDateRange } from './notification-page-model';
 
 export type NotificationFilterLink = {
   readonly href: string;
   readonly label: string;
   readonly review: string;
+};
+
+export type NotificationDateRangeLink = {
+  readonly href: string;
+  readonly label: string;
+  readonly range: NotificationDateRange;
 };
 
 export type NotificationReviewRunbookView = {
@@ -19,8 +26,12 @@ type NotificationFilterBoardSectionProps = {
   readonly activeFilterLabel: string | null;
   readonly activeReview: string;
   readonly activeReviewRunbook: NotificationReviewRunbookView | null;
+  readonly activeRange: NotificationDateRange;
+  readonly activeRangeLabel: string;
+  readonly clearHref: string;
   readonly filteredCount: number;
   readonly links: readonly NotificationFilterLink[];
+  readonly rangeLinks: readonly NotificationDateRangeLink[];
   readonly totalCount: number;
 };
 
@@ -30,8 +41,12 @@ export function NotificationFilterBoardSection({
   activeFilterLabel,
   activeReview,
   activeReviewRunbook,
+  activeRange,
+  activeRangeLabel,
+  clearHref,
   filteredCount,
   links,
+  rangeLinks,
   totalCount,
 }: NotificationFilterBoardSectionProps) {
   const isFiltered = Boolean(activeReview || activeBookingLabel);
@@ -39,9 +54,12 @@ export function NotificationFilterBoardSection({
   return (
     <AdminFilterPanel
       className="notification-filter-card admin-mb-16"
-      description={(
+      description={
         <>
-          Open each queue directly from the command dashboard without hunting through rows.
+          Default view is today. Use the range buttons for past delivery evidence without loading every
+          notification row.
+          <br />
+          Active range: <strong>{activeRangeLabel}</strong>.
           {activeFilterLabel && activeFilterDescription ? (
             <>
               <br />
@@ -56,13 +74,30 @@ export function NotificationFilterBoardSection({
             </>
           ) : null}
         </>
-      )}
+      }
       id="notification-operation-filters"
-      resultLabel={`Showing ${filteredCount} of ${totalCount}`}
+      resultLabel={`Showing ${filteredCount} of ${totalCount} / ${activeRangeLabel}`}
       resultTone={isFiltered ? 'warning' : 'success'}
       title="Notification operation filters"
-      footer={(
+      footer={
         <>
+          <div
+            className="booking-date-filter-bar notification-date-filter-bar"
+            aria-label="Notification date range"
+          >
+            <div className="booking-date-filter-buttons notification-date-filter-buttons" role="group">
+              {rangeLinks.map((link) => (
+                <AdminFormControlLink
+                  aria-current={activeRange === link.range ? 'page' : undefined}
+                  className={activeRange === link.range ? 'is-active' : undefined}
+                  href={link.href}
+                  key={link.range}
+                >
+                  {link.label}
+                </AdminFormControlLink>
+              ))}
+            </div>
+          </div>
           {activeReviewRunbook ? (
             <div className="admin-mt-10">
               <span className="pill pill-info">{activeReviewRunbook.title}</span>
@@ -74,7 +109,7 @@ export function NotificationFilterBoardSection({
           ) : null}
           <div className="participant-list">
             {isFiltered ? (
-              <AdminFormControlLink className="pill pill-success" href="/notifications">
+              <AdminFormControlLink className="pill pill-success" href={clearHref}>
                 Clear filter
               </AdminFormControlLink>
             ) : null}
@@ -91,7 +126,7 @@ export function NotificationFilterBoardSection({
             ))}
           </div>
         </>
-      )}
+      }
     />
   );
 }

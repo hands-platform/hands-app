@@ -10,10 +10,13 @@ import { NotificationDeliveryOpsQueueSection } from './notification-delivery-ops
 import { NotificationFilterBoardSection } from './notification-filter-board-section';
 import {
   emptyNotificationMessage,
+  buildNotificationApiHref,
   buildNotificationPageModel,
   notificationFilterDescription,
   notificationFilterLinks,
   buildNotificationListHref,
+  notificationDateRangeLabel,
+  notificationDateRangeLinks,
 } from './notification-page-model';
 import { NotificationsTableSection } from './notifications-table-section';
 
@@ -26,9 +29,10 @@ export default async function NotificationsPage({
 }) {
   const params = (await searchParams) ?? {};
   const [rawNotifications, operationalPolicies] = await Promise.all([
-    adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminNotification[]>(buildNotificationApiHref(params), []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
+  const diagnosticsMode = readSearchParam(params.diagnostics) === 'full' ? 'full' : 'compact';
   const model = buildNotificationPageModel({
     notifications: rawNotifications,
     operationalPolicies,
@@ -59,6 +63,7 @@ export default async function NotificationsPage({
         <NotificationCommandHeaderSection />
 
         <NotificationChannelPolicySection
+          density={diagnosticsMode}
           inAppDeliveries={model.channelSummary.inAppDeliveries}
           fcmDeliveries={model.channelSummary.fcmDeliveries}
           fcmSmokeReadiness={model.fcmSmokeReadiness}
@@ -79,8 +84,28 @@ export default async function NotificationsPage({
           activeFilterLabel={model.activeFilter?.review ? model.activeFilter.label : null}
           activeReview={model.filters.review}
           activeReviewRunbook={model.reviewRunbook}
+          activeRange={model.filters.range}
+          activeRangeLabel={notificationDateRangeLabel(model.filters.range)}
+          clearHref={buildNotificationListHref({
+            booking: '',
+            range: model.filters.range,
+            review: '',
+          })}
           filteredCount={model.notifications.length}
-          links={notificationFilterLinks}
+          links={notificationFilterLinks.map((link) => ({
+            ...link,
+            href: buildNotificationListHref({
+              ...model.filters,
+              review: link.review,
+            }),
+          }))}
+          rangeLinks={notificationDateRangeLinks.map((link) => ({
+            ...link,
+            href: buildNotificationListHref({
+              ...model.filters,
+              range: link.range,
+            }),
+          }))}
           totalCount={model.allNotifications.length}
         />
 
@@ -93,4 +118,8 @@ export default async function NotificationsPage({
       </div>
     </AdminPageTemplate>
   );
+}
+
+function readSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }

@@ -390,10 +390,7 @@ export class ProvidersService {
     const booking = await this.prisma.booking.findFirst({
       where: {
         id: bookingId,
-        OR: [
-          { selectedProviderId: providerProfileId },
-          { participants: { some: { providerProfileId } } },
-        ],
+        OR: [{ selectedProviderId: providerProfileId }, { participants: { some: { providerProfileId } } }],
       },
       select: { id: true, status: true },
     });
@@ -639,6 +636,9 @@ function assertProviderServicePrice(service: { basePrice: number; priceStep: num
   if (price < service.basePrice) {
     throw new BadRequestException('Partner service price cannot be lower than the admin minimum');
   }
+  if (price >= service.basePrice * 2) {
+    throw new BadRequestException('Partner service price cannot be 2x or more than the admin minimum');
+  }
   if (price % service.priceStep !== 0) {
     throw new BadRequestException(`Partner service price must use ${service.priceStep} VND increments`);
   }
@@ -687,7 +687,12 @@ function publicProviderUser(user?: { fullName: string | null } | null) {
 }
 
 function publicProviderReviews(
-  reviews: Array<{ rating: number; comment: string | null; createdAt: Date | string; status?: ReviewStatus | string }>,
+  reviews: Array<{
+    rating: number;
+    comment: string | null;
+    createdAt: Date | string;
+    status?: ReviewStatus | string;
+  }>,
 ) {
   return reviews
     .filter((review) => review.status === undefined || review.status === ReviewStatus.PUBLISHED)
@@ -721,6 +726,7 @@ function providerPublicBookableServiceSummary(
       const validPrice =
         Number.isInteger(customerPrice) &&
         customerPrice >= providerService.service.basePrice &&
+        customerPrice < providerService.service.basePrice * 2 &&
         customerPrice % priceStep === 0;
 
       return {

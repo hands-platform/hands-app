@@ -22,6 +22,7 @@ class ProviderShell extends ConsumerStatefulWidget {
 
 class _ProviderShellState extends ConsumerState<ProviderShell> {
   static const _requestsIndex = 0;
+  static const _jobsIndex = 1;
   static const _earningsIndex = 2;
   static const _chatIndex = 3;
   static const _profileIndex = 4;
@@ -178,7 +179,10 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
       case PushNotificationOpenDestination.booking:
       case PushNotificationOpenDestination.notificationCenter:
         return _requestsIndex;
+      case PushNotificationOpenDestination.jobs:
+        return _jobsIndex;
       case PushNotificationOpenDestination.providerProfile:
+      case PushNotificationOpenDestination.profile:
         return _profileIndex;
     }
   }

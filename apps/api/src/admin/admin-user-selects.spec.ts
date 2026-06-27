@@ -1,5 +1,6 @@
 import {
   adminAppSessionListSelect,
+  adminNotificationBoardListSelect,
   adminNotificationListSelect,
   adminPushDeviceSummarySelect,
   adminUserAuthSelect,
@@ -43,6 +44,10 @@ describe('admin user selects', () => {
     expect(adminNotificationListSelect).toMatchObject({
       user: { select: expect.objectContaining({ id: true, phone: true }) },
       deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 10 }),
+    });
+    expect(adminNotificationBoardListSelect).toMatchObject({
+      user: { select: expect.objectContaining({ id: true, phone: true }) },
+      deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 3 }),
     });
     expect(adminAppSessionListSelect.user.select).toMatchObject({
       id: true,

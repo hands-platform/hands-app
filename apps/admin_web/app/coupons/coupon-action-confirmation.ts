@@ -11,8 +11,21 @@ export type CouponToggleConfirmation = {
   readonly tone: StatusBadgeTone;
 };
 
+export type CouponDeleteConfirmation = {
+  readonly cancelHref: string;
+  readonly confirmLabel: string;
+  readonly couponId: string;
+  readonly description: string;
+  readonly title: string;
+  readonly tone: StatusBadgeTone;
+};
+
 export function couponToggleConfirmHref(couponId: string) {
   return `/coupons?confirm=toggle&couponId=${encodeURIComponent(couponId)}`;
+}
+
+export function couponDeleteConfirmHref(couponId: string) {
+  return `/coupons?confirm=delete&couponId=${encodeURIComponent(couponId)}`;
 }
 
 export function buildCouponToggleConfirmation(
@@ -37,5 +50,30 @@ export function buildCouponToggleConfirmation(
     description: `${actionLabel} ${coupon.code}. ${exposure}`,
     title: `${actionLabel} ${coupon.code}?`,
     tone: coupon.active ? 'danger' : 'warning',
+  };
+}
+
+export function buildCouponDeleteConfirmation(
+  coupons: readonly AdminCoupon[],
+  couponId: string,
+): CouponDeleteConfirmation | null {
+  const coupon = coupons.find((item) => item.id === couponId);
+  if (!coupon) {
+    return null;
+  }
+
+  const usageCount = coupon.usageBookings?.length ?? 0;
+  const usageWarning =
+    usageCount > 0
+      ? ` ${usageCount} recent booking usage record(s) will remain visible in booking/payment history, but this code will no longer appear in the coupon manager.`
+      : ' No recent booking usage is attached to this coupon.';
+
+  return {
+    cancelHref: '/coupons',
+    confirmLabel: 'Delete coupon',
+    couponId: coupon.id,
+    description: `Delete ${coupon.code}.${usageWarning}`,
+    title: `Delete ${coupon.code}?`,
+    tone: 'danger',
   };
 }

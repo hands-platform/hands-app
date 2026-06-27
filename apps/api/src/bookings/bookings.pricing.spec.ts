@@ -1,6 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 
-import { calculateCouponDiscount, resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
+import {
+  calculateCouponDiscount,
+  resolveBookingPriceSummary,
+  resolveCustomerPrice,
+} from './bookings.pricing';
 
 describe('booking pricing helpers', () => {
   it('calculates percentage coupon discounts without exceeding the subtotal', () => {
@@ -25,6 +29,9 @@ describe('booking pricing helpers', () => {
       BadRequestException,
     );
     expect(() => resolveCustomerPrice({ basePrice: 300000, priceStep: 50000 }, 325000)).toThrow(
+      BadRequestException,
+    );
+    expect(() => resolveCustomerPrice({ basePrice: 300000, priceStep: 50000 }, 600000)).toThrow(
       BadRequestException,
     );
     expect(() => resolveCustomerPrice({ basePrice: 300000, priceStep: 50000 }, 0)).toThrow(

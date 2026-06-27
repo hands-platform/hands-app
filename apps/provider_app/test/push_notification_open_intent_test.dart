@@ -46,6 +46,15 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
+  test('Partner notification opens explicit app destination without ids', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'destination': 'jobs',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.jobs);
+    expect(intent.hasBooking, isFalse);
+  });
+
   test('Partner notification falls back to notification center', () {
     final intent = PushNotificationOpenIntent.fromData({
       'chatRoomId': '',

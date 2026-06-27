@@ -7,7 +7,7 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 
-import { ChevronDown, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 type AdminFormSelectOption = {
   readonly label: string;
@@ -58,7 +58,10 @@ type AdminFormTextareaProps = {
   readonly label: string;
   readonly name: string;
   readonly textareaClassName?: string;
-} & Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'rows' | 'value'>;
+} & Pick<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'defaultValue' | 'maxLength' | 'onChange' | 'placeholder' | 'required' | 'rows' | 'value'
+>;
 
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
@@ -91,7 +94,6 @@ export function AdminFormSelect({
           </option>
         ))}
       </select>
-      <ChevronDown aria-hidden="true" size={16} />
     </label>
   );
 }
@@ -188,9 +190,11 @@ export function AdminFormTextarea({
   className,
   defaultValue,
   label,
+  maxLength,
   name,
   onChange,
   placeholder,
+  required,
   rows = 4,
   textareaClassName,
   value,
@@ -201,9 +205,11 @@ export function AdminFormTextarea({
       <textarea
         className={textareaClassName}
         defaultValue={defaultValue}
+        maxLength={maxLength}
         name={name}
         onChange={onChange}
         placeholder={placeholder}
+        required={required}
         rows={rows}
         value={value}
       />

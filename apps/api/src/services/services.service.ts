@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { groupServiceCatalogOptions } from './service-catalog-groups';
 
@@ -28,6 +29,7 @@ export class ServicesService {
   create(input: {
     serviceGroupKey?: string;
     name: string;
+    nameTranslations?: unknown;
     description?: string;
     durationMin: number;
     basePrice: number;
@@ -42,6 +44,7 @@ export class ServicesService {
 function normalizeServiceInput(input: {
   serviceGroupKey?: string;
   name: string;
+  nameTranslations?: unknown;
   description?: string;
   durationMin: number;
   basePrice: number;
@@ -72,12 +75,35 @@ function normalizeServiceInput(input: {
   return {
     serviceGroupKey: input.serviceGroupKey?.trim() || slugify(name),
     name,
+    nameTranslations: normalizeServiceNameTranslationsForPrisma(input.nameTranslations),
     description: input.description?.trim() || null,
     durationMin: input.durationMin,
     basePrice: input.basePrice,
     priceStep,
     displayOrder: input.displayOrder ?? 0,
   };
+}
+
+function normalizeServiceNameTranslations(input: unknown) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return null;
+  }
+
+  const translations: Record<string, string> = {};
+  for (const key of ['en', 'vi', 'ko', 'ja', 'zh']) {
+    const value = (input as Record<string, unknown>)[key];
+    if (typeof value !== 'string') continue;
+    const normalized = value.trim();
+    if (normalized) {
+      translations[key] = normalized;
+    }
+  }
+  return Object.keys(translations).length ? translations : null;
+}
+
+function normalizeServiceNameTranslationsForPrisma(input: unknown) {
+  const translations = normalizeServiceNameTranslations(input);
+  return translations === null ? Prisma.JsonNull : (translations as Prisma.InputJsonValue);
 }
 
 function slugify(value: string) {

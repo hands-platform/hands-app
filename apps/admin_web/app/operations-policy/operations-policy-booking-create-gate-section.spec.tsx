@@ -46,6 +46,9 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     expect(rendered).toContain('Distance gates active');
     expect(rendered).toContain('Service area');
     expect(rendered).toContain('Blocked booking create attempt');
+    expect(elementTypesIn(section)).not.toContain('article');
+    expect(classNamesIn(section)).toContain('operations-policy-blocked-attempt-section');
+    expect(classNamesIn(section)).not.toContain('ops-task-card');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=blocked-create',
@@ -69,3 +72,38 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     expect(rendered).toContain('No booking create gate rejections are currently recorded.');
   });
 });
+
+function elementTypesIn(value: unknown): string[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(elementTypesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const type = typeof record?.type === 'string' ? [record.type] : [];
+  return [...type, ...elementTypesIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

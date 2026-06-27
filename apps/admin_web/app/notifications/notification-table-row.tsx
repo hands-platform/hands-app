@@ -9,6 +9,7 @@ export type NotificationTableRow = {
   readonly body: string;
   readonly bookingDataHint: string | null;
   readonly createdAtLabel: string;
+  readonly deliveryAttemptCount: number;
   readonly deliveryRows: readonly NotificationDeliveryRow[];
   readonly id: string;
   readonly opsHint: string;
@@ -66,7 +67,7 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
         <div className="muted admin-mt-6">{row.opsHint}</div>
       </td>
       <td>
-        <NotificationDeliveryCell deliveryRows={row.deliveryRows} />
+        <NotificationDeliveryCell deliveryRows={row.deliveryRows} totalAttemptCount={row.deliveryAttemptCount} />
       </td>
       <td>
         <ActionMenu actions={row.actions} label={row.actionLabel} variant="dropdown" />

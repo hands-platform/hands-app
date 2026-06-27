@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsDefined,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -29,6 +30,7 @@ import {
   ProviderSanctionType,
   ReferralRewardMode,
   ReviewStatus,
+  Role,
 } from '@prisma/client';
 
 function trimString(value: unknown) {
@@ -69,6 +71,10 @@ class AdminServiceSharedPayloadDto {
   @IsString()
   @MaxLength(120)
   name?: string;
+
+  @IsOptional()
+  @Allow()
+  nameTranslations?: unknown;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -527,6 +533,67 @@ export class UpdateOperationalPolicyDto {
   @IsString()
   @MaxLength(500)
   reason?: string;
+}
+
+export class UpdateNotificationTemplateDto {
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['en', 'vi', 'ko', 'ja', 'zh'])
+  locale!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  title!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  body!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+}
+
+export class AdminPushCampaignDto {
+  @IsEnum(Role)
+  targetRole!: Role;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  targetUserId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  targetSegment?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['notificationCenter', 'booking', 'jobs', 'earnings', 'chat', 'providerProfile', 'profile'])
+  appDestination?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsIn(['en', 'vi', 'ko', 'ja', 'zh'])
+  locale?: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  title!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  body!: string;
 }
 
 export class UpdateReferralPolicyDto {

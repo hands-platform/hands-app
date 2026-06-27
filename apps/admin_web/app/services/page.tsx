@@ -1,115 +1,65 @@
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
+import { adminGet, type AdminServiceCatalogItem } from '../../lib/admin-api';
+import { groupServices, readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
+import { serviceActionNotice } from '../../lib/service-action-notice';
 import { ServiceActionNoticeSection } from './service-action-notice-section';
-import { ServiceBookingExposureGuardSection } from './service-booking-exposure-guard-section';
-import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
-import { ServiceBookingReadinessQueueSection } from './service-booking-readiness-queue-section';
-import { ServiceCatalogSearchSection } from './service-catalog-search-section';
-import { ServiceCatalogStatusPills } from './service-catalog-status-pills';
-import { ServiceCreateFormsSection } from './service-create-forms-section';
-import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
-import { ServiceGroupEditGridSection } from './service-group-edit-grid-section';
-import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
-import { ServicePricingHealthSection } from './service-pricing-health-section';
-import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
-import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
-import { ServiceTypeCoverageBoardSection } from './service-type-coverage-board-section';
-import { buildServicePageModel } from './service-page-model';
+import { ServiceCatalogManagerSection } from './service-catalog-manager-section';
 
 type ServicesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+const STANDARD_SERVICE_DURATIONS = new Set([60, 90, 120]);
 
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const [services, taxPolicies, auditLogs] = await Promise.all([
-    adminGet<AdminServiceCatalogItem[]>('/admin/services', []),
-    adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
-  ]);
-  const model = buildServicePageModel({
-    auditLogs,
-    params,
-    services,
-    taxPolicies,
-  });
+  const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
+  const visibleServices = services.filter(
+    (service) => !isSmokeOrTestService(service) && STANDARD_SERVICE_DURATIONS.has(service.durationMin),
+  );
+  const groupedServices = groupServices(visibleServices);
+  const activeServices = visibleServices.filter((service) => service.active);
+  const dialogMode = readDialogMode(params.dialog);
+  const editGroupKey = readSingleParam(params.group);
+  const editGroup = dialogMode === 'edit' ? findServiceGroup(groupedServices, editGroupKey) : null;
+  const payoutRuleCount = visibleServices.reduce(
+    (sum, service) => sum + (service.payoutRules?.length ?? 0),
+    0,
+  );
 
   return (
     <AdminPageTemplate
       actions={
-        <ServiceCatalogStatusPills
-          activeServiceCount={model.activeServices.length}
-          activeTaxPolicy={model.activeTaxPolicy}
-          payoutRuleCount={model.payoutRuleCount}
-          serviceTypeCount={model.groupedServices.length}
-        />
+        <div className="service-catalog-page-actions">
+          <span className="pill pill-info">{groupedServices.length} service type(s)</span>
+          <span className="pill pill-success">{activeServices.length} active option(s)</span>
+          <span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>
+        </div>
       }
-      description="Create a service name once, then manage duration options such as 60, 90, and 120 minutes with separate minimum prices and payout policies."
+      description="Manage the base service menu, duration options, base customer prices, and Partner payout amounts."
       title="Service catalog"
     >
       <div className="service-catalog-page">
-        <ServiceCatalogSearchSection
-          activeServiceCount={model.filteredActiveServices.length}
-          groupCount={model.filteredGroupedServices.length}
-          searchQuery={model.serviceSearchQuery}
-        />
-
-        <ServiceActionNoticeSection notice={model.actionNotice} />
-
-        <ServiceBookingExposureGuardSection
-          activeServiceCount={model.activeServices.length}
-          blockedCount={model.blockedReadinessItems.length}
-          payoutRuleCount={model.payoutRuleCount}
-          policyCheckCount={model.pricePolicyPreviewSummary.policyCheckCount}
-          traceGapCount={model.bookingTraceSummary.missingTraceCount}
-          warningCount={model.warningReadinessItems.length}
-        />
-
-        <ServiceTypeCoverageBoardSection
-          hiddenRowCount={model.hiddenServiceTypeCoverageRowCount}
-          rows={model.serviceTypeCoverageRows}
-          summary={model.serviceTypeCoverageSummary}
-          visibleRows={model.visibleServiceTypeCoverageRows}
-        />
-
-        <ServicePricingAuditTrailSection rows={model.pricingAuditRows} />
-
-        <ServicePricingHealthSection items={model.healthItems} />
-
-        <ServiceBookingReadinessQueueSection
-          blockedCount={model.blockedReadinessItems.length}
-          items={model.readinessItems}
-          warningCount={model.warningReadinessItems.length}
-        />
-
-        <ServiceDurationPricingMatrixSection
-          activeTaxPolicy={model.activeTaxPolicy}
-          hiddenGroupCount={model.hiddenServiceGroupCount}
-          totalGroupCount={model.groupedServices.length}
-          visibleGroups={model.visibleGroupedServices}
-        />
-
-        <ServicePayoutLedgerSection
-          activeServiceCount={model.activeServices.length}
-          hiddenRowCount={model.hiddenPayoutLedgerRowCount}
-          rows={model.payoutLedgerRows}
-          visibleRows={model.visiblePayoutLedgerRows}
-        />
-
-        <ServicePricePolicyPreviewSection
-          hiddenRowCount={model.hiddenPricePolicyPreviewRowCount}
-          rows={model.pricePolicyPreviewRows}
-          summary={model.pricePolicyPreviewSummary}
-          visibleRows={model.visiblePricePolicyPreviewRows}
-        />
-
-        <ServiceBookingFinanceTraceSection rows={model.bookingTraceRows} summary={model.bookingTraceSummary} />
-        <ServiceCreateFormsSection />
-
-        <ServiceGroupEditGridSection
-          activeTaxPolicy={model.activeTaxPolicy}
-          hiddenGroupCount={model.hiddenServiceGroupCount}
-          visibleGroups={model.visibleGroupedServices}
+        <ServiceActionNoticeSection notice={serviceActionNotice(params)} />
+        <ServiceCatalogManagerSection
+          dialogMode={dialogMode}
+          editGroup={editGroup}
+          groups={groupedServices}
+          totalGroupCount={groupedServices.length}
         />
       </div>
     </AdminPageTemplate>
   );
+}
+
+function readDialogMode(value: string | readonly string[] | undefined) {
+  const mode = readSingleParam(value);
+  return mode === 'new' || mode === 'edit' ? mode : null;
+}
+
+function findServiceGroup(groups: readonly ServiceCatalogGroup[], key: string | undefined) {
+  return groups.find((group) => group.key === key) ?? null;
+}
+
+function isSmokeOrTestService(service: AdminServiceCatalogItem) {
+  const key = service.serviceGroupKey?.toLowerCase() ?? '';
+  const name = service.name.toLowerCase();
+  return key.startsWith('smoke') || key.includes('test') || name.startsWith('smoke') || name.includes('test');
 }

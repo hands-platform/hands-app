@@ -14,6 +14,11 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import {
+  AdminChatWindow,
+  type AdminChatWindowMessage,
+  type AdminChatWindowMessageRole,
+} from '../../../components/admin-chat-window';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import {
   AdminAppSession,
@@ -107,7 +112,6 @@ const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 3;
-const CUSTOMER_CHAT_ROOM_MESSAGE_PREVIEW_LIMIT = 6;
 const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
 const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
 const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
@@ -877,8 +881,10 @@ function CustomerChatHistoryRoomCard({
   const filteredMessages = readChatMessages(booking).filter((message) =>
     isWithinDetailDateFilter(message.createdAt, dateFilters),
   );
-  const visibleMessages = filteredMessages.slice(-CUSTOMER_CHAT_ROOM_MESSAGE_PREVIEW_LIMIT);
-  const hiddenMessageCount = Math.max(0, filteredMessages.length - visibleMessages.length);
+  const chatMessages = filteredMessages.map(customerChatWindowMessage);
+  const customerName =
+    booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+  const partnerName = bookingPartnerDisplayName(booking);
 
   return (
     <div className="card customer-chat-history-room-card">
@@ -902,26 +908,42 @@ function CustomerChatHistoryRoomCard({
           ) : null}
         </div>
       </div>
-      <div className="admin-grid-gap-8 admin-mt-10">
-        {visibleMessages.map((message) => (
-          <div className="ops-task-note" key={message.id}>
-            <strong>{message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}</strong>
-            <p>{message.body}</p>
-            <p className="muted">{formatDate(message.createdAt)}</p>
-          </div>
-        ))}
-        {hiddenMessageCount > 0 ? (
-          <p className="muted">
-            Showing latest {visibleMessages.length} of {filteredMessages.length} messages. Open full chat
-            archive for the complete transcript.
-          </p>
-        ) : null}
-        {filteredMessages.length === 0 ? (
-          <p className="muted">No messages in this date filter, but the room belongs to this period.</p>
-        ) : null}
-      </div>
+      <AdminChatWindow
+        avatarLabel={customerName}
+        className="admin-mt-12"
+        emptyMessage="No messages in this date filter, but the room belongs to this period."
+        messages={chatMessages}
+        subtitle={`${partnerName} / ${booking.status}`}
+        title={`${customerName} chat evidence`}
+      />
     </div>
   );
+}
+
+function customerChatWindowMessage(message: AdminChatMessage): AdminChatWindowMessage {
+  const role = customerChatMessageRole(message);
+  return {
+    body: message.body,
+    createdLabel: formatDate(message.createdAt),
+    id: message.id,
+    role,
+    senderLabel: message.sender?.fullName ?? message.sender?.phone ?? customerChatRoleLabel(role),
+  };
+}
+
+function customerChatMessageRole(message: AdminChatMessage): AdminChatWindowMessageRole {
+  const roles = message.sender?.roles ?? [];
+  if (roles.includes('CUSTOMER')) return 'CUSTOMER';
+  if (roles.includes('PROVIDER')) return 'PROVIDER';
+  if (roles.includes('ADMIN')) return 'ADMIN';
+  return 'SYSTEM';
+}
+
+function customerChatRoleLabel(role: AdminChatWindowMessageRole) {
+  if (role === 'CUSTOMER') return 'Customer';
+  if (role === 'PROVIDER') return 'Partner';
+  if (role === 'ADMIN') return 'Admin';
+  return 'System';
 }
 
 type CustomerOperatorTone = 'success' | 'info' | 'warn' | 'danger';

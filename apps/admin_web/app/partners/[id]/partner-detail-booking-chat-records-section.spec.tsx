@@ -14,6 +14,7 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
               body: 'I am arriving in 10 minutes.',
               createdLabel: '20 Jun 2026, 10:15',
               id: 'message-1',
+              role: 'PROVIDER',
               senderLabel: 'Partner',
             },
           ],

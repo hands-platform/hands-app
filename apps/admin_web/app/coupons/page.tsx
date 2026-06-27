@@ -2,126 +2,118 @@ import type { AdminCoupon } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import Link from 'next/link';
-import { buildCouponToggleConfirmation } from './coupon-action-confirmation';
-import { CouponsTableSection } from './coupons-table-section';
-import { createCoupon, toggleCoupon } from './actions';
+import { CalendarDays } from 'lucide-react';
 import {
-  buildCouponPageModel,
-  campaignToneClass,
-  campaignToneLabel,
-  couponStatusLabel,
-} from './coupon-page-model';
-import { formatDiscount } from './coupon-page-presenters';
+  buildCouponDeleteConfirmation,
+  buildCouponToggleConfirmation,
+  type CouponToggleConfirmation,
+} from './coupon-action-confirmation';
+import { CouponsTableSection } from './coupons-table-section';
+import { createCoupon, deleteCoupon, toggleCoupon, updateCoupon } from './actions';
+import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-model';
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type ConfirmationHiddenInput = { readonly name: string; readonly value: boolean | number | string };
 
 export default async function CouponsPage({ searchParams }: { searchParams?: CouponsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const coupons = await adminGet<AdminCoupon[]>('/admin/coupons', []);
   const couponModel = buildCouponPageModel(coupons);
+  const createNotice = buildCouponCreateNotice({
+    created: readSingleParam(params.created),
+    failed: readSingleParam(params.failed),
+    notice: readSingleParam(params.couponNotice),
+  });
+  const confirmAction = readSingleParam(params.confirm);
+  const usageCouponId = readSingleParam(params.usageCouponId);
+  const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
+  const usageSearchParams = couponUsageSearchParams(params);
   const confirmation =
-    readSingleParam(params.confirm) === 'toggle'
+    confirmAction === 'toggle'
       ? buildCouponToggleConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
+      : confirmAction === 'delete'
+        ? buildCouponDeleteConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
       : null;
+  const confirmationAction = confirmAction === 'delete' ? deleteCoupon : toggleCoupon;
+  const confirmationInputs: ConfirmationHiddenInput[] =
+    confirmation && isCouponToggleConfirmation(confirmation)
+      ? [
+          { name: 'couponId', value: confirmation.couponId },
+          { name: 'active', value: confirmation.currentActive },
+        ]
+      : confirmation
+        ? [{ name: 'couponId', value: confirmation.couponId }]
+        : [];
 
   return (
     <AdminPageTemplate
-      description="Promotion control for customer booking checkout, campaign readiness, and expired code cleanup."
-      metrics={[
-        { label: 'Total', value: couponModel.orderedCoupons.length, helper: 'Coupons loaded for admin review.' },
-        { label: 'Live now', value: couponModel.liveCoupons.length, helper: 'Can be used in customer checkout.' },
-        { label: 'Active', value: couponModel.activeCoupons.length, helper: 'Live or upcoming discounts.' },
-        {
-          label: 'Scheduled',
-          value: couponModel.scheduledCoupons.length,
-          helper: 'Approved, but start time is still ahead.',
-        },
-        { label: 'Expired', value: couponModel.expiredCoupons.length, helper: 'Candidates for pause or cleanup.' },
-        {
-          label: 'Needs review',
-          value: couponModel.needsReview.length,
-          helper: 'Expired active codes or paused campaigns.',
-        },
-      ]}
+      contentClassName="coupons-page"
+      description="Coupon registration, active windows, discount control, and booking usage review."
       title="Coupons"
     >
       {confirmation ? (
         <ConfirmDialog
-          action={toggleCoupon}
+          action={confirmationAction}
           cancelHref={confirmation.cancelHref}
           confirmLabel={confirmation.confirmLabel}
           description={confirmation.description}
-          hiddenInputs={[
-            { name: 'couponId', value: confirmation.couponId },
-            { name: 'active', value: confirmation.currentActive },
-          ]}
-          id={`coupon-toggle-${confirmation.couponId}`}
+          hiddenInputs={confirmationInputs}
+          id={`coupon-${confirmAction}-${confirmation.couponId}`}
           title={confirmation.title}
           tone={confirmation.tone}
         />
       ) : null}
 
-      <section className="card admin-mb-20">
+      <section className="admin-filter-panel coupons-create-panel">
         <AdminSectionHeader
-          description="Promotion control for customer acquisition, booking conversion, and codes that should not accidentally remain visible in checkout."
           status={
-            <span
-              className={`pill ${
-                couponModel.needsReview.length > 0 || couponModel.expiredCoupons.some((coupon) => coupon.active)
-                  ? 'pill-warn'
-                  : 'pill-success'
-              }`}
-            >
-              {couponModel.needsReview.length} review item(s)
+            <span className="pill pill-info">
+              {couponModel.liveCoupons.length} running / {couponModel.scheduledCoupons.length} upcoming /{' '}
+              {couponModel.expiredCoupons.length} expired
             </span>
           }
-          title="Campaign command board"
+          title="Create coupons"
         />
-        <div className="ops-task-grid">
-          {couponModel.campaignBoard.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.title}>
-              <span className={`signal ${campaignToneClass(item.tone)}`}>{campaignToneLabel(item.tone)}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{item.status}</span>
-                <span className="pill">{item.coupons.length} code(s)</span>
-              </div>
-              {item.coupons.length > 0 ? (
-                <div className="stack">
-                  {item.coupons.slice(0, 3).map((coupon) => (
-                    <span className="muted" key={`${item.title}-${coupon.id}`}>
-                      {coupon.code} / {formatDiscount(coupon.discount)} / {couponStatusLabel(coupon)}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <small>{item.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
-      <section className="card">
-        <h2>Create Coupon</h2>
-        <p className="muted">
-          Codes are normalized to uppercase and customer checkout accepts either uppercase or lowercase input.
-        </p>
-        <form className="form-row" action={createCoupon}>
-          <input name="code" placeholder="WELCOME10" />
-          <input name="description" placeholder="Description" />
-          <input name="percent" type="number" min="1" max="100" placeholder="%" />
-          <input name="startsAt" type="datetime-local" />
-          <input name="endsAt" type="datetime-local" />
-          <button type="submit">Create</button>
+        {createNotice ? (
+          <div className={`coupon-create-notice coupon-create-notice-${createNotice.tone}`} role="status">
+            <strong>{createNotice.title}</strong>
+            <span>{createNotice.detail}</span>
+          </div>
+        ) : null}
+        <form className="coupon-create-form" action={createCoupon}>
+          <label className="calendar-field calendar-field-wide">
+            <span>Coupon codes</span>
+            <textarea name="codes" required rows={1} />
+          </label>
+          <label className="calendar-field">
+            <span>Discount %</span>
+            <input max="100" min="1" name="percent" placeholder="10" required type="number" />
+          </label>
+          <label className="calendar-field coupon-date-field">
+            <span>Starts</span>
+            <span className="coupon-date-input-shell">
+              <input name="startsAt" type="datetime-local" />
+              <CalendarDays aria-hidden="true" size={17} />
+            </span>
+          </label>
+          <label className="calendar-field coupon-date-field">
+            <span>Ends</span>
+            <span className="coupon-date-input-shell">
+              <input name="endsAt" type="datetime-local" />
+              <CalendarDays aria-hidden="true" size={17} />
+            </span>
+          </label>
+          <button className="button" type="submit">
+            Create coupons
+          </button>
         </form>
       </section>
       <CouponsTableSection
-        liveCount={couponModel.liveCoupons.length}
-        pausedCount={couponModel.pausedCoupons.length}
-        reviewCount={couponModel.needsReview.length}
         rows={couponModel.couponRows}
-        scheduledCount={couponModel.scheduledCoupons.length}
+        updateAction={updateCoupon}
+        usageCouponId={usageCouponId}
+        usageHrefForPage={(couponId, page) => couponUsageHref(usageSearchParams, couponId, page)}
+        usagePage={usagePage}
       />
     </AdminPageTemplate>
   );
@@ -129,4 +121,45 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
 
 function readSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function isCouponToggleConfirmation(value: unknown): value is CouponToggleConfirmation {
+  return Boolean(value && typeof value === 'object' && 'currentActive' in value);
+}
+
+function readPositiveInteger(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function couponUsageSearchParams(params: Record<string, string | string[] | undefined>) {
+  const next = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'confirm' || key === 'couponId' || key === 'usageCouponId' || key === 'usagePage') {
+      continue;
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (item) {
+        next.append(key, item);
+      }
+    }
+  }
+
+  return next;
+}
+
+function couponUsageHref(baseParams: URLSearchParams, couponId: string, page: number) {
+  const next = new URLSearchParams(baseParams);
+  next.set('usageCouponId', couponId);
+  if (page > 1) {
+    next.set('usagePage', String(page));
+  } else {
+    next.delete('usagePage');
+  }
+
+  const query = next.toString();
+  return query ? `/coupons?${query}` : '/coupons';
 }

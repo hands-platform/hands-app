@@ -1,9 +1,6 @@
 const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
 const ADMIN_TOKEN_REFRESH_SKEW_MS = 60_000;
 
-let cachedAdminToken: { token: string; expiresAt: number } | null = null;
-let pendingAdminToken: Promise<string> | null = null;
-
 export type AdminBookingStatus =
   | 'CREATED'
   | 'OPEN_MATCHING'
@@ -19,11 +16,7 @@ export type AdminBookingStatus =
 
 export type AdminBookingMatchSource = 'FIRST_PICK_ACCEPTED_FIRST' | 'CUSTOMER_SELECTED_PARTNER';
 export type AdminParticipantStatus = 'JOINED' | 'ACCEPTED' | 'REJECTED' | 'SELECTED' | 'EXPIRED';
-export type AdminProviderStatus =
-  | 'OFFLINE'
-  | 'ONLINE_AVAILABLE'
-  | 'ONLINE_BUSY'
-  | 'ONLINE_AVAILABLE_SOON';
+export type AdminProviderStatus = 'OFFLINE' | 'ONLINE_AVAILABLE' | 'ONLINE_BUSY' | 'ONLINE_AVAILABLE_SOON';
 export type AdminPaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'RELEASED';
 export type AdminPaymentMethod = 'MOMO' | 'VNPAY' | 'CASH';
 export type AdminReviewStatus = 'PUBLISHED' | 'HIDDEN' | 'REPORTED';
@@ -993,12 +986,14 @@ export type AdminPaymentCallbackAttempt = {
   errorMessage?: string | null;
   rawPayload?: unknown;
   createdAt: string;
-  payment?: (AdminPayment & {
-    booking?: AdminPayment['booking'] & {
-      customerProfile?: { user?: { phone?: string; fullName?: string | null } };
-      selectedProvider?: { displayName?: string | null };
-    };
-  }) | null;
+  payment?:
+    | (AdminPayment & {
+        booking?: AdminPayment['booking'] & {
+          customerProfile?: { user?: { phone?: string; fullName?: string | null } };
+          selectedProvider?: { displayName?: string | null };
+        };
+      })
+    | null;
 };
 
 export type AdminEarning = {
@@ -1240,6 +1235,27 @@ export type AdminCoupon = {
   active: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
+  usageBookings?: AdminCouponUsageBooking[];
+};
+
+export type AdminCouponUsageBooking = {
+  amount?: number | null;
+  bookingId: string;
+  closedAt?: string | null;
+  couponCode?: string | null;
+  currency?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  discountAmount?: number | null;
+  originalAmount?: number | null;
+  partnerName?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  requestTime?: string | null;
+  scheduledStartAt?: string | null;
+  serviceName?: string | null;
+  servicePrice?: number | null;
+  status?: string | null;
 };
 
 export type AdminServicePayoutRule = {
@@ -1260,6 +1276,7 @@ export type AdminServiceCatalogItem = {
   id: string;
   serviceGroupKey?: string | null;
   name: string;
+  nameTranslations?: Record<string, string> | null;
   description?: string | null;
   durationMin: number;
   basePrice: number;
@@ -1421,6 +1438,73 @@ export type AdminNotification = {
   }>;
 };
 
+export type AdminNotificationTemplateTranslation = {
+  id: string;
+  templateId: string;
+  locale: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminNotificationTemplate = {
+  id: string;
+  key: string;
+  audience: string;
+  channel: string;
+  description?: string | null;
+  variables?: unknown;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  translations: AdminNotificationTemplateTranslation[];
+};
+
+export type AdminPushCampaign = {
+  id: string;
+  targetRole: string;
+  targetUserId?: string | null;
+  locale?: string | null;
+  title: string;
+  body: string;
+  status: string;
+  recipientCount: number;
+  notificationCount: number;
+  createdById: string;
+  metadata?: unknown;
+  createdAt: string;
+  sentAt?: string | null;
+  recipients?: Array<{
+    id: string;
+    campaignId: string;
+    userId: string;
+    notificationId?: string | null;
+    status: string;
+    createdAt: string;
+  }>;
+};
+
+export type AdminPushCampaignPreview = {
+  targetRole: 'CUSTOMER' | 'PROVIDER';
+  targetUserId?: string | null;
+  targetSegment?: string;
+  appDestination?: string;
+  recipientCount: number;
+  sendLimit: number;
+  willSendCount: number;
+  capped: boolean;
+  sampleRecipients: Array<{
+    id: string;
+    phone: string;
+    fullName?: string | null;
+    roles: string[];
+    customerProfile?: { id: string } | null;
+    providerProfile?: { id: string; displayName?: string | null; status?: string | null } | null;
+    pushDevices?: Array<{ id: string; platform: string; role: string; updatedAt: string }>;
+  }>;
+};
+
 export type AdminExternalReadiness = {
   ok: boolean;
   currentStageOk?: boolean;
@@ -1575,6 +1659,18 @@ export async function adminPost<T>(path: string, body: unknown, fallback: T): Pr
   }
 }
 
+export async function adminPostOrThrow<T>(path: string, body: unknown): Promise<T> {
+  return adminJsonRequestOrThrow<T>('POST', path, body);
+}
+
+export async function adminPatchOrThrow<T>(path: string, body: unknown): Promise<T> {
+  return adminJsonRequestOrThrow<T>('PATCH', path, body);
+}
+
+export async function adminDeleteOrThrow<T>(path: string): Promise<T> {
+  return adminJsonRequestOrThrow<T>('DELETE', path);
+}
+
 export async function adminPatch<T>(path: string, body: unknown, fallback: T): Promise<T> {
   try {
     const token = await getAdminAccessToken();
@@ -1585,6 +1681,27 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
         'content-type': 'application/json',
       },
       body: JSON.stringify(body ?? {}),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    return (await response.json()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function adminDelete<T>(path: string, fallback: T): Promise<T> {
+  try {
+    const token = await getAdminAccessToken();
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'DELETE',
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
       cache: 'no-store',
     });
 
@@ -1611,53 +1728,56 @@ export async function getAdminAccessToken() {
     if (!expiresAt || expiresAt > Date.now() + ADMIN_TOKEN_REFRESH_SKEW_MS) {
       return configuredToken;
     }
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('ADMIN_ACCESS_TOKEN is expired');
-    }
-  }
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('ADMIN_ACCESS_TOKEN is required in production');
+    throw new Error('ADMIN_ACCESS_TOKEN is expired');
   }
 
-  const now = Date.now();
-  if (cachedAdminToken && cachedAdminToken.expiresAt > now + ADMIN_TOKEN_REFRESH_SKEW_MS) {
-    return cachedAdminToken.token;
-  }
+  throw new Error('ADMIN_ACCESS_TOKEN is required for Admin Web API access');
+}
 
-  if (pendingAdminToken) {
-    return pendingAdminToken;
-  }
-
-  pendingAdminToken = requestAdminAccessToken();
-  try {
-    return await pendingAdminToken;
-  } finally {
-    pendingAdminToken = null;
+export class AdminApiRequestError extends Error {
+  constructor(
+    readonly method: string,
+    readonly path: string,
+    readonly status: number,
+  ) {
+    super(`Admin API ${method} ${path} failed with ${status}`);
+    this.name = 'AdminApiRequestError';
   }
 }
 
-async function requestAdminAccessToken() {
-  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      phone: process.env.ADMIN_DEMO_PHONE ?? '+84900000099',
-      otp: process.env.ADMIN_DEMO_OTP ?? '123456',
-      role: 'ADMIN',
-    }),
+export function isAdminApiAuthError(error: unknown) {
+  if (error instanceof AdminApiRequestError) {
+    return error.status === 401 || error.status === 403;
+  }
+
+  return error instanceof Error && error.message.startsWith('ADMIN_ACCESS_TOKEN');
+}
+
+async function adminJsonRequestOrThrow<T>(
+  method: 'DELETE' | 'PATCH' | 'POST',
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const token = await getAdminAccessToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body ?? {}) }),
     cache: 'no-store',
   });
 
   if (!response.ok) {
-    throw new Error('Unable to get admin access token');
+    throw new AdminApiRequestError(method, path, response.status);
   }
 
-  const body = (await response.json()) as { accessToken: string };
-  cachedAdminToken = {
-    token: body.accessToken,
-    expiresAt: readJwtExpiry(body.accessToken) ?? Date.now() + 10 * 60_000,
-  };
-  return body.accessToken;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
 }
 
 function readJwtExpiry(token: string) {

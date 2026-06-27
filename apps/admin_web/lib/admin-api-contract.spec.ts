@@ -47,29 +47,22 @@ describe('admin api auth guard', () => {
     };
     const fetchMock = vi.spyOn(global, 'fetch');
 
-    await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is required in production');
+    await expect(getAdminAccessToken()).rejects.toThrow(
+      'ADMIN_ACCESS_TOKEN is required for Admin Web API access',
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('refreshes an expired local admin token instead of serving empty admin data', async () => {
-    const freshToken = testJwt(Math.floor(Date.now() / 1000) + 600);
+  it('rejects an expired local admin token instead of using mobile OTP fallback', async () => {
     process.env = {
       ...process.env,
       ADMIN_ACCESS_TOKEN: testJwt(Math.floor(Date.now() / 1000) - 60),
       NODE_ENV: 'development',
     };
-    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ accessToken: freshToken }), {
-        headers: { 'content-type': 'application/json' },
-        status: 200,
-      }),
-    );
+    const fetchMock = vi.spyOn(global, 'fetch');
 
-    await expect(getAdminAccessToken()).resolves.toBe(freshToken);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/verify-otp'),
-      expect.objectContaining({ method: 'POST' }),
-    );
+    await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is expired');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

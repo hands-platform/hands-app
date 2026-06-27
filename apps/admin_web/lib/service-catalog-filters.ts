@@ -3,6 +3,7 @@ import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from './admin-api
 export type ServiceCatalogGroup = {
   readonly key: string;
   readonly label: string;
+  readonly nameTranslations?: Record<string, string> | null;
   readonly items: readonly AdminServiceCatalogItem[];
 };
 
@@ -17,6 +18,7 @@ export function groupServices(services: readonly AdminServiceCatalogItem[]): rea
     items: items.sort((left, right) => left.durationMin - right.durationMin),
     key,
     label: items[0]?.name ?? key,
+    nameTranslations: items[0]?.nameTranslations ?? null,
   }));
 }
 
@@ -57,10 +59,7 @@ export function readSingleParam(value: string | readonly string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export function selectActiveTaxPolicy(
-  policies: readonly AdminTaxPolicyVersion[],
-  nowMs = Date.now(),
-) {
+export function selectActiveTaxPolicy(policies: readonly AdminTaxPolicyVersion[], nowMs = Date.now()) {
   return policies
     .filter((policy) => {
       if (policy.status !== 'ACTIVE') {
@@ -79,6 +78,7 @@ function serviceSearchText(service: AdminServiceCatalogItem) {
   return [
     service.id,
     service.name,
+    ...Object.values(service.nameTranslations ?? {}),
     service.description,
     service.serviceGroupKey,
     service.durationMin,

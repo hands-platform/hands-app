@@ -674,18 +674,19 @@ model ProviderVerification {
 }
 
 model MassageService {
-  id              String              @id @default(cuid())
-  serviceGroupKey String?
-  name            String
-  description     String?
-  durationMin     Int
-  basePrice       Int
-  priceStep       Int                 @default(100000)
-  displayOrder    Int                 @default(0)
-  active          Boolean             @default(true)
-  providers       ProviderService[]
-  bookings        BookingService[]
-  payoutRules     ServicePayoutRule[]
+  id               String              @id @default(cuid())
+  serviceGroupKey  String?
+  name             String
+  nameTranslations Json?
+  description      String?
+  durationMin      Int
+  basePrice        Int
+  priceStep        Int                 @default(100000)
+  displayOrder     Int                 @default(0)
+  active           Boolean             @default(true)
+  providers        ProviderService[]
+  bookings         BookingService[]
+  payoutRules      ServicePayoutRule[]
 
   @@index([serviceGroupKey, durationMin])
   @@index([active, displayOrder])
@@ -1323,6 +1324,71 @@ model NotificationDelivery {
   attemptedAt    DateTime     @default(now())
   notification   Notification @relation(fields: [notificationId], references: [id])
   pushDevice     PushDevice   @relation(fields: [pushDeviceId], references: [id])
+}
+
+model NotificationTemplate {
+  id           String                            @id @default(cuid())
+  key          String                            @unique
+  audience     Role
+  channel      String                            @default("BOTH")
+  description  String?
+  variables    Json?
+  enabled      Boolean                           @default(true)
+  createdAt    DateTime                          @default(now())
+  updatedAt    DateTime                          @updatedAt
+  translations NotificationTemplateTranslation[]
+
+  @@index([audience, enabled])
+  @@index([channel])
+}
+
+model NotificationTemplateTranslation {
+  id         String               @id @default(cuid())
+  templateId String
+  locale     String
+  title      String
+  body       String
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  template   NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, locale])
+  @@index([locale])
+}
+
+model AdminPushCampaign {
+  id             String                       @id @default(cuid())
+  targetRole     Role
+  targetUserId   String?
+  locale         String?
+  title          String
+  body           String
+  status         String                       @default("SENT")
+  recipientCount Int                          @default(0)
+  notificationCount Int                       @default(0)
+  createdById    String
+  metadata       Json?
+  createdAt      DateTime                     @default(now())
+  sentAt         DateTime?
+  recipients     AdminPushCampaignRecipient[]
+
+  @@index([targetRole, createdAt])
+  @@index([targetUserId])
+  @@index([createdById, createdAt])
+}
+
+model AdminPushCampaignRecipient {
+  id             String            @id @default(cuid())
+  campaignId     String
+  userId         String
+  notificationId String?
+  status         String            @default("QUEUED")
+  createdAt      DateTime          @default(now())
+  campaign       AdminPushCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+  @@index([userId, createdAt])
+  @@index([notificationId])
 }
 
 model FileAsset {

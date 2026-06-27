@@ -114,6 +114,12 @@ describe('NotificationsService retry queue', () => {
       notification: {
         create: vi.fn().mockResolvedValue(notification),
       },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      pushDevice: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
     };
     const queue = { add: vi.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
@@ -144,11 +150,136 @@ describe('NotificationsService retry queue', () => {
     );
   });
 
+  it('uses enabled language template copy when creating a notification', async () => {
+    const notification = { id: 'notification-1' };
+    const prisma = {
+      notification: {
+        create: vi.fn().mockResolvedValue(notification),
+      },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue({
+          enabled: true,
+          translations: [
+            {
+              locale: 'vi',
+              title: 'Yêu cầu mới',
+              body: 'Đơn {bookingId} từ {customerName} đang sẵn sàng.',
+            },
+            {
+              locale: 'en',
+              title: 'New request',
+              body: 'Booking {bookingId} is ready.',
+            },
+          ],
+        }),
+      },
+      pushDevice: {
+        findFirst: vi.fn().mockResolvedValue({ locale: 'vi' }),
+      },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(
+      service.create({
+        userId: 'user-1',
+        targetRole: Role.PROVIDER,
+        type: 'booking.requested',
+        title: 'Booking request',
+        body: 'A booking request is available.',
+        data: { bookingId: 'booking-1', customerName: 'Linh' },
+      }),
+    ).resolves.toEqual(notification);
+
+    expect(prisma.pushDevice.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        enabled: true,
+        role: Role.PROVIDER,
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { locale: true },
+    });
+    expect(prisma.notificationTemplate.findUnique).toHaveBeenCalledWith({
+      where: { key: 'booking.requested' },
+      select: {
+        enabled: true,
+        translations: {
+          where: { locale: { in: ['vi', 'en'] } },
+          select: {
+            locale: true,
+            title: true,
+            body: true,
+          },
+        },
+      },
+    });
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        type: 'booking.requested',
+        title: 'Yêu cầu mới',
+        body: 'Đơn booking-1 từ Linh đang sẵn sàng.',
+        data: { bookingId: 'booking-1', customerName: 'Linh', targetRole: Role.PROVIDER },
+      },
+    });
+  });
+
+  it('keeps explicit notification copy when template resolution is disabled', async () => {
+    const notification = { id: 'notification-1' };
+    const prisma = {
+      notification: {
+        create: vi.fn().mockResolvedValue(notification),
+      },
+      notificationTemplate: {
+        findUnique: vi.fn(),
+      },
+      pushDevice: {
+        findFirst: vi.fn(),
+      },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(
+      service.create({
+        userId: 'user-1',
+        targetRole: Role.PROVIDER,
+        type: 'admin.push.broadcast',
+        resolveTemplate: false,
+        title: 'Manual Partner update',
+        body: 'Open HANDS for today updates.',
+        data: { campaignId: 'campaign-1' },
+      }),
+    ).resolves.toEqual(notification);
+
+    expect(prisma.pushDevice.findFirst).not.toHaveBeenCalled();
+    expect(prisma.notificationTemplate.findUnique).not.toHaveBeenCalled();
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        type: 'admin.push.broadcast',
+        title: 'Manual Partner update',
+        body: 'Open HANDS for today updates.',
+        data: {
+          campaignId: 'campaign-1',
+          targetRole: Role.PROVIDER,
+        },
+      },
+    });
+  });
+
   it('stores target role metadata for role-scoped push delivery', async () => {
     const notification = { id: 'notification-1' };
     const prisma = {
       notification: {
         create: vi.fn().mockResolvedValue(notification),
+      },
+      notificationTemplate: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      pushDevice: {
+        findFirst: vi.fn().mockResolvedValue(null),
       },
     };
     const queue = { add: vi.fn() };

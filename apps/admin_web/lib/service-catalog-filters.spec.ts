@@ -17,7 +17,9 @@ describe('service catalog filters', () => {
 
     const groups = groupServices(services);
 
-    expect(groups.map((group) => ({ durations: group.items.map((item) => item.durationMin), key: group.key }))).toEqual([
+    expect(
+      groups.map((group) => ({ durations: group.items.map((item) => item.durationMin), key: group.key })),
+    ).toEqual([
       { durations: [60, 90], key: 'foot' },
       { durations: [45], key: 'da_nong_therapy' },
     ]);
@@ -36,6 +38,7 @@ describe('service catalog filters', () => {
         items: [expect.objectContaining({ durationMin: 120 })],
         key: 'thai',
         label: 'Thai Massage',
+        nameTranslations: null,
       },
     ]);
   });

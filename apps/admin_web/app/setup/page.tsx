@@ -25,7 +25,12 @@ import { SetupProgressControlSection } from './setup-progress-control-section';
 import { SetupReadinessOrderSection } from './setup-readiness-order-section';
 import { SetupRegistrationHandoffSection } from './setup-registration-handoff-section';
 
-export default async function SetupPage() {
+type SetupPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function SetupPage({ searchParams }: { searchParams?: SetupPageSearchParams }) {
+  const params = (await searchParams) ?? {};
+  const commandMode = readSetupCommandMode(params.commands);
+  const showSetupDetails = commandMode === 'full' || readSearchParam(params.details) === 'all';
   const readiness = await apiGet<AdminExternalReadiness>('/health/external', {
     ok: false,
     timestamp: new Date(0).toISOString(),
@@ -66,11 +71,46 @@ export default async function SetupPage() {
         <SetupMigrationRunwaySection groupStatuses={groupStatuses} />
       </section>
 
-      <SetupReadinessOrderSection readinessChecks={readiness.checks} recommendedOrder={setupOrder} />
+      <SetupReadinessOrderSection
+        commandMode={commandMode}
+        readinessChecks={readiness.checks}
+        recommendedOrder={setupOrder}
+      />
 
       <SetupExternalBacklogSection missingCount={summary.missing} backlog={externalBacklog} />
 
-      <SetupGroupDetailSection groups={setupGroupDetails} />
+      {showSetupDetails ? (
+        <SetupGroupDetailSection commandMode={commandMode} groups={setupGroupDetails} />
+      ) : (
+        <SetupGroupDetailSummaryLink groupCount={setupGroupDetails.length} />
+      )}
     </div>
+  );
+}
+
+function readSetupCommandMode(value: string | string[] | undefined): 'full' | 'summary' {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw === 'all' ? 'full' : 'summary';
+}
+
+function readSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function SetupGroupDetailSummaryLink({ groupCount }: { readonly groupCount: number }) {
+  return (
+    <section className="card admin-mt-16">
+      <div className="ops-section-header">
+        <div>
+          <h2>Setup group details</h2>
+          <p className="muted">
+            Full environment notes and command packs are kept out of the default setup payload.
+          </p>
+        </div>
+        <a className="pill pill-neutral" href="/setup?details=all">
+          Show {groupCount} setup group(s)
+        </a>
+      </div>
+    </section>
   );
 }

@@ -367,6 +367,56 @@ describe('ProvidersService location updates', () => {
   });
 });
 
+describe('ProvidersService service menu pricing', () => {
+  it('rejects partner prices at 2x or more than the admin base price', async () => {
+    const prisma = createProviderServicePricingPrisma({
+      service: {
+        id: 'service-1',
+        basePrice: 300000,
+        priceStep: 100000,
+        payoutRules: [{ customerPrice: 500000 }],
+      },
+    });
+    const service = createProviderService(prisma);
+
+    await expect(
+      service.updateServicePrice('provider-user-1', 'service-1', {
+        active: true,
+        price: 600000,
+      }),
+    ).rejects.toThrow('Partner service price cannot be 2x or more than the admin minimum');
+    expect(prisma.providerService.upsert).not.toHaveBeenCalled();
+  });
+
+  it('allows partner prices below 2x when the admin payout rule exists', async () => {
+    const prisma = createProviderServicePricingPrisma({
+      service: {
+        id: 'service-1',
+        basePrice: 300000,
+        priceStep: 100000,
+        payoutRules: [{ customerPrice: 500000 }],
+      },
+    });
+    const service = createProviderService(prisma);
+
+    await service.updateServicePrice('provider-user-1', 'service-1', {
+      active: true,
+      price: 500000,
+    });
+
+    expect(prisma.providerService.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          price: 500000,
+        }),
+        update: expect.objectContaining({
+          price: 500000,
+        }),
+      }),
+    );
+  });
+});
+
 function createServiceWithNearbyProviders(providers: unknown[]) {
   return new ProvidersService(
     {
@@ -379,6 +429,51 @@ function createServiceWithNearbyProviders(providers: unknown[]) {
       get: vi.fn(),
     } as never,
   );
+}
+
+function createProviderService(prisma: ReturnType<typeof createProviderServicePricingPrisma>) {
+  return new ProvidersService(
+    prisma as never,
+    {} as never,
+    {
+      get: vi.fn(),
+    } as never,
+  );
+}
+
+function createProviderServicePricingPrisma({
+  service,
+}: {
+  service: {
+    id: string;
+    basePrice: number;
+    priceStep: number;
+    payoutRules: Array<{ customerPrice: number }>;
+  };
+}) {
+  return {
+    providerProfile: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'partner-1',
+        blockedAt: null,
+        blockedReason: null,
+      }),
+    },
+    massageService: {
+      findFirst: vi.fn().mockResolvedValue(service),
+    },
+    providerService: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({
+        id: 'provider-service-1',
+        providerProfileId: 'partner-1',
+        serviceId: service.id,
+        price: 500000,
+        active: true,
+        service,
+      }),
+    },
+  };
 }
 
 function nearbyProviderFixture(overrides: Record<string, unknown> = {}) {

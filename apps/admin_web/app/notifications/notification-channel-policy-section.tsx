@@ -9,6 +9,7 @@ import type {
 import { FCM_TOKEN_RECOVERY_SMOKE_COMMAND } from './fcm-smoke-commands';
 
 type NotificationChannelPolicySectionProps = {
+  readonly density?: 'compact' | 'full';
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
   readonly fcmSmokeReadiness: NotificationFcmSmokeReadiness;
@@ -20,6 +21,7 @@ type NotificationChannelPolicySectionProps = {
 };
 
 export function NotificationChannelPolicySection({
+  density = 'full',
   inAppDeliveries,
   fcmDeliveries,
   fcmSmokeReadiness,
@@ -32,6 +34,7 @@ export function NotificationChannelPolicySection({
   const shouldShowFcmDiagnosis =
     fcmSmokeReadiness.status !== 'ready' || Boolean(fcmSmokeReadiness.deviceWarningLabel);
   const shouldShowAuditEvidence = Boolean(fcmSmokeReadiness.selectedNotificationId);
+  const isCompact = density === 'compact';
 
   return (
     <div className="card soft-card admin-mb-16">
@@ -48,6 +51,29 @@ export function NotificationChannelPolicySection({
           Change alert policy
         </Link>
       </div>
+      {isCompact ? (
+        <div className="participant-list admin-mt-10">
+          <span className="pill pill-info">Partner alerts {partnerAlertCount}</span>
+          <span className="pill pill-success">In-app {inAppDeliveries}</span>
+          <span className={fcmDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>
+            FCM {fcmDeliveries}
+          </span>
+          <span
+            className={
+              fcmSmokeReadiness.status === 'ready'
+                ? 'pill pill-success'
+                : fcmSmokeReadiness.status === 'needs-device'
+                  ? 'pill pill-warn'
+                  : 'pill pill-neutral'
+            }
+          >
+            {fcmSmokeReadiness.statusLabel}
+          </span>
+          <Link className="pill pill-neutral" href="/notifications?diagnostics=full">
+            Show FCM diagnostics
+          </Link>
+        </div>
+      ) : (
       <div className="ops-task-grid">
         <div className="ops-task-card">
           <span className="pill pill-info">Partner booking alerts</span>
@@ -176,6 +202,7 @@ export function NotificationChannelPolicySection({
           </div>
         ) : null}
       </div>
+      )}
     </div>
   );
 }

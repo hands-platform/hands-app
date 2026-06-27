@@ -3,7 +3,9 @@ enum PushNotificationOpenDestination {
   payment,
   earnings,
   booking,
+  jobs,
   providerProfile,
+  profile,
   notificationCenter,
 }
 
@@ -27,6 +29,9 @@ class PushNotificationOpenIntent {
     final payoutBatchId = _stringValue(data, 'payoutBatchId');
     final bookingId = _stringValue(data, 'bookingId');
     final providerProfileId = _stringValue(data, 'providerProfileId');
+    final explicitDestination = _destinationValue(
+      _stringValue(data, 'destination') ?? _stringValue(data, 'appDestination'),
+    );
 
     if (chatRoomId != null) {
       return PushNotificationOpenIntent._(
@@ -73,6 +78,10 @@ class PushNotificationOpenIntent {
       );
     }
 
+    if (explicitDestination != null) {
+      return PushNotificationOpenIntent._(destination: explicitDestination);
+    }
+
     return const PushNotificationOpenIntent._(
       destination: PushNotificationOpenDestination.notificationCenter,
     );
@@ -105,4 +114,32 @@ String? _stringValue(Map<String, Object?> data, String key) {
 
   final stringValue = value.toString().trim();
   return stringValue.isEmpty ? null : stringValue;
+}
+
+PushNotificationOpenDestination? _destinationValue(String? value) {
+  final normalized = value?.replaceAll('_', '').toLowerCase();
+  switch (normalized) {
+    case 'home':
+    case 'notificationcenter':
+      return PushNotificationOpenDestination.notificationCenter;
+    case 'booking':
+    case 'bookings':
+    case 'requests':
+      return PushNotificationOpenDestination.booking;
+    case 'jobs':
+      return PushNotificationOpenDestination.jobs;
+    case 'chat':
+      return PushNotificationOpenDestination.chat;
+    case 'payment':
+      return PushNotificationOpenDestination.payment;
+    case 'earnings':
+    case 'wallet':
+      return PushNotificationOpenDestination.earnings;
+    case 'partners':
+    case 'providerprofile':
+      return PushNotificationOpenDestination.providerProfile;
+    case 'profile':
+      return PushNotificationOpenDestination.profile;
+  }
+  return null;
 }

@@ -69,6 +69,7 @@ describe('NotificationsTableSection', () => {
       rows: [
         {
           ...row,
+          deliveryAttemptCount: 2,
           deliveryRows: [
             {
               ...row.deliveryRows[0],
@@ -96,14 +97,14 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('latest FCM / Android / 2026-06-09 10:03');
     expect(rendered).toContain('previous FAILED at 2026-06-09 10:01');
     expect(rendered).toContain('Latest attempt / FCM SENT / Android');
-    expect(rendered).toContain('Previous attempt / FCM FAILED / IOS');
+    expect(rendered).not.toContain('Previous attempt / FCM FAILED / IOS');
+    expect(rendered).toContain('Previous delivery evidence is summarized above.');
     expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'notification-delivery-disclosure',
         'notification-delivery-summary',
         'pill pill-success',
-        'pill pill-warn',
       ]),
     );
   });
@@ -115,6 +116,7 @@ describe('NotificationsTableSection', () => {
       rows: [
         {
           ...row,
+          deliveryAttemptCount: 2,
           deliveryRows: [
             {
               ...row.deliveryRows[0],
@@ -150,13 +152,13 @@ describe('NotificationsTableSection', () => {
       'FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04 / previous SENT at 2026-06-09 10:03',
     );
     expect(rendered).toContain('Latest attempt / FCM FAILED / Android');
-    expect(rendered).toContain('Previous attempt / FCM SENT / Android');
+    expect(rendered).not.toContain('Previous attempt / FCM SENT / Android');
     expect(rendered).toContain('Failure messaging/internal-error');
     expect(rendered).toContain('Reason temporary provider error for [masked]');
     expect(rendered).toContain(
       'Next Retry after Firebase service health and local worker health are confirmed.',
     );
-    expect(rendered.match(/Token hidden/g)).toHaveLength(2);
+    expect(rendered).not.toContain('Token hidden');
   });
 
   it('renders the empty state when there are no notification rows', () => {
@@ -207,6 +209,7 @@ function buildRow(): NotificationTableRow {
     body: 'Partner request delivery body',
     bookingDataHint: 'booking bookin / partner partne',
     createdAtLabel: '2026-06-09 10:00',
+    deliveryAttemptCount: 1,
     deliveryRows: [
       {
         attemptedAtLabel: '2026-06-09 10:01',

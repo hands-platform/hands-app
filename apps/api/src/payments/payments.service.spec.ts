@@ -21,6 +21,39 @@ describe('PaymentsService status check queue', () => {
       },
     );
   });
+
+  it('preserves coupon pricing metadata when payment authorization is refreshed', async () => {
+    const existingPayment = {
+      ...payment({ status: PaymentStatus.AUTHORIZED }),
+      rawMeta: {
+        couponCode: 'WELCOME10',
+        couponId: 'coupon-1',
+        discountAmount: 30000,
+        originalAmount: 300000,
+      },
+    };
+    const { prisma, service } = createService({
+      existingPayment,
+      updatedPayment: payment({ status: PaymentStatus.AUTHORIZED }),
+    });
+    prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
+
+    await service.refreshAuthorizationForBooking('payment-1', 'booking-1');
+
+    expect(prisma.payment.update).toHaveBeenCalledWith({
+      where: { id: 'payment-1' },
+      data: expect.objectContaining({
+        providerRef: 'cash-booking-1',
+        rawMeta: expect.objectContaining({
+          couponCode: 'WELCOME10',
+          couponId: 'coupon-1',
+          discountAmount: 30000,
+          originalAmount: 300000,
+          providerRef: 'cash-booking-1',
+        }),
+      }),
+    });
+  });
 });
 
 describe('PaymentsService callbacks', () => {
@@ -42,12 +75,12 @@ describe('PaymentsService callbacks', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           rawMeta: expect.objectContaining({
-          callbackSignatureVerified: true,
-          callbackVerificationMode: 'cash-internal',
-          providerRef: 'cash-booking-1',
-          signature: '[REDACTED]',
-          vnp_SecureHash: '[REDACTED]',
-        }),
+            callbackSignatureVerified: true,
+            callbackVerificationMode: 'cash-internal',
+            providerRef: 'cash-booking-1',
+            signature: '[REDACTED]',
+            vnp_SecureHash: '[REDACTED]',
+          }),
           status: PaymentStatus.CAPTURED,
         }),
         where: { id: 'payment-1' },
@@ -229,7 +262,13 @@ function payment({ status }: { status: PaymentStatus }) {
 
 function cashAdapter() {
   return {
-    authorize: vi.fn(),
+    authorize: vi.fn(({ bookingId, amount }: { bookingId: string; amount: number }) => ({
+      amount,
+      method: PaymentMethod.CASH,
+      providerRef: `cash-${bookingId}`,
+      rawMeta: { providerRef: `cash-${bookingId}` },
+      status: PaymentStatus.AUTHORIZED,
+    })),
     checkStatus: vi.fn(),
     method: PaymentMethod.CASH,
     parseCallback: vi.fn((payload: unknown) => {

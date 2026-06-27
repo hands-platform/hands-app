@@ -1,5 +1,20 @@
 import Link from 'next/link';
-import { Briefcase, CalendarCheck, Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
+import {
+  Briefcase,
+  CalendarCheck,
+  Download,
+  Filter,
+  MessageSquare,
+  User,
+  Users,
+  Wrench,
+  X,
+} from 'lucide-react';
+import {
+  AdminChatWindow,
+  type AdminChatWindowMessage,
+  type AdminChatWindowMessageRole,
+} from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { MetricCard } from '../../components/metric-card';
@@ -96,16 +111,16 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     <div className="chat-archive-page">
       <section className="toolbar">
         <div>
-          <h1>Chat Archive</h1>
+          <h1>Chat Evidence Search</h1>
           <p className="muted">
-            Completed booking chats disappear from active mobile app flow, but the full admin archive remains
-            searchable by customer, Partner, booking, date, status, and sender role.
+            Audit-only search for retained booking chat evidence. Day-to-day review stays inside booking,
+            customer, and Partner detail pages; use this page when an operator needs cross-record evidence.
           </p>
         </div>
         <div className="actions">
-          <Link className="button button-secondary" href="/bookings?view=chat">
+          <Link className="button button-secondary" href="/audit-log?bucket=Booking">
             <MessageSquare aria-hidden="true" size={16} />
-            Booking chat handoff
+            Audit log
           </Link>
           <Link className="button button-secondary" href="/customers">
             <User aria-hidden="true" size={16} />
@@ -177,7 +192,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             </Link>
             <a className="button button-secondary" download="hands-chat-archive.csv" href={messageCsvHref}>
               <Download aria-hidden="true" size={16} />
-              Export messages CSV
+              Export evidence CSV
             </a>
             <span className="muted">
               {rooms.length} room(s), {summary.messageCount} message(s)
@@ -217,7 +232,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           <div>
             <h2>Chat integrity repair queue</h2>
             <p className="muted">
-              Matched and completed bookings should have an admin-retained chat archive. Use this queue to
+              Matched and completed bookings should have retained chat evidence. Use this audit queue to
               find missing rooms or rooms where no message has been stored yet.
             </p>
           </div>
@@ -323,10 +338,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
-            <h2>Chat archive index</h2>
+            <h2>Chat evidence index</h2>
             <p className="muted">
-              One row per booking chat room. Open booking, customer, or Partner detail for full operational
-              context.
+              One row per retained booking chat room. Open the chat window, booking, customer, or Partner
+              detail for full operational context before making an admin decision.
             </p>
           </div>
           <span className="pill pill-info">{rooms.length} row(s)</span>
@@ -377,6 +392,13 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <div className="actions">
                     <Link
                       className="button button-secondary chat-inline-action"
+                      href={`#${chatRoomDomId(room.roomId)}`}
+                    >
+                      <MessageSquare aria-hidden="true" size={14} />
+                      Chat
+                    </Link>
+                    <Link
+                      className="button button-secondary chat-inline-action"
                       href={`/bookings/${room.booking.id}#chat`}
                     >
                       <CalendarCheck aria-hidden="true" size={14} />
@@ -411,18 +433,23 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       <section className="card">
         <div className="ops-section-header">
           <div>
-            <h2>Message transcript preview</h2>
+            <h2>Full chat windows</h2>
             <p className="muted">
-              Recent room transcripts. This is an admin archive only; it does not reopen completed chats in
-              the mobile apps.
+              Click a room to open the complete retained chat window. This is an admin-only audit view and does not reopen completed
+              chats in the mobile apps.
             </p>
           </div>
           <span className="pill pill-info">Admin retained</span>
         </div>
         <div className="setup-stage-list admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
-            <article className="card chat-transcript-room" key={`${room.roomId}-messages`}>
-              <div className="ops-section-header">
+            <details
+              className="card chat-transcript-room admin-chat-transcript-disclosure"
+              id={chatRoomDomId(room.roomId)}
+              key={`${room.roomId}-messages`}
+              open={rooms.length === 1}
+            >
+              <summary className="admin-chat-transcript-summary">
                 <div>
                   <h3>
                     {room.customerName} / {room.partnerName}
@@ -431,34 +458,22 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     Booking {shortId(room.booking.id)} / {room.booking.status} / {room.serviceLabel}
                   </p>
                 </div>
-                <Link
-                  className="button button-secondary chat-inline-action"
-                  href={`/bookings/${room.booking.id}#chat`}
-                >
-                  <CalendarCheck aria-hidden="true" size={14} />
-                  Open booking
-                </Link>
-              </div>
-              <div className="admin-grid-gap-10 admin-mt-12 chat-transcript-messages">
-                {room.messages.length > 0 ? (
-                  room.messages.slice(-8).map((message) => (
-                    <ChatTranscriptMessage key={message.id} message={message} />
-                  ))
-                ) : (
-                  <p className="muted">Chat room exists, but no messages have been sent yet.</p>
-                )}
-              </div>
-            </article>
+                <span className="pill pill-info">{room.messages.length} message(s)</span>
+              </summary>
+              <AdminChatWindow
+                avatarLabel={room.customerName}
+                className="admin-mt-12"
+                messages={chatArchiveWindowMessages(room.messages)}
+                subtitle={`${room.partnerName} / ${room.serviceLabel}`}
+                title={room.customerName}
+              />
+            </details>
           ))}
         </div>
       </section>
     </div>
   );
 }
-
-type ChatTranscriptMessageProps = {
-  readonly message: AdminChatMessage;
-};
 
 type ChatArchivePersonCellProps = {
   readonly avatarStatus: AdminAvatarStatus;
@@ -485,19 +500,6 @@ function ChatArchivePersonCell({
       label={label}
       linkClassName="table-link"
     />
-  );
-}
-
-function ChatTranscriptMessage({ message }: ChatTranscriptMessageProps) {
-  const role = senderRole(message);
-  const roleClass = role === 'CUSTOMER' ? 'is-customer' : role === 'PROVIDER' ? 'is-partner' : 'is-system';
-
-  return (
-    <div className={`chat-transcript-bubble ${roleClass}`}>
-      <strong>{senderLabel(message)}</strong>
-      <p>{message.body}</p>
-      <small className="muted">{formatDate(message.createdAt)}</small>
-    </div>
   );
 }
 
@@ -712,7 +714,20 @@ function senderFilterMatch(message: AdminChatMessage, sender: string) {
   return true;
 }
 
-function senderRole(message: AdminChatMessage) {
+function chatArchiveWindowMessages(messages: readonly AdminChatMessage[]): AdminChatWindowMessage[] {
+  return messages.map((message) => {
+    const role = senderRole(message);
+    return {
+      body: message.body,
+      createdLabel: formatDate(message.createdAt),
+      id: message.id,
+      role,
+      senderLabel: senderLabel(message),
+    };
+  });
+}
+
+function senderRole(message: AdminChatMessage): AdminChatWindowMessageRole {
   const roles = message.sender?.roles ?? [];
   if (roles.includes('CUSTOMER')) return 'CUSTOMER';
   if (roles.includes('PROVIDER')) return 'PROVIDER';
@@ -775,6 +790,10 @@ function statusPillClass(status: string) {
 
 function readParam(value: string | string[] | undefined) {
   return readSearchParam(value);
+}
+
+function chatRoomDomId(roomId: string) {
+  return `chat-room-${roomId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 }
 
 function dateMs(value?: string | null) {

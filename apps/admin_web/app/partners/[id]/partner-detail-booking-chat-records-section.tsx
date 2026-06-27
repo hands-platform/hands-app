@@ -1,5 +1,9 @@
 import Link from 'next/link';
 
+import {
+  AdminChatWindow,
+  type AdminChatWindowMessage,
+} from '../../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
@@ -8,12 +12,7 @@ import {
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
-export type PartnerBookingChatMessageRow = {
-  readonly body: string;
-  readonly createdLabel: string;
-  readonly id: string;
-  readonly senderLabel: string;
-};
+export type PartnerBookingChatMessageRow = AdminChatWindowMessage;
 
 export type PartnerBookingChatRecordRow = {
   readonly bookingHref: string;
@@ -79,24 +78,24 @@ export function PartnerDetailBookingChatRecordsSection({
               <td>
                 <p className="muted">{row.chatLine}</p>
                 {row.hasChatRoom ? (
-                  <div className="ops-task-note admin-mt-10">
-                    <strong>Admin chat archive</strong>
-                    <p className="muted">
-                      Mobile chat hides after service completion. Admin keeps this booking transcript.
-                    </p>
-                    <div className="admin-grid-gap-8 admin-mt-10">
-                      {row.chatMessages.map((message) => (
-                        <div className="service-matrix-cell" key={message.id}>
-                          <strong>{message.senderLabel}</strong>
-                          <small>{message.createdLabel}</small>
-                          <p className="admin-m-0">{message.body}</p>
-                        </div>
-                      ))}
-                      {!row.chatMessages.length ? (
-                        <p className="muted">Chat room exists, but no message is stored yet.</p>
-                      ) : null}
-                    </div>
-                  </div>
+                  <details className="admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
+                    <summary className="admin-chat-transcript-summary">
+                      <div>
+                        <strong>Admin chat archive</strong>
+                        <p className="muted">
+                          Mobile chat hides after service completion. Admin keeps this booking transcript.
+                        </p>
+                      </div>
+                      <span className="pill pill-info">{row.chatMessages.length} message(s)</span>
+                    </summary>
+                    <AdminChatWindow
+                      avatarLabel={row.customerLine}
+                      emptyMessage="Chat room exists, but no message is stored yet."
+                      messages={row.chatMessages}
+                      subtitle={row.heading}
+                      title="Booking chat evidence"
+                    />
+                  </details>
                 ) : (
                   <div className="ops-task-note admin-mt-10">
                     <strong>Chat room missing</strong>

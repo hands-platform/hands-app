@@ -156,6 +156,15 @@ export const adminNotificationListSelect = {
   },
 } satisfies Prisma.NotificationSelect;
 
+export const adminNotificationBoardListSelect = {
+  ...adminNotificationListSelect,
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    take: 3,
+    select: adminNotificationDeliverySelect,
+  },
+} satisfies Prisma.NotificationSelect;
+
 export const adminUserListSessionSelect = {
   id: true,
   userId: true,

@@ -33,6 +33,11 @@ import {
   OPERATIONAL_POLICY_DEFINITIONS,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  DEFAULT_NOTIFICATION_TEMPLATES,
+  NOTIFICATION_TEMPLATE_LOCALES,
+  isNotificationTemplateLocale,
+} from '../notifications/notification-template-catalog';
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
@@ -131,6 +136,7 @@ import {
 import {
   adminAppSessionListSelect,
   adminAppSessionSummarySelect,
+  adminNotificationBoardListSelect,
   adminNotificationListSelect,
   adminPushDeviceSummarySelect,
   adminUserAuthSelect,
@@ -169,6 +175,7 @@ import {
   normalizeMarketingSourceFilter,
   withMarketingRates,
 } from './admin-marketing-analytics';
+import type { AdminPushCampaignDto, UpdateNotificationTemplateDto } from './admin.dto';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
@@ -191,6 +198,47 @@ const ADMIN_MARKETING_SPEND_LIMIT = 500;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
+const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 60;
+const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 100;
+const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;
+const ADMIN_PUSH_SEGMENT_ALL = 'all';
+const ADMIN_PUSH_CUSTOMER_SEGMENTS = new Set([
+  ADMIN_PUSH_SEGMENT_ALL,
+  'customer_completed_last_7_days',
+  'customer_completed_inactive_30_days',
+  'customer_never_booked',
+  'customer_active_last_3_days_no_booking',
+  'customer_referral_parents',
+]);
+const ADMIN_PUSH_PROVIDER_SEGMENTS = new Set([
+  ADMIN_PUSH_SEGMENT_ALL,
+  'provider_completed_booking',
+  'provider_referral_parents',
+  'provider_inactive_last_7_days',
+]);
+const ADMIN_PUSH_DEFAULT_DESTINATION = 'notificationCenter';
+const ADMIN_PUSH_CUSTOMER_DESTINATIONS = new Set([
+  ADMIN_PUSH_DEFAULT_DESTINATION,
+  'booking',
+  'chat',
+  'providerProfile',
+  'profile',
+]);
+const ADMIN_PUSH_PROVIDER_DESTINATIONS = new Set([
+  ADMIN_PUSH_DEFAULT_DESTINATION,
+  'booking',
+  'jobs',
+  'earnings',
+  'chat',
+  'providerProfile',
+  'profile',
+]);
+const ADMIN_PUSH_SEGMENT_WINDOWS = {
+  customerCompletedRecentMs: 7 * 24 * 60 * 60 * 1000,
+  customerInactiveMs: 30 * 24 * 60 * 60 * 1000,
+  customerActiveNoBookingMs: 3 * 24 * 60 * 60 * 1000,
+  providerInactiveMs: 7 * 24 * 60 * 60 * 1000,
+};
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 100;
@@ -366,7 +414,9 @@ type AdminReferralPolicyRecord = {
   updatedAt: Date;
 };
 
-type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{ select: typeof adminReferralRewardSelect }>;
+type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{
+  select: typeof adminReferralRewardSelect;
+}>;
 
 type AdminReferralRewardLatestDecision = {
   action: string;
@@ -837,15 +887,23 @@ export class AdminService {
 
     const enabled = input.enabled ?? false;
     const commissionPercentBps =
-      rewardMode === ReferralRewardMode.COMMISSION_PERCENT ? input.commissionPercentBps ?? 0 : null;
+      rewardMode === ReferralRewardMode.COMMISSION_PERCENT ? (input.commissionPercentBps ?? 0) : null;
     const fixedRewardAmount =
-      rewardMode === ReferralRewardMode.FIXED_AMOUNT ? input.fixedRewardAmount ?? 0 : null;
+      rewardMode === ReferralRewardMode.FIXED_AMOUNT ? (input.fixedRewardAmount ?? 0) : null;
 
-    if (enabled && rewardMode === ReferralRewardMode.COMMISSION_PERCENT && Number(commissionPercentBps) <= 0) {
-      throw new BadRequestException('Customer referral commission percent must be greater than zero when enabled');
+    if (
+      enabled &&
+      rewardMode === ReferralRewardMode.COMMISSION_PERCENT &&
+      Number(commissionPercentBps) <= 0
+    ) {
+      throw new BadRequestException(
+        'Customer referral commission percent must be greater than zero when enabled',
+      );
     }
     if (enabled && rewardMode === ReferralRewardMode.FIXED_AMOUNT && Number(fixedRewardAmount) <= 0) {
-      throw new BadRequestException('Partner referral fixed reward amount must be greater than zero when enabled');
+      throw new BadRequestException(
+        'Partner referral fixed reward amount must be greater than zero when enabled',
+      );
     }
 
     const previous = await this.prisma.referralPolicy.findUnique({ where: { audience } });
@@ -1031,10 +1089,7 @@ export class AdminService {
 
   async getVietnamOverview(rangeInput?: string) {
     const now = new Date();
-    const window = adminVietnamOverviewRangeWindow(
-      normalizeAdminVietnamOverviewRange(rangeInput),
-      now,
-    );
+    const window = adminVietnamOverviewRangeWindow(normalizeAdminVietnamOverviewRange(rangeInput), now);
     const dateWhere = adminVietnamOverviewDateWhere(window);
     const bookingWhere: Prisma.BookingWhereInput = dateWhere
       ? {
@@ -1174,11 +1229,7 @@ export class AdminService {
       const region = ensureVietnamOverviewRegion(
         regions,
         vietnamRegionCodeFromValues(
-          [
-            selectedLocation?.addressText,
-            customer.addresses,
-            customer.user.appSessions[0]?.lastLoginAddress,
-          ],
+          [selectedLocation?.addressText, customer.addresses, customer.user.appSessions[0]?.lastLoginAddress],
           {
             latitude: selectedLocation?.latitude,
             longitude: selectedLocation?.longitude,
@@ -1210,17 +1261,10 @@ export class AdminService {
     for (const provider of providers) {
       const region = ensureVietnamOverviewRegion(
         regions,
-        vietnamRegionCodeFromValues(
-          [
-            provider.city,
-            provider.residentialAddress,
-            provider.serviceArea,
-          ],
-          {
-            latitude: provider.currentLat,
-            longitude: provider.currentLng,
-          },
-        ),
+        vietnamRegionCodeFromValues([provider.city, provider.residentialAddress, provider.serviceArea], {
+          latitude: provider.currentLat,
+          longitude: provider.currentLng,
+        }),
       );
       region.partnerCount += 1;
 
@@ -1253,11 +1297,7 @@ export class AdminService {
       const region = ensureVietnamOverviewRegion(
         regions,
         vietnamRegionCodeFromValues(
-          [
-            booking.addressSnapshot?.addressText,
-            booking.address,
-            booking.addressSnapshot?.address,
-          ],
+          [booking.addressSnapshot?.addressText, booking.address, booking.addressSnapshot?.address],
           {
             latitude: bookingAddressLatitude,
             longitude: bookingAddressLongitude,
@@ -1292,13 +1332,10 @@ export class AdminService {
       const activeBookingLongitude = booking.addressSnapshot?.longitude ?? booking.lng;
       const region = ensureVietnamOverviewRegion(
         regions,
-        vietnamRegionCodeFromValues(
-          [activeBookingAddressText],
-          {
-            latitude: activeBookingLatitude,
-            longitude: activeBookingLongitude,
-          },
-        ),
+        vietnamRegionCodeFromValues([activeBookingAddressText], {
+          latitude: activeBookingLatitude,
+          longitude: activeBookingLongitude,
+        }),
       );
       const activeBookingPoint = vietnamOverviewEventPoint({
         id: `booking:${booking.id}:active`,
@@ -1575,7 +1612,11 @@ export class AdminService {
           customerSessionCount: 1,
         })),
         ...regionBookingRequestRows.map((booking) => ({
-          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          regionValues: [
+            booking.addressSnapshot?.addressText,
+            booking.addressSnapshot?.address,
+            booking.address,
+          ],
           coordinates: {
             latitude: booking.addressSnapshot?.latitude ?? booking.lat,
             longitude: booking.addressSnapshot?.longitude ?? booking.lng,
@@ -1583,7 +1624,11 @@ export class AdminService {
           bookingRequestCount: 1,
         })),
         ...regionCompletedBookingRows.map((booking) => ({
-          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          regionValues: [
+            booking.addressSnapshot?.addressText,
+            booking.addressSnapshot?.address,
+            booking.address,
+          ],
           coordinates: {
             latitude: booking.addressSnapshot?.latitude ?? booking.lat,
             longitude: booking.addressSnapshot?.longitude ?? booking.lng,
@@ -1613,7 +1658,7 @@ export class AdminService {
               index,
               providerMap,
             ),
-        ),
+          ),
         completedPartners: completedPartnerRows
           .filter((row) => Boolean(row.selectedProviderId))
           .map((row, index) =>
@@ -1630,23 +1675,24 @@ export class AdminService {
     };
   }
 
-  async getMarketingOverview(query: {
-    range?: string;
-    source?: string;
-    platform?: string;
-    regionCode?: string;
-    campaignId?: string;
-  } = {}) {
+  async getMarketingOverview(
+    query: {
+      range?: string;
+      source?: string;
+      platform?: string;
+      regionCode?: string;
+      campaignId?: string;
+    } = {},
+  ) {
     const window = adminMarketingRangeWindow(normalizeAdminMarketingRange(query.range));
     const dateWhere = adminMarketingDateWhere(window);
     const sourceFilter = normalizeMarketingSourceFilter(query.source);
     const platformFilter = normalizeMarketingPlatformFilter(query.platform);
     const regionCodeFilter = query.regionCode
-      ? VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === query.regionCode)?.code ?? null
+      ? (VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === query.regionCode)?.code ?? null)
       : null;
-    const campaignIdFilter = typeof query.campaignId === 'string' && query.campaignId.trim()
-      ? query.campaignId.trim()
-      : null;
+    const campaignIdFilter =
+      typeof query.campaignId === 'string' && query.campaignId.trim() ? query.campaignId.trim() : null;
     const filters: AdminMarketingFilters = {
       source: sourceFilter,
       platform: platformFilter,
@@ -1869,7 +1915,8 @@ export class AdminService {
       adSpend: manualAdSpend,
     };
     const referralRewardCount = referralCampaignRows.reduce(
-      (total, row) => total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
+      (total, row) =>
+        total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
       0,
     );
     const referralRewardAmount = referralCampaignRows.reduce(
@@ -1925,7 +1972,11 @@ export class AdminService {
           stats: { addressSaves: 1 },
         })),
         ...regionBookingCreatedRows.map((booking) => ({
-          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          regionValues: [
+            booking.addressSnapshot?.addressText,
+            booking.addressSnapshot?.address,
+            booking.address,
+          ],
           coordinates: {
             latitude: booking.addressSnapshot?.latitude ?? booking.lat,
             longitude: booking.addressSnapshot?.longitude ?? booking.lng,
@@ -1933,7 +1984,11 @@ export class AdminService {
           stats: { bookingCreated: 1 },
         })),
         ...regionBookingCompletedRows.map((booking) => ({
-          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          regionValues: [
+            booking.addressSnapshot?.addressText,
+            booking.addressSnapshot?.address,
+            booking.address,
+          ],
           coordinates: {
             latitude: booking.addressSnapshot?.latitude ?? booking.lat,
             longitude: booking.addressSnapshot?.longitude ?? booking.lng,
@@ -1941,7 +1996,11 @@ export class AdminService {
           stats: { bookingCompleted: 1 },
         })),
         ...regionBookingCancelledRows.map((booking) => ({
-          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          regionValues: [
+            booking.addressSnapshot?.addressText,
+            booking.addressSnapshot?.address,
+            booking.address,
+          ],
           coordinates: {
             latitude: booking.addressSnapshot?.latitude ?? booking.lat,
             longitude: booking.addressSnapshot?.longitude ?? booking.lng,
@@ -2826,10 +2885,12 @@ export class AdminService {
       take: adminBookingListLimit(query.take),
       select: adminBookingListSelect,
     });
-    return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings)).map((booking) => ({
-      ...booking,
-      metadata: adminBookingListMetadataPayload(booking.metadata),
-    }));
+    return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings)).map(
+      (booking) => ({
+        ...booking,
+        metadata: adminBookingListMetadataPayload(booking.metadata),
+      }),
+    );
   }
 
   listChatArchive() {
@@ -2972,11 +3033,7 @@ export class AdminService {
     );
     const pin = adminBookingMarketplacePin(booking);
     const bounds = pin
-      ? adminBookingMarketplaceBounds(
-          pin.lat,
-          pin.lng,
-          ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS,
-        )
+      ? adminBookingMarketplaceBounds(pin.lat, pin.lng, ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS)
       : null;
 
     const relatedProvidersPromise =
@@ -3618,6 +3675,7 @@ export class AdminService {
     input: {
       serviceGroupKey?: string;
       name?: string;
+      nameTranslations?: unknown;
       description?: string | null;
       durationMin?: number;
       basePrice?: number;
@@ -3653,6 +3711,7 @@ export class AdminService {
     input: {
       serviceGroupKey?: string;
       name?: string;
+      nameTranslations?: unknown;
       description?: string | null;
       priceStep?: number;
       displayOrder?: number;
@@ -3688,6 +3747,7 @@ export class AdminService {
           {
             serviceGroupKey: groupKey,
             name,
+            nameTranslations: input.nameTranslations,
             description: input.description,
             durationMin: row.durationMin,
             basePrice: row.basePrice,
@@ -3750,6 +3810,7 @@ export class AdminService {
     input: {
       serviceGroupKey?: string | null;
       name?: string;
+      nameTranslations?: unknown;
       description?: string | null;
       durationMin?: number;
       basePrice?: number;
@@ -4133,10 +4194,96 @@ export class AdminService {
     });
   }
 
-  listCoupons() {
-    return this.prisma.coupon.findMany({
+  async listCoupons() {
+    const coupons = await this.prisma.coupon.findMany({
       orderBy: { code: 'asc' },
       take: 100,
+    });
+    const recentUsageBookings = await this.recentCouponUsageBookings();
+    const couponsByCode = new Map(coupons.map((coupon) => [coupon.code.toUpperCase(), coupon.id]));
+    const usageByCouponId = new Map<string, ReturnType<typeof couponUsageBookingView>[]>();
+
+    for (const booking of recentUsageBookings) {
+      const metadata = recordFromJsonValue(booking.payment?.rawMeta ?? null);
+      const couponId = stringFromRecord(metadata, 'couponId');
+      const couponCode = stringFromRecord(metadata, 'couponCode')?.toUpperCase();
+      const resolvedCouponId = couponId ?? (couponCode ? couponsByCode.get(couponCode) : null);
+      if (!resolvedCouponId) {
+        continue;
+      }
+
+      const usage = usageByCouponId.get(resolvedCouponId) ?? [];
+      if (usage.length < 20) {
+        usage.push(couponUsageBookingView(booking));
+      }
+      usageByCouponId.set(resolvedCouponId, usage);
+    }
+
+    return coupons.map((coupon) => ({
+      ...coupon,
+      usageBookings: usageByCouponId.get(coupon.id) ?? [],
+    }));
+  }
+
+  private recentCouponUsageBookings() {
+    return this.prisma.booking.findMany({
+      where: {
+        payment: {
+          isNot: null,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        scheduledStartAt: true,
+        closedAt: true,
+        customerProfile: {
+          select: {
+            user: {
+              select: {
+                email: true,
+                fullName: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        payment: {
+          select: {
+            amount: true,
+            currency: true,
+            method: true,
+            rawMeta: true,
+            status: true,
+          },
+        },
+        selectedProvider: {
+          select: {
+            displayName: true,
+            user: {
+              select: {
+                fullName: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        services: {
+          select: {
+            price: true,
+            service: {
+              select: {
+                durationMin: true,
+                name: true,
+              },
+            },
+          },
+          take: 1,
+        },
+      },
     });
   }
 
@@ -4190,6 +4337,15 @@ export class AdminService {
 
     await this.writeAudit(actorId, 'coupon.update', `coupon:${coupon.id}`, { active: coupon.active });
     return coupon;
+  }
+
+  async deleteCoupon(actorId: string, id: string) {
+    const coupon = await this.prisma.coupon.delete({
+      where: { id },
+    });
+
+    await this.writeAudit(actorId, 'coupon.delete', `coupon:${coupon.id}`, { code: coupon.code });
+    return { ok: true, couponId: coupon.id };
   }
 
   listAuditLogs(options: AdminAuditLogListOptions = {}) {
@@ -4362,12 +4518,206 @@ export class AdminService {
     return typeof value === 'string';
   }
 
-  listNotifications() {
-    return this.prisma.notification.findMany({
+  listNotifications(options: { readonly from?: string; readonly take?: string; readonly to?: string } = {}) {
+    const where = notificationBoardDateWhere(options);
+    const args: Prisma.NotificationFindManyArgs = {
       orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: adminNotificationListSelect,
+      take: normalizeNotificationBoardTake(options.take),
+      select: adminNotificationBoardListSelect,
+    };
+    if (where) {
+      args.where = where;
+    }
+    return this.prisma.notification.findMany(args);
+  }
+
+  async listNotificationTemplates() {
+    await this.ensureDefaultNotificationTemplates();
+
+    return this.prisma.notificationTemplate.findMany({
+      orderBy: [{ audience: 'asc' }, { key: 'asc' }],
+      include: {
+        translations: { orderBy: { locale: 'asc' } },
+      },
     });
+  }
+
+  async updateNotificationTemplate(actorId: string, key: string, input: UpdateNotificationTemplateDto) {
+    const templateKey = normalizeNotificationTemplateKey(key);
+    const locale = normalizeNotificationTemplateLocale(input.locale);
+    await this.ensureDefaultNotificationTemplates();
+
+    const template = await this.prisma.notificationTemplate.findUnique({
+      where: { key: templateKey },
+      select: { id: true, key: true },
+    });
+    if (!template) {
+      throw new NotFoundException('Notification template was not found');
+    }
+
+    const [updatedTemplate] = await this.prisma.$transaction([
+      this.prisma.notificationTemplate.update({
+        where: { id: template.id },
+        data: typeof input.enabled === 'boolean' ? { enabled: input.enabled } : {},
+        include: { translations: { orderBy: { locale: 'asc' } } },
+      }),
+      this.prisma.notificationTemplateTranslation.upsert({
+        where: { templateId_locale: { templateId: template.id, locale } },
+        create: {
+          templateId: template.id,
+          locale,
+          title: input.title,
+          body: input.body,
+        },
+        update: {
+          title: input.title,
+          body: input.body,
+        },
+      }),
+      this.writeAudit(actorId, 'notification_template.update', `notification_template:${template.key}`, {
+        key: template.key,
+        locale,
+        enabled: input.enabled,
+      }),
+    ]);
+
+    return updatedTemplate;
+  }
+
+  listAdminPushCampaigns() {
+    return this.prisma.adminPushCampaign.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        recipients: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+      },
+    });
+  }
+
+  async previewAdminPushCampaign(input: AdminPushCampaignDto) {
+    const targetRole = normalizeAdminPushTargetRole(input.targetRole);
+    const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);
+    const appDestination = normalizeAdminPushAppDestination(targetRole, input.appDestination);
+    const where = adminPushRecipientWhere(targetRole, input.targetUserId, targetSegment);
+    const [recipientCount, sampleRecipients] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          phone: true,
+          fullName: true,
+          roles: true,
+          customerProfile: { select: { id: true } },
+          providerProfile: { select: { id: true, displayName: true, status: true } },
+          pushDevices: {
+            where: { role: targetRole, enabled: true },
+            orderBy: { updatedAt: 'desc' },
+            take: 1,
+            select: { id: true, platform: true, role: true, updatedAt: true },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      targetRole,
+      targetUserId: normalizeNullable(input.targetUserId),
+      targetSegment,
+      appDestination,
+      recipientCount,
+      sendLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+      willSendCount: Math.min(recipientCount, ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT),
+      capped: recipientCount > ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+      sampleRecipients,
+    };
+  }
+
+  async createAdminPushCampaign(actorId: string, input: AdminPushCampaignDto) {
+    const targetRole = normalizeAdminPushTargetRole(input.targetRole);
+    const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);
+    const appDestination = normalizeAdminPushAppDestination(targetRole, input.appDestination);
+    const where = adminPushRecipientWhere(targetRole, input.targetUserId, targetSegment);
+    const recipients = await this.prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+      select: { id: true },
+    });
+
+    if (recipients.length === 0) {
+      throw new BadRequestException('No active push recipients were found for this target');
+    }
+
+    const campaign = await this.prisma.adminPushCampaign.create({
+      data: {
+        targetRole,
+        targetUserId: normalizeNullable(input.targetUserId),
+        locale: normalizeNullable(input.locale),
+        title: input.title,
+        body: input.body,
+        createdById: actorId,
+        recipientCount: recipients.length,
+        metadata: toJson({
+          source: 'admin_manual_push',
+          sendLimit: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,
+          targetSegment,
+          appDestination,
+        }),
+        sentAt: new Date(),
+      },
+    });
+
+    let notificationCount = 0;
+    for (const recipient of recipients) {
+      const notification = await this.notifications.create({
+        userId: recipient.id,
+        targetRole,
+        type: 'admin.push.broadcast',
+        resolveTemplate: false,
+        title: input.title,
+        body: input.body,
+        data: {
+          campaignId: campaign.id,
+          source: 'admin_manual_push',
+          targetSegment,
+          destination: appDestination,
+        },
+      });
+      notificationCount += 1;
+
+      await this.prisma.adminPushCampaignRecipient.create({
+        data: {
+          campaignId: campaign.id,
+          userId: recipient.id,
+          notificationId: notification.id,
+          status: 'QUEUED',
+        },
+      });
+    }
+
+    const updatedCampaign = await this.prisma.adminPushCampaign.update({
+      where: { id: campaign.id },
+      data: { notificationCount },
+      include: { recipients: { orderBy: { createdAt: 'desc' }, take: 5 } },
+    });
+
+    await this.writeAudit(actorId, 'admin_push_campaign.create', `admin_push_campaign:${campaign.id}`, {
+      campaignId: campaign.id,
+      targetRole,
+      targetUserId: normalizeNullable(input.targetUserId),
+      targetSegment,
+      appDestination,
+      recipientCount: recipients.length,
+      notificationCount,
+    });
+
+    return updatedCampaign;
   }
 
   async retryNotification(actorId: string, notificationId: string) {
@@ -4379,6 +4729,39 @@ export class AdminService {
       notificationRetryAuditMetadata(notificationId, result),
     );
     return result;
+  }
+
+  private async ensureDefaultNotificationTemplates() {
+    for (const template of DEFAULT_NOTIFICATION_TEMPLATES) {
+      const row = await this.prisma.notificationTemplate.upsert({
+        where: { key: template.key },
+        create: {
+          key: template.key,
+          audience: template.audience,
+          channel: template.channel,
+          description: template.description,
+          variables: toJson(template.variables),
+          enabled: true,
+        },
+        update: {
+          audience: template.audience,
+          channel: template.channel,
+          description: template.description,
+          variables: toJson(template.variables),
+        },
+        select: { id: true },
+      });
+
+      await this.prisma.notificationTemplateTranslation.createMany({
+        data: NOTIFICATION_TEMPLATE_LOCALES.map((locale) => ({
+          templateId: row.id,
+          locale,
+          title: template.title,
+          body: template.body,
+        })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   writeAudit(actorId: string, action: string, target: string, metadata?: Prisma.InputJsonValue) {
@@ -4832,8 +5215,14 @@ function normalizeMarketingSpendPlatform(value: unknown) {
   return platform;
 }
 
-function normalizeMarketingSpendRegionCode(value: unknown, options: { allowAll: true }): VietnamRegionCode | null;
-function normalizeMarketingSpendRegionCode(value?: unknown, options?: { allowAll?: false }): VietnamRegionCode | 'all';
+function normalizeMarketingSpendRegionCode(
+  value: unknown,
+  options: { allowAll: true },
+): VietnamRegionCode | null;
+function normalizeMarketingSpendRegionCode(
+  value?: unknown,
+  options?: { allowAll?: false },
+): VietnamRegionCode | 'all';
 function normalizeMarketingSpendRegionCode(
   value: unknown,
   options: { allowAll?: boolean } = {},
@@ -4886,10 +5275,7 @@ function normalizeMarketingSpendAmount(value: unknown) {
   return amount;
 }
 
-function ensureVietnamOverviewRegion(
-  regions: Map<string, AdminVietnamOverviewRegion>,
-  regionCode: string,
-) {
+function ensureVietnamOverviewRegion(regions: Map<string, AdminVietnamOverviewRegion>, regionCode: string) {
   const region = regions.get(regionCode) ?? regions.get('other-vietnam');
   if (region) return region;
 
@@ -4924,11 +5310,12 @@ function vietnamOverviewEventPoint<TKind extends AdminVietnamOverviewPointKind>(
 }): (AdminVietnamOverviewPoint & { kind: TKind }) | null {
   const latitude = coordinateValue(input.latitude);
   const longitude = coordinateValue(input.longitude);
-  const occurredAt = input.occurredAt instanceof Date
-    ? input.occurredAt
-    : input.occurredAt
-      ? new Date(input.occurredAt)
-      : null;
+  const occurredAt =
+    input.occurredAt instanceof Date
+      ? input.occurredAt
+      : input.occurredAt
+        ? new Date(input.occurredAt)
+        : null;
 
   if (
     latitude === null ||
@@ -5138,11 +5525,15 @@ function adminReferralRewardView(
 }
 
 function adminCustomerReferralRewardIds(rows: readonly AdminCustomerReferralParent[]) {
-  return uniqueReferralRewardIds(rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)));
+  return uniqueReferralRewardIds(
+    rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)),
+  );
 }
 
 function adminPartnerReferralRewardIds(rows: readonly AdminPartnerReferralParent[]) {
-  return uniqueReferralRewardIds(rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)));
+  return uniqueReferralRewardIds(
+    rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)),
+  );
 }
 
 function uniqueReferralRewardIds(rewards: readonly AdminReferralRewardSummary[]) {
@@ -5177,9 +5568,85 @@ function recordFromJsonValue(value: Prisma.JsonValue | null) {
   return {};
 }
 
+function couponUsageBookingView(booking: {
+  closedAt: Date | null;
+  createdAt: Date;
+  customerProfile: {
+    user: {
+      email: string | null;
+      fullName: string | null;
+      phone: string;
+    };
+  };
+  id: string;
+  payment: {
+    amount: number;
+    currency: string;
+    method: unknown;
+    rawMeta: Prisma.JsonValue | null;
+    status: PaymentStatus;
+  } | null;
+  scheduledStartAt: Date;
+  selectedProvider: {
+    displayName: string;
+    user: {
+      fullName: string | null;
+      phone: string;
+    };
+  } | null;
+  services: Array<{
+    price: number;
+    service: {
+      durationMin: number;
+      name: string;
+    };
+  }>;
+  status: BookingStatus;
+}) {
+  const metadata = recordFromJsonValue(booking.payment?.rawMeta ?? null);
+  const service = booking.services[0];
+  const customerUser = booking.customerProfile.user;
+
+  return {
+    amount: booking.payment?.amount ?? null,
+    bookingId: booking.id,
+    closedAt: booking.closedAt,
+    couponCode: stringFromRecord(metadata, 'couponCode'),
+    currency: booking.payment?.currency ?? 'VND',
+    customerName: customerUser.fullName ?? customerUser.phone ?? customerUser.email ?? 'Unknown customer',
+    customerPhone: customerUser.phone,
+    discountAmount: numberFromRecord(metadata, 'discountAmount'),
+    originalAmount: numberFromRecord(metadata, 'originalAmount'),
+    partnerName:
+      booking.selectedProvider?.displayName ??
+      booking.selectedProvider?.user.fullName ??
+      booking.selectedProvider?.user.phone ??
+      null,
+    paymentMethod: booking.payment?.method ?? null,
+    paymentStatus: booking.payment?.status ?? null,
+    requestTime: booking.createdAt,
+    scheduledStartAt: booking.scheduledStartAt,
+    serviceName: service ? `${service.service.name} / ${service.service.durationMin} min` : null,
+    servicePrice: service?.price ?? null,
+    status: booking.status,
+  };
+}
+
 function stringFromRecord(record: Record<string, unknown>, key: string) {
   const value = record[key];
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function numberFromRecord(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function adminReferralRewardTotals(referralCount: number, rewards: AdminReferralRewardSummary[]) {
@@ -5213,7 +5680,10 @@ function sumReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], statu
 }
 
 function adminBookingMarketplacePin(booking: {
-  addressSnapshot?: { latitude: Prisma.Decimal | number | string; longitude: Prisma.Decimal | number | string } | null;
+  addressSnapshot?: {
+    latitude: Prisma.Decimal | number | string;
+    longitude: Prisma.Decimal | number | string;
+  } | null;
   lat: Prisma.Decimal | number | string;
   lng: Prisma.Decimal | number | string;
 }) {
@@ -5246,6 +5716,252 @@ function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketpla
     seen.add(provider.id);
     return true;
   });
+}
+
+function normalizeNotificationBoardTake(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT;
+  }
+  return Math.min(parsed, ADMIN_NOTIFICATION_BOARD_MAX_LIMIT);
+}
+
+function notificationBoardDateWhere(options: {
+  readonly from?: string;
+  readonly to?: string;
+}): Prisma.NotificationWhereInput | undefined {
+  const from = normalizeNotificationDateBoundary(options.from, 'from');
+  const to = normalizeNotificationDateBoundary(options.to, 'to');
+  if (!from && !to) {
+    return undefined;
+  }
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Notification date range is invalid');
+  }
+
+  return {
+    createdAt: {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lt: to } : {}),
+    },
+  };
+}
+
+function normalizeNotificationDateBoundary(value: string | undefined, field: string) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return undefined;
+  }
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) {
+    throw new BadRequestException(`Notification ${field} date is invalid`);
+  }
+  return new Date(timestamp);
+}
+
+function normalizeNotificationTemplateKey(value: string) {
+  const key = normalizeNullable(value);
+  if (!key || !/^[a-z0-9_.-]+$/i.test(key)) {
+    throw new BadRequestException('Unsupported notification template key');
+  }
+  return key;
+}
+
+function normalizeNotificationTemplateLocale(value: string) {
+  const locale = normalizeNullable(value);
+  if (!locale || !isNotificationTemplateLocale(locale)) {
+    throw new BadRequestException('Unsupported notification locale');
+  }
+  return locale;
+}
+
+function normalizeAdminPushTargetRole(value: Role) {
+  if (value === Role.CUSTOMER || value === Role.PROVIDER) {
+    return value;
+  }
+  throw new BadRequestException('Manual push target role must be CUSTOMER or PROVIDER');
+}
+
+function normalizeAdminPushTargetSegment(targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>, value?: string) {
+  const segment = normalizeNullable(value) ?? ADMIN_PUSH_SEGMENT_ALL;
+  const allowedSegments =
+    targetRole === Role.PROVIDER ? ADMIN_PUSH_PROVIDER_SEGMENTS : ADMIN_PUSH_CUSTOMER_SEGMENTS;
+  if (allowedSegments.has(segment)) {
+    return segment;
+  }
+  throw new BadRequestException(`Unsupported manual push target segment for ${targetRole}`);
+}
+
+function normalizeAdminPushAppDestination(
+  targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
+  value?: string,
+) {
+  const destination = normalizeNullable(value) ?? ADMIN_PUSH_DEFAULT_DESTINATION;
+  const allowedDestinations =
+    targetRole === Role.PROVIDER ? ADMIN_PUSH_PROVIDER_DESTINATIONS : ADMIN_PUSH_CUSTOMER_DESTINATIONS;
+  if (allowedDestinations.has(destination)) {
+    return destination;
+  }
+  throw new BadRequestException(`Unsupported manual push app destination for ${targetRole}`);
+}
+
+function adminPushRecipientWhere(
+  targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
+  targetUserId?: string,
+  targetSegment = ADMIN_PUSH_SEGMENT_ALL,
+  now = new Date(),
+): Prisma.UserWhereInput {
+  const normalizedTargetUserId = normalizeNullable(targetUserId);
+  const baseWhere: Prisma.UserWhereInput = {
+    ...(normalizedTargetUserId ? { id: normalizedTargetUserId } : {}),
+    roles: { has: targetRole },
+    pushDevices: {
+      some: {
+        enabled: true,
+        role: targetRole,
+      },
+    },
+  };
+  const segmentWhere = adminPushSegmentWhere(targetRole, targetSegment, now);
+  return Object.keys(segmentWhere).length ? { AND: [baseWhere, segmentWhere] } : baseWhere;
+}
+
+function adminPushSegmentWhere(
+  targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>,
+  targetSegment: string,
+  now: Date,
+): Prisma.UserWhereInput {
+  if (targetSegment === ADMIN_PUSH_SEGMENT_ALL) {
+    return {};
+  }
+
+  if (targetRole === Role.CUSTOMER) {
+    return adminPushCustomerSegmentWhere(targetSegment, now);
+  }
+  return adminPushProviderSegmentWhere(targetSegment, now);
+}
+
+function adminPushCustomerSegmentWhere(targetSegment: string, now: Date): Prisma.UserWhereInput {
+  const since7Days = new Date(now.getTime() - ADMIN_PUSH_SEGMENT_WINDOWS.customerCompletedRecentMs);
+  const since30Days = new Date(now.getTime() - ADMIN_PUSH_SEGMENT_WINDOWS.customerInactiveMs);
+  const since3Days = new Date(now.getTime() - ADMIN_PUSH_SEGMENT_WINDOWS.customerActiveNoBookingMs);
+
+  if (targetSegment === 'customer_completed_last_7_days') {
+    return {
+      customerProfile: {
+        is: {
+          bookings: { some: completedBookingWhere(since7Days) },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'customer_completed_inactive_30_days') {
+    return {
+      customerProfile: {
+        is: {
+          bookings: { some: completedBookingWhere() },
+        },
+      },
+      appSessions: {
+        none: {
+          role: Role.CUSTOMER,
+          lastSeenAt: { gte: since30Days },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'customer_never_booked') {
+    return {
+      customerProfile: {
+        is: {
+          bookings: { none: {} },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'customer_active_last_3_days_no_booking') {
+    return {
+      customerProfile: {
+        is: {
+          bookings: { none: {} },
+        },
+      },
+      appSessions: {
+        some: {
+          role: Role.CUSTOMER,
+          lastSeenAt: { gte: since3Days },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'customer_referral_parents') {
+    return {
+      customerProfile: {
+        is: {
+          referralsMade: { some: { audience: ReferralAudience.CUSTOMER } },
+        },
+      },
+    };
+  }
+
+  throw new BadRequestException('Unsupported customer push segment');
+}
+
+function adminPushProviderSegmentWhere(targetSegment: string, now: Date): Prisma.UserWhereInput {
+  const since7Days = new Date(now.getTime() - ADMIN_PUSH_SEGMENT_WINDOWS.providerInactiveMs);
+
+  if (targetSegment === 'provider_completed_booking') {
+    return {
+      providerProfile: {
+        is: {
+          selectedBookings: { some: completedBookingWhere() },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'provider_referral_parents') {
+    return {
+      providerProfile: {
+        is: {
+          referralsMade: { some: { audience: ReferralAudience.PARTNER } },
+        },
+      },
+    };
+  }
+
+  if (targetSegment === 'provider_inactive_last_7_days') {
+    return {
+      appSessions: {
+        none: {
+          role: Role.PROVIDER,
+          lastSeenAt: { gte: since7Days },
+        },
+      },
+    };
+  }
+
+  throw new BadRequestException('Unsupported partner push segment');
+}
+
+function completedBookingWhere(since?: Date): Prisma.BookingWhereInput {
+  if (!since) {
+    return { status: BookingStatus.COMPLETED };
+  }
+  return {
+    status: BookingStatus.COMPLETED,
+    OR: [
+      { closedAt: { gte: since } },
+      {
+        closedAt: null,
+        updatedAt: { gte: since },
+      },
+    ],
+  };
 }
 
 async function ensureServiceDurationIsUnique(

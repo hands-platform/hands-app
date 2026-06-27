@@ -1,5 +1,6 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import {
+  buildNotificationApiHref,
   buildNotificationChannelSummary,
   buildNotificationDeliveryStats,
   buildNotificationDeliveryOpsQueue,
@@ -16,6 +17,8 @@ import {
   isStalePushDeviceDelivery,
   notificationFilterDescription,
   notificationFilterLinks,
+  notificationDateRangeLabel,
+  notificationDateRangeLinks,
   notificationReviewRunbook,
   sortNotifications,
 } from './notification-page-model';
@@ -881,11 +884,7 @@ describe('notification page model', () => {
       partnerLabel: 'Partner Mai',
       typeLabel: 'Booking Marketplace Available',
     });
-    expect(rows[0]?.actions.map((action) => action.label)).toEqual([
-      'Open booking',
-      'Audit trail',
-      'Retry',
-    ]);
+    expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Audit trail', 'Retry']);
     expect(rows[0]?.actions.find((action) => action.label === 'Audit trail')).toMatchObject({
       href: '/audit-log?bucket=Notification&q=notification-row&range=all',
     });
@@ -1146,15 +1145,34 @@ describe('notification page model', () => {
   it('keeps review descriptions and empty table messages stable', () => {
     expect(buildNotificationFilters({ booking: 'booking-1', review: 'failed' })).toEqual({
       booking: 'booking-1',
+      range: 'today',
       review: 'failed',
     });
-    expect(buildNotificationListHref({ booking: 'booking-1', review: 'failed' }, { page: 2 })).toBe(
-      '/notifications?review=failed&booking=booking-1&page=2',
-    );
-    expect(buildNotificationListHref({ booking: 'booking-1', review: 'failed' }, { page: 1 })).toBe(
-      '/notifications?review=failed&booking=booking-1',
+    expect(
+      buildNotificationListHref({ booking: 'booking-1', range: 'today', review: 'failed' }, { page: 2 }),
+    ).toBe('/notifications?review=failed&booking=booking-1&page=2');
+    expect(
+      buildNotificationListHref({ booking: 'booking-1', range: 'today', review: 'failed' }, { page: 1 }),
+    ).toBe('/notifications?review=failed&booking=booking-1');
+    expect(buildNotificationListHref({ booking: '', range: '7d', review: 'failed' })).toBe(
+      '/notifications?range=7d&review=failed',
     );
     expect(buildNotificationListHref({ booking: '', review: '' })).toBe('/notifications');
+    expect(notificationDateRangeLinks.map((item) => item.range)).toEqual([
+      'today',
+      'yesterday',
+      '7d',
+      '30d',
+      'all',
+    ]);
+    expect(notificationDateRangeLabel('30d')).toBe('Last 30 days');
+    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=100');
+    const todayApiHref = buildNotificationApiHref({});
+    const todayApiUrl = new URL(todayApiHref, 'http://admin.local');
+    expect(todayApiUrl.pathname).toBe('/admin/notifications');
+    expect(todayApiUrl.searchParams.get('take')).toBe('100');
+    expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
       href: '/notifications?review=partner-alerts',
       label: 'Partner alerts',

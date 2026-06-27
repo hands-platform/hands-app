@@ -55,7 +55,10 @@ if (!adminServiceSource.includes('take: ADMIN_APP_SESSION_LIST_LIMIT,')) {
   });
 }
 
-if (!adminServiceSource.includes('take: ADMIN_BOOKING_LIST_LIMIT,')) {
+if (
+  !adminServiceSource.includes('take: ADMIN_BOOKING_LIST_LIMIT,') &&
+  !adminServiceSource.includes('take: adminBookingListLimit(query.take),')
+) {
   violations.push({
     area: 'admin booking query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -158,7 +161,8 @@ if (!hasAuditCountGroupBy('customerAuditCounts') && !hasAuditSummaryGroupByHelpe
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list must compute full audit-log memo counts separately from the latest memo preview rows.',
+    message:
+      'Customer list must compute full audit-log memo counts separately from the latest memo preview rows.',
   });
 }
 
@@ -222,7 +226,8 @@ if (providerListSource.includes('include:')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Partner list query must not use include; use bounded select fields and detail APIs for deep data.',
+    message:
+      'Partner list query must not use include; use bounded select fields and detail APIs for deep data.',
   });
 }
 
@@ -257,7 +262,8 @@ if (!hasAuditCountGroupBy('providerAuditCounts') && !hasAuditSummaryGroupByHelpe
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Partner list must compute full audit-log memo counts separately from the latest memo preview rows.',
+    message:
+      'Partner list must compute full audit-log memo counts separately from the latest memo preview rows.',
   });
 }
 
@@ -265,7 +271,9 @@ for (const file of listFiles(adminWebAppRoot)) {
   if (!file.endsWith('.ts') && !file.endsWith('.tsx')) continue;
   const source = readFileSync(file, 'utf8');
   const providerListCalls = [
-    ...source.matchAll(/adminGet<AdminProvider\[]>\(['"`](\/admin\/(?:partners|providers)(?!\/)[^'"`]*)['"`]/g),
+    ...source.matchAll(
+      /adminGet<AdminProvider\[]>\(['"`](\/admin\/(?:partners|providers)(?!\/)[^'"`]*)['"`]/g,
+    ),
   ];
 
   for (const call of providerListCalls) {
@@ -282,8 +290,7 @@ for (const file of listFiles(adminWebAppRoot)) {
 
 const result = {
   ok: violations.length === 0,
-  purpose:
-    'Static guard for Admin Operations app session, customer, and partner list query size.',
+  purpose: 'Static guard for Admin Operations app session, customer, and partner list query size.',
   violations,
 };
 
@@ -300,7 +307,10 @@ function listFiles(directory) {
 }
 
 function relativePath(path) {
-  return path.replace(root, '').replace(/^[/\\]/, '').replaceAll('\\', '/');
+  return path
+    .replace(root, '')
+    .replace(/^[/\\]/, '')
+    .replaceAll('\\', '/');
 }
 
 function hasAuditCountGroupBy(resultName) {
@@ -320,7 +330,9 @@ function hasAuditSummaryGroupByHelper() {
     'private async getAuditLogSummaryByTargets',
     'private async findRecentAuditLogsByTargets',
   );
-  return helperSource.includes('this.prisma.adminAuditLog.groupBy') && helperSource.includes("by: ['target']");
+  return (
+    helperSource.includes('this.prisma.adminAuditLog.groupBy') && helperSource.includes("by: ['target']")
+  );
 }
 
 function hasBoundedAuditSummaryHelper() {

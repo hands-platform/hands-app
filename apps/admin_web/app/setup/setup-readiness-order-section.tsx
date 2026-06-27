@@ -10,11 +10,13 @@ type SetupRecommendedOrderItem = {
 };
 
 type SetupReadinessOrderSectionProps = {
+  readonly commandMode?: 'full' | 'summary';
   readonly readinessChecks: AdminExternalReadiness['checks'];
   readonly recommendedOrder: readonly SetupRecommendedOrderItem[];
 };
 
 export function SetupReadinessOrderSection({
+  commandMode = 'full',
   readinessChecks,
   recommendedOrder,
 }: SetupReadinessOrderSectionProps) {
@@ -27,7 +29,7 @@ export function SetupReadinessOrderSection({
         </p>
         <div className="stack">
           {readinessChecks.map((check) => (
-            <ReadinessRow check={check} key={`${check.category}-${check.name}`} />
+            <ReadinessRow check={check} commandMode={commandMode} key={`${check.category}-${check.name}`} />
           ))}
           {readinessChecks.length === 0 && (
             <div className="ops-row">
@@ -57,11 +59,18 @@ export function SetupReadinessOrderSection({
   );
 }
 
-function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
+function ReadinessRow({
+  check,
+  commandMode,
+}: {
+  readonly check: AdminExternalReadiness['checks'][number];
+  readonly commandMode: 'full' | 'summary';
+}) {
   const configured = check.configured.map(setupReadinessDisplayText);
   const missing = check.missing.map(setupReadinessDisplayText);
   const invalid = (check.invalid ?? []).map(setupReadinessDisplayText);
-  const commands = readinessCommands(check);
+  const allCommands = readinessCommands(check);
+  const commands = commandMode === 'summary' ? allCommands.slice(0, 1) : allCommands;
   const isCurrentStage = check.scope === 'CURRENT_STAGE';
 
   return (
@@ -88,6 +97,11 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
             {commands.map((command) => (
               <CommandCopyRow command={command} key={`${check.category}-${command}`} />
             ))}
+            {commandMode === 'summary' && allCommands.length > commands.length ? (
+              <a className="pill pill-neutral" href={`/setup?commands=all#${setupAnchorForReadinessCheck(check)}`}>
+                Show {allCommands.length - commands.length} more command(s)
+              </a>
+            ) : null}
           </div>
         )}
       </div>
@@ -116,4 +130,8 @@ function readinessStatusPillClass(status: string) {
     return 'pill-info';
   }
   return 'pill-warn';
+}
+
+function setupAnchorForReadinessCheck(check: AdminExternalReadiness['checks'][number]) {
+  return check.category === 'push' ? 'notifications' : check.category;
 }

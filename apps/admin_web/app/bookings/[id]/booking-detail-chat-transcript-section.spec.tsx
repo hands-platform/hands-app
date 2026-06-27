@@ -23,7 +23,8 @@ describe('BookingDetailChatTranscriptSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Customer and Partner chat history');
-    expect(rendered).toContain('Latest retained booking chat transcript preview.');
+    expect(rendered).toContain('Read-only retained booking chat transcript.');
+    expect(rendered).toContain('Booking chat evidence');
     expect(rendered).toContain('2 messages');
     expect(rendered).toContain('Customer requested the room change.');
     expect(rendered).toContain('Partner confirmed arrival.');
@@ -48,6 +49,7 @@ describe('BookingDetailChatTranscriptSection', () => {
     expect(rendered).toContain('8 messages');
     expect(rendered).toContain('Latest visible message.');
     expect(rendered).toContain('Showing latest 1 of 8 messages.');
+    expect(rendered).toContain('Open full chat window');
     expect(markup).toContain('href="/chat-archive?q=booking-1"');
   });
 
@@ -57,7 +59,7 @@ describe('BookingDetailChatTranscriptSection', () => {
 
     expect(rendered).toContain('No messages');
     expect(rendered).toContain('No retained chat yet.');
-    expect(markup).toContain('booking-chat-empty');
+    expect(markup).toContain('admin-chat-window');
   });
 });
 

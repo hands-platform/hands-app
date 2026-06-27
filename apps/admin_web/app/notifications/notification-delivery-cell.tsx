@@ -19,9 +19,10 @@ export type NotificationDeliveryRow = {
 
 type NotificationDeliveryCellProps = {
   readonly deliveryRows: readonly NotificationDeliveryRow[];
+  readonly totalAttemptCount?: number;
 };
 
-export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryCellProps) {
+export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: NotificationDeliveryCellProps) {
   if (deliveryRows.length === 0) {
     return <span className="muted">No devices / not attempted</span>;
   }
@@ -32,25 +33,28 @@ export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryC
 
   const latest = deliveryRows[0];
   const previous = deliveryRows[1];
+  const attempts = totalAttemptCount ?? deliveryRows.length;
+  const hiddenAttempts = Math.max(0, attempts - deliveryRows.length);
 
   return (
     <details className="notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
         <span className={latest.statusClassName}>{latest.status}</span>{' '}
-        <strong>{deliveryRows.length} attempts</strong>{' '}
+        <strong>{attempts} attempts</strong>{' '}
         <span className="muted">
           / latest {latest.provider} / {latest.platformLabel} / {latest.attemptedAtLabel}
           {previous ? ` / previous ${previous.status} at ${previous.attemptedAtLabel}` : ''}
+          {hiddenAttempts ? ` / ${hiddenAttempts} older in audit` : ''}
         </span>
       </summary>
       <div className="admin-mt-6">
-        {deliveryRows.map((delivery, index) => (
-          <NotificationDeliveryAttempt
-            delivery={delivery}
-            key={delivery.id}
-            sequenceLabel={deliverySequenceLabel(index)}
-          />
-        ))}
+        <NotificationDeliveryAttempt delivery={latest} sequenceLabel="Latest attempt" />
+        {deliveryRows.length > 1 ? (
+          <p className="muted admin-mt-4">
+            Previous delivery evidence is summarized above. Open the Notification audit trail for the full
+            attempt history.
+          </p>
+        ) : null}
       </div>
     </details>
   );
@@ -84,7 +88,6 @@ function NotificationDeliveryAttempt({
       {delivery.recoveryHintLabel ? (
         <div className="muted admin-mt-4">Next {delivery.recoveryHintLabel}</div>
       ) : null}
-      <div className="muted admin-mt-4">Token hidden</div>
       {delivery.enableDeviceHref ? (
         <AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
           Re-enable device
@@ -92,14 +95,4 @@ function NotificationDeliveryAttempt({
       ) : null}
     </div>
   );
-}
-
-function deliverySequenceLabel(index: number) {
-  if (index === 0) {
-    return 'Latest attempt';
-  }
-  if (index === 1) {
-    return 'Previous attempt';
-  }
-  return 'Earlier attempt';
 }

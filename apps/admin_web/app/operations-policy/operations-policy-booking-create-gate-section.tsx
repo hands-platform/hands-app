@@ -105,7 +105,7 @@ export function OperationsPolicyBookingCreateGateSection({
       ) : (
         <div className="ops-task-grid admin-mt-14">
           {review.recentAttempts.map((attempt) => (
-            <article className="ops-task-card" key={attempt.id}>
+            <section className="operations-policy-blocked-attempt-section" key={attempt.id}>
               <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
               <h3>Blocked booking create attempt</h3>
               <p>{attempt.detail}</p>
@@ -118,7 +118,7 @@ export function OperationsPolicyBookingCreateGateSection({
                   Open evidence
                 </Link>
               </div>
-            </article>
+            </section>
           ))}
         </div>
       )}

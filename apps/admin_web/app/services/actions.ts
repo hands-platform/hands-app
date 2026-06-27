@@ -19,8 +19,13 @@ type SavedPayoutRule = {
   id: string;
 };
 
+const STANDARD_SERVICE_DURATIONS = [60, 90, 120] as const;
+const SERVICE_NAME_FIELDS = ['nameEn', 'nameVi', 'nameKo', 'nameJa', 'nameZh'] as const;
+const SERVICE_NAME_KEYS = ['en', 'vi', 'ko', 'ja', 'zh'] as const;
+
 export async function createService(formData: FormData) {
-  const name = String(formData.get('name') || '').trim();
+  const nameTranslations = collectServiceNameTranslations(formData);
+  const name = serviceDisplayName(formData, nameTranslations);
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const description = String(formData.get('description') || '').trim();
   const durationMin = parseServiceInteger(formData.get('durationMin'));
@@ -34,7 +39,10 @@ export async function createService(formData: FormData) {
   if (!name || !durationMin || !basePrice) {
     redirectToServices('blocked', 'missing-service-fields');
   }
-  if (!isValidServicePriceStep(basePrice, priceStep) || !isValidServicePayout(providerPayoutAmount, basePrice)) {
+  if (
+    !isValidServicePriceStep(basePrice, priceStep) ||
+    !isValidServicePayout(providerPayoutAmount, basePrice)
+  ) {
     redirectToServices('blocked', 'invalid-service-pricing');
   }
 
@@ -42,6 +50,7 @@ export async function createService(formData: FormData) {
     '/admin/services',
     {
       name,
+      nameTranslations,
       serviceGroupKey: serviceGroupKey || undefined,
       description: description || undefined,
       durationMin,
@@ -82,7 +91,8 @@ export async function createService(formData: FormData) {
 
 export async function createServiceDurationSet(formData: FormData) {
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
-  const name = String(formData.get('name') || '').trim();
+  const nameTranslations = collectServiceNameTranslations(formData);
+  const name = serviceDisplayName(formData, nameTranslations);
   const description = String(formData.get('description') || '').trim();
   const priceStep = parseServiceInteger(formData.get('priceStep')) ?? 100000;
   const displayOrder = parseServiceInteger(formData.get('displayOrder')) ?? 100;
@@ -121,6 +131,7 @@ export async function createServiceDurationSet(formData: FormData) {
     '/admin/services/duration-sets',
     {
       name,
+      nameTranslations,
       serviceGroupKey: serviceGroupKey || undefined,
       description: description || undefined,
       priceStep,
@@ -147,7 +158,8 @@ export async function createServiceDurationSet(formData: FormData) {
 
 export async function updateService(formData: FormData) {
   const serviceId = String(formData.get('serviceId') || '').trim();
-  const name = String(formData.get('name') || '').trim();
+  const nameTranslations = collectServiceNameTranslations(formData);
+  const name = serviceDisplayName(formData, nameTranslations);
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const description = String(formData.get('description') || '').trim();
   const durationMin = parseServiceInteger(formData.get('durationMin'));
@@ -167,6 +179,7 @@ export async function updateService(formData: FormData) {
     `/admin/services/${serviceId}`,
     {
       name,
+      nameTranslations,
       serviceGroupKey: serviceGroupKey || null,
       description: description || null,
       durationMin,
@@ -183,6 +196,89 @@ export async function updateService(formData: FormData) {
   revalidatePath('/services');
   revalidatePath('/audit-log');
   redirectToServices('saved', 'service-updated');
+}
+
+export async function saveServiceDurationMenu(formData: FormData) {
+  const nameTranslations = collectServiceNameTranslations(formData);
+  const name = serviceDisplayName(formData, nameTranslations);
+  const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
+  const description = String(formData.get('description') || '').trim();
+  const priceStep = 100000;
+
+  if (!name) {
+    redirectToServices('blocked', 'missing-service-fields');
+  }
+
+  for (const durationMin of STANDARD_SERVICE_DURATIONS) {
+    const serviceId = String(formData.get(`serviceId${durationMin}`) || '').trim();
+    const ruleId = String(formData.get(`ruleId${durationMin}`) || '').trim();
+    const basePrice = parseServiceInteger(formData.get(`basePrice${durationMin}`));
+    const providerPayoutAmount = parseServiceInteger(formData.get(`providerPayoutAmount${durationMin}`));
+    const displayOrder = parseServiceInteger(formData.get(`displayOrder${durationMin}`)) ?? 100 + durationMin;
+    const active = formData.get(`active${durationMin}`) === 'on';
+
+    if (basePrice === null) {
+      continue;
+    }
+
+    if (
+      !isValidServicePriceStep(basePrice, priceStep) ||
+      !isValidServicePayout(providerPayoutAmount, basePrice)
+    ) {
+      redirectToServices('blocked', 'invalid-duration-set');
+    }
+
+    const servicePayload = {
+      name,
+      nameTranslations,
+      serviceGroupKey: serviceGroupKey || undefined,
+      description: description || null,
+      durationMin,
+      basePrice,
+      priceStep,
+      displayOrder,
+      active,
+    };
+
+    const savedService = serviceId
+      ? await adminPatch<CreatedService | null>(`/admin/services/${serviceId}`, servicePayload, null)
+      : await adminPost<CreatedService | null>('/admin/services', servicePayload, null);
+
+    if (!savedService?.id) {
+      redirectToServices('blocked', 'api-rejected');
+    }
+
+    if (providerPayoutAmount !== null) {
+      const payoutPayload = {
+        customerPrice: basePrice,
+        providerPayoutAmount,
+        vatBps: 0,
+        otherCostAmount: 0,
+        active: true,
+        notes: 'Base Partner payout managed from service menu dialog.',
+      };
+
+      const payoutRule = ruleId
+        ? await adminPatch<SavedPayoutRule | null>(
+            `/admin/service-payout-rules/${ruleId}`,
+            payoutPayload,
+            null,
+          )
+        : await adminPost<SavedPayoutRule | null>(
+            `/admin/services/${savedService.id}/payout-rules`,
+            payoutPayload,
+            null,
+          );
+
+      if (!payoutRule?.id) {
+        redirectToServices('blocked', 'api-rejected');
+      }
+    }
+  }
+
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+  redirectToServices('saved', 'service-menu-saved');
 }
 
 export async function upsertPayoutRule(formData: FormData) {
@@ -297,4 +393,28 @@ export async function updatePayoutRule(formData: FormData) {
 
 function redirectToServices(status: 'saved' | 'blocked', reason: string): never {
   redirect(`/services?status=${status}&reason=${reason}`);
+}
+
+function collectServiceNameTranslations(formData: FormData) {
+  const translations: Record<string, string> = {};
+  SERVICE_NAME_FIELDS.forEach((fieldName, index) => {
+    const value = String(formData.get(fieldName) || '').trim();
+    if (value) {
+      translations[SERVICE_NAME_KEYS[index]] = value;
+    }
+  });
+  return Object.keys(translations).length ? translations : undefined;
+}
+
+function serviceDisplayName(formData: FormData, translations: Record<string, string> | undefined) {
+  const legacyName = String(formData.get('name') || '').trim();
+  return (
+    legacyName ||
+    translations?.en ||
+    translations?.vi ||
+    translations?.ko ||
+    translations?.ja ||
+    translations?.zh ||
+    ''
+  );
 }

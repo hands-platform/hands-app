@@ -25,6 +25,7 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
   static const _partnersIndex = 1;
   static const _bookingsIndex = 2;
   static const _chatIndex = 3;
+  static const _profileIndex = 4;
 
   int index = 0;
   String? _notificationChatRoomId;
@@ -158,10 +159,13 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
         return _chatIndex;
       case PushNotificationOpenDestination.payment:
       case PushNotificationOpenDestination.earnings:
+      case PushNotificationOpenDestination.jobs:
       case PushNotificationOpenDestination.booking:
         return _bookingsIndex;
       case PushNotificationOpenDestination.providerProfile:
         return _partnersIndex;
+      case PushNotificationOpenDestination.profile:
+        return _profileIndex;
       case PushNotificationOpenDestination.notificationCenter:
         return _homeIndex;
     }

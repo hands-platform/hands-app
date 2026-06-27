@@ -7,6 +7,7 @@ export type AdminNavLink = {
 export type AdminNavSection = {
   label: string;
   description: string;
+  attentionCount?: number;
   links: AdminNavLink[];
 };
 
@@ -180,14 +181,19 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Coupon codes and discount exposure.',
       },
       {
-        href: '/chat-archive',
-        label: 'Chat Archive',
-        description: 'All retained booking chat records for admin review.',
-      },
-      {
         href: '/notifications',
         label: 'Notifications',
         description: 'In-app notification records and delivery status.',
+      },
+      {
+        href: '/notifications/templates',
+        label: 'Notification Templates',
+        description: 'Language-specific notification titles and message bodies.',
+      },
+      {
+        href: '/notifications/push-send',
+        label: 'Push Send',
+        description: 'Manual push send workspace with recipient preview.',
       },
       {
         href: '/files',

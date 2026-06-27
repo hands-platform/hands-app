@@ -15,6 +15,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
 } from '../../../components/admin-review-records-section';
+import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import {
   bookingLatestActivityAt,
   bookingRecordCreatedAt,
@@ -1699,6 +1700,7 @@ function buildPartnerBookingChatRecordRows(
         body: message.body,
         createdLabel: formatDate(message.createdAt),
         id: message.id,
+        role: partnerChatMessageRole(message),
         senderLabel: chatSenderLabel(message),
       })),
       closureLine: isClosedPartnerBooking(booking)
@@ -1717,6 +1719,16 @@ function buildPartnerBookingChatRecordRows(
       relation: record.relation,
     };
   });
+}
+
+function partnerChatMessageRole(
+  message: ReturnType<typeof readPartnerChatMessages>[number],
+): AdminChatWindowMessageRole {
+  const roles = message.sender?.roles ?? [];
+  if (roles.includes('CUSTOMER')) return 'CUSTOMER';
+  if (roles.includes('PROVIDER')) return 'PROVIDER';
+  if (roles.includes('ADMIN')) return 'ADMIN';
+  return 'SYSTEM';
 }
 
 function buildPartnerEarningsByBookingId(earnings: readonly PartnerEarning[]): PartnerEarningsByBookingId {

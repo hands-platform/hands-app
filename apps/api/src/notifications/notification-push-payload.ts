@@ -16,6 +16,7 @@ const PUSH_DATA_KEYS = new Set([
   'chatRoomId',
   'providerProfileId',
   'customerProfileId',
+  'destination',
   'notificationId',
   'paymentId',
   'earningId',
@@ -36,7 +37,9 @@ export function notificationDeliveryResponse(
   result: Awaited<ReturnType<PushDeliveryService['send']>>,
   pushToken: string,
 ) {
-  const response = result.failureCode ? { ...result.response, failureCode: result.failureCode } : result.response;
+  const response = result.failureCode
+    ? { ...result.response, failureCode: result.failureCode }
+    : result.response;
   return maskPushTokenInJson(response, pushToken);
 }
 

@@ -34,6 +34,9 @@ export function resolveCustomerPrice(
   if (customerPrice < service.basePrice) {
     throw new BadRequestException('Partner service price cannot be lower than the admin minimum');
   }
+  if (customerPrice >= service.basePrice * 2) {
+    throw new BadRequestException('Partner service price cannot be 2x or more than the admin minimum');
+  }
   if (customerPrice % priceStep !== 0) {
     throw new BadRequestException(`Partner service price must use ${priceStep} VND increments`);
   }
@@ -45,7 +48,9 @@ export function resolveBookingPriceSummary(input: {
   adminMinimumAmount: number;
   coupon?: { id?: string | null; code?: string | null; discount: Prisma.JsonValue } | null;
 }) {
-  const discountAmount = input.coupon ? calculateCouponDiscount(input.coupon.discount, input.customerPrice) : 0;
+  const discountAmount = input.coupon
+    ? calculateCouponDiscount(input.coupon.discount, input.customerPrice)
+    : 0;
 
   return {
     finalAmount: Math.max(0, input.customerPrice - discountAmount),

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { FileReviewStatus, Role, VerificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -7,6 +7,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminReasonDto,
+  AdminPushCampaignDto,
   BookingCloseoutDto,
   BookingOpsNoteDto,
   BookingOpsReasonDto,
@@ -27,6 +28,7 @@ import {
   ReferralRewardDecisionDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
+  UpdateNotificationTemplateDto,
   UpdateOperationalPolicyDto,
   UpdateReferralPolicyDto,
   UpdatePartnerReportDto,
@@ -100,7 +102,10 @@ export class AdminController {
   }
 
   @Post('marketing/spend-daily')
-  upsertMarketingSpendDaily(@CurrentUser() user: AuthenticatedUser, @Body() body: UpsertMarketingSpendDailyDto) {
+  upsertMarketingSpendDaily(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpsertMarketingSpendDailyDto,
+  ) {
     return this.admin.upsertMarketingSpendDaily(user.id, body);
   }
 
@@ -592,6 +597,11 @@ export class AdminController {
     return this.admin.updateCoupon(user.id, id, body);
   }
 
+  @Delete('coupons/:id')
+  deleteCoupon(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.admin.deleteCoupon(user.id, id);
+  }
+
   @Get('audit-logs')
   auditLogs(@Query('action') action?: string, @Query('take') take?: string) {
     return this.admin.listAuditLogs({ action, take });
@@ -617,8 +627,37 @@ export class AdminController {
   }
 
   @Get('notifications')
-  notifications() {
-    return this.admin.listNotifications();
+  notifications(@Query('take') take?: string, @Query('from') from?: string, @Query('to') to?: string) {
+    return this.admin.listNotifications({ from, take, to });
+  }
+
+  @Get('notifications/templates')
+  notificationTemplates() {
+    return this.admin.listNotificationTemplates();
+  }
+
+  @Patch('notifications/templates/:key')
+  updateNotificationTemplate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('key') key: string,
+    @Body() body: UpdateNotificationTemplateDto,
+  ) {
+    return this.admin.updateNotificationTemplate(user.id, key, body);
+  }
+
+  @Get('notifications/push-campaigns')
+  pushCampaigns() {
+    return this.admin.listAdminPushCampaigns();
+  }
+
+  @Post('notifications/push-campaigns/preview')
+  previewPushCampaign(@Body() body: AdminPushCampaignDto) {
+    return this.admin.previewAdminPushCampaign(body);
+  }
+
+  @Post('notifications/push-campaigns')
+  createPushCampaign(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminPushCampaignDto) {
+    return this.admin.createAdminPushCampaign(user.id, body);
   }
 
   @Post('notifications/:id/retry')

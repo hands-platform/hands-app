@@ -21,6 +21,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 - `docs/architecture/partner-acceptance-operations.md` - first-pick, marketplace, wallet, and closeout policy.
 - `docs/architecture/notifications.md` - FCM push architecture, token registration, and Firebase scope rules.
 - `docs/architecture/admin-web-integration.md` - Admin Operations Command Center integration.
+- `docs/architecture/admin-vuexy-design-system.md` - active Admin UI design contract based on the Vuexy Figma kit and Next.js TypeScript template.
 - `docs/architecture/mobile-api-integration.md` - Flutter app integration notes.
 
 ## Architecture Areas
@@ -32,6 +33,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 - Operations policy: `docs/architecture/partner-acceptance-operations.md`
 - Payments and settlement: `docs/architecture/payments.md`, `docs/architecture/earnings.md`
 - Notifications and push: `docs/architecture/notifications.md`
+- Admin design system: `docs/architecture/admin-vuexy-design-system.md`
 - Service pricing: `docs/architecture/service-pricing.md`
 - Provider-to-partner onboarding: `docs/architecture/provider-onboarding.md`
 - Supabase migration: `docs/architecture/supabase-migration-runbook.md`

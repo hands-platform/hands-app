@@ -27,10 +27,7 @@ import {
   type PaymentCallbackAttemptInput,
   vnpaySignatureCandidates,
 } from './payment-callback.helpers';
-import {
-  PAYMENT_STATUS_CHECK_QUEUE_NAME,
-  paymentStatusCheckJob,
-} from './payment-status.queue';
+import { PAYMENT_STATUS_CHECK_QUEUE_NAME, paymentStatusCheckJob } from './payment-status.queue';
 import {
   paymentCaptureAuditMetadata,
   paymentRefundAuditMetadata,
@@ -90,7 +87,10 @@ export class PaymentsService {
       data: {
         status: authorization.status,
         providerRef: authorization.providerRef,
-        rawMeta: toJsonOrUndefined(authorization.rawMeta),
+        rawMeta: toJsonOrUndefined({
+          ...asJsonObject(payment.rawMeta),
+          ...asJsonObject(authorization.rawMeta),
+        }),
       },
     });
   }
@@ -243,10 +243,7 @@ export class PaymentsService {
     const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
-      ...paymentRefundAuditMetadata(
-        payment,
-        paymentRefundEarningCancellationAudit(earningCancellation),
-      ),
+      ...paymentRefundAuditMetadata(payment, paymentRefundEarningCancellationAudit(earningCancellation)),
     });
     await this.notifyPaymentUpdated(payment.id);
 

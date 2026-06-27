@@ -20,13 +20,20 @@ describe('AdminController notification and push actions', () => {
     listReferralPolicies: vi.fn(),
     listOperationsHandoffProviders: vi.fn(),
     listOperationsPolicyProviders: vi.fn(),
+    listNotifications: vi.fn(),
+    listNotificationTemplates: vi.fn(),
     listPartnerControlProviders: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
+    listAdminPushCampaigns: vi.fn(),
+    previewAdminPushCampaign: vi.fn(),
+    createAdminPushCampaign: vi.fn(),
     creditReferralReward: vi.fn(),
     holdReferralReward: vi.fn(),
     releaseAvailableReferralRewards: vi.fn(),
     reverseReferralReward: vi.fn(),
+    deleteCoupon: vi.fn(),
     retryNotification: vi.fn(),
+    updateNotificationTemplate: vi.fn(),
     updateReferralPolicy: vi.fn(),
     upsertMarketingSpendDaily: vi.fn(),
   };
@@ -65,6 +72,104 @@ describe('AdminController notification and push actions', () => {
       path: 'notifications/:id/retry',
     });
     expect(admin.retryNotification).toHaveBeenCalledWith('admin-1', 'notification-1');
+  });
+
+  it('exposes notifications as a bounded board list', async () => {
+    admin.listNotifications.mockResolvedValue([{ id: 'notification-1' }]);
+
+    await expect(
+      controller.notifications('25', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+    ).resolves.toEqual([{ id: 'notification-1' }]);
+
+    expect(routeMetadata('notifications')).toEqual({
+      method: RequestMethod.GET,
+      path: 'notifications',
+    });
+    expect(admin.listNotifications).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      take: '25',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes notification templates as a GET catalog', async () => {
+    admin.listNotificationTemplates.mockResolvedValue([{ key: 'booking.matched' }]);
+
+    await expect(controller.notificationTemplates()).resolves.toEqual([{ key: 'booking.matched' }]);
+
+    expect(routeMetadata('notificationTemplates')).toEqual({
+      method: RequestMethod.GET,
+      path: 'notifications/templates',
+    });
+    expect(admin.listNotificationTemplates).toHaveBeenCalledWith();
+  });
+
+  it('exposes notification template copy updates as an audited PATCH action', async () => {
+    const body = {
+      locale: 'en',
+      title: 'Booking matched',
+      body: 'Your booking has a Partner.',
+      enabled: true,
+    };
+    admin.updateNotificationTemplate.mockResolvedValue({ key: 'booking.matched' });
+
+    await expect(controller.updateNotificationTemplate(user, 'booking.matched', body)).resolves.toEqual({
+      key: 'booking.matched',
+    });
+
+    expect(routeMetadata('updateNotificationTemplate')).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'notifications/templates/:key',
+    });
+    expect(admin.updateNotificationTemplate).toHaveBeenCalledWith('admin-1', 'booking.matched', body);
+  });
+
+  it('exposes manual push campaigns with preview before send', async () => {
+    const body = {
+      targetRole: 'CUSTOMER' as never,
+      locale: 'en',
+      title: 'HANDS update',
+      body: 'Your booking update is ready.',
+    };
+    admin.listAdminPushCampaigns.mockResolvedValue([{ id: 'campaign-1' }]);
+    admin.previewAdminPushCampaign.mockResolvedValue({ recipientCount: 2, willSendCount: 2 });
+    admin.createAdminPushCampaign.mockResolvedValue({ id: 'campaign-1' });
+
+    await expect(controller.pushCampaigns()).resolves.toEqual([{ id: 'campaign-1' }]);
+    await expect(controller.previewPushCampaign(body)).resolves.toEqual({
+      recipientCount: 2,
+      willSendCount: 2,
+    });
+    await expect(controller.createPushCampaign(user, body)).resolves.toEqual({ id: 'campaign-1' });
+
+    expect(routeMetadata('pushCampaigns')).toEqual({
+      method: RequestMethod.GET,
+      path: 'notifications/push-campaigns',
+    });
+    expect(routeMetadata('previewPushCampaign')).toEqual({
+      method: RequestMethod.POST,
+      path: 'notifications/push-campaigns/preview',
+    });
+    expect(routeMetadata('createPushCampaign')).toEqual({
+      method: RequestMethod.POST,
+      path: 'notifications/push-campaigns',
+    });
+    expect(admin.createAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
+  });
+
+  it('exposes coupon deletion as an audited DELETE action', async () => {
+    admin.deleteCoupon.mockResolvedValue({ couponId: 'coupon-1', ok: true });
+
+    await expect(controller.deleteCoupon(user, 'coupon-1')).resolves.toEqual({
+      couponId: 'coupon-1',
+      ok: true,
+    });
+
+    expect(routeMetadata('deleteCoupon')).toEqual({
+      method: RequestMethod.DELETE,
+      path: 'coupons/:id',
+    });
+    expect(admin.deleteCoupon).toHaveBeenCalledWith('admin-1', 'coupon-1');
   });
 
   it('exposes file review providers as a lightweight GET list', async () => {
@@ -122,9 +227,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes marketing overview as a separate aggregate GET endpoint', async () => {
     admin.getMarketingOverview.mockResolvedValue({ source: 'stored-marketing-aggregates', bySource: [] });
 
-    await expect(
-      controller.marketingOverview('7d', 'referral', 'ios', 'hcm', 'ref-smoke'),
-    ).resolves.toEqual({
+    await expect(controller.marketingOverview('7d', 'referral', 'ios', 'hcm', 'ref-smoke')).resolves.toEqual({
       source: 'stored-marketing-aggregates',
       bySource: [],
     });
@@ -165,7 +268,10 @@ describe('AdminController notification and push actions', () => {
   });
 
   it('exposes referral policy settings as a read-only GET endpoint', async () => {
-    admin.listReferralPolicies.mockResolvedValue({ customer: { enabled: false }, partner: { enabled: false } });
+    admin.listReferralPolicies.mockResolvedValue({
+      customer: { enabled: false },
+      partner: { enabled: false },
+    });
 
     await expect(controller.referralPolicies()).resolves.toEqual({
       customer: { enabled: false },

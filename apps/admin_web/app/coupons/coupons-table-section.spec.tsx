@@ -1,61 +1,78 @@
 import { CouponsTableSection, type CouponTableRow } from './coupons-table-section';
 
 describe('CouponsTableSection', () => {
-  it('renders coupon rows with status, hints, and action links', () => {
+  it('renders coupon cards with edit fields and booking usage', () => {
     const section = CouponsTableSection({
-      liveCount: 1,
-      pausedCount: 0,
-      reviewCount: 1,
       rows: [buildRow()],
-      scheduledCount: 0,
+      updateAction: async () => {},
+      usageHrefForPage: (couponId, page) => `/coupons?usageCouponId=${couponId}&usagePage=${page}`,
+      usagePage: 1,
     });
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Checkout Campaigns');
+    expect(rendered).toContain('Running Coupons');
     expect(rendered).toContain('WELCOME10');
-    expect(rendered).toContain('Customer can enter');
-    expect(rendered).toContain('welcome10');
     expect(rendered).toContain('10% off');
-    expect(rendered).toContain('Pause');
-    expect(hrefsIn(section)).toContain('/coupons?confirm=toggle&couponId=coupon-1');
+    expect(rendered).toContain('Used 1 booking(s)');
+    expect(rendered).toContain('Edit coupon');
+    expect(rendered).toContain('Discount %');
+    expect(rendered).toContain('Booking usage');
+    expect(rendered).toContain('Showing');
+    expect(rendered).toContain('entries');
+    expect(rendered).toContain('Delete');
+    expect(rendered).toContain('Demo Customer');
+    expect(rendered).toContain('Smoke Partner');
+    expect(hrefsIn(section)).toContain('/bookings/booking-1');
+    expect(hrefsIn(section)).toContain('/coupons?confirm=delete&couponId=coupon-1');
+    expect(elementTypesIn(section)).not.toContain('article');
+    expect(classNamesIn(section)).toContain('coupon-management-section');
+    expect(classNamesIn(section)).not.toContain('coupon-management-card');
   });
 
   it('renders empty state when no coupons exist', () => {
     const section = CouponsTableSection({
-      liveCount: 0,
-      pausedCount: 0,
-      reviewCount: 0,
       rows: [],
-      scheduledCount: 0,
+      updateAction: async () => {},
+      usageHrefForPage: (couponId, page) => `/coupons?usageCouponId=${couponId}&usagePage=${page}`,
+      usagePage: 1,
     });
 
-    expect(textContent(section)).toContain('No coupons loaded.');
+    expect(textContent(section)).toContain('No coupons in this state.');
   });
 });
 
 function buildRow(): CouponTableRow {
   return {
-    actions: [
-      {
-        description: 'Review before removing this code from checkout.',
-        href: '/coupons?confirm=toggle&couponId=coupon-1',
-        kind: 'link',
-        label: 'Pause',
-        tone: 'danger',
-      },
-    ],
+    active: true,
     checkoutHint: 'Checkout preview and booking payment authorization should apply this discount.',
     code: 'WELCOME10',
     description: 'Welcome campaign',
     discountLabel: '10% off',
+    endsAtInputValue: '',
     id: 'coupon-1',
     lowerCode: 'welcome10',
     opsHint: 'Safe to use in customer checkout now.',
+    percentValue: '10',
+    startsAtInputValue: '',
     statusClassName: 'signal signal-ok',
     statusLabel: 'ACTIVE',
+    usageBookings: [
+      {
+        amountLabel: '270,000 VND',
+        bookingHref: '/bookings/booking-1',
+        bookingLabel: 'booking...',
+        customerLabel: 'Demo Customer',
+        discountLabel: '30,000 VND',
+        partnerLabel: 'Smoke Partner',
+        requestTimeLabel: '12 Jun 2026, 16:00',
+        serviceLabel: 'Massage / 60 min',
+        statusLabel: 'OPEN_MATCHING',
+      },
+    ],
     windowLabel: 'Immediate -> No end date',
     windowSignal: 'Live for booking checkout.',
+    windowState: 'live',
   };
 }
 
@@ -89,6 +106,36 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function elementTypesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(elementTypesIn);
+  }
+
+  const record = readRecord(value);
+  const type = typeof record?.type === 'string' ? [record.type] : [];
+  const props = readRecord(record?.props);
+  return [...type, ...elementTypesIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? props.className.split(/\s+/).filter(Boolean) : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
