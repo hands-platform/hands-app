@@ -627,8 +627,13 @@ export class AdminController {
   }
 
   @Get('notifications')
-  notifications(@Query('take') take?: string, @Query('from') from?: string, @Query('to') to?: string) {
-    return this.admin.listNotifications({ from, take, to });
+  notifications(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.admin.listNotifications({ from, skip, take, to });
   }
 
   @Get('notifications/summary')

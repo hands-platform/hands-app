@@ -89,7 +89,7 @@ const PARTNER_ALERT_TYPES = [
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 const NOTIFICATION_TABLE_PAGE_SIZE = 20;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
-const NOTIFICATION_API_TAKE = 50;
+const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const notificationDateRangeLinks = [
@@ -248,7 +248,12 @@ export function buildNotificationListHref(
 
 export function buildNotificationApiHref(params: Record<string, string | string[] | undefined>) {
   const filters = buildNotificationFilters(params);
+  const page = readNotificationTablePage(params.page);
+  const skip = (page - 1) * NOTIFICATION_API_TAKE;
   const query = new URLSearchParams({ take: String(NOTIFICATION_API_TAKE) });
+  if (skip > 0) {
+    query.set('skip', String(skip));
+  }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
     query.set('from', window.from.toISOString());
@@ -342,10 +347,10 @@ export function buildNotificationPageModel({
   const fcmSmokeReadiness = buildNotificationFcmSmokeReadiness(allNotifications);
   const reviewState = buildNotificationReviewState(filters.review);
   const allNotificationRows = buildNotificationTableRows(notifications, filters);
-  const notificationPagination = paginateNotificationRows(
-    allNotificationRows,
-    readNotificationTablePage(params.page),
-  );
+  const requestedPage = readNotificationTablePage(params.page);
+  const notificationPagination = notificationSummary
+    ? paginateServerNotificationRows(allNotificationRows, requestedPage, totalCount)
+    : paginateNotificationRows(allNotificationRows, requestedPage);
 
   return {
     activeBookingId: filters.booking,
@@ -395,6 +400,27 @@ export function paginateNotificationRows(
     to: Math.min(totalRows, start + pageRows.length),
     totalPages,
     totalRows,
+  };
+}
+
+export function paginateServerNotificationRows(
+  rows: readonly NotificationTableRow[],
+  requestedPage: number,
+  totalRows: number,
+  pageSize = NOTIFICATION_TABLE_PAGE_SIZE,
+): NotificationTablePagination {
+  const boundedTotalRows = Math.max(0, totalRows);
+  const totalPages = Math.max(1, Math.ceil(boundedTotalRows / pageSize));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const pageStart = (page - 1) * pageSize;
+
+  return {
+    from: boundedTotalRows === 0 || rows.length === 0 ? 0 : pageStart + 1,
+    page,
+    rows,
+    to: boundedTotalRows === 0 || rows.length === 0 ? 0 : Math.min(boundedTotalRows, pageStart + rows.length),
+    totalPages,
+    totalRows: boundedTotalRows,
   };
 }
 

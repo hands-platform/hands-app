@@ -801,7 +801,7 @@ describe('notification page model', () => {
   });
 
   it('uses server notification summary for range totals without loading every row', () => {
-    const notifications = Array.from({ length: 25 }, (_, index) =>
+    const notifications = Array.from({ length: 20 }, (_, index) =>
       notification({
         createdAt: `2026-06-${String(index + 1).padStart(2, '0')}T10:00:00.000Z`,
         deliveries: [],
@@ -822,12 +822,14 @@ describe('notification page model', () => {
 
     expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(2400);
     expect(model.totalCount).toBe(2400);
-    expect(model.loadedCount).toBe(25);
+    expect(model.loadedCount).toBe(20);
+    expect(model.notificationRows).toHaveLength(20);
     expect(model.notificationPagination).toMatchObject({
       from: 21,
       page: 2,
-      to: 25,
-      totalRows: 25,
+      to: 40,
+      totalPages: 120,
+      totalRows: 2400,
     });
   });
 
@@ -1198,12 +1200,14 @@ describe('notification page model', () => {
       'all',
     ]);
     expect(notificationDateRangeLabel('30d')).toBe('Last 30 days');
-    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=50');
+    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=20');
+    expect(buildNotificationApiHref({ page: '3', range: 'all' })).toBe('/admin/notifications?take=20&skip=40');
     expect(buildNotificationSummaryApiHref({ range: 'all' })).toBe('/admin/notifications/summary');
     const todayApiHref = buildNotificationApiHref({});
     const todayApiUrl = new URL(todayApiHref, 'http://admin.local');
     expect(todayApiUrl.pathname).toBe('/admin/notifications');
-    expect(todayApiUrl.searchParams.get('take')).toBe('50');
+    expect(todayApiUrl.searchParams.get('take')).toBe('20');
+    expect(todayApiUrl.searchParams.get('skip')).toBeNull();
     expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('to') ?? ''))).toBe(true);
     const todaySummaryHref = buildNotificationSummaryApiHref({});

@@ -201,6 +201,7 @@ const pages = [
       'Online Partners',
       'Payment holds',
       'Cash debt',
+      'Hourly booking demand',
       'Regional booking demand',
       'Shift command briefing',
       'Opening shift checklist',

@@ -80,7 +80,7 @@ describe('AdminController notification and push actions', () => {
     admin.listNotifications.mockResolvedValue([{ id: 'notification-1' }]);
 
     await expect(
-      controller.notifications('25', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+      controller.notifications('25', '40', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
     ).resolves.toEqual([{ id: 'notification-1' }]);
 
     expect(routeMetadata('notifications')).toEqual({
@@ -89,6 +89,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listNotifications).toHaveBeenCalledWith({
       from: '2026-06-27T00:00:00.000Z',
+      skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
     });

@@ -4520,13 +4520,19 @@ export class AdminService {
     return typeof value === 'string';
   }
 
-  listNotifications(options: { readonly from?: string; readonly take?: string; readonly to?: string } = {}) {
+  listNotifications(
+    options: { readonly from?: string; readonly skip?: string; readonly take?: string; readonly to?: string } = {},
+  ) {
     const where = notificationBoardDateWhere(options);
+    const skip = normalizeNotificationBoardSkip(options.skip);
     const args: Prisma.NotificationFindManyArgs = {
       orderBy: { createdAt: 'desc' },
       take: normalizeNotificationBoardTake(options.take),
       select: adminNotificationBoardListSelect,
     };
+    if (skip > 0) {
+      args.skip = skip;
+    }
     if (where) {
       args.where = where;
     }
@@ -5765,6 +5771,14 @@ function normalizeNotificationBoardTake(value: string | undefined) {
     return ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT;
   }
   return Math.min(parsed, ADMIN_NOTIFICATION_BOARD_MAX_LIMIT);
+}
+
+function normalizeNotificationBoardSkip(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  return Math.min(parsed, 10000);
 }
 
 function notificationBoardDateWhere(options: {

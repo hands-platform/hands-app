@@ -2430,12 +2430,14 @@ describe('AdminService query orchestration', () => {
 
     await service.listNotifications({
       from: '2026-06-27T00:00:00.000Z',
+      skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
     });
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        skip: 40,
         take: 25,
         where: {
           createdAt: {
