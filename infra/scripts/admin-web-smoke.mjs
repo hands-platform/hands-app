@@ -2,6 +2,7 @@ const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://127.0.0.1:3101';
 const rawSmokeArgs = process.argv.slice(2);
 const criticalSmokePaths = [
   '/',
+  '/?details=all',
   '/calendar',
   '/bookings',
   '/bookings/completed',
@@ -16,6 +17,7 @@ const criticalSmokePaths = [
   '/setup',
 ];
 const budgetSmokePaths = [
+  '/',
   '/bookings',
   '/bookings/completed',
   '/bookings/post-match-cancellations',
@@ -24,6 +26,7 @@ const budgetSmokePaths = [
   '/reviews',
   '/notifications',
   '/operations-policy',
+  '/setup',
 ];
 const runCriticalSmoke =
   rawSmokeArgs.includes('--critical') || process.env.ADMIN_WEB_SMOKE_MODE === 'critical';
@@ -146,8 +149,7 @@ const pages = [
     path: '/',
     markers: [
       'HANDS Admin',
-      'Operations Command Center',
-      'Start Shift',
+      'HANDS Operations',
       'Calendar',
       'Vietnam Overview',
       'Marketing Analytics',
@@ -159,6 +161,33 @@ const pages = [
       'Partners',
       'Customers',
       'Finance',
+      'Core operating counters',
+      'Total bookings',
+      'Open matching',
+      'Active bookings',
+      'Completed bookings',
+      'Cancelled bookings',
+      'No-show records',
+      'Blocked create attempts',
+      'Customers in app',
+      'Partners in app',
+      'Online Partners',
+      'Payment holds',
+      'Cash debt',
+      'Operations command board',
+      'Marketplace participant snapshot',
+      'Evidence drilldown',
+      'Booking evidence command queue',
+      'Dashboard date range',
+      'Detailed dashboard loaded on demand',
+      'Load full dashboard',
+    ],
+  },
+  {
+    path: '/?details=all',
+    markers: [
+      'HANDS Admin',
+      'HANDS Operations',
       'Core operating counters',
       'Total bookings',
       'Open matching',
@@ -190,7 +219,7 @@ const pages = [
   },
   {
     path: '/?range=7d',
-    markers: ['HANDS Admin', 'Dashboard date range', 'Last 7 days', 'Hourly booking demand'],
+    markers: ['HANDS Admin', 'Dashboard date range', 'Last 7 days', 'Detailed dashboard loaded on demand'],
   },
   {
     path: '/marketing-analytics',

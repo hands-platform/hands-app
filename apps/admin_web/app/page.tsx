@@ -69,6 +69,7 @@ import {
   bookingPartnerChoiceEvidenceNeedsOpsFromFacts,
 } from '../lib/booking-evidence-ops';
 import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-location-helpers';
+import { buildDashboardDetailsHref, buildDashboardViewMode } from './dashboard-page-model';
 
 const DASHBOARD_INFO_HEADERS = ['Metric', 'Value'] as const;
 
@@ -233,7 +234,10 @@ const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: s
 ];
 
 export default async function DashboardPage({ searchParams }: { searchParams?: DashboardPageSearchParams }) {
-  const filters = buildDashboardFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildDashboardFilters(params);
+  const dashboardViewMode = buildDashboardViewMode(params);
+  const shouldRenderFullDashboard = dashboardViewMode.shouldRenderFullDashboard;
   const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
     users,
@@ -927,10 +931,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Live operations radar</h2>
+      {shouldRenderFullDashboard ? (
+        <>
+          <section className="card admin-mt-20">
+            <div className="ops-section-header">
+              <div>
+                <h2>Live operations radar</h2>
             <p className="muted">
               Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat
               handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
@@ -2069,6 +2075,25 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminDataTable>
         </div>
       </section>
+
+        </>
+      ) : (
+        <section className="card admin-mt-20">
+          <div className="ops-section-header">
+            <div>
+              <h2>Detailed dashboard loaded on demand</h2>
+              <p className="muted">
+                The default dashboard keeps the first operator scan focused on core counters, command lanes,
+                evidence shortcuts, and the selected date range. Load the full dashboard when you need radar,
+                policy pulse, partner readiness, queue, setup, flow health, and finance detail sections.
+              </p>
+            </div>
+            <Link className="button button-secondary" href={buildDashboardDetailsHref('all', params)}>
+              Load full dashboard
+            </Link>
+          </div>
+        </section>
+      )}
 
       <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
     </div>
