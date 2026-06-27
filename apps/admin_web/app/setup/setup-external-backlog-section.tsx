@@ -12,9 +12,18 @@ type SetupExternalBacklogItem = {
 type SetupExternalBacklogSectionProps = {
   readonly missingCount: number;
   readonly backlog: readonly SetupExternalBacklogItem[];
+  readonly backlogLimit?: number;
 };
 
-export function SetupExternalBacklogSection({ missingCount, backlog }: SetupExternalBacklogSectionProps) {
+export function SetupExternalBacklogSection({
+  missingCount,
+  backlog,
+  backlogLimit,
+}: SetupExternalBacklogSectionProps) {
+  const visibleBacklog =
+    typeof backlogLimit === 'number' && backlogLimit > 0 ? backlog.slice(0, backlogLimit) : backlog;
+  const hiddenCount = Math.max(0, backlog.length - visibleBacklog.length);
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
@@ -30,7 +39,7 @@ export function SetupExternalBacklogSection({ missingCount, backlog }: SetupExte
         </span>
       </div>
       <div className="setup-backlog">
-        {backlog.map((item) => (
+        {visibleBacklog.map((item) => (
           <div className="setup-backlog-item" key={`${item.groupId}-${item.name}`}>
             <span>{item.groupTitle}</span>
             <strong>{item.name}</strong>
@@ -48,6 +57,22 @@ export function SetupExternalBacklogSection({ missingCount, backlog }: SetupExte
             )}
           </div>
         ))}
+        {hiddenCount > 0 ? (
+          <div className="setup-backlog-item setup-backlog-summary">
+            <span>Compact setup view</span>
+            <strong>
+              {hiddenCount} more setup {hiddenCount === 1 ? 'item is' : 'items are'} hidden from the default
+              view.
+            </strong>
+            <p className="muted">
+              Open full setup details only when actively working the external checklist.
+            </p>
+            <a className="button button-secondary setup-card-action" href="/setup?details=all">
+              <ArrowRight size={16} aria-hidden="true" />
+              Show all setup details
+            </a>
+          </div>
+        ) : null}
         {backlog.length === 0 && (
           <p className="muted">All external readiness values are configured for the current environment.</p>
         )}

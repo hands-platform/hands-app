@@ -39,4 +39,39 @@ describe('SetupExternalBacklogSection', () => {
     expect(rendered).toContain('No missing values');
     expect(rendered).toContain('All external readiness values are configured for the current environment.');
   });
+
+  it('can keep the default setup page compact by limiting visible backlog rows', () => {
+    const section = SetupExternalBacklogSection({
+      missingCount: 3,
+      backlogLimit: 2,
+      backlog: [
+        {
+          groupId: 'supabase',
+          groupTitle: 'Supabase',
+          name: 'SUPABASE_URL',
+          reason: 'Needed for API checks.',
+        },
+        {
+          groupId: 'maps',
+          groupTitle: 'Maps',
+          name: 'GEOAPIFY_API_KEY',
+          reason: 'Needed for address search.',
+        },
+        {
+          groupId: 'payments',
+          groupTitle: 'Payments',
+          name: 'MOMO_ACCESS_KEY',
+          reason: 'Needed for payment smoke.',
+        },
+      ],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('SUPABASE_URL');
+    expect(rendered).toContain('GEOAPIFY_API_KEY');
+    expect(rendered).not.toContain('MOMO_ACCESS_KEY');
+    expect(rendered).toContain('1 more setup item is hidden from the default view.');
+    expect(hrefsIn(section)).toContain('/setup?details=all');
+  });
 });

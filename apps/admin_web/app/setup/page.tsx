@@ -26,6 +26,7 @@ import { SetupReadinessOrderSection } from './setup-readiness-order-section';
 import { SetupRegistrationHandoffSection } from './setup-registration-handoff-section';
 
 type SetupPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+const DEFAULT_SETUP_BACKLOG_LIMIT = 8;
 
 export default async function SetupPage({ searchParams }: { searchParams?: SetupPageSearchParams }) {
   const params = (await searchParams) ?? {};
@@ -49,7 +50,7 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
     externalRegistrationPlan,
     readinessUnavailable,
   );
-  const setupGroupDetails = buildSetupGroupDetails(readiness, setupOrder);
+  const setupGroupDetails = showSetupDetails ? buildSetupGroupDetails(readiness, setupOrder) : [];
 
   return (
     <div className="setup-page">
@@ -77,12 +78,16 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
         recommendedOrder={setupOrder}
       />
 
-      <SetupExternalBacklogSection missingCount={summary.missing} backlog={externalBacklog} />
+      <SetupExternalBacklogSection
+        missingCount={summary.missing}
+        backlog={externalBacklog}
+        backlogLimit={showSetupDetails ? undefined : DEFAULT_SETUP_BACKLOG_LIMIT}
+      />
 
       {showSetupDetails ? (
         <SetupGroupDetailSection commandMode={commandMode} groups={setupGroupDetails} />
       ) : (
-        <SetupGroupDetailSummaryLink groupCount={setupGroupDetails.length} />
+        <SetupGroupDetailSummaryLink groupCount={setupOrder.length} />
       )}
     </div>
   );
