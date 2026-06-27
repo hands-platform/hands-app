@@ -655,6 +655,11 @@ export class AdminController {
     return this.admin.listAdminPushCampaigns({ from, take, to });
   }
 
+  @Get('notifications/push-campaigns/summary')
+  pushCampaignSummary(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.admin.adminPushCampaignSummary({ from, to });
+  }
+
   @Post('notifications/push-campaigns/preview')
   previewPushCampaign(@Body() body: AdminPushCampaignDto) {
     return this.admin.previewAdminPushCampaign(body);

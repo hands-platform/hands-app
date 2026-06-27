@@ -26,6 +26,7 @@ describe('AdminController notification and push actions', () => {
     listPartnerControlProviders: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
     listAdminPushCampaigns: vi.fn(),
+    adminPushCampaignSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     creditReferralReward: vi.fn(),
@@ -180,6 +181,33 @@ describe('AdminController notification and push actions', () => {
       to: '2026-06-28T00:00:00.000Z',
     });
     expect(admin.createAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
+  });
+
+  it('exposes manual push campaign summary as a separate aggregate endpoint', async () => {
+    admin.adminPushCampaignSummary.mockResolvedValue({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      totalCount: 40,
+      totalNotifications: 780,
+      totalRecipients: 800,
+    });
+
+    await expect(
+      controller.pushCampaignSummary('2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+    ).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      totalCount: 40,
+      totalNotifications: 780,
+      totalRecipients: 800,
+    });
+
+    expect(routeMetadata('pushCampaignSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'notifications/push-campaigns/summary',
+    });
+    expect(admin.adminPushCampaignSummary).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      to: '2026-06-28T00:00:00.000Z',
+    });
   });
 
   it('exposes coupon deletion as an audited DELETE action', async () => {

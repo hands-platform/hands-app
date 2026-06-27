@@ -4616,6 +4616,27 @@ export class AdminService {
     });
   }
 
+  async adminPushCampaignSummary(
+    options: { readonly from?: string; readonly to?: string } = {},
+  ) {
+    const where = adminPushCampaignHistoryDateWhere(options);
+    const aggregate = await this.prisma.adminPushCampaign.aggregate({
+      _count: { _all: true },
+      _sum: {
+        notificationCount: true,
+        recipientCount: true,
+      },
+      ...(where ? { where } : {}),
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount: aggregate._count._all,
+      totalNotifications: aggregate._sum.notificationCount ?? 0,
+      totalRecipients: aggregate._sum.recipientCount ?? 0,
+    };
+  }
+
   async previewAdminPushCampaign(input: AdminPushCampaignDto) {
     const targetRole = normalizeAdminPushTargetRole(input.targetRole);
     const targetSegment = normalizeAdminPushTargetSegment(targetRole, input.targetSegment);

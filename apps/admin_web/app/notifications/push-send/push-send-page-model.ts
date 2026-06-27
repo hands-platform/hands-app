@@ -26,6 +26,20 @@ export function buildPushCampaignApiHref(params: Record<string, string | string[
   return `/admin/notifications/push-campaigns?${query.toString()}`;
 }
 
+export function buildPushCampaignSummaryApiHref(params: Record<string, string | string[] | undefined>) {
+  const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
+  const query = new URLSearchParams();
+  const window = pushCampaignDateRangeWindow(range);
+  if (window.from) {
+    query.set('from', window.from.toISOString());
+  }
+  if (window.to) {
+    query.set('to', window.to.toISOString());
+  }
+  const value = query.toString();
+  return value ? `/admin/notifications/push-campaigns/summary?${value}` : '/admin/notifications/push-campaigns/summary';
+}
+
 export function buildPushCampaignListHref(
   range: PushCampaignDateRange,
   params: Record<string, string | string[] | undefined> = {},

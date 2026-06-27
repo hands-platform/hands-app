@@ -2560,6 +2560,47 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('counts manual push campaign summary with the same date window without loading rows', async () => {
+    const prisma = {
+      adminPushCampaign: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 40 },
+          _sum: {
+            notificationCount: 780,
+            recipientCount: 800,
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.adminPushCampaignSummary({
+        from: '2026-06-27T00:00:00.000Z',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      generatedAt: expect.any(String),
+      totalCount: 40,
+      totalNotifications: 780,
+      totalRecipients: 800,
+    });
+
+    expect(prisma.adminPushCampaign.aggregate).toHaveBeenCalledWith({
+      _count: { _all: true },
+      _sum: {
+        notificationCount: true,
+        recipientCount: true,
+      },
+      where: {
+        createdAt: {
+          gte: new Date('2026-06-27T00:00:00.000Z'),
+          lt: new Date('2026-06-28T00:00:00.000Z'),
+        },
+      },
+    });
+  });
+
   it('rejects invalid manual push campaign history date windows', () => {
     const prisma = {
       adminPushCampaign: {

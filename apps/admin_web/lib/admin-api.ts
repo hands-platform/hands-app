@@ -1490,6 +1490,13 @@ export type AdminPushCampaign = {
   }>;
 };
 
+export type AdminPushCampaignSummary = {
+  generatedAt: string;
+  totalCount: number;
+  totalNotifications: number;
+  totalRecipients: number;
+};
+
 export type AdminPushCampaignPreview = {
   targetRole: 'CUSTOMER' | 'PROVIDER';
   targetUserId?: string | null;

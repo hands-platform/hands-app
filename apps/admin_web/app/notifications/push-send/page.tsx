@@ -1,4 +1,8 @@
-import type { AdminPushCampaign, AdminPushCampaignPreview } from '../../../lib/admin-api';
+import type {
+  AdminPushCampaign,
+  AdminPushCampaignPreview,
+  AdminPushCampaignSummary,
+} from '../../../lib/admin-api';
 import { adminGet, adminPost } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -15,6 +19,7 @@ import { sendPushCampaign } from './actions';
 import {
   buildPushCampaignApiHref,
   buildPushCampaignListHref,
+  buildPushCampaignSummaryApiHref,
   normalizePushCampaignDateRange,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
@@ -89,8 +94,9 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const campaignRange = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
   const campaignRangeLabel = pushCampaignDateRangeLabel(campaignRange);
   const canPreview = title.trim() && body.trim();
-  const [campaigns, preview] = await Promise.all([
+  const [campaigns, campaignSummary, preview] = await Promise.all([
     adminGet<AdminPushCampaign[]>(buildPushCampaignApiHref(params), []),
+    adminGet<AdminPushCampaignSummary | null>(buildPushCampaignSummaryApiHref(params), null),
     canPreview
       ? adminPost<AdminPushCampaignPreview | null>(
           '/admin/notifications/push-campaigns/preview',
@@ -107,6 +113,12 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         )
       : Promise.resolve(null),
   ]);
+  const totalCampaigns = campaignSummary?.totalCount ?? campaigns.length;
+  const totalRecipients =
+    campaignSummary?.totalRecipients ?? campaigns.reduce((sum, campaign) => sum + campaign.recipientCount, 0);
+  const totalNotifications =
+    campaignSummary?.totalNotifications ??
+    campaigns.reduce((sum, campaign) => sum + campaign.notificationCount, 0);
   const notice = pushCampaignNotice(readSearchParam(params.notice), readSearchParam(params.campaignId));
 
   return (
@@ -124,7 +136,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       contentClassName="stack notification-push-send-page"
       description="Manual push workspace with recipient preview before creating persistent in-app notifications and FCM deliveries."
       metrics={[
-        { label: 'Campaigns', value: campaigns.length, helper: `${campaignRangeLabel} manual sends loaded` },
+        {
+          label: 'Campaigns',
+          value: totalCampaigns,
+          helper: `${campaignRangeLabel} manual sends; ${campaigns.length} loaded`,
+        },
         {
           label: 'Last send',
           value: campaigns[0] ? shortId(campaigns[0].id) : '-',
@@ -134,8 +150,8 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         },
         {
           label: 'Recipients',
-          value: campaigns.reduce((sum, campaign) => sum + campaign.recipientCount, 0),
-          helper: `${campaignRangeLabel} recipients loaded`,
+          value: totalRecipients,
+          helper: `${totalNotifications} notifications in ${campaignRangeLabel}`,
         },
       ]}
       title="Push Send"
@@ -275,7 +291,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        resultLabel={`${campaigns.length} loaded`}
+        resultLabel={`${campaigns.length} loaded of ${totalCampaigns} total`}
         title={`Recent push campaigns / ${campaignRangeLabel}`}
       >
         <div
