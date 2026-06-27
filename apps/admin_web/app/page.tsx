@@ -69,7 +69,11 @@ import {
   bookingPartnerChoiceEvidenceNeedsOpsFromFacts,
 } from '../lib/booking-evidence-ops';
 import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-location-helpers';
-import { buildDashboardDetailsHref, buildDashboardViewMode } from './dashboard-page-model';
+import {
+  buildDashboardDataHrefs,
+  buildDashboardDetailsHref,
+  buildDashboardViewMode,
+} from './dashboard-page-model';
 
 const DASHBOARD_INFO_HEADERS = ['Metric', 'Value'] as const;
 
@@ -233,10 +237,102 @@ const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: s
   { range: '30d', label: 'Last 30 days', href: '/?range=30d' },
 ];
 
+function buildFullDashboardData(input: {
+  activePayoutBatches: AdminPayoutBatch[];
+  appPresence: ReturnType<typeof buildAppPresence>;
+  appSessions: AdminAppSession[];
+  bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  bookings: AdminBooking[];
+  cashDebtRows: AdminEarning[];
+  cashSettlementSummary: AdminCashSettlementSummary;
+  earningRows: AdminEarning[];
+  earnings: AdminEarningSummary;
+  externalReadiness: AdminExternalReadiness;
+  failedNotifications: AdminNotification[];
+  liveBookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  liveBookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  notifications: AdminNotification[];
+  operationalPolicies: AdminOperationalPolicySetting[];
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  payoutBatches: AdminPayoutBatch[];
+  payments: AdminPayment[];
+  providers: AdminProvider[];
+  queue: OpsQueueItem[];
+  rangeBookings: AdminBooking[];
+  refunds: AdminRefund[];
+}) {
+  const partnerOpsQueue = buildPartnerOpsQueue(input.providers, input.cashDebtRows, input.appSessions);
+  const commandSignals = buildDashboardCommandSignals({
+    providers: input.providers,
+    bookings: input.bookings,
+    payments: input.payments,
+    refunds: input.refunds,
+    notifications: input.notifications,
+    earnings: input.earnings,
+    earningRows: input.earningRows,
+    cashSettlementSummary: input.cashSettlementSummary,
+    payoutBatches: input.payoutBatches,
+    externalReadiness: input.externalReadiness,
+  });
+
+  return {
+    acceptanceUnblockQuickOrder: buildDashboardAcceptanceUnblockQuickOrder({
+      providers: input.providers,
+      cashSettlementSummary: input.cashSettlementSummary,
+      partnerOpsQueue,
+    }),
+    bookingDeepDive: input.bookingDeepDive,
+    commandSignals,
+    hourlyDemand: buildHourlyBookingDemand(input.rangeBookings),
+    liveOperationsRadar: buildLiveOperationsRadar({
+      bookingOps: input.liveBookingOps,
+      bookingDeepDive: input.liveBookingDeepDive,
+      matchingControl: input.matchingControl,
+      appPresence: input.appPresence,
+      partnerSupply: input.partnerSupply,
+      cashSettlementSummary: input.cashSettlementSummary,
+      failedNotifications: input.failedNotifications,
+      activePayoutBatches: input.activePayoutBatches,
+      externalReadiness: input.externalReadiness,
+    }),
+    operatorStartChecklist: buildOperatorStartChecklist({
+      queue: input.queue,
+      bookingOps: input.liveBookingOps,
+      appPresence: input.appPresence,
+      partnerSupply: input.partnerSupply,
+      matchingControl: input.matchingControl,
+      failedNotifications: input.failedNotifications,
+      cashSettlementSummary: input.cashSettlementSummary,
+      activePayoutBatches: input.activePayoutBatches,
+      externalReadiness: input.externalReadiness,
+    }),
+    partnerOpsQueue,
+    policyOutcome: buildDashboardPolicyOutcome(input.bookings, input.operationalPolicies),
+    policySummary: buildOperationalPolicySummary(input.operationalPolicies),
+    queueSummary: buildOpsQueueSummary(input.queue),
+    regionalDemand: buildRegionalBookingDemand(input.rangeBookings),
+    shiftBriefing: buildShiftCommandBriefing({
+      queue: input.queue,
+      commandSignals,
+      bookingOps: input.liveBookingOps,
+      bookingDeepDive: input.liveBookingDeepDive,
+      appPresence: input.appPresence,
+      partnerSupply: input.partnerSupply,
+      matchingControl: input.matchingControl,
+      failedNotifications: input.failedNotifications,
+      cashSettlementSummary: input.cashSettlementSummary,
+      activePayoutBatches: input.activePayoutBatches,
+    }),
+    topCommandSignal: commandSignals[0],
+  };
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams?: DashboardPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildDashboardFilters(params);
   const dashboardViewMode = buildDashboardViewMode(params);
+  const dashboardDataHrefs = buildDashboardDataHrefs(params);
   const shouldRenderFullDashboard = dashboardViewMode.shouldRenderFullDashboard;
   const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
@@ -282,7 +378,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       checks: [],
     }),
     adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    dashboardDataHrefs.operationalPolicyHref
+      ? adminGet<AdminOperationalPolicySetting[]>(dashboardDataHrefs.operationalPolicyHref, [])
+      : Promise.resolve([]),
   ]);
 
   const queue = buildOpsQueue({
@@ -299,7 +397,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   });
   const cashDebtRows = openCashDebtEarnings(earningRows);
   const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
-  const queueSummary = buildOpsQueueSummary(queue);
   const rangeBookings = bookings.filter((booking) =>
     isInDateRange(bookingLatestActivityAt(booking), filters.range),
   );
@@ -319,7 +416,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const rangeBookingCreateGateSummary = buildBookingCreateGateSummary(rangeBookingCreateRejections);
   const bookingOps = buildBookingOpsInsights(rangeBookings);
   const liveBookingOps = buildBookingOpsInsights(bookings);
-  const bookingDeepDive = buildBookingOperationsDeepDive(rangeBookings, rangePayments);
   const liveBookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
@@ -332,8 +428,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   });
   const marketplaceParticipantSnapshot = buildMarketplaceParticipantSnapshot(bookings);
   const appPresence = buildAppPresence(users, bookings, appSessions);
-  const hourlyDemand = buildHourlyBookingDemand(rangeBookings);
-  const regionalDemand = buildRegionalBookingDemand(rangeBookings);
   const partnerSupply = buildPartnerSupplyInsights(
     providers,
     bookings,
@@ -341,65 +435,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     cashDebtRows,
     cashSettlementSummary,
   );
-  const partnerOpsQueue = buildPartnerOpsQueue(providers, cashDebtRows, appSessions);
-  const acceptanceUnblockQuickOrder = buildDashboardAcceptanceUnblockQuickOrder({
-    providers,
-    cashSettlementSummary,
-    partnerOpsQueue,
-  });
-  const commandSignals = buildDashboardCommandSignals({
-    providers,
-    bookings,
-    payments,
-    refunds,
-    notifications,
-    earnings,
-    earningRows,
-    cashSettlementSummary,
-    payoutBatches,
-    externalReadiness,
-  });
-  const topCommandSignal = commandSignals[0];
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const pendingVerification = providers.filter((provider) => provider.verification?.status === 'SUBMITTED');
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
-  const policySummary = buildOperationalPolicySummary(operationalPolicies);
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
-  const policyOutcome = buildDashboardPolicyOutcome(bookings, operationalPolicies);
-  const shiftBriefing = buildShiftCommandBriefing({
-    queue,
-    commandSignals,
-    bookingOps: liveBookingOps,
-    bookingDeepDive: liveBookingDeepDive,
-    appPresence,
-    partnerSupply,
-    matchingControl,
-    failedNotifications,
-    cashSettlementSummary,
-    activePayoutBatches,
-  });
-  const operatorStartChecklist = buildOperatorStartChecklist({
-    queue,
-    bookingOps: liveBookingOps,
-    appPresence,
-    partnerSupply,
-    matchingControl,
-    failedNotifications,
-    cashSettlementSummary,
-    activePayoutBatches,
-    externalReadiness,
-  });
-  const liveOperationsRadar = buildLiveOperationsRadar({
-    bookingOps: liveBookingOps,
-    bookingDeepDive: liveBookingDeepDive,
-    matchingControl,
-    appPresence,
-    partnerSupply,
-    cashSettlementSummary,
-    failedNotifications,
-    activePayoutBatches,
-    externalReadiness,
-  });
   const operationsCommandBoard = buildOperationsCommandBoard({
     bookingOps: liveBookingOps,
     bookingDeepDive: liveBookingDeepDive,
@@ -411,6 +450,33 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     activePayoutBatches,
     externalReadiness,
   });
+  const fullDashboardData = shouldRenderFullDashboard
+    ? buildFullDashboardData({
+        activePayoutBatches,
+        appPresence,
+        appSessions,
+        bookingDeepDive: buildBookingOperationsDeepDive(rangeBookings, rangePayments),
+        bookings,
+        cashDebtRows,
+        cashSettlementSummary,
+        earningRows,
+        earnings,
+        externalReadiness,
+        failedNotifications,
+        liveBookingDeepDive,
+        liveBookingOps,
+        matchingControl,
+        notifications,
+        operationalPolicies,
+        partnerSupply,
+        payoutBatches,
+        payments,
+        providers,
+        queue,
+        rangeBookings,
+        refunds,
+      })
+    : null;
 
   const metrics = [
     [
@@ -931,7 +997,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      {shouldRenderFullDashboard ? (
+      {fullDashboardData ? (
         <>
           <section className="card admin-mt-20">
             <div className="ops-section-header">
@@ -942,12 +1008,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
             </p>
           </div>
-          <Link className="text-link" href={liveOperationsRadar[0]?.href ?? '/bookings'}>
+          <Link className="text-link" href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}>
             Open first lane
           </Link>
         </div>
         <div className="ops-task-grid admin-mt-14">
-          {liveOperationsRadar.map((item) => (
+          {fullDashboardData.liveOperationsRadar.map((item) => (
             <Link
               className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
               href={item.href}
@@ -987,7 +1053,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </Link>
         </div>
         <div className="service-trace-summary admin-mt-12">
-          {policyOutcome.metrics.map((metric) => (
+          {fullDashboardData.policyOutcome.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
@@ -996,7 +1062,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </div>
         <div className="ops-task-grid admin-mt-14">
-          {policyOutcome.cards.map((card) => (
+          {fullDashboardData.policyOutcome.cards.map((card) => (
             <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
               <span className={`pill ${card.pillClass}`}>{card.scope}</span>
               <h3>{card.title}</h3>
@@ -1016,23 +1082,25 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               notification, and payout pressure into one operating handoff.
             </p>
           </div>
-          <span className={`signal ${shiftBriefing.signalClass}`}>{shiftBriefing.label}</span>
+          <span className={`signal ${fullDashboardData.shiftBriefing.signalClass}`}>
+            {fullDashboardData.shiftBriefing.label}
+          </span>
         </div>
         <div className="ops-task-note admin-mt-14">
           <div className="ops-row">
             <div>
               <span className="pill pill-warn">Next best move</span>
-              <strong>{shiftBriefing.headline}</strong>
-              <p className="muted">{shiftBriefing.detail}</p>
+              <strong>{fullDashboardData.shiftBriefing.headline}</strong>
+              <p className="muted">{fullDashboardData.shiftBriefing.detail}</p>
             </div>
-            <Link className="button button-secondary" href={shiftBriefing.primaryAction.href}>
+            <Link className="button button-secondary" href={fullDashboardData.shiftBriefing.primaryAction.href}>
               <BellRing size={16} aria-hidden="true" />
-              {shiftBriefing.primaryAction.label}
+              {fullDashboardData.shiftBriefing.primaryAction.label}
             </Link>
           </div>
         </div>
         <div className="service-trace-summary admin-mt-14">
-          {shiftBriefing.stats.map((stat) => (
+          {fullDashboardData.shiftBriefing.stats.map((stat) => (
             <Link
               className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
               href={stat.href}
@@ -1045,7 +1113,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </div>
         <div className="ops-task-grid admin-mt-14">
-          {shiftBriefing.nextActions.map((item, index) => (
+          {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
             <Link
               className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
               href={item.href}
@@ -1059,7 +1127,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <span className="ops-task-card-action">Open</span>
             </Link>
           ))}
-          {shiftBriefing.nextActions.length === 0 && (
+          {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
             <div className="ops-task-note">
               <strong>No same-shift queue item is visible.</strong>
               <p className="muted">
@@ -1082,16 +1150,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <span
             className={`signal ${
-              operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
+              fullDashboardData.operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
                 ? 'signal-warn'
                 : 'signal-ok'
             }`}
           >
-            {operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success').length} action(s)
+            {fullDashboardData.operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success').length}{' '}
+            action(s)
           </span>
         </div>
         <div className="ops-task-grid admin-mt-14">
-          {operatorStartChecklist.map((item, index) => (
+          {fullDashboardData.operatorStartChecklist.map((item, index) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <small>Step {index + 1}</small>
               <span className={`pill ${item.pillClass}`}>{item.status}</span>
@@ -1210,20 +1279,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Active overrides</span>
-            <strong>{policySummary.activeOverrideCount}</strong>
+            <strong>{fullDashboardData.policySummary.activeOverrideCount}</strong>
             <small>Values different from recommended baseline.</small>
           </div>
           <div>
             <span>Recent changes</span>
-            <strong>{policySummary.recentChangeCount}</strong>
+            <strong>{fullDashboardData.policySummary.recentChangeCount}</strong>
             <small>Policy records changed in the last 7 days.</small>
           </div>
           <div>
             <span>Policy alignment</span>
-            <strong>{policySummary.healthLabel}</strong>
-            <small>{policySummary.healthHelper}</small>
+            <strong>{fullDashboardData.policySummary.healthLabel}</strong>
+            <small>{fullDashboardData.policySummary.healthHelper}</small>
           </div>
-          {policySummary.enforced.map((item) => (
+          {fullDashboardData.policySummary.enforced.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
               <strong>{item.value}</strong>
@@ -1234,7 +1303,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           ))}
         </div>
-        {policySummary.activeOverrides.length || policySummary.recentChanges.length ? (
+        {fullDashboardData.policySummary.activeOverrides.length ||
+        fullDashboardData.policySummary.recentChanges.length ? (
           <div className="detail-grid admin-mt-14">
             <div className="ops-task-note">
               <div className="ops-row">
@@ -1244,12 +1314,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     These owner choices are currently different from the recommended operating baseline.
                   </p>
                 </div>
-                <span className={`pill ${policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'}`}>
-                  {policySummary.activeOverrideCount} override(s)
+                <span
+                  className={`pill ${
+                    fullDashboardData.policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'
+                  }`}
+                >
+                  {fullDashboardData.policySummary.activeOverrideCount} override(s)
                 </span>
               </div>
               <div className="stack admin-mt-10">
-                {policySummary.activeOverrides.slice(0, 4).map((override) => (
+                {fullDashboardData.policySummary.activeOverrides.slice(0, 4).map((override) => (
                   <div className="ops-row" key={override.key}>
                     <div>
                       <strong>{override.label}</strong>
@@ -1262,7 +1336,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     </Link>
                   </div>
                 ))}
-                {policySummary.activeOverrides.length === 0 ? (
+                {fullDashboardData.policySummary.activeOverrides.length === 0 ? (
                   <p className="muted">
                     No active policy override is different from the recommended baseline.
                   </p>
@@ -1284,7 +1358,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               </div>
               <div className="stack admin-mt-10">
-                {policySummary.recentChanges.slice(0, 4).map((change) => (
+                {fullDashboardData.policySummary.recentChanges.slice(0, 4).map((change) => (
                   <div className="ops-row" key={change.key}>
                     <div>
                       <strong>{change.label}</strong>
@@ -1300,7 +1374,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     </Link>
                   </div>
                 ))}
-                {policySummary.recentChanges.length === 0 ? (
+                {fullDashboardData.policySummary.recentChanges.length === 0 ? (
                   <p className="muted">No policy setting was changed in the last 7 days.</p>
                 ) : null}
               </div>
@@ -1308,7 +1382,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
         ) : null}
         <div className="ops-task-grid admin-mt-14">
-          {policySummary.decisions.map((decision) => (
+          {fullDashboardData.policySummary.decisions.map((decision) => (
             <div className={`ops-task-card ${decision.className}`} key={decision.key}>
               <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
               <h3>{decision.label}</h3>
@@ -1350,47 +1424,47 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div className="service-trace-summary">
             <div>
               <span>Matching escalations</span>
-              <strong>{bookingDeepDive.matchingEscalations}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.matchingEscalations}</strong>
               <small>First-pick, marketplace participants, final choice, or chat handoff</small>
             </div>
             <div>
               <span>Expired matching</span>
-              <strong>{bookingDeepDive.expiredOpenMatching}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.expiredOpenMatching}</strong>
               <small>Open windows past timeout</small>
             </div>
             <div>
               <span>No participants</span>
-              <strong>{bookingDeepDive.openWithoutParticipants}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.openWithoutParticipants}</strong>
               <small>Customer waiting, no Partner participation yet</small>
             </div>
             <div>
               <span>Matched no chat</span>
-              <strong>{bookingDeepDive.matchedWithoutChat}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.matchedWithoutChat}</strong>
               <small>Partner selected, room missing</small>
             </div>
             <div>
               <span>Quiet active chats</span>
-              <strong>{bookingDeepDive.quietActiveChats}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.quietActiveChats}</strong>
               <small>Room exists but no messages</small>
             </div>
             <div>
               <span>Payment release check</span>
-              <strong>{bookingDeepDive.releaseChecks}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.releaseChecks}</strong>
               <small>Cancelled/expired/no-show not released</small>
             </div>
             <div>
               <span>Completion capture check</span>
-              <strong>{bookingDeepDive.captureChecks}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.captureChecks}</strong>
               <small>Completed service still authorized</small>
             </div>
             <div>
               <span>Avg participants</span>
-              <strong>{bookingDeepDive.averageParticipants}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.averageParticipants}</strong>
               <small>Open/matched response depth</small>
             </div>
             <div>
               <span>Manual closeout</span>
-              <strong>{bookingDeepDive.manualCloseout}</strong>
+              <strong>{fullDashboardData.bookingDeepDive.manualCloseout}</strong>
               <small>Needs operator audit trail</small>
             </div>
           </div>
@@ -1413,7 +1487,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <h3>Top service demand</h3>
               <div className="stack">
-                {bookingDeepDive.serviceDemand.map((item) => (
+                {fullDashboardData.bookingDeepDive.serviceDemand.map((item) => (
                   <div className="ops-row" key={item.label}>
                     <div>
                       <strong>{item.label}</strong>
@@ -1424,7 +1498,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     <span className="pill pill-info">{item.total}</span>
                   </div>
                 ))}
-                {bookingDeepDive.serviceDemand.length === 0 ? (
+                {fullDashboardData.bookingDeepDive.serviceDemand.length === 0 ? (
                   <p className="muted">No service demand loaded yet.</p>
                 ) : null}
               </div>
@@ -1432,7 +1506,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <h3>Payment method load</h3>
               <div className="stack">
-                {bookingDeepDive.paymentMix.map((item) => (
+                {fullDashboardData.bookingDeepDive.paymentMix.map((item) => (
                   <div className="ops-row" key={item.method}>
                     <div>
                       <strong>{item.method}</strong>
@@ -1446,7 +1520,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     </span>
                   </div>
                 ))}
-                {bookingDeepDive.paymentMix.length === 0 ? (
+                {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
                   <p className="muted">No payment method data loaded yet.</p>
                 ) : null}
               </div>
@@ -1588,7 +1662,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
           </div>
           <div className="stack">
-            {hourlyDemand.map((item) => (
+            {fullDashboardData.hourlyDemand.map((item) => (
               <div className="ops-row" key={item.hour}>
                 <div>
                   <strong>{item.hour}</strong>
@@ -1613,7 +1687,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           </div>
           <div className="stack">
-            {regionalDemand.map((item) => (
+            {fullDashboardData.regionalDemand.map((item) => (
               <div className="ops-row" key={item.region}>
                 <div>
                   <strong>{item.region}</strong>
@@ -1626,7 +1700,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </span>
               </div>
             ))}
-            {regionalDemand.length === 0 && <p className="muted">No booking address data loaded yet.</p>}
+            {fullDashboardData.regionalDemand.length === 0 && (
+              <p className="muted">No booking address data loaded yet.</p>
+            )}
           </div>
         </div>
       </section>
@@ -1750,7 +1826,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </Link>
         </div>
         <div className="ops-task-grid admin-mt-12">
-          {partnerOpsQueue.items.map((item) => (
+          {fullDashboardData.partnerOpsQueue.items.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
               <small>{item.status}</small>
               <h3>{item.name}</h3>
@@ -1769,7 +1845,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <span className="ops-task-card-action">{item.action}</span>
             </Link>
           ))}
-          {partnerOpsQueue.items.length === 0 && (
+          {fullDashboardData.partnerOpsQueue.items.length === 0 && (
             <div className="ops-task-note">
               <strong>No Partner blocker is currently visible.</strong>
               <p className="muted">
@@ -1782,22 +1858,22 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div className="service-trace-summary admin-mt-14">
           <div>
             <span>Blocked now</span>
-            <strong>{partnerOpsQueue.blockedNow}</strong>
+            <strong>{fullDashboardData.partnerOpsQueue.blockedNow}</strong>
             <small>Marketplace or account control held</small>
           </div>
           <div>
             <span>Needs payout setup</span>
-            <strong>{partnerOpsQueue.payoutSetup}</strong>
+            <strong>{fullDashboardData.partnerOpsQueue.payoutSetup}</strong>
             <small>First revenue follow-up</small>
           </div>
           <div>
             <span>Location stale/missing</span>
-            <strong>{partnerOpsQueue.locationIssue}</strong>
+            <strong>{fullDashboardData.partnerOpsQueue.locationIssue}</strong>
             <small>Dispatch visibility gap</small>
           </div>
           <div>
             <span>Not contactable</span>
-            <strong>{partnerOpsQueue.contactIssue}</strong>
+            <strong>{fullDashboardData.partnerOpsQueue.contactIssue}</strong>
             <small>No app session or push</small>
           </div>
         </div>
@@ -1817,7 +1893,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </Link>
         </div>
         <div className="ops-task-grid admin-mt-12">
-          {acceptanceUnblockQuickOrder.map((step) => (
+          {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
             <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
               <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
               <h3>{step.title}</h3>
@@ -1853,22 +1929,22 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
           </span>
         </div>
-        {topCommandSignal && (
+        {fullDashboardData.topCommandSignal && (
           <div className="ops-task-note admin-mt-14">
             <div className="ops-row">
               <div>
-                <span className={`pill ${topCommandSignal.pillClass}`}>First move</span>
-                <strong>{topCommandSignal.title}</strong>
-                <p className="muted">{topCommandSignal.detail}</p>
+                <span className={`pill ${fullDashboardData.topCommandSignal.pillClass}`}>First move</span>
+                <strong>{fullDashboardData.topCommandSignal.title}</strong>
+                <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
               </div>
-              <Link className="text-link" href={topCommandSignal.href}>
-                {topCommandSignal.action}
+              <Link className="text-link" href={fullDashboardData.topCommandSignal.href}>
+                {fullDashboardData.topCommandSignal.action}
               </Link>
             </div>
           </div>
         )}
         <div className="ops-task-grid">
-          {commandSignals.map((signal) => (
+          {fullDashboardData.commandSignals.map((signal) => (
             <div className={`ops-task-card ${signal.className}`} key={signal.title}>
               <div>
                 <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
@@ -1920,48 +1996,54 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 payment release, cash debt, and payout recovery together.
               </p>
             </div>
-            <span className={`signal ${queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}>
-              {queueSummary.high > 0 ? `${queueSummary.high} same-shift` : 'No same-shift queue'}
+            <span
+              className={`signal ${fullDashboardData.queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}
+            >
+              {fullDashboardData.queueSummary.high > 0
+                ? `${fullDashboardData.queueSummary.high} same-shift`
+                : 'No same-shift queue'}
             </span>
           </div>
           <div className="service-trace-summary">
             <div>
               <span>Immediate checks</span>
-              <strong>{queueSummary.high}</strong>
+              <strong>{fullDashboardData.queueSummary.high}</strong>
               <small>Same-shift checklist actions</small>
             </div>
             <div>
               <span>Customer protection</span>
-              <strong>{queueSummary.customerProtection}</strong>
+              <strong>{fullDashboardData.queueSummary.customerProtection}</strong>
               <small>Booking checks</small>
             </div>
             <div>
               <span>Finance checks</span>
-              <strong>{queueSummary.financeImmediate}</strong>
+              <strong>{fullDashboardData.queueSummary.financeImmediate}</strong>
               <small>Payment, payout, debt</small>
             </div>
             <div>
               <span>Partner ops</span>
-              <strong>{queueSummary.partnerImmediate}</strong>
+              <strong>{fullDashboardData.queueSummary.partnerImmediate}</strong>
               <small>Reports or verification</small>
             </div>
           </div>
-          {queueSummary.first && (
+          {fullDashboardData.queueSummary.first && (
             <div className="ops-task-note admin-mt-14">
               <div>
                 <span
-                  className={`pill ${queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
+                  className={`pill ${
+                    fullDashboardData.queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'
+                  }`}
                 >
                   First action
                 </span>
-                <h3>{queueSummary.first.label}</h3>
-                <p>{queueSummary.first.recommendedAction}</p>
+                <h3>{fullDashboardData.queueSummary.first.label}</h3>
+                <p>{fullDashboardData.queueSummary.first.recommendedAction}</p>
                 <p className="muted">
-                  Owner: {queueSummary.first.owner} - Checklist position {queueSummary.first.priority} -{' '}
-                  {queueSummary.first.detail}
+                  Owner: {fullDashboardData.queueSummary.first.owner} - Checklist position{' '}
+                  {fullDashboardData.queueSummary.first.priority} - {fullDashboardData.queueSummary.first.detail}
                 </p>
               </div>
-              <Link className="text-link" href={queueSummary.first.href}>
+              <Link className="text-link" href={fullDashboardData.queueSummary.first.href}>
                 Open task
               </Link>
             </div>

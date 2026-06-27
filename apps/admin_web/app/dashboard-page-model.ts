@@ -9,11 +9,22 @@ export type DashboardViewMode = {
   readonly shouldRenderFullDashboard: boolean;
 };
 
+export type DashboardDataHrefs = {
+  readonly operationalPolicyHref: string | null;
+};
+
 export function buildDashboardViewMode(params: DashboardParams): DashboardViewMode {
   const detailsMode = normalizeDashboardDetailsMode(readSearchParam(params.details));
   return {
     detailsMode,
     shouldRenderFullDashboard: detailsMode === 'all',
+  };
+}
+
+export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataHrefs {
+  const viewMode = buildDashboardViewMode(params);
+  return {
+    operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
   };
 }
 

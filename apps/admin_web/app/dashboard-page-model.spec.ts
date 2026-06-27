@@ -1,4 +1,8 @@
-import { buildDashboardDetailsHref, buildDashboardViewMode } from './dashboard-page-model';
+import {
+  buildDashboardDataHrefs,
+  buildDashboardDetailsHref,
+  buildDashboardViewMode,
+} from './dashboard-page-model';
 
 describe('dashboard page model', () => {
   it('keeps the default dashboard in summary mode', () => {
@@ -20,5 +24,12 @@ describe('dashboard page model', () => {
     expect(buildDashboardDetailsHref('all', { range: '7d' })).toBe('/?range=7d&details=all');
     expect(buildDashboardDetailsHref('summary', { range: '7d', details: 'all' })).toBe('/?range=7d');
     expect(buildDashboardDetailsHref('summary', {})).toBe('/');
+  });
+
+  it('loads policy diagnostics only for the full dashboard', () => {
+    expect(buildDashboardDataHrefs({})).toEqual({ operationalPolicyHref: null });
+    expect(buildDashboardDataHrefs({ details: 'all' })).toEqual({
+      operationalPolicyHref: '/admin/operational-policy',
+    });
   });
 });
