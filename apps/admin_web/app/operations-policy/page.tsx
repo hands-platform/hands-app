@@ -42,6 +42,10 @@ import { buildOwnerDecisionPressure } from './owner-decision-pressure';
 import { operationalPolicyAuditRows } from './policy-audit-rows';
 import { operationsPolicyNotice } from './policy-notice';
 import { policyDisplayByKey } from './policy-value-display';
+import {
+  buildOperationsPolicyDetailsHref,
+  buildOperationsPolicyLoadPlan,
+} from './operations-policy-page-model';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -64,38 +68,50 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
+  const loadPlan = buildOperationsPolicyLoadPlan(params);
   const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
-    adminGet<AdminBooking[]>('/admin/bookings?take=50', []),
-    adminGet<AdminProvider[]>('/admin/operations-policy/providers', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=operational_policy.update&take=20', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
+    adminGet<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, []),
+    adminGet<AdminBooking[]>(loadPlan.bookingsHref, []),
+    adminGet<AdminProvider[]>(loadPlan.providersHref, []),
+    adminGet<AdminAuditLog[]>(loadPlan.policyAuditHref, []),
+    adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
   ]);
   const auditLogs = [...policyAuditLogs, ...bookingGateAuditLogs];
+  const shouldRenderFullDiagnostics = loadPlan.shouldRenderFullDiagnostics;
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = operationsPolicyNotice(params);
-  const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook((key) => policyDisplayByKey(settings, key));
-  const policySimulation = buildPolicySimulation(settings, bookings, providers);
-  const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
-  const policyEffectAnalysis = buildPolicyOutcomeEffect(settings, bookings);
-  const policyDrilldown = buildPolicyDrilldown(bookings, settings);
-  const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
   const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
-  const supplySensitivity = buildPolicySupplySensitivity(settings, bookings, providers);
-  const matchingStageImpactPreview = buildMatchingStageImpactPreview(settings, bookings, providers);
-  const ownerDecisionPressure = buildOwnerDecisionPressure(
-    bookings,
-    providers,
-    supplySensitivity,
-    acceptanceMatrix,
-  );
-  const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
   const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
   const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
+  const policySimulation = shouldRenderFullDiagnostics
+    ? buildPolicySimulation(settings, bookings, providers)
+    : null;
+  const impactDashboard = shouldRenderFullDiagnostics
+    ? buildPolicyImpactDashboard(settings, bookings)
+    : null;
+  const policyEffectAnalysis = shouldRenderFullDiagnostics
+    ? buildPolicyOutcomeEffect(settings, bookings)
+    : null;
+  const policyDrilldown = shouldRenderFullDiagnostics ? buildPolicyDrilldown(bookings, settings) : null;
+  const policyAuditRows = shouldRenderFullDiagnostics ? operationalPolicyAuditRows(auditLogs) : null;
+  const supplySensitivity = shouldRenderFullDiagnostics
+    ? buildPolicySupplySensitivity(settings, bookings, providers)
+    : null;
+  const matchingStageImpactPreview = shouldRenderFullDiagnostics
+    ? buildMatchingStageImpactPreview(settings, bookings, providers)
+    : null;
+  const policyEnforcementTrace = shouldRenderFullDiagnostics
+    ? buildPolicyEnforcementTrace(settings)
+    : null;
+  const ownerDecisionBacklog = shouldRenderFullDiagnostics ? operationsOwnerDecisionBacklog() : null;
+  const ownerDecisionPressure =
+    shouldRenderFullDiagnostics && supplySensitivity
+      ? buildOwnerDecisionPressure(bookings, providers, supplySensitivity, acceptanceMatrix)
+      : null;
 
   return (
     <div className="operations-policy-page">
@@ -140,15 +156,19 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyRecommendedValueReviewSection review={recommendationReview} />
 
-      <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix} />
+      {shouldRenderFullDiagnostics ? (
+        <>
+          <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix} />
 
-      <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity} />
+          <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity!} />
 
-      <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview} />
+          <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview!} />
 
-      <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis} />
+          <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
 
-      <OperationsPolicyEnforcementTraceSection trace={policyEnforcementTrace} />
+          <OperationsPolicyEnforcementTraceSection trace={policyEnforcementTrace!} />
+        </>
+      ) : null}
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
@@ -182,18 +202,37 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <OperationsPolicyLiveSimulatorSection simulation={policySimulation} />
+      {shouldRenderFullDiagnostics ? (
+        <>
+          <OperationsPolicyLiveSimulatorSection simulation={policySimulation!} />
 
-      <OperationsPolicyChangeImpactSection
-        dashboard={impactDashboard}
-        sampledBookingCount={bookings.length}
-      />
+          <OperationsPolicyChangeImpactSection
+            dashboard={impactDashboard!}
+            sampledBookingCount={bookings.length}
+          />
 
-      <OperationsPolicyDrilldownSection drilldown={policyDrilldown} />
+          <OperationsPolicyDrilldownSection drilldown={policyDrilldown!} />
 
-      <OperationsPolicyAuditTrailSection rows={policyAuditRows} />
+          <OperationsPolicyAuditTrailSection rows={policyAuditRows!} />
 
-      <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
+          <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
+        </>
+      ) : (
+        <section className="card admin-mb-16">
+          <div className="ops-section-header">
+            <div>
+              <h2>Diagnostics loaded on demand</h2>
+              <p className="muted">
+                The default policy page keeps live editing and gate checks fast. Load full diagnostics only
+                when reviewing simulation, audit trail, drilldown, and owner decision pressure.
+              </p>
+            </div>
+            <Link className="button button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
+              Load full diagnostics
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
@@ -214,12 +253,16 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <OperationsPolicyNextChoicesSection />
+      {shouldRenderFullDiagnostics && ownerDecisionBacklog && ownerDecisionPressure ? (
+        <>
+          <OperationsPolicyNextChoicesSection />
 
-      <OperationsPolicyOwnerDecisionBacklogSection
-        backlog={ownerDecisionBacklog}
-        pressure={ownerDecisionPressure}
-      />
+          <OperationsPolicyOwnerDecisionBacklogSection
+            backlog={ownerDecisionBacklog}
+            pressure={ownerDecisionPressure}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

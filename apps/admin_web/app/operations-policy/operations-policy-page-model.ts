@@ -1,0 +1,51 @@
+import { readSearchParam } from '../../lib/date-range';
+
+export type OperationsPolicyDetailsMode = 'summary' | 'all';
+
+const SUMMARY_BOOKING_SAMPLE_TAKE = 20;
+const SUMMARY_POLICY_AUDIT_TAKE = 8;
+const SUMMARY_BOOKING_GATE_AUDIT_TAKE = 12;
+
+const FULL_BOOKING_SAMPLE_TAKE = 50;
+const FULL_POLICY_AUDIT_TAKE = 20;
+const FULL_BOOKING_GATE_AUDIT_TAKE = 50;
+
+type OperationsPolicyParams = Record<string, string | string[] | undefined>;
+
+export type OperationsPolicyLoadPlan = {
+  readonly bookingGateAuditHref: string;
+  readonly bookingsHref: string;
+  readonly detailsMode: OperationsPolicyDetailsMode;
+  readonly policyAuditHref: string;
+  readonly providersHref: string;
+  readonly settingsHref: string;
+  readonly shouldRenderFullDiagnostics: boolean;
+};
+
+export function buildOperationsPolicyLoadPlan(params: OperationsPolicyParams): OperationsPolicyLoadPlan {
+  const detailsMode = normalizeOperationsPolicyDetailsMode(readSearchParam(params.details));
+  const full = detailsMode === 'all';
+  const bookingsTake = full ? FULL_BOOKING_SAMPLE_TAKE : SUMMARY_BOOKING_SAMPLE_TAKE;
+  const policyAuditTake = full ? FULL_POLICY_AUDIT_TAKE : SUMMARY_POLICY_AUDIT_TAKE;
+  const bookingGateAuditTake = full
+    ? FULL_BOOKING_GATE_AUDIT_TAKE
+    : SUMMARY_BOOKING_GATE_AUDIT_TAKE;
+
+  return {
+    bookingGateAuditHref: `/admin/audit-logs?action=booking.create.rejected&take=${bookingGateAuditTake}`,
+    bookingsHref: `/admin/bookings?take=${bookingsTake}`,
+    detailsMode,
+    policyAuditHref: `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`,
+    providersHref: '/admin/operations-policy/providers',
+    settingsHref: '/admin/operational-policy',
+    shouldRenderFullDiagnostics: full,
+  };
+}
+
+export function buildOperationsPolicyDetailsHref(detailsMode: OperationsPolicyDetailsMode) {
+  return detailsMode === 'all' ? '/operations-policy?details=all' : '/operations-policy';
+}
+
+function normalizeOperationsPolicyDetailsMode(value: string): OperationsPolicyDetailsMode {
+  return value === 'all' ? 'all' : 'summary';
+}

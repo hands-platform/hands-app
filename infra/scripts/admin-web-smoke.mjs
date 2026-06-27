@@ -12,6 +12,7 @@ const criticalSmokePaths = [
   '/vietnam-overview',
   '/marketing-analytics',
   '/operations-policy',
+  '/operations-policy?details=all',
   '/setup',
 ];
 const budgetSmokePaths = [
@@ -22,6 +23,7 @@ const budgetSmokePaths = [
   '/partners',
   '/reviews',
   '/notifications',
+  '/operations-policy',
 ];
 const runCriticalSmoke =
   rawSmokeArgs.includes('--critical') || process.env.ADMIN_WEB_SMOKE_MODE === 'critical';
@@ -388,6 +390,22 @@ const pages = [
   },
   {
     path: '/operations-policy',
+    markers: [
+      'Operations Policy',
+      'MVP authority baseline',
+      'BookingAddressSnapshot',
+      'No auto assignment',
+      'Action gate policy checklist',
+      'Action gate policies are aligned',
+      'Live matching policy',
+      'Operator decisions',
+      'Diagnostics loaded on demand',
+      'Load full diagnostics',
+      'Change reason',
+    ],
+  },
+  {
+    path: '/operations-policy?details=all',
     markers: [
       'Operations Policy',
       'MVP authority baseline',
