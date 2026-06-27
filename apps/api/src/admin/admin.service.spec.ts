@@ -2359,7 +2359,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 60,
+        take: 50,
         select: expect.objectContaining({
           deliveries: expect.objectContaining({
             orderBy: { attemptedAt: 'desc' },
@@ -2415,7 +2415,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 100,
+        take: 50,
       }),
     );
   });

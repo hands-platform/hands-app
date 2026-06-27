@@ -84,7 +84,7 @@ const PARTNER_ALERT_TYPES = [
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 const NOTIFICATION_TABLE_PAGE_SIZE = 20;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
-const NOTIFICATION_API_TAKE = 100;
+const NOTIFICATION_API_TAKE = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const notificationDateRangeLinks = [

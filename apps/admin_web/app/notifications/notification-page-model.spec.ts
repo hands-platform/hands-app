@@ -1166,11 +1166,11 @@ describe('notification page model', () => {
       'all',
     ]);
     expect(notificationDateRangeLabel('30d')).toBe('Last 30 days');
-    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=100');
+    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=50');
     const todayApiHref = buildNotificationApiHref({});
     const todayApiUrl = new URL(todayApiHref, 'http://admin.local');
     expect(todayApiUrl.pathname).toBe('/admin/notifications');
-    expect(todayApiUrl.searchParams.get('take')).toBe('100');
+    expect(todayApiUrl.searchParams.get('take')).toBe('50');
     expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
