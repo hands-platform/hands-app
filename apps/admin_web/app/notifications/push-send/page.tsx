@@ -12,6 +12,13 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
+import {
+  buildPushCampaignApiHref,
+  buildPushCampaignListHref,
+  normalizePushCampaignDateRange,
+  pushCampaignDateRangeLabel,
+  pushCampaignDateRangeLinks,
+} from './push-send-page-model';
 
 type PushSendPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -79,9 +86,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const locale = targetRole === 'PROVIDER' ? 'vi' : readSearchParam(params.locale);
   const title = readSearchParam(params.title);
   const body = readSearchParam(params.body);
+  const campaignRange = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
+  const campaignRangeLabel = pushCampaignDateRangeLabel(campaignRange);
   const canPreview = title.trim() && body.trim();
   const [campaigns, preview] = await Promise.all([
-    adminGet<AdminPushCampaign[]>('/admin/notifications/push-campaigns', []),
+    adminGet<AdminPushCampaign[]>(buildPushCampaignApiHref(params), []),
     canPreview
       ? adminPost<AdminPushCampaignPreview | null>(
           '/admin/notifications/push-campaigns/preview',
@@ -115,7 +124,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       contentClassName="stack notification-push-send-page"
       description="Manual push workspace with recipient preview before creating persistent in-app notifications and FCM deliveries."
       metrics={[
-        { label: 'Campaigns', value: campaigns.length, helper: 'Recent manual sends' },
+        { label: 'Campaigns', value: campaigns.length, helper: `${campaignRangeLabel} manual sends loaded` },
         {
           label: 'Last send',
           value: campaigns[0] ? shortId(campaigns[0].id) : '-',
@@ -126,7 +135,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         {
           label: 'Recipients',
           value: campaigns.reduce((sum, campaign) => sum + campaign.recipientCount, 0),
-          helper: 'Recent campaign recipients',
+          helper: `${campaignRangeLabel} recipients loaded`,
         },
       ]}
       title="Push Send"
@@ -265,7 +274,26 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         ) : null}
       </AdminFilterPanel>
 
-      <AdminFilterPanel resultLabel={`${campaigns.length} recent`} title="Recent push campaigns">
+      <AdminFilterPanel
+        resultLabel={`${campaigns.length} loaded`}
+        title={`Recent push campaigns / ${campaignRangeLabel}`}
+      >
+        <div
+          className="booking-date-filter-buttons notification-push-campaign-range-row"
+          aria-label="Push campaign date range"
+          role="group"
+        >
+          {pushCampaignDateRangeLinks.map((item) => (
+            <a
+              aria-current={item.range === campaignRange ? 'page' : undefined}
+              className={`booking-date-filter-button${item.range === campaignRange ? ' is-active' : ''}`}
+              href={buildPushCampaignListHref(item.range, params)}
+              key={item.range}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No manual push campaigns yet."

@@ -135,7 +135,9 @@ describe('AdminController notification and push actions', () => {
     admin.previewAdminPushCampaign.mockResolvedValue({ recipientCount: 2, willSendCount: 2 });
     admin.createAdminPushCampaign.mockResolvedValue({ id: 'campaign-1' });
 
-    await expect(controller.pushCampaigns()).resolves.toEqual([{ id: 'campaign-1' }]);
+    await expect(
+      controller.pushCampaigns('25', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+    ).resolves.toEqual([{ id: 'campaign-1' }]);
     await expect(controller.previewPushCampaign(body)).resolves.toEqual({
       recipientCount: 2,
       willSendCount: 2,
@@ -153,6 +155,11 @@ describe('AdminController notification and push actions', () => {
     expect(routeMetadata('createPushCampaign')).toEqual({
       method: RequestMethod.POST,
       path: 'notifications/push-campaigns',
+    });
+    expect(admin.listAdminPushCampaigns).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      take: '25',
+      to: '2026-06-28T00:00:00.000Z',
     });
     expect(admin.createAdminPushCampaign).toHaveBeenCalledWith('admin-1', body);
   });

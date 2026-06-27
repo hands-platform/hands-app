@@ -646,8 +646,8 @@ export class AdminController {
   }
 
   @Get('notifications/push-campaigns')
-  pushCampaigns() {
-    return this.admin.listAdminPushCampaigns();
+  pushCampaigns(@Query('take') take?: string, @Query('from') from?: string, @Query('to') to?: string) {
+    return this.admin.listAdminPushCampaigns({ from, take, to });
   }
 
   @Post('notifications/push-campaigns/preview')

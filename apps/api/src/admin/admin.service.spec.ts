@@ -2500,6 +2500,55 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('bounds manual push campaign history by date range and list size', async () => {
+    const prisma = {
+      adminPushCampaign: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listAdminPushCampaigns({
+      from: '2026-06-27T00:00:00.000Z',
+      take: '500',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+
+    expect(prisma.adminPushCampaign.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      where: {
+        createdAt: {
+          gte: new Date('2026-06-27T00:00:00.000Z'),
+          lt: new Date('2026-06-28T00:00:00.000Z'),
+        },
+      },
+      include: {
+        recipients: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+      },
+    });
+  });
+
+  it('rejects invalid manual push campaign history date windows', () => {
+    const prisma = {
+      adminPushCampaign: {
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    expect(() =>
+      service.listAdminPushCampaigns({
+        from: '2026-06-28T00:00:00.000Z',
+        to: '2026-06-27T00:00:00.000Z',
+      }),
+    ).toThrow('Push campaign date range is invalid');
+    expect(prisma.adminPushCampaign.findMany).not.toHaveBeenCalled();
+  });
+
   it('previews manual push recipients only for users with active devices in the selected role', async () => {
     const prisma = {
       user: {

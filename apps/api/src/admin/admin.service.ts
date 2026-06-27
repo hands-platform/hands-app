@@ -239,6 +239,8 @@ const ADMIN_PUSH_SEGMENT_WINDOWS = {
   customerActiveNoBookingMs: 3 * 24 * 60 * 60 * 1000,
   providerInactiveMs: 7 * 24 * 60 * 60 * 1000,
 };
+const ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT = 20;
+const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 100;
@@ -4584,10 +4586,14 @@ export class AdminService {
     return updatedTemplate;
   }
 
-  listAdminPushCampaigns() {
+  listAdminPushCampaigns(
+    options: { readonly from?: string; readonly take?: string; readonly to?: string } = {},
+  ) {
+    const where = adminPushCampaignHistoryDateWhere(options);
     return this.prisma.adminPushCampaign.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: normalizeAdminPushCampaignHistoryTake(options.take),
+      ...(where ? { where } : {}),
       include: {
         recipients: {
           orderBy: { createdAt: 'desc' },
@@ -5755,6 +5761,47 @@ function normalizeNotificationDateBoundary(value: string | undefined, field: str
   const timestamp = Date.parse(normalized);
   if (!Number.isFinite(timestamp)) {
     throw new BadRequestException(`Notification ${field} date is invalid`);
+  }
+  return new Date(timestamp);
+}
+
+function normalizeAdminPushCampaignHistoryTake(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT;
+  }
+  return Math.min(parsed, ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT);
+}
+
+function adminPushCampaignHistoryDateWhere(options: {
+  readonly from?: string;
+  readonly to?: string;
+}): Prisma.AdminPushCampaignWhereInput | undefined {
+  const from = normalizeAdminPushCampaignDateBoundary(options.from, 'from');
+  const to = normalizeAdminPushCampaignDateBoundary(options.to, 'to');
+  if (!from && !to) {
+    return undefined;
+  }
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Push campaign date range is invalid');
+  }
+
+  return {
+    createdAt: {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lt: to } : {}),
+    },
+  };
+}
+
+function normalizeAdminPushCampaignDateBoundary(value: string | undefined, field: string) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return undefined;
+  }
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) {
+    throw new BadRequestException(`Push campaign ${field} date is invalid`);
   }
   return new Date(timestamp);
 }
