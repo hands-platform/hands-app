@@ -13,13 +13,16 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
 import {
   buildPushCampaignApiHref,
   buildPushCampaignListHref,
+  buildPushCampaignPageHref,
   buildPushCampaignSummaryApiHref,
+  normalizePushCampaignPage,
   normalizePushCampaignDateRange,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
@@ -92,6 +95,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const title = readSearchParam(params.title);
   const body = readSearchParam(params.body);
   const campaignRange = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
+  const campaignPage = normalizePushCampaignPage(readSearchParam(params.campaignPage));
   const campaignRangeLabel = pushCampaignDateRangeLabel(campaignRange);
   const canPreview = title.trim() && body.trim();
   const [campaigns, campaignSummary, preview] = await Promise.all([
@@ -119,6 +123,13 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const totalNotifications =
     campaignSummary?.totalNotifications ??
     campaigns.reduce((sum, campaign) => sum + campaign.notificationCount, 0);
+  const campaignPageSize = 20;
+  const campaignTotalPages = Math.max(1, Math.ceil(totalCampaigns / campaignPageSize));
+  const visibleFrom = totalCampaigns === 0 || campaigns.length === 0 ? 0 : (campaignPage - 1) * campaignPageSize + 1;
+  const visibleTo =
+    totalCampaigns === 0 || campaigns.length === 0
+      ? 0
+      : Math.min(totalCampaigns, (campaignPage - 1) * campaignPageSize + campaigns.length);
   const notice = pushCampaignNotice(readSearchParam(params.notice), readSearchParam(params.campaignId));
 
   return (
@@ -354,6 +365,19 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="admin-table-pagination-footer">
+          <span>
+            Showing {visibleFrom} to {visibleTo} of {totalCampaigns} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={campaignPage}
+            ariaLabel="Push campaign pagination"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => buildPushCampaignPageHref(page, params)}
+            pageLinkClassName="vuexy-booking-pagination-link"
+            totalPages={campaignTotalPages}
+          />
+        </div>
       </AdminFilterPanel>
     </AdminPageTemplate>
   );

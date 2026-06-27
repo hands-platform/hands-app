@@ -2538,12 +2538,14 @@ describe('AdminService query orchestration', () => {
 
     await service.listAdminPushCampaigns({
       from: '2026-06-27T00:00:00.000Z',
+      skip: '40',
       take: '500',
       to: '2026-06-28T00:00:00.000Z',
     });
 
     expect(prisma.adminPushCampaign.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
+      skip: 40,
       take: 50,
       where: {
         createdAt: {

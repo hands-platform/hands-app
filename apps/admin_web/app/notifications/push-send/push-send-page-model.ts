@@ -15,7 +15,12 @@ export const pushCampaignDateRangeLinks = [
 
 export function buildPushCampaignApiHref(params: Record<string, string | string[] | undefined>) {
   const range = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
+  const page = normalizePushCampaignPage(readSearchParam(params.campaignPage));
   const query = new URLSearchParams({ take: String(PUSH_CAMPAIGN_API_TAKE) });
+  const skip = (page - 1) * PUSH_CAMPAIGN_API_TAKE;
+  if (skip > 0) {
+    query.set('skip', String(skip));
+  }
   const window = pushCampaignDateRangeWindow(range);
   if (window.from) {
     query.set('from', window.from.toISOString());
@@ -46,7 +51,7 @@ export function buildPushCampaignListHref(
 ) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (key === 'campaignRange') {
+    if (key === 'campaignRange' || key === 'campaignPage') {
       continue;
     }
     const values = Array.isArray(value) ? value : [value];
@@ -58,6 +63,30 @@ export function buildPushCampaignListHref(
   }
   if (range !== 'today') {
     query.set('campaignRange', range);
+  }
+  const value = query.toString();
+  return value ? `/notifications/push-send?${value}` : '/notifications/push-send';
+}
+
+export function buildPushCampaignPageHref(
+  page: number,
+  params: Record<string, string | string[] | undefined> = {},
+) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'campaignPage') {
+      continue;
+    }
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (typeof item === 'string' && item.trim()) {
+        query.append(key, item);
+      }
+    }
+  }
+  const normalizedPage = Math.max(1, Math.trunc(page));
+  if (normalizedPage > 1) {
+    query.set('campaignPage', String(normalizedPage));
   }
   const value = query.toString();
   return value ? `/notifications/push-send?${value}` : '/notifications/push-send';
@@ -84,6 +113,14 @@ export function normalizePushCampaignDateRange(value: string): PushCampaignDateR
     return value;
   }
   return 'today';
+}
+
+export function normalizePushCampaignPage(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+  return Math.min(parsed, 500);
 }
 
 function pushCampaignDateRangeWindow(range: PushCampaignDateRange, now = new Date()) {

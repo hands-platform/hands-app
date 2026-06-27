@@ -1,7 +1,9 @@
 import {
   buildPushCampaignApiHref,
   buildPushCampaignListHref,
+  buildPushCampaignPageHref,
   buildPushCampaignSummaryApiHref,
+  normalizePushCampaignPage,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
 } from './push-send-page-model';
@@ -15,6 +17,22 @@ describe('push send page model', () => {
     expect(url.searchParams.get('take')).toBe('20');
     expect(Number.isFinite(Date.parse(url.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(url.searchParams.get('to') ?? ''))).toBe(true);
+  });
+
+  it('builds server pagination params for manual push campaign history', () => {
+    const href = buildPushCampaignApiHref({ campaignPage: '3', campaignRange: '30d' });
+    const url = new URL(href, 'http://admin.local');
+
+    expect(url.searchParams.get('take')).toBe('20');
+    expect(url.searchParams.get('skip')).toBe('40');
+    expect(normalizePushCampaignPage('0')).toBe(1);
+    expect(normalizePushCampaignPage('3.9')).toBe(3);
+    expect(buildPushCampaignPageHref(4, { campaignPage: '2', campaignRange: '7d', title: 'Blast' })).toBe(
+      '/notifications/push-send?campaignRange=7d&title=Blast&campaignPage=4',
+    );
+    expect(buildPushCampaignListHref('today', { campaignPage: '4', campaignRange: '7d' })).toBe(
+      '/notifications/push-send',
+    );
   });
 
   it('builds a matching summary API href so totals do not require loading every campaign', () => {

@@ -651,8 +651,13 @@ export class AdminController {
   }
 
   @Get('notifications/push-campaigns')
-  pushCampaigns(@Query('take') take?: string, @Query('from') from?: string, @Query('to') to?: string) {
-    return this.admin.listAdminPushCampaigns({ from, take, to });
+  pushCampaigns(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.admin.listAdminPushCampaigns({ from, skip, take, to });
   }
 
   @Get('notifications/push-campaigns/summary')

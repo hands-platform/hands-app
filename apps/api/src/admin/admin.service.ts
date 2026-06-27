@@ -4600,11 +4600,12 @@ export class AdminService {
   }
 
   listAdminPushCampaigns(
-    options: { readonly from?: string; readonly take?: string; readonly to?: string } = {},
+    options: { readonly from?: string; readonly skip?: string; readonly take?: string; readonly to?: string } = {},
   ) {
     const where = adminPushCampaignHistoryDateWhere(options);
     return this.prisma.adminPushCampaign.findMany({
       orderBy: { createdAt: 'desc' },
+      skip: normalizeAdminPushCampaignHistorySkip(options.skip),
       take: normalizeAdminPushCampaignHistoryTake(options.take),
       ...(where ? { where } : {}),
       include: {
@@ -5805,6 +5806,14 @@ function normalizeAdminPushCampaignHistoryTake(value: string | undefined) {
     return ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT;
   }
   return Math.min(parsed, ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT);
+}
+
+function normalizeAdminPushCampaignHistorySkip(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  return Math.min(parsed, 10000);
 }
 
 function adminPushCampaignHistoryDateWhere(options: {
