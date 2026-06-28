@@ -73,9 +73,9 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
     summaryParams.set('q', filters.q);
   }
 
-  if (filters.review === 'unapproved') {
-    listParams.set('review', 'unapproved');
-    summaryParams.set('review', 'unapproved');
+  if (isPrimaryPartnerReview(filters.review)) {
+    listParams.set('review', filters.review);
+    summaryParams.set('review', filters.review);
   }
 
   return {
@@ -504,7 +504,7 @@ function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
       filters.security ||
       filters.readiness ||
       filters.bookingFlow ||
-      (filters.review && filters.review !== 'unapproved'),
+      (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
 

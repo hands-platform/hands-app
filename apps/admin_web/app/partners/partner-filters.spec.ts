@@ -71,19 +71,19 @@ describe('partner filters', () => {
     });
   });
 
-  it('keeps unsettled partner filtering local because wallet aggregation is not a direct profile where', () => {
+  it('pushes the primary unsettled partner review lane to the bounded API list', () => {
     const filters = buildProviderFilters({ review: 'unsettled' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=10',
-      listIsServerPaginated: false,
-      summaryHref: '/admin/partners/list-providers/summary',
-      summaryMatchesVisibleFilter: false,
+      listHref: '/admin/partners/list-providers?take=10&review=unsettled',
+      listIsServerPaginated: true,
+      summaryHref: '/admin/partners/list-providers/summary?review=unsettled',
+      summaryMatchesVisibleFilter: true,
     });
   });
 
   it('caps local partner filter hydration to the API provider list window', () => {
-    const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'unsettled' });
+    const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'marketplace-ready' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=50',

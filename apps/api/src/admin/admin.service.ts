@@ -3244,7 +3244,7 @@ export class AdminService {
   }
 
   async listPartnerDirectoryProviders(options: AdminPartnerDirectoryQueryOptions = {}) {
-    const where = adminPartnerDirectoryWhere(options);
+    const where = await this.partnerDirectoryWhere(options);
     const skip = adminPartnerDirectorySkip(options.skip);
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
@@ -3278,7 +3278,7 @@ export class AdminService {
   }
 
   async partnerDirectorySummary(options: AdminPartnerDirectorySummaryOptions = {}) {
-    const where = adminPartnerDirectoryWhere(options);
+    const where = await this.partnerDirectoryWhere(options);
     const totalCount = await this.prisma.providerProfile.count({
       ...(where ? { where } : {}),
     });
@@ -3287,6 +3287,39 @@ export class AdminService {
       generatedAt: new Date().toISOString(),
       totalCount,
     };
+  }
+
+  private async partnerDirectoryWhere(options: AdminPartnerDirectorySummaryOptions) {
+    const whereClauses = [adminPartnerDirectoryWhere(options)];
+    const unsettledWhere = await this.partnerDirectoryUnsettledWhere(options.review);
+
+    if (unsettledWhere) {
+      whereClauses.push(unsettledWhere);
+    }
+
+    return adminPartnerDirectoryAndWhere(whereClauses);
+  }
+
+  private async partnerDirectoryUnsettledWhere(reviewValue: string | null | undefined) {
+    if (normalizeNullable(reviewValue) !== 'unsettled') {
+      return undefined;
+    }
+
+    const rows = await this.prisma.providerEarning.groupBy({
+      by: ['providerProfileId'],
+      where: {
+        payoutBatchId: null,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+      },
+      _sum: { netAmount: true },
+    });
+    const providerIds = rows
+      .filter((row) => numberValue(row._sum.netAmount) < 0)
+      .map((row) => row.providerProfileId);
+
+    return {
+      id: { in: providerIds },
+    } satisfies Prisma.ProviderProfileWhereInput;
   }
 
   listFileReviewProviders(options: AdminFileReviewProviderListOptions = {}) {
@@ -7975,18 +8008,19 @@ function adminOperationsPolicyProviderListTake(value: number | string | null | u
 function adminPartnerDirectoryWhere(
   options: AdminPartnerDirectorySummaryOptions,
 ): Prisma.ProviderProfileWhereInput | undefined {
-  const whereClauses = [
+  return adminPartnerDirectoryAndWhere([
     adminPartnerDirectorySearchWhere(options.q),
     adminPartnerDirectoryReviewWhere(options.review),
-  ].filter(Boolean) as Prisma.ProviderProfileWhereInput[];
+  ]);
+}
 
-  if (whereClauses.length === 0) {
-    return undefined;
-  }
+function adminPartnerDirectoryAndWhere(
+  whereValues: Array<Prisma.ProviderProfileWhereInput | undefined>,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const whereClauses = whereValues.filter(Boolean) as Prisma.ProviderProfileWhereInput[];
 
-  if (whereClauses.length === 1) {
-    return whereClauses[0];
-  }
+  if (whereClauses.length === 0) return undefined;
+  if (whereClauses.length === 1) return whereClauses[0];
 
   return { AND: whereClauses };
 }

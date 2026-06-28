@@ -2879,6 +2879,47 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('supports unsettled partner directory filtering from wallet aggregation before loading row details', async () => {
+    const prisma = {
+      providerEarning: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-negative',
+            _sum: { netAmount: -120000 },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review: 'unsettled',
+        take: '25',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith({
+      by: ['providerProfileId'],
+      where: {
+        payoutBatchId: null,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+      },
+      _sum: { netAmount: true },
+    });
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 25,
+        where: {
+          id: { in: ['provider-negative'] },
+        },
+      }),
+    );
+  });
+
   it('exposes partner directory summary counts through the same safe filters', async () => {
     const prisma = {
       providerProfile: {
@@ -2951,6 +2992,34 @@ describe('AdminService query orchestration', () => {
             },
           },
         ]),
+      },
+    });
+  });
+
+  it('exposes unsettled partner directory summary counts from wallet aggregation', async () => {
+    const prisma = {
+      providerEarning: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-negative',
+            _sum: { netAmount: -90000 },
+          },
+        ]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerDirectorySummary({ review: 'unsettled' })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 1,
+    });
+
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['provider-negative'] },
       },
     });
   });
