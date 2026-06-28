@@ -11,7 +11,7 @@ import {
   buildProviderActiveFilters,
   buildProviderFilters,
   emptyProviderMessage,
-  paginatePartnerRows,
+  partnerRowsPagination,
   partnerHasAdvancedOperationalFilters,
   partnerSortLabel,
 } from './partner-filters';
@@ -128,14 +128,17 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = sortProviders(rawProviders, opsPolicy, filters.sort, PARTNER_LIST_QUERY_DEPS);
   const providers = filterProviders(allProviders, filters, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const providerPagination = paginatePartnerRows(providers, filters);
-  const visibleProviders = providerPagination.rows;
-  const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const activeFilters = buildProviderActiveFilters(filters);
   const partnerDirectoryTotalCount =
     dataHrefs.summaryMatchesVisibleFilter
       ? providerDirectorySummary.totalCount || rawProviders.length
       : providers.length;
+  const providerPagination = partnerRowsPagination(providers, filters, {
+    serverPaginated: dataHrefs.listIsServerPaginated,
+    totalRows: partnerDirectoryTotalCount,
+  });
+  const visibleProviders = providerPagination.rows;
+  const hiddenProviderCount = Math.max(partnerDirectoryTotalCount - visibleProviders.length, 0);
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
   const deepPartnerOps = showDeepPartnerOpsSections

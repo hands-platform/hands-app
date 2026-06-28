@@ -3,6 +3,7 @@ import {
   buildPartnerListHref,
   buildProviderFilters,
   paginatePartnerRows,
+  partnerRowsPagination,
   partnerHasAdvancedOperationalFilters,
   partnerReviewFilterLabel,
   providerFilterDescription,
@@ -42,16 +43,18 @@ describe('partner filters', () => {
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=10',
+      listIsServerPaginated: true,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: true,
     });
   });
 
-  it('passes partner search to the API and keeps list hydration bounded to the visible page', () => {
+  it('passes partner search and page offsets to the API without cumulative hydration', () => {
     const filters = buildProviderFilters({ page: '3', pageSize: '25', q: 'late arrival' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=75&q=late+arrival',
+      listHref: '/admin/partners/list-providers?take=25&skip=50&q=late+arrival',
+      listIsServerPaginated: true,
       summaryHref: '/admin/partners/list-providers/summary?q=late+arrival',
       summaryMatchesVisibleFilter: true,
     });
@@ -62,6 +65,7 @@ describe('partner filters', () => {
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=10&review=unapproved',
+      listIsServerPaginated: true,
       summaryHref: '/admin/partners/list-providers/summary?review=unapproved',
       summaryMatchesVisibleFilter: true,
     });
@@ -72,6 +76,7 @@ describe('partner filters', () => {
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=10',
+      listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
     });
@@ -91,6 +96,21 @@ describe('partner filters', () => {
       totalRows: 12,
     });
     expect(paginatePartnerRows(rows, { ...filters, page: 99 }).page).toBe(2);
+  });
+
+  it('keeps server-paginated partner rows as the visible rows while using summary totals', () => {
+    const rows = ['p51', 'p52'];
+    const filters = { ...buildProviderFilters({ page: '3', pageSize: '25' }) };
+
+    expect(partnerRowsPagination(rows, filters, { serverPaginated: true, totalRows: 62 })).toMatchObject({
+      from: 51,
+      page: 3,
+      pageSize: 25,
+      rows,
+      to: 52,
+      totalPages: 3,
+      totalRows: 62,
+    });
   });
 
   it.each<keyof ProviderFilters>(['location', 'security', 'bookingFlow'])(

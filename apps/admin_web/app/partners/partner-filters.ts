@@ -28,6 +28,7 @@ export type ProviderFilters = {
 
 export type PartnerDataHrefs = {
   readonly listHref: string;
+  readonly listIsServerPaginated: boolean;
   readonly summaryHref: string;
   readonly summaryMatchesVisibleFilter: boolean;
 };
@@ -54,7 +55,18 @@ export function buildProviderFilters(
 export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHrefs {
   const listParams = new URLSearchParams();
   const summaryParams = new URLSearchParams();
-  listParams.set('take', String(filters.page * filters.pageSize));
+  const listIsServerPaginated = canUsePartnerDirectoryServerPagination(filters);
+  const listTake = listIsServerPaginated
+    ? filters.pageSize
+    : Math.min(filters.page * filters.pageSize, PARTNER_LOCAL_FILTER_HYDRATION_LIMIT);
+
+  listParams.set('take', String(listTake));
+  if (listIsServerPaginated) {
+    const skip = (filters.page - 1) * filters.pageSize;
+    if (skip > 0) {
+      listParams.set('skip', String(skip));
+    }
+  }
 
   if (filters.q) {
     listParams.set('q', filters.q);
@@ -68,6 +80,7 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
 
   return {
     listHref: `/admin/partners/list-providers?${listParams.toString()}`,
+    listIsServerPaginated,
     summaryHref: summaryParams.toString()
       ? `/admin/partners/list-providers/summary?${summaryParams.toString()}`
       : '/admin/partners/list-providers/summary',
@@ -101,6 +114,31 @@ export function paginatePartnerRows<T>(
     pageSize: filters.pageSize,
     rows: paginatedRows,
     to: Math.min(start + filters.pageSize, totalRows),
+    totalPages,
+    totalRows,
+  };
+}
+
+export function partnerRowsPagination<T>(
+  rows: readonly T[],
+  filters: Pick<ProviderFilters, 'page' | 'pageSize'>,
+  options: { readonly serverPaginated?: boolean; readonly totalRows?: number } = {},
+): PartnerPagination<T> {
+  if (!options.serverPaginated) {
+    return paginatePartnerRows(rows, filters);
+  }
+
+  const totalRows = Math.max(0, Math.trunc(options.totalRows ?? rows.length));
+  const totalPages = Math.max(1, Math.ceil(totalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: totalRows === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: Math.min(start + rows.length, totalRows),
     totalPages,
     totalRows,
   };
@@ -470,6 +508,10 @@ function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
   );
 }
 
+function canUsePartnerDirectoryServerPagination(filters: ProviderFilters) {
+  return !hasLocalOnlyPartnerFilters(filters) && filters.sort === 'ops-priority';
+}
+
 function readPartnerSort(value: string) {
   return [
     'ops-priority',
@@ -504,3 +546,5 @@ const partnerFilterHrefParamKeys = [
   'review',
   'sort',
 ] as const satisfies readonly (keyof ProviderFilters)[];
+
+const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 100;
