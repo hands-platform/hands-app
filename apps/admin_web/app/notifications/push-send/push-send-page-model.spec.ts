@@ -6,6 +6,7 @@ import {
   normalizePushCampaignPage,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
+  shouldRequestPushCampaignPreview,
 } from './push-send-page-model';
 
 describe('push send page model', () => {
@@ -70,5 +71,36 @@ describe('push send page model', () => {
       'all',
     ]);
     expect(pushCampaignDateRangeLabel('yesterday')).toBe('Previous day');
+  });
+
+  it('keeps campaign history navigation from rerunning recipient preview counts', () => {
+    expect(
+      buildPushCampaignListHref('7d', {
+        campaignRange: 'today',
+        campaignPage: '3',
+        preview: '1',
+        title: 'Weekend blast',
+        body: 'Slots are open',
+      }),
+    ).toBe('/notifications/push-send?title=Weekend+blast&body=Slots+are+open&campaignRange=7d');
+    expect(
+      buildPushCampaignPageHref(2, {
+        campaignRange: '7d',
+        preview: '1',
+        title: 'Weekend blast',
+        body: 'Slots are open',
+      }),
+    ).toBe('/notifications/push-send?campaignRange=7d&title=Weekend+blast&body=Slots+are+open&campaignPage=2');
+  });
+
+  it('requires explicit preview intent before counting manual push recipients', () => {
+    expect(shouldRequestPushCampaignPreview({ title: 'Weekend blast', body: 'Slots are open' })).toBe(false);
+    expect(
+      shouldRequestPushCampaignPreview({ preview: '1', title: 'Weekend blast', body: 'Slots are open' }),
+    ).toBe(true);
+    expect(shouldRequestPushCampaignPreview({ preview: '1', title: ' ', body: 'Slots are open' })).toBe(false);
+    expect(shouldRequestPushCampaignPreview({ preview: '0', title: 'Weekend blast', body: 'Slots are open' })).toBe(
+      false,
+    );
   });
 });

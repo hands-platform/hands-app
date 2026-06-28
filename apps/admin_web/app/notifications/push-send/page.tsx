@@ -26,6 +26,7 @@ import {
   normalizePushCampaignDateRange,
   pushCampaignDateRangeLabel,
   pushCampaignDateRangeLinks,
+  shouldRequestPushCampaignPreview,
 } from './push-send-page-model';
 
 type PushSendPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -97,7 +98,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
   const campaignRange = normalizePushCampaignDateRange(readSearchParam(params.campaignRange));
   const campaignPage = normalizePushCampaignPage(readSearchParam(params.campaignPage));
   const campaignRangeLabel = pushCampaignDateRangeLabel(campaignRange);
-  const canPreview = title.trim() && body.trim();
+  const canPreview = shouldRequestPushCampaignPreview(params);
   const [campaigns, campaignSummary, preview] = await Promise.all([
     adminGet<AdminPushCampaign[]>(buildPushCampaignApiHref(params), []),
     adminGet<AdminPushCampaignSummary | null>(buildPushCampaignSummaryApiHref(params), null),
@@ -190,6 +191,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         title="Create push campaign"
       >
         <form className="notification-push-preview-form" method="get">
+          <input name="preview" type="hidden" value="1" />
           <AdminFormSelect
             defaultValue={targetRole}
             label="Target role"

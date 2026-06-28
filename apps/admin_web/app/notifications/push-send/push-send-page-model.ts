@@ -51,7 +51,7 @@ export function buildPushCampaignListHref(
 ) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (key === 'campaignRange' || key === 'campaignPage') {
+    if (key === 'campaignRange' || key === 'campaignPage' || key === 'preview') {
       continue;
     }
     const values = Array.isArray(value) ? value : [value];
@@ -74,7 +74,7 @@ export function buildPushCampaignPageHref(
 ) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (key === 'campaignPage') {
+    if (key === 'campaignPage' || key === 'preview') {
       continue;
     }
     const values = Array.isArray(value) ? value : [value];
@@ -121,6 +121,14 @@ export function normalizePushCampaignPage(value: string) {
     return 1;
   }
   return Math.min(parsed, 500);
+}
+
+export function shouldRequestPushCampaignPreview(params: Record<string, string | string[] | undefined>) {
+  return (
+    readSearchParam(params.preview) === '1' &&
+    Boolean(readSearchParam(params.title).trim()) &&
+    Boolean(readSearchParam(params.body).trim())
+  );
 }
 
 function pushCampaignDateRangeWindow(range: PushCampaignDateRange, now = new Date()) {
