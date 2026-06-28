@@ -27,7 +27,7 @@ describe('CouponsPage', () => {
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(hrefs).toContain('/admin/coupons?take=25');
+    expect(hrefs).toContain('/admin/coupons?take=10');
     expect(hrefs).toContain('/admin/coupons/summary');
     expect(hrefs.some((href) => String(href).includes('/usage?'))).toBe(false);
   });
@@ -49,6 +49,6 @@ describe('CouponsPage', () => {
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(hrefs).toContain('/admin/coupons?take=25&skip=50');
+    expect(hrefs).toContain('/admin/coupons?take=10&skip=20');
   });
 });

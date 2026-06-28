@@ -15,7 +15,7 @@ import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-mod
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type ConfirmationHiddenInput = { readonly name: string; readonly value: boolean | number | string };
-const COUPON_LIST_PAGE_SIZE = 25;
+const COUPON_LIST_PAGE_SIZE = 10;
 const COUPON_USAGE_PAGE_SIZE = 10;
 const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
   expiredCount: 0,
