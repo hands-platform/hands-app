@@ -86,6 +86,53 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('filters app sessions server-side and clamps requested limits', async () => {
+    const prisma = {
+      appSession: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listAppSessions({
+        platform: ' IOS ',
+        q: '8490',
+        role: 'customer',
+        skip: '20',
+        state: 'live',
+        take: '250',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.appSession.findMany).toHaveBeenCalledWith({
+      where: {
+        AND: expect.arrayContaining([
+          { role: 'CUSTOMER' },
+          { platform: { equals: 'IOS', mode: 'insensitive' } },
+          expect.objectContaining({
+            OR: expect.arrayContaining([
+              { active: true, expiresAt: { gte: expect.any(Date) } },
+              { lastSeenAt: { gte: expect.any(Date) } },
+            ]),
+          }),
+          {
+            OR: [
+              { user: { phone: { contains: '8490', mode: 'insensitive' } } },
+              { user: { fullName: { contains: '8490', mode: 'insensitive' } } },
+              { deviceId: { contains: '8490', mode: 'insensitive' } },
+              { ipAddress: { contains: '8490', mode: 'insensitive' } },
+            ],
+          },
+        ]),
+      },
+      orderBy: { lastSeenAt: 'desc' },
+      skip: 20,
+      take: 100,
+      select: expect.any(Object),
+    });
+  });
+
   it('filters audit logs by action and clamps requested limits', async () => {
     const prisma = {
       adminAuditLog: {

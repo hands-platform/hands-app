@@ -85,8 +85,15 @@ export class AdminController {
   }
 
   @Get('app-sessions')
-  appSessions() {
-    return this.admin.listAppSessions();
+  appSessions(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('role') role?: string,
+    @Query('state') state?: string,
+    @Query('platform') platform?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.listAppSessions({ platform, q, role, skip, state, take });
   }
 
   @Get(['vietnam-overview', 'maps/vietnam-overview'])

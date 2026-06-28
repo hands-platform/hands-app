@@ -177,7 +177,10 @@ import {
 } from './admin-marketing-analytics';
 import type { AdminPushCampaignDto, UpdateNotificationTemplateDto } from './admin.dto';
 
-const ADMIN_APP_SESSION_LIST_LIMIT = 500;
+const ADMIN_APP_SESSION_LIST_LIMIT = 100;
+const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
+const ADMIN_APP_SESSION_RECENT_WINDOW_MS = 30 * 60_000;
+const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
 const ADMIN_USER_LIST_LIMIT = 500;
@@ -260,6 +263,14 @@ type AdminBookingListQuery = {
   readonly dateRange?: string;
   readonly dateTo?: string;
   readonly statusGroup?: string;
+  readonly take?: number | string | null;
+};
+type AdminAppSessionListQuery = {
+  readonly platform?: string | null;
+  readonly q?: string | null;
+  readonly role?: string | null;
+  readonly skip?: number | string | null;
+  readonly state?: string | null;
   readonly take?: number | string | null;
 };
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
@@ -900,10 +911,14 @@ export class AdminService {
     return { ok: true, auditLog };
   }
 
-  listAppSessions() {
+  listAppSessions(options: AdminAppSessionListQuery = {}) {
+    const where = adminAppSessionListWhere(options);
+    const skip = adminAppSessionListSkip(options.skip);
     return this.prisma.appSession.findMany({
+      ...(where ? { where } : {}),
       orderBy: { lastSeenAt: 'desc' },
-      take: ADMIN_APP_SESSION_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminAppSessionListTake(options.take),
       select: adminAppSessionListSelect,
     });
   }
@@ -5473,6 +5488,98 @@ function adminAuditLogListSkip(value: number | string | null | undefined): numbe
   }
 
   return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+}
+
+function adminAppSessionListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_APP_SESSION_LIST_LIMIT);
+}
+
+function adminAppSessionListSkip(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+}
+
+function adminAppSessionListWhere(
+  options: AdminAppSessionListQuery,
+): Prisma.AppSessionWhereInput | undefined {
+  const filters: Prisma.AppSessionWhereInput[] = [];
+  const role = normalizeAdminAppSessionRole(options.role);
+  const platform = normalizeNullable(options.platform)?.toUpperCase();
+  const stateWhere = adminAppSessionStateWhere(options.state);
+  const q = normalizeNullable(options.q);
+
+  if (role) {
+    filters.push({ role });
+  }
+  if (platform) {
+    filters.push({ platform: { equals: platform, mode: 'insensitive' } });
+  }
+  if (stateWhere) {
+    filters.push(stateWhere);
+  }
+  if (q) {
+    filters.push({
+      OR: [
+        { user: { phone: { contains: q, mode: 'insensitive' } } },
+        { user: { fullName: { contains: q, mode: 'insensitive' } } },
+        { deviceId: { contains: q, mode: 'insensitive' } },
+        { ipAddress: { contains: q, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  return filters.length > 0 ? { AND: filters } : undefined;
+}
+
+function normalizeAdminAppSessionRole(value: string | null | undefined): Role | undefined {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (normalized === 'PARTNER' || normalized === Role.PROVIDER) {
+    return Role.PROVIDER;
+  }
+  if (normalized === Role.CUSTOMER) {
+    return Role.CUSTOMER;
+  }
+  return undefined;
+}
+
+function adminAppSessionStateWhere(value: string | null | undefined): Prisma.AppSessionWhereInput | undefined {
+  const state = normalizeNullable(value)?.toLowerCase();
+  const now = new Date();
+  const liveBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_LIVE_WINDOW_MS);
+  const recentBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_RECENT_WINDOW_MS);
+  const staleBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_STALE_WINDOW_MS);
+  const activeExpiryWhere = { active: true, expiresAt: { gte: now } };
+
+  switch (state) {
+    case 'live':
+      return { OR: [activeExpiryWhere, { lastSeenAt: { gte: liveBoundary } }] };
+    case 'recent':
+      return {
+        AND: [
+          { lastSeenAt: { gte: recentBoundary, lt: liveBoundary } },
+          { NOT: activeExpiryWhere },
+        ],
+      };
+    case 'stale':
+      return {
+        AND: [
+          { lastSeenAt: { gte: staleBoundary, lt: recentBoundary } },
+          { NOT: activeExpiryWhere },
+        ],
+      };
+    case 'expired':
+      return { AND: [{ lastSeenAt: { lt: staleBoundary } }, { NOT: activeExpiryWhere }] };
+    default:
+      return undefined;
+  }
 }
 
 function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAuditLogWhereInput | undefined {

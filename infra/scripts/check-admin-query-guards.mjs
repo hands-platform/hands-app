@@ -8,6 +8,7 @@ const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 const notificationPageModelPath = resolve(root, 'apps/admin_web/app/notifications/notification-page-model.ts');
 const pushSendPageModelPath = resolve(root, 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts');
+const appSessionsPageModelPath = resolve(root, 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts');
 
 const violations = [];
 
@@ -16,6 +17,7 @@ const adminCustomerSelectsSource = readFileSync(adminCustomerSelectsPath, 'utf8'
 const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
 const notificationPageModelSource = readFileSync(notificationPageModelPath, 'utf8');
 const pushSendPageModelSource = readFileSync(pushSendPageModelPath, 'utf8');
+const appSessionsPageModelSource = readFileSync(appSessionsPageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
 function sourceBetween(startMarker, endMarker) {
@@ -33,11 +35,11 @@ const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary'
 const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
 const pushCampaignCreateSource = sourceBetween('async createAdminPushCampaign', 'async retryNotification');
 
-if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 500;')) {
+if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 100;')) {
   violations.push({
     area: 'admin app session query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'App session list query must keep the 500-row operations guard.',
+    message: 'App session list query must keep the 100-row operations guard.',
   });
 }
 
@@ -97,11 +99,43 @@ if (!adminServiceSource.includes('const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 
   });
 }
 
-if (!adminServiceSource.includes('take: ADMIN_APP_SESSION_LIST_LIMIT,')) {
+if (!adminServiceSource.includes('take: adminAppSessionListTake(options.take),')) {
   violations.push({
     area: 'admin app session query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'App session list query must apply ADMIN_APP_SESSION_LIST_LIMIT.',
+    message: 'App session list query must apply bounded server pagination.',
+  });
+}
+
+if (!adminServiceSource.includes('const where = adminAppSessionListWhere(options);')) {
+  violations.push({
+    area: 'admin app session query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'App session list query must apply server-side filters.',
+  });
+}
+
+if (!adminServiceSource.includes('const skip = adminAppSessionListSkip(options.skip);')) {
+  violations.push({
+    area: 'admin app session query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'App session list query must apply bounded server pagination offsets.',
+  });
+}
+
+if (!appSessionsPageModelSource.includes('const DEFAULT_APP_SESSION_LIST_TAKE = 100;')) {
+  violations.push({
+    area: 'admin app session page',
+    file: 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts',
+    message: 'App sessions page API calls must keep a 100-row default page size.',
+  });
+}
+
+if (!appSessionsPageModelSource.includes('buildAppSessionApiHref')) {
+  violations.push({
+    area: 'admin app session page',
+    file: 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts',
+    message: 'App sessions page must build bounded filtered API requests.',
   });
 }
 

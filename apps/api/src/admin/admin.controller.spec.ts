@@ -46,6 +46,7 @@ describe('AdminController notification and push actions', () => {
     updateNotificationTemplate: vi.fn(),
     updateReferralPolicy: vi.fn(),
     upsertMarketingSpendDaily: vi.fn(),
+    listAppSessions: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -220,6 +221,27 @@ describe('AdminController notification and push actions', () => {
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
       q: 'mai',
+    });
+  });
+
+  it('exposes app sessions as a bounded filtered list', async () => {
+    admin.listAppSessions.mockResolvedValue([{ id: 'session-1' }]);
+
+    await expect(
+      controller.appSessions('50', '100', 'customer', 'live', 'ios', '8490'),
+    ).resolves.toEqual([{ id: 'session-1' }]);
+
+    expect(routeMetadata('appSessions')).toEqual({
+      method: RequestMethod.GET,
+      path: 'app-sessions',
+    });
+    expect(admin.listAppSessions).toHaveBeenCalledWith({
+      platform: 'ios',
+      q: '8490',
+      role: 'customer',
+      skip: '100',
+      state: 'live',
+      take: '50',
     });
   });
 

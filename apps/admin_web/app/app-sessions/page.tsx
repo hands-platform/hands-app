@@ -16,16 +16,18 @@ import {
   type SessionCommandCard,
 } from './app-sessions-command-board-section';
 import { AppSessionsCheckQueueSection, type SessionCheckQueueItem } from './app-sessions-check-queue-section';
+import {
+  buildAppSessionApiHref,
+  buildSessionFilters,
+  sessionFilterHref,
+  sessionFilterLabel,
+  type SessionFilters,
+  type SessionState,
+} from './app-sessions-page-model';
 import { AppSessionsScopeSection, type AppSessionQuickFilter } from './app-sessions-scope-section';
 import { AppSessionsTableSection, type AppSessionTableRow } from './app-sessions-table-section';
 
-type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 type AppSessionsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type SessionFilters = {
-  role: 'CUSTOMER' | 'PROVIDER' | null;
-  state: SessionState | null;
-  platform: string | null;
-};
 type SessionRoleAccumulator = {
   expired: number;
   live: number;
@@ -56,8 +58,8 @@ export default async function AppSessionsPage({
   searchParams?: AppSessionsPageSearchParams;
 }) {
   const filters = buildSessionFilters((await searchParams) ?? {});
-  const allSessions = await adminGet<AdminAppSession[]>('/admin/app-sessions', []);
-  const sessions = filterSessions(allSessions, filters);
+  const loadedSessions = await adminGet<AdminAppSession[]>(buildAppSessionApiHref(filters), []);
+  const sessions = filterSessions(loadedSessions, filters);
   const summary = buildSessionSummary(sessions);
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
@@ -92,7 +94,7 @@ export default async function AppSessionsPage({
         activeFilterLabel={activeFilterLabel}
         loadedCount={sessions.length}
         quickFilters={sessionQuickFilters}
-        totalCount={allSessions.length}
+        totalCount={loadedSessions.length}
       />
 
       <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
@@ -156,18 +158,6 @@ const sessionQuickFilters: AppSessionQuickFilter[] = [
   { label: 'Expired sessions', href: '/app-sessions?state=expired' },
 ];
 
-function buildSessionFilters(params: Record<string, string | string[] | undefined>): SessionFilters {
-  const role = singleParam(params.role)?.toUpperCase();
-  const state = singleParam(params.state)?.toLowerCase();
-  const platform = singleParam(params.platform)?.toLowerCase() ?? null;
-
-  return {
-    role: role === 'PARTNER' || role === 'PROVIDER' ? 'PROVIDER' : role === 'CUSTOMER' ? 'CUSTOMER' : null,
-    state: isSessionState(state) ? state : null,
-    platform,
-  };
-}
-
 function filterSessions(sessions: AdminAppSession[], filters: SessionFilters) {
   return sessions.filter((session) => {
     if (filters.role && session.role !== filters.role) {
@@ -182,41 +172,25 @@ function filterSessions(sessions: AdminAppSession[], filters: SessionFilters) {
       return false;
     }
 
+    if (filters.q && !sessionSearchHaystack(session).includes(filters.q.toLowerCase())) {
+      return false;
+    }
+
     return true;
   });
 }
 
-function sessionFilterLabel(filters: SessionFilters) {
-  const parts = [
-    filters.role === 'PROVIDER'
-      ? 'partner sessions'
-      : filters.role === 'CUSTOMER'
-        ? 'customer sessions'
-        : null,
-    filters.state ? `${filters.state} heartbeat` : null,
-    filters.platform ? `${filters.platform} platform` : null,
-  ].filter(Boolean);
-
-  return parts.length
-    ? `Filtered to ${parts.join(', ')}`
-    : 'Showing all customer, partner, and admin app sessions';
-}
-
-function sessionFilterHref(filters: SessionFilters) {
-  const params = new URLSearchParams();
-  if (filters.role) params.set('role', filters.role);
-  if (filters.state) params.set('state', filters.state);
-  if (filters.platform) params.set('platform', filters.platform);
-  const query = params.toString();
-  return query ? `/app-sessions?${query}` : '/app-sessions';
-}
-
-function singleParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function isSessionState(value: string | undefined): value is SessionState {
-  return value === 'live' || value === 'recent' || value === 'stale' || value === 'expired';
+function sessionSearchHaystack(session: AdminAppSession) {
+  return [
+    session.user?.phone,
+    session.user?.fullName,
+    session.user?.providerProfile?.displayName,
+    session.deviceId,
+    session.ipAddress,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string, string]> {
