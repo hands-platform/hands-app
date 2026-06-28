@@ -13,7 +13,7 @@ import {
 } from '../../lib/admin-format';
 import { bookingCreateGateReasonLabel } from '../../lib/booking-create-gate-reasons';
 import { bookingMatchAuditHighlights } from '../../lib/booking-match-audit';
-import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import { dateRangeLabel, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   AuditLogCommandBoardSection,
   type AuditCommandBoardItem,
@@ -49,12 +49,11 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     adminGet<AdminAuditLog[]>(buildAuditLogApiHref(params), []),
     adminGet<AuditLogSummaryResponse | null>(buildAuditLogSummaryApiHref(params), null),
   ]);
-  const dateFilteredLogs = sortLogs(serverLogs).filter((log) => isInDateRange(log.createdAt, filters.range));
-  const logs = filterAuditLogs(dateFilteredLogs, filters);
+  const logs = sortLogs(serverLogs);
   const summary = buildSummary(logs);
   const totalEvents = serverSummary?.totalCount ?? logs.length;
   const totalPages = Math.max(1, Math.ceil(totalEvents / AUDIT_LOG_PAGE_SIZE));
-  const commandBoard = buildAuditCommandBoard(dateFilteredLogs, filters.range);
+  const commandBoard = buildAuditCommandBoard(logs, filters.range);
   const auditLogRows = buildAuditLogTableRows(logs);
 
   return (
@@ -430,29 +429,6 @@ function withAuditRange(href: string, range: AuditLogFilters['range']) {
   return `${href}${href.includes('?') ? '&' : '?'}range=${range}`;
 }
 
-function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
-  const query = filters.q.toLowerCase();
-  return logs.filter((log) => {
-    if (query && !auditSearchText(log).includes(query)) {
-      return false;
-    }
-    if (filters.bucket && !matchesAuditBucket(log.action, filters.bucket)) {
-      return false;
-    }
-    if (filters.priority && String(auditPriority(log.action)) !== filters.priority) {
-      return false;
-    }
-    return true;
-  });
-}
-
-function auditSearchText(log: AdminAuditLog) {
-  return [log.action, log.target, log.actor?.fullName, log.actor?.phone, metadataSearchText(log.metadata)]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
 function auditPriority(action: string) {
   if (action.startsWith('operational_policy.')) {
     return 4;
@@ -551,13 +527,6 @@ function actionBucketLabel(action: string) {
   return 'System';
 }
 
-function matchesAuditBucket(action: string, bucket: string) {
-  if (bucket === 'Finance/Closeout') {
-    return isFinanceCloseoutAction(action);
-  }
-  return actionBucketLabel(action) === bucket;
-}
-
 function isProviderReviewAction(action: string) {
   return (
     action.startsWith('provider_') ||
@@ -632,17 +601,6 @@ function metadataPreviewForLog(log: AdminAuditLog) {
   }
 
   return metadataPreview(log.metadata);
-}
-
-function metadataSearchText(metadata: unknown) {
-  if (!metadata) {
-    return '';
-  }
-  try {
-    return JSON.stringify(metadata);
-  } catch {
-    return '';
-  }
 }
 
 function notificationRetryMetadataPreview(metadata: unknown) {

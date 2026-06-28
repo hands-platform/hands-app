@@ -1,7 +1,55 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
+
 import type { AdminAuditLog } from '../../lib/admin-api';
-import { buildAuditLogTableRows } from './page-content';
+import { adminGet } from '../../lib/admin-api';
+import AuditLogPage, { buildAuditLogTableRows } from './page-content';
+
+vi.mock('../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
+
+  return {
+    ...actual,
+    adminGet: vi.fn(),
+  };
+});
+
+const mockedAdminGet = vi.mocked(adminGet);
 
 describe('audit log page model', () => {
+  beforeEach(() => {
+    mockedAdminGet.mockReset();
+  });
+
+  it('renders the bounded server page rows without applying a second local date filter', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/audit-logs/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 125 };
+      }
+
+      if (href.startsWith('/admin/audit-logs')) {
+        return [
+          {
+            action: 'booking.completed',
+            actor: { fullName: 'Operator One' },
+            createdAt: '2026-06-01T09:00:00.000Z',
+            id: 'audit-server-page-row',
+            metadata: { bookingId: 'booking-1' },
+            target: 'booking:booking-1',
+          },
+        ];
+      }
+
+      return fallback;
+    });
+
+    const page = await AuditLogPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('booking:booking-1');
+    expect(markup).toContain('Showing 1 of 125 events');
+  });
+
   it('surfaces FCM sent evidence for notification retry audit rows', () => {
     const [row] = buildAuditLogTableRows([
       notificationRetryLog({
