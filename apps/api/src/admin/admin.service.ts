@@ -25,6 +25,7 @@ import {
   ProviderSanctionType,
   ProviderStatus,
   ReviewStatus,
+  ReferralAttributionStatus,
   Role,
   VerificationStatus,
 } from '@prisma/client';
@@ -295,7 +296,10 @@ type AdminChatArchiveListQuery = {
   readonly take?: number | string | null;
 };
 type AdminReferralParentListQuery = {
+  readonly q?: string | null;
+  readonly reward?: string | null;
   readonly skip?: number | string | null;
+  readonly status?: string | null;
   readonly take?: number | string | null;
 };
 type AdminPaymentOperationsQuery = {
@@ -1426,7 +1430,7 @@ export class AdminService {
   async listCustomerReferralParents(options: AdminReferralParentListQuery = {}) {
     const skip = adminReferralParentListSkip(options.skip);
     const rows = await this.prisma.customerProfile.findMany({
-      where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+      where: adminCustomerReferralParentWhere(options),
       orderBy: { id: 'desc' },
       ...(skip > 0 ? { skip } : {}),
       take: adminReferralParentListTake(options.take),
@@ -1437,14 +1441,14 @@ export class AdminService {
     return rows.map((row) => adminCustomerReferralParentView(row, decisions));
   }
 
-  async customerReferralParentSummary() {
+  async customerReferralParentSummary(options: AdminReferralParentListQuery = {}) {
     const [totalCount, rewardGroups] = await Promise.all([
       this.prisma.customerProfile.count({
-        where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+        where: adminCustomerReferralParentWhere(options),
       }),
       this.prisma.referralReward.groupBy({
         by: ['status'],
-        where: { attribution: { audience: ReferralAudience.CUSTOMER } },
+        where: { attribution: adminCustomerReferralAttributionWhere(options, { includeReward: true }) },
         _count: { _all: true },
         _sum: { amount: true },
       }),
@@ -1475,7 +1479,7 @@ export class AdminService {
   async listPartnerReferralParents(options: AdminReferralParentListQuery = {}) {
     const skip = adminReferralParentListSkip(options.skip);
     const rows = await this.prisma.providerProfile.findMany({
-      where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+      where: adminPartnerReferralParentWhere(options),
       orderBy: { id: 'desc' },
       ...(skip > 0 ? { skip } : {}),
       take: adminReferralParentListTake(options.take),
@@ -1486,14 +1490,14 @@ export class AdminService {
     return rows.map((row) => adminPartnerReferralParentView(row, decisions));
   }
 
-  async partnerReferralParentSummary() {
+  async partnerReferralParentSummary(options: AdminReferralParentListQuery = {}) {
     const [totalCount, rewardGroups] = await Promise.all([
       this.prisma.providerProfile.count({
-        where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+        where: adminPartnerReferralParentWhere(options),
       }),
       this.prisma.referralReward.groupBy({
         by: ['status'],
-        where: { attribution: { audience: ReferralAudience.PARTNER } },
+        where: { attribution: adminPartnerReferralAttributionWhere(options, { includeReward: true }) },
         _count: { _all: true },
         _sum: { amount: true },
       }),
@@ -5953,6 +5957,264 @@ function adminReferralParentListSkip(value: number | string | null | undefined):
   }
 
   return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+}
+
+function adminCustomerReferralParentWhere(
+  options: AdminReferralParentListQuery,
+): Prisma.CustomerProfileWhereInput {
+  const filters: Prisma.CustomerProfileWhereInput[] = [
+    { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+  ];
+  const q = normalizeNullable(options.q);
+  const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
+  const rewardStatuses = adminReferralRewardStatusFilter(options.reward);
+
+  if (q) {
+    filters.push({ OR: adminCustomerReferralParentSearchFilters(q) });
+  }
+  if (attributionStatuses) {
+    filters.push({
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.CUSTOMER,
+          status: { in: attributionStatuses },
+        },
+      },
+    });
+  }
+  if (rewardStatuses) {
+    filters.push({
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.CUSTOMER,
+          rewards: { some: { status: { in: rewardStatuses } } },
+        },
+      },
+    });
+  }
+
+  return { AND: filters };
+}
+
+function adminPartnerReferralParentWhere(
+  options: AdminReferralParentListQuery,
+): Prisma.ProviderProfileWhereInput {
+  const filters: Prisma.ProviderProfileWhereInput[] = [
+    { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+  ];
+  const q = normalizeNullable(options.q);
+  const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
+  const rewardStatuses = adminReferralRewardStatusFilter(options.reward);
+
+  if (q) {
+    filters.push({ OR: adminPartnerReferralParentSearchFilters(q) });
+  }
+  if (attributionStatuses) {
+    filters.push({
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.PARTNER,
+          status: { in: attributionStatuses },
+        },
+      },
+    });
+  }
+  if (rewardStatuses) {
+    filters.push({
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.PARTNER,
+          rewards: { some: { status: { in: rewardStatuses } } },
+        },
+      },
+    });
+  }
+
+  return { AND: filters };
+}
+
+function adminCustomerReferralAttributionWhere(
+  options: AdminReferralParentListQuery,
+  config: { includeReward: boolean },
+): Prisma.ReferralAttributionWhereInput {
+  const filters: Prisma.ReferralAttributionWhereInput[] = [{ audience: ReferralAudience.CUSTOMER }];
+  const q = normalizeNullable(options.q);
+  const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
+  const rewardStatuses = config.includeReward ? adminReferralRewardStatusFilter(options.reward) : null;
+
+  if (q) {
+    filters.push({ OR: adminCustomerReferralAttributionSearchFilters(q) });
+  }
+  if (attributionStatuses) {
+    filters.push({ status: { in: attributionStatuses } });
+  }
+  if (rewardStatuses) {
+    filters.push({ rewards: { some: { status: { in: rewardStatuses } } } });
+  }
+
+  return { AND: filters };
+}
+
+function adminPartnerReferralAttributionWhere(
+  options: AdminReferralParentListQuery,
+  config: { includeReward: boolean },
+): Prisma.ReferralAttributionWhereInput {
+  const filters: Prisma.ReferralAttributionWhereInput[] = [{ audience: ReferralAudience.PARTNER }];
+  const q = normalizeNullable(options.q);
+  const attributionStatuses = adminReferralAttributionStatusFilter(options.status);
+  const rewardStatuses = config.includeReward ? adminReferralRewardStatusFilter(options.reward) : null;
+
+  if (q) {
+    filters.push({ OR: adminPartnerReferralAttributionSearchFilters(q) });
+  }
+  if (attributionStatuses) {
+    filters.push({ status: { in: attributionStatuses } });
+  }
+  if (rewardStatuses) {
+    filters.push({ rewards: { some: { status: { in: rewardStatuses } } } });
+  }
+
+  return { AND: filters };
+}
+
+function adminCustomerReferralParentSearchFilters(q: string): Prisma.CustomerProfileWhereInput[] {
+  const textFilter = adminInsensitiveContains(q);
+  return [
+    { id: textFilter },
+    { user: { fullName: textFilter } },
+    { user: { phone: textFilter } },
+    { user: { email: textFilter } },
+    { referralCodes: { some: { audience: ReferralAudience.CUSTOMER, code: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.CUSTOMER, id: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.CUSTOMER, installSource: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.CUSTOMER, platform: textFilter } } },
+    {
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.CUSTOMER,
+          referredCustomerProfile: {
+            is: {
+              user: {
+                OR: [
+                  { fullName: textFilter },
+                  { phone: textFilter },
+                  { email: textFilter },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+  ];
+}
+
+function adminPartnerReferralParentSearchFilters(q: string): Prisma.ProviderProfileWhereInput[] {
+  const textFilter = adminInsensitiveContains(q);
+  return [
+    { id: textFilter },
+    { displayName: textFilter },
+    { user: { fullName: textFilter } },
+    { user: { phone: textFilter } },
+    { user: { email: textFilter } },
+    { referralCodes: { some: { audience: ReferralAudience.PARTNER, code: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.PARTNER, id: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.PARTNER, installSource: textFilter } } },
+    { referralsMade: { some: { audience: ReferralAudience.PARTNER, platform: textFilter } } },
+    {
+      referralsMade: {
+        some: {
+          audience: ReferralAudience.PARTNER,
+          referredProviderProfile: {
+            is: {
+              OR: [
+                { displayName: textFilter },
+                { user: { fullName: textFilter } },
+                { user: { phone: textFilter } },
+                { user: { email: textFilter } },
+              ],
+            },
+          },
+        },
+      },
+    },
+  ];
+}
+
+function adminCustomerReferralAttributionSearchFilters(q: string): Prisma.ReferralAttributionWhereInput[] {
+  const textFilter = adminInsensitiveContains(q);
+  return [
+    { id: textFilter },
+    { installSource: textFilter },
+    { platform: textFilter },
+    { referralCode: { code: textFilter } },
+    { referrerCustomerProfile: { is: { OR: adminCustomerReferralParentSearchFilters(q) } } },
+    {
+      referredCustomerProfile: {
+        is: {
+          user: {
+            OR: [
+              { fullName: textFilter },
+              { phone: textFilter },
+              { email: textFilter },
+            ],
+          },
+        },
+      },
+    },
+  ];
+}
+
+function adminPartnerReferralAttributionSearchFilters(q: string): Prisma.ReferralAttributionWhereInput[] {
+  const textFilter = adminInsensitiveContains(q);
+  return [
+    { id: textFilter },
+    { installSource: textFilter },
+    { platform: textFilter },
+    { referralCode: { code: textFilter } },
+    { referrerProviderProfile: { is: { OR: adminPartnerReferralParentSearchFilters(q) } } },
+    {
+      referredProviderProfile: {
+        is: {
+          OR: [
+            { displayName: textFilter },
+            { user: { fullName: textFilter } },
+            { user: { phone: textFilter } },
+            { user: { email: textFilter } },
+          ],
+        },
+      },
+    },
+  ];
+}
+
+function adminReferralAttributionStatusFilter(
+  value: string | null | undefined,
+): ReferralAttributionStatus[] | null {
+  const normalized = normalizeNullable(value);
+  if (normalized === 'qualified') {
+    return [ReferralAttributionStatus.QUALIFIED, ReferralAttributionStatus.REWARDED];
+  }
+  if (normalized === 'blocked') {
+    return [ReferralAttributionStatus.BLOCKED, ReferralAttributionStatus.CANCELLED];
+  }
+  if (normalized === 'pending') {
+    return [ReferralAttributionStatus.REGISTERED];
+  }
+  return null;
+}
+
+function adminReferralRewardStatusFilter(value: string | null | undefined): ReferralRewardStatus[] | null {
+  const normalized = normalizeNullable(value);
+  if (normalized === 'available') return [ReferralRewardStatus.AVAILABLE];
+  if (normalized === 'credited') return [ReferralRewardStatus.REWARDED];
+  if (normalized === 'pending') return [ReferralRewardStatus.PENDING];
+  if (normalized === 'held') return [ReferralRewardStatus.HELD];
+  return null;
+}
+
+function adminInsensitiveContains(value: string): Prisma.StringFilter {
+  return { contains: value, mode: 'insensitive' };
 }
 
 function adminAppSessionListWhere(

@@ -45,7 +45,6 @@ export type ReferralRewardQueueSummary = {
 };
 
 const referralListPageSize = 10;
-const referralFilteredFallbackTake = 100;
 
 type ReferralPaginationModel<T> = {
   readonly currentPage: number;
@@ -1112,18 +1111,13 @@ export function buildReferralParentApiHref(
   currentPage: number,
 ) {
   const params = new URLSearchParams();
-  const hasLocalFilters = hasReferralParentLocalFilters(filters);
-
-  if (hasLocalFilters) {
-    params.set('take', String(referralFilteredFallbackTake));
-  } else {
-    const page = Math.max(1, Math.trunc(currentPage));
-    const skip = (page - 1) * referralListPageSize;
-    params.set('take', String(referralListPageSize));
-    if (skip > 0) {
-      params.set('skip', String(skip));
-    }
+  const page = Math.max(1, Math.trunc(currentPage));
+  const skip = (page - 1) * referralListPageSize;
+  params.set('take', String(referralListPageSize));
+  if (skip > 0) {
+    params.set('skip', String(skip));
   }
+  appendReferralParentApiFilterParams(params, filters);
 
   return `/admin/referrals/${audience === 'partner' ? 'partners' : 'customers'}?${params.toString()}`;
 }
@@ -1132,10 +1126,11 @@ export function buildReferralParentSummaryApiHref(
   audience: ReferralAudienceSlug,
   filters: ReferralDashboardFilters,
 ) {
-  if (hasReferralParentLocalFilters(filters)) {
-    return null;
-  }
-  return `/admin/referrals/${audience === 'partner' ? 'partners' : 'customers'}/summary`;
+  const params = new URLSearchParams();
+  appendReferralParentApiFilterParams(params, filters);
+  const query = params.toString();
+  const baseHref = `/admin/referrals/${audience === 'partner' ? 'partners' : 'customers'}/summary`;
+  return query ? `${baseHref}?${query}` : baseHref;
 }
 
 export function paginateReferralRows<T>(
@@ -1237,13 +1232,15 @@ function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
 }
 
-function hasReferralParentLocalFilters(filters: ReferralDashboardFilters) {
-  return Boolean(filters.q) || filters.status !== 'all' || filters.reward !== 'all';
-}
-
 function formatReferralRewardQueueSummary(summary: ReferralRewardQueueSummary | undefined) {
   if (!summary) return `0 · ${formatMoney(0, 'VND', '0 VND')}`;
   return `${summary.count} · ${formatMoney(summary.amount, 'VND', '0 VND')}`;
+}
+
+function appendReferralParentApiFilterParams(params: URLSearchParams, filters: ReferralDashboardFilters) {
+  if (filters.q) params.set('q', filters.q);
+  if (filters.status !== 'all') params.set('status', filters.status);
+  if (filters.reward !== 'all') params.set('reward', filters.reward);
 }
 
 function buildReferralPaginationPages(currentPage: number, totalPages: number) {

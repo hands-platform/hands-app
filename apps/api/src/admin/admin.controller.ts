@@ -219,13 +219,23 @@ export class AdminController {
   }
 
   @Get('referrals/customers')
-  customerReferralParents(@Query('take') take?: string, @Query('skip') skip?: string) {
-    return this.admin.listCustomerReferralParents({ take, skip });
+  customerReferralParents(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('reward') reward?: string,
+  ) {
+    return this.admin.listCustomerReferralParents({ take, skip, q, status, reward });
   }
 
   @Get('referrals/customers/summary')
-  customerReferralParentSummary() {
-    return this.admin.customerReferralParentSummary();
+  customerReferralParentSummary(
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('reward') reward?: string,
+  ) {
+    return this.admin.customerReferralParentSummary({ q, status, reward });
   }
 
   @Get('referrals/customers/:id')
@@ -234,13 +244,23 @@ export class AdminController {
   }
 
   @Get('referrals/partners')
-  partnerReferralParents(@Query('take') take?: string, @Query('skip') skip?: string) {
-    return this.admin.listPartnerReferralParents({ take, skip });
+  partnerReferralParents(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('reward') reward?: string,
+  ) {
+    return this.admin.listPartnerReferralParents({ take, skip, q, status, reward });
   }
 
   @Get('referrals/partners/summary')
-  partnerReferralParentSummary() {
-    return this.admin.partnerReferralParentSummary();
+  partnerReferralParentSummary(
+    @Query('q') q?: string,
+    @Query('status') status?: string,
+    @Query('reward') reward?: string,
+  ) {
+    return this.admin.partnerReferralParentSummary({ q, status, reward });
   }
 
   @Get('referrals/partners/:id')

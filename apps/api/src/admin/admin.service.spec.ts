@@ -8,6 +8,7 @@ import {
   PaymentStatus,
   ProviderStatus,
   ProviderWalletLedgerType,
+  ReferralAttributionStatus,
   ReferralAudience,
   ReferralRewardMode,
   ReferralRewardStatus,
@@ -1443,7 +1444,15 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listCustomerReferralParents({ take: '25', skip: '50' })).resolves.toEqual([
+    await expect(
+      service.listCustomerReferralParents({
+        q: 'Parent',
+        reward: 'available',
+        skip: '50',
+        status: 'qualified',
+        take: '25',
+      }),
+    ).resolves.toEqual([
       expect.objectContaining({
         referrer: expect.objectContaining({ id: 'parent-customer' }),
         referralCode: expect.objectContaining({ code: 'HANDSCUST' }),
@@ -1480,7 +1489,34 @@ describe('AdminService query orchestration', () => {
       expect.objectContaining({
         skip: 50,
         take: 25,
-        where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+        where: {
+          AND: expect.arrayContaining([
+            { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+            {
+              OR: expect.arrayContaining([
+                { id: { contains: 'Parent', mode: 'insensitive' } },
+                { user: { fullName: { contains: 'Parent', mode: 'insensitive' } } },
+                { referralCodes: { some: { audience: ReferralAudience.CUSTOMER, code: { contains: 'Parent', mode: 'insensitive' } } } },
+              ]),
+            },
+            {
+              referralsMade: {
+                some: {
+                  audience: ReferralAudience.CUSTOMER,
+                  status: { in: [ReferralAttributionStatus.QUALIFIED, ReferralAttributionStatus.REWARDED] },
+                },
+              },
+            },
+            {
+              referralsMade: {
+                some: {
+                  audience: ReferralAudience.CUSTOMER,
+                  rewards: { some: { status: { in: [ReferralRewardStatus.AVAILABLE] } } },
+                },
+              },
+            },
+          ]),
+        },
       }),
     );
     expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
@@ -1560,13 +1596,48 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listPartnerReferralParents({ take: '10', skip: '20' })).resolves.toEqual([]);
+    await expect(
+      service.listPartnerReferralParents({
+        q: 'Parent',
+        reward: 'held',
+        skip: '20',
+        status: 'blocked',
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
 
     expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         skip: 20,
         take: 10,
-        where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+        where: {
+          AND: expect.arrayContaining([
+            { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+            {
+              OR: expect.arrayContaining([
+                { id: { contains: 'Parent', mode: 'insensitive' } },
+                { displayName: { contains: 'Parent', mode: 'insensitive' } },
+                { user: { fullName: { contains: 'Parent', mode: 'insensitive' } } },
+              ]),
+            },
+            {
+              referralsMade: {
+                some: {
+                  audience: ReferralAudience.PARTNER,
+                  status: { in: [ReferralAttributionStatus.BLOCKED, ReferralAttributionStatus.CANCELLED] },
+                },
+              },
+            },
+            {
+              referralsMade: {
+                some: {
+                  audience: ReferralAudience.PARTNER,
+                  rewards: { some: { status: { in: [ReferralRewardStatus.HELD] } } },
+                },
+              },
+            },
+          ]),
+        },
       }),
     );
     expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
@@ -1605,11 +1676,13 @@ describe('AdminService query orchestration', () => {
       ],
     });
     expect(prisma.customerProfile.count).toHaveBeenCalledWith({
-      where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+      where: {
+        AND: [{ referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } }],
+      },
     });
     expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
       by: ['status'],
-      where: { attribution: { audience: ReferralAudience.CUSTOMER } },
+      where: { attribution: { AND: [{ audience: ReferralAudience.CUSTOMER }] } },
       _count: { _all: true },
       _sum: { amount: true },
     });
@@ -1648,11 +1721,13 @@ describe('AdminService query orchestration', () => {
       ],
     });
     expect(prisma.providerProfile.count).toHaveBeenCalledWith({
-      where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+      where: {
+        AND: [{ referralsMade: { some: { audience: ReferralAudience.PARTNER } } }],
+      },
     });
     expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
       by: ['status'],
-      where: { attribution: { audience: ReferralAudience.PARTNER } },
+      where: { attribution: { AND: [{ audience: ReferralAudience.PARTNER }] } },
       _count: { _all: true },
       _sum: { amount: true },
     });

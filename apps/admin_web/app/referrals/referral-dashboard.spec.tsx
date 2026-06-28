@@ -246,8 +246,12 @@ describe('ReferralDashboard', () => {
     expect(buildReferralParentSummaryApiHref('customer', defaultReferralDashboardFiltersForTest())).toBe(
       '/admin/referrals/customers/summary',
     );
-    expect(buildReferralParentApiHref('customer', filters, 3)).toBe('/admin/referrals/customers?take=100');
-    expect(buildReferralParentSummaryApiHref('customer', filters)).toBeNull();
+    expect(buildReferralParentApiHref('customer', filters, 3)).toBe(
+      '/admin/referrals/customers?take=10&skip=20&q=Parent&status=blocked&reward=held',
+    );
+    expect(buildReferralParentSummaryApiHref('customer', filters)).toBe(
+      '/admin/referrals/customers/summary?q=Parent&status=blocked&reward=held',
+    );
   });
 
   it('renders rounded pagination for longer referral parent lists', () => {
