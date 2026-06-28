@@ -21,7 +21,7 @@ export function buildCashSettlementFilters(
 export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
   const params = new URLSearchParams({
     range: filters.range,
-    take: '100',
+    take: '50',
   });
 
   return `/admin/cash-settlement-earnings?${params.toString()}`;

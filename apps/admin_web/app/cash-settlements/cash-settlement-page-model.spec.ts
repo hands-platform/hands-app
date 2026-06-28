@@ -75,7 +75,7 @@ describe('cash settlement page model', () => {
     expect(buildCashSettlementFilters({})).toEqual({ q: '', queue: 'all', range: 'today' });
     expect(cashSettlementHref({ q: '', queue: 'all', range: 'all' })).toBe('/cash-settlements?range=all');
     expect(buildCashSettlementApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
-      '/admin/cash-settlement-earnings?range=7d&take=100',
+      '/admin/cash-settlement-earnings?range=7d&take=50',
     );
     expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
   });
