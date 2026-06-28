@@ -58,11 +58,25 @@ export class AdminController {
     @Query('country') country?: string,
     @Query('joinedFrom') joinedFrom?: string,
     @Query('joinedTo') joinedTo?: string,
+    @Query('lastBookingFrom') lastBookingFrom?: string,
+    @Query('lastBookingTo') lastBookingTo?: string,
     @Query('lastLoginFrom') lastLoginFrom?: string,
     @Query('lastLoginTo') lastLoginTo?: string,
     @Query('sort') sort?: string,
   ) {
-    return this.admin.listCustomers({ country, joinedFrom, joinedTo, lastLoginFrom, lastLoginTo, q, skip, sort, take });
+    return this.admin.listCustomers({
+      country,
+      joinedFrom,
+      joinedTo,
+      lastBookingFrom,
+      lastBookingTo,
+      lastLoginFrom,
+      lastLoginTo,
+      q,
+      skip,
+      sort,
+      take,
+    });
   }
 
   @Get('customers/summary')
@@ -71,10 +85,21 @@ export class AdminController {
     @Query('country') country?: string,
     @Query('joinedFrom') joinedFrom?: string,
     @Query('joinedTo') joinedTo?: string,
+    @Query('lastBookingFrom') lastBookingFrom?: string,
+    @Query('lastBookingTo') lastBookingTo?: string,
     @Query('lastLoginFrom') lastLoginFrom?: string,
     @Query('lastLoginTo') lastLoginTo?: string,
   ) {
-    return this.admin.customerSummary({ country, joinedFrom, joinedTo, lastLoginFrom, lastLoginTo, q });
+    return this.admin.customerSummary({
+      country,
+      joinedFrom,
+      joinedTo,
+      lastBookingFrom,
+      lastBookingTo,
+      lastLoginFrom,
+      lastLoginTo,
+      q,
+    });
   }
 
   @Get('customers/:id')

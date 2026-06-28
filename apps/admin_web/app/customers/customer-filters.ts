@@ -173,6 +173,8 @@ function buildCustomerDataQueryParams(filters: CustomerFilters, options: { inclu
   appendTextParam(params, 'country', filters.country);
   appendTextParam(params, 'joinedFrom', filters.joinedFrom);
   appendTextParam(params, 'joinedTo', filters.joinedTo);
+  appendTextParam(params, 'lastBookingFrom', filters.lastBookingFrom);
+  appendTextParam(params, 'lastBookingTo', filters.lastBookingTo);
   appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
   appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
   if (options.includeSort && filters.sort !== 'last-booking') {

@@ -107,9 +107,9 @@ describe('customer filters', () => {
 
     expect(buildCustomerDataHrefs(filters)).toEqual({
       listHref:
-        '/admin/customers?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21&sort=booking-count&take=25&skip=50',
+        '/admin/customers?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastBookingFrom=2026-06-10&lastBookingTo=2026-06-20&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21&sort=booking-count&take=25&skip=50',
       summaryHref:
-        '/admin/customers/summary?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21',
+        '/admin/customers/summary?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastBookingFrom=2026-06-10&lastBookingTo=2026-06-20&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21',
     });
   });
 });

@@ -2510,6 +2510,8 @@ describe('AdminService query orchestration', () => {
         country: 'VN',
         joinedFrom: '2026-06-01',
         joinedTo: '2026-06-27',
+        lastBookingFrom: '2026-06-08',
+        lastBookingTo: '2026-06-18',
         lastLoginFrom: '2026-06-10',
         lastLoginTo: '2026-06-20',
         q: 'mai',
@@ -2525,6 +2527,18 @@ describe('AdminService query orchestration', () => {
         skip: 20,
         take: 10,
         where: {
+          bookings: {
+            none: {
+              updatedAt: {
+                gte: new Date('2026-06-19T00:00:00.000Z'),
+              },
+            },
+            some: {
+              updatedAt: {
+                gte: new Date('2026-06-08T00:00:00.000Z'),
+              },
+            },
+          },
           user: {
             OR: [
               { fullName: { contains: 'mai', mode: 'insensitive' } },
@@ -2566,6 +2580,8 @@ describe('AdminService query orchestration', () => {
         country: 'VN',
         joinedFrom: '2026-06-01',
         joinedTo: '2026-06-27',
+        lastBookingFrom: '2026-06-08',
+        lastBookingTo: '2026-06-18',
         lastLoginFrom: '2026-06-10',
         lastLoginTo: '2026-06-20',
         q: 'mai',
@@ -2577,6 +2593,18 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.customerProfile.count).toHaveBeenCalledWith({
       where: {
+        bookings: {
+          none: {
+            updatedAt: {
+              gte: new Date('2026-06-19T00:00:00.000Z'),
+            },
+          },
+          some: {
+            updatedAt: {
+              gte: new Date('2026-06-08T00:00:00.000Z'),
+            },
+          },
+        },
         user: {
           OR: [
             { fullName: { contains: 'mai', mode: 'insensitive' } },

@@ -457,6 +457,8 @@ type AdminCustomerDirectorySummaryOptions = {
   country?: string | null;
   joinedFrom?: string | null;
   joinedTo?: string | null;
+  lastBookingFrom?: string | null;
+  lastBookingTo?: string | null;
   lastLoginFrom?: string | null;
   lastLoginTo?: string | null;
   q?: string | null;
@@ -6584,13 +6586,21 @@ function adminPartnerDirectoryReviewWhere(
 function adminCustomerDirectoryWhere(
   options: AdminCustomerDirectorySummaryOptions,
 ): Prisma.CustomerProfileWhereInput | undefined {
+  const where: Prisma.CustomerProfileWhereInput = {};
   const userWhere: Prisma.UserWhereInput = {};
   const q = normalizeNullable(options.q);
   const countrySessionWhere = adminCustomerDirectoryCountrySessionWhere(options.country);
   const joinedFrom = adminCustomerDirectoryDateBoundary(options.joinedFrom, 'joinedFrom');
   const joinedTo = adminCustomerDirectoryDateBoundary(options.joinedTo, 'joinedTo', true);
+  const lastBookingFrom = adminCustomerDirectoryDateBoundary(options.lastBookingFrom, 'lastBookingFrom');
+  const lastBookingTo = adminCustomerDirectoryDateBoundary(options.lastBookingTo, 'lastBookingTo', true);
   const lastLoginFrom = adminCustomerDirectoryDateBoundary(options.lastLoginFrom, 'lastLoginFrom');
   const lastLoginTo = adminCustomerDirectoryDateBoundary(options.lastLoginTo, 'lastLoginTo', true);
+  const lastBookingWhere = adminCustomerDirectoryLastBookingWhere(lastBookingFrom, lastBookingTo);
+
+  if (lastBookingWhere) {
+    where.bookings = lastBookingWhere;
+  }
 
   if (q) {
     userWhere.OR = [
@@ -6623,11 +6633,27 @@ function adminCustomerDirectoryWhere(
     };
   }
 
-  if (Object.keys(userWhere).length === 0) {
+  if (Object.keys(userWhere).length > 0) {
+    where.user = userWhere;
+  }
+
+  if (Object.keys(where).length === 0) {
     return undefined;
   }
 
-  return { user: userWhere };
+  return where;
+}
+
+function adminCustomerDirectoryLastBookingWhere(
+  from: Date | undefined,
+  to: Date | undefined,
+): NonNullable<Prisma.CustomerProfileWhereInput['bookings']> | undefined {
+  if (!from && !to) return undefined;
+
+  return {
+    some: from ? { updatedAt: { gte: from } } : {},
+    ...(to ? { none: { updatedAt: { gte: to } } } : {}),
+  };
 }
 
 function adminCustomerDirectoryOrderBy(
