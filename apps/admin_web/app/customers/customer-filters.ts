@@ -170,8 +170,11 @@ function buildCustomerDataQueryParams(filters: CustomerFilters) {
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', filters.q);
+  appendTextParam(params, 'country', filters.country);
   appendTextParam(params, 'joinedFrom', filters.joinedFrom);
   appendTextParam(params, 'joinedTo', filters.joinedTo);
+  appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
+  appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
 
   return params;
 }

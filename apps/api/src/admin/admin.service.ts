@@ -454,8 +454,11 @@ type AdminAuditLogListOptions = {
 };
 
 type AdminCustomerDirectorySummaryOptions = {
+  country?: string | null;
   joinedFrom?: string | null;
   joinedTo?: string | null;
+  lastLoginFrom?: string | null;
+  lastLoginTo?: string | null;
   q?: string | null;
 };
 
@@ -6582,8 +6585,11 @@ function adminCustomerDirectoryWhere(
 ): Prisma.CustomerProfileWhereInput | undefined {
   const userWhere: Prisma.UserWhereInput = {};
   const q = normalizeNullable(options.q);
+  const countrySessionWhere = adminCustomerDirectoryCountrySessionWhere(options.country);
   const joinedFrom = adminCustomerDirectoryDateBoundary(options.joinedFrom, 'joinedFrom');
   const joinedTo = adminCustomerDirectoryDateBoundary(options.joinedTo, 'joinedTo', true);
+  const lastLoginFrom = adminCustomerDirectoryDateBoundary(options.lastLoginFrom, 'lastLoginFrom');
+  const lastLoginTo = adminCustomerDirectoryDateBoundary(options.lastLoginTo, 'lastLoginTo', true);
 
   if (q) {
     userWhere.OR = [
@@ -6600,11 +6606,68 @@ function adminCustomerDirectoryWhere(
     };
   }
 
+  if (countrySessionWhere || lastLoginFrom || lastLoginTo) {
+    userWhere.appSessions = {
+      some: {
+        ...(countrySessionWhere ?? {}),
+        ...(lastLoginFrom || lastLoginTo
+          ? {
+              lastSeenAt: {
+                ...(lastLoginFrom ? { gte: lastLoginFrom } : {}),
+                ...(lastLoginTo ? { lt: lastLoginTo } : {}),
+              },
+            }
+          : {}),
+      },
+    };
+  }
+
   if (Object.keys(userWhere).length === 0) {
     return undefined;
   }
 
   return { user: userWhere };
+}
+
+const ADMIN_CUSTOMER_DIRECTORY_COUNTRIES = ['VN', 'KR', 'JP', 'CN', 'SG'] as const;
+
+function adminCustomerDirectoryCountrySessionWhere(
+  value: string | null | undefined,
+): Prisma.AppSessionWhereInput | undefined {
+  const country = normalizeNullable(value)?.toUpperCase();
+  if (!country) {
+    return undefined;
+  }
+
+  if (country === 'UNKNOWN') {
+    return {
+      OR: [
+        { deviceLanguage: null },
+        { deviceLanguage: { equals: '' } },
+        { NOT: { OR: ADMIN_CUSTOMER_DIRECTORY_COUNTRIES.flatMap(adminCustomerKnownCountryLanguageClauses) } },
+      ],
+    };
+  }
+
+  if (!ADMIN_CUSTOMER_DIRECTORY_COUNTRIES.includes(country as (typeof ADMIN_CUSTOMER_DIRECTORY_COUNTRIES)[number])) {
+    return undefined;
+  }
+
+  return {
+    OR: adminCustomerKnownCountryLanguageClauses(country),
+  };
+}
+
+function adminCustomerKnownCountryLanguageClauses(country: string): Prisma.AppSessionWhereInput[] {
+  const clauses: Prisma.AppSessionWhereInput[] = [
+    { deviceLanguage: { endsWith: `-${country}`, mode: 'insensitive' } },
+  ];
+
+  if (country === 'VN') {
+    clauses.push({ deviceLanguage: { equals: 'vi', mode: 'insensitive' } });
+  }
+
+  return clauses;
 }
 
 function adminCustomerDirectoryDateBoundary(

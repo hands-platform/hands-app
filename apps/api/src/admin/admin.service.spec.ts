@@ -2507,8 +2507,11 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.listCustomers({
+        country: 'VN',
         joinedFrom: '2026-06-01',
         joinedTo: '2026-06-27',
+        lastLoginFrom: '2026-06-10',
+        lastLoginTo: '2026-06-20',
         q: 'mai',
         skip: '20',
         take: '10',
@@ -2531,6 +2534,18 @@ describe('AdminService query orchestration', () => {
               gte: new Date('2026-06-01T00:00:00.000Z'),
               lt: new Date('2026-06-28T00:00:00.000Z'),
             },
+            appSessions: {
+              some: {
+                OR: [
+                  { deviceLanguage: { endsWith: '-VN', mode: 'insensitive' } },
+                  { deviceLanguage: { equals: 'vi', mode: 'insensitive' } },
+                ],
+                lastSeenAt: {
+                  gte: new Date('2026-06-10T00:00:00.000Z'),
+                  lt: new Date('2026-06-21T00:00:00.000Z'),
+                },
+              },
+            },
           },
         },
       }),
@@ -2546,7 +2561,14 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.customerSummary({ joinedFrom: '2026-06-01', joinedTo: '2026-06-27', q: 'mai' }),
+      service.customerSummary({
+        country: 'VN',
+        joinedFrom: '2026-06-01',
+        joinedTo: '2026-06-27',
+        lastLoginFrom: '2026-06-10',
+        lastLoginTo: '2026-06-20',
+        q: 'mai',
+      }),
     ).resolves.toEqual({
       generatedAt: expect.any(String),
       totalCount: 42,
@@ -2563,6 +2585,18 @@ describe('AdminService query orchestration', () => {
           createdAt: {
             gte: new Date('2026-06-01T00:00:00.000Z'),
             lt: new Date('2026-06-28T00:00:00.000Z'),
+          },
+          appSessions: {
+            some: {
+              OR: [
+                { deviceLanguage: { endsWith: '-VN', mode: 'insensitive' } },
+                { deviceLanguage: { equals: 'vi', mode: 'insensitive' } },
+              ],
+              lastSeenAt: {
+                gte: new Date('2026-06-10T00:00:00.000Z'),
+                lt: new Date('2026-06-21T00:00:00.000Z'),
+              },
+            },
           },
         },
       },

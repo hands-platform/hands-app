@@ -203,9 +203,11 @@ describe('AdminController notification and push actions', () => {
     admin.customerSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 42 });
 
     await expect(
-      controller.customers('10', '20', 'mai', '2026-06-01', '2026-06-27'),
+      controller.customers('10', '20', 'mai', 'VN', '2026-06-01', '2026-06-27', '2026-06-10', '2026-06-20'),
     ).resolves.toEqual([{ id: 'customer-1' }]);
-    await expect(controller.customerSummary('mai', '2026-06-01', '2026-06-27')).resolves.toEqual({
+    await expect(
+      controller.customerSummary('mai', 'VN', '2026-06-01', '2026-06-27', '2026-06-10', '2026-06-20'),
+    ).resolves.toEqual({
       generatedAt: '2026-06-27T00:00:00.000Z',
       totalCount: 42,
     });
@@ -219,15 +221,21 @@ describe('AdminController notification and push actions', () => {
       path: 'customers/summary',
     });
     expect(admin.listCustomers).toHaveBeenCalledWith({
+      country: 'VN',
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
+      lastLoginFrom: '2026-06-10',
+      lastLoginTo: '2026-06-20',
       q: 'mai',
       skip: '20',
       take: '10',
     });
     expect(admin.customerSummary).toHaveBeenCalledWith({
+      country: 'VN',
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
+      lastLoginFrom: '2026-06-10',
+      lastLoginTo: '2026-06-20',
       q: 'mai',
     });
   });

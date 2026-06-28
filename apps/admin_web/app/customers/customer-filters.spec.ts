@@ -88,9 +88,17 @@ describe('customer filters', () => {
 
   it('builds bounded admin API hrefs for customer directory data and summary', () => {
     const filters = buildCustomerFilters({
+      country: 'VN',
+      gender: 'female',
       joinedFrom: '2026-06-01',
       joinedRange: 'custom',
       joinedTo: '2026-06-07',
+      lastBookingFrom: '2026-06-10',
+      lastBookingRange: 'custom',
+      lastBookingTo: '2026-06-20',
+      lastLoginFrom: '2026-06-11',
+      lastLoginRange: 'custom',
+      lastLoginTo: '2026-06-21',
       page: '3',
       pageSize: '25',
       q: 'mai',
@@ -98,8 +106,9 @@ describe('customer filters', () => {
 
     expect(buildCustomerDataHrefs(filters)).toEqual({
       listHref:
-        '/admin/customers?q=mai&joinedFrom=2026-06-01&joinedTo=2026-06-07&take=25&skip=50',
-      summaryHref: '/admin/customers/summary?q=mai&joinedFrom=2026-06-01&joinedTo=2026-06-07',
+        '/admin/customers?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21&take=25&skip=50',
+      summaryHref:
+        '/admin/customers/summary?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21',
     });
   });
 });
