@@ -6,6 +6,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
@@ -27,19 +28,30 @@ import {
   filterFileReviewRows,
   type FileReviewFilters,
   type FileReviewRow,
+  type FileReviewSummary,
 } from './file-review-board';
 
 type FilesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type FileReviewServerSummary = FileReviewSummary & {
+  readonly generatedAt?: string;
+  readonly totalProviders: number;
+};
 
 const FILE_REVIEW_HEADERS = ['File', 'Partner', 'Status', 'Upload', 'Evidence', 'Actions'] as const;
+const FILE_REVIEW_PROVIDER_PAGE_SIZE = 25;
 
 export default async function FilesPage({ searchParams }: { searchParams?: FilesPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const filters = buildFileFilters(params);
-  const providers = await adminGet<AdminProvider[]>('/admin/files/review-providers', []);
+  const activePage = readFileReviewPage(params.page);
+  const [providers, serverSummary] = await Promise.all([
+    adminGet<AdminProvider[]>(buildFileReviewProviderApiHref(activePage), []),
+    adminGet<FileReviewServerSummary | null>('/admin/files/review-summary', null),
+  ]);
   const allRows = buildFileReviewRows(providers);
   const rows = filterFileReviewRows(allRows, filters);
-  const summary = buildFileReviewSummary(allRows);
+  const summary = serverSummary ?? { ...buildFileReviewSummary(allRows), totalProviders: providers.length };
+  const totalPages = Math.max(1, Math.ceil(summary.totalProviders / FILE_REVIEW_PROVIDER_PAGE_SIZE));
   const confirmation = buildPartnerReviewActionConfirmation(
     providers,
     readPartnerReviewConfirmationAction(readSearchParam(params.reviewAction)),
@@ -88,7 +100,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         placeholder="Search Partner, file key, purpose, status"
         queryLabel="Search files"
         resetHref="/files"
-        resultLabel={`${rows.length} of ${allRows.length} file(s)`}
+        resultLabel={`${rows.length} visible / ${summary.total} file(s)`}
       />
 
       <section className="card">
@@ -111,6 +123,14 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
             ))}
           </AdminDataTable>
         </div>
+        <AdminRoundedPagination
+          activePage={activePage}
+          ariaLabel="File review provider pages"
+          className="vuexy-booking-pagination admin-mt-16"
+          hrefForPage={(page) => buildFileReviewPageHref(params, page)}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={totalPages}
+        />
       </section>
     </AdminPageTemplate>
   );
@@ -208,6 +228,42 @@ function buildFileFilters(params: Record<string, string | string[] | undefined>)
     q: readSearchParam(params.q),
     review: readSearchParam(params.review),
   };
+}
+
+function buildFileReviewProviderApiHref(page: number) {
+  const skip = (Math.max(1, page) - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE;
+  const query = new URLSearchParams({ take: String(FILE_REVIEW_PROVIDER_PAGE_SIZE) });
+  if (skip > 0) {
+    query.set('skip', String(skip));
+  }
+  return `/admin/files/review-providers?${query.toString()}`;
+}
+
+function buildFileReviewPageHref(
+  params: Record<string, string | string[] | undefined>,
+  page: number,
+) {
+  const query = new URLSearchParams();
+  const filters = buildFileFilters(params);
+  if (filters.q) {
+    query.set('q', filters.q);
+  }
+  if (filters.kind) {
+    query.set('kind', filters.kind);
+  }
+  if (filters.review) {
+    query.set('review', filters.review);
+  }
+  if (page > 1) {
+    query.set('page', String(page));
+  }
+  const search = query.toString();
+  return search ? `/files?${search}` : '/files';
+}
+
+function readFileReviewPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
 }
 
 function fileFilterOptions(filters: FileReviewFilters): FilterBarOption[] {

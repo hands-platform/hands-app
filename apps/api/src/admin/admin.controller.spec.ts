@@ -10,6 +10,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: vi.fn(),
     listFileReviewProviders: vi.fn(),
+    fileReviewSummary: vi.fn(),
     getMarketingOverview: vi.fn(),
     listMarketingDimensionRows: vi.fn(),
     getMarketingSummary: vi.fn(),
@@ -752,16 +753,36 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listCouponUsageBookings).toHaveBeenCalledWith('coupon-1', { skip: '20', take: '10' });
   });
 
-  it('exposes file review providers as a lightweight GET list', async () => {
+  it('exposes file review providers as a lightweight paged GET list', async () => {
     admin.listFileReviewProviders.mockResolvedValue([{ id: 'partner-1' }]);
 
-    await expect(controller.fileReviewProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.fileReviewProviders('25', '50')).resolves.toEqual([{ id: 'partner-1' }]);
 
     expect(routeMetadata('fileReviewProviders')).toEqual({
       method: RequestMethod.GET,
       path: 'files/review-providers',
     });
-    expect(admin.listFileReviewProviders).toHaveBeenCalledWith();
+    expect(admin.listFileReviewProviders).toHaveBeenCalledWith({ skip: '50', take: '25' });
+  });
+
+  it('exposes file review summary as a separate aggregate endpoint', async () => {
+    admin.fileReviewSummary.mockResolvedValue({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      total: 12,
+      totalProviders: 3,
+    });
+
+    await expect(controller.fileReviewSummary()).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      total: 12,
+      totalProviders: 3,
+    });
+
+    expect(routeMetadata('fileReviewSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'files/review-summary',
+    });
+    expect(admin.fileReviewSummary).toHaveBeenCalledWith();
   });
 
   it('exposes operations policy providers as a lightweight GET list', async () => {

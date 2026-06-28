@@ -444,8 +444,13 @@ export class AdminController {
   }
 
   @Get('files/review-providers')
-  fileReviewProviders() {
-    return this.admin.listFileReviewProviders();
+  fileReviewProviders(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listFileReviewProviders({ skip, take });
+  }
+
+  @Get('files/review-summary')
+  fileReviewSummary() {
+    return this.admin.fileReviewSummary();
   }
 
   @Post('files/:id/approve-public-media')

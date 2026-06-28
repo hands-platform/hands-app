@@ -2960,6 +2960,60 @@ describe('AdminService query orchestration', () => {
     expect(select.verification.select.files.take).toBe(20);
   });
 
+  it('applies pagination to file review provider hydration', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listFileReviewProviders({ skip: '50', take: '25' })).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 50,
+        take: 25,
+      }),
+    );
+  });
+
+  it('counts file review summary without hydrating partner rows', async () => {
+    const prisma = {
+      fileAsset: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(8)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(6),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.fileReviewSummary()).resolves.toEqual({
+      approved: 5,
+      generatedAt: expect.any(String),
+      pendingReview: 7,
+      privateFiles: 8,
+      publicMedia: 4,
+      rejected: 2,
+      total: 12,
+      totalProviders: 6,
+      uploadIncomplete: 3,
+    });
+
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ OR: expect.any(Array) }),
+    });
+    expect(prisma.fileAsset.count).toHaveBeenCalledTimes(5);
+    expect(prisma.providerProfile.findMany).toBeUndefined();
+  });
+
   it('lists operations policy providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {

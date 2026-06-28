@@ -542,6 +542,11 @@ type AdminPartnerControlProviderListOptions = {
   take?: number | string | null;
 };
 
+type AdminFileReviewProviderListOptions = {
+  skip?: number | string | null;
+  take?: number | string | null;
+};
+
 type AdminReviewBoardSummaryOptions = {
   bookingId?: string | null;
   customerProfileId?: string | null;
@@ -3283,13 +3288,54 @@ export class AdminService {
     };
   }
 
-  listFileReviewProviders() {
+  listFileReviewProviders(options: AdminFileReviewProviderListOptions = {}) {
+    const skip = boundedAdminListSkip(options.skip);
     return this.prisma.providerProfile.findMany({
       where: adminProviderFileReviewWhere,
       orderBy: { id: 'desc' },
-      take: ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT),
       select: adminProviderFileReviewSelect,
     });
+  }
+
+  async fileReviewSummary() {
+    const privateFileWhere = adminFileReviewPrivateFileWhere();
+    const publicMediaWhere = adminFileReviewPublicMediaWhere();
+    const fileWhere = adminFileReviewFileWhere();
+    const [privateFiles, publicMedia, approved, rejected, uploadIncomplete, totalProviders] = await Promise.all([
+      this.prisma.fileAsset.count({ where: privateFileWhere }),
+      this.prisma.fileAsset.count({ where: publicMediaWhere }),
+      this.prisma.fileAsset.count({
+        where: {
+          AND: [fileWhere, { reviewStatus: FileReviewStatus.APPROVED }],
+        },
+      }),
+      this.prisma.fileAsset.count({
+        where: {
+          AND: [fileWhere, { reviewStatus: FileReviewStatus.REJECTED }],
+        },
+      }),
+      this.prisma.fileAsset.count({
+        where: {
+          AND: [privateFileWhere, { uploadStatus: { not: FileUploadStatus.UPLOADED } }],
+        },
+      }),
+      this.prisma.providerProfile.count({ where: adminProviderFileReviewWhere }),
+    ]);
+    const total = privateFiles + publicMedia;
+
+    return {
+      approved,
+      generatedAt: new Date().toISOString(),
+      pendingReview: Math.max(0, total - approved),
+      privateFiles,
+      publicMedia,
+      rejected,
+      total,
+      totalProviders,
+      uploadIncomplete,
+    };
   }
 
   async listOperationsHandoffProviders(options: AdminOperationsHandoffProviderListOptions = {}) {
@@ -7308,6 +7354,26 @@ function boundedAdminListLimit(value: number | string | null | undefined, max: n
   }
 
   return Math.min(Math.max(Math.trunc(numeric), 1), max);
+}
+
+function adminFileReviewPrivateFileWhere(): Prisma.FileAssetWhereInput {
+  return {
+    providerVerificationId: { not: null },
+  };
+}
+
+function adminFileReviewPublicMediaWhere(): Prisma.FileAssetWhereInput {
+  return {
+    purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+    visibility: FileVisibility.PUBLIC,
+    uploadStatus: FileUploadStatus.UPLOADED,
+  };
+}
+
+function adminFileReviewFileWhere(): Prisma.FileAssetWhereInput {
+  return {
+    OR: [adminFileReviewPrivateFileWhere(), adminFileReviewPublicMediaWhere()],
+  };
 }
 
 function normalizeMarketingSpendAmount(value: unknown) {
