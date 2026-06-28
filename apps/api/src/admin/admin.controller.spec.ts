@@ -203,7 +203,17 @@ describe('AdminController notification and push actions', () => {
     admin.customerSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 42 });
 
     await expect(
-      controller.customers('10', '20', 'mai', 'VN', '2026-06-01', '2026-06-27', '2026-06-10', '2026-06-20'),
+      controller.customers(
+        '10',
+        '20',
+        'mai',
+        'VN',
+        '2026-06-01',
+        '2026-06-27',
+        '2026-06-10',
+        '2026-06-20',
+        'booking-count',
+      ),
     ).resolves.toEqual([{ id: 'customer-1' }]);
     await expect(
       controller.customerSummary('mai', 'VN', '2026-06-01', '2026-06-27', '2026-06-10', '2026-06-20'),
@@ -228,6 +238,7 @@ describe('AdminController notification and push actions', () => {
       lastLoginTo: '2026-06-20',
       q: 'mai',
       skip: '20',
+      sort: 'booking-count',
       take: '10',
     });
     expect(admin.customerSummary).toHaveBeenCalledWith({

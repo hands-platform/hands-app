@@ -2514,13 +2514,14 @@ describe('AdminService query orchestration', () => {
         lastLoginTo: '2026-06-20',
         q: 'mai',
         skip: '20',
+        sort: 'booking-count',
         take: '10',
       }),
     ).resolves.toEqual([]);
 
     expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: { id: 'desc' },
+        orderBy: [{ bookings: { _count: 'desc' } }, { id: 'desc' }],
         skip: 20,
         take: 10,
         where: {

@@ -60,8 +60,9 @@ export class AdminController {
     @Query('joinedTo') joinedTo?: string,
     @Query('lastLoginFrom') lastLoginFrom?: string,
     @Query('lastLoginTo') lastLoginTo?: string,
+    @Query('sort') sort?: string,
   ) {
-    return this.admin.listCustomers({ country, joinedFrom, joinedTo, lastLoginFrom, lastLoginTo, q, skip, take });
+    return this.admin.listCustomers({ country, joinedFrom, joinedTo, lastLoginFrom, lastLoginTo, q, skip, sort, take });
   }
 
   @Get('customers/summary')

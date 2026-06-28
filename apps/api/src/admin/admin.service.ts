@@ -464,6 +464,7 @@ type AdminCustomerDirectorySummaryOptions = {
 
 type AdminCustomerDirectoryQueryOptions = AdminCustomerDirectorySummaryOptions & {
   skip?: number | string | null;
+  sort?: string | null;
   take?: number | string | null;
 };
 
@@ -807,7 +808,7 @@ export class AdminService {
     const where = adminCustomerDirectoryWhere(options);
     const skip = adminCustomerDirectorySkip(options.skip);
     const customers = await this.prisma.customerProfile.findMany({
-      orderBy: { id: 'desc' },
+      orderBy: adminCustomerDirectoryOrderBy(options.sort),
       ...(skip > 0 ? { skip } : {}),
       take: adminCustomerDirectoryTake(options.take),
       ...(where ? { where } : {}),
@@ -6627,6 +6628,19 @@ function adminCustomerDirectoryWhere(
   }
 
   return { user: userWhere };
+}
+
+function adminCustomerDirectoryOrderBy(
+  value: string | null | undefined,
+): Prisma.CustomerProfileOrderByWithRelationInput | Prisma.CustomerProfileOrderByWithRelationInput[] {
+  switch (normalizeNullable(value)) {
+    case 'booking-count':
+      return [{ bookings: { _count: 'desc' } }, { id: 'desc' }];
+    case 'booking-count-asc':
+      return [{ bookings: { _count: 'asc' } }, { id: 'desc' }];
+    default:
+      return { id: 'desc' };
+  }
 }
 
 const ADMIN_CUSTOMER_DIRECTORY_COUNTRIES = ['VN', 'KR', 'JP', 'CN', 'SG'] as const;

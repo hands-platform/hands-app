@@ -105,7 +105,7 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
 }
 
 export function buildCustomerDataHrefs(filters: CustomerFilters): CustomerDataHrefs {
-  const listParams = buildCustomerDataQueryParams(filters);
+  const listParams = buildCustomerDataQueryParams(filters, { includeSort: true });
   listParams.set('take', String(filters.pageSize));
   listParams.set('skip', String((filters.page - 1) * filters.pageSize));
 
@@ -166,7 +166,7 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
   return labels;
 }
 
-function buildCustomerDataQueryParams(filters: CustomerFilters) {
+function buildCustomerDataQueryParams(filters: CustomerFilters, options: { includeSort?: boolean } = {}) {
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', filters.q);
@@ -175,6 +175,9 @@ function buildCustomerDataQueryParams(filters: CustomerFilters) {
   appendTextParam(params, 'joinedTo', filters.joinedTo);
   appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
   appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
+  if (options.includeSort && filters.sort !== 'last-booking') {
+    appendTextParam(params, 'sort', filters.sort);
+  }
 
   return params;
 }

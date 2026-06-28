@@ -102,11 +102,12 @@ describe('customer filters', () => {
       page: '3',
       pageSize: '25',
       q: 'mai',
+      sort: 'booking-count',
     });
 
     expect(buildCustomerDataHrefs(filters)).toEqual({
       listHref:
-        '/admin/customers?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21&take=25&skip=50',
+        '/admin/customers?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21&sort=booking-count&take=25&skip=50',
       summaryHref:
         '/admin/customers/summary?q=mai&country=VN&joinedFrom=2026-06-01&joinedTo=2026-06-07&lastLoginFrom=2026-06-11&lastLoginTo=2026-06-21',
     });
