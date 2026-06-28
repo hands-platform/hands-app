@@ -41,6 +41,7 @@ import {
 import {
   buildActivityStreamCsvHref,
   buildLatestFcmSentSummary,
+  buildOperationsHandoffDataHrefs,
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
@@ -61,7 +62,9 @@ export default async function OperationsHandoffPage({
 }: {
   searchParams?: OperationsHandoffSearchParams;
 }) {
-  const filters = buildOperationsHandoffFilters(searchParams ? await searchParams : {});
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const filters = buildOperationsHandoffFilters(resolvedSearchParams);
+  const dataHrefs = buildOperationsHandoffDataHrefs(resolvedSearchParams);
   const [
     bookings,
     customers,
@@ -76,18 +79,21 @@ export default async function OperationsHandoffPage({
     cashSummary,
     chatArchive,
   ] = await Promise.all([
-    adminGet<AdminBooking[]>('/admin/bookings', []),
-    adminGet<AdminCustomer[]>('/admin/customers', []),
-    adminGet<AdminProvider[]>('/admin/operations-handoff/providers', []),
-    adminGet<AdminEarning[]>('/admin/earnings', []),
-    adminGet<AdminPayment[]>('/admin/payments', []),
-    adminGet<AdminRefund[]>('/admin/refunds', []),
-    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
-    adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminAppSession[]>('/admin/app-sessions', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
-    adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
-    adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
+    adminGet<AdminBooking[]>(dataHrefs.bookingsHref, []),
+    adminGet<AdminCustomer[]>(dataHrefs.customersHref, []),
+    adminGet<AdminProvider[]>(dataHrefs.partnersHref, []),
+    adminGet<AdminEarning[]>(dataHrefs.earningsHref, []),
+    adminGet<AdminPayment[]>(dataHrefs.paymentsHref, []),
+    adminGet<AdminRefund[]>(dataHrefs.refundsHref, []),
+    adminGet<AdminPayoutBatch[]>(dataHrefs.payoutBatchesHref, []),
+    adminGet<AdminNotification[]>(dataHrefs.notificationsHref, []),
+    adminGet<AdminAppSession[]>(dataHrefs.appSessionsHref, []),
+    adminGet<AdminAuditLog[]>(dataHrefs.auditLogsHref, []),
+    adminGet<AdminCashSettlementSummary>(
+      dataHrefs.cashSettlementSummaryHref,
+      emptyCashSettlementSummary(),
+    ),
+    adminGet<AdminBookingDetail[]>(dataHrefs.chatArchiveHref, []),
   ]);
 
   const activeBookings = bookings.filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status));

@@ -9,6 +9,7 @@ import type {
 import {
   buildActivityStreamCsvHref,
   buildLatestFcmSentSummary,
+  buildOperationsHandoffDataHrefs,
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
@@ -16,6 +17,7 @@ import {
 
 describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
+    expect(buildOperationsHandoffFilters({})).toEqual({ range: 'today' });
     expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({ range: '7d' });
     expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({ range: 'all' });
     expect(emptyCashSettlementSummary()).toMatchObject({
@@ -25,6 +27,40 @@ describe('operations handoff page model', () => {
       topProviderGroups: [],
       totalDebtAmount: 0,
     });
+  });
+
+  it('keeps default handoff board requests bounded and scoped to today', () => {
+    const hrefs = buildOperationsHandoffDataHrefs({});
+    const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
+    const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
+    const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
+
+    expect(bookingsUrl.pathname).toBe('/admin/bookings');
+    expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
+    expect(bookingsUrl.searchParams.get('take')).toBe('100');
+    expect(notificationsUrl.pathname).toBe('/admin/notifications');
+    expect(notificationsUrl.searchParams.get('take')).toBe('50');
+    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
+      true,
+    );
+    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(auditUrl.pathname).toBe('/admin/audit-logs');
+    expect(auditUrl.searchParams.get('take')).toBe('75');
+    expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
+  });
+
+  it('keeps selected handoff range on bounded list requests', () => {
+    const hrefs = buildOperationsHandoffDataHrefs({ range: '7d' });
+    const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
+    const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
+
+    expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
+    expect(notificationsUrl.searchParams.get('take')).toBe('50');
+    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
+      true,
+    );
+    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
   it('filters range-owned finance and audit inputs consistently', () => {

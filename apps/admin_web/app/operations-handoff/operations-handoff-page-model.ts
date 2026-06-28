@@ -33,6 +33,26 @@ export type OperationsHandoffFilters = {
   readonly range: ReturnType<typeof normalizeDateRange>;
 };
 
+export type OperationsHandoffDataHrefs = {
+  readonly appSessionsHref: string;
+  readonly auditLogsHref: string;
+  readonly bookingsHref: string;
+  readonly cashSettlementSummaryHref: string;
+  readonly chatArchiveHref: string;
+  readonly customersHref: string;
+  readonly earningsHref: string;
+  readonly notificationsHref: string;
+  readonly partnersHref: string;
+  readonly paymentsHref: string;
+  readonly payoutBatchesHref: string;
+  readonly refundsHref: string;
+};
+
+const OPERATIONS_HANDOFF_BOOKING_TAKE = 100;
+const OPERATIONS_HANDOFF_NOTIFICATION_TAKE = 50;
+const OPERATIONS_HANDOFF_AUDIT_TAKE = 75;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   return {
     generatedAt: new Date(0).toISOString(),
@@ -55,8 +75,41 @@ export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
 export function buildOperationsHandoffFilters(
   params: Record<string, string | string[] | undefined>,
 ): OperationsHandoffFilters {
+  const rangeParam = readSearchParam(params.range);
   return {
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
+  };
+}
+
+export function buildOperationsHandoffDataHrefs(
+  params: Record<string, string | string[] | undefined>,
+): OperationsHandoffDataHrefs {
+  const { range } = buildOperationsHandoffFilters(params);
+
+  return {
+    appSessionsHref: '/admin/app-sessions',
+    auditLogsHref: buildDateScopedHref(
+      '/admin/audit-logs',
+      { take: String(OPERATIONS_HANDOFF_AUDIT_TAKE) },
+      range,
+    ),
+    bookingsHref: `/admin/bookings?${new URLSearchParams({
+      dateRange: range,
+      take: String(OPERATIONS_HANDOFF_BOOKING_TAKE),
+    }).toString()}`,
+    cashSettlementSummaryHref: '/admin/cash-settlement-summary',
+    chatArchiveHref: '/admin/chat-archive',
+    customersHref: '/admin/customers',
+    earningsHref: '/admin/earnings',
+    notificationsHref: buildDateScopedHref(
+      '/admin/notifications',
+      { take: String(OPERATIONS_HANDOFF_NOTIFICATION_TAKE) },
+      range,
+    ),
+    partnersHref: '/admin/operations-handoff/providers',
+    paymentsHref: '/admin/payments',
+    payoutBatchesHref: '/admin/payout-batches',
+    refundsHref: '/admin/refunds',
   };
 }
 
@@ -107,4 +160,41 @@ function relativeTime(value?: string | null) {
     invalidFallback: 'unknown time',
     hourLabelCutoff: 48,
   });
+}
+
+function buildDateScopedHref(
+  pathname: string,
+  baseParams: Record<string, string>,
+  range: AdminDateRange,
+) {
+  const query = new URLSearchParams(baseParams);
+  const window = dateRangeWindow(range);
+  if (window.from) {
+    query.set('from', window.from.toISOString());
+  }
+  if (window.to) {
+    query.set('to', window.to.toISOString());
+  }
+  return `${pathname}?${query.toString()}`;
+}
+
+function dateRangeWindow(range: AdminDateRange, now = new Date()) {
+  const todayStart = startOfLocalDay(now);
+  const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
+  if (range === 'today') {
+    return { from: todayStart, to: tomorrowStart };
+  }
+  if (range === '7d') {
+    return { from: new Date(tomorrowStart.getTime() - 7 * DAY_MS), to: tomorrowStart };
+  }
+  if (range === '30d') {
+    return { from: new Date(tomorrowStart.getTime() - 30 * DAY_MS), to: tomorrowStart };
+  }
+  return {};
+}
+
+function startOfLocalDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
