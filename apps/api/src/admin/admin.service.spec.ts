@@ -123,6 +123,23 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('keeps provider sanction lists bounded for operations pages', async () => {
+    const prisma = {
+      providerSanction: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listProviderSanctions()).resolves.toEqual([]);
+
+    expect(prisma.providerSanction.findMany).toHaveBeenCalledWith({
+      orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
+      take: 50,
+      select: expect.any(Object),
+    });
+  });
+
   it('filters app sessions server-side and clamps requested limits', async () => {
     const prisma = {
       appSession: {

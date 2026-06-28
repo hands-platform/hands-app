@@ -3094,7 +3094,7 @@ export class AdminService {
   listProviderSanctions() {
     return this.prisma.providerSanction.findMany({
       orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
-      take: 100,
+      take: 50,
       select: adminProviderSanctionListSelect,
     });
   }
