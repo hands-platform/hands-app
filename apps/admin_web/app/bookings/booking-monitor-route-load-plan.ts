@@ -1,7 +1,7 @@
 export type BookingMonitorRouteKind = 'all' | 'completed' | 'postMatchCancellations';
 
-const BOOKING_MONITOR_LIST_TAKE = 25;
-const BOOKING_MONITOR_GATE_AUDIT_TAKE = 25;
+const BOOKING_MONITOR_LIST_TAKE = 10;
+const BOOKING_MONITOR_GATE_AUDIT_TAKE = 10;
 
 export type BookingMonitorRouteLoadPlan = {
   readonly bookingGateAuditHref: string;
