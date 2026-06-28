@@ -293,6 +293,10 @@ type AdminChatArchiveListQuery = {
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
+type AdminReferralParentListQuery = {
+  readonly skip?: number | string | null;
+  readonly take?: number | string | null;
+};
 type AdminPaymentOperationsQuery = {
   readonly range?: string | null;
   readonly review?: string | null;
@@ -1139,11 +1143,13 @@ export class AdminService {
     return reward;
   }
 
-  async listCustomerReferralParents() {
+  async listCustomerReferralParents(options: AdminReferralParentListQuery = {}) {
+    const skip = adminReferralParentListSkip(options.skip);
     const rows = await this.prisma.customerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
       orderBy: { id: 'desc' },
-      take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminReferralParentListTake(options.take),
       select: adminCustomerReferralParentSelect,
     });
     const decisions = await this.listLatestReferralRewardDecisions(adminCustomerReferralRewardIds(rows));
@@ -1167,11 +1173,13 @@ export class AdminService {
     return adminCustomerReferralParentView(row, decisions);
   }
 
-  async listPartnerReferralParents() {
+  async listPartnerReferralParents(options: AdminReferralParentListQuery = {}) {
+    const skip = adminReferralParentListSkip(options.skip);
     const rows = await this.prisma.providerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
       orderBy: { id: 'desc' },
-      take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminReferralParentListTake(options.take),
       select: adminPartnerReferralParentSelect,
     });
     const decisions = await this.listLatestReferralRewardDecisions(adminPartnerReferralRewardIds(rows));
@@ -5600,6 +5608,23 @@ function adminAppSessionListTake(value: number | string | null | undefined): num
 }
 
 function adminAppSessionListSkip(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+}
+
+function adminReferralParentListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_REFERRAL_PARENT_LIST_LIMIT);
+}
+
+function adminReferralParentListSkip(value: number | string | null | undefined): number {
   if (value === null || value === undefined || value === '') {
     return 0;
   }

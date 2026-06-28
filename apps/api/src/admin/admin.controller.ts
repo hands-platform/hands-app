@@ -210,8 +210,8 @@ export class AdminController {
   }
 
   @Get('referrals/customers')
-  customerReferralParents() {
-    return this.admin.listCustomerReferralParents();
+  customerReferralParents(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listCustomerReferralParents({ take, skip });
   }
 
   @Get('referrals/customers/:id')
@@ -220,8 +220,8 @@ export class AdminController {
   }
 
   @Get('referrals/partners')
-  partnerReferralParents() {
-    return this.admin.listPartnerReferralParents();
+  partnerReferralParents(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listPartnerReferralParents({ take, skip });
   }
 
   @Get('referrals/partners/:id')

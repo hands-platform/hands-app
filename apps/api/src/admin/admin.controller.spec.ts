@@ -798,13 +798,13 @@ describe('AdminController notification and push actions', () => {
   it('exposes customer referral parent accounts without listing every customer', async () => {
     admin.listCustomerReferralParents.mockResolvedValue([{ referrer: { id: 'customer-1' } }]);
 
-    await expect(controller.customerReferralParents()).resolves.toEqual([{ referrer: { id: 'customer-1' } }]);
+    await expect(controller.customerReferralParents('25', '50')).resolves.toEqual([{ referrer: { id: 'customer-1' } }]);
 
     expect(routeMetadata('customerReferralParents')).toEqual({
       method: RequestMethod.GET,
       path: 'referrals/customers',
     });
-    expect(admin.listCustomerReferralParents).toHaveBeenCalledWith();
+    expect(admin.listCustomerReferralParents).toHaveBeenCalledWith({ take: '25', skip: '50' });
   });
 
   it('exposes a customer referral parent detail only for referral activity drilldown', async () => {
@@ -824,13 +824,13 @@ describe('AdminController notification and push actions', () => {
   it('exposes partner referral parent accounts without listing every partner', async () => {
     admin.listPartnerReferralParents.mockResolvedValue([{ referrer: { id: 'partner-1' } }]);
 
-    await expect(controller.partnerReferralParents()).resolves.toEqual([{ referrer: { id: 'partner-1' } }]);
+    await expect(controller.partnerReferralParents('10', '20')).resolves.toEqual([{ referrer: { id: 'partner-1' } }]);
 
     expect(routeMetadata('partnerReferralParents')).toEqual({
       method: RequestMethod.GET,
       path: 'referrals/partners',
     });
-    expect(admin.listPartnerReferralParents).toHaveBeenCalledWith();
+    expect(admin.listPartnerReferralParents).toHaveBeenCalledWith({ take: '10', skip: '20' });
   });
 
   it('exposes referral reward hold-window release as a POST action', async () => {

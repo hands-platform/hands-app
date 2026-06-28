@@ -1306,7 +1306,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listCustomerReferralParents()).resolves.toEqual([
+    await expect(service.listCustomerReferralParents({ take: '25', skip: '50' })).resolves.toEqual([
       expect.objectContaining({
         referrer: expect.objectContaining({ id: 'parent-customer' }),
         referralCode: expect.objectContaining({ code: 'HANDSCUST' }),
@@ -1341,6 +1341,8 @@ describe('AdminService query orchestration', () => {
     ]);
     expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        skip: 50,
+        take: 25,
         where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
       }),
     );
@@ -1408,6 +1410,29 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
+  });
+
+  it('paginates partner referral parent accounts before reward decision lookup', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerReferralParents({ take: '10', skip: '20' })).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 10,
+        where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+      }),
+    );
+    expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
   });
 
   it('rejects customer referral parent detail when the customer has no referral activity', async () => {
