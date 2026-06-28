@@ -95,6 +95,7 @@ export const adminBookingDetailSelect = {
   selectedProvider: { select: adminBookingDetailProviderSelect },
   participants: {
     orderBy: { joinedAt: 'asc' },
+    take: 20,
     select: {
       id: true,
       bookingId: true,
@@ -111,6 +112,7 @@ export const adminBookingDetailSelect = {
   payment: { select: adminPaymentSummarySelect },
   refunds: {
     orderBy: { createdAt: 'desc' },
+    take: 10,
     select: adminRefundSummarySelect,
   },
   review: { select: adminBookingDetailReviewSelect },
@@ -122,6 +124,7 @@ export const adminBookingDetailSelect = {
   walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(5),
   opsTasks: {
     orderBy: { updatedAt: 'desc' },
+    take: 10,
     select: adminBookingOpsTaskSummarySelect,
   },
   snapshots: {
@@ -147,6 +150,7 @@ export const adminPaymentDetailSelect = {
   booking: { select: adminBookingDetailSelect },
   refunds: {
     orderBy: { createdAt: 'desc' },
+    take: 10,
     select: adminRefundSummarySelect,
   },
 } satisfies Prisma.PaymentSelect;

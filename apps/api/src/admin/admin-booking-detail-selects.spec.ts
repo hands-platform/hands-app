@@ -27,6 +27,9 @@ describe('admin booking detail selects', () => {
           providerProfileId: true,
         }),
       },
+      participants: { take: 20 },
+      refunds: { take: 10 },
+      opsTasks: { take: 10 },
       snapshots: { take: 10 },
     });
   });
@@ -45,6 +48,7 @@ describe('admin booking detail selects', () => {
     });
     expect(adminPaymentDetailSelect.refunds).toMatchObject({
       orderBy: { createdAt: 'desc' },
+      take: 10,
     });
   });
 });
