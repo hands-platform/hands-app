@@ -19,7 +19,7 @@ describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
     expect(buildOperationsHandoffFilters({})).toEqual({ range: 'today' });
     expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({ range: '7d' });
-    expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({ range: 'all' });
+    expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({ range: 'today' });
     expect(emptyCashSettlementSummary()).toMatchObject({
       cashPaymentRowCount: 0,
       currency: 'VND',

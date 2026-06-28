@@ -13,10 +13,10 @@ export function readSearchParam(value: string | string[] | undefined) {
 }
 
 export function normalizeDateRange(value: string): AdminDateRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
+  if (value === 'all' || value === 'today' || value === '7d' || value === '30d') {
     return value;
   }
-  return 'all';
+  return 'today';
 }
 
 export function dateRangeLabel(range: AdminDateRange) {

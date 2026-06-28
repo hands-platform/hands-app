@@ -842,7 +842,7 @@ function normalizeReviewFilter(value: string) {
 function normalizeReviewDateRange(value: string): ReviewDateRangeFilter {
   return REVIEW_DATE_RANGE_OPTIONS.some((option) => option.value === value)
     ? (value as ReviewDateRangeFilter)
-    : 'all';
+    : 'today';
 }
 
 function normalizeReviewSort(value: string): ReviewSortFilter {

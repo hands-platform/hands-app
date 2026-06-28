@@ -65,7 +65,7 @@ describe('review page model', () => {
       }),
     ).toEqual({
       dateFrom: '',
-      dateRange: 'all',
+      dateRange: 'today',
       dateTo: '',
       page: 1,
       pageSize: 10,
@@ -73,6 +73,21 @@ describe('review page model', () => {
       review: '',
       sort: 'newest',
     });
+  });
+
+  it('defaults review API requests to today instead of loading the full history', () => {
+    const hrefs = buildReviewDataHrefs(buildReviewFilters({}));
+    const listUrl = new URL(hrefs.listHref, 'http://admin.local');
+    const summaryUrl = new URL(hrefs.summaryHref, 'http://admin.local');
+
+    expect(listUrl.pathname).toBe('/admin/reviews');
+    expect(listUrl.searchParams.get('take')).toBe('10');
+    expect(listUrl.searchParams.get('skip')).toBe('0');
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(summaryUrl.pathname).toBe('/admin/reviews/summary');
+    expect(Number.isFinite(Date.parse(summaryUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(summaryUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
   it('filters reviews by moderation queue, request date range, and search query', () => {

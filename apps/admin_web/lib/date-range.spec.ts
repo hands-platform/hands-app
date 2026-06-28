@@ -20,10 +20,12 @@ describe('admin date range helpers', () => {
   });
 
   test('normalizes date range and search parameters defensively', () => {
+    expect(normalizeDateRange('all')).toBe('all');
     expect(normalizeDateRange('today')).toBe('today');
     expect(normalizeDateRange('7d')).toBe('7d');
     expect(normalizeDateRange('30d')).toBe('30d');
-    expect(normalizeDateRange('yesterday')).toBe('all');
+    expect(normalizeDateRange('yesterday')).toBe('today');
+    expect(normalizeDateRange('')).toBe('today');
 
     expect(readSearchParam([' marketplace ', 'ignored'])).toBe('marketplace');
     expect(readSearchParam(undefined)).toBe('');
