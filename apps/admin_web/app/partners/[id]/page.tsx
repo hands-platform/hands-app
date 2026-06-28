@@ -336,6 +336,7 @@ type PartnerEarning = NonNullable<ProviderDetail['earnings']>[number];
 type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 
 const PARTNER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
+const PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 25;
 
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
@@ -439,7 +440,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
   const reviewQuery = new URLSearchParams({
     providerProfileId: provider.id,
-    take: '50',
+    take: String(PARTNER_DETAIL_REVIEW_RECORD_LIMIT),
   }).toString();
   const [customerReviews, partnerEvaluations] = await Promise.all([
     adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, []),
