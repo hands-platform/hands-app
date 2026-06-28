@@ -63,7 +63,6 @@ export const adminPaymentCallbackAttemptSummarySelect = {
   callbackAmount: true,
   errorCode: true,
   errorMessage: true,
-  rawPayload: true,
   createdAt: true,
 } satisfies Prisma.PaymentCallbackAttemptSelect;
 

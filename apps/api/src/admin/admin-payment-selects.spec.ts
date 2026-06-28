@@ -1,6 +1,7 @@
 import {
   adminEarningDetailSelect,
   adminEarningSummarySelect,
+  adminPaymentCallbackAttemptSummarySelect,
   adminPaymentCallbackAttemptListSelect,
   adminPaymentSummarySelect,
   adminRecentPlatformFeeLogsSelect,
@@ -25,6 +26,11 @@ describe('admin payment selects', () => {
       customerProfile: { select: { id: true, user: expect.any(Object) } },
       selectedProvider: expect.any(Object),
     });
+  });
+
+  it('keeps payment callback raw payloads out of summary and list queries', () => {
+    expect(adminPaymentCallbackAttemptSummarySelect).not.toHaveProperty('rawPayload');
+    expect(adminPaymentCallbackAttemptListSelect).not.toHaveProperty('rawPayload');
   });
 
   it('uses bounded recent financial log selectors for earning summaries and details', () => {
