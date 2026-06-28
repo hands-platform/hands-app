@@ -21,12 +21,12 @@ import { adminProviderPushDeviceReachabilityOrder } from './admin-provider-selec
 
 describe('admin provider profile selects', () => {
   it('keeps exported provider list limits stable', () => {
-    expect(ADMIN_PROVIDER_COMPACT_LIST_LIMIT).toBe(100);
-    expect(ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT).toBe(100);
-    expect(ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT).toBe(100);
-    expect(ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT).toBe(100);
-    expect(ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT).toBe(100);
-    expect(ADMIN_PROVIDER_CONTROL_LIST_LIMIT).toBe(100);
+    expect(ADMIN_PROVIDER_COMPACT_LIST_LIMIT).toBe(50);
+    expect(ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT).toBe(50);
+    expect(ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT).toBe(50);
+    expect(ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT).toBe(50);
+    expect(ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT).toBe(50);
+    expect(ADMIN_PROVIDER_CONTROL_LIST_LIMIT).toBe(50);
     expect(ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT).toBe(3);
   });
 

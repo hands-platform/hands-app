@@ -2465,7 +2465,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 100 }));
+    expect(query).toEqual(expect.objectContaining({ take: 50 }));
     expect(select.preferredBookings).toBeUndefined();
     expect(select.selectedBookings).toBeUndefined();
     expect(select.participants).toBeUndefined();
@@ -2657,7 +2657,7 @@ describe('AdminService query orchestration', () => {
     const select = query.select;
     expect(query).toEqual(
       expect.objectContaining({
-        take: 100,
+        take: 50,
         where: expect.objectContaining({
           OR: expect.any(Array),
         }),
@@ -2781,7 +2781,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 100 }));
+    expect(query).toEqual(expect.objectContaining({ take: 50 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,
@@ -2840,7 +2840,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 100 }));
+    expect(query).toEqual(expect.objectContaining({ take: 50 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,
