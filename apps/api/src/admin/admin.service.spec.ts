@@ -4641,6 +4641,25 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('delegates payout batch summary filters to the earnings service', async () => {
+    const earnings = {
+      payoutBatchSummaryForAdmin: vi.fn().mockResolvedValue({ total: 12, totalNetAmount: 900000 }),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.payoutBatchSummary({
+        range: '30d',
+        review: 'needs-review',
+      }),
+    ).resolves.toEqual({ total: 12, totalNetAmount: 900000 });
+
+    expect(earnings.payoutBatchSummaryForAdmin).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-review',
+    });
+  });
+
   it('audits notification retry requests after enqueueing the retry job', async () => {
     const prisma = {
       adminAuditLog: {

@@ -95,6 +95,25 @@ function adminPayoutBatchListWhere(
   return Object.keys(where).length > 0 ? where : undefined;
 }
 
+function mergePayoutBatchWhere(
+  base: Prisma.ProviderPayoutBatchWhereInput | undefined,
+  next: Prisma.ProviderPayoutBatchWhereInput,
+): Prisma.ProviderPayoutBatchWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function payoutBatchCountArgs(
+  where: Prisma.ProviderPayoutBatchWhereInput | undefined,
+): Prisma.ProviderPayoutBatchCountArgs {
+  return where ? { where } : {};
+}
+
+function withholdingLogWhereForPayoutBatchSummary(
+  where: Prisma.ProviderPayoutBatchWhereInput | undefined,
+): Prisma.WithholdingLogWhereInput {
+  return where ? { payoutBatch: { is: where } } : { payoutBatchId: { not: null } };
+}
+
 function adminEarningReviewWhere(review: string | null | undefined): Prisma.ProviderEarningWhereInput | undefined {
   switch (normalizeOptionalQuery(review)) {
     case 'ready':
@@ -714,6 +733,71 @@ export class EarningsService {
       take: adminFinanceListTake(options.take),
       include: adminPayoutBatchListInclude(),
     });
+  }
+
+  async payoutBatchSummaryForAdmin(options: AdminFinanceListQuery = {}) {
+    const where = adminPayoutBatchListWhere(options);
+    const [
+      total,
+      needsReview,
+      inProgress,
+      payoutHolds,
+      missingTransferRefs,
+      settled,
+      totalNet,
+      withholding,
+    ] = await Promise.all([
+      this.prisma.providerPayoutBatch.count(payoutBatchCountArgs(where)),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(
+          mergePayoutBatchWhere(where, {
+            status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
+          }),
+        ),
+      ),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(mergePayoutBatchWhere(where, { status: PayoutBatchStatus.PROCESSING })),
+      ),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(
+          mergePayoutBatchWhere(where, {
+            providerProfile: { sanctions: { some: activePayoutHoldWhere() } },
+          }),
+        ),
+      ),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(
+          mergePayoutBatchWhere(where, {
+            status: { notIn: [PayoutBatchStatus.PAID, PayoutBatchStatus.CANCELLED] },
+            transferRef: null,
+          }),
+        ),
+      ),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(mergePayoutBatchWhere(where, { status: PayoutBatchStatus.PAID })),
+      ),
+      this.prisma.providerPayoutBatch.aggregate({
+        ...(where ? { where } : {}),
+        _sum: { totalNetAmount: true },
+      }),
+      this.prisma.withholdingLog.aggregate({
+        where: withholdingLogWhereForPayoutBatchSummary(where),
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      total,
+      needsReview,
+      inProgress,
+      payoutHolds,
+      missingTransferRefs,
+      settled,
+      totalNetAmount: totalNet._sum.totalNetAmount ?? 0,
+      withholdingAmount: withholding._sum.amount ?? 0,
+      currency: 'VND',
+    };
   }
 
   async updatePayoutBatch(

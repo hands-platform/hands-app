@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
-import { AdminEarning, AdminOperationalPolicySetting, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import {
+  AdminEarning,
+  AdminOperationalPolicySetting,
+  AdminPayoutBatch,
+  AdminPayoutBatchSummary,
+  adminGet,
+} from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
@@ -48,14 +54,15 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
-  const [allBatches, allEarnings, policySettings] = await Promise.all([
+  const [allBatches, payoutSummary, allEarnings, policySettings] = await Promise.all([
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
+    adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
-  const summary = buildSummary(batches);
+  const summary = buildSummary(batches, payoutSummary);
   const payoutBatchRows = buildPayoutBatchTableRows(batches);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
@@ -473,18 +480,22 @@ function payoutPriority(status: string) {
   }
 }
 
-function buildSummary(batches: AdminPayoutBatch[]) {
+function buildSummary(batches: AdminPayoutBatch[], payoutSummary?: AdminPayoutBatchSummary | null) {
   const currency = batches[0]?.currency ?? 'VND';
   return {
-    total: batches.length,
-    needsReview: batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED').length,
-    inProgress: batches.filter((batch) => batch.status === 'PROCESSING').length,
-    payoutHolds: batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
-    missingTransferRefs: batches.filter((batch) => transferRefRequiredBeforePaid(batch)).length,
-    settled: batches.filter((batch) => batch.status === 'PAID').length,
-    totalNetAmount: batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
-    withholdingAmount: batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
-    currency,
+    total: payoutSummary?.total ?? batches.length,
+    needsReview:
+      payoutSummary?.needsReview ??
+      batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED').length,
+    inProgress: payoutSummary?.inProgress ?? batches.filter((batch) => batch.status === 'PROCESSING').length,
+    payoutHolds: payoutSummary?.payoutHolds ?? batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
+    missingTransferRefs:
+      payoutSummary?.missingTransferRefs ?? batches.filter((batch) => transferRefRequiredBeforePaid(batch)).length,
+    settled: payoutSummary?.settled ?? batches.filter((batch) => batch.status === 'PAID').length,
+    totalNetAmount: payoutSummary?.totalNetAmount ?? batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+    withholdingAmount:
+      payoutSummary?.withholdingAmount ?? batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
+    currency: payoutSummary?.currency ?? currency,
   };
 }
 

@@ -18,6 +18,7 @@ export function buildPayoutOperationsApiHrefs(filters: ReturnType<typeof buildPa
 
   return {
     earningsHref: `/admin/earnings?${params.toString()}`,
+    payoutBatchSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
   };
 }

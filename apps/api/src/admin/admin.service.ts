@@ -5412,6 +5412,10 @@ export class AdminService {
     return this.earnings.listPayoutBatchesForAdmin(options);
   }
 
+  payoutBatchSummary(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.payoutBatchSummaryForAdmin(options);
+  }
+
   async createPayoutBatch(
     actorId: string,
     input: { providerProfileId: string; transferRef?: string; notes?: string },

@@ -129,6 +129,62 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('summarizes admin payout batches with aggregate queries instead of loading full batches', async () => {
+    const prisma = {
+      providerPayoutBatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { totalNetAmount: 900000 } }),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(12)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5),
+        findMany: vi.fn(),
+      },
+      withholdingLog: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 75000 } }),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.payoutBatchSummaryForAdmin({ range: '7d' })).resolves.toEqual({
+      currency: 'VND',
+      generatedAt: expect.any(String),
+      inProgress: 3,
+      missingTransferRefs: 4,
+      needsReview: 2,
+      payoutHolds: 1,
+      settled: 5,
+      total: 12,
+      totalNetAmount: 900000,
+      withholdingAmount: 75000,
+    });
+
+    expect(prisma.providerPayoutBatch.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerPayoutBatch.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+        }),
+      }),
+    );
+    expect(prisma.providerPayoutBatch.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { totalNetAmount: true },
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+        }),
+      }),
+    );
+    expect(prisma.withholdingLog.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { amount: true },
+      }),
+    );
+  });
+
   it('uses compact selects for admin payout batch nested earnings', async () => {
     const prisma = {
       providerPayoutBatch: {

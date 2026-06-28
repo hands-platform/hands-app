@@ -10,6 +10,7 @@ describe('payouts page model', () => {
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
       earningsHref: '/admin/earnings?range=30d&take=10',
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
+      payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
     });
   });
 });

@@ -1270,6 +1270,19 @@ export type AdminPayoutBatch = {
   withholdingLogs?: AdminWithholdingLog[];
 };
 
+export type AdminPayoutBatchSummary = {
+  generatedAt: string;
+  total: number;
+  needsReview: number;
+  inProgress: number;
+  payoutHolds: number;
+  missingTransferRefs: number;
+  settled: number;
+  totalNetAmount: number;
+  withholdingAmount: number;
+  currency: string;
+};
+
 export type AdminProviderTaxLog = {
   id: string;
   grossAmount: number;

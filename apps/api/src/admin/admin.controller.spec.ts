@@ -54,6 +54,7 @@ describe('AdminController notification and push actions', () => {
     listCashSettlementEarnings: vi.fn(),
     cashSettlementSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
+    payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
@@ -449,6 +450,24 @@ describe('AdminController notification and push actions', () => {
       range: '30d',
       review: 'needs-review',
       take: '75',
+    });
+  });
+
+  it('exposes payout batch summary with the same finance range and review filters', async () => {
+    admin.payoutBatchSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', total: 12 });
+
+    await expect(controller.payoutBatchSummary('30d', 'needs-review')).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      total: 12,
+    });
+
+    expect(routeMetadata('payoutBatchSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payout-batches/summary',
+    });
+    expect(admin.payoutBatchSummary).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-review',
     });
   });
 

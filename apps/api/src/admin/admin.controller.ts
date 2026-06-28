@@ -773,6 +773,11 @@ export class AdminController {
     return this.admin.markEarningPaid(user.id, id, body);
   }
 
+  @Get('payout-batches/summary')
+  payoutBatchSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.payoutBatchSummary({ range, review });
+  }
+
   @Get('payout-batches')
   payoutBatches(
     @Query('take') take?: string,
