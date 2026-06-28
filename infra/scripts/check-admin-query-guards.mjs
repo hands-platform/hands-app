@@ -125,11 +125,11 @@ if (!adminServiceSource.includes('const skip = adminAppSessionListSkip(options.s
   });
 }
 
-if (!appSessionsPageModelSource.includes('const DEFAULT_APP_SESSION_LIST_TAKE = 100;')) {
+if (!appSessionsPageModelSource.includes('const DEFAULT_APP_SESSION_LIST_TAKE = 50;')) {
   violations.push({
     area: 'admin app session page',
     file: 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts',
-    message: 'App sessions page API calls must keep a 100-row default page size.',
+    message: 'App sessions page API calls must keep a 50-row default page size.',
   });
 }
 

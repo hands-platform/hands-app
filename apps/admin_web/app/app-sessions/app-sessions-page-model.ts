@@ -1,4 +1,4 @@
-const DEFAULT_APP_SESSION_LIST_TAKE = 100;
+const DEFAULT_APP_SESSION_LIST_TAKE = 50;
 
 export type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 
@@ -26,7 +26,7 @@ export function buildSessionFilters(params: Record<string, string | string[] | u
 export function buildAppSessionApiHref(filters: SessionFilters) {
   const params = new URLSearchParams({ take: String(DEFAULT_APP_SESSION_LIST_TAKE) });
   if (filters.role) params.set('role', filters.role);
-  if (filters.state) params.set('state', filters.state);
+  params.set('state', filters.state ?? 'live');
   if (filters.platform) params.set('platform', filters.platform);
   if (filters.q) params.set('q', filters.q);
   return `/admin/app-sessions?${params.toString()}`;
@@ -56,7 +56,7 @@ export function sessionFilterLabel(filters: SessionFilters) {
 
   return parts.length
     ? `Filtered to ${parts.join(', ')}`
-    : 'Showing latest customer, partner, and admin app sessions';
+    : 'Showing live customer, partner, and admin app sessions';
 }
 
 function singleParam(value: string | string[] | undefined) {

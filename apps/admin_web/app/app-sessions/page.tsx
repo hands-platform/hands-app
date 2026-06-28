@@ -149,7 +149,7 @@ function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSess
 }
 
 const sessionQuickFilters: AppSessionQuickFilter[] = [
-  { label: 'All sessions', href: '/app-sessions' },
+  { label: 'Live sessions', href: '/app-sessions' },
   { label: 'Live customers', href: '/app-sessions?role=CUSTOMER&state=live' },
   { label: 'Live partners', href: '/app-sessions?role=PROVIDER&state=live' },
   { label: 'Recent customers', href: '/app-sessions?role=CUSTOMER&state=recent' },
