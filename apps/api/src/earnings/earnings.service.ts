@@ -46,6 +46,15 @@ type PricedBookingService = {
   quantity: number;
 };
 
+type AdminFinanceListQuery = {
+  readonly range?: string | null;
+  readonly review?: string | null;
+  readonly take?: number | string | null;
+};
+
+const ADMIN_FINANCE_LIST_DEFAULT_LIMIT = 50;
+const ADMIN_FINANCE_LIST_MAX_LIMIT = 100;
+
 function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
   return {
     status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
@@ -60,6 +69,136 @@ function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
       },
     },
   };
+}
+
+function adminEarningListWhere(options: AdminFinanceListQuery): Prisma.ProviderEarningWhereInput | undefined {
+  const where = adminEarningReviewWhere(options.review) ?? {};
+  const dateRange = adminFinanceDateRangeWhere(options.range);
+
+  if (dateRange) {
+    where.createdAt = dateRange;
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminPayoutBatchListWhere(
+  options: AdminFinanceListQuery,
+): Prisma.ProviderPayoutBatchWhereInput | undefined {
+  const where = adminPayoutBatchReviewWhere(options.review) ?? {};
+  const dateRange = adminFinanceDateRangeWhere(options.range);
+
+  if (dateRange) {
+    where.createdAt = dateRange;
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminEarningReviewWhere(review: string | null | undefined): Prisma.ProviderEarningWhereInput | undefined {
+  switch (normalizeOptionalQuery(review)) {
+    case 'ready':
+      return {
+        netAmount: { gt: 0 },
+        payoutBatchId: null,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+      };
+    case 'cash-debt':
+      return cashSettlementDebtWhere();
+    case 'batched':
+      return { payoutBatchId: { not: null } };
+    case 'paid':
+      return { status: EarningStatus.PAID };
+    case 'pending':
+      return { status: EarningStatus.PENDING };
+    case 'available':
+      return { status: EarningStatus.AVAILABLE };
+    case 'cancelled':
+      return { status: EarningStatus.CANCELLED };
+    default:
+      return undefined;
+  }
+}
+
+function adminPayoutBatchReviewWhere(
+  review: string | null | undefined,
+): Prisma.ProviderPayoutBatchWhereInput | undefined {
+  switch (normalizeOptionalQuery(review)) {
+    case 'needs-review':
+      return { status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] } };
+    case 'in-progress':
+      return { status: PayoutBatchStatus.PROCESSING };
+    case 'settled':
+    case 'paid':
+      return { status: PayoutBatchStatus.PAID };
+    case 'draft':
+      return { status: PayoutBatchStatus.DRAFT };
+    case 'failed':
+      return { status: PayoutBatchStatus.FAILED };
+    case 'cancelled':
+      return { status: PayoutBatchStatus.CANCELLED };
+    default:
+      return undefined;
+  }
+}
+
+function adminFinanceDateRangeWhere(range: string | null | undefined): Prisma.DateTimeFilter | undefined {
+  const normalized = normalizeOptionalQuery(range);
+  if (!normalized || normalized === 'all') {
+    return undefined;
+  }
+
+  const nowMs = Date.now();
+  const todayStartMs = startOfLocalDay(nowMs);
+  const todayEndMs = endOfLocalDay(todayStartMs);
+
+  if (normalized === '7d') {
+    return { gte: new Date(addLocalDays(todayStartMs, -6)), lte: new Date(todayEndMs) };
+  }
+  if (normalized === '30d') {
+    return { gte: new Date(addLocalDays(todayStartMs, -29)), lte: new Date(todayEndMs) };
+  }
+  if (normalized === 'today') {
+    return { gte: new Date(todayStartMs), lte: new Date(todayEndMs) };
+  }
+
+  return undefined;
+}
+
+function adminFinanceListTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_FINANCE_LIST_DEFAULT_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_FINANCE_LIST_DEFAULT_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_FINANCE_LIST_MAX_LIMIT);
+}
+
+function normalizeOptionalQuery(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function startOfLocalDay(timestamp: number) {
+  const date = new Date(timestamp);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function endOfLocalDay(startMs: number) {
+  return addLocalDays(startMs, 1) - 1;
+}
+
+function addLocalDays(timestamp: number, days: number) {
+  const date = new Date(timestamp);
+  date.setDate(date.getDate() + days);
+  return date.getTime();
 }
 
 @Injectable()
@@ -206,10 +345,13 @@ export class EarningsService {
     };
   }
 
-  listForAdmin() {
+  listForAdmin(options: AdminFinanceListQuery = {}) {
+    const where = adminEarningListWhere(options);
+
     return this.prisma.providerEarning.findMany({
+      ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: adminFinanceListTake(options.take),
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
         booking: { include: { payment: true, review: true, services: { include: { service: true } } } },
@@ -462,10 +604,13 @@ export class EarningsService {
     });
   }
 
-  listPayoutBatchesForAdmin() {
+  listPayoutBatchesForAdmin(options: AdminFinanceListQuery = {}) {
+    const where = adminPayoutBatchListWhere(options);
+
     return this.prisma.providerPayoutBatch.findMany({
+      ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: adminFinanceListTake(options.take),
       include: {
         providerProfile: { include: this.providerPayoutInclude() },
         earnings: {

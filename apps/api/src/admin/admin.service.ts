@@ -3757,8 +3757,8 @@ export class AdminService {
     });
   }
 
-  listEarnings() {
-    return this.earnings.listForAdmin();
+  listEarnings(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.listForAdmin(options);
   }
 
   listCashSettlementEarnings() {
@@ -4147,8 +4147,8 @@ export class AdminService {
     return earning;
   }
 
-  listPayoutBatches() {
-    return this.earnings.listPayoutBatchesForAdmin();
+  listPayoutBatches(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.listPayoutBatchesForAdmin(options);
   }
 
   async createPayoutBatch(

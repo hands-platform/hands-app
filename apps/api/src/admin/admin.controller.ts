@@ -495,8 +495,12 @@ export class AdminController {
   }
 
   @Get('earnings')
-  earnings() {
-    return this.admin.listEarnings();
+  earnings(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listEarnings({ range, review, take });
   }
 
   @Get('cash-settlement-earnings')
@@ -583,8 +587,12 @@ export class AdminController {
   }
 
   @Get('payout-batches')
-  payoutBatches() {
-    return this.admin.listPayoutBatches();
+  payoutBatches(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listPayoutBatches({ range, review, take });
   }
 
   @Post('payout-batches')

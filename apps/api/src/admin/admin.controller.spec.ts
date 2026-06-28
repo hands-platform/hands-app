@@ -36,6 +36,8 @@ describe('AdminController notification and push actions', () => {
     listPaymentCallbackAttempts: vi.fn(),
     listPayments: vi.fn(),
     listRefunds: vi.fn(),
+    listEarnings: vi.fn(),
+    listPayoutBatches: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
@@ -275,6 +277,40 @@ describe('AdminController notification and push actions', () => {
       range: '30d',
       review: 'needs-update',
       take: '50',
+    });
+  });
+
+  it('exposes earnings as a bounded filtered finance list', async () => {
+    admin.listEarnings.mockResolvedValue([{ id: 'earning-1' }]);
+
+    await expect(controller.earnings('75', '7d', 'ready')).resolves.toEqual([{ id: 'earning-1' }]);
+
+    expect(routeMetadata('earnings')).toEqual({
+      method: RequestMethod.GET,
+      path: 'earnings',
+    });
+    expect(admin.listEarnings).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'ready',
+      take: '75',
+    });
+  });
+
+  it('exposes payout batches as a bounded filtered finance list', async () => {
+    admin.listPayoutBatches.mockResolvedValue([{ id: 'payout-1' }]);
+
+    await expect(controller.payoutBatches('75', '30d', 'needs-review')).resolves.toEqual([
+      { id: 'payout-1' },
+    ]);
+
+    expect(routeMetadata('payoutBatches')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payout-batches',
+    });
+    expect(admin.listPayoutBatches).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-review',
+      take: '75',
     });
   });
 

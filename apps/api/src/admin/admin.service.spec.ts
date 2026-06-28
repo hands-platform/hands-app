@@ -2633,6 +2633,48 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('delegates bounded earning list filters to the earnings service', async () => {
+    const earnings = {
+      listForAdmin: vi.fn().mockResolvedValue([{ id: 'earning-1' }]),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.listEarnings({
+        range: '7d',
+        review: 'ready',
+        take: '75',
+      }),
+    ).resolves.toEqual([{ id: 'earning-1' }]);
+
+    expect(earnings.listForAdmin).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'ready',
+      take: '75',
+    });
+  });
+
+  it('delegates bounded payout batch filters to the earnings service', async () => {
+    const earnings = {
+      listPayoutBatchesForAdmin: vi.fn().mockResolvedValue([{ id: 'payout-1' }]),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.listPayoutBatches({
+        range: '30d',
+        review: 'needs-review',
+        take: '75',
+      }),
+    ).resolves.toEqual([{ id: 'payout-1' }]);
+
+    expect(earnings.listPayoutBatchesForAdmin).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-review',
+      take: '75',
+    });
+  });
+
   it('audits notification retry requests after enqueueing the retry job', async () => {
     const prisma = {
       adminAuditLog: {

@@ -2,6 +2,62 @@ import { BookingStatus, EarningStatus, PayoutBatchStatus, ProviderWalletLedgerTy
 import { EarningsService } from './earnings.service';
 
 describe('EarningsService payout batches', () => {
+  it('filters admin earnings by range, review state, and bounded limit', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listForAdmin({
+        range: 'today',
+        review: 'ready',
+        take: '500',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          netAmount: { gt: 0 },
+          payoutBatchId: null,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        }),
+        take: 100,
+      }),
+    );
+  });
+
+  it('filters admin payout batches by range, review state, and bounded limit', async () => {
+    const prisma = {
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listPayoutBatchesForAdmin({
+        range: '7d',
+        review: 'needs-review',
+        take: '500',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
+        }),
+        take: 100,
+      }),
+    );
+  });
+
   it('excludes post-match cancellation fee holds from cash settlement debt lists', async () => {
     const prisma = {
       providerEarning: {
