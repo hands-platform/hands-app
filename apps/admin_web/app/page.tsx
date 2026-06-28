@@ -25,6 +25,7 @@ import {
   AdminOperationalPolicySetting,
   AdminPayment,
   AdminPayoutBatch,
+  AdminPayoutBatchSummary,
   AdminProvider,
   AdminRefund,
   AdminRefundSummary,
@@ -413,6 +414,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     refundSummary,
     notifications,
     payoutBatches,
+    payoutBatchSummary,
     appSessions,
     auditLogs,
     externalReadiness,
@@ -444,6 +446,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
     adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, []),
     adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
+    adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, []),
     adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, []),
     apiGet<AdminExternalReadiness>('/health/external', {
@@ -516,6 +519,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         cashSettlementSummary,
       });
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
+  const activePayoutBatchCount = payoutBatchSummary?.open ?? activePayoutBatches.length;
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies, partnerSupply);
   const operationsCommandBoard = buildOperationsCommandBoard({
     bookingOps: liveBookingOps,
@@ -651,7 +655,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ],
     [
       'Open payout batches',
-      rangePayoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status)).length.toString(),
+      activePayoutBatchCount.toString(),
       `${selectedRangeLabel} draft, processing, failed, or held payout batches needing finance visibility.`,
     ],
     [
@@ -979,7 +983,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <div>
             <span>Payout evidence</span>
-            <strong>{activePayoutBatches.length}</strong>
+            <strong>{activePayoutBatchCount}</strong>
             <small>
               <Link className="text-link" href="/payouts">
                 Weekly, monthly, and admin-selected batches

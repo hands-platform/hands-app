@@ -1278,6 +1278,7 @@ export type AdminPayoutBatchSummary = {
   payoutHolds: number;
   missingTransferRefs: number;
   settled: number;
+  open: number;
   totalNetAmount: number;
   withholdingAmount: number;
   currency: string;

@@ -744,6 +744,7 @@ export class EarningsService {
       payoutHolds,
       missingTransferRefs,
       settled,
+      open,
       totalNet,
       withholding,
     ] = await Promise.all([
@@ -776,6 +777,13 @@ export class EarningsService {
       this.prisma.providerPayoutBatch.count(
         payoutBatchCountArgs(mergePayoutBatchWhere(where, { status: PayoutBatchStatus.PAID })),
       ),
+      this.prisma.providerPayoutBatch.count(
+        payoutBatchCountArgs(
+          mergePayoutBatchWhere(where, {
+            status: { notIn: [PayoutBatchStatus.PAID, PayoutBatchStatus.CANCELLED] },
+          }),
+        ),
+      ),
       this.prisma.providerPayoutBatch.aggregate({
         ...(where ? { where } : {}),
         _sum: { totalNetAmount: true },
@@ -794,6 +802,7 @@ export class EarningsService {
       payoutHolds,
       missingTransferRefs,
       settled,
+      open,
       totalNetAmount: totalNet._sum.totalNetAmount ?? 0,
       withholdingAmount: withholding._sum.amount ?? 0,
       currency: 'VND',

@@ -6,6 +6,7 @@ import type {
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
+  AdminPayoutBatchSummary,
   AdminRefundSummary,
 } from '../lib/admin-api';
 import { adminGet, apiGet } from '../lib/admin-api';
@@ -134,5 +135,40 @@ describe('DashboardPage', () => {
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');
     expect(hrefs).toContain('/admin/app-sessions?role=PROVIDER&take=5');
+  });
+
+  it('uses payout batch summary for default dashboard payout counters', async () => {
+    const payoutSummary: AdminPayoutBatchSummary = {
+      currency: 'VND',
+      generatedAt: '2026-06-28T00:00:00.000Z',
+      inProgress: 3,
+      missingTransferRefs: 2,
+      needsReview: 4,
+      open: 7,
+      payoutHolds: 1,
+      settled: 5,
+      total: 12,
+      totalNetAmount: 900000,
+      withholdingAmount: 80000,
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payout-batches/summary?range=today') {
+        return payoutSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('<span>Payout evidence</span><strong>7</strong>');
   });
 });

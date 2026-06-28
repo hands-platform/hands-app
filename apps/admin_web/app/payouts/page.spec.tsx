@@ -95,6 +95,7 @@ describe('PayoutsPage', () => {
       inProgress: 7,
       missingTransferRefs: 8,
       needsReview: 6,
+      open: 10,
       payoutHolds: 5,
       settled: 4,
       total: 99,

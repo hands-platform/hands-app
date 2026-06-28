@@ -140,7 +140,8 @@ describe('EarningsService payout batches', () => {
           .mockResolvedValueOnce(3)
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(4)
-          .mockResolvedValueOnce(5),
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6),
         findMany: vi.fn(),
       },
       withholdingLog: {
@@ -155,6 +156,7 @@ describe('EarningsService payout batches', () => {
       inProgress: 3,
       missingTransferRefs: 4,
       needsReview: 2,
+      open: 6,
       payoutHolds: 1,
       settled: 5,
       total: 12,
