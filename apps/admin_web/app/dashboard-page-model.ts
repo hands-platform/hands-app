@@ -31,6 +31,11 @@ const DASHBOARD_NOTIFICATION_TAKE = 20;
 const DASHBOARD_AUDIT_TAKE = 20;
 const DASHBOARD_FINANCE_TAKE = 25;
 const DASHBOARD_APP_SESSION_TAKE = 25;
+const DASHBOARD_SUMMARY_BOOKING_TAKE = 25;
+const DASHBOARD_SUMMARY_NOTIFICATION_TAKE = 10;
+const DASHBOARD_SUMMARY_AUDIT_TAKE = 10;
+const DASHBOARD_SUMMARY_FINANCE_TAKE = 10;
+const DASHBOARD_SUMMARY_APP_SESSION_TAKE = 10;
 const DASHBOARD_USER_TAKE = 50;
 const DASHBOARD_PARTNER_TAKE = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -46,6 +51,7 @@ export function buildDashboardViewMode(params: DashboardParams): DashboardViewMo
 export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataHrefs {
   const viewMode = buildDashboardViewMode(params);
   const range = buildDashboardRange(params);
+  const limits = dashboardDataLimits(viewMode);
   return {
     dashboardSummaryHref: '/admin/dashboard/summary',
     cashSettlementSummaryHref: buildDashboardRangeScopedHref(
@@ -55,29 +61,29 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
     ),
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
       ...(viewMode.shouldRenderFullDashboard ? {} : { role: 'PROVIDER' }),
-      take: String(DASHBOARD_APP_SESSION_TAKE),
+      take: String(limits.appSessions),
     }).toString()}`,
     bookingGateAuditHref: buildDashboardDateScopedHref(
       '/admin/audit-logs',
       {
         action: 'booking.create.rejected',
-        take: String(DASHBOARD_AUDIT_TAKE),
+        take: String(limits.audit),
       },
       range,
     ),
     bookingsHref: `/admin/bookings?${new URLSearchParams({
       dateRange: range,
-      take: String(DASHBOARD_BOOKING_TAKE),
+      take: String(limits.bookings),
     }).toString()}`,
     earningsHref: buildDashboardRangeScopedHref(
       '/admin/earnings',
-      { take: String(DASHBOARD_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     earningsSummaryHref: buildDashboardRangeScopedHref('/admin/earnings/summary', {}, range),
     notificationsHref: buildDashboardDateScopedHref(
       '/admin/notifications',
-      { take: String(DASHBOARD_NOTIFICATION_TAKE) },
+      { take: String(limits.notifications) },
       range,
     ),
     operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
@@ -88,22 +94,42 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       : null,
     paymentsHref: buildDashboardRangeScopedHref(
       '/admin/payments',
-      { take: String(DASHBOARD_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     payoutBatchesHref: buildDashboardRangeScopedHref(
       '/admin/payout-batches',
-      { take: String(DASHBOARD_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     refundsHref: buildDashboardRangeScopedHref(
       '/admin/refunds',
-      { take: String(DASHBOARD_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     usersHref: viewMode.shouldRenderFullDashboard
       ? `/admin/users?${new URLSearchParams({ take: String(DASHBOARD_USER_TAKE) }).toString()}`
       : null,
+  };
+}
+
+function dashboardDataLimits(viewMode: DashboardViewMode) {
+  if (viewMode.shouldRenderFullDashboard) {
+    return {
+      appSessions: DASHBOARD_APP_SESSION_TAKE,
+      audit: DASHBOARD_AUDIT_TAKE,
+      bookings: DASHBOARD_BOOKING_TAKE,
+      finance: DASHBOARD_FINANCE_TAKE,
+      notifications: DASHBOARD_NOTIFICATION_TAKE,
+    };
+  }
+
+  return {
+    appSessions: DASHBOARD_SUMMARY_APP_SESSION_TAKE,
+    audit: DASHBOARD_SUMMARY_AUDIT_TAKE,
+    bookings: DASHBOARD_SUMMARY_BOOKING_TAKE,
+    finance: DASHBOARD_SUMMARY_FINANCE_TAKE,
+    notifications: DASHBOARD_SUMMARY_NOTIFICATION_TAKE,
   };
 }
 

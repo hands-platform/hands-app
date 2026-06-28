@@ -118,6 +118,6 @@ describe('DashboardPage', () => {
     expect(hrefs).toContain('/admin/dashboard/summary');
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');
-    expect(hrefs).toContain('/admin/app-sessions?role=PROVIDER&take=25');
+    expect(hrefs).toContain('/admin/app-sessions?role=PROVIDER&take=10');
   });
 });
