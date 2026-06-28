@@ -56,6 +56,7 @@ export class AdminController {
     @Query('skip') skip?: string,
     @Query('q') q?: string,
     @Query('country') country?: string,
+    @Query('gender') gender?: string,
     @Query('joinedFrom') joinedFrom?: string,
     @Query('joinedTo') joinedTo?: string,
     @Query('lastBookingFrom') lastBookingFrom?: string,
@@ -66,6 +67,7 @@ export class AdminController {
   ) {
     return this.admin.listCustomers({
       country,
+      gender,
       joinedFrom,
       joinedTo,
       lastBookingFrom,
@@ -83,6 +85,7 @@ export class AdminController {
   customerSummary(
     @Query('q') q?: string,
     @Query('country') country?: string,
+    @Query('gender') gender?: string,
     @Query('joinedFrom') joinedFrom?: string,
     @Query('joinedTo') joinedTo?: string,
     @Query('lastBookingFrom') lastBookingFrom?: string,
@@ -92,6 +95,7 @@ export class AdminController {
   ) {
     return this.admin.customerSummary({
       country,
+      gender,
       joinedFrom,
       joinedTo,
       lastBookingFrom,

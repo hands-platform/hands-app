@@ -354,6 +354,7 @@ model CustomerProfile {
   id                  String                        @id @default(cuid())
   userId              String                        @unique
   user                User                          @relation(fields: [userId], references: [id])
+  gender              String?
   addresses           Json?
   bookings            Booking[]
   bookingSnapshots    BookingAddressSnapshot[]

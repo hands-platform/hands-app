@@ -2656,6 +2656,7 @@ describe('AdminService query orchestration', () => {
     await expect(
       service.listCustomers({
         country: 'VN',
+        gender: 'female',
         joinedFrom: '2026-06-01',
         joinedTo: '2026-06-27',
         lastBookingFrom: '2026-06-08',
@@ -2675,6 +2676,7 @@ describe('AdminService query orchestration', () => {
         skip: 20,
         take: 10,
         where: {
+          gender: { equals: 'female', mode: 'insensitive' },
           bookings: {
             none: {
               updatedAt: {
@@ -2727,6 +2729,7 @@ describe('AdminService query orchestration', () => {
     await expect(
       service.customerSummary({
         country: 'VN',
+        gender: 'female',
         joinedFrom: '2026-06-01',
         joinedTo: '2026-06-27',
         lastBookingFrom: '2026-06-08',
@@ -2742,6 +2745,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.customerProfile.count).toHaveBeenCalledWith({
       where: {
+        gender: { equals: 'female', mode: 'insensitive' },
         bookings: {
           none: {
             updatedAt: {

@@ -171,6 +171,7 @@ function buildCustomerDataQueryParams(filters: CustomerFilters, options: { inclu
 
   appendTextParam(params, 'q', filters.q);
   appendTextParam(params, 'country', filters.country);
+  appendTextParam(params, 'gender', filters.gender);
   appendTextParam(params, 'joinedFrom', filters.joinedFrom);
   appendTextParam(params, 'joinedTo', filters.joinedTo);
   appendTextParam(params, 'lastBookingFrom', filters.lastBookingFrom);

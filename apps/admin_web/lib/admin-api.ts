@@ -370,6 +370,7 @@ export type AdminMarketingOverview = {
 export type AdminCustomer = {
   id: string;
   userId: string;
+  gender?: string | null;
   addresses?: unknown;
   activitySummary?: {
     activeBookingCount?: number;

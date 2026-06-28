@@ -459,6 +459,7 @@ type AdminAuditLogListOptions = {
 
 type AdminCustomerDirectorySummaryOptions = {
   country?: string | null;
+  gender?: string | null;
   joinedFrom?: string | null;
   joinedTo?: string | null;
   lastBookingFrom?: string | null;
@@ -827,6 +828,7 @@ export class AdminService {
       select: {
         id: true,
         userId: true,
+        gender: true,
         addresses: true,
         user: {
           select: {
@@ -6725,6 +6727,7 @@ function adminCustomerDirectoryWhere(
   const where: Prisma.CustomerProfileWhereInput = {};
   const userWhere: Prisma.UserWhereInput = {};
   const q = normalizeNullable(options.q);
+  const genderWhere = adminCustomerDirectoryGenderWhere(options.gender);
   const countrySessionWhere = adminCustomerDirectoryCountrySessionWhere(options.country);
   const joinedFrom = adminCustomerDirectoryDateBoundary(options.joinedFrom, 'joinedFrom');
   const joinedTo = adminCustomerDirectoryDateBoundary(options.joinedTo, 'joinedTo', true);
@@ -6736,6 +6739,10 @@ function adminCustomerDirectoryWhere(
 
   if (lastBookingWhere) {
     where.bookings = lastBookingWhere;
+  }
+
+  if (genderWhere) {
+    Object.assign(where, genderWhere);
   }
 
   if (q) {
@@ -6806,6 +6813,32 @@ function adminCustomerDirectoryOrderBy(
 }
 
 const ADMIN_CUSTOMER_DIRECTORY_COUNTRIES = ['VN', 'KR', 'JP', 'CN', 'SG'] as const;
+
+function adminCustomerDirectoryGenderWhere(
+  value: string | null | undefined,
+): Prisma.CustomerProfileWhereInput | undefined {
+  const gender = normalizeNullable(value)?.toLowerCase();
+  if (!gender) {
+    return undefined;
+  }
+
+  if (gender === 'unknown') {
+    return {
+      OR: [
+        { gender: null },
+        { gender: { equals: '' } },
+        { gender: { equals: 'unknown', mode: 'insensitive' } },
+        { gender: { equals: 'not captured', mode: 'insensitive' } },
+      ],
+    };
+  }
+
+  if (!['female', 'male', 'other'].includes(gender)) {
+    return undefined;
+  }
+
+  return { gender: { equals: gender, mode: 'insensitive' } };
+}
 
 function adminCustomerDirectoryCountrySessionWhere(
   value: string | null | undefined,

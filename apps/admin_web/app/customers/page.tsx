@@ -15,8 +15,6 @@ import {
   buildCustomerRow,
   buildCustomerSummary,
   buildServerCustomerPagination,
-  filterCustomerRows,
-  sortCustomerRows,
 } from './customer-list-model';
 import {
   buildCustomerManagementMetrics,
@@ -33,8 +31,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
     adminGet<AdminCustomer[]>(dataHrefs.listHref, []),
     adminGet<AdminCustomerSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
   ]);
-  const allRows = customers.map(buildCustomerRow);
-  const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
+  const rows = customers.map(buildCustomerRow);
   const allSummary = {
     ...buildCustomerSummary(rows),
     total: serverSummary.totalCount,

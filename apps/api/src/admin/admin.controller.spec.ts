@@ -210,6 +210,7 @@ describe('AdminController notification and push actions', () => {
         '20',
         'mai',
         'VN',
+        'female',
         '2026-06-01',
         '2026-06-27',
         '2026-06-08',
@@ -223,6 +224,7 @@ describe('AdminController notification and push actions', () => {
       controller.customerSummary(
         'mai',
         'VN',
+        'female',
         '2026-06-01',
         '2026-06-27',
         '2026-06-08',
@@ -245,6 +247,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listCustomers).toHaveBeenCalledWith({
       country: 'VN',
+      gender: 'female',
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
       lastBookingFrom: '2026-06-08',
@@ -258,6 +261,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.customerSummary).toHaveBeenCalledWith({
       country: 'VN',
+      gender: 'female',
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
       lastBookingFrom: '2026-06-08',
