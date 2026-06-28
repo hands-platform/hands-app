@@ -13,6 +13,7 @@ import { formatMoney } from '../../lib/admin-format';
 import { isInDateRange } from '../../lib/date-range';
 import {
   buildCloseoutTasks,
+  buildFinanceCloseoutApiHrefs,
   buildFinanceCloseoutEvidenceChecklist,
   buildFinanceCloseoutFilters,
   buildHandoffRows,
@@ -33,9 +34,10 @@ type FinanceCloseoutPageProps = {
 
 export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {
   const filters = buildFinanceCloseoutFilters(searchParams ? await searchParams : {});
+  const apiHrefs = buildFinanceCloseoutApiHrefs(filters);
   const [payments, refunds, earningsSummary, earnings, payouts, cashSummary] = await Promise.all([
-    adminGet<AdminPayment[]>('/admin/payments', []),
-    adminGet<AdminRefund[]>('/admin/refunds', []),
+    adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
+    adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
     adminGet<AdminEarningSummary>('/admin/earnings/summary', {
       count: 0,
       grossAmount: 0,
@@ -47,8 +49,8 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       paidNetAmount: 0,
       currency: 'VND',
     }),
-    adminGet<AdminEarning[]>('/admin/earnings', []),
-    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
+    adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
   ]);
 
@@ -103,7 +105,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
         />
         <div className="filter-row admin-mt-12">
           {[
-            ['All records', '/finance-closeout'],
+            ['All records', '/finance-closeout?range=all'],
             ['Today', '/finance-closeout?range=today'],
             ['Last 7 days', '/finance-closeout?range=7d'],
             ['Last 30 days', '/finance-closeout?range=30d'],

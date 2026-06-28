@@ -61,6 +61,7 @@ export type ReconciliationInput = {
 const OPEN_PAYMENT_REFERENCE_STATUSES = ['AUTHORIZED', 'PENDING'];
 const CLOSED_PAYOUT_STATUSES = ['PAID', 'CANCELLED'];
 const PAYOUT_REFERENCE_REQUIRED_STATUSES = ['PROCESSING', 'PAID'];
+const FINANCE_CLOSEOUT_API_LIMIT = 100;
 
 export function buildReconciliation(input: ReconciliationInput) {
   const authorizedPayments = input.payments.filter((payment) => payment.status === 'AUTHORIZED');
@@ -345,10 +346,25 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
 }
 
 export function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
-  const range = normalizeDateRange(readSearchParam(params.range));
+  const rangeParam = readSearchParam(params.range);
+  const range = rangeParam ? normalizeDateRange(rangeParam) : 'today';
   return {
     range,
     label: dateRangeLabel(range),
+  };
+}
+
+export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFinanceCloseoutFilters>) {
+  const query = new URLSearchParams({
+    range: filters.range,
+    take: String(FINANCE_CLOSEOUT_API_LIMIT),
+  });
+
+  return {
+    earningsHref: `/admin/earnings?${query.toString()}`,
+    payoutBatchesHref: `/admin/payout-batches?${query.toString()}`,
+    paymentsHref: `/admin/payments?${query.toString()}`,
+    refundsHref: `/admin/refunds?${query.toString()}`,
   };
 }
 

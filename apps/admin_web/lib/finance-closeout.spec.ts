@@ -8,7 +8,9 @@ import type {
 } from './admin-api';
 import {
   buildCloseoutTasks,
+  buildFinanceCloseoutApiHrefs,
   buildFinanceCloseoutEvidenceChecklist,
+  buildFinanceCloseoutFilters,
   buildHandoffRows,
   buildReconciliation,
   buildShiftCloseActionMap,
@@ -16,6 +18,20 @@ import {
 } from './finance-closeout';
 
 describe('finance closeout helpers', () => {
+  it('defaults closeout filters to today and builds bounded finance API hrefs', () => {
+    const defaultFilters = buildFinanceCloseoutFilters({});
+    const rangeFilters = buildFinanceCloseoutFilters({ range: '30d' });
+
+    expect(defaultFilters).toMatchObject({ label: 'Today (Vietnam)', range: 'today' });
+    expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
+    expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
+      earningsHref: '/admin/earnings?range=30d&take=100',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=100',
+      paymentsHref: '/admin/payments?range=30d&take=100',
+      refundsHref: '/admin/refunds?range=30d&take=100',
+    });
+  });
+
   it('builds reconciliation counts and all-date cash debt from settlement summary', () => {
     const reconciliation = buildReconciliation({
       cashSummary: cashSummaryFixture({ totalDebtAmount: 450000 }),
