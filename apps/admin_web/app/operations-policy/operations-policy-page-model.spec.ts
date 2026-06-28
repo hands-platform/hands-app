@@ -15,9 +15,10 @@ describe('operations policy page model', () => {
     expect(plan.shouldRenderFullDiagnostics).toBe(false);
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
     expect(bookingsUrl.searchParams.get('take')).toBe('20');
+    expect(providersUrl.pathname).toBe('/admin/operations-policy/providers');
+    expect(providersUrl.searchParams.get('take')).toBe('50');
     expect(policyAuditUrl.searchParams.get('take')).toBe('8');
     expect(bookingGateAuditUrl.searchParams.get('take')).toBe('12');
-    expect(plan.providersHref).toBe('/admin/operations-policy/providers?take=50');
   });
 
   it('keeps the previous larger diagnostics window behind details=all', () => {
