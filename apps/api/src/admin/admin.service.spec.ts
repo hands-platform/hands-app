@@ -106,6 +106,40 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('keeps customer detail audit trail bounded to the visible preview', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'customer-1',
+          userId: 'user-1',
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getCustomerDetail('customer-1')).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [{ id: 'audit-1' }],
+      }),
+    );
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { target: 'customer:customer-1' },
+            { target: 'user:user-1' },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('keeps provider report lists bounded for operations pages', async () => {
     const prisma = {
       providerReport: {
@@ -3401,6 +3435,39 @@ describe('AdminService query orchestration', () => {
               matchSource: true,
             }),
           }),
+        }),
+      }),
+    );
+  });
+
+  it('keeps partner detail audit trail bounded for full detail screens', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          devices: [],
+          sessions: [],
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getProviderDetail('provider-1')).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [{ id: 'audit-1' }],
+        sharedDeviceMatches: [],
+      }),
+    );
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ target: 'provider:provider-1' }]),
         }),
       }),
     );

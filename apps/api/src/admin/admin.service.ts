@@ -463,6 +463,8 @@ const adminPartnerReferralParentSelect = {
 } satisfies Prisma.ProviderProfileSelect;
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+const ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT = 10;
+const ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT = 20;
 
 type AdminUserListOptions = {
   skip?: number | string | null;
@@ -1006,7 +1008,7 @@ export class AdminService {
     const auditLogs = await this.prisma.adminAuditLog.findMany({
       where: customerAuditLogWhere(customerProfileId, customer.userId),
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
 
@@ -3391,7 +3393,7 @@ export class AdminService {
     const auditLogsPromise = this.prisma.adminAuditLog.findMany({
       where: providerAuditLogWhere(providerProfileId),
       orderBy: { createdAt: 'desc' },
-      take: 75,
+      take: ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
 
