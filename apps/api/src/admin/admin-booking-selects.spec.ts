@@ -100,6 +100,7 @@ describe('admin booking selects', () => {
 
   it('keeps customer booking detail rows bounded for nested activity', () => {
     expect(adminCustomerBookingListSelect.chatRoom).toMatchObject({ select: { id: true } });
+    expect(adminCustomerBookingListSelect).toHaveProperty('metadata', false);
     expect(adminCustomerDetailBookingSelect).toHaveProperty('metadata', false);
     expect(adminCustomerDetailBookingSelect.walletLedgerEntries).toMatchObject({ take: 5 });
     expect(ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT).toBeLessThanOrEqual(5);

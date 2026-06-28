@@ -153,7 +153,7 @@ export const adminCustomerBookingListSelect = {
   closedNote: true,
   createdAt: true,
   updatedAt: true,
-  metadata: true,
+  metadata: false,
   address: true,
   lat: true,
   lng: true,
