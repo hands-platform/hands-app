@@ -1157,6 +1157,25 @@ export class AdminService {
     return rows.map((row) => adminCustomerReferralParentView(row, decisions));
   }
 
+  async customerReferralParentSummary() {
+    const [totalCount, rewardGroups] = await Promise.all([
+      this.prisma.customerProfile.count({
+        where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+      }),
+      this.prisma.referralReward.groupBy({
+        by: ['status'],
+        where: { attribution: { audience: ReferralAudience.CUSTOMER } },
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      totalCount,
+      rewardQueueSummaries: adminReferralRewardQueueSummaries(rewardGroups),
+    };
+  }
+
   async getCustomerReferralParent(customerProfileId: string) {
     const row = await this.prisma.customerProfile.findFirst({
       where: {
@@ -1185,6 +1204,25 @@ export class AdminService {
     const decisions = await this.listLatestReferralRewardDecisions(adminPartnerReferralRewardIds(rows));
 
     return rows.map((row) => adminPartnerReferralParentView(row, decisions));
+  }
+
+  async partnerReferralParentSummary() {
+    const [totalCount, rewardGroups] = await Promise.all([
+      this.prisma.providerProfile.count({
+        where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+      }),
+      this.prisma.referralReward.groupBy({
+        by: ['status'],
+        where: { attribution: { audience: ReferralAudience.PARTNER } },
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      totalCount,
+      rewardQueueSummaries: adminReferralRewardQueueSummaries(rewardGroups),
+    };
   }
 
   async getPartnerReferralParent(providerProfileId: string) {
@@ -6450,6 +6488,40 @@ function adminReferralRewardTotals(referralCount: number, rewards: AdminReferral
     cancelledRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.CANCELLED),
     totalRewardAmount: rewards.reduce((total, reward) => total + reward.amount, 0),
   };
+}
+
+function adminReferralRewardQueueSummaries(
+  rewardGroups: readonly {
+    readonly status: ReferralRewardStatus;
+    readonly _count: { readonly _all: number };
+    readonly _sum: { readonly amount: number | null };
+  }[],
+) {
+  const byStatus = new Map(
+    rewardGroups.map((group) => [
+      group.status,
+      {
+        amount: group._sum.amount ?? 0,
+        count: group._count._all,
+      },
+    ]),
+  );
+  const statusSummary = (status: ReferralRewardStatus) => byStatus.get(status) ?? { amount: 0, count: 0 };
+  const allSummary = rewardGroups.reduce(
+    (summary, group) => ({
+      amount: summary.amount + (group._sum.amount ?? 0),
+      count: summary.count + group._count._all,
+    }),
+    { amount: 0, count: 0 },
+  );
+
+  return [
+    { reward: 'all', ...allSummary },
+    { reward: 'available', ...statusSummary(ReferralRewardStatus.AVAILABLE) },
+    { reward: 'pending', ...statusSummary(ReferralRewardStatus.PENDING) },
+    { reward: 'held', ...statusSummary(ReferralRewardStatus.HELD) },
+    { reward: 'credited', ...statusSummary(ReferralRewardStatus.REWARDED) },
+  ];
 }
 
 function countReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], status: ReferralRewardStatus) {

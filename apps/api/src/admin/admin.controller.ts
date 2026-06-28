@@ -214,6 +214,11 @@ export class AdminController {
     return this.admin.listCustomerReferralParents({ take, skip });
   }
 
+  @Get('referrals/customers/summary')
+  customerReferralParentSummary() {
+    return this.admin.customerReferralParentSummary();
+  }
+
   @Get('referrals/customers/:id')
   customerReferralParent(@Param('id') customerProfileId: string) {
     return this.admin.getCustomerReferralParent(customerProfileId);
@@ -222,6 +227,11 @@ export class AdminController {
   @Get('referrals/partners')
   partnerReferralParents(@Query('take') take?: string, @Query('skip') skip?: string) {
     return this.admin.listPartnerReferralParents({ take, skip });
+  }
+
+  @Get('referrals/partners/summary')
+  partnerReferralParentSummary() {
+    return this.admin.partnerReferralParentSummary();
   }
 
   @Get('referrals/partners/:id')

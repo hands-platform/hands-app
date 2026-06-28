@@ -15,6 +15,8 @@ describe('AdminController notification and push actions', () => {
     getVietnamOverview: vi.fn(),
     getCustomerReferralParent: vi.fn(),
     getPartnerReferralParent: vi.fn(),
+    customerReferralParentSummary: vi.fn(),
+    partnerReferralParentSummary: vi.fn(),
     listCustomerReferralParents: vi.fn(),
     listPartnerReferralParents: vi.fn(),
     listReferralPolicies: vi.fn(),
@@ -807,6 +809,21 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listCustomerReferralParents).toHaveBeenCalledWith({ take: '25', skip: '50' });
   });
 
+  it('exposes customer referral parent summary without loading parent rows', async () => {
+    admin.customerReferralParentSummary.mockResolvedValue({ totalCount: 12, rewardQueueSummaries: [] });
+
+    await expect(controller.customerReferralParentSummary()).resolves.toEqual({
+      totalCount: 12,
+      rewardQueueSummaries: [],
+    });
+
+    expect(routeMetadata('customerReferralParentSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/customers/summary',
+    });
+    expect(admin.customerReferralParentSummary).toHaveBeenCalledWith();
+  });
+
   it('exposes a customer referral parent detail only for referral activity drilldown', async () => {
     admin.getCustomerReferralParent.mockResolvedValue({ referrer: { id: 'customer-1' } });
 
@@ -831,6 +848,21 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/partners',
     });
     expect(admin.listPartnerReferralParents).toHaveBeenCalledWith({ take: '10', skip: '20' });
+  });
+
+  it('exposes partner referral parent summary without loading parent rows', async () => {
+    admin.partnerReferralParentSummary.mockResolvedValue({ totalCount: 7, rewardQueueSummaries: [] });
+
+    await expect(controller.partnerReferralParentSummary()).resolves.toEqual({
+      totalCount: 7,
+      rewardQueueSummaries: [],
+    });
+
+    expect(routeMetadata('partnerReferralParentSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/partners/summary',
+    });
+    expect(admin.partnerReferralParentSummary).toHaveBeenCalledWith();
   });
 
   it('exposes referral reward hold-window release as a POST action', async () => {

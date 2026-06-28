@@ -1435,6 +1435,92 @@ describe('AdminService query orchestration', () => {
     expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
   });
 
+  it('summarizes customer referral parent counts and reward queues without loading parent rows', async () => {
+    const prisma = {
+      customerProfile: {
+        count: vi.fn().mockResolvedValue(12),
+      },
+      referralReward: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            status: ReferralRewardStatus.AVAILABLE,
+            _count: { _all: 3 },
+            _sum: { amount: 75_000 },
+          },
+          {
+            status: ReferralRewardStatus.REWARDED,
+            _count: { _all: 2 },
+            _sum: { amount: 50_000 },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.customerReferralParentSummary()).resolves.toEqual({
+      totalCount: 12,
+      rewardQueueSummaries: [
+        { reward: 'all', count: 5, amount: 125_000 },
+        { reward: 'available', count: 3, amount: 75_000 },
+        { reward: 'pending', count: 0, amount: 0 },
+        { reward: 'held', count: 0, amount: 0 },
+        { reward: 'credited', count: 2, amount: 50_000 },
+      ],
+    });
+    expect(prisma.customerProfile.count).toHaveBeenCalledWith({
+      where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+    });
+    expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      where: { attribution: { audience: ReferralAudience.CUSTOMER } },
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
+  });
+
+  it('summarizes partner referral parent counts and reward queues without loading parent rows', async () => {
+    const prisma = {
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(7),
+      },
+      referralReward: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            status: ReferralRewardStatus.PENDING,
+            _count: { _all: 4 },
+            _sum: { amount: 400_000 },
+          },
+          {
+            status: ReferralRewardStatus.HELD,
+            _count: { _all: 1 },
+            _sum: { amount: 100_000 },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerReferralParentSummary()).resolves.toEqual({
+      totalCount: 7,
+      rewardQueueSummaries: [
+        { reward: 'all', count: 5, amount: 500_000 },
+        { reward: 'available', count: 0, amount: 0 },
+        { reward: 'pending', count: 4, amount: 400_000 },
+        { reward: 'held', count: 1, amount: 100_000 },
+        { reward: 'credited', count: 0, amount: 0 },
+      ],
+    });
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+    });
+    expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      where: { attribution: { audience: ReferralAudience.PARTNER } },
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
+  });
+
   it('rejects customer referral parent detail when the customer has no referral activity', async () => {
     const prisma = {
       customerProfile: {

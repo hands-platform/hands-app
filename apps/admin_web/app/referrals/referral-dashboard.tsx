@@ -45,6 +45,7 @@ export type ReferralRewardQueueSummary = {
 };
 
 const referralListPageSize = 10;
+const referralFilteredFallbackTake = 100;
 
 type ReferralPaginationModel<T> = {
   readonly currentPage: number;
@@ -64,6 +65,7 @@ type ReferralDashboardProps =
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminCustomerReferralParent[];
+      readonly serverPagination?: boolean;
       readonly totalCount?: number;
     }
   | {
@@ -74,6 +76,7 @@ type ReferralDashboardProps =
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
       readonly rows: readonly AdminPartnerReferralParent[];
+      readonly serverPagination?: boolean;
       readonly totalCount?: number;
     };
 
@@ -93,8 +96,10 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
   const title = props.audience === 'customer' ? 'Customer Referrals' : 'Partner Referrals';
   const filters = props.filters ?? defaultReferralDashboardFilters;
   const rewardQueueSummaries = props.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(props.rows);
-  const pagination = paginateReferralRows(props.rows, props.currentPage ?? 1, props.pageSize ?? referralListPageSize);
   const totalCount = props.totalCount ?? props.rows.length;
+  const pagination = props.serverPagination
+    ? paginateReferralServerRows(props.rows, props.currentPage ?? 1, totalCount, props.pageSize ?? referralListPageSize)
+    : paginateReferralRows(props.rows, props.currentPage ?? 1, props.pageSize ?? referralListPageSize);
   const tableEmptyState: ReferralEmptyStateProps = {
     activeFilters: referralActiveFilterLabels(filters),
     audienceLabel: referralAudienceLabel(props.audience),
@@ -1101,6 +1106,38 @@ export function buildReferralListHref(
   return query ? `${referralListPath(audience)}?${query}` : referralListPath(audience);
 }
 
+export function buildReferralParentApiHref(
+  audience: ReferralAudienceSlug,
+  filters: ReferralDashboardFilters,
+  currentPage: number,
+) {
+  const params = new URLSearchParams();
+  const hasLocalFilters = hasReferralParentLocalFilters(filters);
+
+  if (hasLocalFilters) {
+    params.set('take', String(referralFilteredFallbackTake));
+  } else {
+    const page = Math.max(1, Math.trunc(currentPage));
+    const skip = (page - 1) * referralListPageSize;
+    params.set('take', String(referralListPageSize));
+    if (skip > 0) {
+      params.set('skip', String(skip));
+    }
+  }
+
+  return `/admin/referrals/${audience === 'partner' ? 'partners' : 'customers'}?${params.toString()}`;
+}
+
+export function buildReferralParentSummaryApiHref(
+  audience: ReferralAudienceSlug,
+  filters: ReferralDashboardFilters,
+) {
+  if (hasReferralParentLocalFilters(filters)) {
+    return null;
+  }
+  return `/admin/referrals/${audience === 'partner' ? 'partners' : 'customers'}/summary`;
+}
+
 export function paginateReferralRows<T>(
   rows: readonly T[],
   currentPage: number,
@@ -1120,6 +1157,30 @@ export function paginateReferralRows<T>(
     rows: pageRows,
     startItem,
     totalCount: rows.length,
+    totalPages,
+  };
+}
+
+function paginateReferralServerRows<T>(
+  rows: readonly T[],
+  currentPage: number,
+  totalCount: number,
+  pageSize = referralListPageSize,
+): ReferralPaginationModel<T> {
+  const safePageSize = Math.max(1, Math.trunc(pageSize));
+  const safeTotalCount = Math.max(0, Math.trunc(totalCount));
+  const totalPages = Math.max(1, Math.ceil(safeTotalCount / safePageSize));
+  const page = Math.min(Math.max(1, Math.trunc(currentPage)), totalPages);
+  const startIndex = safeTotalCount > 0 && rows.length > 0 ? (page - 1) * safePageSize : 0;
+  const startItem = rows.length > 0 ? startIndex + 1 : 0;
+  const endItem = rows.length > 0 ? Math.min(startIndex + rows.length, safeTotalCount) : 0;
+
+  return {
+    currentPage: page,
+    endItem,
+    rows,
+    startItem,
+    totalCount: safeTotalCount,
     totalPages,
   };
 }
@@ -1174,6 +1235,10 @@ export function buildReferralRewardQueueSummaries(
 
 function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+}
+
+function hasReferralParentLocalFilters(filters: ReferralDashboardFilters) {
+  return Boolean(filters.q) || filters.status !== 'all' || filters.reward !== 'all';
 }
 
 function formatReferralRewardQueueSummary(summary: ReferralRewardQueueSummary | undefined) {

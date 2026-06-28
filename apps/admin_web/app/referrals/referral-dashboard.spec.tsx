@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminCustomerReferralParent, AdminPartnerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
 import {
   ReferralDashboard,
+  buildReferralParentApiHref,
+  buildReferralParentSummaryApiHref,
   buildReferralDashboardFilters,
   buildReferralDashboardPage,
   buildReferralListHref,
@@ -124,6 +126,10 @@ const referralStoreEnvKeys = [
   'CUSTOMER_IOS_APP_URL',
 ] as const;
 
+function defaultReferralDashboardFiltersForTest() {
+  return { q: '', reward: 'all' as const, status: 'all' as const };
+}
+
 describe('ReferralDashboard', () => {
   const originalReferralStoreEnv = new Map<string, string | undefined>();
 
@@ -234,6 +240,14 @@ describe('ReferralDashboard', () => {
     expect(buildReferralListHref('customer', filters, {}, 2)).toBe(
       '/referrals/customers?q=Parent&status=blocked&reward=held&page=2',
     );
+    expect(buildReferralParentApiHref('customer', defaultReferralDashboardFiltersForTest(), 3)).toBe(
+      '/admin/referrals/customers?take=10&skip=20',
+    );
+    expect(buildReferralParentSummaryApiHref('customer', defaultReferralDashboardFiltersForTest())).toBe(
+      '/admin/referrals/customers/summary',
+    );
+    expect(buildReferralParentApiHref('customer', filters, 3)).toBe('/admin/referrals/customers?take=100');
+    expect(buildReferralParentSummaryApiHref('customer', filters)).toBeNull();
   });
 
   it('renders rounded pagination for longer referral parent lists', () => {
@@ -260,6 +274,34 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Page 2 of 2');
     expect(markup).toContain('Showing 11-12 of 12');
     expect(markup).toContain('href="/referrals/customers"');
+  });
+
+  it('renders server-paginated referral parent rows without slicing the loaded page again', () => {
+    const pageRows = Array.from({ length: 10 }, (_, index) =>
+      referralParent({
+        code: `PAGE2-${index}`,
+        id: `parent-${index + 10}`,
+        name: `Parent ${index + 10}`,
+        referralStatus: 'QUALIFIED',
+        rewardStatus: 'AVAILABLE',
+      }),
+    );
+
+    const markup = renderToStaticMarkup(
+      <ReferralDashboard
+        audience="customer"
+        currentPage={2}
+        policy={policy}
+        rows={pageRows}
+        serverPagination
+        totalCount={25}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Parent 10');
+    expect(markup).toContain('Parent 19');
+    expect(markup).toContain('Page 2 of 3');
+    expect(markup).toContain('Showing 11-20 of 25');
   });
 
   it('renders reward operation quick filters without losing search or referral status', () => {

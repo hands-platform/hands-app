@@ -139,6 +139,17 @@ export type AdminReferralReward = {
   walletLedgerReference?: string | null;
 };
 
+export type AdminReferralRewardQueueSummary = {
+  amount: number;
+  count: number;
+  reward: 'all' | 'available' | 'credited' | 'pending' | 'held';
+};
+
+export type AdminReferralParentSummary = {
+  rewardQueueSummaries: AdminReferralRewardQueueSummary[];
+  totalCount: number;
+};
+
 export type AdminReferralTotals = {
   availableRewardAmount: number;
   availableRewardCount: number;

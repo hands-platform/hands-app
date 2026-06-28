@@ -1,5 +1,6 @@
 import type {
   AdminCustomerReferralParent,
+  AdminReferralParentSummary,
   AdminReferralPolicies,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
@@ -7,6 +8,8 @@ import {
   ReferralDashboard,
   buildReferralDashboardFilters,
   buildReferralDashboardPage,
+  buildReferralParentApiHref,
+  buildReferralParentSummaryApiHref,
   buildReferralRewardQueueSummaries,
   filterReferralParentRows,
   referralPolicyFallback,
@@ -22,15 +25,21 @@ export default async function CustomerReferralsPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const filters = buildReferralDashboardFilters(resolvedSearchParams);
   const currentPage = buildReferralDashboardPage(resolvedSearchParams);
-  const [policies, rows] = await Promise.all([
+  const rowsHref = buildReferralParentApiHref('customer', filters, currentPage);
+  const summaryHref = buildReferralParentSummaryApiHref('customer', filters);
+  const [policies, rows, summary] = await Promise.all([
     adminGet<AdminReferralPolicies>('/admin/referrals/policies', {
       customer: referralPolicyFallback('customer'),
       partner: referralPolicyFallback('partner'),
     }),
-    adminGet<AdminCustomerReferralParent[]>('/admin/referrals/customers', []),
+    adminGet<AdminCustomerReferralParent[]>(rowsHref, []),
+    summaryHref ? adminGet<AdminReferralParentSummary | null>(summaryHref, null) : Promise.resolve(null),
   ]);
-  const rewardSummaryRows = filterReferralParentRows('customer', rows, { ...filters, reward: 'all' });
-  const filteredRows = filterReferralParentRows('customer', rows, filters);
+  const serverPagination = Boolean(summary);
+  const rewardSummaryRows = serverPagination
+    ? rows
+    : filterReferralParentRows('customer', rows, { ...filters, reward: 'all' });
+  const filteredRows = serverPagination ? rows : filterReferralParentRows('customer', rows, filters);
 
   return (
     <ReferralDashboard
@@ -38,9 +47,10 @@ export default async function CustomerReferralsPage({
       currentPage={currentPage}
       filters={filters}
       policy={policies.customer}
-      rewardQueueSummaries={buildReferralRewardQueueSummaries(rewardSummaryRows)}
+      rewardQueueSummaries={summary?.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(rewardSummaryRows)}
       rows={filteredRows}
-      totalCount={rows.length}
+      serverPagination={serverPagination}
+      totalCount={summary?.totalCount ?? rows.length}
     />
   );
 }

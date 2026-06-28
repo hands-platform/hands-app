@@ -1,5 +1,6 @@
 import type {
   AdminPartnerReferralParent,
+  AdminReferralParentSummary,
   AdminReferralPolicies,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
@@ -7,6 +8,8 @@ import {
   ReferralDashboard,
   buildReferralDashboardFilters,
   buildReferralDashboardPage,
+  buildReferralParentApiHref,
+  buildReferralParentSummaryApiHref,
   buildReferralRewardQueueSummaries,
   filterReferralParentRows,
   referralPolicyFallback,
@@ -22,15 +25,21 @@ export default async function PartnerReferralsPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const filters = buildReferralDashboardFilters(resolvedSearchParams);
   const currentPage = buildReferralDashboardPage(resolvedSearchParams);
-  const [policies, rows] = await Promise.all([
+  const rowsHref = buildReferralParentApiHref('partner', filters, currentPage);
+  const summaryHref = buildReferralParentSummaryApiHref('partner', filters);
+  const [policies, rows, summary] = await Promise.all([
     adminGet<AdminReferralPolicies>('/admin/referrals/policies', {
       customer: referralPolicyFallback('customer'),
       partner: referralPolicyFallback('partner'),
     }),
-    adminGet<AdminPartnerReferralParent[]>('/admin/referrals/partners', []),
+    adminGet<AdminPartnerReferralParent[]>(rowsHref, []),
+    summaryHref ? adminGet<AdminReferralParentSummary | null>(summaryHref, null) : Promise.resolve(null),
   ]);
-  const rewardSummaryRows = filterReferralParentRows('partner', rows, { ...filters, reward: 'all' });
-  const filteredRows = filterReferralParentRows('partner', rows, filters);
+  const serverPagination = Boolean(summary);
+  const rewardSummaryRows = serverPagination
+    ? rows
+    : filterReferralParentRows('partner', rows, { ...filters, reward: 'all' });
+  const filteredRows = serverPagination ? rows : filterReferralParentRows('partner', rows, filters);
 
   return (
     <ReferralDashboard
@@ -38,9 +47,10 @@ export default async function PartnerReferralsPage({
       currentPage={currentPage}
       filters={filters}
       policy={policies.partner}
-      rewardQueueSummaries={buildReferralRewardQueueSummaries(rewardSummaryRows)}
+      rewardQueueSummaries={summary?.rewardQueueSummaries ?? buildReferralRewardQueueSummaries(rewardSummaryRows)}
       rows={filteredRows}
-      totalCount={rows.length}
+      serverPagination={serverPagination}
+      totalCount={summary?.totalCount ?? rows.length}
     />
   );
 }
