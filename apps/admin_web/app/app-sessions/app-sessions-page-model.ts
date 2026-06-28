@@ -1,4 +1,4 @@
-const DEFAULT_APP_SESSION_LIST_TAKE = 50;
+const DEFAULT_APP_SESSION_LIST_TAKE = 25;
 
 export type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 

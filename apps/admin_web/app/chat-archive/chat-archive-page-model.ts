@@ -4,8 +4,8 @@ import {
 } from '../../lib/detail-date-filter';
 import { readSearchParam } from '../../lib/date-range';
 
-const CHAT_ARCHIVE_DEFAULT_TAKE = 50;
-const CHAT_REPAIR_BOOKING_DEFAULT_TAKE = 50;
+const CHAT_ARCHIVE_DEFAULT_TAKE = 25;
+const CHAT_REPAIR_BOOKING_DEFAULT_TAKE = 25;
 
 export type ChatArchiveFilters = {
   readonly q: string;

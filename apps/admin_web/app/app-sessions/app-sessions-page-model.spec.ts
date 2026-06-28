@@ -9,7 +9,7 @@ describe('app sessions page model', () => {
   it('keeps the default admin app-session API request bounded', () => {
     const filters = buildSessionFilters({});
 
-    expect(buildAppSessionApiHref(filters)).toBe('/admin/app-sessions?take=50&state=live');
+    expect(buildAppSessionApiHref(filters)).toBe('/admin/app-sessions?take=25&state=live');
     expect(sessionFilterHref(filters)).toBe('/app-sessions');
     expect(sessionFilterLabel(filters)).toBe('Showing live customer, partner, and admin app sessions');
   });
@@ -23,7 +23,7 @@ describe('app sessions page model', () => {
     });
 
     expect(buildAppSessionApiHref(filters)).toBe(
-      '/admin/app-sessions?take=50&role=PROVIDER&state=live&platform=ios&q=8490',
+      '/admin/app-sessions?take=25&role=PROVIDER&state=live&platform=ios&q=8490',
     );
     expect(sessionFilterHref(filters)).toBe('/app-sessions?role=PROVIDER&state=live&platform=ios&q=8490');
     expect(sessionFilterLabel(filters)).toBe(

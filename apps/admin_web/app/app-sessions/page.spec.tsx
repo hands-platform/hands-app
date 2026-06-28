@@ -50,7 +50,7 @@ describe('AppSessionsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/app-sessions?take=50&role=PROVIDER&state=live',
+      '/admin/app-sessions?take=25&role=PROVIDER&state=live',
       [],
     );
     expect(markup).toContain('Server Trusted Session');
