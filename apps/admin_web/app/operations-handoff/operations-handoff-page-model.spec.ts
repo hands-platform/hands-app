@@ -17,9 +17,19 @@ import {
 
 describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
-    expect(buildOperationsHandoffFilters({})).toEqual({ range: 'today' });
-    expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({ range: '7d' });
-    expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({ range: 'today' });
+    expect(buildOperationsHandoffFilters({})).toEqual({ detailsMode: 'summary', range: 'today' });
+    expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({
+      detailsMode: 'summary',
+      range: '7d',
+    });
+    expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({
+      detailsMode: 'summary',
+      range: 'today',
+    });
+    expect(buildOperationsHandoffFilters({ details: 'all' })).toEqual({
+      detailsMode: 'all',
+      range: 'today',
+    });
     expect(emptyCashSettlementSummary()).toMatchObject({
       cashPaymentRowCount: 0,
       currency: 'VND',
@@ -35,7 +45,6 @@ describe('operations handoff page model', () => {
     const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
     const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
-    const chatArchiveUrl = new URL(hrefs.chatArchiveHref, 'http://admin.local');
     const customersUrl = new URL(hrefs.customersHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const earningsUrl = new URL(hrefs.earningsHref, 'http://admin.local');
@@ -46,8 +55,7 @@ describe('operations handoff page model', () => {
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
     expect(bookingsUrl.searchParams.get('take')).toBe('100');
     expect(appSessionsUrl.searchParams.get('take')).toBe('50');
-    expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('today');
-    expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+    expect(hrefs.chatArchiveHref).toBeNull();
     expect(customersUrl.searchParams.get('take')).toBe('50');
     expect(paymentsUrl.searchParams.get('range')).toBe('today');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
@@ -69,17 +77,24 @@ describe('operations handoff page model', () => {
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
+  it('keeps retained chat archive behind full handoff details', () => {
+    const hrefs = buildOperationsHandoffDataHrefs({ details: 'all', range: '7d' });
+    const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
+
+    expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
+    expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
+    expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+  });
+
   it('keeps selected handoff range on bounded list requests', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ range: '7d' });
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
-    const chatArchiveUrl = new URL(hrefs.chatArchiveHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const payoutBatchesUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
-    expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
-    expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+    expect(hrefs.chatArchiveHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');

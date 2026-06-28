@@ -30,6 +30,7 @@ type OperationsHandoffRangeDataInput = {
 };
 
 export type OperationsHandoffFilters = {
+  readonly detailsMode: 'summary' | 'all';
   readonly range: ReturnType<typeof normalizeDateRange>;
 };
 
@@ -38,7 +39,7 @@ export type OperationsHandoffDataHrefs = {
   readonly auditLogsHref: string;
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
-  readonly chatArchiveHref: string;
+  readonly chatArchiveHref: string | null;
   readonly customersHref: string;
   readonly earningsHref: string;
   readonly notificationsHref: string;
@@ -79,7 +80,9 @@ export function buildOperationsHandoffFilters(
   params: Record<string, string | string[] | undefined>,
 ): OperationsHandoffFilters {
   const rangeParam = readSearchParam(params.range);
+  const detailsParam = readSearchParam(params.details);
   return {
+    detailsMode: detailsParam === 'all' ? 'all' : 'summary',
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
   };
 }
@@ -87,7 +90,7 @@ export function buildOperationsHandoffFilters(
 export function buildOperationsHandoffDataHrefs(
   params: Record<string, string | string[] | undefined>,
 ): OperationsHandoffDataHrefs {
-  const { range } = buildOperationsHandoffFilters(params);
+  const { detailsMode, range } = buildOperationsHandoffFilters(params);
 
   return {
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
@@ -103,10 +106,13 @@ export function buildOperationsHandoffDataHrefs(
       take: String(OPERATIONS_HANDOFF_BOOKING_TAKE),
     }).toString()}`,
     cashSettlementSummaryHref: '/admin/cash-settlement-summary',
-    chatArchiveHref: `/admin/chat-archive?${new URLSearchParams({
-      dateRange: range,
-      take: String(OPERATIONS_HANDOFF_CHAT_TAKE),
-    }).toString()}`,
+    chatArchiveHref:
+      detailsMode === 'all'
+        ? `/admin/chat-archive?${new URLSearchParams({
+            dateRange: range,
+            take: String(OPERATIONS_HANDOFF_CHAT_TAKE),
+          }).toString()}`
+        : null,
     customersHref: `/admin/customers?${new URLSearchParams({
       take: String(OPERATIONS_HANDOFF_LIST_TAKE),
     }).toString()}`,

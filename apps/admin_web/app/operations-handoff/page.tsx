@@ -93,8 +93,11 @@ export default async function OperationsHandoffPage({
       dataHrefs.cashSettlementSummaryHref,
       emptyCashSettlementSummary(),
     ),
-    adminGet<AdminBookingDetail[]>(dataHrefs.chatArchiveHref, []),
+    dataHrefs.chatArchiveHref
+      ? adminGet<AdminBookingDetail[]>(dataHrefs.chatArchiveHref, [])
+      : Promise.resolve<AdminBookingDetail[]>([]),
   ]);
+  const shouldRenderFullDetails = filters.detailsMode === 'all';
 
   const activeBookings = bookings.filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status));
   const matchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
@@ -137,17 +140,21 @@ export default async function OperationsHandoffPage({
     partnerSignals,
     operatorNotes,
   });
-  const activityStream = filterActivityStreamByRange(
-    buildUnifiedActivityStream({
-      bookings,
-      chatArchive,
-      auditLogs,
-      notifications,
-      financeRows,
-    }),
-    filters.range,
-  );
-  const activityStreamCsvHref = buildActivityStreamCsvHref(activityStream);
+  const activityStream = shouldRenderFullDetails
+    ? filterActivityStreamByRange(
+        buildUnifiedActivityStream({
+          bookings,
+          chatArchive,
+          auditLogs,
+          notifications,
+          financeRows,
+        }),
+        filters.range,
+      )
+    : [];
+  const activityStreamCsvHref = shouldRenderFullDetails
+    ? buildActivityStreamCsvHref(activityStream)
+    : '';
   const handoffChecklist = buildHandoffReadinessChecklist({
     bookings,
     matchingBookings,
@@ -206,13 +213,46 @@ export default async function OperationsHandoffPage({
         <OperationsHandoffOperatorNotesSection notes={operatorNotes} />
       </section>
 
-      <OperationsHandoffActivityStreamSection csvHref={activityStreamCsvHref} rows={activityStream} />
+      {shouldRenderFullDetails ? (
+        <>
+          <OperationsHandoffActivityStreamSection csvHref={activityStreamCsvHref} rows={activityStream} />
 
-      <OperationsHandoffBookingQueueSection bookings={bookingQueue} />
+          <OperationsHandoffBookingQueueSection bookings={bookingQueue} />
 
-      <OperationsHandoffCustomerPartnerSection customers={customerSignals} partners={partnerSignals.rows} />
+          <OperationsHandoffCustomerPartnerSection
+            customers={customerSignals}
+            partners={partnerSignals.rows}
+          />
 
-      <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
+          <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
+        </>
+      ) : (
+        <OperationsHandoffFullDetailsLink range={filters.range} />
+      )}
     </div>
+  );
+}
+
+function OperationsHandoffFullDetailsLink({ range }: { readonly range: string }) {
+  const query = new URLSearchParams({ details: 'all' });
+  if (range !== 'today') {
+    query.set('range', range);
+  }
+
+  return (
+    <section className="card admin-mb-16">
+      <div className="ops-section-header">
+        <div>
+          <h2>Detailed handoff lists</h2>
+          <p className="muted">
+            Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and
+            finance closeout rows are loaded only when an operator opens full handoff details.
+          </p>
+        </div>
+        <a className="button button-secondary" href={`/operations-handoff?${query.toString()}`}>
+          Load full handoff details
+        </a>
+      </div>
+    </section>
   );
 }
