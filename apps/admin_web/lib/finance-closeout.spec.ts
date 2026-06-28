@@ -26,11 +26,11 @@ describe('finance closeout helpers', () => {
     expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
       cashSettlementSummaryHref: '/admin/cash-settlement-summary?range=30d',
-      earningsHref: '/admin/earnings?range=30d&take=25',
+      earningsHref: '/admin/earnings?range=30d&take=10',
       earningsSummaryHref: '/admin/earnings/summary?range=30d',
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=25',
-      paymentsHref: '/admin/payments?range=30d&take=25',
-      refundsHref: '/admin/refunds?range=30d&take=25',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
+      paymentsHref: '/admin/payments?range=30d&take=10',
+      refundsHref: '/admin/refunds?range=30d&take=10',
     });
   });
 
