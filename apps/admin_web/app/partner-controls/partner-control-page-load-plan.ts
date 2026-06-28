@@ -1,4 +1,4 @@
-const PARTNER_CONTROL_LIST_TAKE = 25;
+const PARTNER_CONTROL_LIST_TAKE = 10;
 
 export type PartnerControlPageLoadPlan = {
   readonly operationalPolicyHref: string;
