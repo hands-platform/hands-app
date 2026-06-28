@@ -24,7 +24,7 @@ import {
 import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow } from './refunds-table-section';
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
-const REFUND_OPERATIONS_API_LIMIT = 25;
+const REFUND_OPERATIONS_API_LIMIT = 10;
 
 export default async function RefundsPage({ searchParams }: { searchParams?: RefundsPageSearchParams }) {
   const filters = buildRefundFilters(searchParams ? await searchParams : {});

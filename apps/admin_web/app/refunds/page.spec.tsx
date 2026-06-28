@@ -56,7 +56,7 @@ describe('RefundsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/refunds?range=today&take=25&review=requested',
+      '/admin/refunds?range=today&take=10&review=requested',
       [],
     );
     expect(markup).toContain('Server Trusted Refund');
