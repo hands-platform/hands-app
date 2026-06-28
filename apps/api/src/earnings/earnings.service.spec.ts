@@ -84,6 +84,39 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('filters cash settlement debt by range and clamps requested limits', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listCashSettlementDebtForAdmin({
+        range: 'today',
+        take: '500',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          NOT: {
+            booking: {
+              is: expect.objectContaining({
+                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
+                status: BookingStatus.CANCELLED,
+              }),
+            },
+          },
+        }),
+        take: 100,
+      }),
+    );
+  });
+
   it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
     const prisma = {
       providerEarning: {

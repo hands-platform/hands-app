@@ -504,8 +504,8 @@ export class AdminController {
   }
 
   @Get('cash-settlement-earnings')
-  cashSettlementEarnings() {
-    return this.admin.listCashSettlementEarnings();
+  cashSettlementEarnings(@Query('take') take?: string, @Query('range') range?: string) {
+    return this.admin.listCashSettlementEarnings({ range, take });
   }
 
   @Get('cash-settlement-summary')

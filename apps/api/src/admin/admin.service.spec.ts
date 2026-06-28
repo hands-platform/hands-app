@@ -2654,6 +2654,25 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('delegates bounded cash settlement filters to the earnings service', async () => {
+    const earnings = {
+      listCashSettlementDebtForAdmin: vi.fn().mockResolvedValue([{ id: 'cash-earning-1' }]),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.listCashSettlementEarnings({
+        range: '7d',
+        take: '100',
+      }),
+    ).resolves.toEqual([{ id: 'cash-earning-1' }]);
+
+    expect(earnings.listCashSettlementDebtForAdmin).toHaveBeenCalledWith({
+      range: '7d',
+      take: '100',
+    });
+  });
+
   it('delegates bounded payout batch filters to the earnings service', async () => {
     const earnings = {
       listPayoutBatchesForAdmin: vi.fn().mockResolvedValue([{ id: 'payout-1' }]),

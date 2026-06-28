@@ -362,11 +362,17 @@ export class EarningsService {
     });
   }
 
-  listCashSettlementDebtForAdmin() {
+  listCashSettlementDebtForAdmin(options: AdminFinanceListQuery = {}) {
+    const where = cashSettlementDebtWhere();
+    const dateRange = adminFinanceDateRangeWhere(options.range);
+    if (dateRange) {
+      where.createdAt = dateRange;
+    }
+
     return this.prisma.providerEarning.findMany({
-      where: cashSettlementDebtWhere(),
+      where,
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
-      take: 500,
+      take: adminFinanceListTake(options.take),
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
         booking: { include: { payment: true, review: true, services: { include: { service: true } } } },

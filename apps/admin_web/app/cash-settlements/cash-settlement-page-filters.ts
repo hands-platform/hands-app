@@ -9,11 +9,22 @@ import {
 export function buildCashSettlementFilters(
   params: Record<string, string | string[] | undefined>,
 ): CashSettlementFilters {
+  const rangeParam = readSearchParam(params.range);
+
   return {
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     queue: normalizeCashSettlementQueue(readSearchParam(params.queue)),
     q: readSearchParam(params.q).trim(),
   };
+}
+
+export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+    take: '100',
+  });
+
+  return `/admin/cash-settlement-earnings?${params.toString()}`;
 }
 
 export function normalizeCashSettlementQueue(value: string): CashSettlementQueueFilter {
@@ -34,7 +45,7 @@ export function cashSettlementHref(input: {
   q?: string;
 }) {
   const params = new URLSearchParams();
-  if (input.range && input.range !== 'all') {
+  if (input.range && input.range !== 'today') {
     params.set('range', input.range);
   }
   if (input.queue && input.queue !== 'all') {

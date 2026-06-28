@@ -3761,8 +3761,8 @@ export class AdminService {
     return this.earnings.listForAdmin(options);
   }
 
-  listCashSettlementEarnings() {
-    return this.earnings.listCashSettlementDebtForAdmin();
+  listCashSettlementEarnings(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.listCashSettlementDebtForAdmin(options);
   }
 
   cashSettlementSummary() {

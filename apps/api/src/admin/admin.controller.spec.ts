@@ -37,6 +37,7 @@ describe('AdminController notification and push actions', () => {
     listPayments: vi.fn(),
     listRefunds: vi.fn(),
     listEarnings: vi.fn(),
+    listCashSettlementEarnings: vi.fn(),
     listPayoutBatches: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
@@ -293,6 +294,21 @@ describe('AdminController notification and push actions', () => {
       range: '7d',
       review: 'ready',
       take: '75',
+    });
+  });
+
+  it('exposes cash settlement earnings as a bounded filtered finance list', async () => {
+    admin.listCashSettlementEarnings.mockResolvedValue([{ id: 'cash-earning-1' }]);
+
+    await expect(controller.cashSettlementEarnings('100', '7d')).resolves.toEqual([{ id: 'cash-earning-1' }]);
+
+    expect(routeMetadata('cashSettlementEarnings')).toEqual({
+      method: RequestMethod.GET,
+      path: 'cash-settlement-earnings',
+    });
+    expect(admin.listCashSettlementEarnings).toHaveBeenCalledWith({
+      range: '7d',
+      take: '100',
     });
   });
 

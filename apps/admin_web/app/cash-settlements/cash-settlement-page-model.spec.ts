@@ -1,5 +1,10 @@
 import type { AdminCashSettlementSummary, AdminEarning } from '../../lib/admin-api';
-import { buildCashSettlementFilters, cashSettlementHref, cashSettlementQueueLabel } from './cash-settlement-page-filters';
+import {
+  buildCashSettlementApiHref,
+  buildCashSettlementFilters,
+  cashSettlementHref,
+  cashSettlementQueueLabel,
+} from './cash-settlement-page-filters';
 import { buildCashSettlementPriorityBoard } from './cash-settlement-page-priority';
 import {
   applyCashSettlementRowFilters,
@@ -66,6 +71,11 @@ describe('cash settlement page model', () => {
     expect(applyCashSettlementRowFilters(rows, { q: 'fresh-row', queue: 'all', range: 'all' })).toHaveLength(1);
     expect(cashSettlementHref({ q: 'Mai', queue: 'high-debt', range: '30d' })).toBe(
       '/cash-settlements?range=30d&queue=high-debt&q=Mai',
+    );
+    expect(buildCashSettlementFilters({})).toEqual({ q: '', queue: 'all', range: 'today' });
+    expect(cashSettlementHref({ q: '', queue: 'all', range: 'all' })).toBe('/cash-settlements?range=all');
+    expect(buildCashSettlementApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
+      '/admin/cash-settlement-earnings?range=7d&take=100',
     );
     expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
   });

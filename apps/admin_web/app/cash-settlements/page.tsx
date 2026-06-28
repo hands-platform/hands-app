@@ -23,7 +23,7 @@ import {
   buildCashSettlementExecutionDesk,
   buildDebtCauseCards,
 } from './cash-settlement-page-command-cards';
-import { buildCashSettlementFilters } from './cash-settlement-page-filters';
+import { buildCashSettlementApiHref, buildCashSettlementFilters } from './cash-settlement-page-filters';
 import { buildCashSettlementPriorityBoard, buildCashSettlementPriorityBoardRows } from './cash-settlement-page-priority';
 import { buildAppliedCashSettlementPolicyCards, buildCashSettlementRuleCards } from './cash-settlement-page-rule-cards';
 import {
@@ -47,7 +47,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const params = searchParams ? await searchParams : {};
   const filters = buildCashSettlementFilters(params);
   const [earnings, apiSummary, policySettings] = await Promise.all([
-    adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
+    adminGet<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
