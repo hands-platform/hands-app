@@ -82,6 +82,17 @@ describe('partner filters', () => {
     });
   });
 
+  it('caps local partner filter hydration to the API provider list window', () => {
+    const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'unsettled' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=50',
+      listIsServerPaginated: false,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
+  });
+
   it('paginates partner rows with safe bounds', () => {
     const rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'];
     const filters = { ...buildProviderFilters({ page: '2' }), pageSize: 10 };

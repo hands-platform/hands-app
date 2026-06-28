@@ -37,19 +37,19 @@ const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary'
 const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
 const pushCampaignCreateSource = sourceBetween('async createAdminPushCampaign', 'async retryNotification');
 
-if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 100;')) {
+if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 50;')) {
   violations.push({
     area: 'admin app session query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'App session list query must keep the 100-row operations guard.',
+    message: 'App session list query must keep the 50-row operations guard.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_BOOKING_LIST_LIMIT = 100;')) {
+if (!adminServiceSource.includes('const ADMIN_BOOKING_LIST_LIMIT = 50;')) {
   violations.push({
     area: 'admin booking query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Booking list query must keep the 100-row operations guard.',
+    message: 'Booking list query must keep the 50-row operations guard.',
   });
 }
 
@@ -428,11 +428,11 @@ if (!hasAuditCountGroupBy('customerAuditCounts') && !hasAuditSummaryGroupByHelpe
   });
 }
 
-if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 100;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 50;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list query must keep the 100-row operations guard.',
+    message: 'Compact partner list query must keep the 50-row operations guard.',
   });
 }
 

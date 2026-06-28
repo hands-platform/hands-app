@@ -547,4 +547,4 @@ const partnerFilterHrefParamKeys = [
   'sort',
 ] as const satisfies readonly (keyof ProviderFilters)[];
 
-const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 100;
+const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 50;
