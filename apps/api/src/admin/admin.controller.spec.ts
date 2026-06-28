@@ -24,6 +24,10 @@ describe('AdminController notification and push actions', () => {
     auditLogSummary: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
+    listReviews: vi.fn(),
+    reviewSummary: vi.fn(),
+    listPartnerCustomerReviews: vi.fn(),
+    partnerCustomerReviewSummary: vi.fn(),
     listNotificationTemplates: vi.fn(),
     listPartnerControlProviders: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
@@ -179,6 +183,103 @@ describe('AdminController notification and push actions', () => {
       from: '2026-06-27T00:00:00.000Z',
       booking: 'booking-1',
       review: 'failed',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes customer reviews as a bounded filtered board list with a summary endpoint', async () => {
+    admin.listReviews.mockResolvedValue([{ id: 'review-1' }]);
+    admin.reviewSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 8 });
+
+    await expect(
+      controller.reviews(
+        '25',
+        '50',
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'held',
+        'rating-desc',
+        'mai',
+      ),
+    ).resolves.toEqual([{ id: 'review-1' }]);
+    await expect(
+      controller.reviewSummary(
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'held',
+        'mai',
+      ),
+    ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 8 });
+
+    expect(routeMetadata('reviews')).toEqual({
+      method: RequestMethod.GET,
+      path: 'reviews',
+    });
+    expect(routeMetadata('reviewSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'reviews/summary',
+    });
+    expect(admin.listReviews).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      q: 'mai',
+      review: 'held',
+      skip: '50',
+      sort: 'rating-desc',
+      take: '25',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+    expect(admin.reviewSummary).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      q: 'mai',
+      review: 'held',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes partner customer evaluations as a bounded filtered list with a summary endpoint', async () => {
+    admin.listPartnerCustomerReviews.mockResolvedValue([{ id: 'evaluation-1' }]);
+    admin.partnerCustomerReviewSummary.mockResolvedValue({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      totalCount: 4,
+    });
+
+    await expect(
+      controller.partnerCustomerReviews(
+        '10',
+        '20',
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'oldest',
+        'late',
+      ),
+    ).resolves.toEqual([{ id: 'evaluation-1' }]);
+    await expect(
+      controller.partnerCustomerReviewSummary(
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'late',
+      ),
+    ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 4 });
+
+    expect(routeMetadata('partnerCustomerReviews')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partner-customer-reviews',
+    });
+    expect(routeMetadata('partnerCustomerReviewSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partner-customer-reviews/summary',
+    });
+    expect(admin.listPartnerCustomerReviews).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      q: 'late',
+      skip: '20',
+      sort: 'oldest',
+      take: '10',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+    expect(admin.partnerCustomerReviewSummary).toHaveBeenCalledWith({
+      from: '2026-06-27T00:00:00.000Z',
+      q: 'late',
       to: '2026-06-28T00:00:00.000Z',
     });
   });

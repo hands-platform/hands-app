@@ -3,6 +3,8 @@ import {
   buildPartnerCustomerReviewTableRows,
   buildPartnerCustomerEvaluationFilters,
   buildPartnerCustomerEvaluationListHref,
+  buildPartnerCustomerReviewDataHrefs,
+  buildReviewDataHrefs,
   buildReviewExportHref,
   buildReviewExportRows,
   buildReviewFilters,
@@ -304,6 +306,43 @@ describe('review page model', () => {
     expect(buildPartnerCustomerEvaluationListHref(filters, { sort: 'oldest' })).toBe(
       '/reviews/partner-customer-evaluations?q=customer&pageSize=25&dateRange=7d&sort=oldest',
     );
+  });
+
+  it('builds bounded Admin API hrefs for customer review pages', () => {
+    const hrefs = buildReviewDataHrefs(
+      filters({ dateRange: '7d', page: 2, pageSize: 25, q: 'mai', review: 'held', sort: 'rating-desc' }),
+    );
+    const listUrl = new URL(hrefs.listHref, 'http://admin.local');
+    const summaryUrl = new URL(hrefs.summaryHref, 'http://admin.local');
+
+    expect(listUrl.pathname).toBe('/admin/reviews');
+    expect(listUrl.searchParams.get('take')).toBe('25');
+    expect(listUrl.searchParams.get('skip')).toBe('25');
+    expect(listUrl.searchParams.get('q')).toBe('mai');
+    expect(listUrl.searchParams.get('review')).toBe('held');
+    expect(listUrl.searchParams.get('sort')).toBe('rating-desc');
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(summaryUrl.pathname).toBe('/admin/reviews/summary');
+    expect(summaryUrl.searchParams.get('q')).toBe('mai');
+    expect(summaryUrl.searchParams.get('review')).toBe('held');
+  });
+
+  it('builds bounded Admin API hrefs for partner customer evaluations', () => {
+    const hrefs = buildPartnerCustomerReviewDataHrefs(
+      filters({ dateRange: 'today', page: 3, pageSize: 10, q: 'late', sort: 'oldest' }),
+    );
+    const listUrl = new URL(hrefs.listHref, 'http://admin.local');
+    const summaryUrl = new URL(hrefs.summaryHref, 'http://admin.local');
+
+    expect(listUrl.pathname).toBe('/admin/partner-customer-reviews');
+    expect(listUrl.searchParams.get('take')).toBe('10');
+    expect(listUrl.searchParams.get('skip')).toBe('20');
+    expect(listUrl.searchParams.get('q')).toBe('late');
+    expect(listUrl.searchParams.get('sort')).toBe('oldest');
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(listUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(summaryUrl.pathname).toBe('/admin/partner-customer-reviews/summary');
   });
 
   it('keeps filter, export, and tone copy stable', () => {

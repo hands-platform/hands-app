@@ -560,13 +560,47 @@ export class AdminController {
   }
 
   @Get('reviews')
-  reviews() {
-    return this.admin.listReviews();
+  reviews(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('review') review?: string,
+    @Query('sort') sort?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.listReviews({ from, q, review, skip, sort, take, to });
+  }
+
+  @Get('reviews/summary')
+  reviewSummary(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('review') review?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.reviewSummary({ from, q, review, to });
   }
 
   @Get('partner-customer-reviews')
-  partnerCustomerReviews() {
-    return this.admin.listPartnerCustomerReviews();
+  partnerCustomerReviews(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('sort') sort?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.listPartnerCustomerReviews({ from, q, skip, sort, take, to });
+  }
+
+  @Get('partner-customer-reviews/summary')
+  partnerCustomerReviewSummary(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.partnerCustomerReviewSummary({ from, q, to });
   }
 
   @Patch('reviews/:id/moderate')

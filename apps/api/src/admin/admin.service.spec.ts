@@ -3327,7 +3327,9 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.providerCustomerReview.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      skip: 0,
+      take: 25,
+      where: undefined,
       select: expect.objectContaining({
         id: true,
         bookingId: true,
@@ -3342,6 +3344,122 @@ describe('AdminService query orchestration', () => {
         customerProfile: expect.any(Object),
         providerProfile: expect.any(Object),
       }),
+    });
+  });
+
+  it('lists customer reviews with bounded filters and summary counts', async () => {
+    const prisma = {
+      review: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'review-1' }]),
+        count: vi.fn().mockResolvedValue(8),
+        groupBy: vi.fn().mockResolvedValue([{ status: 'HIDDEN', _count: { _all: 8 } }]),
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: 4.5 } }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listReviews({
+        from: '2026-06-27T00:00:00.000Z',
+        q: 'mai',
+        review: 'held',
+        skip: '25',
+        sort: 'rating-desc',
+        take: '25',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toEqual([{ id: 'review-1' }]);
+    await expect(
+      service.reviewSummary({
+        from: '2026-06-27T00:00:00.000Z',
+        q: 'mai',
+        review: 'held',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toEqual({
+      averageRating: 4.5,
+      generatedAt: expect.any(String),
+      held: 8,
+      published: 0,
+      reported: 0,
+      totalCount: 8,
+    });
+
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+        skip: 25,
+        take: 25,
+        where: expect.objectContaining({
+          status: 'HIDDEN',
+          createdAt: {
+            gte: new Date('2026-06-27T00:00:00.000Z'),
+            lt: new Date('2026-06-28T00:00:00.000Z'),
+          },
+          OR: expect.any(Array),
+        }),
+      }),
+    );
+    expect(prisma.review.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ status: 'HIDDEN' }),
+    });
+    expect(prisma.review.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      where: expect.objectContaining({ status: 'HIDDEN' }),
+      _count: { _all: true },
+    });
+    expect(prisma.review.aggregate).toHaveBeenCalledWith({
+      where: expect.objectContaining({ status: 'HIDDEN' }),
+      _avg: { rating: true },
+    });
+  });
+
+  it('lists partner customer evaluations with bounded filters and summary counts', async () => {
+    const prisma = {
+      providerCustomerReview: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'evaluation-1' }]),
+        count: vi.fn().mockResolvedValue(4),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerCustomerReviews({
+        from: '2026-06-27T00:00:00.000Z',
+        q: 'late',
+        skip: '20',
+        sort: 'oldest',
+        take: '10',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toEqual([{ id: 'evaluation-1' }]);
+    await expect(
+      service.partnerCustomerReviewSummary({
+        from: '2026-06-27T00:00:00.000Z',
+        q: 'late',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 4,
+    });
+
+    expect(prisma.providerCustomerReview.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'asc' },
+        skip: 20,
+        take: 10,
+        where: expect.objectContaining({
+          createdAt: {
+            gte: new Date('2026-06-27T00:00:00.000Z'),
+            lt: new Date('2026-06-28T00:00:00.000Z'),
+          },
+          OR: expect.any(Array),
+        }),
+      }),
+    );
+    expect(prisma.providerCustomerReview.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ OR: expect.any(Array) }),
     });
   });
 });

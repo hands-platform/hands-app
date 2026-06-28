@@ -1,12 +1,14 @@
-import type { AdminPartnerCustomerReview } from '../../../lib/admin-api';
+import type {
+  AdminPartnerCustomerReview,
+  AdminPartnerCustomerReviewSummary,
+} from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import {
+  buildPartnerCustomerReviewDataHrefs,
   buildPartnerCustomerEvaluationFilters,
   buildPartnerCustomerReviewTableRows,
-  filterPartnerCustomerReviews,
-  paginateReviewRows,
-  sortPartnerCustomerReviews,
+  buildServerReviewPagination,
 } from '../review-page-model';
 import { PartnerCustomerEvaluationsSection } from '../partner-customer-evaluations-section';
 
@@ -19,9 +21,12 @@ export default async function PartnerCustomerEvaluationsPage({
 }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPartnerCustomerEvaluationFilters(params);
-  const allEvaluations = await adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []);
-  const evaluations = filterPartnerCustomerReviews(sortPartnerCustomerReviews(allEvaluations, filters.sort), filters);
-  const pagination = paginateReviewRows(evaluations, filters);
+  const dataHrefs = buildPartnerCustomerReviewDataHrefs(filters);
+  const [evaluations, summary] = await Promise.all([
+    adminGet<AdminPartnerCustomerReview[]>(dataHrefs.listHref, []),
+    adminGet<AdminPartnerCustomerReviewSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
+  ]);
+  const pagination = buildServerReviewPagination(evaluations, filters, summary.totalCount);
   const rows = buildPartnerCustomerReviewTableRows(pagination.rows);
   const rowPagination = { ...pagination, rows };
 
@@ -32,8 +37,8 @@ export default async function PartnerCustomerEvaluationsPage({
       metrics={[
         {
           label: 'Total evaluations',
-          value: allEvaluations.length,
-          helper: 'Partner-written customer evaluation records loaded.',
+          value: summary.totalCount,
+          helper: 'Matching partner-written customer evaluation records.',
         },
         {
           label: 'Admin-only',
@@ -52,7 +57,7 @@ export default async function PartnerCustomerEvaluationsPage({
         filters={filters}
         pagination={rowPagination}
         rows={rows}
-        totalEvaluationCount={allEvaluations.length}
+        totalEvaluationCount={summary.totalCount}
       />
     </AdminPageTemplate>
   );

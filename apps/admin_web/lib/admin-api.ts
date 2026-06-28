@@ -1193,6 +1193,15 @@ export type AdminReview = {
   };
 };
 
+export type AdminReviewSummary = {
+  averageRating?: number;
+  generatedAt?: string;
+  held?: number;
+  published?: number;
+  reported?: number;
+  totalCount: number;
+};
+
 export type AdminPartnerCustomerReview = {
   id: string;
   bookingId?: string;
@@ -1225,6 +1234,11 @@ export type AdminPartnerCustomerReview = {
     createdAt?: string;
     services?: AdminBooking['services'];
   };
+};
+
+export type AdminPartnerCustomerReviewSummary = {
+  generatedAt?: string;
+  totalCount: number;
 };
 
 export type AdminCoupon = {

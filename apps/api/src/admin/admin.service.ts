@@ -251,6 +251,8 @@ const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 100;
+const ADMIN_REVIEW_BOARD_DEFAULT_LIMIT = 25;
+const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
 
 type AdminBookingListQuery = {
   readonly dateFrom?: string;
@@ -410,6 +412,27 @@ type AdminAuditLogListOptions = {
   skip?: number | string | null;
   take?: number | string | null;
   to?: string | null;
+};
+
+type AdminReviewBoardSummaryOptions = {
+  from?: string | null;
+  q?: string | null;
+  review?: string | null;
+  to?: string | null;
+};
+
+type AdminReviewBoardQueryOptions = AdminReviewBoardSummaryOptions & {
+  skip?: number | string | null;
+  sort?: string | null;
+  take?: number | string | null;
+};
+
+type AdminPartnerCustomerReviewBoardSummaryOptions = Omit<AdminReviewBoardSummaryOptions, 'review'>;
+
+type AdminPartnerCustomerReviewBoardQueryOptions = AdminPartnerCustomerReviewBoardSummaryOptions & {
+  skip?: number | string | null;
+  sort?: string | null;
+  take?: number | string | null;
 };
 
 type AdminReferralPolicyRecord = {
@@ -4080,10 +4103,12 @@ export class AdminService {
     return batch;
   }
 
-  listReviews() {
+  listReviews(options: AdminReviewBoardQueryOptions = {}) {
     return this.prisma.review.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+      orderBy: adminReviewBoardOrderBy(options.sort),
+      skip: adminReviewBoardSkip(options.skip),
+      take: adminReviewBoardTake(options.take),
+      where: adminReviewBoardWhere(options),
       select: {
         id: true,
         bookingId: true,
@@ -4120,10 +4145,38 @@ export class AdminService {
     });
   }
 
-  listPartnerCustomerReviews() {
+  async reviewSummary(options: AdminReviewBoardSummaryOptions = {}) {
+    const where = adminReviewBoardWhere(options);
+    const [totalCount, statusRows, ratingAggregate] = await Promise.all([
+      this.prisma.review.count({ ...(where ? { where } : {}) }),
+      this.prisma.review.groupBy({
+        by: ['status'],
+        ...(where ? { where } : {}),
+        _count: { _all: true },
+      }),
+      this.prisma.review.aggregate({
+        ...(where ? { where } : {}),
+        _avg: { rating: true },
+      }),
+    ]);
+    const statusCounts = adminReviewStatusCounts(statusRows);
+
+    return {
+      averageRating: ratingAggregate._avg.rating ?? 0,
+      generatedAt: new Date().toISOString(),
+      held: statusCounts[ReviewStatus.HIDDEN],
+      published: statusCounts[ReviewStatus.PUBLISHED],
+      reported: statusCounts[ReviewStatus.REPORTED],
+      totalCount,
+    };
+  }
+
+  listPartnerCustomerReviews(options: AdminPartnerCustomerReviewBoardQueryOptions = {}) {
     return this.prisma.providerCustomerReview.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+      orderBy: adminPartnerCustomerReviewBoardOrderBy(options.sort),
+      skip: adminReviewBoardSkip(options.skip),
+      take: adminReviewBoardTake(options.take),
+      where: adminPartnerCustomerReviewBoardWhere(options),
       select: {
         id: true,
         bookingId: true,
@@ -4157,6 +4210,16 @@ export class AdminService {
         providerProfile: { select: adminProviderSummarySelect },
       },
     });
+  }
+
+  async partnerCustomerReviewSummary(options: AdminPartnerCustomerReviewBoardSummaryOptions = {}) {
+    const where = adminPartnerCustomerReviewBoardWhere(options);
+    const totalCount = await this.prisma.providerCustomerReview.count({ ...(where ? { where } : {}) });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount,
+    };
   }
 
   async moderateReview(
@@ -6007,6 +6070,197 @@ function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketpla
     seen.add(provider.id);
     return true;
   });
+}
+
+function adminReviewBoardTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_REVIEW_BOARD_DEFAULT_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_REVIEW_BOARD_DEFAULT_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_REVIEW_BOARD_MAX_LIMIT);
+}
+
+function adminReviewBoardSkip(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminReviewBoardWhere(options: AdminReviewBoardSummaryOptions): Prisma.ReviewWhereInput | undefined {
+  const where: Prisma.ReviewWhereInput = {};
+  const dateWhere = adminReviewBoardDateWhere(options);
+  const statusWhere = adminReviewBoardStatusWhere(options.review);
+  const q = normalizeNullable(options.q);
+
+  if (dateWhere) {
+    Object.assign(where, dateWhere);
+  }
+  if (statusWhere) {
+    Object.assign(where, statusWhere);
+  }
+  if (q) {
+    where.OR = [
+      { id: { contains: q, mode: 'insensitive' } },
+      { bookingId: { contains: q, mode: 'insensitive' } },
+      { comment: { contains: q, mode: 'insensitive' } },
+      { reportReason: { contains: q, mode: 'insensitive' } },
+      { customerProfile: { user: { fullName: { contains: q, mode: 'insensitive' } } } },
+      { customerProfile: { user: { phone: { contains: q, mode: 'insensitive' } } } },
+      { providerProfile: { displayName: { contains: q, mode: 'insensitive' } } },
+      { providerProfile: { user: { fullName: { contains: q, mode: 'insensitive' } } } },
+      { providerProfile: { user: { phone: { contains: q, mode: 'insensitive' } } } },
+    ];
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminPartnerCustomerReviewBoardWhere(
+  options: AdminPartnerCustomerReviewBoardSummaryOptions,
+): Prisma.ProviderCustomerReviewWhereInput | undefined {
+  const where: Prisma.ProviderCustomerReviewWhereInput = {};
+  const dateWhere = adminPartnerCustomerReviewBoardDateWhere(options);
+  const q = normalizeNullable(options.q);
+
+  if (dateWhere) {
+    Object.assign(where, dateWhere);
+  }
+  if (q) {
+    where.OR = [
+      { id: { contains: q, mode: 'insensitive' } },
+      { bookingId: { contains: q, mode: 'insensitive' } },
+      { comment: { contains: q, mode: 'insensitive' } },
+      { reportReason: { contains: q, mode: 'insensitive' } },
+      { customerProfile: { user: { fullName: { contains: q, mode: 'insensitive' } } } },
+      { customerProfile: { user: { phone: { contains: q, mode: 'insensitive' } } } },
+      { providerProfile: { displayName: { contains: q, mode: 'insensitive' } } },
+      { providerProfile: { user: { fullName: { contains: q, mode: 'insensitive' } } } },
+      { providerProfile: { user: { phone: { contains: q, mode: 'insensitive' } } } },
+    ];
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminReviewBoardDateWhere(options: {
+  readonly from?: string | null;
+  readonly to?: string | null;
+}): Prisma.ReviewWhereInput | undefined {
+  const from = normalizeAdminReviewBoardDateBoundary(options.from, 'from');
+  const to = normalizeAdminReviewBoardDateBoundary(options.to, 'to');
+  if (!from && !to) {
+    return undefined;
+  }
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Review date range is invalid');
+  }
+
+  return {
+    createdAt: {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lt: to } : {}),
+    },
+  };
+}
+
+function adminPartnerCustomerReviewBoardDateWhere(options: {
+  readonly from?: string | null;
+  readonly to?: string | null;
+}): Prisma.ProviderCustomerReviewWhereInput | undefined {
+  const from = normalizeAdminReviewBoardDateBoundary(options.from, 'from');
+  const to = normalizeAdminReviewBoardDateBoundary(options.to, 'to');
+  if (!from && !to) {
+    return undefined;
+  }
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Partner customer evaluation date range is invalid');
+  }
+
+  return {
+    createdAt: {
+      ...(from ? { gte: from } : {}),
+      ...(to ? { lt: to } : {}),
+    },
+  };
+}
+
+function normalizeAdminReviewBoardDateBoundary(value: string | null | undefined, field: string) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) {
+    throw new BadRequestException(`Review ${field} date is invalid`);
+  }
+
+  return new Date(timestamp);
+}
+
+function adminReviewBoardStatusWhere(value: string | null | undefined): Prisma.ReviewWhereInput | undefined {
+  const normalized = normalizeNullable(value);
+  switch (normalized) {
+    case 'held':
+    case 'hidden':
+      return { status: ReviewStatus.HIDDEN };
+    case 'published':
+      return { status: ReviewStatus.PUBLISHED };
+    case 'reported':
+    case 'follow-up':
+      return { status: ReviewStatus.REPORTED };
+    default:
+      return undefined;
+  }
+}
+
+function adminReviewBoardOrderBy(
+  value: string | null | undefined,
+): Prisma.ReviewOrderByWithRelationInput | Prisma.ReviewOrderByWithRelationInput[] {
+  switch (normalizeNullable(value)) {
+    case 'oldest':
+      return { createdAt: 'asc' };
+    case 'rating-asc':
+      return [{ rating: 'asc' }, { createdAt: 'desc' }];
+    case 'rating-desc':
+      return [{ rating: 'desc' }, { createdAt: 'desc' }];
+    default:
+      return { createdAt: 'desc' };
+  }
+}
+
+function adminPartnerCustomerReviewBoardOrderBy(
+  value: string | null | undefined,
+): Prisma.ProviderCustomerReviewOrderByWithRelationInput {
+  return normalizeNullable(value) === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' };
+}
+
+function adminReviewStatusCounts(
+  rows: Array<{ status: ReviewStatus; _count: { _all: number } }>,
+): Record<ReviewStatus, number> {
+  return rows.reduce<Record<ReviewStatus, number>>(
+    (counts, row) => ({
+      ...counts,
+      [row.status]: row._count._all,
+    }),
+    {
+      [ReviewStatus.HIDDEN]: 0,
+      [ReviewStatus.PUBLISHED]: 0,
+      [ReviewStatus.REPORTED]: 0,
+    },
+  );
 }
 
 function normalizeNotificationBoardTake(value: string | undefined) {

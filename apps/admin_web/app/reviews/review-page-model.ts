@@ -86,6 +86,11 @@ export type ReviewPagination<T> = {
   readonly totalRows: number;
 };
 
+export type ReviewDataHrefs = {
+  readonly listHref: string;
+  readonly summaryHref: string;
+};
+
 export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTableRow[] {
   return reviews.map((review) => ({
     actionLabel: `Review actions for ${shortId(review.id)}`,
@@ -321,6 +326,27 @@ export function paginateReviewRows<T>(rows: readonly T[], filters: ReviewFilters
   };
 }
 
+export function buildServerReviewPagination<T>(
+  rows: readonly T[],
+  filters: ReviewFilters,
+  totalRows: number,
+): ReviewPagination<T> {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (filters.page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
 export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<ReviewFilters> = {}) {
   return buildReviewHref('/reviews', filters, overrides);
 }
@@ -343,6 +369,21 @@ export function buildPartnerCustomerEvaluationListHref(
   };
 
   return buildReviewHref('/reviews/partner-customer-evaluations', filters, nextOverrides);
+}
+
+export function buildReviewDataHrefs(filters: ReviewFilters): ReviewDataHrefs {
+  return buildReviewDataHrefPair('/admin/reviews', '/admin/reviews/summary', filters, {
+    includeReviewFilter: true,
+  });
+}
+
+export function buildPartnerCustomerReviewDataHrefs(filters: ReviewFilters): ReviewDataHrefs {
+  return buildReviewDataHrefPair(
+    '/admin/partner-customer-reviews',
+    '/admin/partner-customer-reviews/summary',
+    filters,
+    { includeReviewFilter: false },
+  );
 }
 
 function buildReviewHref(basePath: string, filters: ReviewFilters, overrides: Partial<ReviewFilters> = {}) {
@@ -379,6 +420,50 @@ function buildReviewHref(basePath: string, filters: ReviewFilters, overrides: Pa
   }
 
   return params.size ? `${basePath}?${params.toString()}` : basePath;
+}
+
+function buildReviewDataHrefPair(
+  listPath: string,
+  summaryPath: string,
+  filters: ReviewFilters,
+  options: { readonly includeReviewFilter: boolean },
+): ReviewDataHrefs {
+  const listParams = reviewDataQueryParams(filters, options);
+  listParams.set('take', String(filters.pageSize));
+  listParams.set('skip', String((filters.page - 1) * filters.pageSize));
+
+  const summaryParams = reviewDataQueryParams(filters, options);
+
+  return {
+    listHref: `${listPath}?${listParams.toString()}`,
+    summaryHref: summaryParams.size ? `${summaryPath}?${summaryParams.toString()}` : summaryPath,
+  };
+}
+
+function reviewDataQueryParams(
+  filters: ReviewFilters,
+  options: { readonly includeReviewFilter: boolean },
+) {
+  const params = new URLSearchParams();
+  const bounds = reviewDateRangeBoundsForFilter(filters);
+
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (options.includeReviewFilter && filters.review) {
+    params.set('review', filters.review);
+  }
+  if (filters.sort !== 'newest') {
+    params.set('sort', filters.sort);
+  }
+  if (bounds && bounds.startMs !== Number.NEGATIVE_INFINITY) {
+    params.set('from', new Date(bounds.startMs).toISOString());
+  }
+  if (bounds && bounds.endMs !== Number.POSITIVE_INFINITY) {
+    params.set('to', new Date(bounds.endMs + 1).toISOString());
+  }
+
+  return params;
 }
 
 export function reviewFilterDescription(review: string) {
