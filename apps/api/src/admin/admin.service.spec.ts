@@ -1164,6 +1164,88 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100, 100]);
   });
 
+  it('returns marketing summary without loading dimension lists', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          firstBookingCompleted: 1n,
+          repeatBookingCompleted: 0n,
+        },
+      ]),
+      appSession: {
+        count: vi.fn().mockResolvedValue(3),
+      },
+      user: {
+        count: vi.fn().mockResolvedValue(2),
+      },
+      referralAttribution: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn(),
+      },
+      customerSelectedLocation: {
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn(),
+      },
+      booking: {
+        count: vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1).mockResolvedValueOnce(0),
+        findMany: vi.fn(),
+      },
+      payment: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 800_000 } }),
+      },
+      providerPlatformFeeLog: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { platformFeeAmount: 160_000 } }),
+      },
+      refund: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      marketingSpendDaily: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { spendAmount: 240_000 } }),
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const summary = await service.getMarketingSummary({
+      range: '7d',
+      source: 'google',
+      platform: 'android',
+      regionCode: 'hcm',
+      campaignId: 'launch-hcm',
+    });
+
+    expect(summary.totals).toMatchObject({
+      adSpend: 240_000,
+      firstOpens: 3,
+      signups: 2,
+      bookingCompleted: 1,
+    });
+    expect(summary.funnel.map((step) => step.key)).toEqual([
+      'app_first_open',
+      'signup_completed',
+      'address_saved',
+      'booking_created',
+      'booking_completed',
+      'first_booking_completed',
+      'repeat_booking_completed',
+    ]);
+    expect(summary.bySource).toBeUndefined();
+    expect(prisma.marketingSpendDaily.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          source: 'google',
+          platform: 'android',
+          regionCode: 'hcm',
+          campaignId: 'launch-hcm',
+        }),
+      }),
+    );
+    expect(prisma.marketingSpendDaily.findMany).not.toHaveBeenCalled();
+    expect(prisma.customerSelectedLocation.findMany).not.toHaveBeenCalled();
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+    expect(prisma.referralAttribution.findMany).not.toHaveBeenCalled();
+  });
+
   it('upserts manual marketing spend and writes an audit trail', async () => {
     const spendDate = new Date('2026-06-20T00:00:00.000Z');
     const prisma = {

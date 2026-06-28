@@ -404,6 +404,11 @@ export type AdminMarketingOverview = {
   dataGaps: string[];
 };
 
+export type AdminMarketingSummary = Omit<
+  AdminMarketingOverview,
+  'bySource' | 'byPlatform' | 'byRegion' | 'byCampaign'
+>;
+
 export type AdminCustomer = {
   id: string;
   userId: string;

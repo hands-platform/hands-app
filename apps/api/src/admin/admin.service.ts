@@ -206,6 +206,11 @@ const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;
 const ADMIN_MARKETING_REGION_LIMIT = 100;
 const ADMIN_MARKETING_CAMPAIGN_LIMIT = 50;
 const ADMIN_MARKETING_SPEND_LIMIT = 100;
+const ADMIN_MARKETING_DATA_GAPS = [
+  'Attribution is currently derived from stored referrals and app sessions; non-referral paid campaign attribution falls back to unknown.',
+  'Manual ad spend rows are supported; paid campaign install attribution still needs mobile/deep-link capture before source-level conversion is exact.',
+  'No live ad-network API, MMP, exact customer location, phone number, or ad identifier is returned by this endpoint.',
+] as const;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
@@ -2512,11 +2517,7 @@ export class AdminService {
       byRegion: regionRows,
       byCampaign: campaignRows,
       topInsights: buildMarketingInsights(stats, sourceRows),
-      dataGaps: [
-        'Attribution is currently derived from stored referrals and app sessions; non-referral paid campaign attribution falls back to unknown.',
-        'Manual ad spend rows are supported; paid campaign install attribution still needs mobile/deep-link capture before source-level conversion is exact.',
-        'No live ad-network API, MMP, exact customer location, phone number, or ad identifier is returned by this endpoint.',
-      ],
+      dataGaps: ADMIN_MARKETING_DATA_GAPS,
     };
   }
 
@@ -2616,6 +2617,128 @@ export class AdminService {
     return {
       firstBookingCompleted: numberValue(row?.firstBookingCompleted),
       repeatBookingCompleted: numberValue(row?.repeatBookingCompleted),
+    };
+  }
+
+  async getMarketingSummary(
+    query: {
+      range?: string;
+      source?: string;
+      platform?: string;
+      regionCode?: string;
+      campaignId?: string;
+    } = {},
+  ) {
+    const window = adminMarketingRangeWindow(normalizeAdminMarketingRange(query.range));
+    const dateWhere = adminMarketingDateWhere(window);
+    const sourceFilter = normalizeMarketingSourceFilter(query.source);
+    const platformFilter = normalizeMarketingPlatformFilter(query.platform);
+    const regionCodeFilter = query.regionCode
+      ? (VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === query.regionCode)?.code ?? null)
+      : null;
+    const campaignIdFilter =
+      typeof query.campaignId === 'string' && query.campaignId.trim() ? query.campaignId.trim() : null;
+    const customerSignupWhere = {
+      roles: { has: Role.CUSTOMER },
+      createdAt: dateWhere,
+    } satisfies Prisma.UserWhereInput;
+    const appFirstOpenWhere = {
+      role: Role.CUSTOMER,
+      createdAt: dateWhere,
+    } satisfies Prisma.AppSessionWhereInput;
+    const bookingCreatedWhere = {
+      createdAt: dateWhere,
+    } satisfies Prisma.BookingWhereInput;
+    const bookingCompletedWhere = {
+      status: BookingStatus.COMPLETED,
+      closedAt: dateWhere,
+    } satisfies Prisma.BookingWhereInput;
+    const bookingCancelledWhere = {
+      status: { in: Array.from(ADMIN_VIETNAM_CANCELLATION_STATUSES) },
+      OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }],
+    } satisfies Prisma.BookingWhereInput;
+    const marketingSpendWhere = {
+      spendDate: dateWhere,
+      ...(sourceFilter ? { source: sourceFilter } : {}),
+      ...(platformFilter ? { platform: platformFilter } : {}),
+      ...(regionCodeFilter ? { regionCode: regionCodeFilter } : {}),
+      ...(campaignIdFilter ? { campaignId: campaignIdFilter } : {}),
+    } satisfies Prisma.MarketingSpendDailyWhereInput;
+
+    const [
+      firstOpenCount,
+      signupCount,
+      addressSaveCount,
+      bookingCreatedCount,
+      bookingCompletedCount,
+      bookingCancelledCount,
+      grossBookingValue,
+      platformFeeRevenue,
+      refundAmount,
+      firstRepeatCompleted,
+      manualAdSpend,
+    ] = await Promise.all([
+      this.prisma.appSession.count({ where: appFirstOpenWhere }),
+      this.prisma.user.count({ where: customerSignupWhere }),
+      this.prisma.customerSelectedLocation.count({ where: { createdAt: dateWhere } }),
+      this.prisma.booking.count({ where: bookingCreatedWhere }),
+      this.prisma.booking.count({ where: bookingCompletedWhere }),
+      this.prisma.booking.count({ where: bookingCancelledWhere }),
+      this.prisma.payment.aggregate({
+        where: {
+          status: { in: Array.from(ADMIN_VIETNAM_REVENUE_STATUSES) },
+          booking: bookingCompletedWhere,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.providerPlatformFeeLog.aggregate({
+        where: { createdAt: dateWhere },
+        _sum: { platformFeeAmount: true },
+      }),
+      this.prisma.refund.aggregate({
+        where: { createdAt: dateWhere },
+        _sum: { amount: true },
+      }),
+      this.completedBookingRepeatBreakdown(window),
+      this.prisma.marketingSpendDaily.aggregate({
+        where: marketingSpendWhere,
+        _sum: { spendAmount: true },
+      }),
+    ]);
+    const stats = {
+      ...emptyMarketingStats(),
+      firstOpens: firstOpenCount,
+      signups: signupCount,
+      addressSaves: addressSaveCount,
+      bookingCreated: bookingCreatedCount,
+      bookingCompleted: bookingCompletedCount,
+      bookingCancelled: bookingCancelledCount,
+      firstBookingCompleted: firstRepeatCompleted.firstBookingCompleted,
+      repeatBookingCompleted: firstRepeatCompleted.repeatBookingCompleted,
+      grossBookingValue: numberValue(grossBookingValue._sum.amount),
+      platformFeeRevenue: numberValue(platformFeeRevenue._sum.platformFeeAmount),
+      refundAmount: numberValue(refundAmount._sum.amount),
+      adSpend: numberValue(manualAdSpend._sum.spendAmount),
+    };
+
+    return {
+      generatedAt: new Date().toISOString(),
+      refreshSeconds: 300,
+      source: 'stored-marketing-aggregates',
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt.toISOString(),
+      windowEndAt: window.endAt.toISOString(),
+      filters: {
+        source: sourceFilter ?? null,
+        platform: platformFilter ?? null,
+        regionCode: regionCodeFilter ?? null,
+        campaignId: campaignIdFilter ?? null,
+      },
+      totals: withMarketingRates(stats),
+      funnel: buildMarketingFunnel(stats),
+      topInsights: buildMarketingInsights(stats, []),
+      dataGaps: ADMIN_MARKETING_DATA_GAPS,
     };
   }
 

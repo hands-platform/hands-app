@@ -11,6 +11,7 @@ describe('AdminController notification and push actions', () => {
     enablePushDevice: vi.fn(),
     listFileReviewProviders: vi.fn(),
     getMarketingOverview: vi.fn(),
+    getMarketingSummary: vi.fn(),
     getUsageOverview: vi.fn(),
     getVietnamOverview: vi.fn(),
     getCustomerReferralParent: vi.fn(),
@@ -762,6 +763,27 @@ describe('AdminController notification and push actions', () => {
       path: 'marketing/overview',
     });
     expect(admin.getMarketingOverview).toHaveBeenCalledWith({
+      range: '7d',
+      source: 'referral',
+      platform: 'ios',
+      regionCode: 'hcm',
+      campaignId: 'ref-smoke',
+    });
+  });
+
+  it('exposes marketing summary as the default lightweight aggregate endpoint', async () => {
+    admin.getMarketingSummary.mockResolvedValue({ source: 'stored-marketing-aggregates', totals: {} });
+
+    await expect(controller.marketingSummary('7d', 'referral', 'ios', 'hcm', 'ref-smoke')).resolves.toEqual({
+      source: 'stored-marketing-aggregates',
+      totals: {},
+    });
+
+    expect(routeMetadata('marketingSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'marketing/summary',
+    });
+    expect(admin.getMarketingSummary).toHaveBeenCalledWith({
       range: '7d',
       source: 'referral',
       platform: 'ios',

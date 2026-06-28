@@ -17,12 +17,14 @@ import type { ReactNode } from 'react';
 import {
   AdminMarketingDimensionRow,
   AdminMarketingOverview,
+  AdminMarketingSummary,
   AdminMarketingStats,
   adminGet,
 } from '../../lib/admin-api';
 import {
   marketingAnalyticsApiPath,
   marketingAnalyticsHref,
+  marketingAnalyticsSummaryApiPath,
   marketingAnalyticsPlatformOptions,
   marketingAnalyticsRangeOptions,
   marketingAnalyticsRegionOptions,
@@ -89,6 +91,7 @@ const emptyMarketingOverview: AdminMarketingOverview = {
   topInsights: [],
   dataGaps: [],
 };
+const emptyMarketingSummary: AdminMarketingSummary = emptyMarketingOverview;
 
 export default async function MarketingAnalyticsPage({
   searchParams,
@@ -97,10 +100,12 @@ export default async function MarketingAnalyticsPage({
 }) {
   const params = await searchParams;
   const filters = normalizeMarketingAnalyticsFilters(params);
-  const overview = await adminGet<AdminMarketingOverview>(
-    marketingAnalyticsApiPath(filters),
-    emptyMarketingOverview,
-  );
+  const includeBreakdowns = normalizeBreakdownParam(params?.breakdowns);
+  const overview = includeBreakdowns
+    ? await adminGet<AdminMarketingOverview>(marketingAnalyticsApiPath(filters), emptyMarketingOverview)
+    : marketingOverviewFromSummary(
+        await adminGet<AdminMarketingSummary>(marketingAnalyticsSummaryApiPath(filters), emptyMarketingSummary),
+      );
   const generatedAt = formatDateTime(overview.generatedAt);
   const cards = [
     {
@@ -269,46 +274,52 @@ export default async function MarketingAnalyticsPage({
       <section className="usage-overview-grid marketing-analytics-grid">
         <FunnelCard overview={overview} />
         <InsightCard overview={overview} />
-        <MarketingTable
-          title="Source performance"
-          description="Current first slice groups unknown demand separately from tracked referral attribution."
-          emptyMessage="No source aggregate loaded."
-          rows={overview.bySource}
-          primaryColumn="Source"
-          icon={<Megaphone size={18} aria-hidden="true" />}
-          labelFor={(row) => sourceLabel(row.source)}
-          secondaryFor={(row) => row.platform ? platformLabel(row.platform) : null}
-        />
-        <MarketingTable
-          title="Region performance"
-          description="RegionCode rollups from saved addresses and booking address snapshots."
-          emptyMessage="No regional marketing aggregate loaded."
-          rows={overview.byRegion.filter(hasMarketingActivity)}
-          primaryColumn="Region"
-          icon={<MapPinned size={18} aria-hidden="true" />}
-          labelFor={(row) => row.regionName ?? row.regionCode ?? 'Unknown region'}
-          secondaryFor={(row) => row.regionCode ?? null}
-        />
-        <MarketingTable
-          title="Campaign performance"
-          description="Referral code campaigns first; paid campaign rows can be added by manual spend/import foundation."
-          emptyMessage="No tracked campaign rows in this range."
-          rows={overview.byCampaign}
-          primaryColumn="Campaign"
-          icon={<BarChart3 size={18} aria-hidden="true" />}
-          labelFor={(row) => row.campaignName ?? row.campaignId ?? 'Unknown campaign'}
-          secondaryFor={(row) => row.source ? sourceLabel(row.source) : null}
-        />
-        <MarketingTable
-          title="Platform first opens"
-          description="Platform split from stored app sessions, prepared for Android, iOS, and Web."
-          emptyMessage="No platform first-open rows in this range."
-          rows={overview.byPlatform}
-          primaryColumn="Platform"
-          icon={<Smartphone size={18} aria-hidden="true" />}
-          labelFor={(row) => platformLabel(row.platform)}
-          secondaryFor={() => 'FCM-ready delivery layer'}
-        />
+        {includeBreakdowns ? (
+          <>
+            <MarketingTable
+              title="Source performance"
+              description="Current first slice groups unknown demand separately from tracked referral attribution."
+              emptyMessage="No source aggregate loaded."
+              rows={overview.bySource}
+              primaryColumn="Source"
+              icon={<Megaphone size={18} aria-hidden="true" />}
+              labelFor={(row) => sourceLabel(row.source)}
+              secondaryFor={(row) => row.platform ? platformLabel(row.platform) : null}
+            />
+            <MarketingTable
+              title="Region performance"
+              description="RegionCode rollups from saved addresses and booking address snapshots."
+              emptyMessage="No regional marketing aggregate loaded."
+              rows={overview.byRegion.filter(hasMarketingActivity)}
+              primaryColumn="Region"
+              icon={<MapPinned size={18} aria-hidden="true" />}
+              labelFor={(row) => row.regionName ?? row.regionCode ?? 'Unknown region'}
+              secondaryFor={(row) => row.regionCode ?? null}
+            />
+            <MarketingTable
+              title="Campaign performance"
+              description="Referral code campaigns first; paid campaign rows can be added by manual spend/import foundation."
+              emptyMessage="No tracked campaign rows in this range."
+              rows={overview.byCampaign}
+              primaryColumn="Campaign"
+              icon={<BarChart3 size={18} aria-hidden="true" />}
+              labelFor={(row) => row.campaignName ?? row.campaignId ?? 'Unknown campaign'}
+              secondaryFor={(row) => row.source ? sourceLabel(row.source) : null}
+            />
+            <MarketingTable
+              title="Platform first opens"
+              description="Platform split from stored app sessions, prepared for Android, iOS, and Web."
+              emptyMessage="No platform first-open rows in this range."
+              rows={overview.byPlatform}
+              primaryColumn="Platform"
+              icon={<Smartphone size={18} aria-hidden="true" />}
+              labelFor={(row) => platformLabel(row.platform)}
+              secondaryFor={() => 'FCM-ready delivery layer'}
+            />
+          </>
+        ) : (
+          <MarketingBreakdownLoader filters={filters} />
+        )}
       </section>
     </div>
   );
@@ -393,6 +404,34 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
         </button>
       </form>
     </section>
+  );
+}
+
+function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof normalizeMarketingAnalyticsFilters> }) {
+  const href = marketingAnalyticsHref(filters);
+  const joiner = href.includes('?') ? '&' : '?';
+
+  return (
+    <article className="card usage-overview-ranking-card marketing-table-card">
+      <div className="ops-section-header">
+        <div>
+          <h2>Breakdown tables</h2>
+          <p className="muted">
+            The default view loads summary counts only. Open breakdowns when you need source, region,
+            campaign, and platform rows.
+          </p>
+        </div>
+        <BarChart3 size={18} aria-hidden="true" />
+      </div>
+      <div className="empty-state">
+        <BarChart3 size={22} aria-hidden="true" />
+        <strong>Dimension rows are not loaded by default.</strong>
+        <p className="muted">This keeps Marketing Analytics light until an operator requests the list data.</p>
+        <a className="button button-primary" href={`${href}${joiner}breakdowns=1`}>
+          Load breakdown tables
+        </a>
+      </div>
+    </article>
   );
 }
 
@@ -574,6 +613,22 @@ function hasMarketingActivity(row: AdminMarketingDimensionRow) {
     row.bookingCompleted > 0 ||
     row.bookingCancelled > 0
   );
+}
+
+function marketingOverviewFromSummary(summary: AdminMarketingSummary): AdminMarketingOverview {
+  return {
+    ...summary,
+    bySource: [],
+    byPlatform: [],
+    byRegion: [],
+    byCampaign: [],
+  };
+}
+
+function normalizeBreakdownParam(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+
+  return candidate === '1' || candidate === 'true' || candidate === 'breakdowns';
 }
 
 function sourceLabel(source: AdminMarketingDimensionRow['source']) {

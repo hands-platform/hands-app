@@ -164,6 +164,23 @@ export class AdminController {
     });
   }
 
+  @Get('marketing/summary')
+  marketingSummary(
+    @Query('range') range?: string,
+    @Query('source') source?: string,
+    @Query('platform') platform?: string,
+    @Query('regionCode') regionCode?: string,
+    @Query('campaignId') campaignId?: string,
+  ) {
+    return this.admin.getMarketingSummary({
+      range,
+      source,
+      platform,
+      regionCode,
+      campaignId,
+    });
+  }
+
   @Post('marketing/spend-daily')
   upsertMarketingSpendDaily(
     @CurrentUser() user: AuthenticatedUser,

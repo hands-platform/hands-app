@@ -93,6 +93,14 @@ export function marketingAnalyticsHref(next: Partial<MarketingAnalyticsFilters>)
 }
 
 export function marketingAnalyticsApiPath(filters: MarketingAnalyticsFilters) {
+  return marketingAnalyticsApiPathFor('/admin/marketing/overview', filters);
+}
+
+export function marketingAnalyticsSummaryApiPath(filters: MarketingAnalyticsFilters) {
+  return marketingAnalyticsApiPathFor('/admin/marketing/summary', filters);
+}
+
+function marketingAnalyticsApiPathFor(basePath: string, filters: MarketingAnalyticsFilters) {
   const params = new URLSearchParams();
   params.set('range', filters.range);
   if (filters.source) params.set('source', filters.source);
@@ -100,7 +108,7 @@ export function marketingAnalyticsApiPath(filters: MarketingAnalyticsFilters) {
   if (filters.regionCode) params.set('regionCode', filters.regionCode);
   if (filters.campaignId) params.set('campaignId', filters.campaignId);
 
-  return `/admin/marketing/overview?${params.toString()}`;
+  return `${basePath}?${params.toString()}`;
 }
 
 function firstParam(value: string | string[] | undefined) {

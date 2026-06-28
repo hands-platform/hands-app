@@ -1,6 +1,7 @@
 import {
   marketingAnalyticsApiPath,
   marketingAnalyticsHref,
+  marketingAnalyticsSummaryApiPath,
   normalizeMarketingAnalyticsFilters,
 } from './marketing-analytics-model';
 
@@ -66,5 +67,14 @@ describe('marketing analytics model', () => {
         campaignId: null,
       }),
     ).toBe('/admin/marketing/overview?range=7d&source=referral');
+    expect(
+      marketingAnalyticsSummaryApiPath({
+        range: '7d',
+        source: 'referral',
+        platform: null,
+        regionCode: null,
+        campaignId: null,
+      }),
+    ).toBe('/admin/marketing/summary?range=7d&source=referral');
   });
 });
