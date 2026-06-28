@@ -79,4 +79,48 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('Refund queue');
     expect(markup).toContain('1 OPEN');
   });
+
+  it('uses the server earnings summary instead of recalculating from the bounded earnings sample', async () => {
+    const summary: AdminEarningSummary = {
+      availableNetAmount: 900000,
+      count: 24,
+      currency: 'VND',
+      grossAmount: 1200000,
+      netAmount: 900000,
+      paidNetAmount: 0,
+      pendingNetAmount: 0,
+      platformFee: 300000,
+      withholdingAmount: 0,
+    };
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payments?range=today&take=10') {
+        return [] as AdminPayment[];
+      }
+      if (href === '/admin/refunds?range=today&take=10') {
+        return [] as AdminRefund[];
+      }
+      if (href === '/admin/earnings/summary?range=today') {
+        return summary;
+      }
+      if (href === '/admin/earnings?range=today&take=10') {
+        return [] as AdminEarning[];
+      }
+      if (href === '/admin/payout-batches?range=today&take=10') {
+        return [] as AdminPayoutBatch[];
+      }
+      if (href === '/admin/cash-settlement-summary?range=today') {
+        return null as AdminCashSettlementSummary | null;
+      }
+      return fallback;
+    });
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Available payout');
+    expect(markup).toContain('900.000 VND');
+  });
 });

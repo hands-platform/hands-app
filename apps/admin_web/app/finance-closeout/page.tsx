@@ -18,7 +18,6 @@ import {
   buildHandoffRows,
   buildReconciliation,
   buildShiftCloseActionMap,
-  summarizeEarnings,
 } from '../../lib/finance-closeout';
 import { FinanceCloseoutEvidenceChecklistSection } from './finance-closeout-evidence-checklist-section';
 import { FinanceCloseoutCashDebtHandoffSection } from './finance-closeout-cash-debt-handoff-section';
@@ -57,7 +56,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   const filteredRefunds = refunds;
   const filteredEarnings = earnings;
   const filteredPayouts = payouts;
-  const filteredEarningsSummary = summarizeEarnings(filteredEarnings, currency);
+  const filteredEarningsSummary = { ...earningsSummary, currency };
   const reconciliation = buildReconciliation({
     payments,
     refunds: filteredRefunds,
