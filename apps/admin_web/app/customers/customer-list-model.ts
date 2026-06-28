@@ -78,17 +78,21 @@ export function buildCustomerRow(customer: AdminCustomer) {
       )
     );
   }, 0);
-  const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
+  const activeBookings =
+    activitySummary?.activeBookingCount ?? bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
   const closedBookings = bookings.filter((booking) => CLOSED_STATUSES.includes(booking.status));
-  const cancelledBookings = closedBookings.length;
-  const customerClosedBookings = closedBookings.filter(
-    (booking) => booking.closedByRole === 'CUSTOMER',
-  ).length;
-  const adminClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length;
-  const partnerClosedBookings = closedBookings.filter(
-    (booking) => booking.closedByRole === 'PROVIDER',
-  ).length;
-  const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
+  const cancelledBookings = activitySummary?.closedBookingCount ?? closedBookings.length;
+  const customerClosedBookings =
+    activitySummary?.customerClosedBookingCount ??
+    closedBookings.filter((booking) => booking.closedByRole === 'CUSTOMER').length;
+  const adminClosedBookings =
+    activitySummary?.adminClosedBookingCount ??
+    closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length;
+  const partnerClosedBookings =
+    activitySummary?.partnerClosedBookingCount ??
+    closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length;
+  const noShowBookings =
+    activitySummary?.noShowBookingCount ?? bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings =
     activitySummary?.completedBookingCount ?? bookings.filter((booking) => booking.status === 'COMPLETED').length;
   const openMatchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;

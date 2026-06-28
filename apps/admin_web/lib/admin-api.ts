@@ -361,10 +361,16 @@ export type AdminCustomer = {
   userId: string;
   addresses?: unknown;
   activitySummary?: {
+    activeBookingCount?: number;
+    adminClosedBookingCount?: number;
     bookingCount: number;
+    closedBookingCount?: number;
     completedBookingCount: number;
+    customerClosedBookingCount?: number;
     lastBookingAt?: string | null;
     lastCompletedBookingAt?: string | null;
+    noShowBookingCount?: number;
+    partnerClosedBookingCount?: number;
   };
   user?: {
     id?: string;

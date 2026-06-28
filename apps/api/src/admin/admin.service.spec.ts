@@ -2565,6 +2565,7 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
+    expect(prisma.customerProfile.findMany.mock.calls[0][0].select.bookings.take).toBeLessThanOrEqual(10);
   });
 
   it('exposes customer directory summary counts through the same safe filters', async () => {
@@ -2664,6 +2665,32 @@ describe('AdminService query orchestration', () => {
                 createdAt: new Date('2026-06-19T10:00:00.000Z'),
               },
             },
+          ])
+          .mockResolvedValueOnce([
+            {
+              customerProfileId: 'customer-1',
+              status: BookingStatus.CREATED,
+              closedByRole: null,
+              _count: { _all: 2 },
+            },
+            {
+              customerProfileId: 'customer-1',
+              status: BookingStatus.OPEN_MATCHING,
+              closedByRole: null,
+              _count: { _all: 3 },
+            },
+            {
+              customerProfileId: 'customer-1',
+              status: BookingStatus.CANCELLED,
+              closedByRole: Role.PROVIDER,
+              _count: { _all: 4 },
+            },
+            {
+              customerProfileId: 'customer-1',
+              status: BookingStatus.NO_SHOW,
+              closedByRole: null,
+              _count: { _all: 1 },
+            },
           ]),
       },
       adminAuditLog: {
@@ -2677,14 +2704,20 @@ describe('AdminService query orchestration', () => {
       expect.objectContaining({
         id: 'customer-1',
         activitySummary: {
+          activeBookingCount: 5,
+          adminClosedBookingCount: 0,
           bookingCount: 17,
+          closedBookingCount: 5,
           completedBookingCount: 12,
+          customerClosedBookingCount: 0,
           lastBookingAt,
           lastCompletedBookingAt,
+          noShowBookingCount: 1,
+          partnerClosedBookingCount: 4,
         },
       }),
     ]);
-    expect(prisma.booking.groupBy).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.groupBy).toHaveBeenCalledTimes(3);
   });
 
   it('includes persisted matching decision fields in partner overview booking queries', async () => {

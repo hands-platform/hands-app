@@ -190,7 +190,7 @@ const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
 const ADMIN_USER_LIST_LIMIT = 500;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
-const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;
+const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 10;
 const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
@@ -578,10 +578,16 @@ type AdminProviderBookingSummaryRow = AdminProviderBookingSummary & {
 };
 
 type AdminCustomerActivitySummary = {
+  activeBookingCount: number;
+  adminClosedBookingCount: number;
   bookingCount: number;
+  closedBookingCount: number;
   completedBookingCount: number;
+  customerClosedBookingCount: number;
   lastBookingAt: Date | null;
   lastCompletedBookingAt: Date | null;
+  noShowBookingCount: number;
+  partnerClosedBookingCount: number;
 };
 
 type AdminVietnamOverviewRegion = {
@@ -5151,7 +5157,7 @@ export class AdminService {
     );
 
     const customerWhere = { customerProfileId: { in: customerIds } };
-    const [bookingRows, completedRows] = await Promise.all([
+    const [bookingRows, completedRows, statusRows] = await Promise.all([
       this.prisma.booking.groupBy({
         by: ['customerProfileId'],
         where: customerWhere,
@@ -5164,6 +5170,11 @@ export class AdminService {
         _count: { _all: true },
         _max: { updatedAt: true, createdAt: true },
       }),
+      this.prisma.booking.groupBy({
+        by: ['customerProfileId', 'status', 'closedByRole'],
+        where: customerWhere,
+        _count: { _all: true },
+      }),
     ]);
 
     for (const row of bookingRows) {
@@ -5175,6 +5186,28 @@ export class AdminService {
       const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
       summary.completedBookingCount = row._count._all;
       summary.lastCompletedBookingAt = latestDate(row._max.updatedAt, row._max.createdAt);
+    }
+    for (const row of statusRows) {
+      const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
+      const count = integerValue(row._count._all);
+      if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(row.status)) {
+        summary.activeBookingCount += count;
+      }
+      if (ADMIN_VIETNAM_CANCELLATION_STATUSES.has(row.status)) {
+        summary.closedBookingCount += count;
+      }
+      if (row.status === BookingStatus.NO_SHOW) {
+        summary.noShowBookingCount += count;
+      }
+      if (row.closedByRole === Role.CUSTOMER) {
+        summary.customerClosedBookingCount += count;
+      }
+      if (row.closedByRole === Role.ADMIN) {
+        summary.adminClosedBookingCount += count;
+      }
+      if (row.closedByRole === Role.PROVIDER) {
+        summary.partnerClosedBookingCount += count;
+      }
     }
 
     return summaries;
@@ -5396,10 +5429,16 @@ export class AdminService {
 
 function emptyCustomerActivitySummary(): AdminCustomerActivitySummary {
   return {
+    activeBookingCount: 0,
+    adminClosedBookingCount: 0,
     bookingCount: 0,
+    closedBookingCount: 0,
     completedBookingCount: 0,
+    customerClosedBookingCount: 0,
     lastBookingAt: null,
     lastCompletedBookingAt: null,
+    noShowBookingCount: 0,
+    partnerClosedBookingCount: 0,
   };
 }
 
