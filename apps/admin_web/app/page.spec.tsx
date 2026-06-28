@@ -6,6 +6,7 @@ import type {
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
+  AdminRefundSummary,
 } from '../lib/admin-api';
 import { adminGet, apiGet } from '../lib/admin-api';
 import DashboardPage from './page';
@@ -57,6 +58,15 @@ describe('DashboardPage', () => {
       totalPlatformFee: 0,
       totalTaxAmount: 0,
     };
+    const refundSummary: AdminRefundSummary = {
+      totalCount: 42,
+      requestedCount: 9,
+      refundedBookingCount: 4,
+      needsUpdateCount: 3,
+      completedCount: 21,
+      openCount: 11,
+      outcomeLinkedCount: 7,
+    };
     const oldServerScopedEarning = {
       bookingId: 'server-dashboard-booking',
       createdAt: '2020-01-01T00:00:00.000Z',
@@ -82,6 +92,9 @@ describe('DashboardPage', () => {
       if (href === '/admin/cash-settlement-summary?range=today') {
         return cashSettlementSummary;
       }
+      if (href === '/admin/refunds/summary?range=today') {
+        return refundSummary;
+      }
       if (typeof href === 'string' && href.startsWith('/admin/earnings?')) {
         return [oldServerScopedEarning];
       }
@@ -94,7 +107,9 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('<span>Range earnings</span><strong>1</strong>');
+    expect(markup).toContain('<span>Refund evidence</span><strong>42</strong>');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds/summary?range=today', expect.any(Object));
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/cash-settlement-summary?range=today',
       expect.any(Object),

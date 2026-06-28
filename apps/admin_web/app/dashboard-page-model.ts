@@ -23,6 +23,7 @@ export type DashboardDataHrefs = {
   readonly paymentsHref: string;
   readonly payoutBatchesHref: string;
   readonly refundsHref: string;
+  readonly refundsSummaryHref: string;
   readonly usersHref: string | null;
 };
 
@@ -107,6 +108,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       { take: String(limits.finance) },
       range,
     ),
+    refundsSummaryHref: buildDashboardRangeScopedHref('/admin/refunds/summary', {}, range),
     usersHref: viewMode.shouldRenderFullDashboard
       ? `/admin/users?${new URLSearchParams({ take: String(DASHBOARD_USER_TAKE) }).toString()}`
       : null,

@@ -27,6 +27,7 @@ import {
   AdminPayoutBatch,
   AdminProvider,
   AdminRefund,
+  AdminRefundSummary,
   AdminUser,
   apiGet,
   adminGet,
@@ -283,6 +284,16 @@ type DashboardFilters = {
   range: AdminDateRange;
 };
 
+const EMPTY_REFUND_SUMMARY: AdminRefundSummary = {
+  totalCount: 0,
+  requestedCount: 0,
+  refundedBookingCount: 0,
+  needsUpdateCount: 0,
+  completedCount: 0,
+  openCount: 0,
+  outcomeLinkedCount: 0,
+};
+
 const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: string }> = [
   { range: 'all', label: 'All dates', href: '/' },
   { range: 'today', label: 'Today', href: '/?range=today' },
@@ -314,6 +325,7 @@ function buildFullDashboardData(input: {
   queue: OpsQueueItem[];
   rangeBookings: AdminBooking[];
   refunds: AdminRefund[];
+  refundSummary: AdminRefundSummary;
 }) {
   const partnerOpsQueue = buildPartnerOpsQueue(input.providers, input.cashDebtRows, input.appSessions);
   const commandSignals = buildDashboardCommandSignals({
@@ -321,6 +333,7 @@ function buildFullDashboardData(input: {
     bookings: input.bookings,
     payments: input.payments,
     refunds: input.refunds,
+    refundSummary: input.refundSummary,
     notifications: input.notifications,
     earnings: input.earnings,
     earningRows: input.earningRows,
@@ -397,6 +410,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     earnings,
     earningRows,
     refunds,
+    refundSummary,
     notifications,
     payoutBatches,
     appSessions,
@@ -427,6 +441,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     }),
     adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, []),
     adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, []),
+    adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
     adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, []),
     adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
     adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, []),
@@ -453,6 +468,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     notifications,
     earnings,
     earningRows,
+    refundSummary,
     bookingCreateRejections: auditLogs.filter((log) => log.action === 'booking.create.rejected'),
     cashSettlementSummary,
     payoutBatches,
@@ -537,6 +553,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         queue,
         rangeBookings,
         refunds,
+        refundSummary,
       })
     : null;
 
@@ -953,7 +970,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <div>
             <span>Refund evidence</span>
-            <strong>{refunds.length}</strong>
+            <strong>{refundSummary.totalCount}</strong>
             <small>
               <Link className="text-link" href="/refunds">
                 Refund ledger and payment release checks
@@ -4483,6 +4500,7 @@ function buildDashboardCommandSignals(input: {
   bookings: AdminBooking[];
   payments: AdminPayment[];
   refunds: AdminRefund[];
+  refundSummary: AdminRefundSummary;
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   earningRows: AdminEarning[];
@@ -4538,14 +4556,14 @@ function buildDashboardCommandSignals(input: {
   const cashDebtRowCount = input.cashSettlementSummary.rowCount;
   const cashDebtProviderCount = input.cashSettlementSummary.providerCount;
   const cashDebtAmount = input.cashSettlementSummary.totalDebtAmount;
-  const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
+  const openRefundCount = input.refundSummary.openCount;
   const paymentReviews =
     completedCloseoutChecks.length +
     expiredPaymentChecks.length +
     noShowPaymentChecks.length +
     missingGatewayRef.length +
     cashPending.length +
-    openRefunds.length;
+    openRefundCount;
   const payoutHolds = input.payoutBatches.filter((batch) => Boolean(activePayoutHold(batch)));
   const payoutReviews = input.payoutBatches.filter((batch) =>
     ['DRAFT', 'FAILED', 'PROCESSING'].includes(batch.status),
@@ -4737,8 +4755,8 @@ function buildDashboardCommandSignals(input: {
         },
         {
           label: 'Open refunds',
-          value: openRefunds.length.toString(),
-          tone: openRefunds.length ? 'warn' : 'ok',
+          value: openRefundCount.toString(),
+          tone: openRefundCount ? 'warn' : 'ok',
           href: '/refunds?review=open',
         },
       ],
@@ -4934,6 +4952,7 @@ function buildOpsQueue(input: {
   bookings: AdminBooking[];
   payments: AdminPayment[];
   refunds: AdminRefund[];
+  refundSummary: AdminRefundSummary;
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   earningRows: AdminEarning[];
@@ -5002,7 +5021,8 @@ function buildOpsQueue(input: {
     }
   }
 
-  for (const refund of input.refunds) {
+  const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
+  for (const refund of openRefunds) {
     if (refund.status !== 'COMPLETED') {
       items.push({
         area: 'Payment',
@@ -5015,6 +5035,19 @@ function buildOpsQueue(input: {
         recommendedAction: 'Confirm refund status with the payment channel and update the refund record.',
       });
     }
+  }
+  const additionalOpenRefundCount = Math.max(0, input.refundSummary.openCount - openRefunds.length);
+  if (additionalOpenRefundCount > 0) {
+    items.push({
+      area: 'Payment',
+      href: '/refunds?review=open',
+      label: 'Additional open refunds',
+      detail: `${additionalOpenRefundCount} more open refund row(s) exist outside the current dashboard sample.`,
+      severity: 'medium',
+      owner: 'Finance',
+      priority: 61,
+      recommendedAction: 'Open the refund queue for the full server-paginated list before closing the shift.',
+    });
   }
 
   if (input.cashSettlementSummary.rowCount > 0) {
