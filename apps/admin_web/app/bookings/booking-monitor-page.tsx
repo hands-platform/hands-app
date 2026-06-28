@@ -150,6 +150,7 @@ function bookingListApiPath(
 
   searchParams.set('dateRange', dateRange);
   searchParams.set('statusGroup', bookingListStatusGroup(kind));
+  searchParams.set('take', '50');
   if (dateRange === 'custom') {
     setOptionalSearchParam(searchParams, 'dateFrom', readSingleSearchParam(params?.dateFrom) ?? '');
     setOptionalSearchParam(searchParams, 'dateTo', readSingleSearchParam(params?.dateTo) ?? '');
