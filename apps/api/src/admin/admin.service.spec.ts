@@ -86,6 +86,23 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('keeps provider report lists bounded for operations pages', async () => {
+    const prisma = {
+      providerReport: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listProviderReports()).resolves.toEqual([]);
+
+    expect(prisma.providerReport.findMany).toHaveBeenCalledWith({
+      orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
+      take: 100,
+      select: expect.any(Object),
+    });
+  });
+
   it('filters app sessions server-side and clamps requested limits', async () => {
     const prisma = {
       appSession: {

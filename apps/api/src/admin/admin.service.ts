@@ -192,6 +192,7 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 100;
 const ADMIN_REFERRAL_PARENT_LIST_LIMIT = 100;
 const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
@@ -2654,7 +2655,7 @@ export class AdminService {
   listProviderReports() {
     return this.prisma.providerReport.findMany({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
-      take: 250,
+      take: ADMIN_PROVIDER_REPORT_LIST_LIMIT,
       select: adminProviderReportListSelect,
     });
   }
