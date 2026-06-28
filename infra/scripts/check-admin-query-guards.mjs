@@ -53,11 +53,11 @@ if (!adminServiceSource.includes('const ADMIN_BOOKING_LIST_LIMIT = 50;')) {
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;')) {
+if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;')) {
   violations.push({
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Chat archive list query must keep the 200-row operations guard.',
+    message: 'Chat archive list query must keep the 50-row operations guard.',
   });
 }
 
@@ -125,11 +125,11 @@ if (!adminServiceSource.includes('const skip = adminAppSessionListSkip(options.s
   });
 }
 
-if (!appSessionsPageModelSource.includes('const DEFAULT_APP_SESSION_LIST_TAKE = 50;')) {
+if (!appSessionsPageModelSource.includes('const DEFAULT_APP_SESSION_LIST_TAKE = 10;')) {
   violations.push({
     area: 'admin app session page',
     file: 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts',
-    message: 'App sessions page API calls must keep a 50-row default page size.',
+    message: 'App sessions page API calls must keep a 10-row default page size.',
   });
 }
 
@@ -168,7 +168,7 @@ if (!adminServiceSource.includes('where: adminChatArchiveWhere(query),')) {
   });
 }
 
-if (!chatArchivePageModelSource.includes('const CHAT_ARCHIVE_DEFAULT_TAKE = 50;')) {
+if (!chatArchivePageModelSource.includes('const CHAT_ARCHIVE_DEFAULT_TAKE = 10;')) {
   violations.push({
     area: 'admin chat archive page',
     file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
