@@ -189,7 +189,8 @@ const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
 const ADMIN_APP_SESSION_RECENT_WINDOW_MS = 30 * 60_000;
 const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;
 const ADMIN_BOOKING_LIST_LIMIT = 50;
-const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
+const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
+const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
@@ -3984,9 +3985,10 @@ export class AdminService {
         chatRoom: {
           select: {
             id: true,
+            _count: { select: { messages: true } },
             messages: {
               orderBy: { createdAt: 'asc' },
-              take: 200,
+              take: ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT,
               select: {
                 id: true,
                 body: true,

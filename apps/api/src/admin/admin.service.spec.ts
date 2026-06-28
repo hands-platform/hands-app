@@ -423,7 +423,15 @@ describe('AdminService query orchestration', () => {
           ]),
         },
         orderBy: { updatedAt: 'desc' },
-        take: 200,
+        select: expect.objectContaining({
+          chatRoom: {
+            select: expect.objectContaining({
+              _count: { select: { messages: true } },
+              messages: expect.objectContaining({ take: 25 }),
+            }),
+          },
+        }),
+        take: 50,
       }),
     );
   });

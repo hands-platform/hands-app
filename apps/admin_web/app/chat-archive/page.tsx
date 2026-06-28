@@ -23,6 +23,7 @@ import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../lib/csv-export';
+import { bookingChatMessageCount } from '../bookings/booking-chat-message-count';
 import {
   type DetailDateFilters,
   detailDateRangeOptions,
@@ -337,8 +338,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           <div>
             <h2>Chat evidence index</h2>
             <p className="muted">
-              One row per retained booking chat room. Open the chat window, booking, customer, or Partner
-              detail for full operational context before making an admin decision.
+              One row per retained booking chat room. The list loads a bounded message preview; open the
+              booking, customer, or Partner detail for full operational context before making an admin
+              decision.
             </p>
           </div>
           <span className="pill pill-info">{rooms.length} row(s)</span>
@@ -383,7 +385,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   />
                 </td>
                 <td>{room.serviceLabel}</td>
-                <td>{room.messages.length}</td>
+                <td>{room.messageCount}</td>
                 <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
                 <td>
                   <div className="actions">
@@ -430,10 +432,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       <section className="card">
         <div className="ops-section-header">
           <div>
-            <h2>Full chat windows</h2>
+            <h2>Chat window previews</h2>
             <p className="muted">
-              Click a room to open the complete retained chat window. This is an admin-only audit view and does not reopen completed
-              chats in the mobile apps.
+              Open a preview here for quick audit triage. Full retained chat stays available from the
+              connected booking, customer, and Partner detail pages.
             </p>
           </div>
           <span className="pill pill-info">Admin retained</span>
@@ -455,7 +457,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     Booking {shortId(room.booking.id)} / {room.booking.status} / {room.serviceLabel}
                   </p>
                 </div>
-                <span className="pill pill-info">{room.messages.length} message(s)</span>
+                <span className="pill pill-info">
+                  {room.messages.length} shown / {room.messageCount} total
+                </span>
               </summary>
               <AdminChatWindow
                 avatarLabel={room.customerName}
@@ -505,7 +509,6 @@ function filterChatRooms(
   filters: ChatArchiveFilters,
   dateFilters: DetailDateFilters,
 ) {
-  const query = filters.q.toLowerCase();
   return rooms.filter((room) => {
     const messagesInDate = room.messages.filter((message) =>
       isWithinDetailDateFilter(message.createdAt, dateFilters),
@@ -516,15 +519,11 @@ function filterChatRooms(
       isWithinDetailDateFilter(room.booking.updatedAt, dateFilters);
     if (!roomInDate) return false;
 
-    if (query && !room.searchText.includes(query)) return false;
     if (filters.status === 'active' && !isActiveStatus(room.booking.status)) return false;
     if (filters.status === 'completed' && room.booking.status !== 'COMPLETED') return false;
     if (filters.status === 'closed' && !isClosedStatus(room.booking.status)) return false;
-    if (filters.status === 'no-message' && room.messages.length > 0) return false;
+    if (filters.status === 'no-message' && room.messageCount > 0) return false;
     if (filters.status === 'missing-room') return false;
-    if (filters.sender && !room.messages.some((message) => senderFilterMatch(message, filters.sender))) {
-      return false;
-    }
     return true;
   });
 }
@@ -533,6 +532,7 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => dateMs(left.createdAt) - dateMs(right.createdAt),
   );
+  const messageCount = bookingChatMessageCount(booking);
   const customerName =
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
   const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
@@ -573,6 +573,7 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
     partnerPhone,
     partnerAvatarStatus: bookingPartnerChatAvatarStatus(booking),
     serviceLabel,
+    messageCount,
     latestMessageAt,
     searchText,
   };
@@ -587,8 +588,8 @@ function buildChatRepairRows(
     .filter((booking) => shouldHaveChatArchive(booking.status))
     .map((booking) => {
       const archive = archiveByBookingId.get(booking.id);
-      const messages = archive?.messages ?? [];
-      if (booking.chatRoom && messages.length > 0) return null;
+      const messageCount = archive?.messageCount ?? bookingChatMessageCount(booking);
+      if (booking.chatRoom && messageCount > 0) return null;
       const customerName =
         booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
       const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
@@ -679,28 +680,21 @@ function shouldHaveChatArchive(status: string) {
 
 function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {
   const messages = rooms.flatMap((room) => room.messages);
+  const messageCount = rooms.reduce((sum, room) => sum + room.messageCount, 0);
   const latestMessageAt = messages
     .map((message) => message.createdAt)
     .filter(Boolean)
     .sort((left, right) => dateMs(right) - dateMs(left))[0];
 
   return {
-    messageCount: messages.length,
+    messageCount,
     customerMessages: messages.filter((message) => senderRole(message) === 'CUSTOMER').length,
     partnerMessages: messages.filter((message) => senderRole(message) === 'PROVIDER').length,
     completedRooms: rooms.filter((room) => room.booking.status === 'COMPLETED').length,
     activeRooms: rooms.filter((room) => isActiveStatus(room.booking.status)).length,
-    emptyRooms: rooms.filter((room) => room.messages.length === 0).length,
+    emptyRooms: rooms.filter((room) => room.messageCount === 0).length,
     latestMessageAt: latestMessageAt ? formatDate(latestMessageAt) : 'None',
   };
-}
-
-function senderFilterMatch(message: AdminChatMessage, sender: string) {
-  const role = senderRole(message);
-  if (sender === 'customer') return role === 'CUSTOMER';
-  if (sender === 'partner') return role === 'PROVIDER';
-  if (sender === 'admin') return role === 'ADMIN' || role === 'SYSTEM';
-  return true;
 }
 
 function chatArchiveWindowMessages(messages: readonly AdminChatMessage[]): AdminChatWindowMessage[] {
