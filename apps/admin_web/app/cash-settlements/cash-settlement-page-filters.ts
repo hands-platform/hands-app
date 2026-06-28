@@ -6,6 +6,8 @@ import {
   type CashSettlementQueueFilter,
 } from './cash-settlement-page-types';
 
+const CASH_SETTLEMENT_API_LIMIT = 25;
+
 export function buildCashSettlementFilters(
   params: Record<string, string | string[] | undefined>,
 ): CashSettlementFilters {
@@ -21,7 +23,7 @@ export function buildCashSettlementFilters(
 export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
   const params = new URLSearchParams({
     range: filters.range,
-    take: '50',
+    take: String(CASH_SETTLEMENT_API_LIMIT),
   });
 
   return `/admin/cash-settlement-earnings?${params.toString()}`;
