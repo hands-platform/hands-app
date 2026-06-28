@@ -904,6 +904,7 @@ describe('AdminService query orchestration', () => {
     ]);
     expect(prisma.marketingSpendDaily.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        take: 100,
         where: expect.objectContaining({
           source: 'google',
           platform: 'android',
@@ -912,6 +913,9 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+    expect(prisma.customerSelectedLocation.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.booking.findMany).toHaveBeenCalledTimes(3);
+    expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100, 100]);
   });
 
   it('upserts manual marketing spend and writes an audit trail', async () => {
