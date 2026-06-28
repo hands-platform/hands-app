@@ -162,6 +162,32 @@ describe('AdminService query orchestration', () => {
       customerProfile: {
         count: vi.fn().mockResolvedValue(12),
       },
+      booking: {
+        count: vi.fn().mockResolvedValue(5),
+      },
+      providerEarning: {
+        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+      },
+      providerProfile: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(8)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(7)
+          .mockResolvedValueOnce(1),
+        groupBy: vi.fn().mockResolvedValue([
+          { status: ProviderStatus.ONLINE_AVAILABLE, _count: { _all: 2 } },
+          { status: ProviderStatus.ONLINE_BUSY, _count: { _all: 1 } },
+          { status: ProviderStatus.ONLINE_AVAILABLE_SOON, _count: { _all: 1 } },
+          { status: ProviderStatus.OFFLINE, _count: { _all: 4 } },
+        ]),
+      },
       user: {
         count: vi.fn().mockResolvedValueOnce(9).mockResolvedValueOnce(2),
       },
@@ -188,9 +214,43 @@ describe('AdminService query orchestration', () => {
         staleCustomerSessions: 4,
         totalCustomers: 12,
       },
+      partnerSupply: {
+        approvedVerification: 4,
+        bankApproved: 6,
+        blocked: 1,
+        cashDebtPartners: 0,
+        firstRevenue: 1,
+        kycApproved: 5,
+        level2Active: 7,
+        liveSessions: 1,
+        noLocation: 1,
+        offline: 4,
+        online: 4,
+        onlineAvailable: 2,
+        onlineAvailableSoon: 1,
+        onlineBusy: 1,
+        pendingVerification: 3,
+        staleLocation: 2,
+        supplyPressureLabel: '2.5x',
+        total: 8,
+        withdrawalProfileReady: 1,
+      },
     });
 
     expect(prisma.customerProfile.count).toHaveBeenCalledWith();
+    expect(prisma.providerProfile.findMany).toBeUndefined();
+    expect(prisma.providerProfile.count).toHaveBeenCalledTimes(10);
+    expect(prisma.providerProfile.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      _count: { _all: true },
+    });
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith({
+      by: ['providerProfileId'],
+      where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: { status: { in: expect.any(Array) } },
+    });
     expect(prisma.appSession.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         by: ['userId'],

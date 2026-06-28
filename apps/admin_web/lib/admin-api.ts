@@ -247,6 +247,27 @@ export type AdminDashboardSummary = {
     staleCustomerSessions: number;
     totalCustomers: number;
   };
+  partnerSupply: {
+    approvedVerification: number;
+    bankApproved: number;
+    blocked: number;
+    cashDebtPartners: number;
+    firstRevenue: number;
+    kycApproved: number;
+    level2Active: number;
+    liveSessions: number;
+    noLocation: number;
+    offline: number;
+    online: number;
+    onlineAvailable: number;
+    onlineAvailableSoon: number;
+    onlineBusy: number;
+    pendingVerification: number;
+    staleLocation: number;
+    supplyPressureLabel: string;
+    total: number;
+    withdrawalProfileReady: number;
+  };
 };
 
 export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';

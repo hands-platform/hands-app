@@ -95,4 +95,24 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<span>Range earnings</span><strong>1</strong>');
   });
+
+  it('uses dashboard summary instead of full people lists in default mode', async () => {
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(hrefs).toContain('/admin/dashboard/summary');
+    expect(hrefs).not.toContain('/admin/users');
+    expect(hrefs).not.toContain('/admin/partners?view=list');
+    expect(hrefs).toContain('/admin/app-sessions?role=PROVIDER&take=50');
+  });
 });

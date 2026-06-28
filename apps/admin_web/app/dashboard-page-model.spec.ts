@@ -52,6 +52,7 @@ describe('dashboard page model', () => {
 
     expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary');
     expect(hrefs.usersHref).toBeNull();
+    expect(hrefs.partnersHref).toBeNull();
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
     expect(bookingUrl.searchParams.get('take')).toBe('100');
@@ -81,6 +82,7 @@ describe('dashboard page model', () => {
     const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
 
     expect(hrefs.usersHref).toBe('/admin/users');
+    expect(hrefs.partnersHref).toBe('/admin/partners?view=list');
     expect(appSessionsUrl.searchParams.get('take')).toBe('50');
     expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });

@@ -121,6 +121,41 @@ function emptyDashboardSummary(): AdminDashboardSummary {
       staleCustomerSessions: 0,
       totalCustomers: 0,
     },
+    partnerSupply: {
+      approvedVerification: 0,
+      bankApproved: 0,
+      blocked: 0,
+      cashDebtPartners: 0,
+      firstRevenue: 0,
+      kycApproved: 0,
+      level2Active: 0,
+      liveSessions: 0,
+      noLocation: 0,
+      offline: 0,
+      online: 0,
+      onlineAvailable: 0,
+      onlineAvailableSoon: 0,
+      onlineBusy: 0,
+      pendingVerification: 0,
+      staleLocation: 0,
+      supplyPressureLabel: 'No supply',
+      total: 0,
+      withdrawalProfileReady: 0,
+    },
+  };
+}
+
+function dashboardPartnerSupplyWithLiveFinance(
+  summary: AdminDashboardSummary['partnerSupply'],
+  input: { activeDemand: number; cashSettlementSummary: AdminCashSettlementSummary },
+) {
+  return {
+    ...summary,
+    cashDebtPartners: input.cashSettlementSummary.providerCount,
+    supplyPressureLabel:
+      summary.onlineAvailable > 0
+        ? `${(input.activeDemand / summary.onlineAvailable).toFixed(1)}x`
+        : 'No supply',
   };
 }
 
@@ -374,7 +409,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     dashboardDataHrefs.usersHref
       ? adminGet<AdminUser[]>(dashboardDataHrefs.usersHref, [])
       : Promise.resolve([]),
-    adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, []),
+    dashboardDataHrefs.partnersHref
+      ? adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, [])
+      : Promise.resolve([]),
     adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
     adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
     adminGet<AdminEarningSummary>('/admin/earnings/summary', {
@@ -446,17 +483,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const appPresence = shouldRenderFullDashboard
     ? buildAppPresence(users, bookings, appSessions)
     : dashboardSummary.appPresence;
-  const partnerSupply = buildPartnerSupplyInsights(
-    providers,
-    bookings,
-    appSessions,
-    cashDebtRows,
-    cashSettlementSummary,
-  );
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
-  const pendingVerification = providers.filter((provider) => provider.verification?.status === 'SUBMITTED');
+  const partnerSupply = shouldRenderFullDashboard
+    ? buildPartnerSupplyInsights(
+        providers,
+        bookings,
+        appSessions,
+        cashDebtRows,
+        cashSettlementSummary,
+      )
+    : dashboardPartnerSupplyWithLiveFinance(dashboardSummary.partnerSupply, {
+        activeDemand: activeBookings.length,
+        cashSettlementSummary,
+      });
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
-  const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
+  const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies, partnerSupply);
   const operationsCommandBoard = buildOperationsCommandBoard({
     bookingOps: liveBookingOps,
     bookingDeepDive: liveBookingDeepDive,
@@ -540,10 +581,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ],
     [
       'Online Partners',
-      providers.filter((provider) => provider.status.startsWith('ONLINE')).length.toString(),
+      partnerSupply.online.toString(),
       'Supply currently visible to customers.',
     ],
-    ['Pending verification', pendingVerification.length.toString(), 'Partners waiting for admin approval.'],
+    ['Pending verification', partnerSupply.pendingVerification.toString(), 'Partners waiting for admin approval.'],
     [
       'Customers in app',
       appPresence.liveAppCustomers.toString(),
@@ -2270,6 +2311,10 @@ function buildMatchingControlRoom(
   bookings: AdminBooking[],
   providers: AdminProvider[],
   settings: AdminOperationalPolicySetting[],
+  partnerSupplySummary?: Pick<
+    ReturnType<typeof buildPartnerSupplyInsights>,
+    'online' | 'onlineAvailable' | 'staleLocation'
+  >,
 ) {
   const openMatching = bookings
     .filter((booking) => booking.status === 'OPEN_MATCHING')
@@ -2294,6 +2339,7 @@ function buildMatchingControlRoom(
   const openMatchingWithPolicySnapshot = openMatching.filter((booking) =>
     dashboardBookingPolicySnapshot(booking),
   );
+  const hasProviderRows = providers.length > 0;
   const freshOnlinePartners = providers.filter(
     (provider) =>
       provider.status.startsWith('ONLINE') &&
@@ -2302,6 +2348,9 @@ function buildMatchingControlRoom(
       locationAgeMinutes(provider.currentLocationUpdatedAt) !== null &&
       (locationAgeMinutes(provider.currentLocationUpdatedAt) ?? Infinity) <= backupLocationMaxAgeMinutes,
   );
+  const freshOnlinePartnerCount = hasProviderRows
+    ? freshOnlinePartners.length
+    : (partnerSupplySummary?.onlineAvailable ?? 0);
   const openRows = openMatching.slice(0, 8).map((booking) => {
     const savedPolicy = dashboardBookingPolicySnapshot(booking);
     const bookingResponseWindowMinutes = savedPolicy?.providerResponseWindowMinutes ?? responseWindowMinutes;
@@ -2312,13 +2361,23 @@ function buildMatchingControlRoom(
     const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
     const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
-    const eligiblePartnersAll = coordinate
+    const eligiblePartnersAll = hasProviderRows && coordinate
       ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
       : [];
     const eligiblePartners = eligiblePartnersAll.slice(0, bookingBackupInvitationLimit);
     const freshEligible = eligiblePartners.filter(
       (item) => (item.ageMinutes ?? Infinity) <= bookingBackupLocationMaxAgeMinutes,
     );
+    const summaryEligibleCount = hasProviderRows
+      ? eligiblePartners.length
+      : coordinate
+        ? Math.max(partnerSupplySummary?.online ?? 0, partnerSupplySummary?.onlineAvailable ?? 0)
+        : 0;
+    const summaryFreshEligibleCount = hasProviderRows
+      ? freshEligible.length
+      : coordinate
+        ? (partnerSupplySummary?.onlineAvailable ?? 0)
+        : 0;
     const participantCount = booking.participants?.length ?? 0;
     const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
     const firstPickDeclined = Boolean(
@@ -2330,7 +2389,7 @@ function buildMatchingControlRoom(
       ),
     );
     const backupWindowOpen = bookingImmediateBackup || firstPickDeclined || expired;
-    const needsSameShiftDispatch = expired || freshEligible.length === 0;
+    const needsSameShiftDispatch = expired || summaryFreshEligibleCount === 0;
     const customerReadyToChoose = participantCount > 0;
     const hasCustomerPin = Boolean(coordinate);
     const customerState = customerReadyToChoose ? 'Customer can choose' : 'Customer waiting';
@@ -2338,11 +2397,13 @@ function buildMatchingControlRoom(
     const backupState = backupWindowOpen ? 'Marketplace open' : 'First-pick window';
     const backupPillClass = backupWindowOpen ? 'pill-success' : 'pill-info';
     const supplyState = hasCustomerPin
-      ? `${freshEligible.length} fresh / ${eligiblePartners.length} nearby`
+      ? hasProviderRows
+        ? `${freshEligible.length} fresh / ${eligiblePartners.length} nearby`
+        : `${summaryFreshEligibleCount} fresh / ${summaryEligibleCount} live supply`
       : 'No customer pin';
     const supplyPillClass = !hasCustomerPin
       ? 'pill-danger'
-      : freshEligible.length
+      : summaryFreshEligibleCount
         ? 'pill-success'
         : 'pill-danger';
     const nextAction = matchingRowNextAction({
@@ -2350,8 +2411,8 @@ function buildMatchingControlRoom(
       hasCustomerPin,
       customerReadyToChoose,
       backupWindowOpen,
-      freshEligibleCount: freshEligible.length,
-      eligibleCount: eligiblePartners.length,
+      freshEligibleCount: summaryFreshEligibleCount,
+      eligibleCount: summaryEligibleCount,
       firstPickName: booking.preferredProvider?.displayName ?? null,
     });
     const detail = [
@@ -2363,9 +2424,11 @@ function buildMatchingControlRoom(
         : backupWindowOpen
           ? 'marketplace open'
           : 'marketplace waiting',
-      coordinate
+      coordinate && hasProviderRows
         ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible / ${eligiblePartnersAll.length} in radius`
-        : 'no customer pin',
+        : coordinate
+          ? `${summaryFreshEligibleCount}/${summaryEligibleCount} live supply from summary`
+          : 'no customer pin',
       `${bookingBackupInvitationLimit} invite cap`,
       `${formatDistance(bookingBackupRadiusMeters)} radius`,
       `${bookingBackupLocationMaxAgeMinutes}m freshness`,
@@ -2380,8 +2443,8 @@ function buildMatchingControlRoom(
       detail,
       status: needsSameShiftDispatch ? 'Dispatch now' : 'Monitor',
       pillClass: needsSameShiftDispatch ? 'pill-danger' : 'pill-warn',
-      eligibleCount: eligiblePartners.length,
-      freshEligibleCount: freshEligible.length,
+      eligibleCount: summaryEligibleCount,
+      freshEligibleCount: summaryFreshEligibleCount,
       expired,
       hasPolicySnapshot: Boolean(savedPolicy),
       customerState,
@@ -2460,8 +2523,10 @@ function buildMatchingControlRoom(
       },
       {
         label: 'Fresh online supply',
-        value: String(freshOnlinePartners.length),
-        helper: `Online Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`,
+        value: String(freshOnlinePartnerCount),
+        helper: hasProviderRows
+          ? `Online Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`
+          : 'Dashboard summary supply available without loading the full Partner list.',
       },
     ],
     checks: [

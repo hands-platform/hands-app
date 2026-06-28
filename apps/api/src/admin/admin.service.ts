@@ -12,6 +12,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderKycStatus,
   ReferralAudience,
@@ -991,6 +992,8 @@ export class AdminService {
     const recentCustomerSessionWhere = adminAppSessionStateWhere('recent') ?? {};
     const staleCustomerSessionWhere = adminAppSessionStateWhere('stale') ?? {};
     const activeStatuses = Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES);
+    const locationStaleBoundary = new Date(now.getTime() - 30 * 60_000);
+    const revenueStatuses = [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID];
 
     const [
       totalCustomers,
@@ -1001,6 +1004,19 @@ export class AdminService {
       reachableCustomers,
       disabledPushCustomers,
       bookingCustomerRows,
+      totalPartners,
+      partnerStatusRows,
+      staleLocationPartners,
+      noLocationPartners,
+      pendingVerificationPartners,
+      approvedVerificationPartners,
+      kycApprovedPartners,
+      bankApprovedPartners,
+      firstRevenuePartnerRows,
+      withdrawalProfileReadyPartners,
+      level2ActivePartners,
+      blockedPartners,
+      activeDemandBookings,
     ] = await Promise.all([
       this.prisma.customerProfile.count(),
       this.prisma.appSession.groupBy({
@@ -1065,8 +1081,69 @@ export class AdminService {
             INNER JOIN live_customer_users live_users ON live_users."userId" = matching_users."userId"
           )::bigint AS "liveOpenMatchingCustomers"
       `),
+      this.prisma.providerProfile.count(),
+      this.prisma.providerProfile.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+      this.prisma.providerProfile.count({
+        where: { currentLocationUpdatedAt: { lt: locationStaleBoundary } },
+      }),
+      this.prisma.providerProfile.count({
+        where: { OR: [{ currentLat: null }, { currentLng: null }] },
+      }),
+      this.prisma.providerProfile.count({
+        where: { verification: { is: { status: VerificationStatus.SUBMITTED } } },
+      }),
+      this.prisma.providerProfile.count({
+        where: { verification: { is: { status: VerificationStatus.APPROVED } } },
+      }),
+      this.prisma.providerProfile.count({
+        where: { kyc: { is: { status: ProviderKycStatus.APPROVED } } },
+      }),
+      this.prisma.providerProfile.count({
+        where: { bankAccounts: { some: { status: ProviderBankAccountStatus.APPROVED } } },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: { status: { in: revenueStatuses } },
+      }),
+      this.prisma.providerProfile.count({
+        where: {
+          AND: [
+            { residentialAddress: { not: null } },
+            { NOT: { residentialAddress: '' } },
+            { earnings: { some: { status: { in: revenueStatuses } } } },
+          ],
+        },
+      }),
+      this.prisma.providerProfile.count({
+        where: {
+          kyc: { is: { status: ProviderKycStatus.APPROVED } },
+          verification: { is: { status: VerificationStatus.APPROVED } },
+        },
+      }),
+      this.prisma.providerProfile.count({
+        where: {
+          OR: [
+            { blockedAt: { not: null } },
+            { sanctions: { some: { status: ProviderSanctionStatus.ACTIVE } } },
+          ],
+        },
+      }),
+      this.prisma.booking.count({
+        where: { status: { in: activeStatuses } },
+      }),
     ]);
     const bookingCustomerRow = bookingCustomerRows[0];
+    const partnerStatusCounts = new Map(
+      partnerStatusRows.map((row) => [row.status, row._count._all]),
+    );
+    const onlineAvailable = partnerStatusCounts.get(ProviderStatus.ONLINE_AVAILABLE) ?? 0;
+    const onlineBusy = partnerStatusCounts.get(ProviderStatus.ONLINE_BUSY) ?? 0;
+    const onlineAvailableSoon = partnerStatusCounts.get(ProviderStatus.ONLINE_AVAILABLE_SOON) ?? 0;
+    const offline = partnerStatusCounts.get(ProviderStatus.OFFLINE) ?? 0;
+    const online = onlineAvailable + onlineBusy + onlineAvailableSoon;
 
     return {
       generatedAt: now.toISOString(),
@@ -1081,6 +1158,28 @@ export class AdminService {
         recentCustomerSessions,
         staleCustomerSessions,
         totalCustomers,
+      },
+      partnerSupply: {
+        approvedVerification: approvedVerificationPartners,
+        bankApproved: bankApprovedPartners,
+        blocked: blockedPartners,
+        cashDebtPartners: 0,
+        firstRevenue: firstRevenuePartnerRows.length,
+        kycApproved: kycApprovedPartners,
+        level2Active: level2ActivePartners,
+        liveSessions: liveProviderSessions.length,
+        noLocation: noLocationPartners,
+        offline,
+        online,
+        onlineAvailable,
+        onlineAvailableSoon,
+        onlineBusy,
+        pendingVerification: pendingVerificationPartners,
+        staleLocation: staleLocationPartners,
+        supplyPressureLabel:
+          onlineAvailable > 0 ? `${(activeDemandBookings / onlineAvailable).toFixed(1)}x` : 'No supply',
+        total: totalPartners,
+        withdrawalProfileReady: withdrawalProfileReadyPartners,
       },
     };
   }

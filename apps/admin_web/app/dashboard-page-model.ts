@@ -17,7 +17,7 @@ export type DashboardDataHrefs = {
   readonly earningsHref: string;
   readonly notificationsHref: string;
   readonly operationalPolicyHref: string | null;
-  readonly partnersHref: string;
+  readonly partnersHref: string | null;
   readonly paymentsHref: string;
   readonly payoutBatchesHref: string;
   readonly refundsHref: string;
@@ -71,7 +71,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       range,
     ),
     operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
-    partnersHref: '/admin/partners?view=list',
+    partnersHref: viewMode.shouldRenderFullDashboard ? '/admin/partners?view=list' : null,
     paymentsHref: buildDashboardRangeScopedHref(
       '/admin/payments',
       { take: String(DASHBOARD_FINANCE_TAKE) },
