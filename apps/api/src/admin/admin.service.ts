@@ -463,8 +463,11 @@ const adminPartnerReferralParentSelect = {
 } satisfies Prisma.ProviderProfileSelect;
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+const ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT = 40;
 const ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT = 20;
+const ADMIN_PAYMENT_DETAIL_AUDIT_LOG_LIMIT = 20;
+const ADMIN_PAYMENT_DETAIL_CALLBACK_ATTEMPT_LIMIT = 25;
 
 type AdminUserListOptions = {
   skip?: number | string | null;
@@ -4009,7 +4012,7 @@ export class AdminService {
     const auditLogs = await this.prisma.adminAuditLog.findMany({
       where: bookingAuditLogWhere(id, booking.createdAt),
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
 
@@ -4665,14 +4668,14 @@ export class AdminService {
         ],
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: ADMIN_PAYMENT_DETAIL_CALLBACK_ATTEMPT_LIMIT,
       select: adminPaymentCallbackAttemptSummarySelect,
     });
 
     const auditLogsPromise = this.prisma.adminAuditLog.findMany({
       where: paymentAuditLogWhere(payment.id, payment.bookingId),
       orderBy: { createdAt: 'desc' },
-      take: 75,
+      take: ADMIN_PAYMENT_DETAIL_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
 

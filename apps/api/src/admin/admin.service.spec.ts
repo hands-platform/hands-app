@@ -830,6 +830,43 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('keeps booking detail audit trail aligned with the activity export preview', async () => {
+    const createdAt = new Date('2026-06-10T09:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CREATED,
+          createdAt,
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getBookingDetail('booking-1')).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [{ id: 'audit-1' }],
+      }),
+    );
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 40,
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { target: 'booking:booking-1' },
+            { metadata: { path: ['bookingId'], equals: 'booking-1' } },
+            { action: 'operational_policy.update', createdAt: { gte: createdAt } },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('maps every booking status to an Admin matching evidence stage', async () => {
     const rows = [
       [BookingStatus.CREATED, 'CREATED'],
@@ -3502,6 +3539,52 @@ describe('AdminService query orchestration', () => {
     await detailPromise;
 
     expect(auditStartedBeforeSharedDeviceResolved).toBe(true);
+  });
+
+  it('keeps payment detail callback and audit payloads bounded', async () => {
+    const payment = {
+      id: 'payment-1',
+      bookingId: 'booking-1',
+      providerRef: 'momo-ref-1',
+    };
+    const prisma = {
+      payment: {
+        findUnique: vi.fn().mockResolvedValue(payment),
+      },
+      paymentCallbackAttempt: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'callback-1' }]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getPaymentDetail('payment-1')).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [{ id: 'audit-1' }],
+        callbackAttempts: [{ id: 'callback-1' }],
+      }),
+    );
+
+    expect(prisma.paymentCallbackAttempt.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ paymentId: 'payment-1' }, { providerRef: 'momo-ref-1' }]),
+        }),
+      }),
+    );
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ target: 'payment:payment-1' }, { target: 'booking:booking-1' }]),
+        }),
+      }),
+    );
   });
 
   it('starts payment audit log lookup while callback attempt lookup is still pending', async () => {
