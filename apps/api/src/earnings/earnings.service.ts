@@ -165,6 +165,107 @@ function adminFinanceDateRangeWhere(range: string | null | undefined): Prisma.Da
   return undefined;
 }
 
+const adminEarningBookingSelect = {
+  closedAt: true,
+  closedNote: true,
+  closedReason: true,
+  matchedAt: true,
+  payment: { select: { amount: true, currency: true, method: true, status: true } },
+  scheduledStartAt: true,
+  selectedProviderId: true,
+  services: {
+    select: {
+      id: true,
+      price: true,
+      quantity: true,
+      service: {
+        select: {
+          basePrice: true,
+          durationMin: true,
+          id: true,
+          name: true,
+          serviceGroupKey: true,
+        },
+      },
+      serviceId: true,
+    },
+  },
+  status: true,
+  updatedAt: true,
+} satisfies Prisma.BookingSelect;
+
+const adminEarningPlatformFeeLogSelect = {
+  createdAt: true,
+  currency: true,
+  grossAmount: true,
+  id: true,
+  platformFeeAmount: true,
+  ruleSnapshot: true,
+} satisfies Prisma.ProviderPlatformFeeLogSelect;
+
+const adminEarningTaxLogSelect = {
+  createdAt: true,
+  currency: true,
+  grossAmount: true,
+  id: true,
+  ruleSnapshot: true,
+  taxableAmount: true,
+  withholdingAmount: true,
+} satisfies Prisma.ProviderTaxLogSelect;
+
+const adminEarningWalletLedgerSelect = {
+  amount: true,
+  createdAt: true,
+  currency: true,
+  id: true,
+  notes: true,
+  reference: true,
+  sourceKey: true,
+  type: true,
+} satisfies Prisma.ProviderWalletLedgerEntrySelect;
+
+const adminEarningRelationInclude = {
+  booking: { select: adminEarningBookingSelect },
+  platformFeeLogs: { orderBy: { createdAt: 'desc' as const }, select: adminEarningPlatformFeeLogSelect, take: 1 },
+  taxLogs: { orderBy: { createdAt: 'desc' as const }, select: adminEarningTaxLogSelect, take: 1 },
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' as const },
+    select: adminEarningWalletLedgerSelect,
+    take: 5,
+  },
+} satisfies Prisma.ProviderEarningInclude;
+
+const adminEarningListInclude = {
+  providerProfile: {
+    include: {
+      user: { select: { fullName: true, id: true, phone: true } },
+    },
+  },
+  ...adminEarningRelationInclude,
+} satisfies Prisma.ProviderEarningInclude;
+
+function adminProviderPayoutInclude() {
+  return {
+    sanctions: {
+      orderBy: { startsAt: 'desc' as const },
+      take: 3,
+      where: activePayoutHoldWhere(),
+    },
+    user: { select: { fullName: true, id: true, phone: true } },
+  } satisfies Prisma.ProviderProfileInclude;
+}
+
+function adminPayoutBatchListInclude() {
+  return {
+    providerProfile: { include: adminProviderPayoutInclude() },
+    earnings: {
+      include: adminEarningRelationInclude,
+      orderBy: { createdAt: 'desc' as const },
+    },
+    withholdingLogs: true,
+  } satisfies Prisma.ProviderPayoutBatchInclude;
+}
+
 function adminFinanceListTake(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === '') {
     return ADMIN_FINANCE_LIST_DEFAULT_LIMIT;
@@ -352,13 +453,7 @@ export class EarningsService {
       ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
       take: adminFinanceListTake(options.take),
-      include: {
-        providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-        booking: { include: { payment: true, review: true, services: { include: { service: true } } } },
-        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
-        taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
-        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
+      include: adminEarningListInclude,
     });
   }
 
@@ -373,13 +468,7 @@ export class EarningsService {
       where,
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       take: adminFinanceListTake(options.take),
-      include: {
-        providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-        booking: { include: { payment: true, review: true, services: { include: { service: true } } } },
-        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
-        taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
-        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
+      include: adminEarningListInclude,
     });
   }
 
@@ -623,19 +712,7 @@ export class EarningsService {
       ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
       take: adminFinanceListTake(options.take),
-      include: {
-        providerProfile: { include: this.providerPayoutInclude() },
-        earnings: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            booking: { include: { services: { include: { service: true } }, payment: true } },
-            taxLogs: { orderBy: { createdAt: 'desc' } },
-            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-          },
-        },
-        withholdingLogs: true,
-      },
+      include: adminPayoutBatchListInclude(),
     });
   }
 
@@ -1078,14 +1155,7 @@ export class EarningsService {
   }
 
   private providerPayoutInclude() {
-    return {
-      user: { select: { id: true, phone: true, fullName: true } },
-      sanctions: {
-        where: activePayoutHoldWhere(),
-        orderBy: { startsAt: 'desc' as const },
-        take: 3,
-      },
-    };
+    return adminProviderPayoutInclude();
   }
 
   private async activePayoutHoldForProvider(client: PrismaService | TxClient, providerProfileId: string) {

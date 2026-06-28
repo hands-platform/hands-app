@@ -31,6 +31,45 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('uses compact selects for admin earning list relations', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listForAdmin({ range: 'today' })).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          booking: {
+            select: expect.objectContaining({
+              payment: { select: expect.objectContaining({ amount: true, method: true, status: true }) },
+              services: expect.objectContaining({
+                select: expect.objectContaining({
+                  service: { select: expect.objectContaining({ durationMin: true, id: true, name: true }) },
+                }),
+              }),
+            }),
+          },
+          platformFeeLogs: expect.objectContaining({
+            select: expect.objectContaining({ id: true, ruleSnapshot: true }),
+          }),
+          taxLogs: expect.objectContaining({
+            select: expect.objectContaining({ id: true, ruleSnapshot: true, withholdingAmount: true }),
+          }),
+          walletLedgerEntries: expect.objectContaining({
+            select: expect.objectContaining({ id: true, reference: true, type: true }),
+          }),
+        }),
+      }),
+    );
+    expect(prisma.providerEarning.findMany.mock.calls[0][0].include.booking).not.toHaveProperty('include');
+    expect(prisma.providerEarning.findMany.mock.calls[0][0].include.booking.select).not.toHaveProperty('review');
+  });
+
   it('filters admin earning summary by range without hydrating earning rows', async () => {
     const prisma = {
       providerEarning: {
@@ -88,6 +127,50 @@ describe('EarningsService payout batches', () => {
         take: 100,
       }),
     );
+  });
+
+  it('uses compact selects for admin payout batch nested earnings', async () => {
+    const prisma = {
+      providerPayoutBatch: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listPayoutBatchesForAdmin({ range: '7d' })).resolves.toEqual([]);
+
+    expect(prisma.providerPayoutBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          earnings: expect.objectContaining({
+            include: expect.objectContaining({
+              booking: {
+                select: expect.objectContaining({
+                  payment: { select: expect.objectContaining({ amount: true, method: true, status: true }) },
+                  services: expect.objectContaining({
+                    select: expect.objectContaining({
+                      service: { select: expect.objectContaining({ durationMin: true, id: true, name: true }) },
+                    }),
+                  }),
+                }),
+              },
+              platformFeeLogs: expect.objectContaining({
+                select: expect.objectContaining({ id: true, ruleSnapshot: true }),
+              }),
+              taxLogs: expect.objectContaining({
+                select: expect.objectContaining({ id: true, ruleSnapshot: true, withholdingAmount: true }),
+              }),
+              walletLedgerEntries: expect.objectContaining({
+                select: expect.objectContaining({ id: true, reference: true, type: true }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(
+      prisma.providerPayoutBatch.findMany.mock.calls[0][0].include.earnings.include.booking,
+    ).not.toHaveProperty('include');
   });
 
   it('excludes post-match cancellation fee holds from cash settlement debt lists', async () => {
