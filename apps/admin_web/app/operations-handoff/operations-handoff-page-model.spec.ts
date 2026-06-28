@@ -54,29 +54,29 @@ describe('operations handoff page model', () => {
 
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
-    expect(bookingsUrl.searchParams.get('take')).toBe('25');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('10');
+    expect(bookingsUrl.searchParams.get('take')).toBe('10');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.chatArchiveHref).toBeNull();
-    expect(customersUrl.searchParams.get('take')).toBe('10');
+    expect(customersUrl.searchParams.get('take')).toBe('5');
     expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('10');
+    expect(partnersUrl.searchParams.get('take')).toBe('5');
     expect(paymentsUrl.searchParams.get('range')).toBe('today');
-    expect(paymentsUrl.searchParams.get('take')).toBe('10');
+    expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(earningsUrl.searchParams.get('range')).toBe('today');
-    expect(earningsUrl.searchParams.get('take')).toBe('10');
+    expect(earningsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
     expect(refundsUrl.searchParams.get('range')).toBe('today');
-    expect(refundsUrl.searchParams.get('take')).toBe('10');
+    expect(refundsUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
-    expect(payoutBatchesUrl.searchParams.get('take')).toBe('10');
+    expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
     expect(notificationsUrl.pathname).toBe('/admin/notifications');
-    expect(notificationsUrl.searchParams.get('take')).toBe('10');
+    expect(notificationsUrl.searchParams.get('take')).toBe('5');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
       true,
     );
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
-    expect(auditUrl.searchParams.get('take')).toBe('10');
+    expect(auditUrl.searchParams.get('take')).toBe('5');
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
@@ -104,11 +104,11 @@ describe('operations handoff page model', () => {
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
     expect(hrefs.chatArchiveHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
-    expect(paymentsUrl.searchParams.get('take')).toBe('10');
+    expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
-    expect(payoutBatchesUrl.searchParams.get('take')).toBe('10');
-    expect(notificationsUrl.searchParams.get('take')).toBe('10');
+    expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
+    expect(notificationsUrl.searchParams.get('take')).toBe('5');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
       true,
     );
