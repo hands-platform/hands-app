@@ -76,7 +76,7 @@ describe('cash settlement page model', () => {
     expect(buildCashSettlementFilters({})).toEqual({ q: '', queue: 'all', range: 'today' });
     expect(cashSettlementHref({ q: '', queue: 'all', range: 'all' })).toBe('/cash-settlements?range=all');
     expect(buildCashSettlementApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
-      '/admin/cash-settlement-earnings?range=7d&take=25',
+      '/admin/cash-settlement-earnings?range=7d&take=10',
     );
     expect(buildCashSettlementSummaryApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
       '/admin/cash-settlement-summary?range=7d',

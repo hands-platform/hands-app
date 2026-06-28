@@ -6,7 +6,7 @@ import {
   type CashSettlementQueueFilter,
 } from './cash-settlement-page-types';
 
-const CASH_SETTLEMENT_API_LIMIT = 25;
+const CASH_SETTLEMENT_API_LIMIT = 10;
 
 export function buildCashSettlementFilters(
   params: Record<string, string | string[] | undefined>,
