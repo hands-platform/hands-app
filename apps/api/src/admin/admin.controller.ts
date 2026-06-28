@@ -324,8 +324,8 @@ export class AdminController {
   }
 
   @Get('partner-controls/providers')
-  partnerControlProviders() {
-    return this.admin.listPartnerControlProviders();
+  partnerControlProviders(@Query('take') take?: string) {
+    return this.admin.listPartnerControlProviders({ take });
   }
 
   @Get('partners/list-providers')
@@ -401,8 +401,8 @@ export class AdminController {
   }
 
   @Get(['provider-reports', 'partner-reports'])
-  providerReports() {
-    return this.admin.listProviderReports();
+  providerReports(@Query('take') take?: string) {
+    return this.admin.listProviderReports({ take });
   }
 
   @Post(['provider-reports', 'partner-reports'])
@@ -420,8 +420,8 @@ export class AdminController {
   }
 
   @Get(['provider-sanctions', 'partner-sanctions'])
-  providerSanctions() {
-    return this.admin.listProviderSanctions();
+  providerSanctions(@Query('take') take?: string) {
+    return this.admin.listProviderSanctions({ take });
   }
 
   @Post(['providers/:id/sanctions', 'partners/:id/sanctions'])

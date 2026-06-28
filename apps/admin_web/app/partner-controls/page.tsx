@@ -33,6 +33,7 @@ import {
   readPartnerControlDeskConfirmationAction,
   type PartnerControlDeskConfirmationAction,
 } from './partner-control-desk-action-confirmation';
+import { buildPartnerControlPageLoadPlan } from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -75,11 +76,12 @@ export default async function PartnerControlsPage({
 }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildFilters(params);
+  const loadPlan = buildPartnerControlPageLoadPlan();
   const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/partner-controls/providers', []),
-    adminGet<AdminProviderReport[]>('/admin/provider-reports', []),
-    adminGet<AdminProviderSanction[]>('/admin/provider-sanctions', []),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminProvider[]>(loadPlan.providersHref, []),
+    adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []),
+    adminGet<AdminProviderSanction[]>(loadPlan.sanctionsHref, []),
+    adminGet<AdminOperationalPolicySetting[]>(loadPlan.operationalPolicyHref, []),
   ]);
   const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);

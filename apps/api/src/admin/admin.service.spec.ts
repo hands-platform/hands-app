@@ -148,11 +148,11 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listProviderReports()).resolves.toEqual([]);
+    await expect(service.listProviderReports({ take: '5' })).resolves.toEqual([]);
 
     expect(prisma.providerReport.findMany).toHaveBeenCalledWith({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
-      take: 50,
+      take: 5,
       select: expect.any(Object),
     });
   });
@@ -165,11 +165,11 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listProviderSanctions()).resolves.toEqual([]);
+    await expect(service.listProviderSanctions({ take: '8' })).resolves.toEqual([]);
 
     expect(prisma.providerSanction.findMany).toHaveBeenCalledWith({
       orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
-      take: 50,
+      take: 8,
       select: expect.any(Object),
     });
   });
@@ -3109,7 +3109,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listPartnerControlProviders()).resolves.toEqual([
+    await expect(service.listPartnerControlProviders({ take: '7' })).resolves.toEqual([
       expect.objectContaining({
         id: 'provider-1',
         activitySummary: expect.objectContaining({ walletBalance: -70000 }),
@@ -3119,7 +3119,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 50 }));
+    expect(query).toEqual(expect.objectContaining({ take: 7 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,

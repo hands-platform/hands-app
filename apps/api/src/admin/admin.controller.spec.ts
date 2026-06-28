@@ -29,6 +29,8 @@ describe('AdminController notification and push actions', () => {
     listUsers: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
+    listProviderReports: vi.fn(),
+    listProviderSanctions: vi.fn(),
     listReviews: vi.fn(),
     reviewSummary: vi.fn(),
     listPartnerCustomerReviews: vi.fn(),
@@ -588,6 +590,25 @@ describe('AdminController notification and push actions', () => {
     expect(admin.updateNotificationTemplate).toHaveBeenCalledWith('admin-1', 'booking.matched', body);
   });
 
+  it('exposes provider controls reports and sanctions as bounded lists', async () => {
+    admin.listProviderReports.mockResolvedValue([{ id: 'report-1' }]);
+    admin.listProviderSanctions.mockResolvedValue([{ id: 'sanction-1' }]);
+
+    await expect(controller.providerReports('25')).resolves.toEqual([{ id: 'report-1' }]);
+    await expect(controller.providerSanctions('30')).resolves.toEqual([{ id: 'sanction-1' }]);
+
+    expect(routeMetadata('providerReports')).toEqual({
+      method: RequestMethod.GET,
+      path: ['provider-reports', 'partner-reports'],
+    });
+    expect(routeMetadata('providerSanctions')).toEqual({
+      method: RequestMethod.GET,
+      path: ['provider-sanctions', 'partner-sanctions'],
+    });
+    expect(admin.listProviderReports).toHaveBeenCalledWith({ take: '25' });
+    expect(admin.listProviderSanctions).toHaveBeenCalledWith({ take: '30' });
+  });
+
   it('exposes manual push campaigns with preview before send', async () => {
     const body = {
       targetRole: 'CUSTOMER' as never,
@@ -1079,13 +1100,13 @@ describe('AdminController notification and push actions', () => {
   it('exposes partner control providers as a lightweight GET list', async () => {
     admin.listPartnerControlProviders.mockResolvedValue([{ id: 'partner-1' }]);
 
-    await expect(controller.partnerControlProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.partnerControlProviders('25')).resolves.toEqual([{ id: 'partner-1' }]);
 
     expect(routeMetadata('partnerControlProviders')).toEqual({
       method: RequestMethod.GET,
       path: 'partner-controls/providers',
     });
-    expect(admin.listPartnerControlProviders).toHaveBeenCalledWith();
+    expect(admin.listPartnerControlProviders).toHaveBeenCalledWith({ take: '25' });
   });
 
   it('exposes partner directory providers as a lightweight GET list', async () => {

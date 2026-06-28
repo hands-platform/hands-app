@@ -534,6 +534,14 @@ type AdminOperationsPolicyProviderListOptions = {
   take?: number | string | null;
 };
 
+type AdminProviderControlEvidenceListOptions = {
+  take?: number | string | null;
+};
+
+type AdminPartnerControlProviderListOptions = {
+  take?: number | string | null;
+};
+
 type AdminReviewBoardSummaryOptions = {
   bookingId?: string | null;
   customerProfileId?: string | null;
@@ -3330,10 +3338,10 @@ export class AdminService {
     });
   }
 
-  async listPartnerControlProviders() {
+  async listPartnerControlProviders(options: AdminPartnerControlProviderListOptions = {}) {
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: ADMIN_PROVIDER_CONTROL_LIST_LIMIT,
+      take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_CONTROL_LIST_LIMIT),
       select: adminProviderControlSelect,
     });
 
@@ -3605,10 +3613,10 @@ export class AdminService {
     return { ok: true, providerProfileId: provider.id };
   }
 
-  listProviderReports() {
+  listProviderReports(options: AdminProviderControlEvidenceListOptions = {}) {
     return this.prisma.providerReport.findMany({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
-      take: ADMIN_PROVIDER_REPORT_LIST_LIMIT,
+      take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_REPORT_LIST_LIMIT),
       select: adminProviderReportListSelect,
     });
   }
@@ -3673,10 +3681,10 @@ export class AdminService {
     return report;
   }
 
-  listProviderSanctions() {
+  listProviderSanctions(options: AdminProviderControlEvidenceListOptions = {}) {
     return this.prisma.providerSanction.findMany({
       orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
-      take: 50,
+      take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_REPORT_LIST_LIMIT),
       select: adminProviderSanctionListSelect,
     });
   }
