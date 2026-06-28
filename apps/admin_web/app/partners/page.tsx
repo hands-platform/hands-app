@@ -126,8 +126,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
-  const allProviders = sortProviders(rawProviders, opsPolicy, filters.sort, PARTNER_LIST_QUERY_DEPS);
-  const providers = filterProviders(allProviders, filters, opsPolicy, PARTNER_LIST_QUERY_DEPS);
+  const allProviders = dataHrefs.listIsServerPaginated
+    ? rawProviders
+    : sortProviders(rawProviders, opsPolicy, filters.sort, PARTNER_LIST_QUERY_DEPS);
+  const providers = dataHrefs.listIsServerPaginated
+    ? allProviders
+    : filterProviders(allProviders, filters, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const activeFilters = buildProviderActiveFilters(filters);
   const partnerDirectoryTotalCount =
     dataHrefs.summaryMatchesVisibleFilter
