@@ -105,7 +105,7 @@ export function buildOperationsHandoffDataHrefs(
       dateRange: range,
       take: String(OPERATIONS_HANDOFF_BOOKING_TAKE),
     }).toString()}`,
-    cashSettlementSummaryHref: '/admin/cash-settlement-summary',
+    cashSettlementSummaryHref: buildRangeScopedHref('/admin/cash-settlement-summary', {}, range),
     chatArchiveHref:
       detailsMode === 'all'
         ? `/admin/chat-archive?${new URLSearchParams({

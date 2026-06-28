@@ -64,6 +64,7 @@ describe('operations handoff page model', () => {
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
     expect(earningsUrl.searchParams.get('range')).toBe('today');
     expect(earningsUrl.searchParams.get('take')).toBe('50');
+    expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
     expect(refundsUrl.searchParams.get('range')).toBe('today');
     expect(refundsUrl.searchParams.get('take')).toBe('50');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
@@ -100,6 +101,7 @@ describe('operations handoff page model', () => {
     expect(hrefs.chatArchiveHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
+    expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('50');
     expect(notificationsUrl.searchParams.get('take')).toBe('50');
