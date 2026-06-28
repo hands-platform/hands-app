@@ -61,19 +61,19 @@ if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;')) 
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 50;')) {
+if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 20;')) {
   violations.push({
     area: 'admin notification query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Notification board must keep the 50-row default page size.',
+    message: 'Notification board must keep the 20-row default page size.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 50;')) {
+if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 20;')) {
   violations.push({
     area: 'admin notification query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Notification board must keep the 50-row hard maximum page size.',
+    message: 'Notification board must keep the 20-row hard maximum page size.',
   });
 }
 
@@ -336,11 +336,11 @@ if (!adminServiceSource.includes('const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;')) {
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 10;')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list booking relations must keep a 25-row guard.',
+    message: 'Customer list booking relations must keep a 10-row guard.',
   });
 }
 
@@ -428,11 +428,11 @@ if (!hasAuditCountGroupBy('customerAuditCounts') && !hasAuditSummaryGroupByHelpe
   });
 }
 
-if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 100;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list query must keep the 500-row operations guard.',
+    message: 'Compact partner list query must keep the 100-row operations guard.',
   });
 }
 
