@@ -146,6 +146,20 @@ describe('partner filters', () => {
     });
   });
 
+  it.each(['kyc', 'push', 'cash-debt'])(
+    'pushes the %s partner review lane to the bounded API list',
+    (review) => {
+      const filters = buildProviderFilters({ review });
+
+      expect(buildPartnerDataHrefs(filters)).toEqual({
+        listHref: `/admin/partners/list-providers?take=10&review=${review}`,
+        listIsServerPaginated: true,
+        summaryHref: `/admin/partners/list-providers/summary?review=${review}`,
+        summaryMatchesVisibleFilter: true,
+      });
+    },
+  );
+
   it('caps local partner filter hydration to the API provider list window', () => {
     const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'marketplace-ready' });
 

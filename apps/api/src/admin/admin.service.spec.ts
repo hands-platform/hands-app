@@ -3096,6 +3096,67 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it.each([
+    [
+      'kyc',
+      {
+        OR: [
+          { kyc: { is: null } },
+          { kyc: { is: { status: { not: 'APPROVED' } } } },
+          {
+            documents: {
+              some: {
+                type: { in: ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'] },
+                status: { in: ['PENDING_REVIEW', 'REJECTED'] },
+              },
+            },
+          },
+        ],
+      },
+    ],
+    [
+      'push',
+      {
+        user: {
+          pushDevices: {
+            none: {
+              enabled: true,
+            },
+          },
+        },
+      },
+    ],
+  ])('supports %s partner directory filtering before loading row details', async (review, expectedWhere) => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(5),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review,
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+    await expect(service.partnerDirectorySummary({ review })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 5,
+    });
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: expectedWhere,
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: expectedWhere,
+    });
+  });
+
   it('supports unsettled partner directory filtering from wallet aggregation before loading row details', async () => {
     const prisma = {
       providerEarning: {
@@ -3135,6 +3196,57 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
+  });
+
+  it('supports cash-debt partner directory filtering from wallet aggregation before loading row details', async () => {
+    const prisma = {
+      providerEarning: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-cash-debt',
+            _sum: { netAmount: -65000 },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(1),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review: 'cash-debt',
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+    await expect(service.partnerDirectorySummary({ review: 'cash-debt' })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 1,
+    });
+
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith({
+      by: ['providerProfileId'],
+      where: {
+        payoutBatchId: null,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+      },
+      _sum: { netAmount: true },
+    });
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: {
+          id: { in: ['provider-cash-debt'] },
+        },
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['provider-cash-debt'] },
+      },
+    });
   });
 
   it('exposes partner directory summary counts through the same safe filters', async () => {

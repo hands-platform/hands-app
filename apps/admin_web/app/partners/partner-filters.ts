@@ -532,9 +532,19 @@ function readPartnerSort(value: string) {
 }
 
 function isPrimaryPartnerReview(value: string) {
-  return ['unapproved', 'unsettled', 'blocked', 'documents', 'public-media', 'bank', 'tax', 'reports'].includes(
-    value,
-  );
+  return [
+    'unapproved',
+    'unsettled',
+    'blocked',
+    'documents',
+    'public-media',
+    'bank',
+    'tax',
+    'reports',
+    'kyc',
+    'push',
+    'cash-debt',
+  ].includes(value);
 }
 
 const partnerFilterHrefParamKeys = [

@@ -3305,7 +3305,9 @@ export class AdminService {
   }
 
   private async partnerDirectoryUnsettledWhere(reviewValue: string | null | undefined) {
-    if (normalizeNullable(reviewValue) !== 'unsettled') {
+    const review = normalizeNullable(reviewValue);
+
+    if (review !== 'unsettled' && review !== 'cash-debt') {
       return undefined;
     }
 
@@ -8162,6 +8164,33 @@ function adminPartnerDirectoryReviewWhere(
         },
         { sanctions: { some: { status: ProviderSanctionStatus.ACTIVE } } },
       ],
+    };
+  }
+  if (review === 'kyc') {
+    return {
+      OR: [
+        { kyc: { is: null } },
+        { kyc: { is: { status: { not: ProviderKycStatus.APPROVED } } } },
+        {
+          documents: {
+            some: {
+              type: { in: [...REQUIRED_KYC_DOCUMENT_TYPES] },
+              status: { in: [ProviderDocumentStatus.PENDING_REVIEW, ProviderDocumentStatus.REJECTED] },
+            },
+          },
+        },
+      ],
+    };
+  }
+  if (review === 'push') {
+    return {
+      user: {
+        pushDevices: {
+          none: {
+            enabled: true,
+          },
+        },
+      },
     };
   }
 
