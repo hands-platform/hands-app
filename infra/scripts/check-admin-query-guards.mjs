@@ -6,12 +6,14 @@ const adminServicePath = resolve(root, 'apps/api/src/admin/admin.service.ts');
 const adminCustomerSelectsPath = resolve(root, 'apps/api/src/admin/admin-customer-selects.ts');
 const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-provider-profile-selects.ts');
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
+const pushSendPageModelPath = resolve(root, 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts');
 
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
 const adminCustomerSelectsSource = readFileSync(adminCustomerSelectsPath, 'utf8');
 const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
+const pushSendPageModelSource = readFileSync(pushSendPageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
 function sourceBetween(startMarker, endMarker) {
@@ -22,6 +24,10 @@ function sourceBetween(startMarker, endMarker) {
 }
 
 const providerListSource = sourceBetween('async listProviders', 'async getProviderDetail');
+const pushCampaignListSource = sourceBetween('listAdminPushCampaigns', 'async adminPushCampaignSummary');
+const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary', 'async previewAdminPushCampaign');
+const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
+const pushCampaignCreateSource = sourceBetween('async createAdminPushCampaign', 'async retryNotification');
 
 if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 500;')) {
   violations.push({
@@ -44,6 +50,30 @@ if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;')) 
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Chat archive list query must keep the 200-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push sends must keep a hard 100-recipient limit.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_PUSH_CAMPAIGN_HISTORY_DEFAULT_LIMIT = 20;')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push campaign history must keep the 20-row default page size.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push campaign history must keep the 50-row hard maximum page size.',
   });
 }
 
@@ -71,6 +101,86 @@ if (!adminServiceSource.includes('take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,')) {
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Chat archive list query must apply ADMIN_CHAT_ARCHIVE_LIST_LIMIT.',
+  });
+}
+
+if (!pushCampaignListSource.includes('take: normalizeAdminPushCampaignHistoryTake(options.take),')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push campaign history must apply bounded server pagination.',
+  });
+}
+
+if (!pushCampaignListSource.includes('take: 5,')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push campaign history must only include a 5-recipient evidence preview.',
+  });
+}
+
+if (!pushCampaignSummarySource.includes('this.prisma.adminPushCampaign.aggregate')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push campaign totals must use aggregate summary instead of loading all rows.',
+  });
+}
+
+if (!pushCampaignPreviewSource.includes('this.prisma.user.count({ where })')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push recipient preview must count recipients separately from sample rows.',
+  });
+}
+
+if (!pushCampaignPreviewSource.includes('take: 5,') || !pushCampaignPreviewSource.includes('take: 1,')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push recipient preview must keep a 5-user sample and one active push device per user.',
+  });
+}
+
+if (!pushCampaignCreateSource.includes('take: ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT,')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push creation must cap recipient loading at ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT.',
+  });
+}
+
+if (!pushCampaignCreateSource.includes('select: { id: true },')) {
+  violations.push({
+    area: 'admin push campaign query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Manual push creation must load only recipient ids before enqueueing notifications.',
+  });
+}
+
+if (!pushSendPageModelSource.includes('const PUSH_CAMPAIGN_API_TAKE = 20;')) {
+  violations.push({
+    area: 'admin push campaign page',
+    file: 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts',
+    message: 'Push send page history API calls must keep a 20-row page size.',
+  });
+}
+
+if (!pushSendPageModelSource.includes('shouldRequestPushCampaignPreview')) {
+  violations.push({
+    area: 'admin push campaign page',
+    file: 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts',
+    message: 'Push send page must require explicit preview intent before counting recipients.',
+  });
+}
+
+if (!pushSendPageModelSource.includes("key === 'preview'")) {
+  violations.push({
+    area: 'admin push campaign page',
+    file: 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts',
+    message: 'Push send history navigation must drop preview intent to avoid repeated recipient counts.',
   });
 }
 
@@ -306,7 +416,8 @@ for (const file of listFiles(adminWebAppRoot)) {
 
 const result = {
   ok: violations.length === 0,
-  purpose: 'Static guard for Admin Operations app session, customer, and partner list query size.',
+  purpose:
+    'Static guard for Admin app session, push campaign, customer, and partner query size.',
   violations,
 };
 
