@@ -582,6 +582,12 @@ type AdminProviderBookingSummaryRow = AdminProviderBookingSummary & {
   providerId: string;
 };
 
+type AdminDashboardAppPresenceIntersectionRow = {
+  activeBookingCustomers: unknown;
+  liveActiveBookingCustomers: unknown;
+  liveOpenMatchingCustomers: unknown;
+};
+
 type AdminCustomerActivitySummary = {
   activeBookingCount: number;
   adminClosedBookingCount: number;
@@ -976,6 +982,107 @@ export class AdminService {
       take: adminAppSessionListTake(options.take),
       select: adminAppSessionListSelect,
     });
+  }
+
+  async dashboardSummary() {
+    const now = new Date();
+    const liveBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_LIVE_WINDOW_MS);
+    const liveSessionWhere = adminAppSessionStateWhere('live') ?? {};
+    const recentCustomerSessionWhere = adminAppSessionStateWhere('recent') ?? {};
+    const staleCustomerSessionWhere = adminAppSessionStateWhere('stale') ?? {};
+    const activeStatuses = Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES);
+
+    const [
+      totalCustomers,
+      liveCustomerSessions,
+      liveProviderSessions,
+      recentCustomerSessions,
+      staleCustomerSessions,
+      reachableCustomers,
+      disabledPushCustomers,
+      bookingCustomerRows,
+    ] = await Promise.all([
+      this.prisma.customerProfile.count(),
+      this.prisma.appSession.groupBy({
+        by: ['userId'],
+        where: { role: Role.CUSTOMER, ...liveSessionWhere },
+      }),
+      this.prisma.appSession.groupBy({
+        by: ['userId'],
+        where: { role: Role.PROVIDER, ...liveSessionWhere },
+      }),
+      this.prisma.appSession.count({
+        where: { role: Role.CUSTOMER, ...recentCustomerSessionWhere },
+      }),
+      this.prisma.appSession.count({
+        where: { role: Role.CUSTOMER, ...staleCustomerSessionWhere },
+      }),
+      this.prisma.user.count({
+        where: {
+          customerProfile: { isNot: null },
+          pushDevices: { some: { enabled: true, role: Role.CUSTOMER } },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          customerProfile: { isNot: null },
+          pushDevices: { some: { role: Role.CUSTOMER } },
+          NOT: { pushDevices: { some: { enabled: true, role: Role.CUSTOMER } } },
+        },
+      }),
+      this.prisma.$queryRaw<AdminDashboardAppPresenceIntersectionRow[]>(Prisma.sql`
+        WITH live_customer_users AS (
+          SELECT DISTINCT sessions."userId"
+          FROM "AppSession" sessions
+          WHERE sessions."role"::text = ${Role.CUSTOMER}
+            AND (
+              (sessions."active" = TRUE AND sessions."expiresAt" >= ${now})
+              OR sessions."lastSeenAt" >= ${liveBoundary}
+            )
+        ),
+        active_booking_customer_users AS (
+          SELECT DISTINCT customers."userId"
+          FROM "Booking" bookings
+          INNER JOIN "CustomerProfile" customers ON customers."id" = bookings."customerProfileId"
+          WHERE bookings."status"::text IN (${Prisma.join(activeStatuses)})
+        ),
+        open_matching_customer_users AS (
+          SELECT DISTINCT customers."userId"
+          FROM "Booking" bookings
+          INNER JOIN "CustomerProfile" customers ON customers."id" = bookings."customerProfileId"
+          WHERE bookings."status"::text = ${BookingStatus.OPEN_MATCHING}
+        )
+        SELECT
+          (SELECT COUNT(*) FROM active_booking_customer_users)::bigint AS "activeBookingCustomers",
+          (
+            SELECT COUNT(*)
+            FROM active_booking_customer_users active_users
+            INNER JOIN live_customer_users live_users ON live_users."userId" = active_users."userId"
+          )::bigint AS "liveActiveBookingCustomers",
+          (
+            SELECT COUNT(*)
+            FROM open_matching_customer_users matching_users
+            INNER JOIN live_customer_users live_users ON live_users."userId" = matching_users."userId"
+          )::bigint AS "liveOpenMatchingCustomers"
+      `),
+    ]);
+    const bookingCustomerRow = bookingCustomerRows[0];
+
+    return {
+      generatedAt: now.toISOString(),
+      appPresence: {
+        activeBookingCustomers: integerValue(bookingCustomerRow?.activeBookingCustomers),
+        disabledPushCustomers,
+        liveActiveBookingCustomers: integerValue(bookingCustomerRow?.liveActiveBookingCustomers),
+        liveAppCustomers: liveCustomerSessions.length,
+        liveAppPartners: liveProviderSessions.length,
+        liveOpenMatchingCustomers: integerValue(bookingCustomerRow?.liveOpenMatchingCustomers),
+        reachableCustomers,
+        recentCustomerSessions,
+        staleCustomerSessions,
+        totalCustomers,
+      },
+    };
   }
 
   async listReferralPolicies() {

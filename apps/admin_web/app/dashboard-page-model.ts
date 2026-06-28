@@ -13,6 +13,7 @@ export type DashboardDataHrefs = {
   readonly appSessionsHref: string;
   readonly bookingGateAuditHref: string;
   readonly bookingsHref: string;
+  readonly dashboardSummaryHref: string;
   readonly earningsHref: string;
   readonly notificationsHref: string;
   readonly operationalPolicyHref: string | null;
@@ -20,7 +21,7 @@ export type DashboardDataHrefs = {
   readonly paymentsHref: string;
   readonly payoutBatchesHref: string;
   readonly refundsHref: string;
-  readonly usersHref: string;
+  readonly usersHref: string | null;
 };
 
 const DASHBOARD_BOOKING_TAKE = 100;
@@ -42,7 +43,9 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const viewMode = buildDashboardViewMode(params);
   const range = buildDashboardRange(params);
   return {
+    dashboardSummaryHref: '/admin/dashboard/summary',
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
+      ...(viewMode.shouldRenderFullDashboard ? {} : { role: 'PROVIDER' }),
       take: String(DASHBOARD_APP_SESSION_TAKE),
     }).toString()}`,
     bookingGateAuditHref: buildDashboardDateScopedHref(
@@ -84,7 +87,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       { take: String(DASHBOARD_FINANCE_TAKE) },
       range,
     ),
-    usersHref: '/admin/users',
+    usersHref: viewMode.shouldRenderFullDashboard ? '/admin/users' : null,
   };
 }
 

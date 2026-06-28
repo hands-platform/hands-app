@@ -233,6 +233,22 @@ export type AdminAppSession = {
   user?: AdminUser | null;
 };
 
+export type AdminDashboardSummary = {
+  generatedAt: string;
+  appPresence: {
+    activeBookingCustomers: number;
+    disabledPushCustomers: number;
+    liveActiveBookingCustomers: number;
+    liveAppCustomers: number;
+    liveAppPartners: number;
+    liveOpenMatchingCustomers: number;
+    reachableCustomers: number;
+    recentCustomerSessions: number;
+    staleCustomerSessions: number;
+    totalCustomers: number;
+  };
+};
+
 export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';
 
 export type AdminUsageOverviewRankRow = {

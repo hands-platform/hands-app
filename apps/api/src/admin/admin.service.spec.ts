@@ -150,6 +150,64 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('builds dashboard app presence summary with aggregate queries instead of full user/session lists', async () => {
+    const prisma = {
+      appSession: {
+        count: vi.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(4),
+        groupBy: vi
+          .fn()
+          .mockResolvedValueOnce([{ userId: 'customer-user-1' }, { userId: 'customer-user-2' }])
+          .mockResolvedValueOnce([{ userId: 'provider-user-1' }]),
+      },
+      customerProfile: {
+        count: vi.fn().mockResolvedValue(12),
+      },
+      user: {
+        count: vi.fn().mockResolvedValueOnce(9).mockResolvedValueOnce(2),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          activeBookingCustomers: 2n,
+          liveActiveBookingCustomers: 2n,
+          liveOpenMatchingCustomers: 1n,
+        },
+      ]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.dashboardSummary()).resolves.toMatchObject({
+      appPresence: {
+        activeBookingCustomers: 2,
+        disabledPushCustomers: 2,
+        liveActiveBookingCustomers: 2,
+        liveAppCustomers: 2,
+        liveAppPartners: 1,
+        liveOpenMatchingCustomers: 1,
+        reachableCustomers: 9,
+        recentCustomerSessions: 3,
+        staleCustomerSessions: 4,
+        totalCustomers: 12,
+      },
+    });
+
+    expect(prisma.customerProfile.count).toHaveBeenCalledWith();
+    expect(prisma.appSession.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['userId'],
+        where: expect.objectContaining({ role: Role.CUSTOMER }),
+      }),
+    );
+    expect(prisma.appSession.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['userId'],
+        where: expect.objectContaining({ role: Role.PROVIDER }),
+      }),
+    );
+    expect(prisma.appSession.count).toHaveBeenCalledTimes(2);
+    expect(prisma.user.count).toHaveBeenCalledTimes(2);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps usage overview regional source rows bounded', async () => {
     const prisma = {
       appSession: {

@@ -50,6 +50,8 @@ describe('dashboard page model', () => {
     const payoutBatchUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
     const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
 
+    expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary');
+    expect(hrefs.usersHref).toBeNull();
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
     expect(bookingUrl.searchParams.get('take')).toBe('100');
@@ -71,6 +73,16 @@ describe('dashboard page model', () => {
     expect(payoutBatchUrl.searchParams.get('range')).toBe('today');
     expect(payoutBatchUrl.searchParams.get('take')).toBe('50');
     expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect(appSessionsUrl.searchParams.get('role')).toBe('PROVIDER');
+  });
+
+  it('keeps full dashboard diagnostics behind explicit details mode', () => {
+    const hrefs = buildDashboardDataHrefs({ details: 'all' });
+    const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
+
+    expect(hrefs.usersHref).toBe('/admin/users');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });
 
   it('preserves selected dashboard range for bounded list requests', () => {

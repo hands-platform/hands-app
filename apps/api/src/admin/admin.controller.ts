@@ -132,6 +132,11 @@ export class AdminController {
     return this.admin.listAppSessions({ platform, q, role, skip, state, take });
   }
 
+  @Get('dashboard/summary')
+  dashboardSummary() {
+    return this.admin.dashboardSummary();
+  }
+
   @Get(['vietnam-overview', 'maps/vietnam-overview'])
   vietnamOverview(@Query('range') range?: string) {
     return this.admin.getVietnamOverview(range);

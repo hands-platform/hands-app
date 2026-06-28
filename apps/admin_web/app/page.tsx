@@ -16,6 +16,7 @@ import {
   AdminAuditLog,
   AdminBooking,
   AdminCashSettlementSummary,
+  AdminDashboardSummary,
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
@@ -102,6 +103,24 @@ function emptyCashSettlementSummary(): AdminCashSettlementSummary {
     missingPaymentEvidenceCount: 0,
     cashPaymentRowCount: 0,
     topProviderGroups: [],
+  };
+}
+
+function emptyDashboardSummary(): AdminDashboardSummary {
+  return {
+    generatedAt: new Date(0).toISOString(),
+    appPresence: {
+      activeBookingCustomers: 0,
+      disabledPushCustomers: 0,
+      liveActiveBookingCustomers: 0,
+      liveAppCustomers: 0,
+      liveAppPartners: 0,
+      liveOpenMatchingCustomers: 0,
+      reachableCustomers: 0,
+      recentCustomerSessions: 0,
+      staleCustomerSessions: 0,
+      totalCustomers: 0,
+    },
   };
 }
 
@@ -335,6 +354,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const shouldRenderFullDashboard = dashboardViewMode.shouldRenderFullDashboard;
   const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
+    dashboardSummary,
     users,
     providers,
     bookings,
@@ -350,7 +370,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     cashSettlementSummary,
     operationalPolicies,
   ] = await Promise.all([
-    adminGet<AdminUser[]>(dashboardDataHrefs.usersHref, []),
+    adminGet<AdminDashboardSummary>(dashboardDataHrefs.dashboardSummaryHref, emptyDashboardSummary()),
+    dashboardDataHrefs.usersHref
+      ? adminGet<AdminUser[]>(dashboardDataHrefs.usersHref, [])
+      : Promise.resolve([]),
     adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, []),
     adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
     adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
@@ -420,7 +443,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     failedNotifications,
   });
   const marketplaceParticipantSnapshot = buildMarketplaceParticipantSnapshot(bookings);
-  const appPresence = buildAppPresence(users, bookings, appSessions);
+  const appPresence = shouldRenderFullDashboard
+    ? buildAppPresence(users, bookings, appSessions)
+    : dashboardSummary.appPresence;
   const partnerSupply = buildPartnerSupplyInsights(
     providers,
     bookings,
