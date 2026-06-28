@@ -503,6 +503,10 @@ type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
   take?: number | string | null;
 };
 
+type AdminOperationsPolicyProviderListOptions = {
+  take?: number | string | null;
+};
+
 type AdminReviewBoardSummaryOptions = {
   bookingId?: string | null;
   customerProfileId?: string | null;
@@ -2715,10 +2719,10 @@ export class AdminService {
     }));
   }
 
-  async listOperationsPolicyProviders() {
+  async listOperationsPolicyProviders(options: AdminOperationsPolicyProviderListOptions = {}) {
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
+      take: adminOperationsPolicyProviderListTake(options.take),
       select: adminProviderOperationsPolicySelect,
     });
 
@@ -6925,6 +6929,19 @@ function adminPartnerDirectorySkip(value: number | string | null | undefined) {
   }
 
   return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminOperationsPolicyProviderListTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT);
 }
 
 function adminPartnerDirectoryWhere(

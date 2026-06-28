@@ -2611,7 +2611,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listOperationsPolicyProviders()).resolves.toEqual([
+    await expect(service.listOperationsPolicyProviders({ take: '50' })).resolves.toEqual([
       expect.objectContaining({
         id: 'provider-1',
         activitySummary: expect.objectContaining({ walletBalance: -120000 }),
@@ -2623,7 +2623,7 @@ describe('AdminService query orchestration', () => {
     const select = query.select;
     expect(query).toEqual(
       expect.objectContaining({
-        take: 100,
+        take: 50,
       }),
     );
     expect(select).toEqual(

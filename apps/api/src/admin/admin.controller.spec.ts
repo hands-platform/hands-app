@@ -682,13 +682,13 @@ describe('AdminController notification and push actions', () => {
   it('exposes operations policy providers as a lightweight GET list', async () => {
     admin.listOperationsPolicyProviders.mockResolvedValue([{ id: 'partner-1' }]);
 
-    await expect(controller.operationsPolicyProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.operationsPolicyProviders('50')).resolves.toEqual([{ id: 'partner-1' }]);
 
     expect(routeMetadata('operationsPolicyProviders')).toEqual({
       method: RequestMethod.GET,
       path: 'operations-policy/providers',
     });
-    expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith();
+    expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith({ take: '50' });
   });
 
   it('exposes Vietnam region overview as an aggregate GET list', async () => {

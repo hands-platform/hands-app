@@ -254,8 +254,8 @@ export class AdminController {
   }
 
   @Get('operations-policy/providers')
-  operationsPolicyProviders() {
-    return this.admin.listOperationsPolicyProviders();
+  operationsPolicyProviders(@Query('take') take?: string) {
+    return this.admin.listOperationsPolicyProviders({ take });
   }
 
   @Get('operations-handoff/providers')
