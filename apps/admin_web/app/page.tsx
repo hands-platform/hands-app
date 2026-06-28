@@ -47,8 +47,6 @@ import {
   type AdminDateRange,
   dateRangeLabel,
   isInDateRange,
-  normalizeDateRange,
-  readSearchParam,
 } from '../lib/date-range';
 import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplace';
@@ -72,6 +70,7 @@ import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-locat
 import {
   buildDashboardDataHrefs,
   buildDashboardDetailsHref,
+  buildDashboardRange,
   buildDashboardViewMode,
 } from './dashboard-page-model';
 
@@ -351,10 +350,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     cashSettlementSummary,
     operationalPolicies,
   ] = await Promise.all([
-    adminGet<AdminUser[]>('/admin/users', []),
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
-    adminGet<AdminBooking[]>('/admin/bookings', []),
-    adminGet<AdminPayment[]>('/admin/payments', []),
+    adminGet<AdminUser[]>(dashboardDataHrefs.usersHref, []),
+    adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, []),
+    adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
+    adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
     adminGet<AdminEarningSummary>('/admin/earnings/summary', {
       count: 0,
       grossAmount: 0,
@@ -366,12 +365,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       paidNetAmount: 0,
       currency: 'VND',
     }),
-    adminGet<AdminEarning[]>('/admin/earnings', []),
-    adminGet<AdminRefund[]>('/admin/refunds', []),
-    adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
-    adminGet<AdminAppSession[]>('/admin/app-sessions', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
+    adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, []),
+    adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, []),
+    adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, []),
+    adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
+    adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, []),
+    adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, []),
     apiGet<AdminExternalReadiness>('/health/external', {
       ok: false,
       timestamp: new Date(0).toISOString(),
@@ -2184,7 +2183,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
 function buildDashboardFilters(params: Record<string, string | string[] | undefined>): DashboardFilters {
   return {
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: buildDashboardRange(params),
   };
 }
 
