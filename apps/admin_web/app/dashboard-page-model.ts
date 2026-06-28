@@ -16,6 +16,7 @@ export type DashboardDataHrefs = {
   readonly cashSettlementSummaryHref: string;
   readonly dashboardSummaryHref: string;
   readonly earningsHref: string;
+  readonly earningsSummaryHref: string;
   readonly notificationsHref: string;
   readonly operationalPolicyHref: string | null;
   readonly partnersHref: string | null;
@@ -73,6 +74,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       { take: String(DASHBOARD_FINANCE_TAKE) },
       range,
     ),
+    earningsSummaryHref: buildDashboardRangeScopedHref('/admin/earnings/summary', {}, range),
     notificationsHref: buildDashboardDateScopedHref(
       '/admin/notifications',
       { take: String(DASHBOARD_NOTIFICATION_TAKE) },

@@ -218,6 +218,7 @@ export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildE
 
   return {
     earningsHref: `/admin/earnings?${params.toString()}`,
+    earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
   };
 }

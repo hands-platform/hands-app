@@ -34,7 +34,6 @@ import {
   filterEarningsByBatchState,
   isCashDebt,
   sortEarnings,
-  summarizeEarnings,
 } from './earnings-page-model';
 import { EarningsPartnerPayoutQueueSection } from './earnings-partner-payout-queue-section';
 import { EarningsServiceBridgeSection } from './earnings-service-bridge-section';
@@ -48,14 +47,14 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const filters = buildEarningFilters(params);
   const apiHrefs = buildEarningOperationsApiHrefs(filters);
   const [apiSummary, earnings, payoutBatches] = await Promise.all([
-    adminGet<AdminEarningSummary>('/admin/earnings/summary', emptySummary),
+    adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, emptySummary),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
   ]);
   const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
   const filteredEarnings = earnings;
   const filteredPayoutBatches = payoutBatches;
-  const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
+  const summary = apiSummary;
   const sortedEarnings = sortEarnings(filteredEarnings);
   const ledgerEarnings = sortEarnings(filterEarningsByBatchState(filteredEarnings, filters.batchState));
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);

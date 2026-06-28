@@ -76,7 +76,7 @@ describe('DashboardPage', () => {
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/earnings/summary') {
+      if (href === '/admin/earnings/summary?range=today') {
         return earningSummary;
       }
       if (href === '/admin/cash-settlement-summary?range=today') {
@@ -94,6 +94,7 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('<span>Range earnings</span><strong>1</strong>');
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/cash-settlement-summary?range=today',
       expect.any(Object),

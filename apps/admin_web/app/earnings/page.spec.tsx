@@ -64,7 +64,7 @@ describe('EarningsPage', () => {
     } as AdminEarning;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/earnings/summary') {
+      if (href === '/admin/earnings/summary?range=today') {
         return summary;
       }
       if (href === '/admin/earnings?range=today&take=50') {
@@ -82,5 +82,6 @@ describe('EarningsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Server Trusted Earning');
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
   });
 });

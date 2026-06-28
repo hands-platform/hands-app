@@ -414,7 +414,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       : Promise.resolve([]),
     adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
     adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
-    adminGet<AdminEarningSummary>('/admin/earnings/summary', {
+    adminGet<AdminEarningSummary>(dashboardDataHrefs.earningsSummaryHref, {
       count: 0,
       grossAmount: 0,
       platformFee: 0,
