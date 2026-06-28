@@ -115,6 +115,104 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('filters audit logs by date, search, bucket, priority, and skip without loading the whole trail', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listAuditLogs({
+        bucket: 'Notification',
+        from: '2026-06-27T00:00:00.000Z',
+        priority: '4',
+        q: 'booking-1',
+        skip: '40',
+        take: '20',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          {
+            createdAt: {
+              gte: new Date('2026-06-27T00:00:00.000Z'),
+              lt: new Date('2026-06-28T00:00:00.000Z'),
+            },
+          },
+          {
+            OR: [
+              { action: { contains: 'booking-1', mode: 'insensitive' } },
+              { target: { contains: 'booking-1', mode: 'insensitive' } },
+              { actor: { fullName: { contains: 'booking-1', mode: 'insensitive' } } },
+              { actor: { phone: { contains: 'booking-1', mode: 'insensitive' } } },
+            ],
+          },
+          {
+            OR: [{ action: { startsWith: 'notification.' } }, { action: { startsWith: 'push_device.' } }],
+          },
+          {
+            OR: expect.arrayContaining([
+              { action: { startsWith: 'operational_policy.' } },
+              { action: { endsWith: '.retry' } },
+            ]),
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: 40,
+      take: 20,
+      select: expect.objectContaining({
+        action: true,
+        actor: expect.any(Object),
+        createdAt: true,
+        metadata: true,
+        target: true,
+      }),
+    });
+  });
+
+  it('counts audit log summaries with the same filters', async () => {
+    const prisma = {
+      adminAuditLog: {
+        count: vi.fn().mockResolvedValue(120),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.auditLogSummary({
+        bucket: 'Notification',
+        from: '2026-06-27T00:00:00.000Z',
+        q: 'booking-1',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      generatedAt: expect.any(String),
+      totalCount: 120,
+    });
+
+    expect(prisma.adminAuditLog.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          {
+            createdAt: {
+              gte: new Date('2026-06-27T00:00:00.000Z'),
+              lt: new Date('2026-06-28T00:00:00.000Z'),
+            },
+          },
+          {
+            OR: [{ action: { startsWith: 'notification.' } }, { action: { startsWith: 'push_device.' } }],
+          },
+        ]),
+      }),
+    });
+  });
+
   it('attaches recent coupon booking usage to coupon list rows', async () => {
     const coupon = {
       active: true,

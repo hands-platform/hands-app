@@ -1,14 +1,45 @@
-import { buildAuditCommandBoard, buildAuditFilters, buildAuditLogTableRows } from './page-content';
+import {
+  buildAuditCommandBoard,
+  buildAuditFilters,
+  buildAuditLogApiHref,
+  buildAuditLogSummaryApiHref,
+  buildAuditLogTableRows,
+} from './page-content';
 
 describe('audit log page model', () => {
   it('accepts legacy query links as audit search input', () => {
     expect(buildAuditFilters({ query: 'booking.create.rejected' })).toMatchObject({
       q: 'booking.create.rejected',
-      range: 'all',
+      range: 'today',
     });
     expect(buildAuditFilters({ q: 'notification.retry', query: 'booking.create.rejected' })).toMatchObject({
       q: 'notification.retry',
     });
+  });
+
+  it('builds bounded audit log API requests from the active filters', () => {
+    const href = buildAuditLogApiHref({
+      bucket: 'Notification',
+      page: '3',
+      priority: '4',
+      q: 'booking-1',
+      range: '7d',
+    });
+    const url = new URL(href, 'http://admin.local');
+    expect(url.pathname).toBe('/admin/audit-logs');
+    expect(url.searchParams.get('take')).toBe('20');
+    expect(url.searchParams.get('skip')).toBe('40');
+    expect(url.searchParams.get('q')).toBe('booking-1');
+    expect(url.searchParams.get('bucket')).toBe('Notification');
+    expect(url.searchParams.get('priority')).toBe('4');
+    expect(Number.isFinite(Date.parse(url.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(url.searchParams.get('to') ?? ''))).toBe(true);
+
+    const summaryHref = buildAuditLogSummaryApiHref({ bucket: 'Notification', q: 'booking-1', range: '7d' });
+    const summaryUrl = new URL(summaryHref, 'http://admin.local');
+    expect(summaryUrl.pathname).toBe('/admin/audit-logs/summary');
+    expect(summaryUrl.searchParams.get('q')).toBe('booking-1');
+    expect(summaryUrl.searchParams.get('bucket')).toBe('Notification');
   });
 
   it('links notification retry audit rows to the notification board anchor', () => {

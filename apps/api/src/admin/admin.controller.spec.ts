@@ -20,6 +20,8 @@ describe('AdminController notification and push actions', () => {
     listReferralPolicies: vi.fn(),
     listOperationsHandoffProviders: vi.fn(),
     listOperationsPolicyProviders: vi.fn(),
+    listAuditLogs: vi.fn(),
+    auditLogSummary: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
     listNotificationTemplates: vi.fn(),
@@ -100,6 +102,59 @@ describe('AdminController notification and push actions', () => {
       review: 'failed',
       skip: '40',
       take: '25',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes audit logs as a bounded filtered list with a separate summary', async () => {
+    admin.listAuditLogs.mockResolvedValue([{ id: 'audit-1' }]);
+    admin.auditLogSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 120 });
+
+    await expect(
+      controller.auditLogs(
+        'booking.create.rejected',
+        '20',
+        '40',
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'booking-1',
+        'Notification',
+        '4',
+      ),
+    ).resolves.toEqual([{ id: 'audit-1' }]);
+    await expect(
+      controller.auditLogSummary(
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'booking-1',
+        'Notification',
+        '4',
+      ),
+    ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 120 });
+
+    expect(routeMetadata('auditLogs')).toEqual({
+      method: RequestMethod.GET,
+      path: 'audit-logs',
+    });
+    expect(routeMetadata('auditLogSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'audit-logs/summary',
+    });
+    expect(admin.listAuditLogs).toHaveBeenCalledWith({
+      action: 'booking.create.rejected',
+      bucket: 'Notification',
+      from: '2026-06-27T00:00:00.000Z',
+      priority: '4',
+      q: 'booking-1',
+      skip: '40',
+      take: '20',
+      to: '2026-06-28T00:00:00.000Z',
+    });
+    expect(admin.auditLogSummary).toHaveBeenCalledWith({
+      bucket: 'Notification',
+      from: '2026-06-27T00:00:00.000Z',
+      priority: '4',
+      q: 'booking-1',
       to: '2026-06-28T00:00:00.000Z',
     });
   });

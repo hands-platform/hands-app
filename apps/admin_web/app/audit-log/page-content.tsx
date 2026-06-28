@@ -1,6 +1,7 @@
 import { Filter, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
@@ -31,16 +32,28 @@ type AuditLogFilters = {
   priority: string;
   range: ReturnType<typeof normalizeDateRange>;
 };
+type AuditLogSummaryResponse = {
+  generatedAt: string;
+  totalCount: number;
+};
 type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+const AUDIT_LOG_PAGE_SIZE = 20;
 const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default async function AuditLogPage({ searchParams }: { searchParams?: AuditLogPageSearchParams }) {
-  const filters = buildAuditFilters(searchParams ? await searchParams : {});
-  const allLogs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
-  const dateFilteredLogs = allLogs.filter((log) => isInDateRange(log.createdAt, filters.range));
+  const params = searchParams ? await searchParams : {};
+  const filters = buildAuditFilters(params);
+  const activePage = readAuditLogPage(params.page);
+  const [serverLogs, serverSummary] = await Promise.all([
+    adminGet<AdminAuditLog[]>(buildAuditLogApiHref(params), []),
+    adminGet<AuditLogSummaryResponse | null>(buildAuditLogSummaryApiHref(params), null),
+  ]);
+  const dateFilteredLogs = sortLogs(serverLogs).filter((log) => isInDateRange(log.createdAt, filters.range));
   const logs = filterAuditLogs(dateFilteredLogs, filters);
   const summary = buildSummary(logs);
+  const totalEvents = serverSummary?.totalCount ?? logs.length;
+  const totalPages = Math.max(1, Math.ceil(totalEvents / AUDIT_LOG_PAGE_SIZE));
   const commandBoard = buildAuditCommandBoard(dateFilteredLogs, filters.range);
   const auditLogRows = buildAuditLogTableRows(logs);
 
@@ -48,7 +61,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     <AdminPageTemplate
       description="Operational history for bookings, payments, refunds, Partner review, alerts, and policy changes."
       metrics={[
-        { label: 'Total events', value: summary.total, helper: 'Events after the active filters.' },
+        { label: 'Total events', value: totalEvents, helper: 'Server-counted events after the active filters.' },
         {
           label: 'Dispatch actions',
           value: summary.dispatch,
@@ -128,7 +141,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 Clear filters
               </a>
               <span className="muted">
-                Showing {logs.length} of {dateFilteredLogs.length} events / {dateRangeLabel(filters.range)}
+                Showing {logs.length} of {totalEvents} events / {dateRangeLabel(filters.range)}
               </span>
             </div>
           </form>
@@ -151,6 +164,14 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <AdminTableScroll>
             <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
           </AdminTableScroll>
+          <AdminRoundedPagination
+            activePage={activePage}
+            ariaLabel="Audit log pagination"
+            className="vuexy-booking-pagination admin-mt-16"
+            hrefForPage={(page) => buildAuditLogPageHref(filters, page)}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={totalPages}
+          />
         </div>
       </div>
     </AdminPageTemplate>
@@ -293,12 +314,109 @@ function buildAuditCommandLogPreviews(logs: readonly AdminAuditLog[]): AuditComm
 }
 
 export function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
+  const rangeParam = readSearchParam(params.range);
   return {
     q: readParam(params.q) || readParam(params.query),
     bucket: readParam(params.bucket),
     priority: readParam(params.priority),
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
   };
+}
+
+export function buildAuditLogApiHref(params: Record<string, string | string[] | undefined>) {
+  const filters = buildAuditFilters(params);
+  const page = readAuditLogPage(params.page);
+  return buildAuditLogAdminHref('/admin/audit-logs', filters, {
+    skip: (page - 1) * AUDIT_LOG_PAGE_SIZE,
+    take: AUDIT_LOG_PAGE_SIZE,
+  });
+}
+
+export function buildAuditLogSummaryApiHref(params: Record<string, string | string[] | undefined>) {
+  return buildAuditLogAdminHref('/admin/audit-logs/summary', buildAuditFilters(params));
+}
+
+function buildAuditLogAdminHref(
+  pathname: string,
+  filters: AuditLogFilters,
+  paging?: { take: number; skip: number },
+) {
+  const query = new URLSearchParams();
+  const dateWindow = auditLogDateWindow(filters.range);
+
+  if (paging) {
+    query.set('take', String(paging.take));
+    if (paging.skip > 0) {
+      query.set('skip', String(paging.skip));
+    }
+  }
+  if (filters.q) {
+    query.set('q', filters.q);
+  }
+  if (filters.bucket) {
+    query.set('bucket', filters.bucket);
+  }
+  if (filters.priority) {
+    query.set('priority', filters.priority);
+  }
+  if (dateWindow.from) {
+    query.set('from', dateWindow.from);
+  }
+  if (dateWindow.to) {
+    query.set('to', dateWindow.to);
+  }
+
+  const search = query.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+function buildAuditLogPageHref(filters: AuditLogFilters, page: number) {
+  const query = new URLSearchParams();
+  if (filters.q) {
+    query.set('q', filters.q);
+  }
+  if (filters.range) {
+    query.set('range', filters.range);
+  }
+  if (filters.bucket) {
+    query.set('bucket', filters.bucket);
+  }
+  if (filters.priority) {
+    query.set('priority', filters.priority);
+  }
+  if (page > 1) {
+    query.set('page', String(page));
+  }
+
+  const search = query.toString();
+  return search ? `/audit-log?${search}` : '/audit-log';
+}
+
+function auditLogDateWindow(range: AuditLogFilters['range']) {
+  const now = new Date();
+  if (range === 'today') {
+    const from = new Date(now);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (range === '7d') {
+    const from = new Date(now);
+    from.setDate(from.getDate() - 7);
+    return { from: from.toISOString(), to: now.toISOString() };
+  }
+  if (range === '30d') {
+    const from = new Date(now);
+    from.setDate(from.getDate() - 30);
+    return { from: from.toISOString(), to: now.toISOString() };
+  }
+  return {};
+}
+
+function readAuditLogPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
 }
 
 function readParam(value: string | string[] | undefined) {

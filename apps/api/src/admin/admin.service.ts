@@ -403,7 +403,13 @@ type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof admi
 
 type AdminAuditLogListOptions = {
   action?: string | null;
+  bucket?: string | null;
+  from?: string | null;
+  priority?: string | null;
+  q?: string | null;
+  skip?: number | string | null;
   take?: number | string | null;
+  to?: string | null;
 };
 
 type AdminReferralPolicyRecord = {
@@ -4358,13 +4364,27 @@ export class AdminService {
   }
 
   listAuditLogs(options: AdminAuditLogListOptions = {}) {
-    const action = normalizeNullable(options.action);
+    const where = adminAuditLogWhere(options);
+    const skip = adminAuditLogListSkip(options.skip);
     return this.prisma.adminAuditLog.findMany({
-      ...(action ? { where: { action } } : {}),
+      ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminAuditLogListLimit(options.take),
       select: adminAuditLogSelect,
     });
+  }
+
+  async auditLogSummary(options: AdminAuditLogListOptions = {}) {
+    const where = adminAuditLogWhere(options);
+    const totalCount = await this.prisma.adminAuditLog.count({
+      ...(where ? { where } : {}),
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount,
+    };
   }
 
   async addOperationsHandoffNote(actorId: string, input: { note?: string; preset?: string; owner?: string }) {
@@ -5299,6 +5319,225 @@ function normalizeMarketingSpendCampaignId(value: unknown) {
 
 function adminAuditLogListLimit(value: number | string | null | undefined): number {
   return boundedAdminListLimit(value, ADMIN_AUDIT_LOG_LIST_LIMIT);
+}
+
+function adminAuditLogListSkip(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+}
+
+function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAuditLogWhereInput | undefined {
+  const filters: Prisma.AdminAuditLogWhereInput[] = [];
+  const action = normalizeNullable(options.action);
+  const q = normalizeNullable(options.q);
+  const bucket = normalizeNullable(options.bucket);
+  const priority = normalizeNullable(options.priority);
+  const createdAt = adminAuditLogDateWhere(options.from, options.to);
+  const bucketWhere = adminAuditLogBucketWhere(bucket);
+  const priorityWhere = adminAuditLogPriorityWhere(priority);
+
+  if (action) {
+    filters.push({ action });
+  }
+  if (createdAt) {
+    filters.push(createdAt);
+  }
+  if (q) {
+    filters.push({
+      OR: [
+        { action: { contains: q, mode: 'insensitive' } },
+        { target: { contains: q, mode: 'insensitive' } },
+        { actor: { fullName: { contains: q, mode: 'insensitive' } } },
+        { actor: { phone: { contains: q, mode: 'insensitive' } } },
+      ],
+    });
+  }
+  if (bucketWhere) {
+    filters.push(bucketWhere);
+  }
+  if (priorityWhere) {
+    filters.push(priorityWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  if (filters.length === 1) {
+    return filters[0];
+  }
+
+  return { AND: filters };
+}
+
+function adminAuditLogDateWhere(
+  from: string | null | undefined,
+  to: string | null | undefined,
+): Prisma.AdminAuditLogWhereInput | undefined {
+  const fromDate = adminAuditLogDateBoundary(from, 'from');
+  const toDate = adminAuditLogDateBoundary(to, 'to');
+
+  if (!fromDate && !toDate) {
+    return undefined;
+  }
+  if (fromDate && toDate && fromDate.getTime() >= toDate.getTime()) {
+    throw new BadRequestException('Audit log date range is invalid');
+  }
+
+  return {
+    createdAt: {
+      ...(fromDate ? { gte: fromDate } : {}),
+      ...(toDate ? { lt: toDate } : {}),
+    },
+  };
+}
+
+function adminAuditLogDateBoundary(value: string | null | undefined, label: 'from' | 'to'): Date | undefined {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`Audit log ${label} date is invalid`);
+  }
+
+  return date;
+}
+
+function adminAuditLogBucketWhere(bucket: string | null): Prisma.AdminAuditLogWhereInput | undefined {
+  switch (bucket) {
+    case 'Dispatch':
+      return {
+        OR: [
+          { action: { startsWith: 'booking.' } },
+          { action: { startsWith: 'provider.' } },
+          { action: { startsWith: 'provider_' } },
+          { action: { startsWith: 'provider-' } },
+        ],
+      };
+    case 'Operations/Policy':
+      return { action: { startsWith: 'operational_policy.' } };
+    case 'Payment':
+      return { OR: [{ action: { startsWith: 'payment.' } }, { action: { startsWith: 'refund.' } }] };
+    case 'Finance/Closeout':
+      return {
+        OR: [
+          { action: { startsWith: 'payment.' } },
+          { action: { startsWith: 'refund.' } },
+          { action: { startsWith: 'payout.' } },
+          { action: { startsWith: 'payout_batch.' } },
+          { action: { startsWith: 'earning.' } },
+          { action: { startsWith: 'provider_wallet.' } },
+          { action: { startsWith: 'wallet_ledger.' } },
+          { action: 'booking.completed.closeout' },
+          { action: 'booking.expire.manual' },
+          { action: 'booking.no_show.mark' },
+        ],
+      };
+    case 'Service/Pricing':
+      return {
+        OR: [{ action: { startsWith: 'service.' } }, { action: { startsWith: 'service_payout_rule.' } }],
+      };
+    case 'Notification':
+      return {
+        OR: [{ action: { startsWith: 'notification.' } }, { action: { startsWith: 'push_device.' } }],
+      };
+    case 'Partner':
+      return {
+        OR: [
+          { action: { startsWith: 'provider_' } },
+          { action: { startsWith: 'provider-' } },
+          { action: { startsWith: 'provider-verification.' } },
+        ],
+      };
+    case 'Tax':
+      return { action: { startsWith: 'tax_' } };
+    case 'System':
+      return {
+        NOT: {
+          OR: [
+            { action: { startsWith: 'booking.' } },
+            { action: { startsWith: 'provider.' } },
+            { action: { startsWith: 'provider_' } },
+            { action: { startsWith: 'provider-' } },
+            { action: { startsWith: 'operational_policy.' } },
+            { action: { startsWith: 'payment.' } },
+            { action: { startsWith: 'refund.' } },
+            { action: { startsWith: 'payout.' } },
+            { action: { startsWith: 'payout_batch.' } },
+            { action: { startsWith: 'earning.' } },
+            { action: { startsWith: 'provider_wallet.' } },
+            { action: { startsWith: 'wallet_ledger.' } },
+            { action: { startsWith: 'service.' } },
+            { action: { startsWith: 'service_payout_rule.' } },
+            { action: { startsWith: 'notification.' } },
+            { action: { startsWith: 'push_device.' } },
+            { action: { startsWith: 'tax_' } },
+          ],
+        },
+      };
+    default:
+      return undefined;
+  }
+}
+
+function adminAuditLogPriorityWhere(priority: string | null): Prisma.AdminAuditLogWhereInput | undefined {
+  switch (priority) {
+    case '4':
+      return {
+        OR: [
+          { action: { startsWith: 'operational_policy.' } },
+          { action: { startsWith: 'service_payout_rule.' } },
+          { action: 'booking.completed.closeout' },
+          { action: { endsWith: '.refund' } },
+          { action: { contains: 'reject' } },
+          { action: { endsWith: '.retry' } },
+        ],
+      };
+    case '3':
+      return {
+        OR: [
+          { action: { startsWith: 'payout_batch.' } },
+          { action: { startsWith: 'service.' } },
+          { action: { startsWith: 'payment.' } },
+          { action: { startsWith: 'refund.' } },
+        ],
+      };
+    case '2':
+      return {
+        OR: [{ action: { startsWith: 'booking.' } }, { action: { startsWith: 'notification.' } }],
+      };
+    case '1':
+      return {
+        NOT: {
+          OR: [
+            { action: { startsWith: 'operational_policy.' } },
+            { action: { startsWith: 'service_payout_rule.' } },
+            { action: 'booking.completed.closeout' },
+            { action: { endsWith: '.refund' } },
+            { action: { contains: 'reject' } },
+            { action: { endsWith: '.retry' } },
+            { action: { startsWith: 'payout_batch.' } },
+            { action: { startsWith: 'service.' } },
+            { action: { startsWith: 'payment.' } },
+            { action: { startsWith: 'refund.' } },
+            { action: { startsWith: 'booking.' } },
+            { action: { startsWith: 'notification.' } },
+          ],
+        },
+      };
+    default:
+      return undefined;
+  }
 }
 
 function adminBookingListLimit(value: number | string | null | undefined): number {

@@ -603,8 +603,28 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  auditLogs(@Query('action') action?: string, @Query('take') take?: string) {
-    return this.admin.listAuditLogs({ action, take });
+  auditLogs(
+    @Query('action') action?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('q') q?: string,
+    @Query('bucket') bucket?: string,
+    @Query('priority') priority?: string,
+  ) {
+    return this.admin.listAuditLogs({ action, bucket, from, priority, q, skip, take, to });
+  }
+
+  @Get('audit-logs/summary')
+  auditLogSummary(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('q') q?: string,
+    @Query('bucket') bucket?: string,
+    @Query('priority') priority?: string,
+  ) {
+    return this.admin.auditLogSummary({ bucket, from, priority, q, to });
   }
 
   @Post('operations-handoff/note')
