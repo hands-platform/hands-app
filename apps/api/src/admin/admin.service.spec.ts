@@ -401,7 +401,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 500,
+        take: 100,
         where: { payment: { isNot: null } },
       }),
     );

@@ -4387,7 +4387,7 @@ export class AdminService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: 100,
       select: {
         id: true,
         status: true,
