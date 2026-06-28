@@ -521,7 +521,7 @@ describe('AdminService query orchestration', () => {
     });
   });
 
-  it('attaches recent coupon booking usage to coupon list rows', async () => {
+  it('keeps coupon list rows lightweight and moves booking usage to a paged endpoint', async () => {
     const coupon = {
       active: true,
       code: 'WELCOME10',
@@ -575,10 +575,12 @@ describe('AdminService query orchestration', () => {
     };
     const prisma = {
       booking: {
+        count: vi.fn().mockResolvedValue(1),
         findMany: vi.fn().mockResolvedValue([booking]),
       },
       coupon: {
         findMany: vi.fn().mockResolvedValue([coupon]),
+        findUnique: vi.fn().mockResolvedValue(coupon),
       },
     };
     const service = createAdminService(prisma);
@@ -586,26 +588,69 @@ describe('AdminService query orchestration', () => {
     await expect(service.listCoupons()).resolves.toEqual([
       expect.objectContaining({
         code: 'WELCOME10',
-        usageBookings: [
-          expect.objectContaining({
-            amount: 270000,
-            bookingId: 'booking-1',
-            customerName: 'Demo Customer',
-            discountAmount: 30000,
-            partnerName: 'Smoke Partner',
-            serviceName: 'Massage / 60 min',
-          }),
-        ],
+        usageBookings: [],
       }),
     ]);
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
 
+    await expect(service.listCouponUsageBookings('coupon-1', { skip: '10', take: '10' })).resolves.toEqual({
+      couponCode: 'WELCOME10',
+      couponId: 'coupon-1',
+      rows: [
+        expect.objectContaining({
+          amount: 270000,
+          bookingId: 'booking-1',
+          customerName: 'Demo Customer',
+          discountAmount: 30000,
+          partnerName: 'Smoke Partner',
+          serviceName: 'Massage / 60 min',
+        }),
+      ],
+      skip: 10,
+      take: 10,
+      totalCount: 1,
+    });
+
+    expect(prisma.booking.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          payment: {
+            is: {
+              OR: [
+                { rawMeta: { path: ['couponId'], equals: 'coupon-1' } },
+                { rawMeta: { path: ['couponCode'], equals: 'WELCOME10' } },
+              ],
+            },
+          },
+        }),
+      }),
+    );
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 50,
-        where: { payment: { isNot: null } },
+        skip: 10,
+        take: 10,
       }),
     );
+  });
+
+  it('returns coupon status summary without hydrating booking usage rows', async () => {
+    const prisma = {
+      coupon: {
+        count: vi.fn().mockResolvedValueOnce(10).mockResolvedValueOnce(4).mockResolvedValueOnce(2).mockResolvedValueOnce(3).mockResolvedValueOnce(1),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.couponSummary()).resolves.toMatchObject({
+      expiredCount: 3,
+      liveCount: 4,
+      pausedCount: 1,
+      scheduledCount: 2,
+      totalCount: 10,
+    });
+
+    expect(prisma.coupon.count).toHaveBeenCalledTimes(5);
   });
 
   it('deletes coupons and writes an audit entry', async () => {

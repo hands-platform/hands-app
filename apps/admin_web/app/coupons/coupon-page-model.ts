@@ -215,6 +215,7 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
     statusClassName: couponStatusClass(coupon),
     statusLabel: couponStatusLabel(coupon),
     endsAtInputValue: datetimeLocalInputValue(coupon.endsAt),
+    usageBookingCount: coupon.usageBookingCount ?? coupon.usageBookings?.length ?? 0,
     usageBookings: (coupon.usageBookings ?? []).map((booking) => ({
       amountLabel: formatMoney(booking.amount, booking.currency ?? 'VND', '-'),
       bookingHref: `/bookings/${booking.bookingId}`,

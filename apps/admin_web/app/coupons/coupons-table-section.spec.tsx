@@ -19,7 +19,7 @@ describe('CouponsTableSection', () => {
     expect(rendered).toContain('Discount %');
     expect(rendered).toContain('Booking usage');
     expect(rendered).toContain('Showing');
-    expect(rendered).toContain('entries');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 1 entries');
     expect(rendered).toContain('Delete');
     expect(rendered).toContain('Demo Customer');
     expect(rendered).toContain('Smoke Partner');
@@ -57,6 +57,7 @@ function buildRow(): CouponTableRow {
     startsAtInputValue: '',
     statusClassName: 'signal signal-ok',
     statusLabel: 'ACTIVE',
+    usageBookingCount: 1,
     usageBookings: [
       {
         amountLabel: '270,000 VND',

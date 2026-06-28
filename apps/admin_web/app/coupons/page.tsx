@@ -1,4 +1,4 @@
-import type { AdminCoupon } from '../../lib/admin-api';
+import type { AdminCoupon, AdminCouponSummary, AdminCouponUsagePage } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -14,11 +14,17 @@ import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-mod
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type ConfirmationHiddenInput = { readonly name: string; readonly value: boolean | number | string };
+const COUPON_USAGE_PAGE_SIZE = 10;
+const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
+  expiredCount: 0,
+  liveCount: 0,
+  pausedCount: 0,
+  scheduledCount: 0,
+  totalCount: 0,
+};
 
 export default async function CouponsPage({ searchParams }: { searchParams?: CouponsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
-  const coupons = await adminGet<AdminCoupon[]>('/admin/coupons', []);
-  const couponModel = buildCouponPageModel(coupons);
   const createNotice = buildCouponCreateNotice({
     created: readSingleParam(params.created),
     failed: readSingleParam(params.failed),
@@ -27,6 +33,18 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   const confirmAction = readSingleParam(params.confirm);
   const usageCouponId = readSingleParam(params.usageCouponId);
   const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
+  const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
+  const [coupons, couponSummary, usagePageResult] = await Promise.all([
+    adminGet<AdminCoupon[]>('/admin/coupons?take=100', []),
+    adminGet<AdminCouponSummary>('/admin/coupons/summary', EMPTY_COUPON_SUMMARY),
+    usageCouponId
+      ? adminGet<AdminCouponUsagePage>(
+          `/admin/coupons/${encodeURIComponent(usageCouponId)}/usage?take=${COUPON_USAGE_PAGE_SIZE}&skip=${usageSkip}`,
+          emptyCouponUsagePage(usageCouponId, usagePage),
+        )
+      : Promise.resolve<AdminCouponUsagePage | null>(null),
+  ]);
+  const couponModel = buildCouponPageModel(withCouponUsagePage(coupons, usagePageResult));
   const usageSearchParams = couponUsageSearchParams(params);
   const confirmation =
     confirmAction === 'toggle'
@@ -68,8 +86,8 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         <AdminSectionHeader
           status={
             <span className="pill pill-info">
-              {couponModel.liveCoupons.length} running / {couponModel.scheduledCoupons.length} upcoming /{' '}
-              {couponModel.expiredCoupons.length} expired
+              {couponSummary.liveCount} running / {couponSummary.scheduledCount} upcoming /{' '}
+              {couponSummary.expiredCount + couponSummary.pausedCount} expired
             </span>
           }
           title="Create coupons"
@@ -162,4 +180,33 @@ function couponUsageHref(baseParams: URLSearchParams, couponId: string, page: nu
 
   const query = next.toString();
   return query ? `/coupons?${query}` : '/coupons';
+}
+
+function emptyCouponUsagePage(couponId: string, page: number): AdminCouponUsagePage {
+  return {
+    couponId,
+    rows: [],
+    skip: (Math.max(1, page) - 1) * COUPON_USAGE_PAGE_SIZE,
+    take: COUPON_USAGE_PAGE_SIZE,
+    totalCount: 0,
+  };
+}
+
+function withCouponUsagePage(
+  coupons: readonly AdminCoupon[],
+  usagePage: AdminCouponUsagePage | null,
+): AdminCoupon[] {
+  if (!usagePage) {
+    return [...coupons];
+  }
+
+  return coupons.map((coupon) =>
+    coupon.id === usagePage.couponId
+      ? {
+          ...coupon,
+          usageBookingCount: usagePage.totalCount,
+          usageBookings: usagePage.rows,
+        }
+      : coupon,
+  );
 }

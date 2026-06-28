@@ -270,6 +270,8 @@ const ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_REFUND_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_REVIEW_BOARD_DEFAULT_LIMIT = 25;
 const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
+const ADMIN_COUPON_LIST_LIMIT = 100;
+const ADMIN_COUPON_USAGE_LIST_LIMIT = 20;
 
 type AdminBookingListQuery = {
   readonly dateFrom?: string;
@@ -4720,97 +4722,133 @@ export class AdminService {
     });
   }
 
-  async listCoupons() {
+  async listCoupons(options: { skip?: number | string | null; take?: number | string | null } = {}) {
     const coupons = await this.prisma.coupon.findMany({
       orderBy: { code: 'asc' },
-      take: 100,
+      skip: adminCouponListSkip(options.skip),
+      take: adminCouponListTake(options.take),
     });
-    const recentUsageBookings = await this.recentCouponUsageBookings();
-    const couponsByCode = new Map(coupons.map((coupon) => [coupon.code.toUpperCase(), coupon.id]));
-    const usageByCouponId = new Map<string, ReturnType<typeof couponUsageBookingView>[]>();
 
-    for (const booking of recentUsageBookings) {
-      const metadata = recordFromJsonValue(booking.payment?.rawMeta ?? null);
-      const couponId = stringFromRecord(metadata, 'couponId');
-      const couponCode = stringFromRecord(metadata, 'couponCode')?.toUpperCase();
-      const resolvedCouponId = couponId ?? (couponCode ? couponsByCode.get(couponCode) : null);
-      if (!resolvedCouponId) {
-        continue;
-      }
-
-      const usage = usageByCouponId.get(resolvedCouponId) ?? [];
-      if (usage.length < 20) {
-        usage.push(couponUsageBookingView(booking));
-      }
-      usageByCouponId.set(resolvedCouponId, usage);
-    }
-
-    return coupons.map((coupon) => ({
-      ...coupon,
-      usageBookings: usageByCouponId.get(coupon.id) ?? [],
-    }));
+    return coupons.map((coupon) => ({ ...coupon, usageBookings: [] }));
   }
 
-  private recentCouponUsageBookings() {
-    return this.prisma.booking.findMany({
-      where: {
-        payment: {
-          isNot: null,
+  async couponSummary() {
+    const now = new Date();
+    const [totalCount, liveCount, scheduledCount, expiredCount, pausedCount] = await Promise.all([
+      this.prisma.coupon.count(),
+      this.prisma.coupon.count({
+        where: {
+          active: true,
+          AND: [
+            { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+            { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+          ],
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-        scheduledStartAt: true,
-        closedAt: true,
-        customerProfile: {
-          select: {
-            user: {
-              select: {
-                email: true,
-                fullName: true,
-                phone: true,
-              },
-            },
-          },
-        },
-        payment: {
-          select: {
-            amount: true,
-            currency: true,
-            method: true,
-            rawMeta: true,
-            status: true,
-          },
-        },
-        selectedProvider: {
-          select: {
-            displayName: true,
-            user: {
-              select: {
-                fullName: true,
-                phone: true,
-              },
-            },
-          },
-        },
-        services: {
-          select: {
-            price: true,
-            service: {
-              select: {
-                durationMin: true,
-                name: true,
-              },
-            },
-          },
-          take: 1,
-        },
-      },
+      }),
+      this.prisma.coupon.count({
+        where: { active: true, startsAt: { gt: now } },
+      }),
+      this.prisma.coupon.count({
+        where: { active: true, endsAt: { lt: now } },
+      }),
+      this.prisma.coupon.count({
+        where: { active: false },
+      }),
+    ]);
+
+    return {
+      expiredCount,
+      generatedAt: now.toISOString(),
+      liveCount,
+      pausedCount,
+      scheduledCount,
+      totalCount,
+    };
+  }
+
+  async listCouponUsageBookings(
+    couponId: string,
+    options: { skip?: number | string | null; take?: number | string | null } = {},
+  ) {
+    const coupon = await this.prisma.coupon.findUnique({
+      where: { id: couponId },
+      select: { code: true, id: true },
     });
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    const skip = adminCouponUsageListSkip(options.skip);
+    const take = adminCouponUsageListTake(options.take);
+    const where = adminCouponUsageBookingWhere(coupon);
+    const [totalCount, bookings] = await Promise.all([
+      this.prisma.booking.count({ where }),
+      this.prisma.booking.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          scheduledStartAt: true,
+          closedAt: true,
+          customerProfile: {
+            select: {
+              user: {
+                select: {
+                  email: true,
+                  fullName: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          payment: {
+            select: {
+              amount: true,
+              currency: true,
+              method: true,
+              rawMeta: true,
+              status: true,
+            },
+          },
+          selectedProvider: {
+            select: {
+              displayName: true,
+              user: {
+                select: {
+                  fullName: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          services: {
+            select: {
+              price: true,
+              service: {
+                select: {
+                  durationMin: true,
+                  name: true,
+                },
+              },
+            },
+            take: 1,
+          },
+        },
+      }),
+    ]);
+
+    return {
+      couponCode: coupon.code,
+      couponId: coupon.id,
+      rows: bookings.map(couponUsageBookingView),
+      skip,
+      take,
+      totalCount,
+    };
   }
 
   async createCoupon(
@@ -5925,21 +5963,41 @@ function adminAuditLogListSkip(value: number | string | null | undefined): numbe
   return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
 }
 
+function adminCouponListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_COUPON_LIST_LIMIT);
+}
+
+function adminCouponListSkip(value: number | string | null | undefined): number {
+  return boundedAdminListSkip(value);
+}
+
+function adminCouponUsageListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_COUPON_USAGE_LIST_LIMIT);
+}
+
+function adminCouponUsageListSkip(value: number | string | null | undefined): number {
+  return boundedAdminListSkip(value);
+}
+
+function adminCouponUsageBookingWhere(coupon: { code: string; id: string }): Prisma.BookingWhereInput {
+  return {
+    payment: {
+      is: {
+        OR: [
+          { rawMeta: { path: ['couponId'], equals: coupon.id } },
+          { rawMeta: { path: ['couponCode'], equals: coupon.code } },
+        ],
+      },
+    },
+  };
+}
+
 function adminAppSessionListTake(value: number | string | null | undefined): number {
   return boundedAdminListLimit(value, ADMIN_APP_SESSION_LIST_LIMIT);
 }
 
 function adminAppSessionListSkip(value: number | string | null | undefined): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-
-  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
-  if (!Number.isFinite(numeric)) {
-    return 0;
-  }
-
-  return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
+  return boundedAdminListSkip(value);
 }
 
 function adminReferralParentListTake(value: number | string | null | undefined): number {
@@ -6614,6 +6672,19 @@ function adminAuditLogPriorityWhere(priority: string | null): Prisma.AdminAuditL
 
 function adminBookingListLimit(value: number | string | null | undefined): number {
   return boundedAdminListLimit(value, ADMIN_BOOKING_LIST_LIMIT);
+}
+
+function boundedAdminListSkip(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+
+  return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
 }
 
 function boundedAdminListLimit(value: number | string | null | undefined, max: number): number {

@@ -777,8 +777,18 @@ export class AdminController {
   }
 
   @Get('coupons')
-  coupons() {
-    return this.admin.listCoupons();
+  coupons(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listCoupons({ skip, take });
+  }
+
+  @Get('coupons/summary')
+  couponSummary() {
+    return this.admin.couponSummary();
+  }
+
+  @Get('coupons/:id/usage')
+  couponUsage(@Param('id') id: string, @Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listCouponUsageBookings(id, { skip, take });
   }
 
   @Post('coupons')

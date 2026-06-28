@@ -1341,7 +1341,26 @@ export type AdminCoupon = {
   active: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
+  usageBookingCount?: number;
   usageBookings?: AdminCouponUsageBooking[];
+};
+
+export type AdminCouponSummary = {
+  expiredCount: number;
+  generatedAt?: string;
+  liveCount: number;
+  pausedCount: number;
+  scheduledCount: number;
+  totalCount: number;
+};
+
+export type AdminCouponUsagePage = {
+  couponCode?: string;
+  couponId: string;
+  rows: AdminCouponUsageBooking[];
+  skip: number;
+  take: number;
+  totalCount: number;
 };
 
 export type AdminCouponUsageBooking = {

@@ -33,6 +33,7 @@ export type CouponTableRow = {
   readonly startsAtInputValue: string;
   readonly statusClassName: string;
   readonly statusLabel: string;
+  readonly usageBookingCount: number;
   readonly usageBookings: readonly CouponUsageBookingRow[];
   readonly windowLabel: string;
   readonly windowSignal: string;
@@ -113,7 +114,7 @@ function CouponManagementCard({
   readonly usagePage: number;
   readonly usageShouldOpen: boolean;
 }) {
-  const usageCount = row.usageBookings.length;
+  const usageCount = row.usageBookingCount;
 
   return (
     <section className={`coupon-management-section coupon-management-section-${row.windowState}`}>
@@ -134,8 +135,11 @@ function CouponManagementCard({
       <p className="coupon-window-copy">{row.checkoutHint}</p>
 
       <div className="coupon-section-footer">
-        <span>{usageCount > 0 ? `Used ${usageCount} booking(s)` : 'No recent booking usage'}</span>
+        <span>{usageCount > 0 ? `Used ${usageCount} booking(s)` : 'Booking usage loads on demand'}</span>
         <span>{row.opsHint}</span>
+        <Link className="text-link" href={usageHrefForPage(row.id, 1)}>
+          View usage
+        </Link>
         <Link className="coupon-delete-link" href={couponDeleteConfirmHref(row.id)}>
           Delete
         </Link>
@@ -179,6 +183,7 @@ function CouponManagementCard({
           hrefForPage={(page) => usageHrefForPage(row.id, page)}
           page={usagePage}
           rows={row.usageBookings}
+          totalCount={row.usageBookingCount}
         />
       </details>
     </section>
@@ -189,17 +194,19 @@ function CouponUsageBookingTable({
   hrefForPage,
   page,
   rows,
+  totalCount,
 }: {
   readonly hrefForPage: (page: number) => string;
   readonly page: number;
   readonly rows: readonly CouponUsageBookingRow[];
+  readonly totalCount: number;
 }) {
-  const totalPages = Math.max(1, Math.ceil(rows.length / COUPON_USAGE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / COUPON_USAGE_PAGE_SIZE));
   const activePage = Math.min(Math.max(1, page), totalPages);
   const pageStartIndex = (activePage - 1) * COUPON_USAGE_PAGE_SIZE;
-  const visibleRows = rows.slice(pageStartIndex, pageStartIndex + COUPON_USAGE_PAGE_SIZE);
-  const pageFrom = rows.length === 0 ? 0 : pageStartIndex + 1;
-  const pageTo = Math.min(rows.length, pageStartIndex + visibleRows.length);
+  const visibleRows = rows;
+  const pageFrom = totalCount === 0 ? 0 : pageStartIndex + 1;
+  const pageTo = Math.min(totalCount, pageStartIndex + visibleRows.length);
 
   return (
     <div className="coupon-usage-list booking-monitor">
@@ -235,7 +242,7 @@ function CouponUsageBookingTable({
       </AdminTableScroll>
       <div className="vuexy-booking-table-footer coupon-usage-table-footer">
         <span>
-          Showing {pageFrom} to {pageTo} of {rows.length} entries
+          Showing {pageFrom} to {pageTo} of {totalCount} entries
         </span>
         <AdminRoundedPagination
           activePage={activePage}

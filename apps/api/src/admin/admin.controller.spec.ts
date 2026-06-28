@@ -52,6 +52,8 @@ describe('AdminController notification and push actions', () => {
     releaseAvailableReferralRewards: vi.fn(),
     reverseReferralReward: vi.fn(),
     deleteCoupon: vi.fn(),
+    couponSummary: vi.fn(),
+    listCouponUsageBookings: vi.fn(),
     retryNotification: vi.fn(),
     updateNotificationTemplate: vi.fn(),
     updateReferralPolicy: vi.fn(),
@@ -665,6 +667,34 @@ describe('AdminController notification and push actions', () => {
       path: 'coupons/:id',
     });
     expect(admin.deleteCoupon).toHaveBeenCalledWith('admin-1', 'coupon-1');
+  });
+
+  it('exposes coupon summary as a separate aggregate endpoint', async () => {
+    admin.couponSummary.mockResolvedValue({ liveCount: 2, totalCount: 4 });
+
+    await expect(controller.couponSummary()).resolves.toEqual({ liveCount: 2, totalCount: 4 });
+
+    expect(routeMetadata('couponSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'coupons/summary',
+    });
+    expect(admin.couponSummary).toHaveBeenCalledWith();
+  });
+
+  it('exposes coupon usage as a paged list endpoint', async () => {
+    admin.listCouponUsageBookings.mockResolvedValue({ couponId: 'coupon-1', rows: [], totalCount: 0 });
+
+    await expect(controller.couponUsage('coupon-1', '10', '20')).resolves.toEqual({
+      couponId: 'coupon-1',
+      rows: [],
+      totalCount: 0,
+    });
+
+    expect(routeMetadata('couponUsage')).toEqual({
+      method: RequestMethod.GET,
+      path: 'coupons/:id/usage',
+    });
+    expect(admin.listCouponUsageBookings).toHaveBeenCalledWith('coupon-1', { skip: '20', take: '10' });
   });
 
   it('exposes file review providers as a lightweight GET list', async () => {
