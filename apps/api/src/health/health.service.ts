@@ -14,8 +14,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID } from '../notifications/push-delivery.service';
 
+const EXTERNAL_READINESS_CACHE_TTL_MS = 5_000;
+
 @Injectable()
 export class HealthService {
+  private externalReadinessCache: { expiresAt: number; value: ExternalReadinessResult } | null = null;
+
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
@@ -48,6 +52,22 @@ export class HealthService {
   }
 
   externalReadiness() {
+    const now = Date.now();
+
+    if (this.externalReadinessCache && this.externalReadinessCache.expiresAt > now) {
+      return this.externalReadinessCache.value;
+    }
+
+    const value = this.buildExternalReadiness();
+    this.externalReadinessCache = {
+      expiresAt: now + EXTERNAL_READINESS_CACHE_TTL_MS,
+      value,
+    };
+
+    return value;
+  }
+
+  private buildExternalReadiness(): ExternalReadinessResult {
     const rawChecks = [
       this.mobileFirebaseRemovalReadiness(),
       this.mobileReleaseReadiness(),
@@ -498,6 +518,18 @@ type ExternalReadinessCheck = {
   operatorAction?: string;
   commands?: string[];
   secretSafe?: boolean;
+};
+
+type ExternalReadinessResult = {
+  ok: boolean;
+  currentStageOk: boolean;
+  productionE2EOk: boolean;
+  blockingCategories: string[];
+  deferredCategories: string[];
+  currentStageCommands: string[];
+  deferredCommands: string[];
+  timestamp: string;
+  checks: ExternalReadinessCheck[];
 };
 
 function errorMessage(error: unknown) {

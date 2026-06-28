@@ -38,6 +38,20 @@ function referralCheck(values: Record<string, string> = {}) {
     .checks.find((check) => check.category === 'referrals');
 }
 
+describe('HealthService external readiness caching', () => {
+  it('reuses external readiness results within one service instance to avoid repeated setup scans', () => {
+    const get = vi.fn((key: string) => ({ PUSH_PROVIDER: 'in_app_only' })[key]);
+    const health = new HealthService({ get } as unknown as ConfigService, {} as never, {} as never);
+
+    const first = health.externalReadiness();
+    const callsAfterFirst = get.mock.calls.length;
+    const second = health.externalReadiness();
+
+    expect(second).toBe(first);
+    expect(get).toHaveBeenCalledTimes(callsAfterFirst);
+  });
+});
+
 describe('HealthService external storage readiness', () => {
   it('keeps storage blocked when no storage values are configured', () => {
     const check = storageCheck();
