@@ -3,7 +3,6 @@ import { readSearchParam } from '../../lib/date-range';
 export type OperationsPolicyDetailsMode = 'summary' | 'all';
 
 const SUMMARY_BOOKING_SAMPLE_TAKE = 20;
-const SUMMARY_PROVIDER_SAMPLE_TAKE = 50;
 const SUMMARY_POLICY_AUDIT_TAKE = 8;
 const SUMMARY_BOOKING_GATE_AUDIT_TAKE = 12;
 
@@ -19,7 +18,7 @@ export type OperationsPolicyLoadPlan = {
   readonly bookingsHref: string;
   readonly detailsMode: OperationsPolicyDetailsMode;
   readonly policyAuditHref: string;
-  readonly providersHref: string;
+  readonly providersHref: string | null;
   readonly settingsHref: string;
   readonly shouldRenderFullDiagnostics: boolean;
 };
@@ -28,7 +27,6 @@ export function buildOperationsPolicyLoadPlan(params: OperationsPolicyParams): O
   const detailsMode = normalizeOperationsPolicyDetailsMode(readSearchParam(params.details));
   const full = detailsMode === 'all';
   const bookingsTake = full ? FULL_BOOKING_SAMPLE_TAKE : SUMMARY_BOOKING_SAMPLE_TAKE;
-  const providersTake = full ? FULL_PROVIDER_SAMPLE_TAKE : SUMMARY_PROVIDER_SAMPLE_TAKE;
   const policyAuditTake = full ? FULL_POLICY_AUDIT_TAKE : SUMMARY_POLICY_AUDIT_TAKE;
   const bookingGateAuditTake = full
     ? FULL_BOOKING_GATE_AUDIT_TAKE
@@ -39,7 +37,7 @@ export function buildOperationsPolicyLoadPlan(params: OperationsPolicyParams): O
     bookingsHref: `/admin/bookings?take=${bookingsTake}`,
     detailsMode,
     policyAuditHref: `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`,
-    providersHref: `/admin/operations-policy/providers?take=${providersTake}`,
+    providersHref: full ? `/admin/operations-policy/providers?take=${FULL_PROVIDER_SAMPLE_TAKE}` : null,
     settingsHref: '/admin/operational-policy',
     shouldRenderFullDiagnostics: full,
   };

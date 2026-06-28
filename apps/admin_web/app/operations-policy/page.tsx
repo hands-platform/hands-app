@@ -72,7 +72,9 @@ export default async function OperationsPolicyPage({
   const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, []),
     adminGet<AdminBooking[]>(loadPlan.bookingsHref, []),
-    adminGet<AdminProvider[]>(loadPlan.providersHref, []),
+    loadPlan.providersHref
+      ? adminGet<AdminProvider[]>(loadPlan.providersHref, [])
+      : Promise.resolve<AdminProvider[]>([]),
     adminGet<AdminAuditLog[]>(loadPlan.policyAuditHref, []),
     adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
   ]);
