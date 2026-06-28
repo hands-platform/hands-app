@@ -4,7 +4,7 @@ import { AdminEarning, AdminOperationalPolicySetting, AdminPayoutBatch, adminGet
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
-import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import { dateRangeLabel, isInDateRange, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
   OPERATIONAL_POLICY_KEYS,
@@ -38,6 +38,7 @@ import {
   type PayoutServiceEvidenceItem,
 } from './payout-service-evidence-section';
 import { PayoutStatusLanesSection, type PayoutStatusLane } from './payout-status-lanes-section';
+import { buildPayoutFilters, buildPayoutOperationsApiHrefs } from './payouts-page-model';
 
 type PayoutsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -46,9 +47,10 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
+  const apiHrefs = buildPayoutOperationsApiHrefs(filters);
   const [allBatches, allEarnings, policySettings] = await Promise.all([
-    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
-    adminGet<AdminEarning[]>('/admin/earnings', []),
+    adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
+    adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
@@ -144,7 +146,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
         <div className="filter-row admin-mt-12">
           {[
-            ['All dates', '/payouts'],
+            ['All dates', '/payouts?range=all'],
             ['Today', '/payouts?range=today'],
             ['Last 7 days', '/payouts?range=7d'],
             ['Last 30 days', '/payouts?range=30d'],
@@ -469,12 +471,6 @@ function payoutPriority(status: string) {
     default:
       return 5;
   }
-}
-
-function buildPayoutFilters(params: Record<string, string | string[] | undefined>) {
-  return {
-    range: normalizeDateRange(readSearchParam(params.range)),
-  };
 }
 
 function buildSummary(batches: AdminPayoutBatch[]) {

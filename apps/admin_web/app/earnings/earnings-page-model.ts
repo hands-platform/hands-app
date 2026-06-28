@@ -76,6 +76,7 @@ const earningBatchStateOptions: Array<{ state: EarningBatchState; label: string 
   { state: 'batched', label: 'Already batched' },
   { state: 'paid', label: 'Paid' },
 ];
+const EARNING_OPERATIONS_API_LIMIT = 100;
 
 export function buildEarningPayoutConfirmationRows(
   payoutQueue: ProviderPayoutQueueItem[],
@@ -201,9 +202,23 @@ export function sortEarnings(earnings: AdminEarning[]) {
 }
 
 export function buildEarningFilters(params: Record<string, string | string[] | undefined>) {
+  const rangeParam = readSearchParam(params.range);
+
   return {
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     batchState: normalizeEarningBatchState(readSearchParam(params.batchState)),
+  };
+}
+
+export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildEarningFilters>) {
+  const params = new URLSearchParams({
+    range: filters.range,
+    take: String(EARNING_OPERATIONS_API_LIMIT),
+  });
+
+  return {
+    earningsHref: `/admin/earnings?${params.toString()}`,
+    payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
   };
 }
 

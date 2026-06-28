@@ -4,6 +4,7 @@ import {
   buildCashDebtQueueItems,
   buildEarningBatchStateCards,
   buildEarningFilters,
+  buildEarningOperationsApiHrefs,
   buildEarningsLedgerRows,
   buildEarningsMoneyFlowCards,
   buildEarningsMoneyFlowChecks,
@@ -15,6 +16,18 @@ import {
 } from './earnings-page-model';
 
 describe('earnings page model', () => {
+  it('defaults finance operations filters to today and bounded API hrefs', () => {
+    const defaultFilters = buildEarningFilters({});
+    const rangeFilters = buildEarningFilters({ range: '7d', batchState: 'ready' });
+
+    expect(defaultFilters.range).toBe('today');
+    expect(buildEarningFilters({ range: 'all' }).range).toBe('all');
+    expect(buildEarningOperationsApiHrefs(rangeFilters)).toEqual({
+      earningsHref: '/admin/earnings?range=7d&take=100',
+      payoutBatchesHref: '/admin/payout-batches?range=7d&take=100',
+    });
+  });
+
   it('summarizes, prioritizes, and filters earning rows without changing statuses', () => {
     const rows = [
       earning({ id: 'paid-row', netAmount: 70000, status: 'PAID' }),

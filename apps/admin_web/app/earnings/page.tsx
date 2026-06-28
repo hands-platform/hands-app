@@ -21,6 +21,7 @@ import {
   buildCashDebtTotals,
   buildEarningBatchStateCards,
   buildEarningFilters,
+  buildEarningOperationsApiHrefs,
   buildEarningPayoutConfirmationRows,
   buildEarningsLedgerRows,
   buildEarningsMoneyFlowCards,
@@ -45,10 +46,11 @@ type EarningsPageProps = {
 export default async function EarningsPage({ searchParams }: EarningsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildEarningFilters(params);
+  const apiHrefs = buildEarningOperationsApiHrefs(filters);
   const [apiSummary, earnings, payoutBatches] = await Promise.all([
     adminGet<AdminEarningSummary>('/admin/earnings/summary', emptySummary),
-    adminGet<AdminEarning[]>('/admin/earnings', []),
-    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
+    adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
   ]);
   const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
   const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
@@ -171,7 +173,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         />
         <div className="filter-row admin-mt-12">
           {[
-            ['All dates', '/earnings'],
+            ['All dates', '/earnings?range=all'],
             ['Today', '/earnings?range=today'],
             ['Last 7 days', '/earnings?range=7d'],
             ['Last 30 days', '/earnings?range=30d'],
