@@ -4838,6 +4838,76 @@ export class AdminService {
     });
   }
 
+  async paymentSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminPaymentOperationsWhere(options);
+    const callbackAttemptWhere = adminPaymentCallbackAttemptWhere(options);
+    const callbackReviewWhere = adminMergePaymentCallbackAttemptWhere(
+      callbackAttemptWhere,
+      adminPaymentCallbackAttemptNeedsReviewWhere(),
+    );
+    const callbackVerifiedWhere = adminMergePaymentCallbackAttemptWhere(
+      callbackAttemptWhere,
+      adminPaymentCallbackAttemptVerifiedWhere(),
+    );
+
+    const [
+      totalCount,
+      authorized,
+      pendingCash,
+      cashDebt,
+      captured,
+      refunded,
+      needsAction,
+      linkedRefunds,
+      callbackReview,
+      callbackVerified,
+    ] = await Promise.all([
+      this.prisma.payment.count(adminPaymentCountArgs(where)),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(adminMergePaymentOperationsWhere(where, { status: PaymentStatus.AUTHORIZED })),
+      ),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(
+          adminMergePaymentOperationsWhere(where, { method: PaymentMethod.CASH, status: PaymentStatus.PENDING }),
+        ),
+      ),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(
+          adminMergePaymentOperationsWhere(where, adminPaymentReviewWhere('cash-debt') ?? {}),
+        ),
+      ),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(adminMergePaymentOperationsWhere(where, { status: PaymentStatus.CAPTURED })),
+      ),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(adminMergePaymentOperationsWhere(where, { status: PaymentStatus.REFUNDED })),
+      ),
+      this.prisma.payment.count(
+        adminPaymentCountArgs(
+          adminMergePaymentOperationsWhere(where, {
+            status: { notIn: [PaymentStatus.CAPTURED, PaymentStatus.REFUNDED, PaymentStatus.RELEASED] },
+          }),
+        ),
+      ),
+      this.prisma.refund.count(adminLinkedRefundCountArgs(where)),
+      this.prisma.paymentCallbackAttempt.count(adminPaymentCallbackAttemptCountArgs(callbackReviewWhere)),
+      this.prisma.paymentCallbackAttempt.count(adminPaymentCallbackAttemptCountArgs(callbackVerifiedWhere)),
+    ]);
+
+    return {
+      authorized,
+      callbackReview,
+      callbackVerified,
+      captured,
+      cashDebt,
+      linkedRefunds,
+      needsAction,
+      pendingCash,
+      refunded,
+      totalCount,
+    };
+  }
+
   async getPaymentDetail(paymentId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -8933,6 +9003,17 @@ function adminPaymentOperationsWhere(
   return Object.keys(where).length > 0 ? where : undefined;
 }
 
+function adminMergePaymentOperationsWhere(
+  base: Prisma.PaymentWhereInput | undefined,
+  next: Prisma.PaymentWhereInput,
+): Prisma.PaymentWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminPaymentCountArgs(where: Prisma.PaymentWhereInput | undefined): Prisma.PaymentCountArgs {
+  return where ? { where } : {};
+}
+
 function adminPaymentCallbackAttemptWhere(
   options: AdminPaymentCallbackAttemptQuery,
 ): Prisma.PaymentCallbackAttemptWhereInput | undefined {
@@ -8951,6 +9032,23 @@ function adminPaymentCallbackAttemptWhere(
     return undefined;
   }
   return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminMergePaymentCallbackAttemptWhere(
+  base: Prisma.PaymentCallbackAttemptWhereInput | undefined,
+  next: Prisma.PaymentCallbackAttemptWhereInput,
+): Prisma.PaymentCallbackAttemptWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminPaymentCallbackAttemptCountArgs(
+  where: Prisma.PaymentCallbackAttemptWhereInput | undefined,
+): Prisma.PaymentCallbackAttemptCountArgs {
+  return where ? { where } : {};
+}
+
+function adminLinkedRefundCountArgs(where: Prisma.PaymentWhereInput | undefined): Prisma.RefundCountArgs {
+  return where ? { where: { payment: { is: where } } } : {};
 }
 
 function adminPaymentReviewWhere(review: string | null | undefined): Prisma.PaymentWhereInput | undefined {

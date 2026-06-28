@@ -1,7 +1,12 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
 import { paymentActionExecutionMap } from './payment-action-execution-map';
 import { emptyPaymentMessage, paymentFilterDescription, paymentRangeLinks, withPaymentRange } from './payment-page-links';
-import { buildPaymentCallbackAttemptsApiHref, buildPaymentOperationsApiHref, buildPaymentPageModel } from './payment-page-model';
+import {
+  buildPaymentCallbackAttemptsApiHref,
+  buildPaymentOperationsApiHref,
+  buildPaymentPageModel,
+  buildPaymentSummaryApiHref,
+} from './payment-page-model';
 import { paymentCallbackMeta, paymentCashDebtNeedsSettlement } from './payment-page-rules';
 
 describe('payment page model', () => {
@@ -85,6 +90,43 @@ describe('payment page model', () => {
     expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
       '/admin/payment-callback-attempts?take=10&range=7d&review=callback-review',
     );
+    expect(buildPaymentSummaryApiHref(model.filters)).toBe(
+      '/admin/payments/summary?range=7d&review=callback-review',
+    );
+  });
+
+  it('uses server payment summary metrics instead of the loaded payment sample', () => {
+    const model = buildPaymentPageModel({
+      callbackAttempts: [callbackAttempt({ id: 'loaded-callback', outcome: 'CONFLICT' })],
+      params: { range: '7d', review: 'cash-debt' },
+      paymentSummary: {
+        authorized: 12,
+        callbackReview: 13,
+        callbackVerified: 14,
+        captured: 15,
+        cashDebt: 16,
+        linkedRefunds: 17,
+        needsAction: 18,
+        pendingCash: 19,
+        refunded: 20,
+        totalCount: 50,
+      },
+      payments: [
+        payment({
+          booking: { earning: cashDebtEarning(), status: 'COMPLETED' },
+          method: 'CASH',
+          status: 'PENDING',
+        }),
+      ],
+    });
+
+    expect(model.metrics).toMatchObject({
+      authorized: 12,
+      callbackReview: 13,
+      cashDebt: 16,
+      pendingCash: 19,
+    });
+    expect(model.totalCount).toBe(50);
   });
 
   it('keeps callback metadata, filter links, and empty copy stable', () => {

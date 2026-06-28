@@ -642,6 +642,14 @@ export class AdminController {
     return this.admin.listPayments({ range, review, take });
   }
 
+  @Get('payments/summary')
+  paymentSummary(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.paymentSummary({ range, review });
+  }
+
   @Get('payments/:id')
   paymentDetail(@Param('id') paymentId: string) {
     return this.admin.getPaymentDetail(paymentId);

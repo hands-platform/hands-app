@@ -1,4 +1,4 @@
-import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
+import type { AdminPayment, AdminPaymentCallbackAttempt, AdminPaymentSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -12,6 +12,7 @@ import {
   buildPaymentFilters,
   buildPaymentOperationsApiHref,
   buildPaymentPageModel,
+  buildPaymentSummaryApiHref,
 } from './payment-page-model';
 import { buildPaymentOperationsTableRows, paymentConfirmationAction } from './payment-page-presenters';
 
@@ -20,13 +21,15 @@ type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undef
 export default async function PaymentsPage({ searchParams }: { readonly searchParams?: PaymentsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPaymentFilters(params);
-  const [callbackAttempts, payments] = await Promise.all([
+  const [callbackAttempts, payments, paymentSummary] = await Promise.all([
     adminGet<AdminPaymentCallbackAttempt[]>(buildPaymentCallbackAttemptsApiHref(filters), []),
     adminGet<AdminPayment[]>(buildPaymentOperationsApiHref(filters), []),
+    adminGet<AdminPaymentSummary | null>(buildPaymentSummaryApiHref(filters), null),
   ]);
   const model = buildPaymentPageModel({
     callbackAttempts,
     params,
+    paymentSummary,
     payments,
   });
   const confirmation = buildPaymentActionConfirmation(
@@ -112,7 +115,7 @@ export default async function PaymentsPage({ searchParams }: { readonly searchPa
         rangeLinks={model.rangeLinks}
         review={model.filters.review}
         reviewLinks={model.reviewLinks}
-        totalCount={model.allPayments.length}
+        totalCount={model.totalCount}
       />
       <PaymentCallbackAttemptLedgerSection rows={model.callbackAttemptRows} />
       <PaymentOperationsTableSection

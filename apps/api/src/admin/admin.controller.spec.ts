@@ -46,6 +46,7 @@ describe('AdminController notification and push actions', () => {
     adminPushCampaignSummary: vi.fn(),
     listPaymentCallbackAttempts: vi.fn(),
     listPayments: vi.fn(),
+    paymentSummary: vi.fn(),
     listRefunds: vi.fn(),
     refundSummary: vi.fn(),
     listEarnings: vi.fn(),
@@ -299,6 +300,24 @@ describe('AdminController notification and push actions', () => {
       range: 'today',
       review: 'cash-debt',
       take: '25',
+    });
+  });
+
+  it('exposes payment summary with the same operations filters', async () => {
+    admin.paymentSummary.mockResolvedValue({ totalCount: 42, needsAction: 7 });
+
+    await expect(controller.paymentSummary('7d', 'callback-review')).resolves.toEqual({
+      totalCount: 42,
+      needsAction: 7,
+    });
+
+    expect(routeMetadata('paymentSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payments/summary',
+    });
+    expect(admin.paymentSummary).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'callback-review',
     });
   });
 

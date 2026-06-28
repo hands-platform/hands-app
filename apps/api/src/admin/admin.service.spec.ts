@@ -4375,6 +4375,60 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('counts payment operation summaries without loading payment rows', async () => {
+    const prisma = {
+      payment: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(20)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(7),
+      },
+      paymentCallbackAttempt: {
+        count: vi.fn().mockResolvedValueOnce(9).mockResolvedValueOnce(10),
+      },
+      refund: {
+        count: vi.fn().mockResolvedValue(8),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.paymentSummary({
+        range: '7d',
+        review: 'cash-debt',
+      }),
+    ).resolves.toEqual({
+      authorized: 2,
+      callbackReview: 9,
+      callbackVerified: 10,
+      captured: 5,
+      cashDebt: 4,
+      linkedRefunds: 8,
+      needsAction: 7,
+      pendingCash: 3,
+      refunded: 6,
+      totalCount: 20,
+    });
+
+    expect(prisma.payment.count).toHaveBeenCalledTimes(7);
+    expect(prisma.paymentCallbackAttempt.count).toHaveBeenCalledTimes(2);
+    expect(prisma.refund.count).toHaveBeenCalledWith({
+      where: {
+        payment: {
+          is: expect.objectContaining({
+            booking: expect.any(Object),
+          }),
+        },
+      },
+    });
+    expect(prisma.payment.findMany).toBeUndefined();
+  });
+
   it('filters payment callback attempts server-side and clamps requested limits', async () => {
     const prisma = {
       paymentCallbackAttempt: {

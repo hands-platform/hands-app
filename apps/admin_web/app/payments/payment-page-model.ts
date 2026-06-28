@@ -1,4 +1,4 @@
-import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
+import type { AdminPayment, AdminPaymentCallbackAttempt, AdminPaymentSummary } from '../../lib/admin-api';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
@@ -48,6 +48,7 @@ export type PaymentPageModel = {
   readonly metrics: PaymentMetrics;
   readonly payments: readonly AdminPayment[];
   readonly rangeLinks: readonly PaymentRangeLink[];
+  readonly totalCount: number;
   readonly reviewLinks: readonly PaymentFilterLink[];
   readonly visibleCallbackAttempts: readonly AdminPaymentCallbackAttempt[];
 };
@@ -57,10 +58,12 @@ const PAYMENT_OPERATIONS_API_LIMIT = 10;
 export function buildPaymentPageModel({
   callbackAttempts,
   params,
+  paymentSummary,
   payments,
 }: {
   readonly callbackAttempts: readonly AdminPaymentCallbackAttempt[];
   readonly params: Record<string, string | string[] | undefined>;
+  readonly paymentSummary?: AdminPaymentSummary | null;
   readonly payments: readonly AdminPayment[];
 }): PaymentPageModel {
   const filters = buildPaymentFilters(params);
@@ -79,10 +82,13 @@ export function buildPaymentPageModel({
     callbackAttemptRows: buildPaymentCallbackAttemptLedgerRows(visibleCallbackAttempts),
     dateRangeLabel: dateRangeLabel(filters.range),
     filters,
-    metrics: buildPaymentMetrics(visiblePayments, visibleCallbackAttempts),
+    metrics: paymentSummary
+      ? paymentMetricsFromSummary(paymentSummary)
+      : buildPaymentMetrics(visiblePayments, visibleCallbackAttempts),
     payments: visiblePayments,
     rangeLinks: paymentRangeLinks(filters.review),
     reviewLinks,
+    totalCount: paymentSummary?.totalCount ?? allPayments.length,
     visibleCallbackAttempts,
   };
 }
@@ -149,6 +155,15 @@ export function buildPaymentOperationsApiHref(filters: PaymentFilters): string {
 
 export function buildPaymentCallbackAttemptsApiHref(filters: PaymentFilters): string {
   return buildPaymentApiHref('/admin/payment-callback-attempts', filters);
+}
+
+export function buildPaymentSummaryApiHref(filters: PaymentFilters): string {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+
+  return `/admin/payments/summary?${params.toString()}`;
 }
 
 export function filterPayments(payments: readonly AdminPayment[], filters: PaymentFilters): AdminPayment[] {
@@ -229,6 +244,20 @@ function buildPaymentMetrics(
     pendingCash: payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
       .length,
     refunded: payments.filter((payment) => payment.status === 'REFUNDED').length,
+  };
+}
+
+function paymentMetricsFromSummary(summary: AdminPaymentSummary): PaymentMetrics {
+  return {
+    authorized: summary.authorized,
+    callbackReview: summary.callbackReview,
+    callbackVerified: summary.callbackVerified,
+    captured: summary.captured,
+    cashDebt: summary.cashDebt,
+    linkedRefunds: summary.linkedRefunds,
+    needsAction: summary.needsAction,
+    pendingCash: summary.pendingCash,
+    refunded: summary.refunded,
   };
 }
 
