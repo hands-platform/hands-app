@@ -58,7 +58,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 500,
+        take: 100,
       }),
     );
   });
@@ -2088,7 +2088,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 500 }));
+    expect(query).toEqual(expect.objectContaining({ take: 100 }));
     expect(select.preferredBookings).toBeUndefined();
     expect(select.selectedBookings).toBeUndefined();
     expect(select.participants).toBeUndefined();
@@ -2280,7 +2280,7 @@ describe('AdminService query orchestration', () => {
     const select = query.select;
     expect(query).toEqual(
       expect.objectContaining({
-        take: 500,
+        take: 100,
         where: expect.objectContaining({
           OR: expect.any(Array),
         }),
@@ -2338,7 +2338,7 @@ describe('AdminService query orchestration', () => {
     const select = query.select;
     expect(query).toEqual(
       expect.objectContaining({
-        take: 500,
+        take: 100,
       }),
     );
     expect(select).toEqual(
@@ -2404,7 +2404,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 500 }));
+    expect(query).toEqual(expect.objectContaining({ take: 100 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,
@@ -2463,7 +2463,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 500 }));
+    expect(query).toEqual(expect.objectContaining({ take: 100 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,
