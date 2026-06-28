@@ -183,7 +183,7 @@ import {
 } from './admin-marketing-analytics';
 import type { AdminPushCampaignDto, UpdateNotificationTemplateDto } from './admin.dto';
 
-const ADMIN_APP_SESSION_LIST_LIMIT = 100;
+const ADMIN_APP_SESSION_LIST_LIMIT = 50;
 const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
 const ADMIN_APP_SESSION_RECENT_WINDOW_MS = 30 * 60_000;
 const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;

@@ -182,7 +182,7 @@ describe('AdminService query orchestration', () => {
       },
       orderBy: { lastSeenAt: 'desc' },
       skip: 20,
-      take: 100,
+      take: 50,
       select: expect.any(Object),
     });
   });
