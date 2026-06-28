@@ -16,6 +16,8 @@ describe('AdminController notification and push actions', () => {
     getMarketingSummary: vi.fn(),
     getUsageOverview: vi.fn(),
     getVietnamOverview: vi.fn(),
+    getVietnamOverviewRealtimePoints: vi.fn(),
+    getVietnamOverviewSummary: vi.fn(),
     getCustomerReferralParent: vi.fn(),
     getPartnerReferralParent: vi.fn(),
     customerReferralParentSummary: vi.fn(),
@@ -825,6 +827,30 @@ describe('AdminController notification and push actions', () => {
       path: ['vietnam-overview', 'maps/vietnam-overview'],
     });
     expect(admin.getVietnamOverview).toHaveBeenCalledWith(undefined);
+  });
+
+  it('exposes Vietnam overview summary without map point payloads', async () => {
+    admin.getVietnamOverviewSummary.mockResolvedValue({ regions: [], points: [] });
+
+    await expect(controller.vietnamOverviewSummary('7d')).resolves.toEqual({ regions: [], points: [] });
+
+    expect(routeMetadata('vietnamOverviewSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: ['vietnam-overview/summary', 'maps/vietnam-overview/summary'],
+    });
+    expect(admin.getVietnamOverviewSummary).toHaveBeenCalledWith('7d');
+  });
+
+  it('exposes Vietnam realtime map points as a bounded point feed', async () => {
+    admin.getVietnamOverviewRealtimePoints.mockResolvedValue({ realtimePoints: [] });
+
+    await expect(controller.vietnamOverviewRealtimePoints('today')).resolves.toEqual({ realtimePoints: [] });
+
+    expect(routeMetadata('vietnamOverviewRealtimePoints')).toEqual({
+      method: RequestMethod.GET,
+      path: ['vietnam-overview/realtime-points', 'maps/vietnam-overview/realtime-points'],
+    });
+    expect(admin.getVietnamOverviewRealtimePoints).toHaveBeenCalledWith('today');
   });
 
   it('exposes usage overview as a bounded aggregate GET list', async () => {

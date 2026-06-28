@@ -1776,6 +1776,15 @@ export type AdminVietnamOverview = {
   realtimePoints?: AdminVietnamOverviewRealtimePoint[];
 };
 
+export type AdminVietnamOverviewSummary = Omit<AdminVietnamOverview, 'realtimePoints'>;
+
+export type AdminVietnamOverviewRealtimePointFeed = Pick<
+  AdminVietnamOverview,
+  'generatedAt' | 'refreshSeconds' | 'source' | 'range' | 'rangeLabel' | 'windowStartAt' | 'windowEndAt'
+> & {
+  realtimePoints: AdminVietnamOverviewRealtimePoint[];
+};
+
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {

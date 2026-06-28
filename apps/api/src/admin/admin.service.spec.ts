@@ -2432,6 +2432,126 @@ describe('AdminService query orchestration', () => {
     expect(serialized).not.toContain('currentLng');
   });
 
+  it('returns Vietnam overview summary without realtime point payloads', async () => {
+    const now = new Date();
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'customer-1',
+            addresses: ['85/9 Pham Viet Chanh, Ho Chi Minh City'],
+            selectedLocations: [
+              {
+                id: 'location-1',
+                addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+                createdAt: now,
+              },
+            ],
+            user: {
+              appSessions: [
+                {
+                  lastLoginAddress: 'Ho Chi Minh City',
+                  lastSeenAt: now,
+                },
+              ],
+            },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'provider-1',
+            displayName: 'Smoke Partner',
+            city: 'Ho Chi Minh City',
+            residentialAddress: null,
+            serviceArea: null,
+            status: ProviderStatus.ONLINE_AVAILABLE,
+            currentLat: 10.7769,
+            currentLng: 106.7009,
+            currentLocationUpdatedAt: now,
+          },
+        ]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const summary = await service.getVietnamOverviewSummary('today');
+
+    expect(summary.points).toEqual([]);
+    expect(summary).not.toHaveProperty('realtimePoints');
+    expect(summary.totals).toMatchObject({
+      activeCustomerCount: 1,
+      onlinePartnerCount: 1,
+    });
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+  });
+
+  it('returns Vietnam realtime points without period metric queries', async () => {
+    const now = new Date();
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'booking-2',
+            address: '22 Le Thanh Ton, District 1, Ho Chi Minh City',
+            lat: 10.7758,
+            lng: 106.701,
+            createdAt: now,
+            updatedAt: now,
+            addressSnapshot: {
+              address: null,
+              addressText: '22 Le Thanh Ton, District 1, Ho Chi Minh City',
+              latitude: 10.7758,
+              longitude: 106.701,
+            },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const pointFeed = await service.getVietnamOverviewRealtimePoints('today');
+
+    expect(pointFeed).toMatchObject({
+      refreshSeconds: 60,
+      source: 'stored-address-aggregates',
+      realtimePoints: [
+        expect.objectContaining({
+          bookingId: 'booking-2',
+          kind: 'bookings',
+          latitude: 10.7758,
+          longitude: 106.701,
+        }),
+      ],
+    });
+    expect(pointFeed).not.toHaveProperty('totals');
+    expect(pointFeed).not.toHaveProperty('regions');
+    expect(prisma.booking.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 50,
+        where: {
+          status: expect.objectContaining({
+            in: expect.arrayContaining([BookingStatus.OPEN_MATCHING]),
+          }),
+        },
+      }),
+    );
+  });
+
   it('adds server-computed activity summaries to provider list rows', async () => {
     const latestWorkAt = new Date('2026-06-20T10:00:00.000Z');
     const prisma = {

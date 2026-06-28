@@ -142,6 +142,16 @@ export class AdminController {
     return this.admin.getVietnamOverview(range);
   }
 
+  @Get(['vietnam-overview/summary', 'maps/vietnam-overview/summary'])
+  vietnamOverviewSummary(@Query('range') range?: string) {
+    return this.admin.getVietnamOverviewSummary(range);
+  }
+
+  @Get(['vietnam-overview/realtime-points', 'maps/vietnam-overview/realtime-points'])
+  vietnamOverviewRealtimePoints(@Query('range') range?: string) {
+    return this.admin.getVietnamOverviewRealtimePoints(range);
+  }
+
   @Get('usage-overview')
   usageOverview(@Query('range') range?: string) {
     return this.admin.getUsageOverview(range);

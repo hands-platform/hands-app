@@ -1601,6 +1601,47 @@ export class AdminService {
   }
 
   async getVietnamOverview(rangeInput?: string) {
+    return this.buildVietnamOverview(rangeInput, {
+      includePeriodMetrics: true,
+      includeRealtimePoints: true,
+    });
+  }
+
+  async getVietnamOverviewSummary(rangeInput?: string) {
+    const overview = await this.buildVietnamOverview(rangeInput, {
+      includePeriodMetrics: true,
+      includeRealtimePoints: false,
+    });
+    const { realtimePoints: _realtimePoints, ...summary } = overview;
+
+    return summary;
+  }
+
+  async getVietnamOverviewRealtimePoints(rangeInput?: string) {
+    const overview = await this.buildVietnamOverview(rangeInput, {
+      includePeriodMetrics: false,
+      includeRealtimePoints: true,
+    });
+
+    return {
+      generatedAt: overview.generatedAt,
+      refreshSeconds: overview.refreshSeconds,
+      source: overview.source,
+      range: overview.range,
+      rangeLabel: overview.rangeLabel,
+      windowStartAt: overview.windowStartAt,
+      windowEndAt: overview.windowEndAt,
+      realtimePoints: overview.realtimePoints ?? [],
+    };
+  }
+
+  private async buildVietnamOverview(
+    rangeInput: string | undefined,
+    options: {
+      includePeriodMetrics: boolean;
+      includeRealtimePoints: boolean;
+    },
+  ) {
     const now = new Date();
     const window = adminVietnamOverviewRangeWindow(normalizeAdminVietnamOverviewRange(rangeInput), now);
     const dateWhere = adminVietnamOverviewDateWhere(window);
@@ -1681,125 +1722,145 @@ export class AdminService {
           currentLocationUpdatedAt: true,
         },
       }),
-      this.prisma.booking.findMany({
-        where: bookingWhere,
-        orderBy: { createdAt: 'desc' },
-        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
-        select: {
-          id: true,
-          status: true,
-          address: true,
-          lat: true,
-          lng: true,
-          createdAt: true,
-          updatedAt: true,
-          closedAt: true,
-          addressSnapshot: {
+      options.includePeriodMetrics
+        ? this.prisma.booking.findMany({
+            where: bookingWhere,
+            orderBy: { createdAt: 'desc' },
+            take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
             select: {
-              address: true,
-              addressText: true,
-              latitude: true,
-              longitude: true,
-            },
-          },
-          payment: {
-            select: {
-              amount: true,
-              currency: true,
+              id: true,
               status: true,
-            },
-          },
-        },
-      }),
-      this.prisma.booking.findMany({
-        where: {
-          status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
-        select: {
-          id: true,
-          address: true,
-          lat: true,
-          lng: true,
-          createdAt: true,
-          updatedAt: true,
-          addressSnapshot: {
-            select: {
               address: true,
-              addressText: true,
-              latitude: true,
-              longitude: true,
+              lat: true,
+              lng: true,
+              createdAt: true,
+              updatedAt: true,
+              closedAt: true,
+              addressSnapshot: {
+                select: {
+                  address: true,
+                  addressText: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
+              payment: {
+                select: {
+                  amount: true,
+                  currency: true,
+                  status: true,
+                },
+              },
             },
-          },
-        },
-      }),
+          })
+        : Promise.resolve([]),
+      options.includePeriodMetrics || options.includeRealtimePoints
+        ? this.prisma.booking.findMany({
+            where: {
+              status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) },
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+            select: {
+              id: true,
+              address: true,
+              lat: true,
+              lng: true,
+              createdAt: true,
+              updatedAt: true,
+              addressSnapshot: {
+                select: {
+                  address: true,
+                  addressText: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
     ]);
     const realtimePoints: AdminVietnamOverviewRealtimePoint[] = [];
 
     for (const customer of customers) {
       const selectedLocation = customer.selectedLocations[0];
-      const region = ensureVietnamOverviewRegion(
-        regions,
-        vietnamRegionCodeFromValues(
-          [selectedLocation?.addressText, customer.addresses, customer.user.appSessions[0]?.lastLoginAddress],
-          {
-            latitude: selectedLocation?.latitude,
-            longitude: selectedLocation?.longitude,
-          },
-        ),
-      );
-      region.customerCount += 1;
+      const region = options.includePeriodMetrics
+        ? ensureVietnamOverviewRegion(
+            regions,
+            vietnamRegionCodeFromValues(
+              [selectedLocation?.addressText, customer.addresses, customer.user.appSessions[0]?.lastLoginAddress],
+              {
+                latitude: selectedLocation?.latitude,
+                longitude: selectedLocation?.longitude,
+              },
+            ),
+          )
+        : null;
+      if (region) {
+        region.customerCount += 1;
+      }
 
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
       if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
-        region.activeCustomerCount += 1;
-        const activePoint = vietnamOverviewEventPoint({
-          id: `active-customer:${customer.id}:${lastSeenAt.toISOString()}`,
-          kind: 'active',
-          label: 'Active customer session anchored to saved location',
-          latitude: selectedLocation?.latitude,
-          longitude: selectedLocation?.longitude,
-          occurredAt: lastSeenAt,
-          source: 'customer-session-selected-location',
-          addressText: selectedLocation?.addressText ?? customer.user.appSessions[0]?.lastLoginAddress,
-          customerProfileId: customer.id,
-        });
-        if (activePoint) {
-          realtimePoints.push(activePoint);
+        if (region) {
+          region.activeCustomerCount += 1;
+        }
+        if (options.includeRealtimePoints) {
+          const activePoint = vietnamOverviewEventPoint({
+            id: `active-customer:${customer.id}:${lastSeenAt.toISOString()}`,
+            kind: 'active',
+            label: 'Active customer session anchored to saved location',
+            latitude: selectedLocation?.latitude,
+            longitude: selectedLocation?.longitude,
+            occurredAt: lastSeenAt,
+            source: 'customer-session-selected-location',
+            addressText: selectedLocation?.addressText ?? customer.user.appSessions[0]?.lastLoginAddress,
+            customerProfileId: customer.id,
+          });
+          if (activePoint) {
+            realtimePoints.push(activePoint);
+          }
         }
       }
     }
 
     for (const provider of providers) {
-      const region = ensureVietnamOverviewRegion(
-        regions,
-        vietnamRegionCodeFromValues([provider.city, provider.residentialAddress, provider.serviceArea], {
-          latitude: provider.currentLat,
-          longitude: provider.currentLng,
-        }),
-      );
-      region.partnerCount += 1;
+      const region = options.includePeriodMetrics
+        ? ensureVietnamOverviewRegion(
+            regions,
+            vietnamRegionCodeFromValues([provider.city, provider.residentialAddress, provider.serviceArea], {
+              latitude: provider.currentLat,
+              longitude: provider.currentLng,
+            }),
+          )
+        : null;
+      if (region) {
+        region.partnerCount += 1;
+      }
 
       if (
         provider.status !== ProviderStatus.OFFLINE &&
         provider.currentLocationUpdatedAt &&
         provider.currentLocationUpdatedAt >= onlinePartnerSince
       ) {
-        region.onlinePartnerCount += 1;
-        const onlinePoint = vietnamOverviewEventPoint({
-          id: `online-partner:${provider.id}:${provider.currentLocationUpdatedAt.toISOString()}`,
-          kind: 'online',
-          label: provider.displayName,
-          latitude: provider.currentLat,
-          longitude: provider.currentLng,
-          occurredAt: provider.currentLocationUpdatedAt,
-          source: 'partner-online-heartbeat-location',
-          addressText: provider.residentialAddress ?? provider.city,
-          providerProfileId: provider.id,
-        });
-        if (onlinePoint) {
-          realtimePoints.push(onlinePoint);
+        if (region) {
+          region.onlinePartnerCount += 1;
+        }
+        if (options.includeRealtimePoints) {
+          const onlinePoint = vietnamOverviewEventPoint({
+            id: `online-partner:${provider.id}:${provider.currentLocationUpdatedAt.toISOString()}`,
+            kind: 'online',
+            label: provider.displayName,
+            latitude: provider.currentLat,
+            longitude: provider.currentLng,
+            occurredAt: provider.currentLocationUpdatedAt,
+            source: 'partner-online-heartbeat-location',
+            addressText: provider.residentialAddress ?? provider.city,
+            providerProfileId: provider.id,
+          });
+          if (onlinePoint) {
+            realtimePoints.push(onlinePoint);
+          }
         }
       }
     }
@@ -1862,8 +1923,12 @@ export class AdminService {
         bookingId: booking.id,
       });
       if (activeBookingPoint) {
-        region.activeBookingCount += 1;
-        realtimePoints.push(activeBookingPoint);
+        if (options.includePeriodMetrics) {
+          region.activeBookingCount += 1;
+        }
+        if (options.includeRealtimePoints) {
+          realtimePoints.push(activeBookingPoint);
+        }
       }
     }
 

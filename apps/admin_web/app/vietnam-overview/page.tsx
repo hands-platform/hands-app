@@ -11,7 +11,9 @@ import {
 import Image from 'next/image';
 import type { CSSProperties } from 'react';
 import {
-  AdminVietnamOverview,
+  type AdminVietnamOverview,
+  AdminVietnamOverviewSummary,
+  AdminVietnamOverviewRealtimePointFeed,
   adminGet,
 } from '../../lib/admin-api';
 import {
@@ -34,7 +36,7 @@ export const dynamic = 'force-dynamic';
 
 type VietnamOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const emptyVietnamOverview: AdminVietnamOverview = {
+const emptyVietnamOverview: AdminVietnamOverviewSummary = {
   generatedAt: new Date(0).toISOString(),
   refreshSeconds: 60,
   source: 'stored-address-aggregates',
@@ -57,6 +59,17 @@ const emptyVietnamOverview: AdminVietnamOverview = {
   points: [],
 };
 
+const emptyVietnamOverviewRealtimePointFeed: AdminVietnamOverviewRealtimePointFeed = {
+  generatedAt: new Date(0).toISOString(),
+  refreshSeconds: 60,
+  source: 'stored-address-aggregates',
+  range: 'today',
+  rangeLabel: 'Today',
+  windowStartAt: null,
+  windowEndAt: null,
+  realtimePoints: [],
+};
+
 export default async function VietnamOverviewPage({
   searchParams,
 }: {
@@ -66,14 +79,20 @@ export default async function VietnamOverviewPage({
   const range = normalizeVietnamOverviewRange(params?.range);
   const activeSignalKeys = normalizeVietnamOverviewSignalFilters(params?.signals);
   const activeSignalSet = new Set<VietnamOverviewMetricDotKey>(activeSignalKeys);
-  const overview = await adminGet<AdminVietnamOverview>(
-    `/admin/vietnam-overview?range=${range}`,
-    emptyVietnamOverview,
-  );
+  const [overview, realtimePointFeed] = await Promise.all([
+    adminGet<AdminVietnamOverviewSummary>(
+      `/admin/vietnam-overview/summary?range=${range}`,
+      emptyVietnamOverview,
+    ),
+    adminGet<AdminVietnamOverviewRealtimePointFeed>(
+      `/admin/vietnam-overview/realtime-points?range=${range}`,
+      emptyVietnamOverviewRealtimePointFeed,
+    ),
+  ]);
   const regions = overview.regions;
   const activeRegion = normalizeVietnamOverviewRegionFilter(params?.region, regions);
   const activeRegionCode = activeRegion?.regionCode ?? null;
-  const realtimePointSource = overview.realtimePoints ?? overview.points ?? [];
+  const realtimePointSource = realtimePointFeed.realtimePoints;
   const allRealtimeMapPoints = vietnamOverviewRealtimeMapPoints(realtimePointSource);
   const regionalRealtimeMapPoints = activeRegionCode
     ? allRealtimeMapPoints.filter((point) => point.regionCode === activeRegionCode)
