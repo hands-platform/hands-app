@@ -2,6 +2,7 @@ import type { AdminCoupon, AdminCouponSummary, AdminCouponUsagePage } from '../.
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { CalendarDays } from 'lucide-react';
 import {
   buildCouponDeleteConfirmation,
@@ -33,10 +34,16 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   });
   const confirmAction = readSingleParam(params.confirm);
   const usageCouponId = readSingleParam(params.usageCouponId);
+  const couponPage = readPositiveInteger(readSingleParam(params.couponPage));
+  const couponSkip = (couponPage - 1) * COUPON_LIST_PAGE_SIZE;
   const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
   const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
+  const couponListParams = new URLSearchParams({ take: String(COUPON_LIST_PAGE_SIZE) });
+  if (couponSkip > 0) {
+    couponListParams.set('skip', String(couponSkip));
+  }
   const [coupons, couponSummary, usagePageResult] = await Promise.all([
-    adminGet<AdminCoupon[]>(`/admin/coupons?take=${COUPON_LIST_PAGE_SIZE}`, []),
+    adminGet<AdminCoupon[]>(`/admin/coupons?${couponListParams.toString()}`, []),
     adminGet<AdminCouponSummary>('/admin/coupons/summary', EMPTY_COUPON_SUMMARY),
     usageCouponId
       ? adminGet<AdminCouponUsagePage>(
@@ -47,6 +54,8 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   ]);
   const couponModel = buildCouponPageModel(withCouponUsagePage(coupons, usagePageResult));
   const usageSearchParams = couponUsageSearchParams(params);
+  const couponListSearchParams = couponListSearchParamsWithoutPaging(params);
+  const couponTotalPages = Math.max(1, Math.ceil(couponSummary.totalCount / COUPON_LIST_PAGE_SIZE));
   const confirmation =
     confirmAction === 'toggle'
       ? buildCouponToggleConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
@@ -134,6 +143,16 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         usageHrefForPage={(couponId, page) => couponUsageHref(usageSearchParams, couponId, page)}
         usagePage={usagePage}
       />
+      {couponTotalPages > 1 ? (
+        <AdminRoundedPagination
+          activePage={couponPage}
+          ariaLabel="Coupon list pagination"
+          className="vuexy-booking-pagination coupon-list-pagination"
+          hrefForPage={(page) => couponListHref(couponListSearchParams, page)}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={couponTotalPages}
+        />
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -168,6 +187,46 @@ function couponUsageSearchParams(params: Record<string, string | string[] | unde
   }
 
   return next;
+}
+
+function couponListSearchParamsWithoutPaging(params: Record<string, string | string[] | undefined>) {
+  const next = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (
+      key === 'confirm' ||
+      key === 'couponId' ||
+      key === 'couponPage' ||
+      key === 'usageCouponId' ||
+      key === 'usagePage' ||
+      key === 'couponNotice' ||
+      key === 'created' ||
+      key === 'failed'
+    ) {
+      continue;
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (item) {
+        next.append(key, item);
+      }
+    }
+  }
+
+  return next;
+}
+
+function couponListHref(baseParams: URLSearchParams, page: number) {
+  const next = new URLSearchParams(baseParams);
+  if (page > 1) {
+    next.set('couponPage', String(page));
+  } else {
+    next.delete('couponPage');
+  }
+
+  const query = next.toString();
+  return query ? `/coupons?${query}` : '/coupons';
 }
 
 function couponUsageHref(baseParams: URLSearchParams, couponId: string, page: number) {

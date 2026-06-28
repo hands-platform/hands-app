@@ -41,4 +41,14 @@ describe('CouponsPage', () => {
 
     expect(hrefs).toContain('/admin/coupons/coupon-1/usage?take=10&skip=20');
   });
+
+  it('paginates the coupon list with server skip and take', async () => {
+    await CouponsPage({
+      searchParams: Promise.resolve({ couponPage: '3' }),
+    });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(hrefs).toContain('/admin/coupons?take=25&skip=50');
+  });
 });
