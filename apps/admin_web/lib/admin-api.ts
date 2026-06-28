@@ -1228,6 +1228,16 @@ export type AdminRefund = {
   payment?: { method: string; status: string; currency: string };
 };
 
+export type AdminRefundSummary = {
+  totalCount: number;
+  requestedCount: number;
+  refundedBookingCount: number;
+  needsUpdateCount: number;
+  completedCount: number;
+  openCount: number;
+  outcomeLinkedCount: number;
+};
+
 export type AdminPayoutBatch = {
   id: string;
   providerProfileId: string;

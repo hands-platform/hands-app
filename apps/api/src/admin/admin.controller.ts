@@ -665,6 +665,14 @@ export class AdminController {
     return this.admin.listRefunds({ range, review, take });
   }
 
+  @Get('refunds/summary')
+  refundSummary(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.refundSummary({ range, review });
+  }
+
   @Get('earnings')
   earnings(
     @Query('take') take?: string,

@@ -47,6 +47,7 @@ describe('AdminController notification and push actions', () => {
     listPaymentCallbackAttempts: vi.fn(),
     listPayments: vi.fn(),
     listRefunds: vi.fn(),
+    refundSummary: vi.fn(),
     listEarnings: vi.fn(),
     earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
@@ -332,6 +333,24 @@ describe('AdminController notification and push actions', () => {
       range: '30d',
       review: 'needs-update',
       take: '50',
+    });
+  });
+
+  it('exposes refund summary with the same operations filters', async () => {
+    admin.refundSummary.mockResolvedValue({ totalCount: 12, requestedCount: 4 });
+
+    await expect(controller.refundSummary('30d', 'needs-update')).resolves.toEqual({
+      totalCount: 12,
+      requestedCount: 4,
+    });
+
+    expect(routeMetadata('refundSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'refunds/summary',
+    });
+    expect(admin.refundSummary).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-update',
     });
   });
 

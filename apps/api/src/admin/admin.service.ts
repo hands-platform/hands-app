@@ -4894,6 +4894,60 @@ export class AdminService {
     });
   }
 
+  async refundSummary(options: AdminRefundOperationsQuery = {}) {
+    const where = adminRefundOperationsWhere(options);
+    const requestedWhere = adminMergeRefundOperationsWhere(where, { status: 'REQUESTED' });
+    const refundedBookingWhere = adminMergeRefundOperationsWhere(where, {
+      booking: { status: BookingStatus.REFUNDED },
+    });
+    const needsUpdateWhere = adminMergeRefundOperationsWhere(where, {
+      payment: { status: { not: PaymentStatus.REFUNDED } },
+      status: 'REQUESTED',
+    });
+    const completedWhere = adminMergeRefundOperationsWhere(where, { status: 'COMPLETED' });
+    const openWhere = adminMergeRefundOperationsWhere(where, { status: { not: 'COMPLETED' } });
+    const outcomeLinkedWhere = adminMergeRefundOperationsWhere(where, {
+      booking: {
+        status: {
+          in: [
+            BookingStatus.CANCELLED,
+            BookingStatus.EXPIRED,
+            BookingStatus.NO_SHOW,
+            BookingStatus.REFUNDED,
+          ],
+        },
+      },
+    });
+
+    const [
+      totalCount,
+      requestedCount,
+      refundedBookingCount,
+      needsUpdateCount,
+      completedCount,
+      openCount,
+      outcomeLinkedCount,
+    ] = await Promise.all([
+      this.prisma.refund.count(adminRefundCountArgs(where)),
+      this.prisma.refund.count(adminRefundCountArgs(requestedWhere)),
+      this.prisma.refund.count(adminRefundCountArgs(refundedBookingWhere)),
+      this.prisma.refund.count(adminRefundCountArgs(needsUpdateWhere)),
+      this.prisma.refund.count(adminRefundCountArgs(completedWhere)),
+      this.prisma.refund.count(adminRefundCountArgs(openWhere)),
+      this.prisma.refund.count(adminRefundCountArgs(outcomeLinkedWhere)),
+    ]);
+
+    return {
+      totalCount,
+      requestedCount,
+      refundedBookingCount,
+      needsUpdateCount,
+      completedCount,
+      openCount,
+      outcomeLinkedCount,
+    };
+  }
+
   listEarnings(options: AdminPaymentOperationsQuery = {}) {
     return this.earnings.listForAdmin(options);
   }
@@ -9023,6 +9077,17 @@ function adminRefundOperationsWhere(
   }
 
   return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminMergeRefundOperationsWhere(
+  base: Prisma.RefundWhereInput | undefined,
+  next: Prisma.RefundWhereInput,
+): Prisma.RefundWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminRefundCountArgs(where: Prisma.RefundWhereInput | undefined): Prisma.RefundCountArgs {
+  return where ? { where } : {};
 }
 
 function adminRefundReviewWhere(review: string | null | undefined): Prisma.RefundWhereInput | undefined {

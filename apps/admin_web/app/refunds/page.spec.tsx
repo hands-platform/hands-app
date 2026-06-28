@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import type { AdminRefund } from '../../lib/admin-api';
+import type { AdminRefund, AdminRefundSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import RefundsPage from './page';
 
@@ -22,6 +22,15 @@ describe('RefundsPage', () => {
   });
 
   it('renders bounded server refund rows without applying a second local filter', async () => {
+    const summary: AdminRefundSummary = {
+      totalCount: 42,
+      requestedCount: 17,
+      refundedBookingCount: 8,
+      needsUpdateCount: 6,
+      completedCount: 9,
+      openCount: 24,
+      outcomeLinkedCount: 12,
+    };
     const serverRefund = {
       amount: 150000,
       booking: {
@@ -48,7 +57,15 @@ describe('RefundsPage', () => {
       status: 'COMPLETED',
     } as AdminRefund;
 
-    mockedAdminGet.mockResolvedValue([serverRefund]);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/refunds?range=today&take=10&review=requested') {
+        return [serverRefund];
+      }
+      if (href === '/admin/refunds/summary?range=today&review=requested') {
+        return summary;
+      }
+      return fallback;
+    });
 
     const page = await RefundsPage({
       searchParams: Promise.resolve({ range: 'today', review: 'requested' }),
@@ -59,6 +76,12 @@ describe('RefundsPage', () => {
       '/admin/refunds?range=today&take=10&review=requested',
       [],
     );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/refunds/summary?range=today&review=requested',
+      expect.objectContaining({ totalCount: 0 }),
+    );
     expect(markup).toContain('Server Trusted Refund');
+    expect(markup).toContain('42');
+    expect(markup).toContain('Showing 1 of 42');
   });
 });

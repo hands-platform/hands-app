@@ -1,4 +1,4 @@
-import { AdminRefund, adminGet } from '../../lib/admin-api';
+import { AdminRefund, AdminRefundSummary, adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { shortId } from '../../lib/admin-format';
 import {
@@ -25,36 +25,46 @@ import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const REFUND_OPERATIONS_API_LIMIT = 10;
+const EMPTY_REFUND_SUMMARY: AdminRefundSummary = {
+  totalCount: 0,
+  requestedCount: 0,
+  refundedBookingCount: 0,
+  needsUpdateCount: 0,
+  completedCount: 0,
+  openCount: 0,
+  outcomeLinkedCount: 0,
+};
 
 export default async function RefundsPage({ searchParams }: { searchParams?: RefundsPageSearchParams }) {
   const filters = buildRefundFilters(searchParams ? await searchParams : {});
-  const allRefunds = sortRefunds(await adminGet<AdminRefund[]>(buildRefundOperationsApiHref(filters), []));
-  const refunds = allRefunds;
+  const [summary, refundsPayload] = await Promise.all([
+    adminGet<AdminRefundSummary>(buildRefundSummaryApiHref(filters), EMPTY_REFUND_SUMMARY),
+    adminGet<AdminRefund[]>(buildRefundOperationsApiHref(filters), []),
+  ]);
+  const refunds = sortRefunds(refundsPayload);
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
-  const commandBoard = buildRefundCommandBoard(allRefunds);
-  const decisionChecklist = buildRefundDecisionChecklist(allRefunds);
+  const commandBoard = buildRefundCommandBoard(refunds, summary);
+  const decisionChecklist = buildRefundDecisionChecklist(summary);
   const refundRows = buildRefundTableRows(refunds);
 
   return (
     <AdminPageTemplate
       description="Refund operations for customer protection, payment ledger alignment, and finance handoff."
       metrics={[
-        { label: 'Total refunds', value: allRefunds.length, helper: 'Refund records loaded.' },
+        { label: 'Total refunds', value: summary.totalCount, helper: 'Refund records matching this queue.' },
         {
           label: 'Requested',
-          value: allRefunds.filter((refund) => refund.status === 'REQUESTED').length,
+          value: summary.requestedCount,
           helper: 'Customer refund requests waiting for review.',
         },
         {
           label: 'Refunded bookings',
-          value: allRefunds.filter((refund) => refund.booking?.status === 'REFUNDED').length,
+          value: summary.refundedBookingCount,
           helper: 'Bookings already in the refund outcome.',
         },
         {
           label: 'Needs update',
-          value: allRefunds.filter(
-            (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
-          ).length,
+          value: summary.needsUpdateCount,
           helper: 'Refund records whose payment ledger still needs attention.',
         },
       ]}
@@ -75,7 +85,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
           ...item,
           href: withRefundRange(item.href, filters.range),
         }))}
-        totalCount={allRefunds.length}
+        totalCount={summary.totalCount}
       />
       <RefundDecisionChecklistSection items={decisionChecklist} />
       <RefundsTableSection emptyMessage={emptyRefundMessage(filters.review)} rows={refundRows} />
@@ -109,7 +119,7 @@ function buildRefundTableRows(refunds: readonly AdminRefund[]): RefundTableRow[]
   }));
 }
 
-function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
+function buildRefundCommandBoard(refunds: AdminRefund[], summary: AdminRefundSummary): RefundCommandItem[] {
   const requested = refunds.filter((refund) => refund.status === 'REQUESTED');
   const paymentMismatch = refunds.filter(
     (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
@@ -128,7 +138,7 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
       status: 'REQUESTED',
       operatorAction: 'Confirm eligibility, payment method, and customer message.',
       href: '/refunds?review=requested',
-      tone: requested.length > 0 ? 'warn' : 'ok',
+      tone: summary.requestedCount > 0 ? 'warn' : 'ok',
       refunds: buildRefundCommandPreviews(requested),
     },
     {
@@ -137,7 +147,7 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
       status: 'Payment not refunded',
       operatorAction: 'Open payment, confirm reversal, then close the refund case.',
       href: '/refunds?review=needs-update',
-      tone: paymentMismatch.length > 0 ? 'warn' : 'ok',
+      tone: summary.needsUpdateCount > 0 ? 'warn' : 'ok',
       refunds: buildRefundCommandPreviews(paymentMismatch),
     },
     {
@@ -146,7 +156,7 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
       status: 'Settled',
       operatorAction: 'Sample settled cases and make sure operator notes are complete.',
       href: '/refunds?review=completed',
-      tone: bookingSettled.length > 0 ? 'info' : 'ok',
+      tone: summary.completedCount + summary.refundedBookingCount > 0 ? 'info' : 'ok',
       refunds: buildRefundCommandPreviews(bookingSettled),
     },
     {
@@ -155,7 +165,7 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
       status: 'Closeout related',
       operatorAction: 'Check booking closeout, cash debt, and customer protection policy.',
       href: '/bookings?view=closeout',
-      tone: cancelledOrExpired.length > 0 ? 'warn' : 'ok',
+      tone: summary.outcomeLinkedCount > 0 ? 'warn' : 'ok',
       refunds: buildRefundCommandPreviews(cancelledOrExpired),
     },
   ];
@@ -169,16 +179,7 @@ function buildRefundCommandPreviews(refunds: readonly AdminRefund[]): RefundComm
   }));
 }
 
-function buildRefundDecisionChecklist(refunds: AdminRefund[]): RefundDecisionChecklistItem[] {
-  const openRefunds = refunds.filter((refund) => refund.status !== 'COMPLETED');
-  const paymentUpdates = refunds.filter(
-    (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
-  );
-  const outcomeLinked = refunds.filter((refund) =>
-    ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(refund.booking?.status ?? ''),
-  );
-  const settled = refunds.filter((refund) => refund.status === 'COMPLETED');
-
+function buildRefundDecisionChecklist(summary: AdminRefundSummary): RefundDecisionChecklistItem[] {
   return [
     {
       title: 'Booking evidence',
@@ -186,36 +187,36 @@ function buildRefundDecisionChecklist(refunds: AdminRefund[]): RefundDecisionChe
         'Open the booking, chat, location notes, and operator notes before deciding the refund outcome.',
       operatorRule: 'Decision must be based on saved evidence, not customer or Partner judgement.',
       href: '/bookings?view=manual-decision',
-      status: `${outcomeLinked.length} outcome-linked`,
-      className: outcomeLinked.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: outcomeLinked.length ? 'pill-warn' : 'pill-success',
+      status: `${summary.outcomeLinkedCount} outcome-linked`,
+      className: summary.outcomeLinkedCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: summary.outcomeLinkedCount ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Payment ledger',
       detail: 'Check that payment method, hold, refund, or release state matches the refund record.',
       operatorRule: 'Do not close a refund until payment ledger state and refund status match.',
       href: '/payments',
-      status: `${paymentUpdates.length} update(s)`,
-      className: paymentUpdates.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: paymentUpdates.length ? 'pill-danger' : 'pill-success',
+      status: `${summary.needsUpdateCount} update(s)`,
+      className: summary.needsUpdateCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.needsUpdateCount ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Customer update',
       detail: 'Confirm the customer-facing message is clear after the operator decision is recorded.',
       operatorRule: 'Every open refund should have an operator note or customer update path.',
       href: '/refunds?review=open',
-      status: `${openRefunds.length} open`,
-      className: openRefunds.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: openRefunds.length ? 'pill-warn' : 'pill-success',
+      status: `${summary.openCount} open`,
+      className: summary.openCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: summary.openCount ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Finance handoff',
       detail: 'Settled refunds should align with booking state, payment rows, and audit records.',
       operatorRule: 'Sample settled cases during closeout so finance can finish the shift cleanly.',
       href: '/finance-closeout',
-      status: `${settled.length} settled`,
-      className: settled.length ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: settled.length ? 'pill-success' : 'pill-info',
+      status: `${summary.completedCount} settled`,
+      className: summary.completedCount ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: summary.completedCount ? 'pill-success' : 'pill-info',
     },
   ];
 }
@@ -300,6 +301,17 @@ function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilt
   }
 
   return `/admin/refunds?${params.toString()}`;
+}
+
+function buildRefundSummaryApiHref(filters: ReturnType<typeof buildRefundFilters>) {
+  const params = new URLSearchParams({
+    range: filters.range,
+  });
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+
+  return `/admin/refunds/summary?${params.toString()}`;
 }
 
 function refundFilterLinks(): RefundFilterLink[] {

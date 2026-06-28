@@ -4438,6 +4438,66 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('summarizes refund operations with server count queries instead of list rows', async () => {
+    const prisma = {
+      refund: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(24)
+          .mockResolvedValueOnce(8)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(10)
+          .mockResolvedValueOnce(4),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.refundSummary({ range: 'today' })).resolves.toEqual({
+      totalCount: 24,
+      requestedCount: 8,
+      refundedBookingCount: 3,
+      needsUpdateCount: 5,
+      completedCount: 6,
+      openCount: 10,
+      outcomeLinkedCount: 4,
+    });
+
+    expect(prisma.refund.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date) }),
+        }),
+      }),
+    );
+    expect(prisma.refund.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ createdAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: 'REQUESTED' },
+          ]),
+        }),
+      }),
+    );
+    expect(prisma.refund.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ createdAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            {
+              payment: {
+                status: { not: PaymentStatus.REFUNDED },
+              },
+              status: 'REQUESTED',
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('delegates bounded earning list filters to the earnings service', async () => {
     const earnings = {
       listForAdmin: vi.fn().mockResolvedValue([{ id: 'earning-1' }]),
