@@ -336,7 +336,7 @@ type PartnerEarning = NonNullable<ProviderDetail['earnings']>[number];
 type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 
 const PARTNER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
-const PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 25;
+const PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 10;
 
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,

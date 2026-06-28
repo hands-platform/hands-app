@@ -12,7 +12,7 @@ describe('partner detail page structure', () => {
   it('keeps review and evaluation record requests bounded inside the full detail page', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/partners/[id]/page.tsx'), 'utf8');
 
-    expect(pageSource).toContain('PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 25');
+    expect(pageSource).toContain('PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 10');
     expect(pageSource).toContain("take: String(PARTNER_DETAIL_REVIEW_RECORD_LIMIT)");
   });
 });
