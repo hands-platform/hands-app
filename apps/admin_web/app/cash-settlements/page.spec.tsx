@@ -57,7 +57,7 @@ describe('CashSettlementsPage', () => {
     } as AdminEarning;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/cash-settlement-earnings?range=today&take=50') {
+      if (href === '/admin/cash-settlement-earnings?range=today&take=25') {
         return [earning];
       }
       if (href === '/admin/cash-settlement-summary?range=today') {

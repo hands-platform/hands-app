@@ -86,10 +86,10 @@ describe('dashboard page model', () => {
     const partnersUrl = new URL(hrefs.partnersHref ?? '', 'http://admin.local');
 
     expect(usersUrl.pathname).toBe('/admin/users');
-    expect(usersUrl.searchParams.get('take')).toBe('50');
+    expect(usersUrl.searchParams.get('take')).toBe('25');
     expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('50');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('25');
+    expect(partnersUrl.searchParams.get('take')).toBe('25');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('10');
     expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });
 
