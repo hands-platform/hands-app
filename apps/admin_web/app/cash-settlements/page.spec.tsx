@@ -60,7 +60,7 @@ describe('CashSettlementsPage', () => {
       if (href === '/admin/cash-settlement-earnings?range=today&take=50') {
         return [earning];
       }
-      if (href === '/admin/cash-settlement-summary') {
+      if (href === '/admin/cash-settlement-summary?range=today') {
         return null as AdminCashSettlementSummary | null;
       }
       if (href === '/admin/operational-policy') {
@@ -75,5 +75,6 @@ describe('CashSettlementsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Server Trusted Cash Partner');
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
   });
 });

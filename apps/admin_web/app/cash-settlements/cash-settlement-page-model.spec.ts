@@ -2,6 +2,7 @@ import type { AdminCashSettlementSummary, AdminEarning } from '../../lib/admin-a
 import {
   buildCashSettlementApiHref,
   buildCashSettlementFilters,
+  buildCashSettlementSummaryApiHref,
   cashSettlementHref,
   cashSettlementQueueLabel,
 } from './cash-settlement-page-filters';
@@ -76,6 +77,9 @@ describe('cash settlement page model', () => {
     expect(cashSettlementHref({ q: '', queue: 'all', range: 'all' })).toBe('/cash-settlements?range=all');
     expect(buildCashSettlementApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
       '/admin/cash-settlement-earnings?range=7d&take=50',
+    );
+    expect(buildCashSettlementSummaryApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
+      '/admin/cash-settlement-summary?range=7d',
     );
     expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
   });

@@ -23,7 +23,11 @@ import {
   buildCashSettlementExecutionDesk,
   buildDebtCauseCards,
 } from './cash-settlement-page-command-cards';
-import { buildCashSettlementApiHref, buildCashSettlementFilters } from './cash-settlement-page-filters';
+import {
+  buildCashSettlementApiHref,
+  buildCashSettlementFilters,
+  buildCashSettlementSummaryApiHref,
+} from './cash-settlement-page-filters';
 import { buildCashSettlementPriorityBoard, buildCashSettlementPriorityBoardRows } from './cash-settlement-page-priority';
 import { buildAppliedCashSettlementPolicyCards, buildCashSettlementRuleCards } from './cash-settlement-page-rule-cards';
 import {
@@ -48,7 +52,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const filters = buildCashSettlementFilters(params);
   const [earnings, apiSummary, policySettings] = await Promise.all([
     adminGet<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
-    adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
+    adminGet<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const filteredEarnings = earnings;
@@ -57,7 +61,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const providers = buildProviderGroups(rows);
   const visibleSummary = buildSummary(rows, providers);
   const summary =
-    filters.range === 'all' && filters.queue === 'all' && !filters.q
+    filters.queue === 'all' && !filters.q
       ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
       : visibleSummary;
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);

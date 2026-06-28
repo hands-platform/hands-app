@@ -27,6 +27,14 @@ export function buildCashSettlementApiHref(filters: CashSettlementFilters) {
   return `/admin/cash-settlement-earnings?${params.toString()}`;
 }
 
+export function buildCashSettlementSummaryApiHref(filters: CashSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+  });
+
+  return `/admin/cash-settlement-summary?${params.toString()}`;
+}
+
 export function normalizeCashSettlementQueue(value: string): CashSettlementQueueFilter {
   const option = cashSettlementQueueOptions.find((item) => item.value === value);
   if (option) {
