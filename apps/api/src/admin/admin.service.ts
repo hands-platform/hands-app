@@ -200,6 +200,13 @@ const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
 const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 50;
 const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 50;
+const ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES = [
+  'booking.requested',
+  'booking.backup_available',
+  'booking.matched',
+  'provider.payout_setup_required',
+  'provider.payout_batch.updated',
+] as const;
 const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;
 const ADMIN_PUSH_SEGMENT_ALL = 'all';
 const ADMIN_PUSH_CUSTOMER_SEGMENTS = new Set([
@@ -4520,10 +4527,8 @@ export class AdminService {
     return typeof value === 'string';
   }
 
-  listNotifications(
-    options: { readonly from?: string; readonly skip?: string; readonly take?: string; readonly to?: string } = {},
-  ) {
-    const where = notificationBoardDateWhere(options);
+  listNotifications(options: NotificationBoardQueryOptions = {}) {
+    const where = notificationBoardWhere(options);
     const skip = normalizeNotificationBoardSkip(options.skip);
     const args: Prisma.NotificationFindManyArgs = {
       orderBy: { createdAt: 'desc' },
@@ -4539,8 +4544,8 @@ export class AdminService {
     return this.prisma.notification.findMany(args);
   }
 
-  async notificationSummary(options: { readonly from?: string; readonly to?: string } = {}) {
-    const where = notificationBoardDateWhere(options);
+  async notificationSummary(options: NotificationBoardSummaryOptions = {}) {
+    const where = notificationBoardWhere(options);
     const args: Prisma.NotificationCountArgs = {};
     if (where) {
       args.where = where;
@@ -5779,6 +5784,100 @@ function normalizeNotificationBoardSkip(value: string | undefined) {
     return 0;
   }
   return Math.min(parsed, 10000);
+}
+
+type NotificationBoardSummaryOptions = {
+  readonly booking?: string;
+  readonly from?: string;
+  readonly review?: string;
+  readonly to?: string;
+};
+
+type NotificationBoardQueryOptions = NotificationBoardSummaryOptions & {
+  readonly skip?: string;
+  readonly take?: string;
+};
+
+function notificationBoardWhere(options: NotificationBoardSummaryOptions): Prisma.NotificationWhereInput | undefined {
+  const where: Prisma.NotificationWhereInput = {};
+  const dateWhere = notificationBoardDateWhere(options);
+  const filters: Prisma.NotificationWhereInput[] = [];
+  const booking = normalizeNullable(options.booking);
+  const reviewWhere = notificationBoardReviewWhere(options.review);
+
+  if (dateWhere) {
+    Object.assign(where, dateWhere);
+  }
+  if (booking) {
+    filters.push({ data: { path: ['bookingId'], equals: booking } });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+  if (filters.length > 0) {
+    where.AND = filters;
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function notificationBoardReviewWhere(value: string | undefined): Prisma.NotificationWhereInput | undefined {
+  const review = normalizeNullable(value);
+  switch (review) {
+    case 'disabled-device':
+      return { user: { pushDevices: { some: { enabled: false } } } };
+    case 'failed':
+      return notificationDeliveryStatusWhere('FAILED');
+    case 'fcm':
+      return notificationDeliveryProviderWhere('FCM');
+    case 'in-app-route':
+      return notificationDeliveryProviderWhere('IN_APP_ONLY');
+    case 'needs-retry':
+      return {
+        OR: [
+          notificationDeliveryStatusWhere('FAILED'),
+          { user: { pushDevices: { some: { enabled: false } } } },
+          notificationStaleDeliveryCandidateWhere(),
+        ],
+      };
+    case 'no-show':
+      return { type: 'booking.no_show' };
+    case 'partner-alerts':
+      return { type: { in: [...ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES] } };
+    case 'payout-setup':
+      return { type: 'provider.payout_setup_required' };
+    case 'pending':
+      return { deliveries: { none: {} } };
+    case 'sent':
+      return notificationDeliveryStatusWhere('SENT');
+    case 'skipped':
+      return notificationDeliveryStatusWhere('SKIPPED');
+    case 'stale-device':
+      return notificationStaleDeliveryCandidateWhere();
+    default:
+      return undefined;
+  }
+}
+
+function notificationDeliveryStatusWhere(status: string): Prisma.NotificationWhereInput {
+  return { deliveries: { some: { status } } };
+}
+
+function notificationDeliveryProviderWhere(provider: string): Prisma.NotificationWhereInput {
+  return { deliveries: { some: { provider } } };
+}
+
+function notificationStaleDeliveryCandidateWhere(): Prisma.NotificationWhereInput {
+  return {
+    deliveries: {
+      some: {
+        pushDevice: {
+          enabled: true,
+          lastSeenAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        },
+      },
+    },
+  };
 }
 
 function notificationBoardDateWhere(options: {

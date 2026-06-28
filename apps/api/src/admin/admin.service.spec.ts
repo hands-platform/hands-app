@@ -2420,7 +2420,7 @@ describe('AdminService query orchestration', () => {
     );
   });
 
-  it('filters notification board rows by an explicit date range', async () => {
+  it('filters notification board rows by an explicit date range, booking id, and review queue', async () => {
     const prisma = {
       notification: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -2429,7 +2429,9 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await service.listNotifications({
+      booking: 'booking-1',
       from: '2026-06-27T00:00:00.000Z',
+      review: 'failed',
       skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
@@ -2440,6 +2442,21 @@ describe('AdminService query orchestration', () => {
         skip: 40,
         take: 25,
         where: {
+          AND: [
+            {
+              data: {
+                equals: 'booking-1',
+                path: ['bookingId'],
+              },
+            },
+            {
+              deliveries: {
+                some: {
+                  status: 'FAILED',
+                },
+              },
+            },
+          ],
           createdAt: {
             gte: new Date('2026-06-27T00:00:00.000Z'),
             lt: new Date('2026-06-28T00:00:00.000Z'),
@@ -2449,7 +2466,7 @@ describe('AdminService query orchestration', () => {
     );
   });
 
-  it('counts notification summary with the same date window without loading rows', async () => {
+  it('counts notification summary with the same filters without loading rows', async () => {
     const prisma = {
       notification: {
         count: vi.fn().mockResolvedValue(2400),
@@ -2459,7 +2476,9 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.notificationSummary({
+        booking: 'booking-1',
         from: '2026-06-27T00:00:00.000Z',
+        review: 'failed',
         to: '2026-06-28T00:00:00.000Z',
       }),
     ).resolves.toMatchObject({
@@ -2469,6 +2488,21 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.notification.count).toHaveBeenCalledWith({
       where: {
+        AND: [
+          {
+            data: {
+              equals: 'booking-1',
+              path: ['bookingId'],
+            },
+          },
+          {
+            deliveries: {
+              some: {
+                status: 'FAILED',
+              },
+            },
+          },
+        ],
         createdAt: {
           gte: new Date('2026-06-27T00:00:00.000Z'),
           lt: new Date('2026-06-28T00:00:00.000Z'),

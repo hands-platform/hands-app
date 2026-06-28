@@ -632,13 +632,20 @@ export class AdminController {
     @Query('skip') skip?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('review') review?: string,
+    @Query('booking') booking?: string,
   ) {
-    return this.admin.listNotifications({ from, skip, take, to });
+    return this.admin.listNotifications({ booking, from, review, skip, take, to });
   }
 
   @Get('notifications/summary')
-  notificationSummary(@Query('from') from?: string, @Query('to') to?: string) {
-    return this.admin.notificationSummary({ from, to });
+  notificationSummary(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('review') review?: string,
+    @Query('booking') booking?: string,
+  ) {
+    return this.admin.notificationSummary({ booking, from, review, to });
   }
 
   @Get('notifications/templates')

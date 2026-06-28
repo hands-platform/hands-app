@@ -254,6 +254,12 @@ export function buildNotificationApiHref(params: Record<string, string | string[
   if (skip > 0) {
     query.set('skip', String(skip));
   }
+  if (filters.review) {
+    query.set('review', filters.review);
+  }
+  if (filters.booking) {
+    query.set('booking', filters.booking);
+  }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
     query.set('from', window.from.toISOString());
@@ -267,6 +273,12 @@ export function buildNotificationApiHref(params: Record<string, string | string[
 export function buildNotificationSummaryApiHref(params: Record<string, string | string[] | undefined>) {
   const filters = buildNotificationFilters(params);
   const query = new URLSearchParams();
+  if (filters.review) {
+    query.set('review', filters.review);
+  }
+  if (filters.booking) {
+    query.set('booking', filters.booking);
+  }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
     query.set('from', window.from.toISOString());

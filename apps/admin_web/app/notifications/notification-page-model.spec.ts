@@ -1203,6 +1203,27 @@ describe('notification page model', () => {
     expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=20');
     expect(buildNotificationApiHref({ page: '3', range: 'all' })).toBe('/admin/notifications?take=20&skip=40');
     expect(buildNotificationSummaryApiHref({ range: 'all' })).toBe('/admin/notifications/summary');
+    const filteredApiHref = buildNotificationApiHref({
+      booking: 'booking-1',
+      page: '2',
+      range: 'all',
+      review: 'failed',
+    });
+    const filteredApiUrl = new URL(filteredApiHref, 'http://admin.local');
+    expect(filteredApiUrl.pathname).toBe('/admin/notifications');
+    expect(filteredApiUrl.searchParams.get('take')).toBe('20');
+    expect(filteredApiUrl.searchParams.get('skip')).toBe('20');
+    expect(filteredApiUrl.searchParams.get('review')).toBe('failed');
+    expect(filteredApiUrl.searchParams.get('booking')).toBe('booking-1');
+    const filteredSummaryHref = buildNotificationSummaryApiHref({
+      booking: 'booking-1',
+      range: 'all',
+      review: 'failed',
+    });
+    const filteredSummaryUrl = new URL(filteredSummaryHref, 'http://admin.local');
+    expect(filteredSummaryUrl.pathname).toBe('/admin/notifications/summary');
+    expect(filteredSummaryUrl.searchParams.get('review')).toBe('failed');
+    expect(filteredSummaryUrl.searchParams.get('booking')).toBe('booking-1');
     const todayApiHref = buildNotificationApiHref({});
     const todayApiUrl = new URL(todayApiHref, 'http://admin.local');
     expect(todayApiUrl.pathname).toBe('/admin/notifications');

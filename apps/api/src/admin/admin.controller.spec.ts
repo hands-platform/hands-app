@@ -80,7 +80,14 @@ describe('AdminController notification and push actions', () => {
     admin.listNotifications.mockResolvedValue([{ id: 'notification-1' }]);
 
     await expect(
-      controller.notifications('25', '40', '2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+      controller.notifications(
+        '25',
+        '40',
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'failed',
+        'booking-1',
+      ),
     ).resolves.toEqual([{ id: 'notification-1' }]);
 
     expect(routeMetadata('notifications')).toEqual({
@@ -89,6 +96,8 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listNotifications).toHaveBeenCalledWith({
       from: '2026-06-27T00:00:00.000Z',
+      booking: 'booking-1',
+      review: 'failed',
       skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
@@ -99,7 +108,12 @@ describe('AdminController notification and push actions', () => {
     admin.notificationSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 2400 });
 
     await expect(
-      controller.notificationSummary('2026-06-27T00:00:00.000Z', '2026-06-28T00:00:00.000Z'),
+      controller.notificationSummary(
+        '2026-06-27T00:00:00.000Z',
+        '2026-06-28T00:00:00.000Z',
+        'failed',
+        'booking-1',
+      ),
     ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 2400 });
 
     expect(routeMetadata('notificationSummary')).toEqual({
@@ -108,6 +122,8 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.notificationSummary).toHaveBeenCalledWith({
       from: '2026-06-27T00:00:00.000Z',
+      booking: 'booking-1',
+      review: 'failed',
       to: '2026-06-28T00:00:00.000Z',
     });
   });
