@@ -59,7 +59,7 @@ export default async function AppSessionsPage({
 }) {
   const filters = buildSessionFilters((await searchParams) ?? {});
   const loadedSessions = await adminGet<AdminAppSession[]>(buildAppSessionApiHref(filters), []);
-  const sessions = filterSessions(loadedSessions, filters);
+  const sessions = loadedSessions;
   const summary = buildSessionSummary(sessions);
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
@@ -157,41 +157,6 @@ const sessionQuickFilters: AppSessionQuickFilter[] = [
   { label: 'Stale sessions', href: '/app-sessions?state=stale' },
   { label: 'Expired sessions', href: '/app-sessions?state=expired' },
 ];
-
-function filterSessions(sessions: AdminAppSession[], filters: SessionFilters) {
-  return sessions.filter((session) => {
-    if (filters.role && session.role !== filters.role) {
-      return false;
-    }
-
-    if (filters.state && sessionState(session) !== filters.state) {
-      return false;
-    }
-
-    if (filters.platform && (session.platform ?? 'unknown').toLowerCase() !== filters.platform) {
-      return false;
-    }
-
-    if (filters.q && !sessionSearchHaystack(session).includes(filters.q.toLowerCase())) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function sessionSearchHaystack(session: AdminAppSession) {
-  return [
-    session.user?.phone,
-    session.user?.fullName,
-    session.user?.providerProfile?.displayName,
-    session.deviceId,
-    session.ipAddress,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
 
 function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string, string]> {
   const states = sessions.map(sessionState);
