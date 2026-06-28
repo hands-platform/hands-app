@@ -2,6 +2,7 @@ import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
 import {
   ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
   ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
+  ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
   ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT,
   ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
   ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT,
@@ -20,19 +21,25 @@ describe('admin customer selects', () => {
   });
 
   it('keeps customer detail activity lists bounded', () => {
-    expect(adminCustomerDetailSelect.user.select.appSessions).toMatchObject({ take: 20 });
+    expect(ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT).toBe(10);
+    expect(adminCustomerDetailSelect.user.select.appSessions).toMatchObject({ take: 10 });
     expect(adminCustomerDetailSelect.user.select.appSessions.select).toMatchObject({
       deviceLanguage: true,
       lastLoginAddress: true,
     });
     expect(adminCustomerDetailSelect.user.select.notifications).toMatchObject({
-      take: 20,
+      take: 10,
       select: adminCustomerNotificationSelect,
     });
     expect(adminCustomerDetailSelect.user.select.pushDevices).toMatchObject({
       take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
     });
-    expect(adminCustomerDetailSelect.selectedLocations).toMatchObject({ take: 25 });
+    expect(adminCustomerDetailSelect.selectedLocations).toMatchObject({ take: 10 });
     expect(adminCustomerDetailSelect.bookings).toMatchObject({
       take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
       select: adminCustomerDetailBookingSelect,

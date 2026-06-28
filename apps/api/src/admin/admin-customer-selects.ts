@@ -8,7 +8,7 @@ import {
   adminUserSummarySelect,
 } from './admin-user-selects';
 
-export const ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT = 20;
+export const ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT = 10;
 
 const adminCustomerNotificationDeliverySelect = {
   id: true,
@@ -48,11 +48,11 @@ export const adminCustomerNotificationSelect = {
 } satisfies Prisma.NotificationSelect;
 
 export const ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT = 10;
-export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 25;
-export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 25;
-export const ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT = 25;
-export const ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT = 25;
-export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 25;
+export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 10;
+export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 10;
+export const ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT = 10;
+export const ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT = 10;
+export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 10;
 
 const adminCustomerDetailReviewBookingSelect = {
   id: true,
@@ -100,7 +100,7 @@ export const adminCustomerDetailSelect = {
       ...adminUserSummarySelect,
       appSessions: {
         orderBy: { lastSeenAt: 'desc' },
-        take: 20,
+        take: 10,
         select: adminCustomerDetailAppSessionSelect,
       },
       pushDevices: {
@@ -117,7 +117,7 @@ export const adminCustomerDetailSelect = {
   },
   selectedLocations: {
     orderBy: { createdAt: 'desc' },
-    take: 25,
+    take: 10,
     select: {
       id: true,
       latitude: true,

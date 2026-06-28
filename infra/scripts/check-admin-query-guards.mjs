@@ -392,11 +392,11 @@ if (!adminServiceSource.includes('const skip = adminCustomerDirectorySkip(option
   });
 }
 
-if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 25;')) {
+if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 10;')) {
   violations.push({
     area: 'admin customer detail query',
     file: 'apps/api/src/admin/admin-customer-selects.ts',
-    message: 'Customer detail booking relations must keep a 25-row guard.',
+    message: 'Customer detail booking relations must keep a 10-row guard.',
   });
 }
 
