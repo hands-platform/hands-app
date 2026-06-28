@@ -486,8 +486,12 @@ export class AdminController {
   }
 
   @Get('refunds')
-  refunds() {
-    return this.admin.listRefunds();
+  refunds(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listRefunds({ range, review, take });
   }
 
   @Get('earnings')

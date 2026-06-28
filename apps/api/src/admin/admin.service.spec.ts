@@ -2603,6 +2603,36 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('filters refunds server-side and clamps requested limits', async () => {
+    const prisma = {
+      refund: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listRefunds({
+        range: 'today',
+        review: 'needs-update',
+        take: '500',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.refund.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date) }),
+          payment: expect.objectContaining({
+            status: { not: PaymentStatus.REFUNDED },
+          }),
+          status: 'REQUESTED',
+        }),
+        take: 100,
+      }),
+    );
+  });
+
   it('audits notification retry requests after enqueueing the retry job', async () => {
     const prisma = {
       adminAuditLog: {

@@ -25,10 +25,11 @@ import {
 import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow } from './refunds-table-section';
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+const REFUND_OPERATIONS_API_LIMIT = 100;
 
 export default async function RefundsPage({ searchParams }: { searchParams?: RefundsPageSearchParams }) {
   const filters = buildRefundFilters(searchParams ? await searchParams : {});
-  const allRefunds = sortRefunds(await adminGet<AdminRefund[]>('/admin/refunds', []));
+  const allRefunds = sortRefunds(await adminGet<AdminRefund[]>(buildRefundOperationsApiHref(filters), []));
   const refunds = filterRefunds(allRefunds, filters);
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
   const commandBoard = buildRefundCommandBoard(allRefunds);
@@ -282,10 +283,24 @@ function refundActionExecutionMap(refund: AdminRefund): RefundActionExecutionRow
 }
 
 function buildRefundFilters(params: Record<string, string | string[] | undefined>) {
+  const rangeParam = readSearchParam(params.range);
+
   return {
     review: readSearchParam(params.review),
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
   };
+}
+
+function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilters>) {
+  const params = new URLSearchParams({
+    range: filters.range,
+    take: String(REFUND_OPERATIONS_API_LIMIT),
+  });
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+
+  return `/admin/refunds?${params.toString()}`;
 }
 
 function filterRefunds(refunds: AdminRefund[], filters: ReturnType<typeof buildRefundFilters>) {

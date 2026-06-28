@@ -35,6 +35,7 @@ describe('AdminController notification and push actions', () => {
     adminPushCampaignSummary: vi.fn(),
     listPaymentCallbackAttempts: vi.fn(),
     listPayments: vi.fn(),
+    listRefunds: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
@@ -258,6 +259,22 @@ describe('AdminController notification and push actions', () => {
       range: '7d',
       review: 'callback-review',
       take: '75',
+    });
+  });
+
+  it('exposes refunds as a bounded filtered operations list', async () => {
+    admin.listRefunds.mockResolvedValue([{ id: 'refund-1' }]);
+
+    await expect(controller.refunds('50', '30d', 'needs-update')).resolves.toEqual([{ id: 'refund-1' }]);
+
+    expect(routeMetadata('refunds')).toEqual({
+      method: RequestMethod.GET,
+      path: 'refunds',
+    });
+    expect(admin.listRefunds).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'needs-update',
+      take: '50',
     });
   });
 

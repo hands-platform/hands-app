@@ -260,6 +260,8 @@ const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_PAYMENT_CALLBACK_ATTEMPT_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_CALLBACK_ATTEMPT_MAX_LIMIT = 100;
+const ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT = 50;
+const ADMIN_REFUND_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_REVIEW_BOARD_DEFAULT_LIMIT = 25;
 const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
 
@@ -293,6 +295,7 @@ type AdminPaymentOperationsQuery = {
   readonly take?: number | string | null;
 };
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
+type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -3743,10 +3746,13 @@ export class AdminService {
     });
   }
 
-  listRefunds() {
+  listRefunds(options: AdminRefundOperationsQuery = {}) {
+    const where = adminRefundOperationsWhere(options);
+
     return this.prisma.refund.findMany({
+      ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: adminRefundOperationsTake(options.take),
       select: adminRefundListSelect,
     });
   }
@@ -6705,6 +6711,14 @@ function adminPaymentCallbackAttemptTake(value: number | string | null | undefin
   );
 }
 
+function adminRefundOperationsTake(value: number | string | null | undefined) {
+  return adminBoundedPositiveInteger(
+    value,
+    ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT,
+    ADMIN_REFUND_OPERATIONS_MAX_LIMIT,
+  );
+}
+
 function adminPaymentOperationsWhere(
   options: AdminPaymentOperationsQuery,
 ): Prisma.PaymentWhereInput | undefined {
@@ -6849,6 +6863,36 @@ function adminMergePaymentBookingWhere(
   next: Prisma.BookingWhereInput,
 ): Prisma.BookingWhereInput {
   return existing ? { ...existing, ...next } : next;
+}
+
+function adminRefundOperationsWhere(
+  options: AdminRefundOperationsQuery,
+): Prisma.RefundWhereInput | undefined {
+  const where = adminRefundReviewWhere(options.review) ?? {};
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+
+  if (dateRange) {
+    where.createdAt = dateRange;
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminRefundReviewWhere(review: string | null | undefined): Prisma.RefundWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'open':
+      return { status: { not: 'COMPLETED' } };
+    case 'requested':
+      return { status: 'REQUESTED' };
+    case 'needs-update':
+      return { payment: { status: { not: PaymentStatus.REFUNDED } }, status: 'REQUESTED' };
+    case 'refunded-booking':
+      return { booking: { status: BookingStatus.REFUNDED } };
+    case 'completed':
+      return { status: 'COMPLETED' };
+    default:
+      return undefined;
+  }
 }
 
 function adminBoundedPositiveInteger(
