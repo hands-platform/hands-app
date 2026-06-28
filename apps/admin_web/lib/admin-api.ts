@@ -1458,7 +1458,19 @@ export type AdminNotification = {
 };
 
 export type AdminNotificationBoardSummary = {
+  disabledDevices?: number;
+  failed?: number;
+  fcmDeliveries?: number;
   generatedAt: string;
+  inAppDeliveries?: number;
+  needsRetry?: number;
+  noShow?: number;
+  partnerAlertCount?: number;
+  payoutSetup?: number;
+  pending?: number;
+  sent?: number;
+  skipped?: number;
+  staleDevices?: number;
   totalCount: number;
 };
 

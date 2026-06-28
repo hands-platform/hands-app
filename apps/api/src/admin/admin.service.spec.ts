@@ -2639,7 +2639,25 @@ describe('AdminService query orchestration', () => {
   it('counts notification summary with the same filters without loading rows', async () => {
     const prisma = {
       notification: {
-        count: vi.fn().mockResolvedValue(2400),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(2400)
+          .mockResolvedValueOnce(13)
+          .mockResolvedValueOnce(8)
+          .mockResolvedValueOnce(17)
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(19)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(33),
+      },
+      notificationDelivery: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(121)
+          .mockResolvedValueOnce(7)
+          .mockResolvedValueOnce(172)
+          .mockResolvedValueOnce(64),
       },
     };
     const service = createAdminService(prisma);
@@ -2652,11 +2670,23 @@ describe('AdminService query orchestration', () => {
         to: '2026-06-28T00:00:00.000Z',
       }),
     ).resolves.toMatchObject({
+      disabledDevices: 17,
+      failed: 13,
+      fcmDeliveries: 172,
       totalCount: 2400,
       generatedAt: expect.any(String),
+      inAppDeliveries: 64,
+      needsRetry: 19,
+      noShow: 4,
+      partnerAlertCount: 33,
+      payoutSetup: 5,
+      pending: 8,
+      sent: 121,
+      skipped: 7,
+      staleDevices: 6,
     });
 
-    expect(prisma.notification.count).toHaveBeenCalledWith({
+    expect(prisma.notification.count).toHaveBeenNthCalledWith(1, {
       where: {
         AND: [
           {
@@ -2679,6 +2709,39 @@ describe('AdminService query orchestration', () => {
         },
       },
     });
+    expect(prisma.notification.count).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              deliveries: { some: { status: 'FAILED' } },
+            }),
+          ]),
+        }),
+      }),
+    );
+    expect(prisma.notification.count).toHaveBeenCalledTimes(9);
+    expect(prisma.notificationDelivery.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          notification: expect.objectContaining({
+            createdAt: {
+              gte: new Date('2026-06-27T00:00:00.000Z'),
+              lt: new Date('2026-06-28T00:00:00.000Z'),
+            },
+          }),
+          provider: 'FCM',
+        }),
+      }),
+    );
+    expect(prisma.notificationDelivery.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          provider: 'IN_APP_ONLY',
+        }),
+      }),
+    );
   });
 
   it('rejects invalid notification board date windows', () => {

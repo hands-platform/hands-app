@@ -349,9 +349,17 @@ export function buildNotificationPageModel({
   const loadedCount = allNotifications.length;
   const totalCount = notificationSummary?.totalCount ?? loadedCount;
   const notifications = filterNotifications(allNotifications, filters);
-  const deliveryStats = buildNotificationDeliveryStats(allNotifications);
-  const summary = buildNotificationSummary(allNotifications, deliveryStats);
-  const channelSummary = buildNotificationChannelSummary(allNotifications, operationalPolicies);
+  const loadedDeliveryStats = buildNotificationDeliveryStats(allNotifications);
+  const deliveryStats = notificationSummary
+    ? notificationDeliveryStatsFromServerSummary(notificationSummary, loadedDeliveryStats)
+    : loadedDeliveryStats;
+  const summary = notificationSummary
+    ? notificationSummaryFromServer(notificationSummary, buildNotificationSummary(allNotifications, loadedDeliveryStats))
+    : buildNotificationSummary(allNotifications, loadedDeliveryStats);
+  const channelSummary = notificationChannelSummaryFromServer(
+    notificationSummary,
+    buildNotificationChannelSummary(allNotifications, operationalPolicies),
+  );
   const partnerAlertSmokeFallback = buildNotificationPartnerAlertSmokeFallback(
     allNotifications,
     operationalPolicies,
@@ -391,6 +399,55 @@ export function buildNotificationPageModel({
     reviewRunbook: reviewState.runbook,
     summary,
     totalCount,
+  };
+}
+
+function notificationSummaryFromServer(
+  serverSummary: AdminNotificationBoardSummary,
+  fallback: NotificationSummary,
+): NotificationSummary {
+  return {
+    disabledDevices: serverSummary.disabledDevices ?? fallback.disabledDevices,
+    failed: serverSummary.failed ?? fallback.failed,
+    needsRetry: serverSummary.needsRetry ?? fallback.needsRetry,
+    noShow: serverSummary.noShow ?? fallback.noShow,
+    payoutSetup: serverSummary.payoutSetup ?? fallback.payoutSetup,
+    pending: serverSummary.pending ?? fallback.pending,
+    sent: serverSummary.sent ?? fallback.sent,
+    skipped: serverSummary.skipped ?? fallback.skipped,
+    staleDevices: serverSummary.staleDevices ?? fallback.staleDevices,
+  };
+}
+
+function notificationDeliveryStatsFromServerSummary(
+  serverSummary: AdminNotificationBoardSummary,
+  fallback: NotificationDeliveryStats,
+): NotificationDeliveryStats {
+  return {
+    disabledDevices: serverSummary.disabledDevices ?? fallback.disabledDevices,
+    failedDeliveries: serverSummary.failed ?? fallback.failedDeliveries,
+    failedNotifications: serverSummary.failed ?? fallback.failedNotifications,
+    pendingNotifications: serverSummary.pending ?? fallback.pendingNotifications,
+    retrySignalNotifications: serverSummary.needsRetry ?? fallback.retrySignalNotifications,
+    sentDeliveries: serverSummary.sent ?? fallback.sentDeliveries,
+    skippedDeliveries: serverSummary.skipped ?? fallback.skippedDeliveries,
+    skippedNotifications: serverSummary.skipped ?? fallback.skippedNotifications,
+    stalePushDeviceDeliveries: serverSummary.staleDevices ?? fallback.stalePushDeviceDeliveries,
+  };
+}
+
+function notificationChannelSummaryFromServer(
+  serverSummary: AdminNotificationBoardSummary | null | undefined,
+  fallback: NotificationChannelSummary,
+): NotificationChannelSummary {
+  if (!serverSummary) {
+    return fallback;
+  }
+  return {
+    ...fallback,
+    fcmDeliveries: serverSummary.fcmDeliveries ?? fallback.fcmDeliveries,
+    inAppDeliveries: serverSummary.inAppDeliveries ?? fallback.inAppDeliveries,
+    partnerAlertCount: serverSummary.partnerAlertCount ?? fallback.partnerAlertCount,
   };
 }
 

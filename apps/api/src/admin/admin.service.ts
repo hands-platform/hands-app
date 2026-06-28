@@ -4659,15 +4659,62 @@ export class AdminService {
   }
 
   async notificationSummary(options: NotificationBoardSummaryOptions = {}) {
-    const where = notificationBoardWhere(options);
-    const args: Prisma.NotificationCountArgs = {};
-    if (where) {
-      args.where = where;
-    }
+    const baseWhere = notificationBoardWhere(options);
+    const countNotifications = (where?: Prisma.NotificationWhereInput) =>
+      this.prisma.notification.count(notificationCountArgs(notificationBoardAndWhere(baseWhere, where)));
+    const countDeliveries = (where: Prisma.NotificationDeliveryWhereInput) =>
+      this.prisma.notificationDelivery.count({
+        where: {
+          ...where,
+          ...(baseWhere ? { notification: baseWhere } : {}),
+        },
+      });
+
+    const [
+      totalCount,
+      failed,
+      sent,
+      skipped,
+      pending,
+      disabledDevices,
+      staleDevices,
+      needsRetry,
+      noShow,
+      payoutSetup,
+      partnerAlertCount,
+      fcmDeliveries,
+      inAppDeliveries,
+    ] = await Promise.all([
+      countNotifications(),
+      countNotifications(notificationDeliveryStatusWhere('FAILED')),
+      countDeliveries({ status: 'SENT' }),
+      countDeliveries({ status: 'SKIPPED' }),
+      countNotifications({ deliveries: { none: {} } }),
+      countNotifications({ user: { pushDevices: { some: { enabled: false } } } }),
+      countNotifications(notificationStaleDeliveryCandidateWhere()),
+      countNotifications(notificationBoardReviewWhere('needs-retry')),
+      countNotifications({ type: 'booking.no_show' }),
+      countNotifications({ type: 'provider.payout_setup_required' }),
+      countNotifications({ type: { in: [...ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES] } }),
+      countDeliveries({ provider: 'FCM' }),
+      countDeliveries({ provider: 'IN_APP_ONLY' }),
+    ]);
 
     return {
       generatedAt: new Date().toISOString(),
-      totalCount: await this.prisma.notification.count(args),
+      disabledDevices,
+      failed,
+      fcmDeliveries,
+      inAppDeliveries,
+      needsRetry,
+      noShow,
+      partnerAlertCount,
+      payoutSetup,
+      pending,
+      sent,
+      skipped,
+      staleDevices,
+      totalCount,
     };
   }
 
@@ -6411,6 +6458,24 @@ function normalizeNotificationBoardSkip(value: string | undefined) {
     return 0;
   }
   return Math.min(parsed, 10000);
+}
+
+function notificationCountArgs(where?: Prisma.NotificationWhereInput): Prisma.NotificationCountArgs {
+  return where ? { where } : {};
+}
+
+function notificationBoardAndWhere(
+  baseWhere?: Prisma.NotificationWhereInput,
+  extraWhere?: Prisma.NotificationWhereInput,
+): Prisma.NotificationWhereInput | undefined {
+  const filters = [baseWhere, extraWhere].filter(Boolean) as Prisma.NotificationWhereInput[];
+  if (filters.length === 0) {
+    return undefined;
+  }
+  if (filters.length === 1) {
+    return filters[0];
+  }
+  return { AND: filters };
 }
 
 type NotificationBoardSummaryOptions = {

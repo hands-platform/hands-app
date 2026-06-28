@@ -833,6 +833,57 @@ describe('notification page model', () => {
     });
   });
 
+  it('uses server notification summary metrics instead of the currently loaded page rows', () => {
+    const model = buildNotificationPageModel({
+      notifications: [],
+      notificationSummary: {
+        generatedAt: '2026-06-27T00:00:00.000Z',
+        totalCount: 2400,
+        disabledDevices: 17,
+        failed: 13,
+        fcmDeliveries: 172,
+        inAppDeliveries: 64,
+        needsRetry: 19,
+        noShow: 4,
+        partnerAlertCount: 33,
+        payoutSetup: 5,
+        pending: 8,
+        sent: 121,
+        skipped: 7,
+        staleDevices: 6,
+      },
+      operationalPolicies: [],
+      params: {},
+    });
+
+    expect(Object.fromEntries(model.metrics.map((metric) => [metric.label, metric.value]))).toMatchObject({
+      'Disabled devices': 17,
+      Failed: 13,
+      'FCM route': 172,
+      'Needs retry': 19,
+      'No-show alerts': 4,
+      'Partner alerts': 33,
+      'Payout setup': 5,
+      Pending: 8,
+      Sent: 121,
+      Skipped: 7,
+      'Stale devices': 6,
+      Total: 2400,
+    });
+    expect(model.opsQueue.map((item) => [item.key, item.count])).toEqual([
+      ['failed', 13],
+      ['disabled-devices', 17],
+      ['stale-devices', 6],
+      ['skipped', 7],
+      ['pending', 8],
+    ]);
+    expect(model.channelSummary).toMatchObject({
+      fcmDeliveries: 172,
+      inAppDeliveries: 64,
+      partnerAlertCount: 33,
+    });
+  });
+
   it('builds the FCM route model with retry confirmation guidance', () => {
     const model = buildNotificationPageModel({
       notifications: [
