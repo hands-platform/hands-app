@@ -24,6 +24,7 @@ import {
   ProviderSanctionStatus,
   ProviderSanctionType,
   ProviderStatus,
+  ProviderTaxProfileStatus,
   ReviewStatus,
   ReferralAttributionStatus,
   Role,
@@ -8137,6 +8138,29 @@ function adminPartnerDirectoryReviewWhere(
       AND: [
         { bankAccounts: { some: {} } },
         { bankAccounts: { none: { status: ProviderBankAccountStatus.APPROVED } } },
+      ],
+    };
+  }
+  if (review === 'tax') {
+    return {
+      taxProfile: {
+        is: {
+          status: { in: [ProviderTaxProfileStatus.PENDING_REVIEW, ProviderTaxProfileStatus.REJECTED] },
+        },
+      },
+    };
+  }
+  if (review === 'reports') {
+    return {
+      OR: [
+        {
+          reports: {
+            some: {
+              status: { in: [ProviderReportStatus.OPEN, ProviderReportStatus.INVESTIGATING] },
+            },
+          },
+        },
+        { sanctions: { some: { status: ProviderSanctionStatus.ACTIVE } } },
       ],
     };
   }
