@@ -437,9 +437,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     return <PartnerDetailFastOverview dispatchPolicy={dispatchPolicy} provider={provider} />;
   }
 
+  const reviewQuery = new URLSearchParams({
+    providerProfileId: provider.id,
+    take: '50',
+  }).toString();
   const [customerReviews, partnerEvaluations] = await Promise.all([
-    adminGet<AdminReview[]>('/admin/reviews', []),
-    adminGet<AdminPartnerCustomerReview[]>('/admin/partner-customer-reviews', []),
+    adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, []),
+    adminGet<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, []),
   ]);
   const partnerReviewRecords = reviewRecordsForPartner(customerReviews, partnerEvaluations, provider.id);
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);

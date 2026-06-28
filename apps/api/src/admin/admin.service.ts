@@ -415,7 +415,10 @@ type AdminAuditLogListOptions = {
 };
 
 type AdminReviewBoardSummaryOptions = {
+  bookingId?: string | null;
+  customerProfileId?: string | null;
   from?: string | null;
+  providerProfileId?: string | null;
   q?: string | null;
   review?: string | null;
   to?: string | null;
@@ -6100,12 +6103,24 @@ function adminReviewBoardSkip(value: number | string | null | undefined) {
 
 function adminReviewBoardWhere(options: AdminReviewBoardSummaryOptions): Prisma.ReviewWhereInput | undefined {
   const where: Prisma.ReviewWhereInput = {};
+  const bookingId = normalizeNullable(options.bookingId);
+  const customerProfileId = normalizeNullable(options.customerProfileId);
   const dateWhere = adminReviewBoardDateWhere(options);
+  const providerProfileId = normalizeNullable(options.providerProfileId);
   const statusWhere = adminReviewBoardStatusWhere(options.review);
   const q = normalizeNullable(options.q);
 
+  if (bookingId) {
+    where.bookingId = bookingId;
+  }
+  if (customerProfileId) {
+    where.customerProfileId = customerProfileId;
+  }
   if (dateWhere) {
     Object.assign(where, dateWhere);
+  }
+  if (providerProfileId) {
+    where.providerProfileId = providerProfileId;
   }
   if (statusWhere) {
     Object.assign(where, statusWhere);
@@ -6131,11 +6146,23 @@ function adminPartnerCustomerReviewBoardWhere(
   options: AdminPartnerCustomerReviewBoardSummaryOptions,
 ): Prisma.ProviderCustomerReviewWhereInput | undefined {
   const where: Prisma.ProviderCustomerReviewWhereInput = {};
+  const bookingId = normalizeNullable(options.bookingId);
+  const customerProfileId = normalizeNullable(options.customerProfileId);
   const dateWhere = adminPartnerCustomerReviewBoardDateWhere(options);
+  const providerProfileId = normalizeNullable(options.providerProfileId);
   const q = normalizeNullable(options.q);
 
+  if (bookingId) {
+    where.bookingId = bookingId;
+  }
+  if (customerProfileId) {
+    where.customerProfileId = customerProfileId;
+  }
   if (dateWhere) {
     Object.assign(where, dateWhere);
+  }
+  if (providerProfileId) {
+    where.providerProfileId = providerProfileId;
   }
   if (q) {
     where.OR = [

@@ -219,7 +219,7 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.GET,
       path: 'reviews/summary',
     });
-    expect(admin.listReviews).toHaveBeenCalledWith({
+    expect(admin.listReviews).toHaveBeenCalledWith(expect.objectContaining({
       from: '2026-06-27T00:00:00.000Z',
       q: 'mai',
       review: 'held',
@@ -227,13 +227,13 @@ describe('AdminController notification and push actions', () => {
       sort: 'rating-desc',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
-    });
-    expect(admin.reviewSummary).toHaveBeenCalledWith({
+    }));
+    expect(admin.reviewSummary).toHaveBeenCalledWith(expect.objectContaining({
       from: '2026-06-27T00:00:00.000Z',
       q: 'mai',
       review: 'held',
       to: '2026-06-28T00:00:00.000Z',
-    });
+    }));
   });
 
   it('exposes partner customer evaluations as a bounded filtered list with a summary endpoint', async () => {
@@ -269,19 +269,59 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.GET,
       path: 'partner-customer-reviews/summary',
     });
-    expect(admin.listPartnerCustomerReviews).toHaveBeenCalledWith({
+    expect(admin.listPartnerCustomerReviews).toHaveBeenCalledWith(expect.objectContaining({
       from: '2026-06-27T00:00:00.000Z',
       q: 'late',
       skip: '20',
       sort: 'oldest',
       take: '10',
       to: '2026-06-28T00:00:00.000Z',
-    });
-    expect(admin.partnerCustomerReviewSummary).toHaveBeenCalledWith({
+    }));
+    expect(admin.partnerCustomerReviewSummary).toHaveBeenCalledWith(expect.objectContaining({
       from: '2026-06-27T00:00:00.000Z',
       q: 'late',
       to: '2026-06-28T00:00:00.000Z',
-    });
+    }));
+  });
+
+  it('passes detail page review identity filters through to the admin service', async () => {
+    admin.listReviews.mockResolvedValue([{ id: 'review-1' }]);
+    admin.listPartnerCustomerReviews.mockResolvedValue([{ id: 'evaluation-1' }]);
+
+    await expect(
+      controller.reviews(
+        '50',
+        '0',
+        undefined,
+        undefined,
+        undefined,
+        'newest',
+        undefined,
+        'provider-1',
+        undefined,
+        undefined,
+      ),
+    ).resolves.toEqual([{ id: 'review-1' }]);
+    await expect(
+      controller.partnerCustomerReviews(
+        '50',
+        '0',
+        undefined,
+        undefined,
+        'newest',
+        undefined,
+        'provider-1',
+        undefined,
+        undefined,
+      ),
+    ).resolves.toEqual([{ id: 'evaluation-1' }]);
+
+    expect(admin.listReviews).toHaveBeenCalledWith(
+      expect.objectContaining({ providerProfileId: 'provider-1' }),
+    );
+    expect(admin.listPartnerCustomerReviews).toHaveBeenCalledWith(
+      expect.objectContaining({ providerProfileId: 'provider-1' }),
+    );
   });
 
   it('exposes notification templates as a GET catalog', async () => {

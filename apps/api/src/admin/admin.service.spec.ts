@@ -3462,4 +3462,36 @@ describe('AdminService query orchestration', () => {
       where: expect.objectContaining({ OR: expect.any(Array) }),
     });
   });
+
+  it('scopes review lists to a provider profile for detail pages', async () => {
+    const prisma = {
+      review: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'review-1' }]),
+      },
+      providerCustomerReview: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'evaluation-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listReviews({ providerProfileId: 'provider-1', take: '50' }),
+    ).resolves.toEqual([{ id: 'review-1' }]);
+    await expect(
+      service.listPartnerCustomerReviews({ providerProfileId: 'provider-1', take: '50' }),
+    ).resolves.toEqual([{ id: 'evaluation-1' }]);
+
+    expect(prisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 50,
+        where: expect.objectContaining({ providerProfileId: 'provider-1' }),
+      }),
+    );
+    expect(prisma.providerCustomerReview.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 50,
+        where: expect.objectContaining({ providerProfileId: 'provider-1' }),
+      }),
+    );
+  });
 });

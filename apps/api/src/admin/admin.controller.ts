@@ -568,8 +568,22 @@ export class AdminController {
     @Query('review') review?: string,
     @Query('sort') sort?: string,
     @Query('q') q?: string,
+    @Query('providerProfileId') providerProfileId?: string,
+    @Query('customerProfileId') customerProfileId?: string,
+    @Query('bookingId') bookingId?: string,
   ) {
-    return this.admin.listReviews({ from, q, review, skip, sort, take, to });
+    return this.admin.listReviews({
+      bookingId,
+      customerProfileId,
+      from,
+      providerProfileId,
+      q,
+      review,
+      skip,
+      sort,
+      take,
+      to,
+    });
   }
 
   @Get('reviews/summary')
@@ -578,8 +592,11 @@ export class AdminController {
     @Query('to') to?: string,
     @Query('review') review?: string,
     @Query('q') q?: string,
+    @Query('providerProfileId') providerProfileId?: string,
+    @Query('customerProfileId') customerProfileId?: string,
+    @Query('bookingId') bookingId?: string,
   ) {
-    return this.admin.reviewSummary({ from, q, review, to });
+    return this.admin.reviewSummary({ bookingId, customerProfileId, from, providerProfileId, q, review, to });
   }
 
   @Get('partner-customer-reviews')
@@ -590,8 +607,21 @@ export class AdminController {
     @Query('to') to?: string,
     @Query('sort') sort?: string,
     @Query('q') q?: string,
+    @Query('providerProfileId') providerProfileId?: string,
+    @Query('customerProfileId') customerProfileId?: string,
+    @Query('bookingId') bookingId?: string,
   ) {
-    return this.admin.listPartnerCustomerReviews({ from, q, skip, sort, take, to });
+    return this.admin.listPartnerCustomerReviews({
+      bookingId,
+      customerProfileId,
+      from,
+      providerProfileId,
+      q,
+      skip,
+      sort,
+      take,
+      to,
+    });
   }
 
   @Get('partner-customer-reviews/summary')
@@ -599,8 +629,11 @@ export class AdminController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('q') q?: string,
+    @Query('providerProfileId') providerProfileId?: string,
+    @Query('customerProfileId') customerProfileId?: string,
+    @Query('bookingId') bookingId?: string,
   ) {
-    return this.admin.partnerCustomerReviewSummary({ from, q, to });
+    return this.admin.partnerCustomerReviewSummary({ bookingId, customerProfileId, from, providerProfileId, q, to });
   }
 
   @Patch('reviews/:id/moderate')
