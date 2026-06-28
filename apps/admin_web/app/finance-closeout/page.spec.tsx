@@ -50,19 +50,19 @@ describe('FinanceCloseoutPage', () => {
     } as AdminRefund;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=50') {
+      if (href === '/admin/payments?range=today&take=25') {
         return [] as AdminPayment[];
       }
-      if (href === '/admin/refunds?range=today&take=50') {
+      if (href === '/admin/refunds?range=today&take=25') {
         return [refund];
       }
       if (href === '/admin/earnings/summary?range=today') {
         return summary;
       }
-      if (href === '/admin/earnings?range=today&take=50') {
+      if (href === '/admin/earnings?range=today&take=25') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/payout-batches?range=today&take=50') {
+      if (href === '/admin/payout-batches?range=today&take=25') {
         return [] as AdminPayoutBatch[];
       }
       if (href === '/admin/cash-settlement-summary?range=today') {
