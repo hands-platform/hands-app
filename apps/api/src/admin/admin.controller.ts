@@ -334,13 +334,22 @@ export class AdminController {
     @Query('skip') skip?: string,
     @Query('q') q?: string,
     @Query('review') review?: string,
+    @Query('verification') verification?: string,
+    @Query('providerStatus') providerStatus?: string,
+    @Query('kyc') kyc?: string,
   ) {
-    return this.admin.listPartnerDirectoryProviders({ q, review, skip, take });
+    return this.admin.listPartnerDirectoryProviders({ kyc, providerStatus, q, review, skip, take, verification });
   }
 
   @Get('partners/list-providers/summary')
-  partnerDirectorySummary(@Query('q') q?: string, @Query('review') review?: string) {
-    return this.admin.partnerDirectorySummary({ q, review });
+  partnerDirectorySummary(
+    @Query('q') q?: string,
+    @Query('review') review?: string,
+    @Query('verification') verification?: string,
+    @Query('providerStatus') providerStatus?: string,
+    @Query('kyc') kyc?: string,
+  ) {
+    return this.admin.partnerDirectorySummary({ kyc, providerStatus, q, review, verification });
   }
 
   @Get(['providers/:id/overview', 'partners/:id/overview'])

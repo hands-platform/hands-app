@@ -2879,6 +2879,75 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('supports simple partner state filters before loading row details', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        kyc: 'APPROVED',
+        providerStatus: 'ONLINE_AVAILABLE',
+        take: '10',
+        verification: 'SUBMITTED',
+      }),
+    ).resolves.toEqual([]);
+    await expect(
+      service.partnerDirectorySummary({
+        kyc: 'APPROVED',
+        providerStatus: 'ONLINE_AVAILABLE',
+        verification: 'SUBMITTED',
+      }),
+    ).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 0,
+    });
+
+    const expectedWhere = {
+      AND: [
+        { verification: { is: { status: 'SUBMITTED' } } },
+        { status: 'ONLINE_AVAILABLE' },
+        { kyc: { is: { status: 'APPROVED' } } },
+      ],
+    };
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: expectedWhere,
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: expectedWhere,
+    });
+  });
+
+  it('treats verification BLOCKED as account blocked in the partner directory query', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        take: '10',
+        verification: 'BLOCKED',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: { blockedAt: { not: null } },
+      }),
+    );
+  });
+
   it('supports unsettled partner directory filtering from wallet aggregation before loading row details', async () => {
     const prisma = {
       providerEarning: {

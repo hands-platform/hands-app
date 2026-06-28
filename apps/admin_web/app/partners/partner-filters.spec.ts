@@ -60,6 +60,34 @@ describe('partner filters', () => {
     });
   });
 
+  it('pushes simple provider state filters to the bounded API list and summary', () => {
+    const filters = buildProviderFilters({
+      kyc: 'APPROVED',
+      providerStatus: 'ONLINE_AVAILABLE',
+      verification: 'SUBMITTED',
+    });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref:
+        '/admin/partners/list-providers?take=10&verification=SUBMITTED&providerStatus=ONLINE_AVAILABLE&kyc=APPROVED',
+      listIsServerPaginated: true,
+      summaryHref:
+        '/admin/partners/list-providers/summary?verification=SUBMITTED&providerStatus=ONLINE_AVAILABLE&kyc=APPROVED',
+      summaryMatchesVisibleFilter: true,
+    });
+  });
+
+  it('keeps calculated partner filters on the local bounded hydration path', () => {
+    const filters = buildProviderFilters({ location: 'stale' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=10',
+      listIsServerPaginated: false,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
+  });
+
   it('pushes the primary unapproved partner review lane to the bounded API list', () => {
     const filters = buildProviderFilters({ review: 'unapproved' });
 

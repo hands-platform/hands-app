@@ -518,8 +518,11 @@ type AdminCustomerGenderGroupRow = {
 };
 
 type AdminPartnerDirectorySummaryOptions = {
+  kyc?: string | null;
+  providerStatus?: string | null;
   q?: string | null;
   review?: string | null;
+  verification?: string | null;
 };
 
 type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
@@ -8010,6 +8013,9 @@ function adminPartnerDirectoryWhere(
 ): Prisma.ProviderProfileWhereInput | undefined {
   return adminPartnerDirectoryAndWhere([
     adminPartnerDirectorySearchWhere(options.q),
+    adminPartnerDirectoryVerificationWhere(options.verification),
+    adminPartnerDirectoryProviderStatusWhere(options.providerStatus),
+    adminPartnerDirectoryKycWhere(options.kyc),
     adminPartnerDirectoryReviewWhere(options.review),
   ]);
 }
@@ -8051,6 +8057,48 @@ function adminPartnerDirectorySearchWhere(
       },
     ],
   };
+}
+
+function adminPartnerDirectoryVerificationWhere(
+  value: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const verification = normalizeNullable(value);
+
+  if (!verification) {
+    return undefined;
+  }
+  if (verification === 'BLOCKED') {
+    return { blockedAt: { not: null } };
+  }
+  if (!isVerificationStatus(verification)) {
+    return undefined;
+  }
+
+  return { verification: { is: { status: verification } } };
+}
+
+function adminPartnerDirectoryProviderStatusWhere(
+  value: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const status = normalizeNullable(value);
+
+  if (!status || !isProviderStatus(status)) {
+    return undefined;
+  }
+
+  return { status };
+}
+
+function adminPartnerDirectoryKycWhere(
+  value: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const status = normalizeNullable(value);
+
+  if (!status || !isProviderKycStatus(status)) {
+    return undefined;
+  }
+
+  return { kyc: { is: { status } } };
 }
 
 function adminPartnerDirectoryReviewWhere(
@@ -8098,6 +8146,18 @@ function adminPartnerDirectoryReviewWhere(
       },
     ],
   };
+}
+
+function isVerificationStatus(value: string): value is VerificationStatus {
+  return (Object.values(VerificationStatus) as string[]).includes(value);
+}
+
+function isProviderStatus(value: string): value is ProviderStatus {
+  return (Object.values(ProviderStatus) as string[]).includes(value);
+}
+
+function isProviderKycStatus(value: string): value is ProviderKycStatus {
+  return (Object.values(ProviderKycStatus) as string[]).includes(value);
 }
 
 function adminCustomerDirectoryWhere(

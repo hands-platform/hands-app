@@ -1184,8 +1184,20 @@ describe('AdminController notification and push actions', () => {
     admin.listPartnerDirectoryProviders.mockResolvedValue([{ id: 'partner-1' }]);
     admin.partnerDirectorySummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 12 });
 
-    await expect(controller.partnerDirectoryProviders('25', '50', 'linh', 'unapproved')).resolves.toEqual([{ id: 'partner-1' }]);
-    await expect(controller.partnerDirectorySummary('linh', 'unapproved')).resolves.toEqual({
+    await expect(
+      controller.partnerDirectoryProviders(
+        '25',
+        '50',
+        'linh',
+        'unapproved',
+        'SUBMITTED',
+        'ONLINE_AVAILABLE',
+        'APPROVED',
+      ),
+    ).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(
+      controller.partnerDirectorySummary('linh', 'unapproved', 'SUBMITTED', 'ONLINE_AVAILABLE', 'APPROVED'),
+    ).resolves.toEqual({
       generatedAt: '2026-06-27T00:00:00.000Z',
       totalCount: 12,
     });
@@ -1203,8 +1215,17 @@ describe('AdminController notification and push actions', () => {
       review: 'unapproved',
       skip: '50',
       take: '25',
+      verification: 'SUBMITTED',
+      providerStatus: 'ONLINE_AVAILABLE',
+      kyc: 'APPROVED',
     });
-    expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({ q: 'linh', review: 'unapproved' });
+    expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({
+      q: 'linh',
+      review: 'unapproved',
+      verification: 'SUBMITTED',
+      providerStatus: 'ONLINE_AVAILABLE',
+      kyc: 'APPROVED',
+    });
   });
 });
 
