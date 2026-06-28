@@ -8,13 +8,13 @@ import {
 describe('admin usage overview helpers', () => {
   const now = new Date('2026-06-22T10:20:30.000Z');
 
-  it('normalizes supported range filters and defaults to 7 days', () => {
-    expect(normalizeAdminUsageRange(undefined)).toBe('7d');
+  it('normalizes supported range filters and defaults to today', () => {
+    expect(normalizeAdminUsageRange(undefined)).toBe('today');
     expect(normalizeAdminUsageRange('today')).toBe('today');
     expect(normalizeAdminUsageRange('yesterday')).toBe('yesterday');
     expect(normalizeAdminUsageRange('month')).toBe('month');
     expect(normalizeAdminUsageRange('all')).toBe('all');
-    expect(normalizeAdminUsageRange('bad-input')).toBe('7d');
+    expect(normalizeAdminUsageRange('bad-input')).toBe('today');
   });
 
   it('builds bounded windows for today, yesterday, 7 days, and month without realtime GPS', () => {

@@ -31,7 +31,7 @@ export type AdminUsageRegionRow = {
   completedBookingCount: number;
 };
 
-const DEFAULT_USAGE_RANGE: AdminUsageOverviewRange = '7d';
+const DEFAULT_USAGE_RANGE: AdminUsageOverviewRange = 'today';
 const USAGE_RANGE_LABELS: Record<AdminUsageOverviewRange, string> = {
   today: 'Today',
   yesterday: 'Yesterday',

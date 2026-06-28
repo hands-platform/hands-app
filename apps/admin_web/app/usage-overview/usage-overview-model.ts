@@ -17,7 +17,7 @@ export function normalizeUsageOverviewRange(value: string | string[] | undefined
 
   return usageOverviewRanges.has(candidate as UsageOverviewRange)
     ? (candidate as UsageOverviewRange)
-    : '7d';
+    : 'today';
 }
 
 export function usageOverviewHref(range: UsageOverviewRange) {
