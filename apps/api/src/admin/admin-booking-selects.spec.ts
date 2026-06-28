@@ -64,6 +64,10 @@ describe('admin booking selects', () => {
         },
       },
     });
+    expect(adminBookingListSelect.participants).toMatchObject({
+      orderBy: { joinedAt: 'asc' },
+      take: 10,
+    });
     expect(
       'messages' in (adminBookingListSelect.chatRoom.select as Record<string, unknown>),
     ).toBe(false);
@@ -103,6 +107,7 @@ describe('admin booking selects', () => {
     expect(adminCustomerBookingListSelect).toHaveProperty('metadata', false);
     expect(adminCustomerDetailBookingSelect).toHaveProperty('metadata', false);
     expect(adminCustomerDetailBookingSelect.walletLedgerEntries).toMatchObject({ take: 5 });
+    expect(adminCustomerDetailBookingSelect.opsTasks).toMatchObject({ take: 5 });
     expect(ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT).toBeLessThanOrEqual(5);
     expect(adminCustomerDetailBookingSelect.chatRoom.select.messages).toMatchObject({
       take: ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT,

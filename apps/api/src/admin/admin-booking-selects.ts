@@ -113,6 +113,7 @@ export const adminBookingListSelect = {
   selectedProvider: { select: adminProviderBookingListSummarySelect },
   participants: {
     orderBy: { joinedAt: 'asc' },
+    take: 10,
     select: {
       id: true,
       providerProfileId: true,
@@ -190,6 +191,7 @@ export const adminCustomerDetailBookingSelect = {
   },
   opsTasks: {
     orderBy: { updatedAt: 'desc' },
+    take: 5,
     select: adminBookingOpsTaskSummarySelect,
   },
   chatRoom: {
