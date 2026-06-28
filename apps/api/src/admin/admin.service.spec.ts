@@ -2422,10 +2422,10 @@ describe('AdminService query orchestration', () => {
       'bookings',
       'online',
     ]);
-    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
-    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(2);
-    expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100]);
+    expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([50, 50]);
     expect(serialized).toContain('latitude');
     expect(serialized).toContain('longitude');
     expect(serialized).not.toContain('currentLat');
