@@ -27,7 +27,7 @@ describe('FilesPage', () => {
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(hrefs).toContain('/admin/files/review-providers?take=25&skip=50');
+    expect(hrefs).toContain('/admin/files/review-providers?take=10&skip=20');
     expect(hrefs).toContain('/admin/files/review-summary');
   });
 });

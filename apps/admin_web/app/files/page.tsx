@@ -38,7 +38,7 @@ type FileReviewServerSummary = FileReviewSummary & {
 };
 
 const FILE_REVIEW_HEADERS = ['File', 'Partner', 'Status', 'Upload', 'Evidence', 'Actions'] as const;
-const FILE_REVIEW_PROVIDER_PAGE_SIZE = 25;
+const FILE_REVIEW_PROVIDER_PAGE_SIZE = 10;
 
 export default async function FilesPage({ searchParams }: { searchParams?: FilesPageSearchParams }) {
   const params = (await searchParams) ?? {};
