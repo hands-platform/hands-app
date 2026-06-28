@@ -55,7 +55,7 @@ describe('dashboard page model', () => {
     expect(hrefs.partnersHref).toBeNull();
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
-    expect(bookingUrl.searchParams.get('take')).toBe('100');
+    expect(bookingUrl.searchParams.get('take')).toBe('50');
     expect(notificationUrl.pathname).toBe('/admin/notifications');
     expect(notificationUrl.searchParams.get('take')).toBe('20');
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('from') ?? ''))).toBe(true);
@@ -66,14 +66,14 @@ describe('dashboard page model', () => {
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(paymentUrl.searchParams.get('range')).toBe('today');
-    expect(paymentUrl.searchParams.get('take')).toBe('50');
+    expect(paymentUrl.searchParams.get('take')).toBe('25');
     expect(earningUrl.searchParams.get('range')).toBe('today');
-    expect(earningUrl.searchParams.get('take')).toBe('50');
+    expect(earningUrl.searchParams.get('take')).toBe('25');
     expect(refundUrl.searchParams.get('range')).toBe('today');
-    expect(refundUrl.searchParams.get('take')).toBe('50');
+    expect(refundUrl.searchParams.get('take')).toBe('25');
     expect(payoutBatchUrl.searchParams.get('range')).toBe('today');
-    expect(payoutBatchUrl.searchParams.get('take')).toBe('50');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchUrl.searchParams.get('take')).toBe('25');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('25');
     expect(appSessionsUrl.searchParams.get('role')).toBe('PROVIDER');
   });
 
@@ -87,7 +87,7 @@ describe('dashboard page model', () => {
     expect(usersUrl.searchParams.get('take')).toBe('50');
     expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
     expect(partnersUrl.searchParams.get('take')).toBe('50');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('25');
     expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });
 
@@ -103,8 +103,8 @@ describe('dashboard page model', () => {
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(paymentUrl.searchParams.get('range')).toBe('7d');
-    expect(paymentUrl.searchParams.get('take')).toBe('50');
+    expect(paymentUrl.searchParams.get('take')).toBe('25');
     expect(payoutBatchUrl.searchParams.get('range')).toBe('7d');
-    expect(payoutBatchUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchUrl.searchParams.get('take')).toBe('25');
   });
 });
