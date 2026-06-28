@@ -44,6 +44,11 @@ describe('dashboard page model', () => {
     const bookingUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const notificationUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.bookingGateAuditHref, 'http://admin.local');
+    const paymentUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
+    const earningUrl = new URL(hrefs.earningsHref, 'http://admin.local');
+    const refundUrl = new URL(hrefs.refundsHref, 'http://admin.local');
+    const payoutBatchUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
+    const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
 
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
@@ -57,16 +62,31 @@ describe('dashboard page model', () => {
     expect(auditUrl.searchParams.get('take')).toBe('20');
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(paymentUrl.searchParams.get('range')).toBe('today');
+    expect(paymentUrl.searchParams.get('take')).toBe('50');
+    expect(earningUrl.searchParams.get('range')).toBe('today');
+    expect(earningUrl.searchParams.get('take')).toBe('50');
+    expect(refundUrl.searchParams.get('range')).toBe('today');
+    expect(refundUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchUrl.searchParams.get('range')).toBe('today');
+    expect(payoutBatchUrl.searchParams.get('take')).toBe('50');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
   });
 
   it('preserves selected dashboard range for bounded list requests', () => {
     const hrefs = buildDashboardDataHrefs({ range: '7d' });
     const bookingUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const notificationUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
+    const paymentUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
+    const payoutBatchUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
     expect(bookingUrl.searchParams.get('dateRange')).toBe('7d');
     expect(notificationUrl.searchParams.get('take')).toBe('20');
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(paymentUrl.searchParams.get('range')).toBe('7d');
+    expect(paymentUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchUrl.searchParams.get('range')).toBe('7d');
+    expect(payoutBatchUrl.searchParams.get('take')).toBe('50');
   });
 });

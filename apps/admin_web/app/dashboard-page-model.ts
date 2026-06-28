@@ -26,6 +26,8 @@ export type DashboardDataHrefs = {
 const DASHBOARD_BOOKING_TAKE = 100;
 const DASHBOARD_NOTIFICATION_TAKE = 20;
 const DASHBOARD_AUDIT_TAKE = 20;
+const DASHBOARD_FINANCE_TAKE = 50;
+const DASHBOARD_APP_SESSION_TAKE = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function buildDashboardViewMode(params: DashboardParams): DashboardViewMode {
@@ -40,7 +42,9 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const viewMode = buildDashboardViewMode(params);
   const range = buildDashboardRange(params);
   return {
-    appSessionsHref: '/admin/app-sessions',
+    appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
+      take: String(DASHBOARD_APP_SESSION_TAKE),
+    }).toString()}`,
     bookingGateAuditHref: buildDashboardDateScopedHref(
       '/admin/audit-logs',
       {
@@ -53,7 +57,11 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       dateRange: range,
       take: String(DASHBOARD_BOOKING_TAKE),
     }).toString()}`,
-    earningsHref: '/admin/earnings',
+    earningsHref: buildDashboardRangeScopedHref(
+      '/admin/earnings',
+      { take: String(DASHBOARD_FINANCE_TAKE) },
+      range,
+    ),
     notificationsHref: buildDashboardDateScopedHref(
       '/admin/notifications',
       { take: String(DASHBOARD_NOTIFICATION_TAKE) },
@@ -61,9 +69,21 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
     ),
     operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
     partnersHref: '/admin/partners?view=list',
-    paymentsHref: '/admin/payments',
-    payoutBatchesHref: '/admin/payout-batches',
-    refundsHref: '/admin/refunds',
+    paymentsHref: buildDashboardRangeScopedHref(
+      '/admin/payments',
+      { take: String(DASHBOARD_FINANCE_TAKE) },
+      range,
+    ),
+    payoutBatchesHref: buildDashboardRangeScopedHref(
+      '/admin/payout-batches',
+      { take: String(DASHBOARD_FINANCE_TAKE) },
+      range,
+    ),
+    refundsHref: buildDashboardRangeScopedHref(
+      '/admin/refunds',
+      { take: String(DASHBOARD_FINANCE_TAKE) },
+      range,
+    ),
     usersHref: '/admin/users',
   };
 }
@@ -103,6 +123,16 @@ function buildDashboardDateScopedHref(
   if (window.to) {
     query.set('to', window.to.toISOString());
   }
+  return `${pathname}?${query.toString()}`;
+}
+
+function buildDashboardRangeScopedHref(
+  pathname: string,
+  baseParams: Record<string, string>,
+  range: ReturnType<typeof normalizeDateRange>,
+) {
+  const query = new URLSearchParams(baseParams);
+  query.set('range', range);
   return `${pathname}?${query.toString()}`;
 }
 
