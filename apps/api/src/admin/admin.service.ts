@@ -447,6 +447,11 @@ const adminPartnerReferralParentSelect = {
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
 
+type AdminUserListOptions = {
+  skip?: number | string | null;
+  take?: number | string | null;
+};
+
 type AdminAuditLogListOptions = {
   action?: string | null;
   bucket?: string | null;
@@ -828,10 +833,13 @@ export class AdminService {
     private readonly referrals: ReferralsService,
   ) {}
 
-  listUsers() {
+  listUsers(options: AdminUserListOptions = {}) {
+    const skip = adminUserListSkip(options.skip);
+
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
-      take: ADMIN_USER_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminUserListTake(options.take),
       select: adminUserListSelect,
     });
   }
@@ -6839,6 +6847,32 @@ function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketpla
     seen.add(provider.id);
     return true;
   });
+}
+
+function adminUserListTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_USER_LIST_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_USER_LIST_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_USER_LIST_LIMIT);
+}
+
+function adminUserListSkip(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.trunc(parsed), 10_000);
 }
 
 function adminCustomerDirectoryTake(value: number | string | null | undefined) {

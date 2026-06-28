@@ -29,6 +29,8 @@ const DASHBOARD_NOTIFICATION_TAKE = 20;
 const DASHBOARD_AUDIT_TAKE = 20;
 const DASHBOARD_FINANCE_TAKE = 50;
 const DASHBOARD_APP_SESSION_TAKE = 50;
+const DASHBOARD_USER_TAKE = 50;
+const DASHBOARD_PARTNER_TAKE = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function buildDashboardViewMode(params: DashboardParams): DashboardViewMode {
@@ -71,7 +73,11 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       range,
     ),
     operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
-    partnersHref: viewMode.shouldRenderFullDashboard ? '/admin/partners?view=list' : null,
+    partnersHref: viewMode.shouldRenderFullDashboard
+      ? `/admin/partners/list-providers?${new URLSearchParams({
+          take: String(DASHBOARD_PARTNER_TAKE),
+        }).toString()}`
+      : null,
     paymentsHref: buildDashboardRangeScopedHref(
       '/admin/payments',
       { take: String(DASHBOARD_FINANCE_TAKE) },
@@ -87,7 +93,9 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       { take: String(DASHBOARD_FINANCE_TAKE) },
       range,
     ),
-    usersHref: viewMode.shouldRenderFullDashboard ? '/admin/users' : null,
+    usersHref: viewMode.shouldRenderFullDashboard
+      ? `/admin/users?${new URLSearchParams({ take: String(DASHBOARD_USER_TAKE) }).toString()}`
+      : null,
   };
 }
 

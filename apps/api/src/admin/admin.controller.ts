@@ -46,8 +46,8 @@ export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
   @Get('users')
-  users() {
-    return this.admin.listUsers();
+  users(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listUsers({ skip, take });
   }
 
   @Get('customers')

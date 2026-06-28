@@ -24,6 +24,7 @@ describe('AdminController notification and push actions', () => {
     listOperationsPolicyProviders: vi.fn(),
     listAuditLogs: vi.fn(),
     auditLogSummary: vi.fn(),
+    listUsers: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
     listReviews: vi.fn(),
@@ -955,6 +956,21 @@ describe('AdminController notification and push actions', () => {
       path: 'operations-handoff/providers',
     });
     expect(admin.listOperationsHandoffProviders).toHaveBeenCalledWith();
+  });
+
+  it('exposes admin users as a bounded list', async () => {
+    admin.listUsers.mockResolvedValue([{ id: 'user-1' }]);
+
+    await expect(controller.users('50', '100')).resolves.toEqual([{ id: 'user-1' }]);
+
+    expect(routeMetadata('users')).toEqual({
+      method: RequestMethod.GET,
+      path: 'users',
+    });
+    expect(admin.listUsers).toHaveBeenCalledWith({
+      skip: '100',
+      take: '50',
+    });
   });
 
   it('exposes partner control providers as a lightweight GET list', async () => {

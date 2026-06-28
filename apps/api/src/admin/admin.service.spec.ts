@@ -63,6 +63,25 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('applies admin user list pagination when requested by dashboard diagnostics', async () => {
+    const prisma = {
+      user: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listUsers({ skip: '100', take: '50' })).resolves.toEqual([]);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        skip: 100,
+        take: 50,
+      }),
+    );
+  });
+
   it('keeps audit log list bounded by default', async () => {
     const prisma = {
       adminAuditLog: {

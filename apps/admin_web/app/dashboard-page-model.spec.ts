@@ -80,9 +80,13 @@ describe('dashboard page model', () => {
   it('keeps full dashboard diagnostics behind explicit details mode', () => {
     const hrefs = buildDashboardDataHrefs({ details: 'all' });
     const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
+    const usersUrl = new URL(hrefs.usersHref ?? '', 'http://admin.local');
+    const partnersUrl = new URL(hrefs.partnersHref ?? '', 'http://admin.local');
 
-    expect(hrefs.usersHref).toBe('/admin/users');
-    expect(hrefs.partnersHref).toBe('/admin/partners?view=list');
+    expect(usersUrl.pathname).toBe('/admin/users');
+    expect(usersUrl.searchParams.get('take')).toBe('50');
+    expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
+    expect(partnersUrl.searchParams.get('take')).toBe('50');
     expect(appSessionsUrl.searchParams.get('take')).toBe('50');
     expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });
