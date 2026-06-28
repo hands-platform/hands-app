@@ -14,6 +14,7 @@ import { buildCouponCreateNotice, buildCouponPageModel } from './coupon-page-mod
 
 type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type ConfirmationHiddenInput = { readonly name: string; readonly value: boolean | number | string };
+const COUPON_LIST_PAGE_SIZE = 25;
 const COUPON_USAGE_PAGE_SIZE = 10;
 const EMPTY_COUPON_SUMMARY: AdminCouponSummary = {
   expiredCount: 0,
@@ -35,7 +36,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   const usagePage = readPositiveInteger(readSingleParam(params.usagePage));
   const usageSkip = (usagePage - 1) * COUPON_USAGE_PAGE_SIZE;
   const [coupons, couponSummary, usagePageResult] = await Promise.all([
-    adminGet<AdminCoupon[]>('/admin/coupons?take=100', []),
+    adminGet<AdminCoupon[]>(`/admin/coupons?take=${COUPON_LIST_PAGE_SIZE}`, []),
     adminGet<AdminCouponSummary>('/admin/coupons/summary', EMPTY_COUPON_SUMMARY),
     usageCouponId
       ? adminGet<AdminCouponUsagePage>(
