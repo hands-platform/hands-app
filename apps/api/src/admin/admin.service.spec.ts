@@ -3048,7 +3048,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listOperationsHandoffProviders()).resolves.toEqual([
+    await expect(service.listOperationsHandoffProviders({ take: '5' })).resolves.toEqual([
       expect.objectContaining({
         id: 'provider-1',
         activitySummary: expect.objectContaining({
@@ -3060,7 +3060,7 @@ describe('AdminService query orchestration', () => {
 
     const query = prisma.providerProfile.findMany.mock.calls[0][0];
     const select = query.select;
-    expect(query).toEqual(expect.objectContaining({ take: 50 }));
+    expect(query).toEqual(expect.objectContaining({ take: 5 }));
     expect(select).toEqual(
       expect.objectContaining({
         id: true,

@@ -319,8 +319,8 @@ export class AdminController {
   }
 
   @Get('operations-handoff/providers')
-  operationsHandoffProviders() {
-    return this.admin.listOperationsHandoffProviders();
+  operationsHandoffProviders(@Query('take') take?: string) {
+    return this.admin.listOperationsHandoffProviders({ take });
   }
 
   @Get('partner-controls/providers')

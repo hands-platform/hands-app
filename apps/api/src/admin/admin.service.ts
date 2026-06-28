@@ -526,6 +526,10 @@ type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
   take?: number | string | null;
 };
 
+type AdminOperationsHandoffProviderListOptions = {
+  take?: number | string | null;
+};
+
 type AdminOperationsPolicyProviderListOptions = {
   take?: number | string | null;
 };
@@ -3280,10 +3284,10 @@ export class AdminService {
     });
   }
 
-  async listOperationsHandoffProviders() {
+  async listOperationsHandoffProviders(options: AdminOperationsHandoffProviderListOptions = {}) {
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT,
+      take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT),
       select: adminProviderOperationsHandoffSelect,
     });
 

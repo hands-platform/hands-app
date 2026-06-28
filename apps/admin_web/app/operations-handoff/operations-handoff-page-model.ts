@@ -49,9 +49,9 @@ export type OperationsHandoffDataHrefs = {
   readonly refundsHref: string;
 };
 
-const OPERATIONS_HANDOFF_BOOKING_TAKE = 100;
+const OPERATIONS_HANDOFF_BOOKING_TAKE = 50;
 const OPERATIONS_HANDOFF_NOTIFICATION_TAKE = 50;
-const OPERATIONS_HANDOFF_AUDIT_TAKE = 75;
+const OPERATIONS_HANDOFF_AUDIT_TAKE = 50;
 const OPERATIONS_HANDOFF_FINANCE_TAKE = 50;
 const OPERATIONS_HANDOFF_LIST_TAKE = 50;
 const OPERATIONS_HANDOFF_CHAT_TAKE = 50;
@@ -126,7 +126,9 @@ export function buildOperationsHandoffDataHrefs(
       { take: String(OPERATIONS_HANDOFF_NOTIFICATION_TAKE) },
       range,
     ),
-    partnersHref: '/admin/operations-handoff/providers',
+    partnersHref: `/admin/operations-handoff/providers?${new URLSearchParams({
+      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+    }).toString()}`,
     paymentsHref: buildRangeScopedHref(
       '/admin/payments',
       { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
