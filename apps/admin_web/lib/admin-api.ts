@@ -449,6 +449,11 @@ export type AdminProviderBookingSummary = {
   workingBookingCount: number;
 };
 
+export type AdminProviderSummary = {
+  generatedAt?: string;
+  totalCount: number;
+};
+
 export type AdminProvider = {
   id: string;
   userId?: string;

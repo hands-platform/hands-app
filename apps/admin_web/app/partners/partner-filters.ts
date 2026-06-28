@@ -26,6 +26,11 @@ export type ProviderFilters = {
   sort: string;
 };
 
+export type PartnerDataHrefs = {
+  readonly listHref: string;
+  readonly summaryHref: string;
+};
+
 export function buildProviderFilters(
   params: Record<string, string | string[] | undefined>,
 ): ProviderFilters {
@@ -42,6 +47,16 @@ export function buildProviderFilters(
     bookingFlow: normalizePartnerBookingFlowFilter(readParam(params.bookingFlow)),
     review: normalizePartnerReviewFilter(readParam(params.review)),
     sort: readPartnerSort(readParam(params.sort)),
+  };
+}
+
+export function buildPartnerDataHrefs(_filters: ProviderFilters): PartnerDataHrefs {
+  const listParams = new URLSearchParams();
+  listParams.set('take', '500');
+
+  return {
+    listHref: `/admin/partners/list-providers?${listParams.toString()}`,
+    summaryHref: '/admin/partners/list-providers/summary',
   };
 }
 

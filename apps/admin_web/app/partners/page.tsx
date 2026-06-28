@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
+import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
   buildPartnerExportSlug,
+  buildPartnerDataHrefs,
   buildProviderActiveFilters,
   buildProviderFilters,
   emptyProviderMessage,
@@ -118,8 +119,10 @@ const PARTNER_LIST_QUERY_DEPS: PartnerListQueryDeps = {
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildProviderFilters(params);
-  const [rawProviders, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/partners/list-providers', []),
+  const dataHrefs = buildPartnerDataHrefs(filters);
+  const [rawProviders, providerDirectorySummary, operationalPolicies] = await Promise.all([
+    adminGet<AdminProvider[]>(dataHrefs.listHref, []),
+    adminGet<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
@@ -129,6 +132,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const visibleProviders = providerPagination.rows;
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const activeFilters = buildProviderActiveFilters(filters);
+  const partnerDirectoryTotalCount =
+    activeFilters.length === 0 ? providerDirectorySummary.totalCount || rawProviders.length : providers.length;
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
   const deepPartnerOps = showDeepPartnerOpsSections
@@ -291,7 +296,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         filters={filters}
         locationFreshnessLabel={`Location freshness: ${opsPolicy.staleLocationMinutes}m`}
         showAdvancedFilters={showAdvancedPartnerFilters}
-        totalCount={providers.length}
+        totalCount={partnerDirectoryTotalCount}
       />
       {deepPartnerOps ? (
         <>

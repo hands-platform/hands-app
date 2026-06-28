@@ -1,4 +1,5 @@
 import {
+  buildPartnerDataHrefs,
   buildPartnerListHref,
   buildProviderFilters,
   paginatePartnerRows,
@@ -34,6 +35,24 @@ describe('partner filters', () => {
     expect(buildPartnerListHref(filters, { review: 'unsettled' })).toBe(
       '/partners?providerStatus=ONLINE_AVAILABLE&review=unsettled&sort=wallet-debt&pageSize=25',
     );
+  });
+
+  it('keeps partner directory hydration bounded while summary count is loaded separately', () => {
+    const filters = buildProviderFilters({});
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=500',
+      summaryHref: '/admin/partners/list-providers/summary',
+    });
+  });
+
+  it('keeps rich partner search local until the API supports every searchable fact', () => {
+    const filters = buildProviderFilters({ page: '3', pageSize: '25', q: 'late arrival' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=500',
+      summaryHref: '/admin/partners/list-providers/summary',
+    });
   });
 
   it('paginates partner rows with safe bounds', () => {
