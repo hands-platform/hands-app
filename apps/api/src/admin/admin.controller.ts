@@ -496,8 +496,21 @@ export class AdminController {
     @Query('sender') sender?: string,
     @Query('q') q?: string,
     @Query('take') take?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listChatArchive({ dateFrom, dateRange, dateTo, q, sender, status, take });
+    return this.admin.listChatArchive({ dateFrom, dateRange, dateTo, q, sender, skip, status, take });
+  }
+
+  @Get('chat-archive/summary')
+  chatArchiveSummary(
+    @Query('dateRange') dateRange?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('status') status?: string,
+    @Query('sender') sender?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.chatArchiveSummary({ dateFrom, dateRange, dateTo, q, sender, status });
   }
 
   @Get('bookings/:id/notifications')

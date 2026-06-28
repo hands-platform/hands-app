@@ -382,6 +382,7 @@ describe('AdminService query orchestration', () => {
         q: 'late',
         sender: 'partner',
         status: 'no-message',
+        skip: '100',
         take: '999',
       }),
     ).resolves.toEqual([]);
@@ -431,9 +432,41 @@ describe('AdminService query orchestration', () => {
             }),
           },
         }),
+        skip: 100,
         take: 50,
       }),
     );
+  });
+
+  it('counts chat archive summaries with the same server filters', async () => {
+    const prisma = {
+      booking: {
+        count: vi.fn().mockResolvedValue(34),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.chatArchiveSummary({
+        dateRange: 'today',
+        q: 'late',
+        sender: 'partner',
+        status: 'no-message',
+      }),
+    ).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 34,
+    });
+
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          { chatRoom: { isNot: null } },
+          { chatRoom: { is: { messages: { none: {} } } } },
+        ]),
+      }),
+    });
+    expect(prisma.booking.findMany).toBeUndefined();
   });
 
   it('filters audit logs by action and clamps requested limits', async () => {

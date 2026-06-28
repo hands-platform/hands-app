@@ -306,6 +306,7 @@ type AdminChatArchiveListQuery = {
   readonly dateTo?: string;
   readonly q?: string | null;
   readonly sender?: string | null;
+  readonly skip?: number | string | null;
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
@@ -4009,9 +4010,12 @@ export class AdminService {
   }
 
   listChatArchive(query: AdminChatArchiveListQuery = {}) {
+    const skip = adminChatArchiveListSkip(query.skip);
+
     return this.prisma.booking.findMany({
       where: adminChatArchiveWhere(query),
       orderBy: { updatedAt: 'desc' },
+      skip: skip > 0 ? skip : undefined,
       take: adminChatArchiveListTake(query.take),
       select: {
         id: true,
@@ -4058,6 +4062,17 @@ export class AdminService {
         },
       },
     });
+  }
+
+  async chatArchiveSummary(query: AdminChatArchiveListQuery = {}) {
+    const totalCount = await this.prisma.booking.count({
+      where: adminChatArchiveWhere(query),
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount,
+    };
   }
 
   async getBookingDetail(id: string) {
@@ -6987,6 +7002,10 @@ function adminAppSessionStateWhere(value: string | null | undefined): Prisma.App
 
 function adminChatArchiveListTake(value: number | string | null | undefined): number {
   return boundedAdminListLimit(value, ADMIN_CHAT_ARCHIVE_LIST_LIMIT);
+}
+
+function adminChatArchiveListSkip(value: number | string | null | undefined): number {
+  return boundedAdminListSkip(value);
 }
 
 function adminChatArchiveWhere(query: AdminChatArchiveListQuery): Prisma.BookingWhereInput {

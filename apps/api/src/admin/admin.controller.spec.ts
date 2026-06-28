@@ -67,6 +67,7 @@ describe('AdminController notification and push actions', () => {
     upsertMarketingSpendDaily: vi.fn(),
     listAppSessions: vi.fn(),
     listChatArchive: vi.fn(),
+    chatArchiveSummary: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -432,16 +433,24 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
-  it('exposes chat archive as a bounded filtered audit list', async () => {
+  it('exposes chat archive as a paged filtered audit list with a separate summary', async () => {
     admin.listChatArchive.mockResolvedValue([{ id: 'booking-1' }]);
+    admin.chatArchiveSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 10 });
 
     await expect(
-      controller.chatArchive('today', '2026-06-01', '2026-06-02', 'completed', 'partner', 'late', '50'),
+      controller.chatArchive('today', '2026-06-01', '2026-06-02', 'completed', 'partner', 'late', '50', '100'),
     ).resolves.toEqual([{ id: 'booking-1' }]);
+    await expect(
+      controller.chatArchiveSummary('today', '2026-06-01', '2026-06-02', 'completed', 'partner', 'late'),
+    ).resolves.toEqual({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 10 });
 
     expect(routeMetadata('chatArchive')).toEqual({
       method: RequestMethod.GET,
       path: 'chat-archive',
+    });
+    expect(routeMetadata('chatArchiveSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'chat-archive/summary',
     });
     expect(admin.listChatArchive).toHaveBeenCalledWith({
       dateFrom: '2026-06-01',
@@ -449,8 +458,17 @@ describe('AdminController notification and push actions', () => {
       dateTo: '2026-06-02',
       q: 'late',
       sender: 'partner',
+      skip: '100',
       status: 'completed',
       take: '50',
+    });
+    expect(admin.chatArchiveSummary).toHaveBeenCalledWith({
+      dateFrom: '2026-06-01',
+      dateRange: 'today',
+      dateTo: '2026-06-02',
+      q: 'late',
+      sender: 'partner',
+      status: 'completed',
     });
   });
 

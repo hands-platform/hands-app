@@ -14,7 +14,10 @@ export type ChatArchiveFilters = {
 };
 
 export type ChatArchiveLoadPlan = {
+  readonly activePage: number;
   readonly archiveHref: string;
+  readonly archivePageHref: (page: number) => string;
+  readonly archiveSummaryHref: string;
   readonly dateFilters: DetailDateFilters;
   readonly filters: ChatArchiveFilters;
   readonly repairBookingsHref: string;
@@ -31,9 +34,13 @@ export function buildChatArchiveLoadPlan(
   const filters = readChatArchiveFilters(normalizedParams);
   const dateFilters = readDetailDateFilters(normalizedParams);
   const hasExplicitDateBounds = Boolean(readSearchParam(params.from) || readSearchParam(params.to));
+  const activePage = readChatArchivePage(normalizedParams.page);
 
   return {
-    archiveHref: buildChatArchiveApiHref(filters, dateFilters, hasExplicitDateBounds),
+    activePage,
+    archiveHref: buildChatArchiveApiHref(filters, dateFilters, hasExplicitDateBounds, activePage),
+    archivePageHref: (page) => buildChatArchivePageHref(filters, dateFilters, page),
+    archiveSummaryHref: buildChatArchiveSummaryApiHref(filters, dateFilters, hasExplicitDateBounds),
     dateFilters,
     filters,
     repairBookingsHref: buildRepairBookingsApiHref(dateFilters, hasExplicitDateBounds),
@@ -54,6 +61,7 @@ function buildChatArchiveApiHref(
   filters: ChatArchiveFilters,
   dateFilters: DetailDateFilters,
   hasExplicitDateBounds: boolean,
+  activePage: number,
 ) {
   const params = new URLSearchParams();
   appendDateParams(params, dateFilters, hasExplicitDateBounds);
@@ -61,7 +69,42 @@ function buildChatArchiveApiHref(
   if (filters.sender) params.set('sender', filters.sender);
   if (filters.q) params.set('q', filters.q);
   params.set('take', String(CHAT_ARCHIVE_DEFAULT_TAKE));
+  const skip = (activePage - 1) * CHAT_ARCHIVE_DEFAULT_TAKE;
+  if (skip > 0) params.set('skip', String(skip));
   return `/admin/chat-archive?${params.toString()}`;
+}
+
+function buildChatArchiveSummaryApiHref(
+  filters: ChatArchiveFilters,
+  dateFilters: DetailDateFilters,
+  hasExplicitDateBounds: boolean,
+) {
+  const params = new URLSearchParams();
+  appendDateParams(params, dateFilters, hasExplicitDateBounds);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.sender) params.set('sender', filters.sender);
+  if (filters.q) params.set('q', filters.q);
+  return `/admin/chat-archive/summary?${params.toString()}`;
+}
+
+function buildChatArchivePageHref(
+  filters: ChatArchiveFilters,
+  dateFilters: DetailDateFilters,
+  activePage: number,
+) {
+  const params = new URLSearchParams();
+  if (filters.q) params.set('q', filters.q);
+  if (filters.sender) params.set('sender', filters.sender);
+  if (filters.status) params.set('status', filters.status);
+  const range = dateFilters.range || 'today';
+  params.set('range', range);
+  if (range === 'custom') {
+    if (dateFilters.from) params.set('from', dateFilters.from);
+    if (dateFilters.to) params.set('to', dateFilters.to);
+  }
+  if (activePage > 1) params.set('page', String(activePage));
+  const query = params.toString();
+  return query ? `/chat-archive?${query}` : '/chat-archive';
 }
 
 function buildRepairBookingsApiHref(dateFilters: DetailDateFilters, hasExplicitDateBounds: boolean) {
@@ -69,6 +112,13 @@ function buildRepairBookingsApiHref(dateFilters: DetailDateFilters, hasExplicitD
   appendDateParams(params, dateFilters, hasExplicitDateBounds);
   params.set('take', String(CHAT_REPAIR_BOOKING_DEFAULT_TAKE));
   return `/admin/bookings?${params.toString()}`;
+}
+
+function readChatArchivePage(value: string | string[] | undefined) {
+  const raw = readSearchParam(value);
+  const page = Number.parseInt(raw, 10);
+  if (!Number.isFinite(page)) return 1;
+  return Math.max(1, page);
 }
 
 function appendDateParams(

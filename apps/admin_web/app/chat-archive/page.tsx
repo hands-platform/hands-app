@@ -17,6 +17,7 @@ import {
 } from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -56,14 +57,30 @@ const CHAT_ARCHIVE_INDEX_HEADERS = [
   'Open',
 ] as const;
 
+type ChatArchiveServerSummary = {
+  readonly generatedAt: string;
+  readonly totalCount: number;
+};
+
 export default async function ChatArchivePage({ searchParams }: { searchParams?: ChatArchiveSearchParams }) {
   const params = searchParams ? await searchParams : {};
-  const { archiveHref, dateFilters, filters, repairBookingsHref } = buildChatArchiveLoadPlan(params);
-  const [bookings, allBookings] = await Promise.all([
+  const {
+    activePage,
+    archiveHref,
+    archivePageHref,
+    archiveSummaryHref,
+    dateFilters,
+    filters,
+    repairBookingsHref,
+  } = buildChatArchiveLoadPlan(params);
+  const [bookings, archiveSummaryResponse, allBookings] = await Promise.all([
     adminGet<AdminBookingDetail[]>(archiveHref, []),
+    adminGet<unknown>(archiveSummaryHref, null),
     adminGet<AdminBookingDetail[]>(repairBookingsHref, []),
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
+  const totalRooms = readChatArchiveTotalCount(archiveSummaryResponse) ?? rooms.length;
+  const totalPages = Math.max(1, Math.ceil(totalRooms / 50));
   const repairRows = filterChatRepairRows(
     buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
     filters,
@@ -200,7 +217,11 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </section>
 
       <section className="grid admin-mb-16">
-        <MetricCard label="Rooms loaded" value={rooms.length.toString()} helper={dateFilters.label} />
+        <MetricCard
+          label="Rooms loaded"
+          value={totalRooms.toString()}
+          helper={`${rooms.length} shown / ${dateFilters.label}`}
+        />
         <MetricCard
           label="Messages"
           value={summary.messageCount.toString()}
@@ -427,6 +448,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <AdminRoundedPagination
+          activePage={activePage}
+          ariaLabel="Chat evidence pages"
+          className="vuexy-booking-pagination admin-mt-16"
+          hrefForPage={archivePageHref}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={totalPages}
+        />
       </section>
 
       <section className="card">
@@ -474,6 +503,13 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </section>
     </div>
   );
+}
+
+function readChatArchiveTotalCount(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const totalCount = (value as Partial<ChatArchiveServerSummary>).totalCount;
+  if (typeof totalCount !== 'number' || !Number.isFinite(totalCount)) return null;
+  return Math.max(0, Math.trunc(totalCount));
 }
 
 type ChatArchivePersonCellProps = {
