@@ -19,18 +19,14 @@ describe('admin service selects', () => {
     );
   });
 
-  it('keeps the service catalog bounded while exposing operational booking context', () => {
-    expect(adminServiceCatalogSelect.providers).toMatchObject({
-      take: 50,
-      select: expect.objectContaining({ providerProfileId: true, active: true }),
+  it('keeps the service catalog lightweight for the Admin service menu page', () => {
+    expect(adminServiceCatalogSelect.payoutRules).toMatchObject({
+      orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }],
+      select: expect.objectContaining({ customerPrice: true, providerPayoutAmount: true }),
     });
-    expect(adminServiceCatalogSelect.bookings).toMatchObject({
-      take: 8,
-      select: expect.objectContaining({ booking: expect.any(Object) }),
-    });
-    expect(adminServiceCatalogSelect._count).toMatchObject({
-      select: { providers: true, bookings: true },
-    });
+    expect(adminServiceCatalogSelect).not.toHaveProperty('providers');
+    expect(adminServiceCatalogSelect).not.toHaveProperty('bookings');
+    expect(adminServiceCatalogSelect).not.toHaveProperty('_count');
   });
 
   it('keeps mutation selects reusable for service payout rule writes', () => {
