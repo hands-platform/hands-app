@@ -9,12 +9,14 @@ import {
   postMatchCancellationBookingViewOptions,
   realtimeBookingViewOptions,
 } from './booking-monitor-options';
+import {
+  buildBookingMonitorRouteLoadPlan,
+  type BookingMonitorRouteKind,
+} from './booking-monitor-route-load-plan';
 import { buildBookingsPageModel } from './booking-page-model';
 import type { BookingPageView } from './booking-page-params';
 
 export type BookingMonitorRouteSearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-type BookingMonitorRouteKind = 'all' | 'completed' | 'postMatchCancellations';
 
 type BookingMonitorRouteProps = {
   readonly kind: BookingMonitorRouteKind;
@@ -95,10 +97,11 @@ const bookingMonitorRouteConfig = {
 
 export async function renderBookingMonitorRoute({ kind, searchParams }: BookingMonitorRouteProps) {
   const params = await searchParams;
+  const loadPlan = buildBookingMonitorRouteLoadPlan(params, kind);
   const [bookings, auditLogs, policySettings] = await Promise.all([
-    adminGet<AdminBooking[]>(bookingListApiPath(params, kind), []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs?action=booking.create.rejected&take=50', []),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminBooking[]>(loadPlan.bookingsHref, []),
+    adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
+    adminGet<AdminOperationalPolicySetting[]>(loadPlan.policySettingsHref, []),
   ]);
   const model = buildBookingsPageModel({
     auditLogs,
@@ -141,36 +144,6 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
   );
 }
 
-function bookingListApiPath(
-  params: Record<string, string | string[] | undefined> | undefined,
-  kind: BookingMonitorRouteKind,
-) {
-  const searchParams = new URLSearchParams();
-  const dateRange = readSingleSearchParam(params?.dateRange) ?? 'today';
-
-  searchParams.set('dateRange', dateRange);
-  searchParams.set('statusGroup', bookingListStatusGroup(kind));
-  searchParams.set('take', '50');
-  if (dateRange === 'custom') {
-    setOptionalSearchParam(searchParams, 'dateFrom', readSingleSearchParam(params?.dateFrom) ?? '');
-    setOptionalSearchParam(searchParams, 'dateTo', readSingleSearchParam(params?.dateTo) ?? '');
-  }
-
-  return `/admin/bookings?${searchParams.toString()}`;
-}
-
-function bookingListStatusGroup(kind: BookingMonitorRouteKind) {
-  switch (kind) {
-    case 'completed':
-      return 'completed';
-    case 'postMatchCancellations':
-      return 'post-match-cancellations';
-    case 'all':
-    default:
-      return 'realtime';
-  }
-}
-
 function searchParamEntries(params: Record<string, string | string[] | undefined> | undefined) {
   const entries: Array<readonly [string, string]> = [];
 
@@ -210,16 +183,4 @@ function queryStringForRedirect(
   searchParams.set('view', view);
   const query = searchParams.toString();
   return query ? `?${query}` : '';
-}
-
-function setOptionalSearchParam(params: URLSearchParams, key: string, value: string) {
-  if (value) {
-    params.set(key, value);
-  } else {
-    params.delete(key);
-  }
-}
-
-function readSingleSearchParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
 }
