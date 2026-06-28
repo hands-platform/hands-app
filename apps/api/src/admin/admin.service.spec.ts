@@ -2979,6 +2979,72 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it.each([
+    [
+      'documents',
+      {
+        documents: {
+          some: {
+            status: { in: ['PENDING_REVIEW', 'REJECTED'] },
+          },
+        },
+      },
+    ],
+    [
+      'public-media',
+      {
+        user: {
+          fileAssets: {
+            some: {
+              purpose: { in: ['PROFILE_IMAGE', 'PROVIDER_GALLERY'] },
+              uploadStatus: 'UPLOADED',
+              visibility: 'PUBLIC',
+              reviewStatus: { in: ['PENDING_REVIEW', 'REJECTED'] },
+            },
+          },
+        },
+      },
+    ],
+    [
+      'bank',
+      {
+        AND: [
+          { bankAccounts: { some: {} } },
+          { bankAccounts: { none: { status: 'APPROVED' } } },
+        ],
+      },
+    ],
+  ])('supports %s partner directory filtering before loading row details', async (review, expectedWhere) => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(3),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review,
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+    await expect(service.partnerDirectorySummary({ review })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 3,
+    });
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: expectedWhere,
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: expectedWhere,
+    });
+  });
+
   it('supports unsettled partner directory filtering from wallet aggregation before loading row details', async () => {
     const prisma = {
       providerEarning: {

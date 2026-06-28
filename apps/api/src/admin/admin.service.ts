@@ -8109,6 +8109,37 @@ function adminPartnerDirectoryReviewWhere(
   if (review === 'blocked') {
     return { blockedAt: { not: null } };
   }
+  if (review === 'documents') {
+    return {
+      documents: {
+        some: {
+          status: { in: [ProviderDocumentStatus.PENDING_REVIEW, ProviderDocumentStatus.REJECTED] },
+        },
+      },
+    };
+  }
+  if (review === 'public-media') {
+    return {
+      user: {
+        fileAssets: {
+          some: {
+            purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+            uploadStatus: FileUploadStatus.UPLOADED,
+            visibility: FileVisibility.PUBLIC,
+            reviewStatus: { in: [FileReviewStatus.PENDING_REVIEW, FileReviewStatus.REJECTED] },
+          },
+        },
+      },
+    };
+  }
+  if (review === 'bank') {
+    return {
+      AND: [
+        { bankAccounts: { some: {} } },
+        { bankAccounts: { none: { status: ProviderBankAccountStatus.APPROVED } } },
+      ],
+    };
+  }
 
   if (review !== 'unapproved') {
     return undefined;
