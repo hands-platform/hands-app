@@ -1194,6 +1194,7 @@ describe('AdminController notification and push actions', () => {
         'ONLINE_AVAILABLE',
         'APPROVED',
         'completed-work',
+        'name',
       ),
     ).resolves.toEqual([{ id: 'partner-1' }]);
     await expect(
@@ -1222,6 +1223,7 @@ describe('AdminController notification and push actions', () => {
       q: 'linh',
       review: 'unapproved',
       skip: '50',
+      sort: 'name',
       take: '25',
       verification: 'SUBMITTED',
       providerStatus: 'ONLINE_AVAILABLE',

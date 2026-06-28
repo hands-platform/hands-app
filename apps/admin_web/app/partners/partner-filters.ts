@@ -77,6 +77,9 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'providerStatus', filters.providerStatus);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'kyc', filters.kyc);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'bookingFlow', filters.bookingFlow);
+  if (filters.sort === 'name') {
+    listParams.set('sort', filters.sort);
+  }
 
   if (isPrimaryPartnerReview(filters.review)) {
     listParams.set('review', filters.review);
@@ -509,7 +512,7 @@ function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
 }
 
 function canUsePartnerDirectoryServerPagination(filters: ProviderFilters) {
-  return !hasLocalOnlyPartnerFilters(filters) && filters.sort === 'ops-priority';
+  return !hasLocalOnlyPartnerFilters(filters) && ['ops-priority', 'name'].includes(filters.sort);
 }
 
 function readPartnerSort(value: string) {

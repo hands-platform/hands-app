@@ -536,6 +536,7 @@ type AdminPartnerDirectorySummaryOptions = {
 
 type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
   skip?: number | string | null;
+  sort?: string | null;
   take?: number | string | null;
 };
 
@@ -3259,7 +3260,7 @@ export class AdminService {
     const where = await this.partnerDirectoryWhere(options);
     const skip = adminPartnerDirectorySkip(options.skip);
     const providers = await this.prisma.providerProfile.findMany({
-      orderBy: { id: 'desc' },
+      orderBy: adminPartnerDirectoryOrderBy(options.sort),
       ...(skip > 0 ? { skip } : {}),
       take: adminPartnerDirectoryTake(options.take),
       ...(where ? { where } : {}),
@@ -8004,6 +8005,18 @@ function adminPartnerDirectorySkip(value: number | string | null | undefined) {
   }
 
   return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminPartnerDirectoryOrderBy(
+  sortValue: string | null | undefined,
+): Prisma.ProviderProfileOrderByWithRelationInput | Prisma.ProviderProfileOrderByWithRelationInput[] {
+  const sort = normalizeNullable(sortValue);
+
+  if (sort === 'name') {
+    return [{ displayName: 'asc' }, { legalName: 'asc' }, { id: 'asc' }];
+  }
+
+  return { id: 'desc' };
 }
 
 function adminOperationsPolicyProviderListTake(value: number | string | null | undefined) {

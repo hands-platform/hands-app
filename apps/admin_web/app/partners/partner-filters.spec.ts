@@ -60,6 +60,17 @@ describe('partner filters', () => {
     });
   });
 
+  it('pushes name sorting to the API without cumulative hydration', () => {
+    const filters = buildProviderFilters({ page: '2', sort: 'name' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=10&skip=10&sort=name',
+      listIsServerPaginated: true,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: true,
+    });
+  });
+
   it('pushes simple provider state filters to the bounded API list and summary', () => {
     const filters = buildProviderFilters({
       kyc: 'APPROVED',

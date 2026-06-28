@@ -338,6 +338,7 @@ export class AdminController {
     @Query('providerStatus') providerStatus?: string,
     @Query('kyc') kyc?: string,
     @Query('bookingFlow') bookingFlow?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.admin.listPartnerDirectoryProviders({
       bookingFlow,
@@ -346,6 +347,7 @@ export class AdminController {
       q,
       review,
       skip,
+      sort,
       take,
       verification,
     });

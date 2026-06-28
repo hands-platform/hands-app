@@ -2925,6 +2925,29 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('supports server-side partner name sorting before loading row details', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        sort: 'name',
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ displayName: 'asc' }, { legalName: 'asc' }, { id: 'asc' }],
+        take: 10,
+      }),
+    );
+  });
+
   it('treats verification BLOCKED as account blocked in the partner directory query', async () => {
     const prisma = {
       providerProfile: {
