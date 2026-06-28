@@ -436,7 +436,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       timestamp: new Date(0).toISOString(),
       checks: [],
     }),
-    adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
+    adminGet<AdminCashSettlementSummary>(
+      dashboardDataHrefs.cashSettlementSummaryHref,
+      emptyCashSettlementSummary(),
+    ),
     dashboardDataHrefs.operationalPolicyHref
       ? adminGet<AdminOperationalPolicySetting[]>(dashboardDataHrefs.operationalPolicyHref, [])
       : Promise.resolve([]),

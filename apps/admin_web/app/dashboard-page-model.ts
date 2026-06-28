@@ -13,6 +13,7 @@ export type DashboardDataHrefs = {
   readonly appSessionsHref: string;
   readonly bookingGateAuditHref: string;
   readonly bookingsHref: string;
+  readonly cashSettlementSummaryHref: string;
   readonly dashboardSummaryHref: string;
   readonly earningsHref: string;
   readonly notificationsHref: string;
@@ -46,6 +47,11 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const range = buildDashboardRange(params);
   return {
     dashboardSummaryHref: '/admin/dashboard/summary',
+    cashSettlementSummaryHref: buildDashboardRangeScopedHref(
+      '/admin/cash-settlement-summary',
+      {},
+      range,
+    ),
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
       ...(viewMode.shouldRenderFullDashboard ? {} : { role: 'PROVIDER' }),
       take: String(DASHBOARD_APP_SESSION_TAKE),

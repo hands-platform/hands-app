@@ -79,7 +79,7 @@ describe('DashboardPage', () => {
       if (href === '/admin/earnings/summary') {
         return earningSummary;
       }
-      if (href === '/admin/cash-settlement-summary') {
+      if (href === '/admin/cash-settlement-summary?range=today') {
         return cashSettlementSummary;
       }
       if (typeof href === 'string' && href.startsWith('/admin/earnings?')) {
@@ -94,6 +94,10 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('<span>Range earnings</span><strong>1</strong>');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/cash-settlement-summary?range=today',
+      expect.any(Object),
+    );
   });
 
   it('uses dashboard summary instead of full people lists in default mode', async () => {
