@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
 const adminServicePath = resolve(root, 'apps/api/src/admin/admin.service.ts');
+const adminUsageOverviewPath = resolve(root, 'apps/api/src/admin/admin-usage-overview.ts');
 const adminCustomerSelectsPath = resolve(root, 'apps/api/src/admin/admin-customer-selects.ts');
 const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-provider-profile-selects.ts');
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
@@ -10,16 +11,19 @@ const notificationPageModelPath = resolve(root, 'apps/admin_web/app/notification
 const pushSendPageModelPath = resolve(root, 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts');
 const appSessionsPageModelPath = resolve(root, 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts');
 const chatArchivePageModelPath = resolve(root, 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts');
+const usageOverviewPageModelPath = resolve(root, 'apps/admin_web/app/usage-overview/usage-overview-model.ts');
 
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
+const adminUsageOverviewSource = readFileSync(adminUsageOverviewPath, 'utf8');
 const adminCustomerSelectsSource = readFileSync(adminCustomerSelectsPath, 'utf8');
 const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
 const notificationPageModelSource = readFileSync(notificationPageModelPath, 'utf8');
 const pushSendPageModelSource = readFileSync(pushSendPageModelPath, 'utf8');
 const appSessionsPageModelSource = readFileSync(appSessionsPageModelPath, 'utf8');
 const chatArchivePageModelSource = readFileSync(chatArchivePageModelPath, 'utf8');
+const usageOverviewPageModelSource = readFileSync(usageOverviewPageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
 function sourceBetween(startMarker, endMarker) {
@@ -98,6 +102,30 @@ if (!adminServiceSource.includes('const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 
     area: 'admin push campaign query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Manual push campaign history must keep the 50-row hard maximum page size.',
+  });
+}
+
+if (!adminUsageOverviewSource.includes("const DEFAULT_USAGE_RANGE: AdminUsageOverviewRange = 'today';")) {
+  violations.push({
+    area: 'admin usage overview query',
+    file: 'apps/api/src/admin/admin-usage-overview.ts',
+    message: 'Usage overview must default to today for the initial operations view.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;')) {
+  violations.push({
+    area: 'admin usage overview query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Usage overview ranking queries must keep a 10-row limit.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;')) {
+  violations.push({
+    area: 'admin usage overview query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Usage overview region sample queries must keep the 100-row cost guard.',
   });
 }
 
@@ -181,6 +209,14 @@ if (!chatArchivePageModelSource.includes("normalizedParams.range = 'today';")) {
     area: 'admin chat archive page',
     file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
     message: 'Chat archive page must default audit loading to today.',
+  });
+}
+
+if (!usageOverviewPageModelSource.includes(": 'today';")) {
+  violations.push({
+    area: 'admin usage overview page',
+    file: 'apps/admin_web/app/usage-overview/usage-overview-model.ts',
+    message: 'Usage overview page model must default to today.',
   });
 }
 
@@ -553,7 +589,7 @@ for (const file of listFiles(adminWebAppRoot)) {
 const result = {
   ok: violations.length === 0,
   purpose:
-    'Static guard for Admin app session, notification, push campaign, customer, and partner query size.',
+    'Static guard for Admin app session, notification, push campaign, customer, partner, usage overview, and chat query size.',
   violations,
 };
 
