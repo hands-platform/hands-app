@@ -23,19 +23,17 @@ import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../lib/csv-export';
-import { readSearchParam } from '../../lib/date-range';
 import {
+  type DetailDateFilters,
   detailDateRangeOptions,
   isWithinDetailDateFilter,
-  readDetailDateFilters,
 } from '../../lib/detail-date-filter';
+import {
+  buildChatArchiveLoadPlan,
+  type ChatArchiveFilters,
+} from './chat-archive-page-model';
 
 type ChatArchiveSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type ChatArchiveFilters = {
-  q: string;
-  status: string;
-  sender: string;
-};
 
 const CHAT_REPAIR_HEADERS = [
   'Booking',
@@ -59,11 +57,10 @@ const CHAT_ARCHIVE_INDEX_HEADERS = [
 
 export default async function ChatArchivePage({ searchParams }: { searchParams?: ChatArchiveSearchParams }) {
   const params = searchParams ? await searchParams : {};
-  const dateFilters = readDetailDateFilters(params);
-  const filters = readChatArchiveFilters(params);
+  const { archiveHref, dateFilters, filters, repairBookingsHref } = buildChatArchiveLoadPlan(params);
   const [bookings, allBookings] = await Promise.all([
-    adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
-    adminGet<AdminBookingDetail[]>('/admin/bookings', []),
+    adminGet<AdminBookingDetail[]>(archiveHref, []),
+    adminGet<AdminBookingDetail[]>(repairBookingsHref, []),
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
   const repairRows = filterChatRepairRows(
@@ -503,18 +500,10 @@ function ChatArchivePersonCell({
   );
 }
 
-function readChatArchiveFilters(params: Record<string, string | string[] | undefined>): ChatArchiveFilters {
-  return {
-    q: readParam(params.q),
-    status: readParam(params.status),
-    sender: readParam(params.sender),
-  };
-}
-
 function filterChatRooms(
   rooms: ReturnType<typeof buildChatRoomRow>[],
   filters: ChatArchiveFilters,
-  dateFilters: ReturnType<typeof readDetailDateFilters>,
+  dateFilters: DetailDateFilters,
 ) {
   const query = filters.q.toLowerCase();
   return rooms.filter((room) => {
@@ -642,7 +631,7 @@ function buildChatRepairRows(
 function filterChatRepairRows(
   rows: ReturnType<typeof buildChatRepairRows>,
   filters: ChatArchiveFilters,
-  dateFilters: ReturnType<typeof readDetailDateFilters>,
+  dateFilters: DetailDateFilters,
 ) {
   const query = filters.q.toLowerCase();
   return rows.filter((row) => {
@@ -786,10 +775,6 @@ function statusPillClass(status: string) {
   if (isActiveStatus(status)) return 'pill-info';
   if (isClosedStatus(status)) return 'pill-warn';
   return 'pill-neutral';
-}
-
-function readParam(value: string | string[] | undefined) {
-  return readSearchParam(value);
 }
 
 function chatRoomDomId(roomId: string) {

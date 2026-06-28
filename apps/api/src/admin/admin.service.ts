@@ -273,6 +273,15 @@ type AdminAppSessionListQuery = {
   readonly state?: string | null;
   readonly take?: number | string | null;
 };
+type AdminChatArchiveListQuery = {
+  readonly dateFrom?: string;
+  readonly dateRange?: string;
+  readonly dateTo?: string;
+  readonly q?: string | null;
+  readonly sender?: string | null;
+  readonly status?: string | null;
+  readonly take?: number | string | null;
+};
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -2977,13 +2986,11 @@ export class AdminService {
     );
   }
 
-  listChatArchive() {
+  listChatArchive(query: AdminChatArchiveListQuery = {}) {
     return this.prisma.booking.findMany({
-      where: {
-        chatRoom: { isNot: null },
-      },
+      where: adminChatArchiveWhere(query),
       orderBy: { updatedAt: 'desc' },
-      take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,
+      take: adminChatArchiveListTake(query.take),
       select: {
         id: true,
         customerProfileId: true,
@@ -5580,6 +5587,120 @@ function adminAppSessionStateWhere(value: string | null | undefined): Prisma.App
     default:
       return undefined;
   }
+}
+
+function adminChatArchiveListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_CHAT_ARCHIVE_LIST_LIMIT);
+}
+
+function adminChatArchiveWhere(query: AdminChatArchiveListQuery): Prisma.BookingWhereInput {
+  return {
+    AND: [
+      { chatRoom: { isNot: null } },
+      adminBookingListDateWhere(query),
+      adminChatArchiveStatusWhere(query.status),
+      adminChatArchiveSenderWhere(query.sender),
+      adminChatArchiveSearchWhere(query.q),
+    ].filter((filter): filter is Prisma.BookingWhereInput => Boolean(filter)),
+  };
+}
+
+function adminChatArchiveStatusWhere(status: string | null | undefined): Prisma.BookingWhereInput | undefined {
+  switch (normalizeNullable(status)?.toLowerCase()) {
+    case 'active':
+      return adminBookingListStatusGroupWhere('realtime');
+    case 'completed':
+      return { status: BookingStatus.COMPLETED };
+    case 'closed':
+      return {
+        status: {
+          in: [BookingStatus.CANCELLED, BookingStatus.EXPIRED, BookingStatus.REFUNDED, BookingStatus.NO_SHOW],
+        },
+      };
+    case 'no-message':
+      return { chatRoom: { is: { messages: { none: {} } } } };
+    case 'missing-room':
+      return { chatRoom: { is: null } };
+    default:
+      return undefined;
+  }
+}
+
+function adminChatArchiveSenderWhere(sender: string | null | undefined): Prisma.BookingWhereInput | undefined {
+  const role = adminChatArchiveSenderRole(sender);
+  if (!role) {
+    return undefined;
+  }
+
+  return {
+    chatRoom: {
+      is: {
+        messages: {
+          some: {
+            sender: { roles: { has: role } },
+          },
+        },
+      },
+    },
+  };
+}
+
+function adminChatArchiveSenderRole(sender: string | null | undefined): Role | undefined {
+  switch (normalizeNullable(sender)?.toLowerCase()) {
+    case 'customer':
+      return Role.CUSTOMER;
+    case 'partner':
+      return Role.PROVIDER;
+    case 'admin':
+      return Role.ADMIN;
+    default:
+      return undefined;
+  }
+}
+
+function adminChatArchiveSearchWhere(q: string | null | undefined): Prisma.BookingWhereInput | undefined {
+  const query = normalizeNullable(q);
+  if (!query) {
+    return undefined;
+  }
+
+  const textFilter = { contains: query, mode: Prisma.QueryMode.insensitive };
+  const userSearch = {
+    OR: [
+      { phone: textFilter },
+      { fullName: textFilter },
+    ],
+  };
+  const providerSearch = {
+    OR: [
+      { id: textFilter },
+      { displayName: textFilter },
+      { user: { is: userSearch } },
+    ],
+  };
+
+  return {
+    OR: [
+      { id: textFilter },
+      { customerProfileId: textFilter },
+      { preferredProviderId: textFilter },
+      { selectedProviderId: textFilter },
+      { customerProfile: { is: { id: textFilter } } },
+      { customerProfile: { is: { user: { is: userSearch } } } },
+      { preferredProvider: { is: providerSearch } },
+      { selectedProvider: { is: providerSearch } },
+      { chatRoom: { is: { id: textFilter } } },
+      {
+        chatRoom: {
+          is: {
+            messages: {
+              some: { body: textFilter },
+            },
+          },
+        },
+      },
+    ],
+  };
 }
 
 function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAuditLogWhereInput | undefined {

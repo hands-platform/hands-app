@@ -362,8 +362,16 @@ export class AdminController {
   }
 
   @Get('chat-archive')
-  chatArchive() {
-    return this.admin.listChatArchive();
+  chatArchive(
+    @Query('dateRange') dateRange?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('status') status?: string,
+    @Query('sender') sender?: string,
+    @Query('q') q?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.admin.listChatArchive({ dateFrom, dateRange, dateTo, q, sender, status, take });
   }
 
   @Get('bookings/:id/notifications')

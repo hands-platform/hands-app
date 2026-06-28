@@ -133,6 +133,66 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('filters chat archive rows server-side and clamps requested limits', async () => {
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listChatArchive({
+        dateRange: 'today',
+        q: 'late',
+        sender: 'partner',
+        status: 'no-message',
+        take: '999',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: expect.arrayContaining([
+            { chatRoom: { isNot: null } },
+            expect.objectContaining({
+              OR: expect.arrayContaining([{ createdAt: expect.any(Object) }]),
+            }),
+            { chatRoom: { is: { messages: { none: {} } } } },
+            {
+              chatRoom: {
+                is: {
+                  messages: {
+                    some: {
+                      sender: { roles: { has: Role.PROVIDER } },
+                    },
+                  },
+                },
+              },
+            },
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { id: { contains: 'late', mode: 'insensitive' } },
+                {
+                  chatRoom: {
+                    is: {
+                      messages: {
+                        some: { body: { contains: 'late', mode: 'insensitive' } },
+                      },
+                    },
+                  },
+                },
+              ]),
+            }),
+          ]),
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 200,
+      }),
+    );
+  });
+
   it('filters audit logs by action and clamps requested limits', async () => {
     const prisma = {
       adminAuditLog: {

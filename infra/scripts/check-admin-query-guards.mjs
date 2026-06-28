@@ -9,6 +9,7 @@ const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 const notificationPageModelPath = resolve(root, 'apps/admin_web/app/notifications/notification-page-model.ts');
 const pushSendPageModelPath = resolve(root, 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts');
 const appSessionsPageModelPath = resolve(root, 'apps/admin_web/app/app-sessions/app-sessions-page-model.ts');
+const chatArchivePageModelPath = resolve(root, 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts');
 
 const violations = [];
 
@@ -18,6 +19,7 @@ const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelec
 const notificationPageModelSource = readFileSync(notificationPageModelPath, 'utf8');
 const pushSendPageModelSource = readFileSync(pushSendPageModelPath, 'utf8');
 const appSessionsPageModelSource = readFileSync(appSessionsPageModelPath, 'utf8');
+const chatArchivePageModelSource = readFileSync(chatArchivePageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
 function sourceBetween(startMarker, endMarker) {
@@ -150,11 +152,35 @@ if (
   });
 }
 
-if (!adminServiceSource.includes('take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,')) {
+if (!adminServiceSource.includes('take: adminChatArchiveListTake(query.take),')) {
   violations.push({
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Chat archive list query must apply ADMIN_CHAT_ARCHIVE_LIST_LIMIT.',
+    message: 'Chat archive list query must apply bounded server pagination.',
+  });
+}
+
+if (!adminServiceSource.includes('where: adminChatArchiveWhere(query),')) {
+  violations.push({
+    area: 'admin chat archive query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Chat archive list query must apply server-side audit filters.',
+  });
+}
+
+if (!chatArchivePageModelSource.includes('const CHAT_ARCHIVE_DEFAULT_TAKE = 50;')) {
+  violations.push({
+    area: 'admin chat archive page',
+    file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
+    message: 'Chat archive page must keep a narrow default room load size.',
+  });
+}
+
+if (!chatArchivePageModelSource.includes("normalizedParams.range = 'today';")) {
+  violations.push({
+    area: 'admin chat archive page',
+    file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
+    message: 'Chat archive page must default audit loading to today.',
   });
 }
 

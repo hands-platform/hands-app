@@ -47,6 +47,7 @@ describe('AdminController notification and push actions', () => {
     updateReferralPolicy: vi.fn(),
     upsertMarketingSpendDaily: vi.fn(),
     listAppSessions: vi.fn(),
+    listChatArchive: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -241,6 +242,28 @@ describe('AdminController notification and push actions', () => {
       role: 'customer',
       skip: '100',
       state: 'live',
+      take: '50',
+    });
+  });
+
+  it('exposes chat archive as a bounded filtered audit list', async () => {
+    admin.listChatArchive.mockResolvedValue([{ id: 'booking-1' }]);
+
+    await expect(
+      controller.chatArchive('today', '2026-06-01', '2026-06-02', 'completed', 'partner', 'late', '50'),
+    ).resolves.toEqual([{ id: 'booking-1' }]);
+
+    expect(routeMetadata('chatArchive')).toEqual({
+      method: RequestMethod.GET,
+      path: 'chat-archive',
+    });
+    expect(admin.listChatArchive).toHaveBeenCalledWith({
+      dateFrom: '2026-06-01',
+      dateRange: 'today',
+      dateTo: '2026-06-02',
+      q: 'late',
+      sender: 'partner',
+      status: 'completed',
       take: '50',
     });
   });
