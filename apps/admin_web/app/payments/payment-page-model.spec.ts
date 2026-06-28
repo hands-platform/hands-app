@@ -80,10 +80,10 @@ describe('payment page model', () => {
     });
 
     expect(buildPaymentOperationsApiHref(model.filters)).toBe(
-      '/admin/payments?take=25&range=7d&review=callback-review',
+      '/admin/payments?take=10&range=7d&review=callback-review',
     );
     expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
-      '/admin/payment-callback-attempts?take=25&range=7d&review=callback-review',
+      '/admin/payment-callback-attempts?take=10&range=7d&review=callback-review',
     );
   });
 
