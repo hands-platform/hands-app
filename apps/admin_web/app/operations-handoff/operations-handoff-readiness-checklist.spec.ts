@@ -65,6 +65,26 @@ describe('operations handoff readiness checklist model', () => {
       'handoff-note-written',
     ]);
   });
+
+  it('uses server notification summary count instead of bounded failed notification samples', () => {
+    const rows = buildHandoffReadinessChecklist({
+      bookings: [],
+      matchingBookings: [],
+      inServiceBookings: [],
+      failedNotificationCount: 42,
+      failedNotifications: [],
+      cashSummary: cashSummary({ providerCount: 0 }),
+      partnerSignals: { attentionCount: 0 },
+      customerSignals: [],
+      operatorNotes: [],
+    });
+
+    expect(rowById(rows, 'failed-alerts-reviewed')).toMatchObject({
+      count: 42,
+      countLabel: '42 failed',
+      badgeClass: 'pill pill-warn',
+    });
+  });
 });
 
 function rowById(rows: ReturnType<typeof buildHandoffReadinessChecklist>, id: string) {

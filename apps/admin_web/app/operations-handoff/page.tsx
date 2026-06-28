@@ -7,6 +7,7 @@ import {
   AdminCustomer,
   AdminEarning,
   AdminNotification,
+  AdminNotificationBoardSummary,
   AdminPayment,
   AdminPayoutBatch,
   AdminProvider,
@@ -42,6 +43,7 @@ import {
   buildActivityStreamCsvHref,
   buildLatestFcmSentSummary,
   buildOperationsHandoffDataHrefs,
+  buildOperationsHandoffFailedNotificationCount,
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
@@ -74,6 +76,7 @@ export default async function OperationsHandoffPage({
     refunds,
     payouts,
     notifications,
+    notificationSummary,
     sessions,
     auditLogs,
     cashSummary,
@@ -87,6 +90,7 @@ export default async function OperationsHandoffPage({
     adminGet<AdminRefund[]>(dataHrefs.refundsHref, []),
     adminGet<AdminPayoutBatch[]>(dataHrefs.payoutBatchesHref, []),
     adminGet<AdminNotification[]>(dataHrefs.notificationsHref, []),
+    adminGet<AdminNotificationBoardSummary | null>(dataHrefs.notificationSummaryHref, null),
     adminGet<AdminAppSession[]>(dataHrefs.appSessionsHref, []),
     adminGet<AdminAuditLog[]>(dataHrefs.auditLogsHref, []),
     adminGet<AdminCashSettlementSummary>(
@@ -130,11 +134,16 @@ export default async function OperationsHandoffPage({
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+  const failedNotificationCount = buildOperationsHandoffFailedNotificationCount(
+    notifications,
+    notificationSummary,
+  );
   const latestFcmSentSummary = buildLatestFcmSentSummary(notifications);
   const immediateActions = buildImmediateActionQueue({
     bookings,
     matchingBookings,
     inServiceBookings,
+    failedNotificationCount,
     failedNotifications,
     cashSummary,
     partnerSignals,
@@ -159,6 +168,7 @@ export default async function OperationsHandoffPage({
     bookings,
     matchingBookings,
     inServiceBookings,
+    failedNotificationCount,
     failedNotifications,
     cashSummary,
     partnerSignals,
@@ -188,7 +198,7 @@ export default async function OperationsHandoffPage({
         cashSummary={cashSummary}
         presence={presence}
         chatSignals={chatSignals}
-        failedNotificationCount={failedNotifications.length}
+        failedNotificationCount={failedNotificationCount}
         latestFcmSent={latestFcmSentSummary}
       />
 
@@ -206,7 +216,7 @@ export default async function OperationsHandoffPage({
           activeBookingCount={activeBookings.length}
           cashDebtPartnerCount={cashSummary.providerCount}
           customerSignalCount={customerSignals.length}
-          failedNotificationCount={failedNotifications.length}
+          failedNotificationCount={failedNotificationCount}
           matchingBookingCount={matchingBookings.length}
           partnerIssueCount={partnerSignals.attentionCount}
         />

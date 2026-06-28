@@ -9,6 +9,7 @@ import type {
 import {
   buildActivityStreamCsvHref,
   buildLatestFcmSentSummary,
+  buildOperationsHandoffFailedNotificationCount,
   buildOperationsHandoffDataHrefs,
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
@@ -65,6 +66,7 @@ describe('operations handoff page model', () => {
     expect(earningsUrl.searchParams.get('range')).toBe('today');
     expect(earningsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
+    expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(refundsUrl.searchParams.get('range')).toBe('today');
     expect(refundsUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
@@ -106,6 +108,7 @@ describe('operations handoff page model', () => {
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
+    expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
     expect(notificationsUrl.searchParams.get('take')).toBe('5');
@@ -113,6 +116,16 @@ describe('operations handoff page model', () => {
       true,
     );
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
+  });
+
+  it('prefers notification summary failed counts over bounded notification samples', () => {
+    expect(
+      buildOperationsHandoffFailedNotificationCount([failedNotification()], {
+        failed: 2400,
+      }),
+    ).toBe(2400);
+
+    expect(buildOperationsHandoffFailedNotificationCount([failedNotification()], null)).toBe(1);
   });
 
   it('filters range-owned finance and audit inputs consistently', () => {
@@ -304,5 +317,16 @@ function refund(input: Partial<AdminRefund>): AdminRefund {
     paymentId: 'payment-1',
     status: 'COMPLETED',
     ...input,
+  };
+}
+
+function failedNotification() {
+  return {
+    body: 'Failed body',
+    createdAt: '2026-06-14T00:00:00.000Z',
+    deliveries: [{ attemptedAt: '2026-06-14T00:00:00.000Z', provider: 'FCM', status: 'FAILED' }],
+    id: 'notification-failed',
+    title: 'Failed title',
+    type: 'BOOKING',
   };
 }

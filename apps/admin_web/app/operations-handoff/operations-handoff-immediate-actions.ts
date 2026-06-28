@@ -20,6 +20,7 @@ type ImmediateActionQueueInput = {
   readonly bookings: readonly AdminBooking[];
   readonly matchingBookings: readonly AdminBooking[];
   readonly inServiceBookings: readonly AdminBooking[];
+  readonly failedNotificationCount?: number;
   readonly failedNotifications: readonly AdminNotification[];
   readonly cashSummary: AdminCashSettlementSummary;
   readonly partnerSignals: PartnerSignalSummary;
@@ -33,6 +34,7 @@ export function buildImmediateActionQueue(
   const nowMs = options.nowMs ?? Date.now();
   const chatMissing = bookingsMissingChatHandoffEvidence(input.bookings);
   const closeoutRows = bookingsMissingCloseoutEvidence(input.bookings);
+  const failedNotificationCount = input.failedNotificationCount ?? input.failedNotifications.length;
   const recentNotes = input.operatorNotes.filter((note) =>
     recentlyChangedWithin(note.createdAt, nowMs, 240),
   );
@@ -100,12 +102,12 @@ export function buildImmediateActionQueue(
       title: 'Notification delivery failures',
       detail: 'Failed delivery rows can hide booking requests, Partner updates, or customer status changes.',
       href: '/notifications?review=failed',
-      count: input.failedNotifications.length,
-      countLabel: `${input.failedNotifications.length} failed`,
-      status: input.failedNotifications.length ? 'Retry/check' : 'Clear',
+      count: failedNotificationCount,
+      countLabel: `${failedNotificationCount} failed`,
+      status: failedNotificationCount ? 'Retry/check' : 'Clear',
       nextAction: 'Retry delivery or inspect disabled push devices before relying on app alerts.',
-      className: input.failedNotifications.length ? 'signal signal-warn' : 'signal signal-ok',
-      statusClass: input.failedNotifications.length ? 'pill pill-warn' : 'pill pill-success',
+      className: failedNotificationCount ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: failedNotificationCount ? 'pill pill-warn' : 'pill pill-success',
     },
     {
       id: 'partner-admin-facts',

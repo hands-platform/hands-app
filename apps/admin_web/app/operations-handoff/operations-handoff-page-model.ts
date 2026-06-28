@@ -3,6 +3,7 @@ import type {
   AdminCashSettlementSummary,
   AdminEarning,
   AdminNotification,
+  AdminNotificationBoardSummary,
   AdminPayment,
   AdminPayoutBatch,
   AdminRefund,
@@ -42,6 +43,7 @@ export type OperationsHandoffDataHrefs = {
   readonly chatArchiveHref: string | null;
   readonly customersHref: string;
   readonly earningsHref: string;
+  readonly notificationSummaryHref: string;
   readonly notificationsHref: string;
   readonly partnersHref: string;
   readonly paymentsHref: string;
@@ -132,6 +134,7 @@ export function buildOperationsHandoffDataHrefs(
       { take: String(limits.notifications) },
       range,
     ),
+    notificationSummaryHref: buildDateScopedHref('/admin/notifications/summary', {}, range),
     partnersHref: `/admin/operations-handoff/providers?${new URLSearchParams({
       take: String(limits.list),
     }).toString()}`,
@@ -199,6 +202,13 @@ export function buildLatestFcmSentSummary(notifications: readonly AdminNotificat
     : null;
 }
 
+export function buildOperationsHandoffFailedNotificationCount(
+  notifications: readonly AdminNotification[],
+  notificationSummary?: Pick<AdminNotificationBoardSummary, 'failed'> | null,
+) {
+  return notificationSummary?.failed ?? failedNotificationRows(notifications).length;
+}
+
 export function buildActivityStreamCsvHref(activityStream: readonly ActivityStreamRow[]) {
   return buildCsvDataHref(
     activityStream.map((item) => ({
@@ -220,6 +230,12 @@ function relativeTime(value?: string | null) {
     invalidFallback: 'unknown time',
     hourLabelCutoff: 48,
   });
+}
+
+function failedNotificationRows(notifications: readonly AdminNotification[]) {
+  return notifications.filter((notification) =>
+    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+  );
 }
 
 function buildDateScopedHref(

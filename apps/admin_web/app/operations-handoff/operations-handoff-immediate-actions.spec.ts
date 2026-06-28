@@ -65,6 +65,25 @@ describe('operations handoff immediate action model', () => {
       'in-service-watch',
     ]);
   });
+
+  it('uses server notification summary count instead of bounded failed notification samples', () => {
+    const rows = buildImmediateActionQueue({
+      bookings: [],
+      matchingBookings: [],
+      inServiceBookings: [],
+      failedNotificationCount: 27,
+      failedNotifications: [],
+      cashSummary: cashSummary({ providerCount: 0 }),
+      partnerSignals: { attentionCount: 0 },
+      operatorNotes: [],
+    });
+
+    expect(rowById(rows, 'notification-delivery')).toMatchObject({
+      count: 27,
+      countLabel: '27 failed',
+      statusClass: 'pill pill-warn',
+    });
+  });
 });
 
 function rowById(rows: ReturnType<typeof buildImmediateActionQueue>, id: string) {

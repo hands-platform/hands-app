@@ -20,6 +20,7 @@ type ReadinessChecklistInput = {
   readonly bookings: readonly AdminBooking[];
   readonly matchingBookings: readonly AdminBooking[];
   readonly inServiceBookings: readonly AdminBooking[];
+  readonly failedNotificationCount?: number;
   readonly failedNotifications: readonly AdminNotification[];
   readonly cashSummary: AdminCashSettlementSummary;
   readonly partnerSignals: PartnerSignalSummary;
@@ -96,6 +97,8 @@ function buildReadinessChecklistBaseRows(
   input: ReadinessChecklistInput,
   context: ReadinessChecklistContext,
 ): ReadinessChecklistBaseRow[] {
+  const failedNotificationCount = input.failedNotificationCount ?? input.failedNotifications.length;
+
   return [
     {
       id: 'live-matching-reviewed',
@@ -164,11 +167,11 @@ function buildReadinessChecklistBaseRows(
       title: 'Failed alerts reviewed',
       detail: 'Failed delivery rows can hide customer status changes or Partner booking requests.',
       href: '/notifications?review=failed',
-      count: input.failedNotifications.length,
-      countLabel: `${input.failedNotifications.length} failed`,
-      status: input.failedNotifications.length ? 'Retry/check' : 'Clear',
+      count: failedNotificationCount,
+      countLabel: `${failedNotificationCount} failed`,
+      status: failedNotificationCount ? 'Retry/check' : 'Clear',
       operatorAction: 'Open notification failures and inspect retry/device state before handover.',
-      tone: input.failedNotifications.length ? 'warn' : 'success',
+      tone: failedNotificationCount ? 'warn' : 'success',
     },
     {
       id: 'partner-facts-reviewed',
