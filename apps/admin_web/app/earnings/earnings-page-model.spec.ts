@@ -23,8 +23,8 @@ describe('earnings page model', () => {
     expect(defaultFilters.range).toBe('today');
     expect(buildEarningFilters({ range: 'all' }).range).toBe('all');
     expect(buildEarningOperationsApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=7d&take=100',
-      payoutBatchesHref: '/admin/payout-batches?range=7d&take=100',
+      earningsHref: '/admin/earnings?range=7d&take=50',
+      payoutBatchesHref: '/admin/payout-batches?range=7d&take=50',
     });
   });
 

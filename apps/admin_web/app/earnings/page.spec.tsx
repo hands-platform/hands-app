@@ -67,10 +67,10 @@ describe('EarningsPage', () => {
       if (href === '/admin/earnings/summary') {
         return summary;
       }
-      if (href === '/admin/earnings?range=today&take=100') {
+      if (href === '/admin/earnings?range=today&take=50') {
         return [earning];
       }
-      if (href === '/admin/payout-batches?range=today&take=100') {
+      if (href === '/admin/payout-batches?range=today&take=50') {
         return [] as AdminPayoutBatch[];
       }
       return fallback;

@@ -25,10 +25,10 @@ describe('finance closeout helpers', () => {
     expect(defaultFilters).toMatchObject({ label: 'Today (Vietnam)', range: 'today' });
     expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=30d&take=100',
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=100',
-      paymentsHref: '/admin/payments?range=30d&take=100',
-      refundsHref: '/admin/refunds?range=30d&take=100',
+      earningsHref: '/admin/earnings?range=30d&take=50',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=50',
+      paymentsHref: '/admin/payments?range=30d&take=50',
+      refundsHref: '/admin/refunds?range=30d&take=50',
     });
   });
 

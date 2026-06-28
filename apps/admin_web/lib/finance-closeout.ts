@@ -61,7 +61,7 @@ export type ReconciliationInput = {
 const OPEN_PAYMENT_REFERENCE_STATUSES = ['AUTHORIZED', 'PENDING'];
 const CLOSED_PAYOUT_STATUSES = ['PAID', 'CANCELLED'];
 const PAYOUT_REFERENCE_REQUIRED_STATUSES = ['PROCESSING', 'PAID'];
-const FINANCE_CLOSEOUT_API_LIMIT = 100;
+const FINANCE_CLOSEOUT_API_LIMIT = 50;
 
 export function buildReconciliation(input: ReconciliationInput) {
   const authorizedPayments = input.payments.filter((payment) => payment.status === 'AUTHORIZED');

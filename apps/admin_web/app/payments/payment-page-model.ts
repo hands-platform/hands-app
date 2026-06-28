@@ -52,7 +52,7 @@ export type PaymentPageModel = {
   readonly visibleCallbackAttempts: readonly AdminPaymentCallbackAttempt[];
 };
 
-const PAYMENT_OPERATIONS_API_LIMIT = 100;
+const PAYMENT_OPERATIONS_API_LIMIT = 50;
 
 export function buildPaymentPageModel({
   callbackAttempts,

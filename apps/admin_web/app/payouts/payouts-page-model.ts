@@ -1,6 +1,6 @@
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 
-const PAYOUT_OPERATIONS_API_LIMIT = 100;
+const PAYOUT_OPERATIONS_API_LIMIT = 50;
 
 export function buildPayoutFilters(params: Record<string, string | string[] | undefined>) {
   const rangeParam = readSearchParam(params.range);

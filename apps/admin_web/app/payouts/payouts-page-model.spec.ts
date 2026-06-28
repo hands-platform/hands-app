@@ -8,8 +8,8 @@ describe('payouts page model', () => {
     expect(defaultFilters.range).toBe('today');
     expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=30d&take=100',
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=100',
+      earningsHref: '/admin/earnings?range=30d&take=50',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=50',
     });
   });
 });
