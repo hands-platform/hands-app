@@ -55,6 +55,11 @@ const OPERATIONS_HANDOFF_AUDIT_TAKE = 50;
 const OPERATIONS_HANDOFF_FINANCE_TAKE = 50;
 const OPERATIONS_HANDOFF_LIST_TAKE = 50;
 const OPERATIONS_HANDOFF_CHAT_TAKE = 50;
+const OPERATIONS_HANDOFF_SUMMARY_BOOKING_TAKE = 25;
+const OPERATIONS_HANDOFF_SUMMARY_NOTIFICATION_TAKE = 10;
+const OPERATIONS_HANDOFF_SUMMARY_AUDIT_TAKE = 10;
+const OPERATIONS_HANDOFF_SUMMARY_FINANCE_TAKE = 10;
+const OPERATIONS_HANDOFF_SUMMARY_LIST_TAKE = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
@@ -91,19 +96,20 @@ export function buildOperationsHandoffDataHrefs(
   params: Record<string, string | string[] | undefined>,
 ): OperationsHandoffDataHrefs {
   const { detailsMode, range } = buildOperationsHandoffFilters(params);
+  const limits = operationsHandoffDataLimits(detailsMode);
 
   return {
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
-      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+      take: String(limits.list),
     }).toString()}`,
     auditLogsHref: buildDateScopedHref(
       '/admin/audit-logs',
-      { take: String(OPERATIONS_HANDOFF_AUDIT_TAKE) },
+      { take: String(limits.audit) },
       range,
     ),
     bookingsHref: `/admin/bookings?${new URLSearchParams({
       dateRange: range,
-      take: String(OPERATIONS_HANDOFF_BOOKING_TAKE),
+      take: String(limits.bookings),
     }).toString()}`,
     cashSettlementSummaryHref: buildRangeScopedHref('/admin/cash-settlement-summary', {}, range),
     chatArchiveHref:
@@ -114,36 +120,56 @@ export function buildOperationsHandoffDataHrefs(
           }).toString()}`
         : null,
     customersHref: `/admin/customers?${new URLSearchParams({
-      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+      take: String(limits.list),
     }).toString()}`,
     earningsHref: buildRangeScopedHref(
       '/admin/earnings',
-      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     notificationsHref: buildDateScopedHref(
       '/admin/notifications',
-      { take: String(OPERATIONS_HANDOFF_NOTIFICATION_TAKE) },
+      { take: String(limits.notifications) },
       range,
     ),
     partnersHref: `/admin/operations-handoff/providers?${new URLSearchParams({
-      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+      take: String(limits.list),
     }).toString()}`,
     paymentsHref: buildRangeScopedHref(
       '/admin/payments',
-      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     payoutBatchesHref: buildRangeScopedHref(
       '/admin/payout-batches',
-      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
     refundsHref: buildRangeScopedHref(
       '/admin/refunds',
-      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      { take: String(limits.finance) },
       range,
     ),
+  };
+}
+
+function operationsHandoffDataLimits(detailsMode: OperationsHandoffFilters['detailsMode']) {
+  if (detailsMode === 'all') {
+    return {
+      audit: OPERATIONS_HANDOFF_AUDIT_TAKE,
+      bookings: OPERATIONS_HANDOFF_BOOKING_TAKE,
+      finance: OPERATIONS_HANDOFF_FINANCE_TAKE,
+      list: OPERATIONS_HANDOFF_LIST_TAKE,
+      notifications: OPERATIONS_HANDOFF_NOTIFICATION_TAKE,
+    };
+  }
+
+  return {
+    audit: OPERATIONS_HANDOFF_SUMMARY_AUDIT_TAKE,
+    bookings: OPERATIONS_HANDOFF_SUMMARY_BOOKING_TAKE,
+    finance: OPERATIONS_HANDOFF_SUMMARY_FINANCE_TAKE,
+    list: OPERATIONS_HANDOFF_SUMMARY_LIST_TAKE,
+    notifications: OPERATIONS_HANDOFF_SUMMARY_NOTIFICATION_TAKE,
   };
 }
 

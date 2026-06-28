@@ -54,40 +54,44 @@ describe('operations handoff page model', () => {
 
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
-    expect(bookingsUrl.searchParams.get('take')).toBe('50');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect(bookingsUrl.searchParams.get('take')).toBe('25');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('10');
     expect(hrefs.chatArchiveHref).toBeNull();
-    expect(customersUrl.searchParams.get('take')).toBe('50');
+    expect(customersUrl.searchParams.get('take')).toBe('10');
     expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('50');
+    expect(partnersUrl.searchParams.get('take')).toBe('10');
     expect(paymentsUrl.searchParams.get('range')).toBe('today');
-    expect(paymentsUrl.searchParams.get('take')).toBe('50');
+    expect(paymentsUrl.searchParams.get('take')).toBe('10');
     expect(earningsUrl.searchParams.get('range')).toBe('today');
-    expect(earningsUrl.searchParams.get('take')).toBe('50');
+    expect(earningsUrl.searchParams.get('take')).toBe('10');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
     expect(refundsUrl.searchParams.get('range')).toBe('today');
-    expect(refundsUrl.searchParams.get('take')).toBe('50');
+    expect(refundsUrl.searchParams.get('take')).toBe('10');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
-    expect(payoutBatchesUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchesUrl.searchParams.get('take')).toBe('10');
     expect(notificationsUrl.pathname).toBe('/admin/notifications');
-    expect(notificationsUrl.searchParams.get('take')).toBe('50');
+    expect(notificationsUrl.searchParams.get('take')).toBe('10');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
       true,
     );
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
-    expect(auditUrl.searchParams.get('take')).toBe('50');
+    expect(auditUrl.searchParams.get('take')).toBe('10');
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
   it('keeps retained chat archive behind full handoff details', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ details: 'all', range: '7d' });
+    const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
+    const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
+    expect(bookingsUrl.searchParams.get('take')).toBe('50');
     expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
     expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
     expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+    expect(paymentsUrl.searchParams.get('take')).toBe('50');
   });
 
   it('keeps selected handoff range on bounded list requests', () => {
@@ -100,11 +104,11 @@ describe('operations handoff page model', () => {
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
     expect(hrefs.chatArchiveHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
-    expect(paymentsUrl.searchParams.get('take')).toBe('50');
+    expect(paymentsUrl.searchParams.get('take')).toBe('10');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
-    expect(payoutBatchesUrl.searchParams.get('take')).toBe('50');
-    expect(notificationsUrl.searchParams.get('take')).toBe('50');
+    expect(payoutBatchesUrl.searchParams.get('take')).toBe('10');
+    expect(notificationsUrl.searchParams.get('take')).toBe('10');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
       true,
     );
