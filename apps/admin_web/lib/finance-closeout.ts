@@ -361,7 +361,9 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
   });
 
   return {
+    cashSettlementSummaryHref: `/admin/cash-settlement-summary?range=${filters.range}`,
     earningsHref: `/admin/earnings?${query.toString()}`,
+    earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
     payoutBatchesHref: `/admin/payout-batches?${query.toString()}`,
     paymentsHref: `/admin/payments?${query.toString()}`,
     refundsHref: `/admin/refunds?${query.toString()}`,

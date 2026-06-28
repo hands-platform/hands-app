@@ -37,7 +37,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   const [payments, refunds, earningsSummary, earnings, payouts, cashSummary] = await Promise.all([
     adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
     adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
-    adminGet<AdminEarningSummary>('/admin/earnings/summary', {
+    adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, {
       count: 0,
       grossAmount: 0,
       platformFee: 0,
@@ -50,7 +50,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
     }),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
-    adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
+    adminGet<AdminCashSettlementSummary | null>(apiHrefs.cashSettlementSummaryHref, null),
   ]);
 
   const currency = earningsSummary.currency || payments[0]?.currency || cashSummary?.currency || 'VND';

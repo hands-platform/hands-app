@@ -3746,6 +3746,20 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('delegates earning summary filters to the earnings service', async () => {
+    const earnings = {
+      adminSummary: vi.fn().mockResolvedValue({ count: 1, grossAmount: 200000 }),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(service.earningsSummary({ range: 'today' })).resolves.toEqual({
+      count: 1,
+      grossAmount: 200000,
+    });
+
+    expect(earnings.adminSummary).toHaveBeenCalledWith({ range: 'today' });
+  });
+
   it('delegates bounded cash settlement filters to the earnings service', async () => {
     const earnings = {
       listCashSettlementDebtForAdmin: vi.fn().mockResolvedValue([{ id: 'cash-earning-1' }]),
@@ -3763,6 +3777,20 @@ describe('AdminService query orchestration', () => {
       range: '7d',
       take: '100',
     });
+  });
+
+  it('delegates cash settlement summary filters to the earnings service', async () => {
+    const earnings = {
+      cashSettlementSummaryForAdmin: vi.fn().mockResolvedValue({ rowCount: 1, totalDebtAmount: 300000 }),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(service.cashSettlementSummary({ range: '7d' })).resolves.toEqual({
+      rowCount: 1,
+      totalDebtAmount: 300000,
+    });
+
+    expect(earnings.cashSettlementSummaryForAdmin).toHaveBeenCalledWith({ range: '7d' });
   });
 
   it('delegates bounded payout batch filters to the earnings service', async () => {

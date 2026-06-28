@@ -630,13 +630,13 @@ export class AdminController {
   }
 
   @Get('cash-settlement-summary')
-  cashSettlementSummary() {
-    return this.admin.cashSettlementSummary();
+  cashSettlementSummary(@Query('range') range?: string) {
+    return this.admin.cashSettlementSummary({ range });
   }
 
   @Get('earnings/summary')
-  earningsSummary() {
-    return this.admin.earningsSummary();
+  earningsSummary(@Query('range') range?: string) {
+    return this.admin.earningsSummary({ range });
   }
 
   @Get('services')

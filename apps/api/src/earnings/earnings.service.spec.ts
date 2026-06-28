@@ -31,6 +31,38 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('filters admin earning summary by range without hydrating earning rows', async () => {
+    const prisma = {
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: {} }),
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn(),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.adminSummary({ range: 'today' })).resolves.toMatchObject({
+      count: 0,
+      grossAmount: 0,
+    });
+
+    expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+        }),
+      }),
+    );
+    expect(prisma.providerEarning.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+        }),
+      }),
+    );
+  });
+
   it('filters admin payout batches by range, review state, and bounded limit', async () => {
     const prisma = {
       providerPayoutBatch: {
@@ -133,6 +165,36 @@ describe('EarningsService payout batches', () => {
     expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
+          NOT: {
+            booking: {
+              is: expect.objectContaining({
+                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
+                status: BookingStatus.CANCELLED,
+              }),
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('filters cash settlement summaries by range without hydrating unrelated earning rows', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cashSettlementSummaryForAdmin({ range: '7d' })).resolves.toMatchObject({
+      rowCount: 0,
+      totalDebtAmount: 0,
+    });
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
           NOT: {
             booking: {
               is: expect.objectContaining({

@@ -4728,12 +4728,12 @@ export class AdminService {
     return this.earnings.listCashSettlementDebtForAdmin(options);
   }
 
-  cashSettlementSummary() {
-    return this.earnings.cashSettlementSummaryForAdmin();
+  cashSettlementSummary(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.cashSettlementSummaryForAdmin(options);
   }
 
-  earningsSummary() {
-    return this.earnings.adminSummary();
+  earningsSummary(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.adminSummary(options);
   }
 
   listServices() {

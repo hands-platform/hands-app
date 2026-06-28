@@ -56,7 +56,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/refunds?range=today&take=50') {
         return [refund];
       }
-      if (href === '/admin/earnings/summary') {
+      if (href === '/admin/earnings/summary?range=today') {
         return summary;
       }
       if (href === '/admin/earnings?range=today&take=50') {
@@ -65,7 +65,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/payout-batches?range=today&take=50') {
         return [] as AdminPayoutBatch[];
       }
-      if (href === '/admin/cash-settlement-summary') {
+      if (href === '/admin/cash-settlement-summary?range=today') {
         return null as AdminCashSettlementSummary | null;
       }
       return fallback;

@@ -45,7 +45,9 @@ describe('AdminController notification and push actions', () => {
     listPayments: vi.fn(),
     listRefunds: vi.fn(),
     listEarnings: vi.fn(),
+    earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
+    cashSettlementSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
@@ -345,6 +347,21 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
+  it('exposes earning summary with the same finance range filter', async () => {
+    admin.earningsSummary.mockResolvedValue({ count: 1, grossAmount: 200000 });
+
+    await expect(controller.earningsSummary('today')).resolves.toEqual({
+      count: 1,
+      grossAmount: 200000,
+    });
+
+    expect(routeMetadata('earningsSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'earnings/summary',
+    });
+    expect(admin.earningsSummary).toHaveBeenCalledWith({ range: 'today' });
+  });
+
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {
     admin.listCashSettlementEarnings.mockResolvedValue([{ id: 'cash-earning-1' }]);
 
@@ -358,6 +375,21 @@ describe('AdminController notification and push actions', () => {
       range: '7d',
       take: '100',
     });
+  });
+
+  it('exposes cash settlement summary with the same finance range filter', async () => {
+    admin.cashSettlementSummary.mockResolvedValue({ rowCount: 1, totalDebtAmount: 300000 });
+
+    await expect(controller.cashSettlementSummary('7d')).resolves.toEqual({
+      rowCount: 1,
+      totalDebtAmount: 300000,
+    });
+
+    expect(routeMetadata('cashSettlementSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'cash-settlement-summary',
+    });
+    expect(admin.cashSettlementSummary).toHaveBeenCalledWith({ range: '7d' });
   });
 
   it('exposes payout batches as a bounded filtered finance list', async () => {

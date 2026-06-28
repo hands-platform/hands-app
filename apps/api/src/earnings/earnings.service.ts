@@ -383,9 +383,15 @@ export class EarningsService {
     });
   }
 
-  async cashSettlementSummaryForAdmin() {
+  async cashSettlementSummaryForAdmin(options: AdminFinanceListQuery = {}) {
+    const where = cashSettlementDebtWhere();
+    const dateRange = adminFinanceDateRangeWhere(options.range);
+    if (dateRange) {
+      where.createdAt = dateRange;
+    }
+
     const debtRows = await this.prisma.providerEarning.findMany({
-      where: cashSettlementDebtWhere(),
+      where,
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       select: {
         id: true,
@@ -485,8 +491,8 @@ export class EarningsService {
     };
   }
 
-  adminSummary() {
-    return this.summaryWhere({});
+  adminSummary(options: AdminFinanceListQuery = {}) {
+    return this.summaryWhere(adminEarningListWhere(options) ?? {});
   }
 
   async markPaid(
