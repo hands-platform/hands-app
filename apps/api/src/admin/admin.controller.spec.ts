@@ -903,8 +903,8 @@ describe('AdminController notification and push actions', () => {
     admin.listPartnerDirectoryProviders.mockResolvedValue([{ id: 'partner-1' }]);
     admin.partnerDirectorySummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 12 });
 
-    await expect(controller.partnerDirectoryProviders('25', '50', 'linh')).resolves.toEqual([{ id: 'partner-1' }]);
-    await expect(controller.partnerDirectorySummary('linh')).resolves.toEqual({
+    await expect(controller.partnerDirectoryProviders('25', '50', 'linh', 'unapproved')).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.partnerDirectorySummary('linh', 'unapproved')).resolves.toEqual({
       generatedAt: '2026-06-27T00:00:00.000Z',
       totalCount: 12,
     });
@@ -919,10 +919,11 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listPartnerDirectoryProviders).toHaveBeenCalledWith({
       q: 'linh',
+      review: 'unapproved',
       skip: '50',
       take: '25',
     });
-    expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({ q: 'linh' });
+    expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({ q: 'linh', review: 'unapproved' });
   });
 });
 

@@ -12,6 +12,8 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ProviderDocumentStatus,
+  ProviderKycStatus,
   ReferralAudience,
   ReferralRewardMode,
   ReferralRewardStatus,
@@ -41,6 +43,7 @@ import {
 } from '../notifications/notification-template-catalog';
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
+import { REQUIRED_KYC_DOCUMENT_TYPES } from '../provider-onboarding/provider-onboarding.policy';
 import { RedisStateService } from '../redis/redis-state.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
@@ -463,6 +466,7 @@ type AdminCustomerDirectoryQueryOptions = AdminCustomerDirectorySummaryOptions &
 
 type AdminPartnerDirectorySummaryOptions = {
   q?: string | null;
+  review?: string | null;
 };
 
 type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
@@ -6482,7 +6486,26 @@ function adminPartnerDirectorySkip(value: number | string | null | undefined) {
 function adminPartnerDirectoryWhere(
   options: AdminPartnerDirectorySummaryOptions,
 ): Prisma.ProviderProfileWhereInput | undefined {
-  const q = normalizeNullable(options.q);
+  const whereClauses = [
+    adminPartnerDirectorySearchWhere(options.q),
+    adminPartnerDirectoryReviewWhere(options.review),
+  ].filter(Boolean) as Prisma.ProviderProfileWhereInput[];
+
+  if (whereClauses.length === 0) {
+    return undefined;
+  }
+
+  if (whereClauses.length === 1) {
+    return whereClauses[0];
+  }
+
+  return { AND: whereClauses };
+}
+
+function adminPartnerDirectorySearchWhere(
+  qValue: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const q = normalizeNullable(qValue);
 
   if (!q) {
     return undefined;
@@ -6501,6 +6524,53 @@ function adminPartnerDirectoryWhere(
             { phone: { contains: q, mode: 'insensitive' } },
             { email: { contains: q, mode: 'insensitive' } },
           ],
+        },
+      },
+    ],
+  };
+}
+
+function adminPartnerDirectoryReviewWhere(
+  reviewValue: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const review = normalizeNullable(reviewValue);
+
+  if (review !== 'unapproved') {
+    return undefined;
+  }
+
+  return {
+    OR: [
+      { blockedAt: { not: null } },
+      { verification: { is: null } },
+      { verification: { is: { status: { not: VerificationStatus.APPROVED } } } },
+      { kyc: { is: null } },
+      { kyc: { is: { status: { not: ProviderKycStatus.APPROVED } } } },
+      {
+        documents: {
+          some: {
+            status: { in: [ProviderDocumentStatus.PENDING_REVIEW, ProviderDocumentStatus.REJECTED] },
+          },
+        },
+      },
+      ...REQUIRED_KYC_DOCUMENT_TYPES.map((type) => ({
+        documents: {
+          none: {
+            type,
+            status: ProviderDocumentStatus.APPROVED,
+          },
+        },
+      })),
+      {
+        user: {
+          fileAssets: {
+            some: {
+              purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+              uploadStatus: FileUploadStatus.UPLOADED,
+              visibility: FileVisibility.PUBLIC,
+              reviewStatus: { in: [FileReviewStatus.PENDING_REVIEW, FileReviewStatus.REJECTED] },
+            },
+          },
         },
       },
     ],

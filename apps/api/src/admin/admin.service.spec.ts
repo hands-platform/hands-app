@@ -2143,6 +2143,53 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('supports unapproved partner directory filtering before loading row details', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review: 'unapproved',
+        take: '25',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 25,
+        where: {
+          OR: expect.arrayContaining([
+            { blockedAt: { not: null } },
+            { verification: { is: null } },
+            { verification: { is: { status: { not: 'APPROVED' } } } },
+            { kyc: { is: null } },
+            { kyc: { is: { status: { not: 'APPROVED' } } } },
+            { documents: { some: { status: { in: ['PENDING_REVIEW', 'REJECTED'] } } } },
+            { documents: { none: { type: 'CCCD_FRONT', status: 'APPROVED' } } },
+            { documents: { none: { type: 'CCCD_BACK', status: 'APPROVED' } } },
+            { documents: { none: { type: 'SELFIE', status: 'APPROVED' } } },
+            {
+              user: {
+                fileAssets: {
+                  some: {
+                    purpose: { in: ['PROFILE_IMAGE', 'PROVIDER_GALLERY'] },
+                    uploadStatus: 'UPLOADED',
+                    visibility: 'PUBLIC',
+                    reviewStatus: { in: ['PENDING_REVIEW', 'REJECTED'] },
+                  },
+                },
+              },
+            },
+          ]),
+        },
+      }),
+    );
+  });
+
   it('exposes partner directory summary counts through the same safe filters', async () => {
     const prisma = {
       providerProfile: {
@@ -2173,6 +2220,48 @@ describe('AdminService query orchestration', () => {
             },
           },
         ],
+      },
+    });
+  });
+
+  it('exposes unapproved partner directory summary counts through the same safe filters', async () => {
+    const prisma = {
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(9),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerDirectorySummary({ review: 'unapproved' })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 9,
+    });
+
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: {
+        OR: expect.arrayContaining([
+          { blockedAt: { not: null } },
+          { verification: { is: null } },
+          { verification: { is: { status: { not: 'APPROVED' } } } },
+          { kyc: { is: null } },
+          { kyc: { is: { status: { not: 'APPROVED' } } } },
+          { documents: { some: { status: { in: ['PENDING_REVIEW', 'REJECTED'] } } } },
+          { documents: { none: { type: 'CCCD_FRONT', status: 'APPROVED' } } },
+          { documents: { none: { type: 'CCCD_BACK', status: 'APPROVED' } } },
+          { documents: { none: { type: 'SELFIE', status: 'APPROVED' } } },
+          {
+            user: {
+              fileAssets: {
+                some: {
+                  purpose: { in: ['PROFILE_IMAGE', 'PROVIDER_GALLERY'] },
+                  uploadStatus: 'UPLOADED',
+                  visibility: 'PUBLIC',
+                  reviewStatus: { in: ['PENDING_REVIEW', 'REJECTED'] },
+                },
+              },
+            },
+          },
+        ]),
       },
     });
   });

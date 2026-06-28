@@ -29,6 +29,7 @@ export type ProviderFilters = {
 export type PartnerDataHrefs = {
   readonly listHref: string;
   readonly summaryHref: string;
+  readonly summaryMatchesVisibleFilter: boolean;
 };
 
 export function buildProviderFilters(
@@ -50,13 +51,22 @@ export function buildProviderFilters(
   };
 }
 
-export function buildPartnerDataHrefs(_filters: ProviderFilters): PartnerDataHrefs {
+export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHrefs {
   const listParams = new URLSearchParams();
+  const summaryParams = new URLSearchParams();
   listParams.set('take', '500');
+
+  if (filters.review === 'unapproved') {
+    listParams.set('review', 'unapproved');
+    summaryParams.set('review', 'unapproved');
+  }
 
   return {
     listHref: `/admin/partners/list-providers?${listParams.toString()}`,
-    summaryHref: '/admin/partners/list-providers/summary',
+    summaryHref: summaryParams.toString()
+      ? `/admin/partners/list-providers/summary?${summaryParams.toString()}`
+      : '/admin/partners/list-providers/summary',
+    summaryMatchesVisibleFilter: !hasLocalOnlyPartnerFilters(filters),
   };
 }
 
@@ -440,6 +450,20 @@ function normalizePartnerBookingFlowFilter(value: string) {
     'no-work',
   ];
   return allowed.includes(value) ? value : '';
+}
+
+function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
+  return Boolean(
+    filters.q ||
+      filters.verification ||
+      filters.providerStatus ||
+      filters.kyc ||
+      filters.location ||
+      filters.security ||
+      filters.readiness ||
+      filters.bookingFlow ||
+      (filters.review && filters.review !== 'unapproved'),
+  );
 }
 
 function readPartnerSort(value: string) {

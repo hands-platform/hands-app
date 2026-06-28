@@ -133,7 +133,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const activeFilters = buildProviderActiveFilters(filters);
   const partnerDirectoryTotalCount =
-    activeFilters.length === 0 ? providerDirectorySummary.totalCount || rawProviders.length : providers.length;
+    dataHrefs.summaryMatchesVisibleFilter
+      ? providerDirectorySummary.totalCount || rawProviders.length
+      : providers.length;
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
   const deepPartnerOps = showDeepPartnerOpsSections

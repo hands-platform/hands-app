@@ -43,6 +43,7 @@ describe('partner filters', () => {
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=500',
       summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: true,
     });
   });
 
@@ -52,6 +53,27 @@ describe('partner filters', () => {
     expect(buildPartnerDataHrefs(filters)).toEqual({
       listHref: '/admin/partners/list-providers?take=500',
       summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
+  });
+
+  it('pushes the primary unapproved partner review lane to the bounded API list', () => {
+    const filters = buildProviderFilters({ review: 'unapproved' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=500&review=unapproved',
+      summaryHref: '/admin/partners/list-providers/summary?review=unapproved',
+      summaryMatchesVisibleFilter: true,
+    });
+  });
+
+  it('keeps unsettled partner filtering local because wallet aggregation is not a direct profile where', () => {
+    const filters = buildProviderFilters({ review: 'unsettled' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=500',
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
     });
   });
 
