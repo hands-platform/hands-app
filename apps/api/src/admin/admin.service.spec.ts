@@ -2166,7 +2166,7 @@ describe('AdminService query orchestration', () => {
         }),
       ]),
     );
-    expect(overview.points).toEqual(overview.realtimePoints);
+    expect(overview.points).toEqual([]);
     expect(overview.realtimePoints.map((point) => point.kind).sort()).toEqual([
       'active',
       'bookings',

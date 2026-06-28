@@ -1841,7 +1841,7 @@ export class AdminService {
         currency: 'VND',
       },
       regions: regionRows,
-      points: realtimePoints,
+      points: [],
       realtimePoints,
     };
   }
