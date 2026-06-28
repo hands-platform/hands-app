@@ -399,18 +399,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const rangeBookings = bookings.filter((booking) =>
     isInDateRange(bookingLatestActivityAt(booking), filters.range),
   );
-  const rangePayments = payments.filter((payment) =>
-    isInDateRange(payment.booking?.createdAt ?? payment.refunds?.[0]?.createdAt, filters.range),
-  );
-  const rangeNotifications = notifications.filter((notification) =>
-    isInDateRange(notification.createdAt, filters.range),
-  );
-  const rangeEarningRows = earningRows.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const rangePayoutBatches = payoutBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range));
+  const rangePayments = payments;
+  const rangeNotifications = notifications;
+  const rangeEarningRows = earningRows;
+  const rangePayoutBatches = payoutBatches;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
-  const rangeBookingCreateRejections = bookingCreateRejections.filter((log) =>
-    isInDateRange(log.createdAt, filters.range),
-  );
+  const rangeBookingCreateRejections = bookingCreateRejections;
   const bookingCreateGateSummary = buildBookingCreateGateSummary(bookingCreateRejections);
   const rangeBookingCreateGateSummary = buildBookingCreateGateSummary(rangeBookingCreateRejections);
   const bookingOps = buildBookingOpsInsights(rangeBookings);
