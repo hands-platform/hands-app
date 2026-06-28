@@ -1193,10 +1193,18 @@ describe('AdminController notification and push actions', () => {
         'SUBMITTED',
         'ONLINE_AVAILABLE',
         'APPROVED',
+        'completed-work',
       ),
     ).resolves.toEqual([{ id: 'partner-1' }]);
     await expect(
-      controller.partnerDirectorySummary('linh', 'unapproved', 'SUBMITTED', 'ONLINE_AVAILABLE', 'APPROVED'),
+      controller.partnerDirectorySummary(
+        'linh',
+        'unapproved',
+        'SUBMITTED',
+        'ONLINE_AVAILABLE',
+        'APPROVED',
+        'completed-work',
+      ),
     ).resolves.toEqual({
       generatedAt: '2026-06-27T00:00:00.000Z',
       totalCount: 12,
@@ -1218,6 +1226,7 @@ describe('AdminController notification and push actions', () => {
       verification: 'SUBMITTED',
       providerStatus: 'ONLINE_AVAILABLE',
       kyc: 'APPROVED',
+      bookingFlow: 'completed-work',
     });
     expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({
       q: 'linh',
@@ -1225,6 +1234,7 @@ describe('AdminController notification and push actions', () => {
       verification: 'SUBMITTED',
       providerStatus: 'ONLINE_AVAILABLE',
       kyc: 'APPROVED',
+      bookingFlow: 'completed-work',
     });
   });
 });

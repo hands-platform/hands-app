@@ -333,6 +333,13 @@ const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.ARRIVED,
   BookingStatus.IN_SERVICE,
 ]);
+const ADMIN_PROVIDER_CHAT_REQUIRED_BOOKING_STATUSES = [
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+  BookingStatus.COMPLETED,
+] as const;
 const ADMIN_VIETNAM_CANCELLATION_STATUSES = new Set<BookingStatus>([
   BookingStatus.CANCELLED,
   BookingStatus.NO_SHOW,
@@ -519,6 +526,7 @@ type AdminCustomerGenderGroupRow = {
 };
 
 type AdminPartnerDirectorySummaryOptions = {
+  bookingFlow?: string | null;
   kyc?: string | null;
   providerStatus?: string | null;
   q?: string | null;
@@ -8019,6 +8027,7 @@ function adminPartnerDirectoryWhere(
     adminPartnerDirectoryVerificationWhere(options.verification),
     adminPartnerDirectoryProviderStatusWhere(options.providerStatus),
     adminPartnerDirectoryKycWhere(options.kyc),
+    adminPartnerDirectoryBookingFlowWhere(options.bookingFlow),
     adminPartnerDirectoryReviewWhere(options.review),
   ]);
 }
@@ -8234,6 +8243,55 @@ function adminPartnerDirectoryReviewWhere(
       },
     ],
   };
+}
+
+function adminPartnerDirectoryBookingFlowWhere(
+  bookingFlowValue: string | null | undefined,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const bookingFlow = normalizeNullable(bookingFlowValue);
+  const relatedBooking = (where: Prisma.BookingWhereInput): Prisma.ProviderProfileWhereInput => ({
+    OR: [
+      { preferredBookings: { some: where } },
+      { selectedBookings: { some: where } },
+      { participants: { some: { booking: where } } },
+    ],
+  });
+
+  if (bookingFlow === 'active-booking') {
+    return relatedBooking({ status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) } });
+  }
+  if (bookingFlow === 'first-pick') {
+    return { preferredBookings: { some: {} } };
+  }
+  if (bookingFlow === 'marketplace-joined') {
+    return { participants: { some: {} } };
+  }
+  if (bookingFlow === 'final-partner') {
+    return { selectedBookings: { some: {} } };
+  }
+  if (bookingFlow === 'chat-live') {
+    return relatedBooking({ chatRoom: { isNot: null } });
+  }
+  if (bookingFlow === 'chat-missing') {
+    return relatedBooking({
+      status: { in: [...ADMIN_PROVIDER_CHAT_REQUIRED_BOOKING_STATUSES] },
+      chatRoom: { is: null },
+    });
+  }
+  if (bookingFlow === 'completed-work') {
+    return relatedBooking({ status: BookingStatus.COMPLETED });
+  }
+  if (bookingFlow === 'no-work') {
+    return {
+      AND: [
+        { preferredBookings: { none: { status: BookingStatus.COMPLETED } } },
+        { selectedBookings: { none: { status: BookingStatus.COMPLETED } } },
+        { participants: { none: { booking: { status: BookingStatus.COMPLETED } } } },
+      ],
+    };
+  }
+
+  return undefined;
 }
 
 function isVerificationStatus(value: string): value is VerificationStatus {

@@ -337,8 +337,18 @@ export class AdminController {
     @Query('verification') verification?: string,
     @Query('providerStatus') providerStatus?: string,
     @Query('kyc') kyc?: string,
+    @Query('bookingFlow') bookingFlow?: string,
   ) {
-    return this.admin.listPartnerDirectoryProviders({ kyc, providerStatus, q, review, skip, take, verification });
+    return this.admin.listPartnerDirectoryProviders({
+      bookingFlow,
+      kyc,
+      providerStatus,
+      q,
+      review,
+      skip,
+      take,
+      verification,
+    });
   }
 
   @Get('partners/list-providers/summary')
@@ -348,8 +358,9 @@ export class AdminController {
     @Query('verification') verification?: string,
     @Query('providerStatus') providerStatus?: string,
     @Query('kyc') kyc?: string,
+    @Query('bookingFlow') bookingFlow?: string,
   ) {
-    return this.admin.partnerDirectorySummary({ kyc, providerStatus, q, review, verification });
+    return this.admin.partnerDirectorySummary({ bookingFlow, kyc, providerStatus, q, review, verification });
   }
 
   @Get(['providers/:id/overview', 'partners/:id/overview'])

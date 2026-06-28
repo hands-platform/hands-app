@@ -3249,6 +3249,91 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it.each([
+    [
+      'active-booking',
+      {
+        OR: [
+          { preferredBookings: { some: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } },
+          { selectedBookings: { some: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } },
+          { participants: { some: { booking: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } } },
+        ],
+      },
+    ],
+    ['first-pick', { preferredBookings: { some: {} } }],
+    ['marketplace-joined', { participants: { some: {} } }],
+    ['final-partner', { selectedBookings: { some: {} } }],
+    [
+      'chat-live',
+      {
+        OR: [
+          { preferredBookings: { some: { chatRoom: { isNot: null } } } },
+          { selectedBookings: { some: { chatRoom: { isNot: null } } } },
+          { participants: { some: { booking: { chatRoom: { isNot: null } } } } },
+        ],
+      },
+    ],
+    [
+      'chat-missing',
+      {
+        OR: [
+          { preferredBookings: { some: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } },
+          { selectedBookings: { some: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } },
+          { participants: { some: { booking: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } } },
+        ],
+      },
+    ],
+    [
+      'completed-work',
+      {
+        OR: [
+          { preferredBookings: { some: { status: 'COMPLETED' } } },
+          { selectedBookings: { some: { status: 'COMPLETED' } } },
+          { participants: { some: { booking: { status: 'COMPLETED' } } } },
+        ],
+      },
+    ],
+    [
+      'no-work',
+      {
+        AND: [
+          { preferredBookings: { none: { status: 'COMPLETED' } } },
+          { selectedBookings: { none: { status: 'COMPLETED' } } },
+          { participants: { none: { booking: { status: 'COMPLETED' } } } },
+        ],
+      },
+    ],
+  ])('supports %s booking flow filtering before loading row details', async (bookingFlow, expectedWhere) => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(6),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        bookingFlow,
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+    await expect(service.partnerDirectorySummary({ bookingFlow })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 6,
+    });
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: expectedWhere,
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: expectedWhere,
+    });
+  });
+
   it('exposes partner directory summary counts through the same safe filters', async () => {
     const prisma = {
       providerProfile: {

@@ -76,6 +76,7 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'verification', filters.verification);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'providerStatus', filters.providerStatus);
   setPartnerDirectoryServerFilter(listParams, summaryParams, 'kyc', filters.kyc);
+  setPartnerDirectoryServerFilter(listParams, summaryParams, 'bookingFlow', filters.bookingFlow);
 
   if (isPrimaryPartnerReview(filters.review)) {
     listParams.set('review', filters.review);
@@ -363,7 +364,6 @@ export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
   return Boolean(
     filters.location ||
       filters.security ||
-      filters.bookingFlow ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
@@ -504,7 +504,6 @@ function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
     filters.location ||
       filters.security ||
       filters.readiness ||
-      filters.bookingFlow ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
@@ -565,7 +564,7 @@ const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 50;
 function setPartnerDirectoryServerFilter(
   listParams: URLSearchParams,
   summaryParams: URLSearchParams,
-  key: 'verification' | 'providerStatus' | 'kyc',
+  key: 'verification' | 'providerStatus' | 'kyc' | 'bookingFlow',
   value: string,
 ) {
   if (!value) {

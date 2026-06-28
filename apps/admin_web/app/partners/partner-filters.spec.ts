@@ -88,6 +88,20 @@ describe('partner filters', () => {
     });
   });
 
+  it.each(['active-booking', 'first-pick', 'marketplace-joined', 'final-partner', 'chat-live', 'chat-missing', 'completed-work', 'no-work'])(
+    'pushes the %s booking flow filter to the bounded API list',
+    (bookingFlow) => {
+      const filters = buildProviderFilters({ bookingFlow });
+
+      expect(buildPartnerDataHrefs(filters)).toEqual({
+        listHref: `/admin/partners/list-providers?take=10&bookingFlow=${bookingFlow}`,
+        listIsServerPaginated: true,
+        summaryHref: `/admin/partners/list-providers/summary?bookingFlow=${bookingFlow}`,
+        summaryMatchesVisibleFilter: true,
+      });
+    },
+  );
+
   it('pushes the primary unapproved partner review lane to the bounded API list', () => {
     const filters = buildProviderFilters({ review: 'unapproved' });
 
@@ -202,7 +216,7 @@ describe('partner filters', () => {
     });
   });
 
-  it.each<keyof ProviderFilters>(['location', 'security', 'bookingFlow'])(
+  it.each<keyof ProviderFilters>(['location', 'security'])(
     'opens advanced operational filters when %s is active',
     (key) => {
       const filters = { ...buildProviderFilters({}), [key]: 'active' };
