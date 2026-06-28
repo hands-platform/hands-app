@@ -68,6 +68,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     activePage,
     archiveHref,
     archivePageHref,
+    archivePageSize,
     archiveSummaryHref,
     dateFilters,
     filters,
@@ -80,7 +81,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
   const totalRooms = readChatArchiveTotalCount(archiveSummaryResponse) ?? rooms.length;
-  const totalPages = Math.max(1, Math.ceil(totalRooms / 50));
+  const totalPages = Math.max(1, Math.ceil(totalRooms / archivePageSize));
   const repairRows = filterChatRepairRows(
     buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
     filters,

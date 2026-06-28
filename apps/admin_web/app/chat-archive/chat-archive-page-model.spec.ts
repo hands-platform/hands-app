@@ -5,9 +5,10 @@ describe('chat archive page model', () => {
     const plan = buildChatArchiveLoadPlan({});
 
     expect(plan.dateFilters.range).toBe('today');
-    expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=today&take=25');
+    expect(plan.archivePageSize).toBe(10);
+    expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=today&take=10');
     expect(plan.archiveSummaryHref).toBe('/admin/chat-archive/summary?dateRange=today');
-    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=today&take=25');
+    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=today&take=10');
   });
 
   it('passes search, sender, status, and custom dates through to bounded API requests', () => {
@@ -20,13 +21,13 @@ describe('chat archive page model', () => {
     });
 
     expect(plan.archiveHref).toBe(
-      '/admin/chat-archive?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late&take=25',
+      '/admin/chat-archive?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late&take=10',
     );
     expect(plan.archiveSummaryHref).toBe(
       '/admin/chat-archive/summary?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late',
     );
     expect(plan.repairBookingsHref).toBe(
-      '/admin/bookings?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&take=25',
+      '/admin/bookings?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&take=10',
     );
   });
 
@@ -39,7 +40,7 @@ describe('chat archive page model', () => {
     });
 
     expect(plan.archiveHref).toBe(
-      '/admin/chat-archive?dateRange=7d&sender=customer&q=room&take=25&skip=50',
+      '/admin/chat-archive?dateRange=7d&sender=customer&q=room&take=10&skip=20',
     );
     expect(plan.archivePageHref(2)).toBe('/chat-archive?q=room&sender=customer&range=7d&page=2');
     expect(plan.archivePageHref(1)).toBe('/chat-archive?q=room&sender=customer&range=7d');

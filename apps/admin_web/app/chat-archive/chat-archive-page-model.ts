@@ -4,8 +4,8 @@ import {
 } from '../../lib/detail-date-filter';
 import { readSearchParam } from '../../lib/date-range';
 
-const CHAT_ARCHIVE_DEFAULT_TAKE = 25;
-const CHAT_REPAIR_BOOKING_DEFAULT_TAKE = 25;
+const CHAT_ARCHIVE_DEFAULT_TAKE = 10;
+const CHAT_REPAIR_BOOKING_DEFAULT_TAKE = 10;
 
 export type ChatArchiveFilters = {
   readonly q: string;
@@ -17,6 +17,7 @@ export type ChatArchiveLoadPlan = {
   readonly activePage: number;
   readonly archiveHref: string;
   readonly archivePageHref: (page: number) => string;
+  readonly archivePageSize: number;
   readonly archiveSummaryHref: string;
   readonly dateFilters: DetailDateFilters;
   readonly filters: ChatArchiveFilters;
@@ -40,6 +41,7 @@ export function buildChatArchiveLoadPlan(
     activePage,
     archiveHref: buildChatArchiveApiHref(filters, dateFilters, hasExplicitDateBounds, activePage),
     archivePageHref: (page) => buildChatArchivePageHref(filters, dateFilters, page),
+    archivePageSize: CHAT_ARCHIVE_DEFAULT_TAKE,
     archiveSummaryHref: buildChatArchiveSummaryApiHref(filters, dateFilters, hasExplicitDateBounds),
     dateFilters,
     filters,
