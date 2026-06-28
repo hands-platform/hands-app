@@ -461,6 +461,15 @@ type AdminCustomerDirectoryQueryOptions = AdminCustomerDirectorySummaryOptions &
   take?: number | string | null;
 };
 
+type AdminPartnerDirectorySummaryOptions = {
+  q?: string | null;
+};
+
+type AdminPartnerDirectoryQueryOptions = AdminPartnerDirectorySummaryOptions & {
+  skip?: number | string | null;
+  take?: number | string | null;
+};
+
 type AdminReviewBoardSummaryOptions = {
   bookingId?: string | null;
   customerProfileId?: string | null;
@@ -2292,10 +2301,14 @@ export class AdminService {
     }));
   }
 
-  async listPartnerDirectoryProviders() {
+  async listPartnerDirectoryProviders(options: AdminPartnerDirectoryQueryOptions = {}) {
+    const where = adminPartnerDirectoryWhere(options);
+    const skip = adminPartnerDirectorySkip(options.skip);
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminPartnerDirectoryTake(options.take),
+      ...(where ? { where } : {}),
       select: adminProviderDirectorySelect,
     });
 
@@ -2320,6 +2333,18 @@ export class AdminService {
       auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
       auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
     }));
+  }
+
+  async partnerDirectorySummary(options: AdminPartnerDirectorySummaryOptions = {}) {
+    const where = adminPartnerDirectoryWhere(options);
+    const totalCount = await this.prisma.providerProfile.count({
+      ...(where ? { where } : {}),
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount,
+    };
   }
 
   listFileReviewProviders() {
@@ -6426,6 +6451,60 @@ function adminCustomerDirectorySkip(value: number | string | null | undefined) {
   }
 
   return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminPartnerDirectoryTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT);
+}
+
+function adminPartnerDirectorySkip(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminPartnerDirectoryWhere(
+  options: AdminPartnerDirectorySummaryOptions,
+): Prisma.ProviderProfileWhereInput | undefined {
+  const q = normalizeNullable(options.q);
+
+  if (!q) {
+    return undefined;
+  }
+
+  return {
+    OR: [
+      { displayName: { contains: q, mode: 'insensitive' } },
+      { legalName: { contains: q, mode: 'insensitive' } },
+      { activityNickname: { contains: q, mode: 'insensitive' } },
+      { city: { contains: q, mode: 'insensitive' } },
+      {
+        user: {
+          OR: [
+            { fullName: { contains: q, mode: 'insensitive' } },
+            { phone: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      },
+    ],
+  };
 }
 
 function adminCustomerDirectoryWhere(

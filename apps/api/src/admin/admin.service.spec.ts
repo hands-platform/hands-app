@@ -2101,6 +2101,82 @@ describe('AdminService query orchestration', () => {
     expect(select.devices.take).toBe(3);
   });
 
+  it('supports bounded partner directory paging and text search before loading row details', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        q: 'linh',
+        skip: '50',
+        take: '25',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { id: 'desc' },
+        skip: 50,
+        take: 25,
+        where: {
+          OR: [
+            { displayName: { contains: 'linh', mode: 'insensitive' } },
+            { legalName: { contains: 'linh', mode: 'insensitive' } },
+            { activityNickname: { contains: 'linh', mode: 'insensitive' } },
+            { city: { contains: 'linh', mode: 'insensitive' } },
+            {
+              user: {
+                OR: [
+                  { fullName: { contains: 'linh', mode: 'insensitive' } },
+                  { phone: { contains: 'linh', mode: 'insensitive' } },
+                  { email: { contains: 'linh', mode: 'insensitive' } },
+                ],
+              },
+            },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('exposes partner directory summary counts through the same safe filters', async () => {
+    const prisma = {
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(32),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerDirectorySummary({ q: 'linh' })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 32,
+    });
+
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { displayName: { contains: 'linh', mode: 'insensitive' } },
+          { legalName: { contains: 'linh', mode: 'insensitive' } },
+          { activityNickname: { contains: 'linh', mode: 'insensitive' } },
+          { city: { contains: 'linh', mode: 'insensitive' } },
+          {
+            user: {
+              OR: [
+                { fullName: { contains: 'linh', mode: 'insensitive' } },
+                { phone: { contains: 'linh', mode: 'insensitive' } },
+                { email: { contains: 'linh', mode: 'insensitive' } },
+              ],
+            },
+          },
+        ],
+      },
+    });
+  });
+
   it('lists file review providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {

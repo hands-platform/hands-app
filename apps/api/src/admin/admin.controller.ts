@@ -218,8 +218,17 @@ export class AdminController {
   }
 
   @Get('partners/list-providers')
-  partnerDirectoryProviders() {
-    return this.admin.listPartnerDirectoryProviders();
+  partnerDirectoryProviders(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.listPartnerDirectoryProviders({ q, skip, take });
+  }
+
+  @Get('partners/list-providers/summary')
+  partnerDirectorySummary(@Query('q') q?: string) {
+    return this.admin.partnerDirectorySummary({ q });
   }
 
   @Get(['providers/:id/overview', 'partners/:id/overview'])

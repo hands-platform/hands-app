@@ -31,6 +31,7 @@ describe('AdminController notification and push actions', () => {
     listNotificationTemplates: vi.fn(),
     listPartnerControlProviders: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
+    partnerDirectorySummary: vi.fn(),
     listAdminPushCampaigns: vi.fn(),
     adminPushCampaignSummary: vi.fn(),
     listPaymentCallbackAttempts: vi.fn(),
@@ -900,14 +901,28 @@ describe('AdminController notification and push actions', () => {
 
   it('exposes partner directory providers as a lightweight GET list', async () => {
     admin.listPartnerDirectoryProviders.mockResolvedValue([{ id: 'partner-1' }]);
+    admin.partnerDirectorySummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 12 });
 
-    await expect(controller.partnerDirectoryProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.partnerDirectoryProviders('25', '50', 'linh')).resolves.toEqual([{ id: 'partner-1' }]);
+    await expect(controller.partnerDirectorySummary('linh')).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      totalCount: 12,
+    });
 
     expect(routeMetadata('partnerDirectoryProviders')).toEqual({
       method: RequestMethod.GET,
       path: 'partners/list-providers',
     });
-    expect(admin.listPartnerDirectoryProviders).toHaveBeenCalledWith();
+    expect(routeMetadata('partnerDirectorySummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partners/list-providers/summary',
+    });
+    expect(admin.listPartnerDirectoryProviders).toHaveBeenCalledWith({
+      q: 'linh',
+      skip: '50',
+      take: '25',
+    });
+    expect(admin.partnerDirectorySummary).toHaveBeenCalledWith({ q: 'linh' });
   });
 });
 
