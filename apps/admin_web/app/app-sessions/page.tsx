@@ -21,7 +21,6 @@ import {
   buildSessionFilters,
   sessionFilterHref,
   sessionFilterLabel,
-  type SessionFilters,
   type SessionState,
 } from './app-sessions-page-model';
 import { AppSessionsScopeSection, type AppSessionQuickFilter } from './app-sessions-scope-section';

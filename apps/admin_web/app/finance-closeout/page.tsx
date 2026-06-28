@@ -10,7 +10,6 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
-import { isInDateRange } from '../../lib/date-range';
 import {
   buildCloseoutTasks,
   buildFinanceCloseoutApiHrefs,
@@ -55,9 +54,9 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   ]);
 
   const currency = earningsSummary.currency || payments[0]?.currency || cashSummary?.currency || 'VND';
-  const filteredRefunds = refunds.filter((refund) => isInDateRange(refund.createdAt, filters.range));
-  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const filteredPayouts = payouts.filter((batch) => isInDateRange(batch.createdAt, filters.range));
+  const filteredRefunds = refunds;
+  const filteredEarnings = earnings;
+  const filteredPayouts = payouts;
   const filteredEarningsSummary = summarizeEarnings(filteredEarnings, currency);
   const reconciliation = buildReconciliation({
     payments,

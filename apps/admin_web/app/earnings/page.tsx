@@ -3,7 +3,7 @@ import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '.
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatMoney } from '../../lib/admin-format';
-import { dateRangeLabel, isInDateRange, readSearchParam } from '../../lib/date-range';
+import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 import {
   type EarningConfirmationAction,
@@ -53,10 +53,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
   ]);
   const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
-  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const filteredPayoutBatches = payoutBatches.filter((batch) =>
-    isInDateRange(batch.createdAt, filters.range),
-  );
+  const filteredEarnings = earnings;
+  const filteredPayoutBatches = payoutBatches;
   const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
   const sortedEarnings = sortEarnings(filteredEarnings);
   const ledgerEarnings = sortEarnings(filterEarningsByBatchState(filteredEarnings, filters.batchState));

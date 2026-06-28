@@ -4,7 +4,7 @@ import { AdminEarning, AdminOperationalPolicySetting, AdminPayoutBatch, adminGet
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
-import { dateRangeLabel, isInDateRange, readSearchParam } from '../../lib/date-range';
+import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
   OPERATIONAL_POLICY_KEYS,
@@ -53,8 +53,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
-  const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
-  const earnings = allEarnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
+  const batches = sortBatches(allBatches);
+  const earnings = allEarnings;
   const summary = buildSummary(batches);
   const payoutBatchRows = buildPayoutBatchTableRows(batches);
   const commandSignals = buildPayoutCommandSignals(batches);

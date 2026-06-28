@@ -4,7 +4,6 @@ import { shortId } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
-  isInDateRange,
   normalizeDateRange,
   readSearchParam,
 } from '../../lib/date-range';
@@ -30,7 +29,7 @@ const REFUND_OPERATIONS_API_LIMIT = 100;
 export default async function RefundsPage({ searchParams }: { searchParams?: RefundsPageSearchParams }) {
   const filters = buildRefundFilters(searchParams ? await searchParams : {});
   const allRefunds = sortRefunds(await adminGet<AdminRefund[]>(buildRefundOperationsApiHref(filters), []));
-  const refunds = filterRefunds(allRefunds, filters);
+  const refunds = allRefunds;
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
   const commandBoard = buildRefundCommandBoard(allRefunds);
   const decisionChecklist = buildRefundDecisionChecklist(allRefunds);
@@ -301,33 +300,6 @@ function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilt
   }
 
   return `/admin/refunds?${params.toString()}`;
-}
-
-function filterRefunds(refunds: AdminRefund[], filters: ReturnType<typeof buildRefundFilters>) {
-  return refunds.filter(
-    (refund) =>
-      isInDateRange(refund.createdAt, filters.range) &&
-      (!filters.review || refundMatchesReview(refund, filters.review)),
-  );
-}
-
-function refundMatchesReview(refund: AdminRefund, review: string) {
-  if (review === 'open') {
-    return refund.status !== 'COMPLETED';
-  }
-  if (review === 'requested') {
-    return refund.status === 'REQUESTED';
-  }
-  if (review === 'needs-update') {
-    return refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED';
-  }
-  if (review === 'refunded-booking') {
-    return refund.booking?.status === 'REFUNDED';
-  }
-  if (review === 'completed') {
-    return refund.status === 'COMPLETED';
-  }
-  return true;
 }
 
 function refundFilterLinks(): RefundFilterLink[] {

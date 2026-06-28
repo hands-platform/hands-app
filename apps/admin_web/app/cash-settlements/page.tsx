@@ -7,7 +7,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatMoney } from '../../lib/admin-format';
-import { isInDateRange, readSearchParam } from '../../lib/date-range';
+import { readSearchParam } from '../../lib/date-range';
 import { buildAdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { settleCashFeeDebt } from './actions';
 import { buildCashSettlementConfirmation } from './cash-settlement-action-confirmation';
@@ -51,7 +51,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
-  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
+  const filteredEarnings = earnings;
   const allRowsInRange = buildCashSettlementRows(filteredEarnings);
   const rows = applyCashSettlementRowFilters(allRowsInRange, filters);
   const providers = buildProviderGroups(rows);
