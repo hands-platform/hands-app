@@ -478,6 +478,33 @@ export type AdminCustomer = {
 
 export type AdminCustomerSummary = {
   generatedAt?: string;
+  genderBreakdown?: {
+    female: number;
+    male: number;
+    other: number;
+    unknown: number;
+  };
+  monthSeen?: number;
+  monthSeenGenderBreakdown?: {
+    female: number;
+    male: number;
+    other: number;
+    unknown: number;
+  };
+  todayJoined?: number;
+  todayJoinedGenderBreakdown?: {
+    female: number;
+    male: number;
+    other: number;
+    unknown: number;
+  };
+  todaySeen?: number;
+  todaySeenGenderBreakdown?: {
+    female: number;
+    male: number;
+    other: number;
+    unknown: number;
+  };
   totalCount: number;
 };
 

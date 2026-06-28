@@ -476,6 +476,18 @@ type AdminCustomerDirectoryQueryOptions = AdminCustomerDirectorySummaryOptions &
   take?: number | string | null;
 };
 
+type AdminCustomerGenderBreakdown = {
+  female: number;
+  male: number;
+  other: number;
+  unknown: number;
+};
+
+type AdminCustomerGenderGroupRow = {
+  gender: string | null;
+  _count: { _all: number };
+};
+
 type AdminPartnerDirectorySummaryOptions = {
   q?: string | null;
   review?: string | null;
@@ -894,13 +906,61 @@ export class AdminService {
 
   async customerSummary(options: AdminCustomerDirectorySummaryOptions = {}) {
     const where = adminCustomerDirectoryWhere(options);
-    const totalCount = await this.prisma.customerProfile.count({
-      ...(where ? { where } : {}),
-    });
+    const todayStartMs = startOfLocalDay(Date.now());
+    const todayEndMs = addLocalDays(todayStartMs, 1);
+    const monthStartMs = addLocalDays(todayStartMs, -29);
+    const todayJoinedWhere = adminCustomerSummaryWhere(
+      where,
+      adminCustomerCreatedAtWindowWhere(todayStartMs, todayEndMs),
+    );
+    const todaySeenWhere = adminCustomerSummaryWhere(
+      where,
+      adminCustomerLastSeenWindowWhere(todayStartMs, todayEndMs),
+    );
+    const monthSeenWhere = adminCustomerSummaryWhere(
+      where,
+      adminCustomerLastSeenWindowWhere(monthStartMs, todayEndMs),
+    );
+    const [totalCount, genderRows, todayJoinedRows, todaySeenRows, monthSeenRows] = await Promise.all([
+      this.prisma.customerProfile.count({
+        ...(where ? { where } : {}),
+      }),
+      this.prisma.customerProfile.groupBy({
+        by: ['gender'],
+        ...(where ? { where } : {}),
+        _count: { _all: true },
+      }),
+      this.prisma.customerProfile.groupBy({
+        by: ['gender'],
+        where: todayJoinedWhere,
+        _count: { _all: true },
+      }),
+      this.prisma.customerProfile.groupBy({
+        by: ['gender'],
+        where: todaySeenWhere,
+        _count: { _all: true },
+      }),
+      this.prisma.customerProfile.groupBy({
+        by: ['gender'],
+        where: monthSeenWhere,
+        _count: { _all: true },
+      }),
+    ]);
+    const genderBreakdown = adminCustomerGenderBreakdown(genderRows);
+    const todayJoinedGenderBreakdown = adminCustomerGenderBreakdown(todayJoinedRows);
+    const todaySeenGenderBreakdown = adminCustomerGenderBreakdown(todaySeenRows);
+    const monthSeenGenderBreakdown = adminCustomerGenderBreakdown(monthSeenRows);
 
     return {
       generatedAt: new Date().toISOString(),
       totalCount,
+      genderBreakdown,
+      todayJoined: adminCustomerGenderBreakdownTotal(todayJoinedGenderBreakdown),
+      todayJoinedGenderBreakdown,
+      todaySeen: adminCustomerGenderBreakdownTotal(todaySeenGenderBreakdown),
+      todaySeenGenderBreakdown,
+      monthSeen: adminCustomerGenderBreakdownTotal(monthSeenGenderBreakdown),
+      monthSeenGenderBreakdown,
     };
   }
 
@@ -6991,6 +7051,68 @@ function adminCustomerDirectoryWhere(
   }
 
   return where;
+}
+
+function adminCustomerSummaryWhere(
+  baseWhere: Prisma.CustomerProfileWhereInput | undefined,
+  extraWhere: Prisma.CustomerProfileWhereInput,
+): Prisma.CustomerProfileWhereInput {
+  return baseWhere ? { AND: [baseWhere, extraWhere] } : extraWhere;
+}
+
+function adminCustomerCreatedAtWindowWhere(startMs: number, endMs: number): Prisma.CustomerProfileWhereInput {
+  return {
+    user: {
+      createdAt: {
+        gte: new Date(startMs),
+        lt: new Date(endMs),
+      },
+    },
+  };
+}
+
+function adminCustomerLastSeenWindowWhere(startMs: number, endMs: number): Prisma.CustomerProfileWhereInput {
+  return {
+    user: {
+      appSessions: {
+        some: {
+          lastSeenAt: {
+            gte: new Date(startMs),
+            lt: new Date(endMs),
+          },
+        },
+      },
+    },
+  };
+}
+
+function adminCustomerGenderBreakdown(rows: AdminCustomerGenderGroupRow[]): AdminCustomerGenderBreakdown {
+  return rows.reduce<AdminCustomerGenderBreakdown>(
+    (breakdown, row) => {
+      const count = row._count._all;
+      switch (row.gender?.toLowerCase()) {
+        case 'female':
+          breakdown.female += count;
+          break;
+        case 'male':
+          breakdown.male += count;
+          break;
+        case 'other':
+          breakdown.other += count;
+          break;
+        default:
+          breakdown.unknown += count;
+          break;
+      }
+
+      return breakdown;
+    },
+    { female: 0, male: 0, other: 0, unknown: 0 },
+  );
+}
+
+function adminCustomerGenderBreakdownTotal(breakdown: AdminCustomerGenderBreakdown) {
+  return breakdown.female + breakdown.male + breakdown.other + breakdown.unknown;
 }
 
 function adminCustomerDirectoryLastBookingWhere(

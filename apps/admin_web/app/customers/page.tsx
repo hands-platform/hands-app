@@ -32,9 +32,17 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
     adminGet<AdminCustomerSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
   ]);
   const rows = customers.map(buildCustomerRow);
+  const rowSummary = buildCustomerSummary(rows);
   const allSummary = {
-    ...buildCustomerSummary(rows),
+    ...rowSummary,
     total: serverSummary.totalCount,
+    genderBreakdown: serverSummary.genderBreakdown ?? rowSummary.genderBreakdown,
+    todayJoined: serverSummary.todayJoined ?? rowSummary.todayJoined,
+    todayJoinedGenderBreakdown: serverSummary.todayJoinedGenderBreakdown ?? rowSummary.todayJoinedGenderBreakdown,
+    todaySeen: serverSummary.todaySeen ?? rowSummary.todaySeen,
+    todaySeenGenderBreakdown: serverSummary.todaySeenGenderBreakdown ?? rowSummary.todaySeenGenderBreakdown,
+    monthSeen: serverSummary.monthSeen ?? rowSummary.monthSeen,
+    monthSeenGenderBreakdown: serverSummary.monthSeenGenderBreakdown ?? rowSummary.monthSeenGenderBreakdown,
   };
   const activeFilters = buildCustomerActiveFilters(filters);
   const metrics = buildCustomerManagementMetrics(allSummary);

@@ -2837,29 +2837,63 @@ describe('AdminService query orchestration', () => {
   });
 
   it('exposes customer directory summary counts through the same safe filters', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-28T08:30:00.000Z'));
+
     const prisma = {
       customerProfile: {
         count: vi.fn().mockResolvedValue(42),
+        groupBy: vi
+          .fn()
+          .mockResolvedValueOnce([
+            { gender: 'female', _count: { _all: 24 } },
+            { gender: 'male', _count: { _all: 12 } },
+            { gender: null, _count: { _all: 6 } },
+          ])
+          .mockResolvedValueOnce([
+            { gender: 'female', _count: { _all: 3 } },
+            { gender: 'male', _count: { _all: 1 } },
+          ])
+          .mockResolvedValueOnce([
+            { gender: 'female', _count: { _all: 5 } },
+            { gender: 'other', _count: { _all: 1 } },
+          ])
+          .mockResolvedValueOnce([
+            { gender: 'female', _count: { _all: 18 } },
+            { gender: 'male', _count: { _all: 9 } },
+            { gender: 'non_binary', _count: { _all: 2 } },
+          ]),
       },
     };
     const service = createAdminService(prisma);
 
-    await expect(
-      service.customerSummary({
-        country: 'VN',
-        gender: 'female',
-        joinedFrom: '2026-06-01',
-        joinedTo: '2026-06-27',
-        lastBookingFrom: '2026-06-08',
-        lastBookingTo: '2026-06-18',
-        lastLoginFrom: '2026-06-10',
-        lastLoginTo: '2026-06-20',
-        q: 'mai',
-      }),
-    ).resolves.toEqual({
-      generatedAt: expect.any(String),
-      totalCount: 42,
-    });
+    try {
+      await expect(
+        service.customerSummary({
+          country: 'VN',
+          gender: 'female',
+          joinedFrom: '2026-06-01',
+          joinedTo: '2026-06-27',
+          lastBookingFrom: '2026-06-08',
+          lastBookingTo: '2026-06-18',
+          lastLoginFrom: '2026-06-10',
+          lastLoginTo: '2026-06-20',
+          q: 'mai',
+        }),
+      ).resolves.toEqual({
+        generatedAt: expect.any(String),
+        totalCount: 42,
+        genderBreakdown: { female: 24, male: 12, other: 0, unknown: 6 },
+        todayJoined: 4,
+        todayJoinedGenderBreakdown: { female: 3, male: 1, other: 0, unknown: 0 },
+        todaySeen: 6,
+        todaySeenGenderBreakdown: { female: 5, male: 0, other: 1, unknown: 0 },
+        monthSeen: 29,
+        monthSeenGenderBreakdown: { female: 18, male: 9, other: 0, unknown: 2 },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(prisma.customerProfile.count).toHaveBeenCalledWith({
       where: {
@@ -2901,6 +2935,47 @@ describe('AdminService query orchestration', () => {
         },
       },
     });
+    expect(prisma.customerProfile.groupBy).toHaveBeenCalledTimes(4);
+    expect(prisma.customerProfile.groupBy).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        by: ['gender'],
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              user: expect.objectContaining({
+                createdAt: {
+                  gte: new Date('2026-06-27T17:00:00.000Z'),
+                  lt: new Date('2026-06-28T17:00:00.000Z'),
+                },
+              }),
+            }),
+          ]),
+        }),
+      }),
+    );
+    expect(prisma.customerProfile.groupBy).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        by: ['gender'],
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              user: {
+                appSessions: {
+                  some: {
+                    lastSeenAt: {
+                      gte: new Date('2026-06-27T17:00:00.000Z'),
+                      lt: new Date('2026-06-28T17:00:00.000Z'),
+                    },
+                  },
+                },
+              },
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   it('adds server-computed activity summaries to customer list rows', async () => {
