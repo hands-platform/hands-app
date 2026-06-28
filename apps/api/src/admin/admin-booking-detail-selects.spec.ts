@@ -35,6 +35,10 @@ describe('admin booking detail selects', () => {
   });
 
   it('keeps booking detail chat transcript capped for initial admin review', () => {
+    expect(ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT).toBe(25);
+    expect(adminBookingDetailSelect.chatRoom.select).toMatchObject({
+      _count: { select: { messages: true } },
+    });
     expect(adminBookingDetailSelect.chatRoom.select.messages).toMatchObject({
       orderBy: { createdAt: 'desc' },
       take: ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,

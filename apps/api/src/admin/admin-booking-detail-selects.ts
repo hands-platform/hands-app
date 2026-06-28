@@ -19,7 +19,7 @@ import {
 import { adminBookingServiceSummarySelect } from './admin-service-selects';
 import { adminUserSummarySelect } from './admin-user-selects';
 
-export const ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT = 200;
+export const ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT = 25;
 
 const adminBookingDetailReviewBookingSelect = {
   id: true,
@@ -136,6 +136,7 @@ export const adminBookingDetailSelect = {
     select: {
       id: true,
       createdAt: true,
+      _count: { select: { messages: true } },
       messages: {
         orderBy: { createdAt: 'desc' },
         take: ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,

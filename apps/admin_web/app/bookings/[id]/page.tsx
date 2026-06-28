@@ -66,6 +66,7 @@ import {
   BookingRecordDetailSections,
   type BookingRecordDetailSectionsProps,
 } from './booking-record-detail-sections';
+import { bookingChatMessageCount } from '../booking-chat-message-count';
 import { bookingPostMatchChatEvidenceRows } from '../booking-post-match-chat-evidence';
 import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
 import { bookingRecordPaymentRows as buildBookingRecordPaymentRows } from './booking-record-info-rows';
@@ -259,7 +260,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
-  const messageCount = messages.length;
+  const messageCount = bookingChatMessageCount(booking);
   const visibleMessages = latestItems(messages, BOOKING_DETAIL_CHAT_PREVIEW_LIMIT);
   const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
