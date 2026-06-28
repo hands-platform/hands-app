@@ -6,7 +6,7 @@ describe('chat archive page model', () => {
 
     expect(plan.dateFilters.range).toBe('today');
     expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=today&take=50');
-    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=today&take=100');
+    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=today&take=50');
   });
 
   it('passes search, sender, status, and custom dates through to bounded API requests', () => {
@@ -22,7 +22,7 @@ describe('chat archive page model', () => {
       '/admin/chat-archive?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late&take=50',
     );
     expect(plan.repairBookingsHref).toBe(
-      '/admin/bookings?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&take=100',
+      '/admin/bookings?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&take=50',
     );
   });
 });
