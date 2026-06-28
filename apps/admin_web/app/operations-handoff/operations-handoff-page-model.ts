@@ -51,6 +51,9 @@ export type OperationsHandoffDataHrefs = {
 const OPERATIONS_HANDOFF_BOOKING_TAKE = 100;
 const OPERATIONS_HANDOFF_NOTIFICATION_TAKE = 50;
 const OPERATIONS_HANDOFF_AUDIT_TAKE = 75;
+const OPERATIONS_HANDOFF_FINANCE_TAKE = 50;
+const OPERATIONS_HANDOFF_LIST_TAKE = 50;
+const OPERATIONS_HANDOFF_CHAT_TAKE = 50;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
@@ -87,7 +90,9 @@ export function buildOperationsHandoffDataHrefs(
   const { range } = buildOperationsHandoffFilters(params);
 
   return {
-    appSessionsHref: '/admin/app-sessions',
+    appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
+      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+    }).toString()}`,
     auditLogsHref: buildDateScopedHref(
       '/admin/audit-logs',
       { take: String(OPERATIONS_HANDOFF_AUDIT_TAKE) },
@@ -98,18 +103,39 @@ export function buildOperationsHandoffDataHrefs(
       take: String(OPERATIONS_HANDOFF_BOOKING_TAKE),
     }).toString()}`,
     cashSettlementSummaryHref: '/admin/cash-settlement-summary',
-    chatArchiveHref: '/admin/chat-archive',
-    customersHref: '/admin/customers',
-    earningsHref: '/admin/earnings',
+    chatArchiveHref: `/admin/chat-archive?${new URLSearchParams({
+      dateRange: range,
+      take: String(OPERATIONS_HANDOFF_CHAT_TAKE),
+    }).toString()}`,
+    customersHref: `/admin/customers?${new URLSearchParams({
+      take: String(OPERATIONS_HANDOFF_LIST_TAKE),
+    }).toString()}`,
+    earningsHref: buildRangeScopedHref(
+      '/admin/earnings',
+      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      range,
+    ),
     notificationsHref: buildDateScopedHref(
       '/admin/notifications',
       { take: String(OPERATIONS_HANDOFF_NOTIFICATION_TAKE) },
       range,
     ),
     partnersHref: '/admin/operations-handoff/providers',
-    paymentsHref: '/admin/payments',
-    payoutBatchesHref: '/admin/payout-batches',
-    refundsHref: '/admin/refunds',
+    paymentsHref: buildRangeScopedHref(
+      '/admin/payments',
+      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      range,
+    ),
+    payoutBatchesHref: buildRangeScopedHref(
+      '/admin/payout-batches',
+      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      range,
+    ),
+    refundsHref: buildRangeScopedHref(
+      '/admin/refunds',
+      { take: String(OPERATIONS_HANDOFF_FINANCE_TAKE) },
+      range,
+    ),
   };
 }
 
@@ -175,6 +201,12 @@ function buildDateScopedHref(
   if (window.to) {
     query.set('to', window.to.toISOString());
   }
+  return `${pathname}?${query.toString()}`;
+}
+
+function buildRangeScopedHref(pathname: string, baseParams: Record<string, string>, range: AdminDateRange) {
+  const query = new URLSearchParams(baseParams);
+  query.set('range', range);
   return `${pathname}?${query.toString()}`;
 }
 
