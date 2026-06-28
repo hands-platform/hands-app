@@ -6,6 +6,7 @@ const adminServicePath = resolve(root, 'apps/api/src/admin/admin.service.ts');
 const adminCustomerSelectsPath = resolve(root, 'apps/api/src/admin/admin-customer-selects.ts');
 const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-provider-profile-selects.ts');
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
+const notificationPageModelPath = resolve(root, 'apps/admin_web/app/notifications/notification-page-model.ts');
 const pushSendPageModelPath = resolve(root, 'apps/admin_web/app/notifications/push-send/push-send-page-model.ts');
 
 const violations = [];
@@ -13,6 +14,7 @@ const violations = [];
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
 const adminCustomerSelectsSource = readFileSync(adminCustomerSelectsPath, 'utf8');
 const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
+const notificationPageModelSource = readFileSync(notificationPageModelPath, 'utf8');
 const pushSendPageModelSource = readFileSync(pushSendPageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
@@ -24,6 +26,8 @@ function sourceBetween(startMarker, endMarker) {
 }
 
 const providerListSource = sourceBetween('async listProviders', 'async getProviderDetail');
+const notificationListSource = sourceBetween('listNotifications', 'async notificationSummary');
+const notificationSummarySource = sourceBetween('async notificationSummary', 'async listNotificationTemplates');
 const pushCampaignListSource = sourceBetween('listAdminPushCampaigns', 'async adminPushCampaignSummary');
 const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary', 'async previewAdminPushCampaign');
 const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
@@ -50,6 +54,22 @@ if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;')) 
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Chat archive list query must keep the 200-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 50;')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board must keep the 50-row default page size.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 50;')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board must keep the 50-row hard maximum page size.',
   });
 }
 
@@ -101,6 +121,62 @@ if (!adminServiceSource.includes('take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,')) {
     area: 'admin chat archive query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Chat archive list query must apply ADMIN_CHAT_ARCHIVE_LIST_LIMIT.',
+  });
+}
+
+if (!notificationListSource.includes('take: normalizeNotificationBoardTake(options.take),')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board list must apply bounded server pagination.',
+  });
+}
+
+if (!notificationListSource.includes('select: adminNotificationBoardListSelect,')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board list must use the bounded notification select.',
+  });
+}
+
+if (notificationListSource.includes('include:')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board list must not use include; use bounded selects and detail/audit links.',
+  });
+}
+
+if (!notificationSummarySource.includes('this.prisma.notification.count')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification board totals must use count queries instead of loading all rows.',
+  });
+}
+
+if (!notificationSummarySource.includes('this.prisma.notificationDelivery.count')) {
+  violations.push({
+    area: 'admin notification query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Notification delivery totals must use count queries instead of loading all delivery rows.',
+  });
+}
+
+if (!notificationPageModelSource.includes('const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;')) {
+  violations.push({
+    area: 'admin notification page',
+    file: 'apps/admin_web/app/notifications/notification-page-model.ts',
+    message: 'Notification page API calls must share the bounded table page size.',
+  });
+}
+
+if (!notificationPageModelSource.includes('buildNotificationSummaryApiHref')) {
+  violations.push({
+    area: 'admin notification page',
+    file: 'apps/admin_web/app/notifications/notification-page-model.ts',
+    message: 'Notification page must keep a separate summary API href for aggregate counts.',
   });
 }
 
@@ -417,7 +493,7 @@ for (const file of listFiles(adminWebAppRoot)) {
 const result = {
   ok: violations.length === 0,
   purpose:
-    'Static guard for Admin app session, push campaign, customer, and partner query size.',
+    'Static guard for Admin app session, notification, push campaign, customer, and partner query size.',
   violations,
 };
 
