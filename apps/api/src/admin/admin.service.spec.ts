@@ -2111,7 +2111,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: 25,
         where: { data: { path: ['bookingId'], equals: 'booking-1' } },
         select: expect.objectContaining({
           deliveries: expect.any(Object),
