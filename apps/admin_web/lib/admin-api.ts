@@ -380,6 +380,8 @@ export type AdminMarketingDimensionRow = AdminMarketingStats & {
   campaignName?: string | null;
 };
 
+export type AdminMarketingDimensionKey = 'source' | 'platform' | 'region' | 'campaign';
+
 export type AdminMarketingOverview = {
   generatedAt: string;
   refreshSeconds: number;
@@ -408,6 +410,24 @@ export type AdminMarketingSummary = Omit<
   AdminMarketingOverview,
   'bySource' | 'byPlatform' | 'byRegion' | 'byCampaign'
 >;
+
+export type AdminMarketingDimensionPage = Pick<
+  AdminMarketingOverview,
+  | 'generatedAt'
+  | 'refreshSeconds'
+  | 'source'
+  | 'range'
+  | 'rangeLabel'
+  | 'windowStartAt'
+  | 'windowEndAt'
+  | 'filters'
+> & {
+  dimension: AdminMarketingDimensionKey;
+  rows: AdminMarketingDimensionRow[];
+  skip: number;
+  take: number;
+  totalCount: number;
+};
 
 export type AdminCustomer = {
   id: string;

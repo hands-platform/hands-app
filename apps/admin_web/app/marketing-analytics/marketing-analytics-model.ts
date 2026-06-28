@@ -1,4 +1,5 @@
 import type {
+  AdminMarketingDimensionKey,
   AdminMarketingOverviewRange,
   AdminMarketingPlatform,
   AdminMarketingSource,
@@ -98,6 +99,16 @@ export function marketingAnalyticsApiPath(filters: MarketingAnalyticsFilters) {
 
 export function marketingAnalyticsSummaryApiPath(filters: MarketingAnalyticsFilters) {
   return marketingAnalyticsApiPathFor('/admin/marketing/summary', filters);
+}
+
+export function marketingAnalyticsDimensionApiPath(
+  filters: MarketingAnalyticsFilters,
+  dimension: AdminMarketingDimensionKey,
+  paging: { take: number; skip: number },
+) {
+  const path = marketingAnalyticsApiPathFor(`/admin/marketing/dimensions/${dimension}`, filters);
+
+  return `${path}&take=${paging.take}&skip=${paging.skip}`;
 }
 
 function marketingAnalyticsApiPathFor(basePath: string, filters: MarketingAnalyticsFilters) {

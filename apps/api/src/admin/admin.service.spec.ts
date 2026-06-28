@@ -1246,6 +1246,62 @@ describe('AdminService query orchestration', () => {
     expect(prisma.referralAttribution.findMany).not.toHaveBeenCalled();
   });
 
+  it('returns paged marketing platform dimensions without loading unrelated dimension lists', async () => {
+    const prisma = {
+      appSession: {
+        groupBy: vi.fn().mockResolvedValue([{ platform: 'ANDROID', _count: { _all: 3 } }]),
+      },
+      booking: {
+        findMany: vi.fn(),
+      },
+      customerSelectedLocation: {
+        findMany: vi.fn(),
+      },
+      referralAttribution: {
+        findMany: vi.fn(),
+      },
+      marketingSpendDaily: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            spendDate: new Date('2026-06-20T00:00:00.000Z'),
+            source: 'google',
+            platform: 'android',
+            regionCode: 'hcm',
+            campaignId: 'launch-hcm',
+            campaignName: 'Launch HCMC',
+            spendAmount: 600_000,
+            currency: 'VND',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const page = await service.listMarketingDimensionRows({
+      dimension: 'platform',
+      range: '7d',
+      take: '1',
+      skip: '0',
+    });
+
+    expect(page).toMatchObject({
+      dimension: 'platform',
+      skip: 0,
+      take: 1,
+      totalCount: 2,
+    });
+    expect(page.rows).toHaveLength(1);
+    expect(page.rows[0]).toEqual(
+      expect.objectContaining({
+        platform: 'android',
+      }),
+    );
+    expect(prisma.marketingSpendDaily.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+    expect(prisma.customerSelectedLocation.findMany).not.toHaveBeenCalled();
+    expect(prisma.referralAttribution.findMany).not.toHaveBeenCalled();
+  });
+
   it('upserts manual marketing spend and writes an audit trail', async () => {
     const spendDate = new Date('2026-06-20T00:00:00.000Z');
     const prisma = {

@@ -181,6 +181,29 @@ export class AdminController {
     });
   }
 
+  @Get('marketing/dimensions/:dimension')
+  marketingDimension(
+    @Param('dimension') dimension: string,
+    @Query('range') range?: string,
+    @Query('source') source?: string,
+    @Query('platform') platform?: string,
+    @Query('regionCode') regionCode?: string,
+    @Query('campaignId') campaignId?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listMarketingDimensionRows({
+      dimension,
+      range,
+      source,
+      platform,
+      regionCode,
+      campaignId,
+      take,
+      skip,
+    });
+  }
+
   @Post('marketing/spend-daily')
   upsertMarketingSpendDaily(
     @CurrentUser() user: AuthenticatedUser,

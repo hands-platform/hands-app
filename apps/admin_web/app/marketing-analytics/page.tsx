@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
+  AdminMarketingDimensionKey,
+  AdminMarketingDimensionPage,
   AdminMarketingDimensionRow,
   AdminMarketingOverview,
   AdminMarketingSummary,
@@ -22,7 +24,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
-  marketingAnalyticsApiPath,
+  marketingAnalyticsDimensionApiPath,
   marketingAnalyticsHref,
   marketingAnalyticsSummaryApiPath,
   marketingAnalyticsPlatformOptions,
@@ -36,6 +38,15 @@ import { upsertMarketingSpendDaily } from './actions';
 export const dynamic = 'force-dynamic';
 
 type MarketingAnalyticsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type MarketingDimensionPages = Record<AdminMarketingDimensionKey, AdminMarketingDimensionPage>;
+
+const marketingDimensionKeys: readonly AdminMarketingDimensionKey[] = [
+  'source',
+  'region',
+  'campaign',
+  'platform',
+];
+const marketingDimensionPageTake = 10;
 
 const emptyStats: AdminMarketingStats = {
   firstOpens: 0,
@@ -93,6 +104,52 @@ const emptyMarketingOverview: AdminMarketingOverview = {
 };
 const emptyMarketingSummary: AdminMarketingSummary = emptyMarketingOverview;
 
+async function loadMarketingDimensionPages(
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+): Promise<MarketingDimensionPages> {
+  const pages = await Promise.all(
+    marketingDimensionKeys.map(async (dimension) => {
+      const page = await adminGet<AdminMarketingDimensionPage>(
+        marketingAnalyticsDimensionApiPath(filters, dimension, {
+          skip: 0,
+          take: marketingDimensionPageTake,
+        }),
+        emptyMarketingDimensionPage(dimension, filters),
+      );
+
+      return [dimension, page] as const;
+    }),
+  );
+
+  return Object.fromEntries(pages) as MarketingDimensionPages;
+}
+
+function emptyMarketingDimensionPage(
+  dimension: AdminMarketingDimensionKey,
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+): AdminMarketingDimensionPage {
+  return {
+    generatedAt: new Date(0).toISOString(),
+    refreshSeconds: 300,
+    source: 'stored-marketing-aggregates',
+    range: filters.range,
+    rangeLabel: emptyMarketingOverview.rangeLabel,
+    windowStartAt: new Date(0).toISOString(),
+    windowEndAt: new Date(0).toISOString(),
+    filters: {
+      source: filters.source ?? null,
+      platform: filters.platform ?? null,
+      regionCode: filters.regionCode ?? null,
+      campaignId: filters.campaignId ?? null,
+    },
+    dimension,
+    rows: [],
+    skip: 0,
+    take: marketingDimensionPageTake,
+    totalCount: 0,
+  };
+}
+
 export default async function MarketingAnalyticsPage({
   searchParams,
 }: {
@@ -101,11 +158,12 @@ export default async function MarketingAnalyticsPage({
   const params = await searchParams;
   const filters = normalizeMarketingAnalyticsFilters(params);
   const includeBreakdowns = normalizeBreakdownParam(params?.breakdowns);
-  const overview = includeBreakdowns
-    ? await adminGet<AdminMarketingOverview>(marketingAnalyticsApiPath(filters), emptyMarketingOverview)
-    : marketingOverviewFromSummary(
-        await adminGet<AdminMarketingSummary>(marketingAnalyticsSummaryApiPath(filters), emptyMarketingSummary),
-      );
+  const summary = await adminGet<AdminMarketingSummary>(
+    marketingAnalyticsSummaryApiPath(filters),
+    emptyMarketingSummary,
+  );
+  const overview = marketingOverviewFromSummary(summary);
+  const dimensionPages = includeBreakdowns ? await loadMarketingDimensionPages(filters) : null;
   const generatedAt = formatDateTime(overview.generatedAt);
   const cards = [
     {
@@ -274,13 +332,14 @@ export default async function MarketingAnalyticsPage({
       <section className="usage-overview-grid marketing-analytics-grid">
         <FunnelCard overview={overview} />
         <InsightCard overview={overview} />
-        {includeBreakdowns ? (
+        {dimensionPages ? (
           <>
             <MarketingTable
               title="Source performance"
               description="Current first slice groups unknown demand separately from tracked referral attribution."
               emptyMessage="No source aggregate loaded."
-              rows={overview.bySource}
+              page={dimensionPages.source}
+              rows={dimensionPages.source.rows}
               primaryColumn="Source"
               icon={<Megaphone size={18} aria-hidden="true" />}
               labelFor={(row) => sourceLabel(row.source)}
@@ -290,7 +349,8 @@ export default async function MarketingAnalyticsPage({
               title="Region performance"
               description="RegionCode rollups from saved addresses and booking address snapshots."
               emptyMessage="No regional marketing aggregate loaded."
-              rows={overview.byRegion.filter(hasMarketingActivity)}
+              page={dimensionPages.region}
+              rows={dimensionPages.region.rows.filter(hasMarketingActivity)}
               primaryColumn="Region"
               icon={<MapPinned size={18} aria-hidden="true" />}
               labelFor={(row) => row.regionName ?? row.regionCode ?? 'Unknown region'}
@@ -300,7 +360,8 @@ export default async function MarketingAnalyticsPage({
               title="Campaign performance"
               description="Referral code campaigns first; paid campaign rows can be added by manual spend/import foundation."
               emptyMessage="No tracked campaign rows in this range."
-              rows={overview.byCampaign}
+              page={dimensionPages.campaign}
+              rows={dimensionPages.campaign.rows}
               primaryColumn="Campaign"
               icon={<BarChart3 size={18} aria-hidden="true" />}
               labelFor={(row) => row.campaignName ?? row.campaignId ?? 'Unknown campaign'}
@@ -310,7 +371,8 @@ export default async function MarketingAnalyticsPage({
               title="Platform first opens"
               description="Platform split from stored app sessions, prepared for Android, iOS, and Web."
               emptyMessage="No platform first-open rows in this range."
-              rows={overview.byPlatform}
+              page={dimensionPages.platform}
+              rows={dimensionPages.platform.rows}
               primaryColumn="Platform"
               icon={<Smartphone size={18} aria-hidden="true" />}
               labelFor={(row) => platformLabel(row.platform)}
@@ -522,6 +584,7 @@ function MarketingTable({
   emptyMessage,
   icon,
   labelFor,
+  page,
   primaryColumn,
   rows,
   secondaryFor,
@@ -531,6 +594,7 @@ function MarketingTable({
   emptyMessage: string;
   icon: ReactNode;
   labelFor: (row: AdminMarketingDimensionRow) => string;
+  page?: AdminMarketingDimensionPage;
   primaryColumn: string;
   rows: readonly AdminMarketingDimensionRow[];
   secondaryFor: (row: AdminMarketingDimensionRow) => string | null;
@@ -543,7 +607,14 @@ function MarketingTable({
           <h2>{title}</h2>
           <p className="muted">{description}</p>
         </div>
-        {icon}
+        <div className="actions marketing-table-actions">
+          {page ? (
+            <span className="pill pill-info">
+              Showing {formatNumber(rows.length)} / {formatNumber(page.totalCount)}
+            </span>
+          ) : null}
+          {icon}
+        </div>
       </div>
       <div className="admin-table-scroll usage-overview-table-wrap">
         <table className="table usage-overview-table marketing-analytics-table">

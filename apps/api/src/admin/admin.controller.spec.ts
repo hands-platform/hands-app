@@ -11,6 +11,7 @@ describe('AdminController notification and push actions', () => {
     enablePushDevice: vi.fn(),
     listFileReviewProviders: vi.fn(),
     getMarketingOverview: vi.fn(),
+    listMarketingDimensionRows: vi.fn(),
     getMarketingSummary: vi.fn(),
     getUsageOverview: vi.fn(),
     getVietnamOverview: vi.fn(),
@@ -789,6 +790,32 @@ describe('AdminController notification and push actions', () => {
       platform: 'ios',
       regionCode: 'hcm',
       campaignId: 'ref-smoke',
+    });
+  });
+
+  it('exposes marketing dimensions as separate paged list endpoints', async () => {
+    admin.listMarketingDimensionRows.mockResolvedValue({ dimension: 'source', rows: [] });
+
+    await expect(
+      controller.marketingDimension('source', '7d', 'referral', 'ios', 'hcm', 'ref-smoke', '10', '20'),
+    ).resolves.toEqual({
+      dimension: 'source',
+      rows: [],
+    });
+
+    expect(routeMetadata('marketingDimension')).toEqual({
+      method: RequestMethod.GET,
+      path: 'marketing/dimensions/:dimension',
+    });
+    expect(admin.listMarketingDimensionRows).toHaveBeenCalledWith({
+      dimension: 'source',
+      range: '7d',
+      source: 'referral',
+      platform: 'ios',
+      regionCode: 'hcm',
+      campaignId: 'ref-smoke',
+      take: '10',
+      skip: '20',
     });
   });
 
