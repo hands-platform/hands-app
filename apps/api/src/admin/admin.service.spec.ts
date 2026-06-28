@@ -59,7 +59,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: 50,
       }),
     );
   });
@@ -95,7 +95,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 50,
       select: expect.objectContaining({
         action: true,
         actor: expect.any(Object),
@@ -118,7 +118,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.providerReport.findMany).toHaveBeenCalledWith({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
-      take: 100,
+      take: 50,
       select: expect.any(Object),
     });
   });
@@ -412,7 +412,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
       where: { action: 'booking.create.rejected' },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 50,
       select: expect.objectContaining({
         action: true,
         actor: expect.any(Object),
