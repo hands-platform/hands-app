@@ -76,7 +76,7 @@ const earningBatchStateOptions: Array<{ state: EarningBatchState; label: string 
   { state: 'batched', label: 'Already batched' },
   { state: 'paid', label: 'Paid' },
 ];
-const EARNING_OPERATIONS_API_LIMIT = 25;
+const EARNING_OPERATIONS_API_LIMIT = 10;
 
 export function buildEarningPayoutConfirmationRows(
   payoutQueue: ProviderPayoutQueueItem[],

@@ -42,10 +42,10 @@ describe('PayoutsPage', () => {
     } as AdminPayoutBatch;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payout-batches?range=today&take=25') {
+      if (href === '/admin/payout-batches?range=today&take=10') {
         return [batch];
       }
-      if (href === '/admin/earnings?range=today&take=25') {
+      if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
       if (href === '/admin/operational-policy') {
