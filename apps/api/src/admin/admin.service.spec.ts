@@ -150,6 +150,35 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('keeps usage overview regional source rows bounded', async () => {
+    const prisma = {
+      appSession: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      booking: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getUsageOverview('7d')).resolves.toMatchObject({
+      source: 'stored-usage-aggregates',
+      range: '7d',
+    });
+
+    expect(prisma.appSession.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.booking.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100]);
+  });
+
   it('filters chat archive rows server-side and clamps requested limits', async () => {
     const prisma = {
       booking: {
