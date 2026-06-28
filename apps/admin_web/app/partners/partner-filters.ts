@@ -532,7 +532,7 @@ function readPartnerSort(value: string) {
 }
 
 function isPrimaryPartnerReview(value: string) {
-  return value === 'unapproved' || value === 'unsettled';
+  return value === 'unapproved' || value === 'unsettled' || value === 'blocked';
 }
 
 const partnerFilterHrefParamKeys = [

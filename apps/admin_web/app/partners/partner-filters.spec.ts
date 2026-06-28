@@ -110,6 +110,17 @@ describe('partner filters', () => {
     });
   });
 
+  it('pushes the blocked partner review lane to the bounded API list', () => {
+    const filters = buildProviderFilters({ review: 'blocked' });
+
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=10&review=blocked',
+      listIsServerPaginated: true,
+      summaryHref: '/admin/partners/list-providers/summary?review=blocked',
+      summaryMatchesVisibleFilter: true,
+    });
+  });
+
   it('caps local partner filter hydration to the API provider list window', () => {
     const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'marketplace-ready' });
 

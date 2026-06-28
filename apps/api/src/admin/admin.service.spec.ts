@@ -2948,6 +2948,37 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('supports blocked partner directory filtering before loading row details', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(2),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerDirectoryProviders({
+        review: 'blocked',
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+    await expect(service.partnerDirectorySummary({ review: 'blocked' })).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 2,
+    });
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: { blockedAt: { not: null } },
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: { blockedAt: { not: null } },
+    });
+  });
+
   it('supports unsettled partner directory filtering from wallet aggregation before loading row details', async () => {
     const prisma = {
       providerEarning: {

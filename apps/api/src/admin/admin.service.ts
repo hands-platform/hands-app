@@ -8106,6 +8106,10 @@ function adminPartnerDirectoryReviewWhere(
 ): Prisma.ProviderProfileWhereInput | undefined {
   const review = normalizeNullable(reviewValue);
 
+  if (review === 'blocked') {
+    return { blockedAt: { not: null } };
+  }
+
   if (review !== 'unapproved') {
     return undefined;
   }
