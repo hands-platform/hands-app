@@ -4759,7 +4759,7 @@ export class AdminService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 50,
       select: {
         id: true,
         status: true,
