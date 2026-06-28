@@ -4,8 +4,10 @@ import {
   AdminEarning,
   AdminEarningSummary,
   AdminPayment,
+  AdminPaymentSummary,
   AdminPayoutBatch,
   AdminRefund,
+  AdminRefundSummary,
   adminGet,
 } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
@@ -33,9 +35,12 @@ type FinanceCloseoutPageProps = {
 export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {
   const filters = buildFinanceCloseoutFilters(searchParams ? await searchParams : {});
   const apiHrefs = buildFinanceCloseoutApiHrefs(filters);
-  const [payments, refunds, earningsSummary, earnings, payouts, cashSummary] = await Promise.all([
+  const [payments, paymentSummary, refunds, refundSummary, earningsSummary, earnings, payouts, cashSummary] =
+    await Promise.all([
     adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
+    adminGet<AdminPaymentSummary | null>(apiHrefs.paymentSummaryHref, null),
     adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
+    adminGet<AdminRefundSummary | null>(apiHrefs.refundSummaryHref, null),
     adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, {
       count: 0,
       grossAmount: 0,
@@ -59,7 +64,9 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   const filteredEarningsSummary = { ...earningsSummary, currency };
   const reconciliation = buildReconciliation({
     payments,
+    paymentSummary,
     refunds: filteredRefunds,
+    refundSummary,
     earningsSummary: filteredEarningsSummary,
     earnings: filteredEarnings,
     payouts: filteredPayouts,

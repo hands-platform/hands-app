@@ -3,8 +3,10 @@ import type {
   AdminEarning,
   AdminEarningSummary,
   AdminPayment,
+  AdminPaymentSummary,
   AdminPayoutBatch,
   AdminRefund,
+  AdminRefundSummary,
 } from './admin-api';
 import { formatMoney } from './admin-format';
 import type { AdminDateRange } from './date-range';
@@ -52,9 +54,11 @@ export type ReconciliationInput = {
   readonly currency: string;
   readonly earnings: readonly AdminEarning[];
   readonly earningsSummary: AdminEarningSummary;
+  readonly paymentSummary?: AdminPaymentSummary | null;
   readonly payments: readonly AdminPayment[];
   readonly payouts: readonly AdminPayoutBatch[];
   readonly range: AdminDateRange;
+  readonly refundSummary?: AdminRefundSummary | null;
   readonly refunds: readonly AdminRefund[];
 };
 
@@ -73,6 +77,9 @@ export function buildReconciliation(input: ReconciliationInput) {
   const openPayouts = input.payouts.filter(payoutNeedsCloseout);
   const payoutMissingRefs = input.payouts.filter(payoutNeedsReference);
   const earningsWithoutTaxLogs = input.earnings.filter((earning) => (earning.taxLogs?.length ?? 0) === 0);
+  const authorizedPaymentCount = input.paymentSummary?.authorized ?? authorizedPayments.length;
+  const cashPendingCount = input.paymentSummary?.pendingCash ?? cashPending.length;
+  const openRefundCount = input.refundSummary?.openCount ?? openRefunds.length;
   const rangedCashDebtAmount = input.earnings
     .filter((earning) => earning.netAmount < 0 && earning.status !== 'PAID')
     .reduce((sum, earning) => sum + Math.abs(earning.netAmount), 0);
@@ -85,8 +92,10 @@ export function buildReconciliation(input: ReconciliationInput) {
     openPayouts,
     payoutMissingRefs,
     earningsWithoutTaxLogs,
-    openPaymentCount: authorizedPayments.length + cashPending.length,
-    openRefundCount: openRefunds.length,
+    authorizedPaymentCount,
+    cashPendingCount,
+    openPaymentCount: authorizedPaymentCount + cashPendingCount,
+    openRefundCount,
     openPayoutCount: openPayouts.length,
     cashDebtAmount:
       input.range === 'all'
@@ -103,36 +112,36 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
   return [
     {
       title: 'Payment hold review',
-      status: `${reconciliation.authorizedPayments.length} HOLD(S)`,
+      status: `${reconciliation.authorizedPaymentCount} HOLD(S)`,
       detail:
         'Authorized payments should remain held until service completion, then capture, release, or refund.',
-      action: reconciliation.authorizedPayments.length
+      action: reconciliation.authorizedPaymentCount
         ? 'Open payment holds before handoff.'
         : 'No open holds.',
       href: '/payments?review=authorized',
-      className: reconciliation.authorizedPayments.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: reconciliation.authorizedPayments.length ? 'pill-warn' : 'pill-success',
+      className: reconciliation.authorizedPaymentCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: reconciliation.authorizedPaymentCount ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Cash collection review',
-      status: `${reconciliation.cashPending.length} CASH`,
+      status: `${reconciliation.cashPendingCount} CASH`,
       detail:
         'Cash bookings need confirmation that the Partner collected customer cash and the wallet debt is recorded.',
-      action: reconciliation.cashPending.length
+      action: reconciliation.cashPendingCount
         ? 'Confirm cash rows and wallet ledger.'
         : 'No pending cash collection.',
       href: '/payments?review=cash',
-      className: reconciliation.cashPending.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: reconciliation.cashPending.length ? 'pill-warn' : 'pill-success',
+      className: reconciliation.cashPendingCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: reconciliation.cashPendingCount ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Refund queue',
-      status: `${reconciliation.openRefunds.length} OPEN`,
+      status: `${reconciliation.openRefundCount} OPEN`,
       detail: 'Refund cases need payment ledger state, customer message, and booking closeout alignment.',
-      action: reconciliation.openRefunds.length ? 'Resolve requested refunds.' : 'No open refund cases.',
+      action: reconciliation.openRefundCount ? 'Resolve requested refunds.' : 'No open refund cases.',
       href: '/refunds?review=open',
-      className: reconciliation.openRefunds.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: reconciliation.openRefunds.length ? 'pill-danger' : 'pill-success',
+      className: reconciliation.openRefundCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: reconciliation.openRefundCount ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Missing references',
@@ -175,7 +184,7 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
 export function buildFinanceCloseoutEvidenceChecklist(
   reconciliation: FinanceCloseoutReconciliation,
 ): FinanceCloseoutEvidenceChecklistItem[] {
-  const openPayments = reconciliation.authorizedPayments.length + reconciliation.cashPending.length;
+  const openPayments = reconciliation.openPaymentCount;
   const referencesComplete = reconciliation.missingReferenceCount === 0;
 
   return [
@@ -190,12 +199,12 @@ export function buildFinanceCloseoutEvidenceChecklist(
     },
     {
       title: 'Refund queue',
-      status: `${reconciliation.openRefunds.length} open`,
+      status: `${reconciliation.openRefundCount} open`,
       detail: 'Open refund rows need customer update, payment ledger alignment, and booking evidence.',
       operatorRule: 'Refund outcomes should be closed before finance handoff whenever possible.',
       href: '/refunds?review=open',
-      className: reconciliation.openRefunds.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: reconciliation.openRefunds.length ? 'pill-danger' : 'pill-success',
+      className: reconciliation.openRefundCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: reconciliation.openRefundCount ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Cash debt',
@@ -223,8 +232,8 @@ export function buildFinanceCloseoutEvidenceChecklist(
 export function buildShiftCloseActionMap(
   reconciliation: FinanceCloseoutReconciliation,
 ): FinanceCloseoutShiftActionMapItem[] {
-  const openPayments = reconciliation.authorizedPayments.length + reconciliation.cashPending.length;
-  const openRefunds = reconciliation.openRefunds.length;
+  const openPayments = reconciliation.openPaymentCount;
+  const openRefunds = reconciliation.openRefundCount;
   const cashDebt = reconciliation.cashDebtAmount;
   const openPayouts = reconciliation.openPayouts.length;
   const missingRefs = reconciliation.missingReferenceCount;
@@ -242,7 +251,7 @@ export function buildShiftCloseActionMap(
       action: 'Payment close',
       status: openPayments ? `${openPayments} open` : 'Clear',
       reason: openPayments
-        ? `${reconciliation.authorizedPayments.length} authorization hold(s), ${reconciliation.cashPending.length} cash pending row(s).`
+        ? `${reconciliation.authorizedPaymentCount} authorization hold(s), ${reconciliation.cashPendingCount} cash pending row(s).`
         : 'No open payment hold or pending cash collection is visible.',
       operatorRule: 'Capture, release, refund, or record cash settlement evidence before shift handoff.',
       href: '/payments?review=needs-action',
@@ -306,7 +315,7 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
   return [
     {
       label: 'Payment holds',
-      count: reconciliation.authorizedPayments.length,
+      count: reconciliation.authorizedPaymentCount,
       amount: formatMoney(
         reconciliation.authorizedPayments.reduce((sum, payment) => sum + payment.amount, 0),
         reconciliation.currency,
@@ -316,7 +325,7 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
     },
     {
       label: 'Refunds',
-      count: reconciliation.openRefunds.length,
+      count: reconciliation.openRefundCount,
       amount: formatMoney(
         reconciliation.openRefunds.reduce((sum, refund) => sum + refund.amount, 0),
         reconciliation.currency,
@@ -326,7 +335,7 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
     },
     {
       label: 'Cash wallet debt',
-      count: reconciliation.cashPending.length,
+      count: reconciliation.cashPendingCount,
       amount: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
       nextAction:
         'Collect Partner deposit or approve documented offset before final acceptance, service start, or payout release.',
@@ -366,7 +375,9 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
     payoutBatchesHref: `/admin/payout-batches?${query.toString()}`,
     paymentsHref: `/admin/payments?${query.toString()}`,
+    paymentSummaryHref: `/admin/payments/summary?range=${filters.range}`,
     refundsHref: `/admin/refunds?${query.toString()}`,
+    refundSummaryHref: `/admin/refunds/summary?range=${filters.range}`,
   };
 }
 

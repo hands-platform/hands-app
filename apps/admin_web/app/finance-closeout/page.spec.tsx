@@ -6,8 +6,10 @@ import type {
   AdminEarning,
   AdminEarningSummary,
   AdminPayment,
+  AdminPaymentSummary,
   AdminPayoutBatch,
   AdminRefund,
+  AdminRefundSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import FinanceCloseoutPage from './page';
@@ -122,5 +124,77 @@ describe('FinanceCloseoutPage', () => {
 
     expect(markup).toContain('Available payout');
     expect(markup).toContain('900.000 VND');
+  });
+
+  it('uses payment and refund summaries for closeout counts instead of bounded samples', async () => {
+    const earningsSummary: AdminEarningSummary = {
+      availableNetAmount: 0,
+      count: 0,
+      currency: 'VND',
+      grossAmount: 0,
+      netAmount: 0,
+      paidNetAmount: 0,
+      pendingNetAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+    };
+    const paymentSummary: AdminPaymentSummary = {
+      authorized: 12,
+      callbackReview: 0,
+      callbackVerified: 0,
+      captured: 0,
+      cashDebt: 0,
+      linkedRefunds: 0,
+      needsAction: 15,
+      pendingCash: 3,
+      refunded: 0,
+      totalCount: 15,
+    };
+    const refundSummary: AdminRefundSummary = {
+      completedCount: 0,
+      needsUpdateCount: 0,
+      openCount: 4,
+      outcomeLinkedCount: 0,
+      refundedBookingCount: 0,
+      requestedCount: 4,
+      totalCount: 4,
+    };
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payments?range=today&take=10') {
+        return [] as AdminPayment[];
+      }
+      if (href === '/admin/payments/summary?range=today') {
+        return paymentSummary;
+      }
+      if (href === '/admin/refunds?range=today&take=10') {
+        return [] as AdminRefund[];
+      }
+      if (href === '/admin/refunds/summary?range=today') {
+        return refundSummary;
+      }
+      if (href === '/admin/earnings/summary?range=today') {
+        return earningsSummary;
+      }
+      if (href === '/admin/earnings?range=today&take=10') {
+        return [] as AdminEarning[];
+      }
+      if (href === '/admin/payout-batches?range=today&take=10') {
+        return [] as AdminPayoutBatch[];
+      }
+      if (href === '/admin/cash-settlement-summary?range=today') {
+        return null as AdminCashSettlementSummary | null;
+      }
+      return fallback;
+    });
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('12 HOLD(S)');
+    expect(markup).toContain('3 CASH');
+    expect(markup).toContain('4 OPEN');
   });
 });
