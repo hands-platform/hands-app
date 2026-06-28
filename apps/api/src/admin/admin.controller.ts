@@ -463,8 +463,12 @@ export class AdminController {
   }
 
   @Get('payments')
-  payments() {
-    return this.admin.listPayments();
+  payments(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listPayments({ range, review, take });
   }
 
   @Get('payments/:id')
@@ -473,8 +477,12 @@ export class AdminController {
   }
 
   @Get('payment-callback-attempts')
-  paymentCallbackAttempts() {
-    return this.admin.listPaymentCallbackAttempts();
+  paymentCallbackAttempts(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listPaymentCallbackAttempts({ range, review, take });
   }
 
   @Get('refunds')

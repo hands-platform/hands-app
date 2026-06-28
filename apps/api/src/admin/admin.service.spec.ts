@@ -2534,6 +2534,75 @@ describe('AdminService query orchestration', () => {
     expect(auditStartedBeforeCallbackResolved).toBe(true);
   });
 
+  it('filters payment operations server-side and clamps requested limits', async () => {
+    const prisma = {
+      payment: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPayments({
+        range: 'today',
+        review: 'capture',
+        take: '999',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.payment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          booking: expect.objectContaining({
+            status: BookingStatus.COMPLETED,
+          }),
+          status: PaymentStatus.AUTHORIZED,
+        }),
+        take: 100,
+      }),
+    );
+    expect(prisma.payment.findMany.mock.calls[0][0].where.booking).toEqual(
+      expect.objectContaining({
+        OR: expect.arrayContaining([
+          expect.objectContaining({ createdAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+        ]),
+      }),
+    );
+  });
+
+  it('filters payment callback attempts server-side and clamps requested limits', async () => {
+    const prisma = {
+      paymentCallbackAttempt: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPaymentCallbackAttempts({
+        range: '7d',
+        review: 'callback-review',
+        take: '500',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.paymentCallbackAttempt.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              createdAt: expect.objectContaining({ gte: expect.any(Date) }),
+            }),
+            expect.objectContaining({
+              OR: expect.any(Array),
+            }),
+          ]),
+        },
+        take: 100,
+      }),
+    );
+  });
+
   it('audits notification retry requests after enqueueing the retry job', async () => {
     const prisma = {
       adminAuditLog: {

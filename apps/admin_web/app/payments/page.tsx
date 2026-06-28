@@ -7,17 +7,27 @@ import { PaymentCallbackAttemptLedgerSection } from './payment-callback-attempt-
 import { PaymentFilterBoardSection } from './payment-filter-board-section';
 import { PaymentOperationsTableSection } from './payment-operations-table-section';
 import { emptyPaymentMessage, paymentFilterDescription } from './payment-page-links';
-import { buildPaymentPageModel } from './payment-page-model';
+import {
+  buildPaymentCallbackAttemptsApiHref,
+  buildPaymentFilters,
+  buildPaymentOperationsApiHref,
+  buildPaymentPageModel,
+} from './payment-page-model';
 import { buildPaymentOperationsTableRows, paymentConfirmationAction } from './payment-page-presenters';
 
 type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function PaymentsPage({ searchParams }: { readonly searchParams?: PaymentsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
+  const filters = buildPaymentFilters(params);
+  const [callbackAttempts, payments] = await Promise.all([
+    adminGet<AdminPaymentCallbackAttempt[]>(buildPaymentCallbackAttemptsApiHref(filters), []),
+    adminGet<AdminPayment[]>(buildPaymentOperationsApiHref(filters), []),
+  ]);
   const model = buildPaymentPageModel({
-    callbackAttempts: await adminGet<AdminPaymentCallbackAttempt[]>('/admin/payment-callback-attempts', []),
+    callbackAttempts,
     params,
-    payments: await adminGet<AdminPayment[]>('/admin/payments', []),
+    payments,
   });
   const confirmation = buildPaymentActionConfirmation(
     model.allPayments,

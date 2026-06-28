@@ -33,6 +33,8 @@ describe('AdminController notification and push actions', () => {
     listPartnerDirectoryProviders: vi.fn(),
     listAdminPushCampaigns: vi.fn(),
     adminPushCampaignSummary: vi.fn(),
+    listPaymentCallbackAttempts: vi.fn(),
+    listPayments: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
@@ -222,6 +224,40 @@ describe('AdminController notification and push actions', () => {
       joinedFrom: '2026-06-01',
       joinedTo: '2026-06-27',
       q: 'mai',
+    });
+  });
+
+  it('exposes payments as a bounded filtered operations list', async () => {
+    admin.listPayments.mockResolvedValue([{ id: 'payment-1' }]);
+
+    await expect(controller.payments('25', 'today', 'cash-debt')).resolves.toEqual([{ id: 'payment-1' }]);
+
+    expect(routeMetadata('payments')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payments',
+    });
+    expect(admin.listPayments).toHaveBeenCalledWith({
+      range: 'today',
+      review: 'cash-debt',
+      take: '25',
+    });
+  });
+
+  it('exposes payment callback attempts as a bounded filtered ledger list', async () => {
+    admin.listPaymentCallbackAttempts.mockResolvedValue([{ id: 'attempt-1' }]);
+
+    await expect(
+      controller.paymentCallbackAttempts('75', '7d', 'callback-review'),
+    ).resolves.toEqual([{ id: 'attempt-1' }]);
+
+    expect(routeMetadata('paymentCallbackAttempts')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payment-callback-attempts',
+    });
+    expect(admin.listPaymentCallbackAttempts).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'callback-review',
+      take: '75',
     });
   });
 

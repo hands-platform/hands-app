@@ -9,6 +9,7 @@ import {
   FileUploadStatus,
   FileVisibility,
   PayoutBatchStatus,
+  PaymentMethod,
   PaymentStatus,
   Prisma,
   ReferralAudience,
@@ -255,6 +256,10 @@ const ADMIN_PUSH_CAMPAIGN_HISTORY_MAX_LIMIT = 50;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 100;
+const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
+const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
+const ADMIN_PAYMENT_CALLBACK_ATTEMPT_DEFAULT_LIMIT = 50;
+const ADMIN_PAYMENT_CALLBACK_ATTEMPT_MAX_LIMIT = 100;
 const ADMIN_REVIEW_BOARD_DEFAULT_LIMIT = 25;
 const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
 
@@ -282,6 +287,12 @@ type AdminChatArchiveListQuery = {
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
+type AdminPaymentOperationsQuery = {
+  readonly range?: string | null;
+  readonly review?: string | null;
+  readonly take?: number | string | null;
+};
+type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -3653,10 +3664,13 @@ export class AdminService {
     return task;
   }
 
-  listPayments() {
+  listPayments(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminPaymentOperationsWhere(options);
+
     return this.prisma.payment.findMany({
+      ...(where ? { where } : {}),
       orderBy: { id: 'desc' },
-      take: 100,
+      take: adminPaymentOperationsTake(options.take),
       select: {
         ...adminPaymentSummarySelect,
         booking: {
@@ -3718,10 +3732,13 @@ export class AdminService {
     return { ...payment, callbackAttempts, auditLogs };
   }
 
-  listPaymentCallbackAttempts() {
+  listPaymentCallbackAttempts(options: AdminPaymentCallbackAttemptQuery = {}) {
+    const where = adminPaymentCallbackAttemptWhere(options);
+
     return this.prisma.paymentCallbackAttempt.findMany({
+      ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: adminPaymentCallbackAttemptTake(options.take),
       select: adminPaymentCallbackAttemptListSelect,
     });
   }
@@ -6670,6 +6687,185 @@ function adminReviewStatusCounts(
       [ReviewStatus.REPORTED]: 0,
     },
   );
+}
+
+function adminPaymentOperationsTake(value: number | string | null | undefined) {
+  return adminBoundedPositiveInteger(
+    value,
+    ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT,
+    ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT,
+  );
+}
+
+function adminPaymentCallbackAttemptTake(value: number | string | null | undefined) {
+  return adminBoundedPositiveInteger(
+    value,
+    ADMIN_PAYMENT_CALLBACK_ATTEMPT_DEFAULT_LIMIT,
+    ADMIN_PAYMENT_CALLBACK_ATTEMPT_MAX_LIMIT,
+  );
+}
+
+function adminPaymentOperationsWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.PaymentWhereInput | undefined {
+  const where = adminPaymentReviewWhere(options.review) ?? {};
+  const bookingDateWhere = adminPaymentBookingDateWhere(options.range);
+
+  if (bookingDateWhere) {
+    where.booking = adminMergePaymentBookingWhere(where.booking, bookingDateWhere);
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminPaymentCallbackAttemptWhere(
+  options: AdminPaymentCallbackAttemptQuery,
+): Prisma.PaymentCallbackAttemptWhereInput | undefined {
+  const filters: Prisma.PaymentCallbackAttemptWhereInput[] = [];
+  const dateWhere = adminPaymentCallbackAttemptDateWhere(options.range);
+  const reviewWhere = adminPaymentCallbackAttemptReviewWhere(options.review);
+
+  if (dateWhere) {
+    filters.push(dateWhere);
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminPaymentReviewWhere(review: string | null | undefined): Prisma.PaymentWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'capture':
+      return { booking: { status: BookingStatus.COMPLETED }, status: PaymentStatus.AUTHORIZED };
+    case 'missing-ref':
+      return { providerRef: null, status: PaymentStatus.AUTHORIZED };
+    case 'authorized':
+      return { status: PaymentStatus.AUTHORIZED };
+    case 'cash':
+      return { method: PaymentMethod.CASH, status: PaymentStatus.PENDING };
+    case 'cash-debt':
+      return {
+        booking: {
+          earning: {
+            is: {
+              netAmount: { lt: 0 },
+              status: { not: EarningStatus.PAID },
+            },
+          },
+        },
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.PENDING,
+      };
+    case 'needs-action':
+      return { status: { notIn: [PaymentStatus.CAPTURED, PaymentStatus.REFUNDED, PaymentStatus.RELEASED] } };
+    case 'callback-review':
+      return { callbackAttempts: { some: adminPaymentCallbackAttemptNeedsReviewWhere() } };
+    case 'callback-verified':
+      return { callbackAttempts: { some: adminPaymentCallbackAttemptVerifiedWhere() } };
+    case 'refunded':
+      return { status: PaymentStatus.REFUNDED };
+    default:
+      return undefined;
+  }
+}
+
+function adminPaymentCallbackAttemptReviewWhere(
+  review: string | null | undefined,
+): Prisma.PaymentCallbackAttemptWhereInput | undefined {
+  if (normalizeNullable(review) === 'callback-review') {
+    return adminPaymentCallbackAttemptNeedsReviewWhere();
+  }
+  if (normalizeNullable(review) === 'callback-verified') {
+    return adminPaymentCallbackAttemptVerifiedWhere();
+  }
+  return undefined;
+}
+
+function adminPaymentCallbackAttemptNeedsReviewWhere(): Prisma.PaymentCallbackAttemptWhereInput {
+  return {
+    OR: [
+      { outcome: { notIn: ['ACCEPTED', 'REPLAY'] } },
+      { outcome: { in: ['ACCEPTED', 'REPLAY'] }, signatureVerified: { not: true } },
+    ],
+  };
+}
+
+function adminPaymentCallbackAttemptVerifiedWhere(): Prisma.PaymentCallbackAttemptWhereInput {
+  return {
+    outcome: { in: ['ACCEPTED', 'REPLAY'] },
+    signatureVerified: true,
+  };
+}
+
+function adminPaymentBookingDateWhere(range: string | null | undefined): Prisma.BookingWhereInput | undefined {
+  const dateRange = adminPaymentDateRangeWhere(range);
+  return dateRange ? { OR: [{ createdAt: dateRange }] } : undefined;
+}
+
+function adminPaymentCallbackAttemptDateWhere(
+  range: string | null | undefined,
+): Prisma.PaymentCallbackAttemptWhereInput | undefined {
+  const dateRange = adminPaymentDateRangeWhere(range);
+  return dateRange ? { createdAt: dateRange } : undefined;
+}
+
+function adminPaymentDateRangeWhere(range: string | null | undefined): Prisma.DateTimeFilter | undefined {
+  const bounds = adminPaymentDateRangeBounds(range);
+  if (!bounds) {
+    return undefined;
+  }
+
+  return {
+    gte: new Date(bounds.startMs),
+    lte: new Date(bounds.endMs),
+  };
+}
+
+function adminPaymentDateRangeBounds(range: string | null | undefined) {
+  const nowMs = Date.now();
+  const todayStartMs = startOfLocalDay(nowMs);
+  const todayEndMs = endOfLocalDay(todayStartMs);
+
+  switch (normalizeNullable(range) ?? 'today') {
+    case '7d':
+      return { startMs: addLocalDays(todayStartMs, -6), endMs: todayEndMs };
+    case '30d':
+      return { startMs: addLocalDays(todayStartMs, -29), endMs: todayEndMs };
+    case 'all':
+      return undefined;
+    case 'today':
+    default:
+      return { startMs: todayStartMs, endMs: todayEndMs };
+  }
+}
+
+function adminMergePaymentBookingWhere(
+  existing: Prisma.BookingWhereInput | undefined,
+  next: Prisma.BookingWhereInput,
+): Prisma.BookingWhereInput {
+  return existing ? { ...existing, ...next } : next;
+}
+
+function adminBoundedPositiveInteger(
+  value: number | string | null | undefined,
+  defaultValue: number,
+  maxValue: number,
+) {
+  if (value === null || value === undefined || value === '') {
+    return defaultValue;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return defaultValue;
+  }
+
+  return Math.min(Math.trunc(parsed), maxValue);
 }
 
 function normalizeNotificationBoardTake(value: string | undefined) {

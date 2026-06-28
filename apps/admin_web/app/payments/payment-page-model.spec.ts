@@ -1,7 +1,7 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
 import { paymentActionExecutionMap } from './payment-action-execution-map';
 import { emptyPaymentMessage, paymentFilterDescription, paymentRangeLinks, withPaymentRange } from './payment-page-links';
-import { buildPaymentPageModel } from './payment-page-model';
+import { buildPaymentCallbackAttemptsApiHref, buildPaymentOperationsApiHref, buildPaymentPageModel } from './payment-page-model';
 import { paymentCallbackMeta, paymentCashDebtNeedsSettlement } from './payment-page-rules';
 
 describe('payment page model', () => {
@@ -59,6 +59,32 @@ describe('payment page model', () => {
         payments: [cashDebt, callbackReview],
       }).payments.map((item) => item.id),
     ).toEqual(['callback-review-payment']);
+  });
+
+  it('defaults the operations board to today when no range is selected', () => {
+    const model = buildPaymentPageModel({
+      callbackAttempts: [],
+      params: {},
+      payments: [],
+    });
+
+    expect(model.filters.range).toBe('today');
+    expect(model.dateRangeLabel).toBe('Today (Vietnam)');
+  });
+
+  it('builds bounded API hrefs from the selected payment filters', () => {
+    const model = buildPaymentPageModel({
+      callbackAttempts: [],
+      params: { range: '7d', review: 'callback-review' },
+      payments: [],
+    });
+
+    expect(buildPaymentOperationsApiHref(model.filters)).toBe(
+      '/admin/payments?take=100&range=7d&review=callback-review',
+    );
+    expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
+      '/admin/payment-callback-attempts?take=100&range=7d&review=callback-review',
+    );
   });
 
   it('keeps callback metadata, filter links, and empty copy stable', () => {

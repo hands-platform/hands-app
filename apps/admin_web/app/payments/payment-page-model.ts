@@ -52,6 +52,8 @@ export type PaymentPageModel = {
   readonly visibleCallbackAttempts: readonly AdminPaymentCallbackAttempt[];
 };
 
+const PAYMENT_OPERATIONS_API_LIMIT = 100;
+
 export function buildPaymentPageModel({
   callbackAttempts,
   params,
@@ -133,10 +135,20 @@ export function buildPaymentCallbackAttemptLedgerRows(
 }
 
 export function buildPaymentFilters(params: Record<string, string | string[] | undefined>): PaymentFilters {
+  const rangeParam = readSearchParam(params.range);
+
   return {
-    range: normalizeDateRange(readSearchParam(params.range)),
+    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     review: readSearchParam(params.review),
   };
+}
+
+export function buildPaymentOperationsApiHref(filters: PaymentFilters): string {
+  return buildPaymentApiHref('/admin/payments', filters);
+}
+
+export function buildPaymentCallbackAttemptsApiHref(filters: PaymentFilters): string {
+  return buildPaymentApiHref('/admin/payment-callback-attempts', filters);
 }
 
 export function filterPayments(payments: readonly AdminPayment[], filters: PaymentFilters): AdminPayment[] {
@@ -218,4 +230,13 @@ function buildPaymentMetrics(
       .length,
     refunded: payments.filter((payment) => payment.status === 'REFUNDED').length,
   };
+}
+
+function buildPaymentApiHref(path: string, filters: PaymentFilters): string {
+  const params = new URLSearchParams({ take: String(PAYMENT_OPERATIONS_API_LIMIT), range: filters.range });
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+
+  return `${path}?${params.toString()}`;
 }
