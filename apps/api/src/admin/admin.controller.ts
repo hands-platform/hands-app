@@ -51,8 +51,23 @@ export class AdminController {
   }
 
   @Get('customers')
-  customers() {
-    return this.admin.listCustomers();
+  customers(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('joinedFrom') joinedFrom?: string,
+    @Query('joinedTo') joinedTo?: string,
+  ) {
+    return this.admin.listCustomers({ joinedFrom, joinedTo, q, skip, take });
+  }
+
+  @Get('customers/summary')
+  customerSummary(
+    @Query('q') q?: string,
+    @Query('joinedFrom') joinedFrom?: string,
+    @Query('joinedTo') joinedTo?: string,
+  ) {
+    return this.admin.customerSummary({ joinedFrom, joinedTo, q });
   }
 
   @Get('customers/:id')

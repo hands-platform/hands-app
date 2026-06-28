@@ -1,5 +1,5 @@
 import type { AdminBooking, AdminCustomer } from '../../lib/admin-api';
-import { buildCustomerRow } from './customer-list-model';
+import { buildCustomerRow, buildServerCustomerPagination } from './customer-list-model';
 
 function booking(input: Partial<AdminBooking> & { id: string }): AdminBooking {
   return {
@@ -41,5 +41,34 @@ describe('customer list model', () => {
     expect(row.completedBookings).toBe(19);
     expect(row.lastBookingAt).toBe('2026-06-20T12:00:00.000Z');
     expect(row.lastCompletedAt).toBe('2026-06-19T10:00:00.000Z');
+  });
+
+  it('uses server-provided customer rows without slicing them again', () => {
+    const pagination = buildServerCustomerPagination(
+      [{ id: 'customer-11' }, { id: 'customer-12' }],
+      {
+        country: '',
+        gender: '',
+        joinedFrom: '',
+        joinedRange: '',
+        joinedTo: '',
+        lastBookingFrom: '',
+        lastBookingRange: '',
+        lastBookingTo: '',
+        lastLoginFrom: '',
+        lastLoginRange: '',
+        lastLoginTo: '',
+        page: 2,
+        pageSize: 10,
+        q: '',
+        sort: 'last-booking',
+      },
+      12,
+    );
+
+    expect(pagination.rows).toEqual([{ id: 'customer-11' }, { id: 'customer-12' }]);
+    expect(pagination.from).toBe(11);
+    expect(pagination.to).toBe(12);
+    expect(pagination.totalRows).toBe(12);
   });
 });

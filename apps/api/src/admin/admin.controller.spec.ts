@@ -35,8 +35,10 @@ describe('AdminController notification and push actions', () => {
     adminPushCampaignSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
+    customerSummary: vi.fn(),
     creditReferralReward: vi.fn(),
     holdReferralReward: vi.fn(),
+    listCustomers: vi.fn(),
     releaseAvailableReferralRewards: vi.fn(),
     reverseReferralReward: vi.fn(),
     deleteCoupon: vi.fn(),
@@ -184,6 +186,40 @@ describe('AdminController notification and push actions', () => {
       booking: 'booking-1',
       review: 'failed',
       to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes customers as a bounded filtered list with a summary endpoint', async () => {
+    admin.listCustomers.mockResolvedValue([{ id: 'customer-1' }]);
+    admin.customerSummary.mockResolvedValue({ generatedAt: '2026-06-27T00:00:00.000Z', totalCount: 42 });
+
+    await expect(
+      controller.customers('10', '20', 'mai', '2026-06-01', '2026-06-27'),
+    ).resolves.toEqual([{ id: 'customer-1' }]);
+    await expect(controller.customerSummary('mai', '2026-06-01', '2026-06-27')).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      totalCount: 42,
+    });
+
+    expect(routeMetadata('customers')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customers',
+    });
+    expect(routeMetadata('customerSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customers/summary',
+    });
+    expect(admin.listCustomers).toHaveBeenCalledWith({
+      joinedFrom: '2026-06-01',
+      joinedTo: '2026-06-27',
+      q: 'mai',
+      skip: '20',
+      take: '10',
+    });
+    expect(admin.customerSummary).toHaveBeenCalledWith({
+      joinedFrom: '2026-06-01',
+      joinedTo: '2026-06-27',
+      q: 'mai',
     });
   });
 

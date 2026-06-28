@@ -421,6 +421,11 @@ export type AdminCustomer = {
   auditLogCount?: number;
 };
 
+export type AdminCustomerSummary = {
+  generatedAt?: string;
+  totalCount: number;
+};
+
 export type AdminCustomerDetail = AdminCustomer & {
   bookings?: AdminBookingDetail[];
 };

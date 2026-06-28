@@ -181,7 +181,8 @@ const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
 const ADMIN_USER_LIST_LIMIT = 500;
-const ADMIN_CUSTOMER_LIST_LIMIT = 500;
+const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
+const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
 const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;
 const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
@@ -412,6 +413,17 @@ type AdminAuditLogListOptions = {
   skip?: number | string | null;
   take?: number | string | null;
   to?: string | null;
+};
+
+type AdminCustomerDirectorySummaryOptions = {
+  joinedFrom?: string | null;
+  joinedTo?: string | null;
+  q?: string | null;
+};
+
+type AdminCustomerDirectoryQueryOptions = AdminCustomerDirectorySummaryOptions & {
+  skip?: number | string | null;
+  take?: number | string | null;
 };
 
 type AdminReviewBoardSummaryOptions = {
@@ -740,10 +752,14 @@ export class AdminService {
     });
   }
 
-  async listCustomers() {
+  async listCustomers(options: AdminCustomerDirectoryQueryOptions = {}) {
+    const where = adminCustomerDirectoryWhere(options);
+    const skip = adminCustomerDirectorySkip(options.skip);
     const customers = await this.prisma.customerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: ADMIN_CUSTOMER_LIST_LIMIT,
+      ...(skip > 0 ? { skip } : {}),
+      take: adminCustomerDirectoryTake(options.take),
+      ...(where ? { where } : {}),
       select: {
         id: true,
         userId: true,
@@ -801,6 +817,18 @@ export class AdminService {
       auditLogs: logsByTarget.get(`customer:${customer.id}`) ?? [],
       auditLogCount: countByTarget.get(`customer:${customer.id}`) ?? 0,
     }));
+  }
+
+  async customerSummary(options: AdminCustomerDirectorySummaryOptions = {}) {
+    const where = adminCustomerDirectoryWhere(options);
+    const totalCount = await this.prisma.customerProfile.count({
+      ...(where ? { where } : {}),
+    });
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCount,
+    };
   }
 
   async getCustomerDetail(customerProfileId: string) {
@@ -6073,6 +6101,85 @@ function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketpla
     seen.add(provider.id);
     return true;
   });
+}
+
+function adminCustomerDirectoryTake(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT;
+  }
+
+  return Math.min(Math.trunc(parsed), ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT);
+}
+
+function adminCustomerDirectorySkip(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function adminCustomerDirectoryWhere(
+  options: AdminCustomerDirectorySummaryOptions,
+): Prisma.CustomerProfileWhereInput | undefined {
+  const userWhere: Prisma.UserWhereInput = {};
+  const q = normalizeNullable(options.q);
+  const joinedFrom = adminCustomerDirectoryDateBoundary(options.joinedFrom, 'joinedFrom');
+  const joinedTo = adminCustomerDirectoryDateBoundary(options.joinedTo, 'joinedTo', true);
+
+  if (q) {
+    userWhere.OR = [
+      { fullName: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
+      { email: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  if (joinedFrom || joinedTo) {
+    userWhere.createdAt = {
+      ...(joinedFrom ? { gte: joinedFrom } : {}),
+      ...(joinedTo ? { lt: joinedTo } : {}),
+    };
+  }
+
+  if (Object.keys(userWhere).length === 0) {
+    return undefined;
+  }
+
+  return { user: userWhere };
+}
+
+function adminCustomerDirectoryDateBoundary(
+  value: string | null | undefined,
+  field: string,
+  endExclusive = false,
+) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(normalized);
+  const date = new Date(isDateOnly ? `${normalized}T00:00:00.000Z` : normalized);
+  if (!Number.isFinite(date.getTime())) {
+    throw new BadRequestException(`Invalid customer ${field} date`);
+  }
+
+  if (endExclusive && isDateOnly) {
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+
+  return date;
 }
 
 function adminReviewBoardTake(value: number | string | null | undefined) {

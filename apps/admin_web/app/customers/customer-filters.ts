@@ -21,6 +21,11 @@ export type CustomerFilters = {
   lastLoginTo: string;
 };
 
+export type CustomerDataHrefs = {
+  readonly listHref: string;
+  readonly summaryHref: string;
+};
+
 export function buildCustomerFilters(params: Record<string, string | string[] | undefined>): CustomerFilters {
   const joinedRange = normalizeCustomerDateRangeFilter(readSearchParam(params.joinedRange));
   const joinedDateRange = resolveCustomerDateRange(
@@ -99,6 +104,21 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
   return params.size ? `/customers?${params.toString()}` : '/customers';
 }
 
+export function buildCustomerDataHrefs(filters: CustomerFilters): CustomerDataHrefs {
+  const listParams = buildCustomerDataQueryParams(filters);
+  listParams.set('take', String(filters.pageSize));
+  listParams.set('skip', String((filters.page - 1) * filters.pageSize));
+
+  const summaryParams = buildCustomerDataQueryParams(filters);
+
+  return {
+    listHref: `/admin/customers?${listParams.toString()}`,
+    summaryHref: summaryParams.size
+      ? `/admin/customers/summary?${summaryParams.toString()}`
+      : '/admin/customers/summary',
+  };
+}
+
 export function customerSortLabel(sort: string) {
   if (sort === 'booking-count') return 'reservations many first';
   if (sort === 'booking-count-asc') return 'reservations few first';
@@ -144,6 +164,16 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
   }
   if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
+}
+
+function buildCustomerDataQueryParams(filters: CustomerFilters) {
+  const params = new URLSearchParams();
+
+  appendTextParam(params, 'q', filters.q);
+  appendTextParam(params, 'joinedFrom', filters.joinedFrom);
+  appendTextParam(params, 'joinedTo', filters.joinedTo);
+
+  return params;
 }
 
 function normalizeCustomerDateRangeFilter(value: string) {

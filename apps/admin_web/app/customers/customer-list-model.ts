@@ -238,6 +238,27 @@ export function paginateCustomerRows<T>(rows: readonly T[], filters: CustomerFil
   };
 }
 
+export function buildServerCustomerPagination<T>(
+  rows: readonly T[],
+  filters: CustomerFilters,
+  totalRows: number,
+): CustomerPagination<T> {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (filters.page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
 export function buildCustomerSummary(rows: CustomerRow[]) {
   const todayJoinedRows = rows.filter((row) => isToday(row.joinedAt));
   const todaySeenRows = rows.filter((row) => isToday(row.lastSeenAt));

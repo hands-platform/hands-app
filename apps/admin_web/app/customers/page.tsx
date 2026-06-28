@@ -2,15 +2,20 @@ import { CalendarClock, Star } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { adminGet } from '../../lib/admin-api';
-import type { AdminCustomer } from '../../lib/admin-api';
+import type { AdminCustomer, AdminCustomerSummary } from '../../lib/admin-api';
 import { buildCsvDataHref } from '../../lib/csv-export';
-import { buildCustomerActiveFilters, buildCustomerFilters, customerSortLabel } from './customer-filters';
+import {
+  buildCustomerActiveFilters,
+  buildCustomerDataHrefs,
+  buildCustomerFilters,
+  customerSortLabel,
+} from './customer-filters';
 import { CustomerFilterBoard } from './customer-filter-board';
 import {
   buildCustomerRow,
   buildCustomerSummary,
+  buildServerCustomerPagination,
   filterCustomerRows,
-  paginateCustomerRows,
   sortCustomerRows,
 } from './customer-list-model';
 import {
@@ -23,13 +28,20 @@ type CustomersPageSearchParams = Promise<Record<string, string | string[] | unde
 
 export default async function CustomersPage({ searchParams }: { searchParams?: CustomersPageSearchParams }) {
   const filters = buildCustomerFilters(searchParams ? await searchParams : {});
-  const customers = await adminGet<AdminCustomer[]>('/admin/customers', []);
+  const dataHrefs = buildCustomerDataHrefs(filters);
+  const [customers, serverSummary] = await Promise.all([
+    adminGet<AdminCustomer[]>(dataHrefs.listHref, []),
+    adminGet<AdminCustomerSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
+  ]);
   const allRows = customers.map(buildCustomerRow);
   const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
-  const allSummary = buildCustomerSummary(allRows);
+  const allSummary = {
+    ...buildCustomerSummary(rows),
+    total: serverSummary.totalCount,
+  };
   const activeFilters = buildCustomerActiveFilters(filters);
   const metrics = buildCustomerManagementMetrics(allSummary);
-  const pagination = paginateCustomerRows(rows, filters);
+  const pagination = buildServerCustomerPagination(rows, filters, serverSummary.totalCount);
   const tableRows = buildCustomerManagementTableRows(pagination.rows);
   const tablePagination = { ...pagination, rows: tableRows };
   const customerListCsvHref = buildCsvDataHref(
@@ -151,7 +163,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         csvHref={customerListCsvHref}
         filteredCount={rows.length}
         filters={filters}
-        totalCount={allRows.length}
+        totalCount={serverSummary.totalCount}
       />
 
       <CustomersTableSection

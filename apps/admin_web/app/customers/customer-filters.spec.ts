@@ -1,4 +1,9 @@
-import { buildCustomerActiveFilters, buildCustomerFilters, buildCustomerListHref } from './customer-filters';
+import {
+  buildCustomerActiveFilters,
+  buildCustomerDataHrefs,
+  buildCustomerFilters,
+  buildCustomerListHref,
+} from './customer-filters';
 
 describe('customer filters', () => {
   it('adds date range filters and reservation count sort without keeping removed filters', () => {
@@ -79,5 +84,22 @@ describe('customer filters', () => {
         'Sort: reservations many first',
       ]),
     );
+  });
+
+  it('builds bounded admin API hrefs for customer directory data and summary', () => {
+    const filters = buildCustomerFilters({
+      joinedFrom: '2026-06-01',
+      joinedRange: 'custom',
+      joinedTo: '2026-06-07',
+      page: '3',
+      pageSize: '25',
+      q: 'mai',
+    });
+
+    expect(buildCustomerDataHrefs(filters)).toEqual({
+      listHref:
+        '/admin/customers?q=mai&joinedFrom=2026-06-01&joinedTo=2026-06-07&take=25&skip=50',
+      summaryHref: '/admin/customers/summary?q=mai&joinedFrom=2026-06-01&joinedTo=2026-06-07',
+    });
   });
 });

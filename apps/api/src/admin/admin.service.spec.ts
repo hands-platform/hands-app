@@ -2208,6 +2208,78 @@ describe('AdminService query orchestration', () => {
     expect(select.sessions.take).toBe(3);
   });
 
+  it('bounds and filters customer directory queries before loading row details', async () => {
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listCustomers({
+        joinedFrom: '2026-06-01',
+        joinedTo: '2026-06-27',
+        q: 'mai',
+        skip: '20',
+        take: '10',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { id: 'desc' },
+        skip: 20,
+        take: 10,
+        where: {
+          user: {
+            OR: [
+              { fullName: { contains: 'mai', mode: 'insensitive' } },
+              { phone: { contains: 'mai', mode: 'insensitive' } },
+              { email: { contains: 'mai', mode: 'insensitive' } },
+            ],
+            createdAt: {
+              gte: new Date('2026-06-01T00:00:00.000Z'),
+              lt: new Date('2026-06-28T00:00:00.000Z'),
+            },
+          },
+        },
+      }),
+    );
+  });
+
+  it('exposes customer directory summary counts through the same safe filters', async () => {
+    const prisma = {
+      customerProfile: {
+        count: vi.fn().mockResolvedValue(42),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.customerSummary({ joinedFrom: '2026-06-01', joinedTo: '2026-06-27', q: 'mai' }),
+    ).resolves.toEqual({
+      generatedAt: expect.any(String),
+      totalCount: 42,
+    });
+
+    expect(prisma.customerProfile.count).toHaveBeenCalledWith({
+      where: {
+        user: {
+          OR: [
+            { fullName: { contains: 'mai', mode: 'insensitive' } },
+            { phone: { contains: 'mai', mode: 'insensitive' } },
+            { email: { contains: 'mai', mode: 'insensitive' } },
+          ],
+          createdAt: {
+            gte: new Date('2026-06-01T00:00:00.000Z'),
+            lt: new Date('2026-06-28T00:00:00.000Z'),
+          },
+        },
+      },
+    });
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');

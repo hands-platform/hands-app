@@ -74,11 +74,19 @@ if (!adminServiceSource.includes('take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,')) {
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_LIMIT = 500;')) {
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list query must keep the 500-row operations guard.',
+    message: 'Customer directory must keep a small default page size for first paint.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer directory must keep a hard maximum page size.',
   });
 }
 
@@ -122,11 +130,19 @@ if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
   });
 }
 
-if (!adminServiceSource.includes('take: ADMIN_CUSTOMER_LIST_LIMIT,')) {
+if (!adminServiceSource.includes('take: adminCustomerDirectoryTake(options.take),')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list query must apply ADMIN_CUSTOMER_LIST_LIMIT.',
+    message: 'Customer list query must apply the bounded requested page size.',
+  });
+}
+
+if (!adminServiceSource.includes('const skip = adminCustomerDirectorySkip(options.skip);')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list query must apply bounded server pagination offsets.',
   });
 }
 
