@@ -54,7 +54,12 @@ export function buildProviderFilters(
 export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHrefs {
   const listParams = new URLSearchParams();
   const summaryParams = new URLSearchParams();
-  listParams.set('take', '500');
+  listParams.set('take', String(filters.page * filters.pageSize));
+
+  if (filters.q) {
+    listParams.set('q', filters.q);
+    summaryParams.set('q', filters.q);
+  }
 
   if (filters.review === 'unapproved') {
     listParams.set('review', 'unapproved');
@@ -454,8 +459,7 @@ function normalizePartnerBookingFlowFilter(value: string) {
 
 function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
   return Boolean(
-    filters.q ||
-      filters.verification ||
+    filters.verification ||
       filters.providerStatus ||
       filters.kyc ||
       filters.location ||

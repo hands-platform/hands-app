@@ -41,19 +41,19 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({});
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=500',
+      listHref: '/admin/partners/list-providers?take=10',
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: true,
     });
   });
 
-  it('keeps rich partner search local until the API supports every searchable fact', () => {
+  it('passes partner search to the API and keeps list hydration bounded to the visible page', () => {
     const filters = buildProviderFilters({ page: '3', pageSize: '25', q: 'late arrival' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=500',
-      summaryHref: '/admin/partners/list-providers/summary',
-      summaryMatchesVisibleFilter: false,
+      listHref: '/admin/partners/list-providers?take=75&q=late+arrival',
+      summaryHref: '/admin/partners/list-providers/summary?q=late+arrival',
+      summaryMatchesVisibleFilter: true,
     });
   });
 
@@ -61,7 +61,7 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({ review: 'unapproved' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=500&review=unapproved',
+      listHref: '/admin/partners/list-providers?take=10&review=unapproved',
       summaryHref: '/admin/partners/list-providers/summary?review=unapproved',
       summaryMatchesVisibleFilter: true,
     });
@@ -71,7 +71,7 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({ review: 'unsettled' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=500',
+      listHref: '/admin/partners/list-providers?take=10',
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
     });
