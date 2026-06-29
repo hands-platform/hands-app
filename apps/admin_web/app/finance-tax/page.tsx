@@ -15,7 +15,9 @@ import {
   emptyBookingSettlementSummary,
   emptyPartnerWithholdingTaxSummary,
   monthlyTaxClosingHref,
+  paymentFeeHref,
   partnerWithholdingTaxHref,
+  platformVatHref,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
@@ -55,6 +57,12 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           </Link>
           <Link className="pill pill-info" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
             Monthly tax closing
+          </Link>
+          <Link className="pill pill-info" href={platformVatHref(monthlyClosingFilters)}>
+            Platform VAT
+          </Link>
+          <Link className="pill pill-info" href={paymentFeeHref(monthlyClosingFilters)}>
+            Payment fees
           </Link>
         </>
       }
@@ -139,6 +147,22 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               </p>
             </div>
             <small>{monthlyClosingFilters.period}</small>
+          </Link>
+          <Link className="setup-stage-item" href={platformVatHref(monthlyClosingFilters)}>
+            <span>VAT</span>
+            <div>
+              <strong>Platform VAT</strong>
+              <p className="muted">Review company output VAT by platform fee rate bucket.</p>
+            </div>
+            <small>{formatMoney(settlementSummary.companyOutputVat, currency)}</small>
+          </Link>
+          <Link className="setup-stage-item" href={paymentFeeHref(monthlyClosingFilters)}>
+            <span>FEE</span>
+            <div>
+              <strong>Payment Fees</strong>
+              <p className="muted">Review processing fee totals by method, payer, and treatment.</p>
+            </div>
+            <small>{formatMoney(settlementSummary.paymentProcessingFee, currency)}</small>
           </Link>
           <Link className="setup-stage-item" href="/tax-policy">
             <span>RULES</span>

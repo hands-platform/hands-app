@@ -155,6 +155,16 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Monthly platform VAT, Partner withholding, payment fee, and reconciliation closeout.',
       },
       {
+        href: '/finance-tax/platform-vat',
+        label: 'Platform VAT',
+        description: 'Company output VAT from HANDS platform fee by monthly VAT rate bucket.',
+      },
+      {
+        href: '/finance-tax/payment-fees',
+        label: 'Payment Fees',
+        description: 'Payment processing fees by method, payer, and treatment from settlement snapshots.',
+      },
+      {
         href: '/payments',
         label: 'Payments',
         description: 'Gateway, cash, refund, and payment-state operations.',

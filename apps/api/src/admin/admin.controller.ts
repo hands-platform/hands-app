@@ -764,6 +764,16 @@ export class AdminController {
     return this.admin.updateMonthlyTaxClosingStatus(user.id, period, body);
   }
 
+  @Get('platform-vat/summary')
+  platformVatSummary(@Query('period') period?: string) {
+    return this.admin.platformVatSummary({ period });
+  }
+
+  @Get('payment-fees/summary')
+  paymentFeeSummary(@Query('period') period?: string) {
+    return this.admin.paymentFeeSummary({ period });
+  }
+
   @Get('services')
   services() {
     return this.admin.listServices();

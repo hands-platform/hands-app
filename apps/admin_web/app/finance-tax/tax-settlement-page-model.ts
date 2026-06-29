@@ -1,5 +1,7 @@
 import type {
   AdminBookingSettlementSnapshotSummary,
+  AdminPaymentFeeSummary,
+  AdminPlatformVatSummary,
   AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxSummary,
@@ -137,6 +139,18 @@ export function buildMonthlyTaxClosingSummaryApiHref(filters: MonthlyTaxClosingF
   }).toString()}`;
 }
 
+export function buildPlatformVatSummaryApiHref(filters: MonthlyTaxClosingFilters) {
+  return `/admin/platform-vat/summary?${new URLSearchParams({
+    period: filters.period,
+  }).toString()}`;
+}
+
+export function buildPaymentFeeSummaryApiHref(filters: MonthlyTaxClosingFilters) {
+  return `/admin/payment-fees/summary?${new URLSearchParams({
+    period: filters.period,
+  }).toString()}`;
+}
+
 export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
   if (filters.review !== 'all') {
@@ -151,6 +165,14 @@ export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters)
 
 export function monthlyTaxClosingHref(filters: MonthlyTaxClosingFilters) {
   return `/finance-tax/monthly-tax-closing?${new URLSearchParams({ period: filters.period }).toString()}`;
+}
+
+export function platformVatHref(filters: MonthlyTaxClosingFilters) {
+  return `/finance-tax/platform-vat?${new URLSearchParams({ period: filters.period }).toString()}`;
+}
+
+export function paymentFeeHref(filters: MonthlyTaxClosingFilters) {
+  return `/finance-tax/payment-fees?${new URLSearchParams({ period: filters.period }).toString()}`;
 }
 
 export function buildTaxFinanceMetrics(
@@ -310,6 +332,82 @@ export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSum
       helper: 'Platform fee gross minus company output VAT and net revenue.',
     },
   ];
+}
+
+export function buildPlatformVatMetrics(summary: AdminPlatformVatSummary) {
+  return [
+    {
+      label: 'Settlements',
+      value: summary.settlementCount,
+      helper: 'Settlement snapshots included in this platform VAT period.',
+    },
+    {
+      label: 'Platform fee gross',
+      value: formatMoney(summary.platformFeeGrossTotal, summary.currency),
+      helper: 'HANDS platform fee including company output VAT.',
+    },
+    {
+      label: 'Company output VAT',
+      value: formatMoney(summary.companyOutputVatTotal, summary.currency),
+      helper: 'VAT payable from HANDS platform fee gross.',
+    },
+    {
+      label: 'Net revenue',
+      value: formatMoney(summary.platformFeeNetRevenueTotal, summary.currency),
+      helper: 'Company revenue after removing output VAT.',
+    },
+    {
+      label: 'Formula delta',
+      value: formatMoney(summary.netRevenueDelta, summary.currency),
+      helper: 'Platform fee gross minus output VAT and net revenue.',
+    },
+  ];
+}
+
+export function buildPaymentFeeMetrics(summary: AdminPaymentFeeSummary) {
+  return [
+    {
+      label: 'Settlements',
+      value: summary.settlementCount,
+      helper: 'Settlement snapshots included in this payment fee period.',
+    },
+    {
+      label: 'Customer paid',
+      value: formatMoney(summary.customerPaymentAmountTotal, summary.currency),
+      helper: 'Customer payment volume used to audit payment fee cost.',
+    },
+    {
+      label: 'Payment fees',
+      value: formatMoney(summary.paymentProcessingFeeTotal, summary.currency),
+      helper: 'Processing fees. This is not Partner withholding tax or company output VAT.',
+    },
+  ];
+}
+
+export function emptyPlatformVatSummary(period = normalizeTaxPeriod('')): AdminPlatformVatSummary {
+  return {
+    period,
+    currency: 'VND',
+    settlementCount: 0,
+    platformFeeGrossTotal: 0,
+    platformFeeNetRevenueTotal: 0,
+    companyOutputVatTotal: 0,
+    netRevenueDelta: 0,
+    rateBreakdown: [],
+  };
+}
+
+export function emptyPaymentFeeSummary(period = normalizeTaxPeriod('')): AdminPaymentFeeSummary {
+  return {
+    period,
+    currency: 'VND',
+    settlementCount: 0,
+    customerPaymentAmountTotal: 0,
+    paymentProcessingFeeTotal: 0,
+    byPaymentMethod: [],
+    byPayer: [],
+    byTreatment: [],
+  };
 }
 
 export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClosingSummary) {

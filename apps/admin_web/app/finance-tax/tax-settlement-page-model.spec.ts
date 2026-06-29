@@ -3,6 +3,10 @@ import {
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildPaymentFeeMetrics,
+  buildPaymentFeeSummaryApiHref,
+  buildPlatformVatMetrics,
+  buildPlatformVatSummaryApiHref,
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
@@ -59,6 +63,13 @@ describe('tax settlement page model', () => {
     expect(buildMonthlyTaxClosingSummaryApiHref(filters)).toBe(
       '/admin/monthly-tax-closings/summary?period=2026-06',
     );
+  });
+
+  it('builds platform VAT and payment fee summary API hrefs from the same monthly period filter', () => {
+    const filters = readMonthlyTaxClosingFilters({ period: '2026-06' });
+
+    expect(buildPlatformVatSummaryApiHref(filters)).toBe('/admin/platform-vat/summary?period=2026-06');
+    expect(buildPaymentFeeSummaryApiHref(filters)).toBe('/admin/payment-fees/summary?period=2026-06');
   });
 
   it('builds overview metrics from summary APIs without list data', () => {
@@ -198,5 +209,42 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"closing-1"');
     expect(rowsCsv).toContain('"company_output_vat_total"');
     expect(rowsCsv).toContain('"18962"');
+  });
+
+  it('builds platform VAT and payment fee metrics from summary-only APIs', () => {
+    expect(
+      buildPlatformVatMetrics({
+        period: '2026-06',
+        currency: 'VND',
+        settlementCount: 2,
+        platformFeeGrossTotal: 256000,
+        platformFeeNetRevenueTotal: 237038,
+        companyOutputVatTotal: 18962,
+        netRevenueDelta: 0,
+        rateBreakdown: [],
+      }).map((metric) => [metric.label, metric.value]),
+    ).toEqual([
+      ['Settlements', 2],
+      ['Platform fee gross', '256.000 VND'],
+      ['Company output VAT', '18.962 VND'],
+      ['Net revenue', '237.038 VND'],
+      ['Formula delta', '0 VND'],
+    ]);
+    expect(
+      buildPaymentFeeMetrics({
+        period: '2026-06',
+        currency: 'VND',
+        settlementCount: 2,
+        customerPaymentAmountTotal: 1200000,
+        paymentProcessingFeeTotal: 10000,
+        byPaymentMethod: [],
+        byPayer: [],
+        byTreatment: [],
+      }).map((metric) => [metric.label, metric.value]),
+    ).toEqual([
+      ['Settlements', 2],
+      ['Customer paid', '1.200.000 VND'],
+      ['Payment fees', '10.000 VND'],
+    ]);
   });
 });

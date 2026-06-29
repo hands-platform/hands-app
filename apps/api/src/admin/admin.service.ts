@@ -5653,6 +5653,122 @@ export class AdminService {
     });
   }
 
+  async platformVatSummary(options: AdminMonthlyTaxClosingQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const where = { monthlyPeriod: period };
+    const [totals, rateGroups] = await Promise.all([
+      this.prisma.bookingSettlementSnapshot.aggregate({
+        where,
+        _count: { _all: true },
+        _sum: {
+          platformFeeGross: true,
+          platformFeeNetRevenue: true,
+          companyOutputVat: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.groupBy({
+        by: ['platformVatRateBps'],
+        where,
+        _count: { _all: true },
+        _sum: {
+          platformFeeGross: true,
+          platformFeeNetRevenue: true,
+          companyOutputVat: true,
+        },
+      }),
+    ]);
+
+    const platformFeeGrossTotal = totals._sum.platformFeeGross ?? 0;
+    const platformFeeNetRevenueTotal = totals._sum.platformFeeNetRevenue ?? 0;
+    const companyOutputVatTotal = totals._sum.companyOutputVat ?? 0;
+
+    return {
+      period,
+      currency: 'VND',
+      settlementCount: totals._count._all,
+      platformFeeGrossTotal,
+      platformFeeNetRevenueTotal,
+      companyOutputVatTotal,
+      netRevenueDelta: platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal,
+      rateBreakdown: rateGroups.map((group) => ({
+        category: platformVatCategory(group.platformVatRateBps),
+        platformVatRateBps: group.platformVatRateBps,
+        settlementCount: group._count._all,
+        platformFeeGrossTotal: group._sum.platformFeeGross ?? 0,
+        platformFeeNetRevenueTotal: group._sum.platformFeeNetRevenue ?? 0,
+        companyOutputVatTotal: group._sum.companyOutputVat ?? 0,
+      })),
+    };
+  }
+
+  async paymentFeeSummary(options: AdminMonthlyTaxClosingQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const where = { monthlyPeriod: period };
+    const [totals, methodGroups, payerGroups, treatmentGroups] = await Promise.all([
+      this.prisma.bookingSettlementSnapshot.aggregate({
+        where,
+        _count: { _all: true },
+        _sum: {
+          customerPaymentAmount: true,
+          paymentProcessingFee: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.groupBy({
+        by: ['paymentMethod'],
+        where,
+        _count: { _all: true },
+        _sum: {
+          customerPaymentAmount: true,
+          paymentProcessingFee: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.groupBy({
+        by: ['paymentFeePayer'],
+        where,
+        _count: { _all: true },
+        _sum: {
+          customerPaymentAmount: true,
+          paymentProcessingFee: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.groupBy({
+        by: ['paymentFeeTreatment'],
+        where,
+        _count: { _all: true },
+        _sum: {
+          customerPaymentAmount: true,
+          paymentProcessingFee: true,
+        },
+      }),
+    ]);
+
+    return {
+      period,
+      currency: 'VND',
+      settlementCount: totals._count._all,
+      customerPaymentAmountTotal: totals._sum.customerPaymentAmount ?? 0,
+      paymentProcessingFeeTotal: totals._sum.paymentProcessingFee ?? 0,
+      byPaymentMethod: methodGroups.map((group) => ({
+        paymentMethod: group.paymentMethod,
+        settlementCount: group._count._all,
+        customerPaymentAmountTotal: group._sum.customerPaymentAmount ?? 0,
+        paymentProcessingFeeTotal: group._sum.paymentProcessingFee ?? 0,
+      })),
+      byPayer: payerGroups.map((group) => ({
+        paymentFeePayer: group.paymentFeePayer,
+        settlementCount: group._count._all,
+        customerPaymentAmountTotal: group._sum.customerPaymentAmount ?? 0,
+        paymentProcessingFeeTotal: group._sum.paymentProcessingFee ?? 0,
+      })),
+      byTreatment: treatmentGroups.map((group) => ({
+        paymentFeeTreatment: group.paymentFeeTreatment,
+        settlementCount: group._count._all,
+        customerPaymentAmountTotal: group._sum.customerPaymentAmount ?? 0,
+        paymentProcessingFeeTotal: group._sum.paymentProcessingFee ?? 0,
+      })),
+    };
+  }
+
   listServices() {
     return this.prisma.massageService.findMany({
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
@@ -9911,6 +10027,16 @@ function monthlyTaxClosingStatusMutationData(
     default:
       return {};
   }
+}
+
+function platformVatCategory(rateBps: number) {
+  if (rateBps === 800) {
+    return 'REDUCED_8';
+  }
+  if (rateBps === 1000) {
+    return 'STANDARD_10';
+  }
+  return 'MANUAL_REVIEW';
 }
 
 function adminPaymentOperationsWhere(

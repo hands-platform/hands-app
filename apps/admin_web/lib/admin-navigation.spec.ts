@@ -19,6 +19,8 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe('Finance: Partner Withholding Tax');
     expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe('Finance: Booking Settlement Audit');
     expect(linksByHref.get('/finance-tax/monthly-tax-closing')).toBe('Finance: Monthly Tax Closing');
+    expect(linksByHref.get('/finance-tax/platform-vat')).toBe('Finance: Platform VAT');
+    expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Finance: Payment Fees');
   });
 
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {

@@ -18,7 +18,7 @@ export type AdminBookingMatchSource = 'FIRST_PICK_ACCEPTED_FIRST' | 'CUSTOMER_SE
 export type AdminParticipantStatus = 'JOINED' | 'ACCEPTED' | 'REJECTED' | 'SELECTED' | 'EXPIRED';
 export type AdminProviderStatus = 'OFFLINE' | 'ONLINE_AVAILABLE' | 'ONLINE_BUSY' | 'ONLINE_AVAILABLE_SOON';
 export type AdminPaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'RELEASED';
-export type AdminPaymentMethod = 'MOMO' | 'VNPAY' | 'CASH';
+export type AdminPaymentMethod = 'MOMO' | 'VNPAY' | 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'CUSTOMER_WALLET' | 'MANUAL';
 export type AdminReviewStatus = 'PUBLISHED' | 'HIDDEN' | 'REPORTED';
 export type AdminEarningStatus = 'PENDING' | 'AVAILABLE' | 'PAID' | 'CANCELLED';
 export type AdminPayoutBatchStatus = 'DRAFT' | 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED';
@@ -1709,6 +1709,58 @@ export type AdminMonthlyTaxClosingSummary = {
   paidAt?: string | null;
   closedAt?: string | null;
   notes?: string | null;
+};
+
+export type AdminPlatformVatRateBreakdown = {
+  category: 'REDUCED_8' | 'STANDARD_10' | 'MANUAL_REVIEW';
+  platformVatRateBps: number;
+  settlementCount: number;
+  platformFeeGrossTotal: number;
+  platformFeeNetRevenueTotal: number;
+  companyOutputVatTotal: number;
+};
+
+export type AdminPlatformVatSummary = {
+  period: string;
+  currency: string;
+  settlementCount: number;
+  platformFeeGrossTotal: number;
+  platformFeeNetRevenueTotal: number;
+  companyOutputVatTotal: number;
+  netRevenueDelta: number;
+  rateBreakdown: AdminPlatformVatRateBreakdown[];
+};
+
+export type AdminPaymentFeeMethodBreakdown = {
+  paymentMethod: AdminPaymentMethod;
+  settlementCount: number;
+  customerPaymentAmountTotal: number;
+  paymentProcessingFeeTotal: number;
+};
+
+export type AdminPaymentFeePayerBreakdown = {
+  paymentFeePayer: 'HANDS' | 'CUSTOMER' | 'PARTNER' | 'SHARED';
+  settlementCount: number;
+  customerPaymentAmountTotal: number;
+  paymentProcessingFeeTotal: number;
+};
+
+export type AdminPaymentFeeTreatmentBreakdown = {
+  paymentFeeTreatment: 'OPERATING_EXPENSE' | 'PASS_THROUGH' | 'MANUAL_REVIEW';
+  settlementCount: number;
+  customerPaymentAmountTotal: number;
+  paymentProcessingFeeTotal: number;
+};
+
+export type AdminPaymentFeeSummary = {
+  period: string;
+  currency: string;
+  settlementCount: number;
+  customerPaymentAmountTotal: number;
+  paymentProcessingFeeTotal: number;
+  byPaymentMethod: AdminPaymentFeeMethodBreakdown[];
+  byPayer: AdminPaymentFeePayerBreakdown[];
+  byTreatment: AdminPaymentFeeTreatmentBreakdown[];
 };
 
 export type AdminAuditLog = {

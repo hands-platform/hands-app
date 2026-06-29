@@ -62,6 +62,8 @@ describe('AdminController notification and push actions', () => {
     listMonthlyTaxClosings: vi.fn(),
     monthlyTaxClosingSummary: vi.fn(),
     updateMonthlyTaxClosingStatus: vi.fn(),
+    platformVatSummary: vi.fn(),
+    paymentFeeSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -571,6 +573,36 @@ describe('AdminController notification and push actions', () => {
       path: 'monthly-tax-closings/:period/status',
     });
     expect(admin.updateMonthlyTaxClosingStatus).toHaveBeenCalledWith('admin-1', '2026-06', body);
+  });
+
+  it('exposes platform VAT summary grouped by monthly period', async () => {
+    admin.platformVatSummary.mockResolvedValue({ period: '2026-06', companyOutputVatTotal: 18962 });
+
+    await expect(controller.platformVatSummary('2026-06')).resolves.toEqual({
+      period: '2026-06',
+      companyOutputVatTotal: 18962,
+    });
+
+    expect(routeMetadata('platformVatSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'platform-vat/summary',
+    });
+    expect(admin.platformVatSummary).toHaveBeenCalledWith({ period: '2026-06' });
+  });
+
+  it('exposes payment fee summary grouped by monthly period', async () => {
+    admin.paymentFeeSummary.mockResolvedValue({ period: '2026-06', paymentProcessingFeeTotal: 10000 });
+
+    await expect(controller.paymentFeeSummary('2026-06')).resolves.toEqual({
+      period: '2026-06',
+      paymentProcessingFeeTotal: 10000,
+    });
+
+    expect(routeMetadata('paymentFeeSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payment-fees/summary',
+    });
+    expect(admin.paymentFeeSummary).toHaveBeenCalledWith({ period: '2026-06' });
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

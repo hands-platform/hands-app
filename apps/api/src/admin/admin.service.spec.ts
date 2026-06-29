@@ -9,6 +9,9 @@ import {
   MonthlyTaxClosingStatus,
   ParticipantStatus,
   PaymentStatus,
+  PaymentFeePayer,
+  PaymentFeeTreatment,
+  PaymentMethod,
   ProviderBankAccountStatus,
   ProviderKycStatus,
   ProviderReportSeverity,
@@ -5513,6 +5516,166 @@ describe('AdminService query orchestration', () => {
         status: MonthlyTaxClosingStatus.PAID,
       }),
     ).rejects.toThrow('Closed monthly periods require reversal entries, not direct edits.');
+  });
+
+  it('summarizes platform VAT totals and rate buckets for a monthly period', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 2 },
+          _sum: {
+            platformFeeGross: 256000,
+            platformFeeNetRevenue: 237038,
+            companyOutputVat: 18962,
+          },
+        }),
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            platformVatRateBps: 800,
+            _count: { _all: 1 },
+            _sum: {
+              platformFeeGross: 128000,
+              platformFeeNetRevenue: 118519,
+              companyOutputVat: 9481,
+            },
+          },
+          {
+            platformVatRateBps: 1000,
+            _count: { _all: 1 },
+            _sum: {
+              platformFeeGross: 128000,
+              platformFeeNetRevenue: 118519,
+              companyOutputVat: 9481,
+            },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.platformVatSummary({ period: '2026-06' })).resolves.toEqual({
+      period: '2026-06',
+      currency: 'VND',
+      settlementCount: 2,
+      platformFeeGrossTotal: 256000,
+      platformFeeNetRevenueTotal: 237038,
+      companyOutputVatTotal: 18962,
+      netRevenueDelta: 0,
+      rateBreakdown: [
+        {
+          category: 'REDUCED_8',
+          platformVatRateBps: 800,
+          settlementCount: 1,
+          platformFeeGrossTotal: 128000,
+          platformFeeNetRevenueTotal: 118519,
+          companyOutputVatTotal: 9481,
+        },
+        {
+          category: 'STANDARD_10',
+          platformVatRateBps: 1000,
+          settlementCount: 1,
+          platformFeeGrossTotal: 128000,
+          platformFeeNetRevenueTotal: 118519,
+          companyOutputVatTotal: 9481,
+        },
+      ],
+    });
+
+    expect(prisma.bookingSettlementSnapshot.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['platformVatRateBps'],
+        where: { monthlyPeriod: '2026-06' },
+      }),
+    );
+  });
+
+  it('summarizes payment processing fees by method, payer, and treatment for a monthly period', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 2 },
+          _sum: {
+            customerPaymentAmount: 1200000,
+            paymentProcessingFee: 10000,
+          },
+        }),
+        groupBy: vi
+          .fn()
+          .mockResolvedValueOnce([
+            {
+              paymentMethod: PaymentMethod.CASH,
+              _count: { _all: 1 },
+              _sum: { customerPaymentAmount: 600000, paymentProcessingFee: 0 },
+            },
+            {
+              paymentMethod: PaymentMethod.MOMO,
+              _count: { _all: 1 },
+              _sum: { customerPaymentAmount: 600000, paymentProcessingFee: 10000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              paymentFeePayer: PaymentFeePayer.HANDS,
+              _count: { _all: 2 },
+              _sum: { customerPaymentAmount: 1200000, paymentProcessingFee: 10000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+              _count: { _all: 2 },
+              _sum: { customerPaymentAmount: 1200000, paymentProcessingFee: 10000 },
+            },
+          ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.paymentFeeSummary({ period: '2026-06' })).resolves.toEqual({
+      period: '2026-06',
+      currency: 'VND',
+      settlementCount: 2,
+      customerPaymentAmountTotal: 1200000,
+      paymentProcessingFeeTotal: 10000,
+      byPaymentMethod: [
+        {
+          paymentMethod: PaymentMethod.CASH,
+          settlementCount: 1,
+          customerPaymentAmountTotal: 600000,
+          paymentProcessingFeeTotal: 0,
+        },
+        {
+          paymentMethod: PaymentMethod.MOMO,
+          settlementCount: 1,
+          customerPaymentAmountTotal: 600000,
+          paymentProcessingFeeTotal: 10000,
+        },
+      ],
+      byPayer: [
+        {
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          settlementCount: 2,
+          customerPaymentAmountTotal: 1200000,
+          paymentProcessingFeeTotal: 10000,
+        },
+      ],
+      byTreatment: [
+        {
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          settlementCount: 2,
+          customerPaymentAmountTotal: 1200000,
+          paymentProcessingFeeTotal: 10000,
+        },
+      ],
+    });
+
+    expect(prisma.bookingSettlementSnapshot.groupBy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        by: ['paymentMethod'],
+        where: { monthlyPeriod: '2026-06' },
+      }),
+    );
   });
 
   it('delegates bounded cash settlement filters to the earnings service', async () => {

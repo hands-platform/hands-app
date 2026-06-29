@@ -70,6 +70,8 @@ const iconByLabel = {
   'Partner Withholding Tax': ReceiptText,
   'Booking Settlement Audit': FileText,
   'Monthly Tax Closing': ClipboardCheck,
+  'Payment Fees': ReceiptText,
+  'Platform VAT': ReceiptText,
   'Unapproved Partners': BadgeCheck,
   'Unsettled Partners': WalletCards,
   'Usage Overview': ChartNoAxesCombined,
