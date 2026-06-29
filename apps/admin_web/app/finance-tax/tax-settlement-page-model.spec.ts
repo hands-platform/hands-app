@@ -4,8 +4,10 @@ import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildPaymentFeeMetrics,
+  buildPaymentFeeSummaryCsvHref,
   buildPaymentFeeSummaryApiHref,
   buildPlatformVatMetrics,
+  buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingRowsCsvHref,
@@ -246,5 +248,71 @@ describe('tax settlement page model', () => {
       ['Customer paid', '1.200.000 VND'],
       ['Payment fees', '10.000 VND'],
     ]);
+  });
+
+  it('exports platform VAT and payment fee summary breakdowns as CSV', () => {
+    const platformVatCsv = decodeURIComponent(
+      buildPlatformVatSummaryCsvHref({
+        period: '2026-06',
+        currency: 'VND',
+        settlementCount: 2,
+        platformFeeGrossTotal: 256000,
+        platformFeeNetRevenueTotal: 237038,
+        companyOutputVatTotal: 18962,
+        netRevenueDelta: 0,
+        rateBreakdown: [
+          {
+            category: 'REDUCED_8',
+            platformVatRateBps: 800,
+            settlementCount: 2,
+            platformFeeGrossTotal: 256000,
+            platformFeeNetRevenueTotal: 237038,
+            companyOutputVatTotal: 18962,
+          },
+        ],
+      }),
+    );
+    const paymentFeeCsv = decodeURIComponent(
+      buildPaymentFeeSummaryCsvHref({
+        period: '2026-06',
+        currency: 'VND',
+        settlementCount: 2,
+        customerPaymentAmountTotal: 1200000,
+        paymentProcessingFeeTotal: 10000,
+        byPaymentMethod: [
+          {
+            paymentMethod: 'MOMO',
+            settlementCount: 1,
+            customerPaymentAmountTotal: 600000,
+            paymentProcessingFeeTotal: 10000,
+          },
+        ],
+        byPayer: [
+          {
+            paymentFeePayer: 'HANDS',
+            settlementCount: 2,
+            customerPaymentAmountTotal: 1200000,
+            paymentProcessingFeeTotal: 10000,
+          },
+        ],
+        byTreatment: [
+          {
+            paymentFeeTreatment: 'OPERATING_EXPENSE',
+            settlementCount: 2,
+            customerPaymentAmountTotal: 1200000,
+            paymentProcessingFeeTotal: 10000,
+          },
+        ],
+      }),
+    );
+
+    expect(platformVatCsv).toContain('"section","period","currency"');
+    expect(platformVatCsv).toContain('"summary","2026-06","VND"');
+    expect(platformVatCsv).toContain('"rate_breakdown","2026-06","VND","REDUCED_8"');
+    expect(platformVatCsv).toContain('"18962"');
+    expect(paymentFeeCsv).toContain('"method_breakdown","2026-06","VND","MOMO"');
+    expect(paymentFeeCsv).toContain('"payer_breakdown","2026-06","VND","HANDS"');
+    expect(paymentFeeCsv).toContain('"treatment_breakdown","2026-06","VND","OPERATING_EXPENSE"');
+    expect(paymentFeeCsv).toContain('"10000"');
   });
 });

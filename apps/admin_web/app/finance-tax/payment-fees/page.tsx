@@ -7,6 +7,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin
 import { formatMoney } from '../../../lib/admin-format';
 import {
   buildPaymentFeeMetrics,
+  buildPaymentFeeSummaryCsvHref,
   buildPaymentFeeSummaryApiHref,
   emptyPaymentFeeSummary,
   monthlyTaxClosingHref,
@@ -24,11 +25,15 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
     buildPaymentFeeSummaryApiHref(filters),
     emptyPaymentFeeSummary(filters.period),
   );
+  const csvHref = buildPaymentFeeSummaryCsvHref(summary);
 
   return (
     <AdminPageTemplate
       actions={
         <>
+          <a className="pill pill-success" download={`hands-payment-fees-${filters.period}.csv`} href={csvHref}>
+            Export payment fee CSV
+          </a>
           <Link className="pill pill-info" href="/finance-tax">
             Tax overview
           </Link>

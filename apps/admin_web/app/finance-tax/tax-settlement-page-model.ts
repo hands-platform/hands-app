@@ -410,6 +410,81 @@ export function emptyPaymentFeeSummary(period = normalizeTaxPeriod('')): AdminPa
   };
 }
 
+export function buildPlatformVatSummaryCsvHref(summary: AdminPlatformVatSummary) {
+  return buildCsvDataHref(
+    [
+      {
+        section: 'summary',
+        period: summary.period,
+        currency: summary.currency,
+        bucket: '',
+        rate_bps: '',
+        settlement_count: summary.settlementCount,
+        platform_fee_gross_total: summary.platformFeeGrossTotal,
+        platform_fee_net_revenue_total: summary.platformFeeNetRevenueTotal,
+        company_output_vat_total: summary.companyOutputVatTotal,
+        net_revenue_delta: summary.netRevenueDelta,
+      },
+      ...summary.rateBreakdown.map((row) => ({
+        section: 'rate_breakdown',
+        period: summary.period,
+        currency: summary.currency,
+        bucket: row.category,
+        rate_bps: row.platformVatRateBps,
+        settlement_count: row.settlementCount,
+        platform_fee_gross_total: row.platformFeeGrossTotal,
+        platform_fee_net_revenue_total: row.platformFeeNetRevenueTotal,
+        company_output_vat_total: row.companyOutputVatTotal,
+        net_revenue_delta: '',
+      })),
+    ],
+    PLATFORM_VAT_CSV_COLUMNS,
+  );
+}
+
+export function buildPaymentFeeSummaryCsvHref(summary: AdminPaymentFeeSummary) {
+  const rows = [
+    {
+      section: 'summary',
+      period: summary.period,
+      currency: summary.currency,
+      bucket: '',
+      settlement_count: summary.settlementCount,
+      customer_payment_amount_total: summary.customerPaymentAmountTotal,
+      payment_processing_fee_total: summary.paymentProcessingFeeTotal,
+    },
+    ...summary.byPaymentMethod.map((row) => ({
+      section: 'method_breakdown',
+      period: summary.period,
+      currency: summary.currency,
+      bucket: row.paymentMethod,
+      settlement_count: row.settlementCount,
+      customer_payment_amount_total: row.customerPaymentAmountTotal,
+      payment_processing_fee_total: row.paymentProcessingFeeTotal,
+    })),
+    ...summary.byPayer.map((row) => ({
+      section: 'payer_breakdown',
+      period: summary.period,
+      currency: summary.currency,
+      bucket: row.paymentFeePayer,
+      settlement_count: row.settlementCount,
+      customer_payment_amount_total: row.customerPaymentAmountTotal,
+      payment_processing_fee_total: row.paymentProcessingFeeTotal,
+    })),
+    ...summary.byTreatment.map((row) => ({
+      section: 'treatment_breakdown',
+      period: summary.period,
+      currency: summary.currency,
+      bucket: row.paymentFeeTreatment,
+      settlement_count: row.settlementCount,
+      customer_payment_amount_total: row.customerPaymentAmountTotal,
+      payment_processing_fee_total: row.paymentProcessingFeeTotal,
+    })),
+  ];
+
+  return buildCsvDataHref(rows, PAYMENT_FEE_CSV_COLUMNS);
+}
+
 export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClosingSummary) {
   return buildCsvDataHref(
     [
@@ -465,6 +540,29 @@ export function buildMonthlyTaxClosingRowsCsvHref(rows: AdminMonthlyTaxClosing[]
     MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS,
   );
 }
+
+const PLATFORM_VAT_CSV_COLUMNS = [
+  'section',
+  'period',
+  'currency',
+  'bucket',
+  'rate_bps',
+  'settlement_count',
+  'platform_fee_gross_total',
+  'platform_fee_net_revenue_total',
+  'company_output_vat_total',
+  'net_revenue_delta',
+];
+
+const PAYMENT_FEE_CSV_COLUMNS = [
+  'section',
+  'period',
+  'currency',
+  'bucket',
+  'settlement_count',
+  'customer_payment_amount_total',
+  'payment_processing_fee_total',
+];
 
 const MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS = [
   'period',

@@ -7,6 +7,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin
 import { formatMoney } from '../../../lib/admin-format';
 import {
   buildPlatformVatMetrics,
+  buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
   emptyPlatformVatSummary,
   monthlyTaxClosingHref,
@@ -24,11 +25,15 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
     buildPlatformVatSummaryApiHref(filters),
     emptyPlatformVatSummary(filters.period),
   );
+  const csvHref = buildPlatformVatSummaryCsvHref(summary);
 
   return (
     <AdminPageTemplate
       actions={
         <>
+          <a className="pill pill-success" download={`hands-platform-vat-${filters.period}.csv`} href={csvHref}>
+            Export company VAT CSV
+          </a>
           <Link className="pill pill-info" href="/finance-tax">
             Tax overview
           </Link>
