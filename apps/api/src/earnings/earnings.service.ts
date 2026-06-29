@@ -18,6 +18,7 @@ import {
 } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { providerBankCorrectionRequest } from '../provider-onboarding/provider-bank-correction';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
@@ -558,6 +559,7 @@ export class EarningsService {
 
   async summaryForProviderUser(userId: string) {
     const provider = await this.requireProviderProfile(userId);
+    const bankCorrectionRequest = providerBankCorrectionRequest(provider.bankAccounts);
     const [summary, payoutHold] = await Promise.all([
       this.summaryWhere({ providerProfileId: provider.id }),
       this.activePayoutHoldForProvider(this.prisma, provider.id),
@@ -587,6 +589,7 @@ export class EarningsService {
         : [],
       payoutBlocked: Boolean(payoutHold),
       payoutHold,
+      bankCorrectionRequest,
     };
   }
 
@@ -1655,7 +1658,23 @@ export class EarningsService {
   }
 
   private async requireProviderProfile(userId: string) {
-    const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { userId },
+      include: {
+        bankAccounts: {
+          where: { deletedAt: null },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+          select: {
+            id: true,
+            status: true,
+            rejectionReason: true,
+            reviewedAt: true,
+            updatedAt: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
     if (!provider) {
       throw new NotFoundException('Partner profile not found');
     }

@@ -1,4 +1,13 @@
-import { ProviderBankAccountStatus, TaxPolicyStatus } from '@prisma/client';
+import {
+  ProviderAgreementType,
+  ProviderBankAccountStatus,
+  ProviderDocumentStatus,
+  ProviderDocumentType,
+  ProviderKycStatus,
+  ProviderLevel,
+  TaxPolicyStatus,
+  VerificationStatus,
+} from '@prisma/client';
 
 import { ProviderOnboardingService } from './provider-onboarding.service';
 
@@ -195,5 +204,93 @@ describe('ProviderOnboardingService bank account submission', () => {
         }),
       }),
     );
+  });
+});
+
+describe('ProviderOnboardingService partner payout setup snapshot', () => {
+  it('exposes a rejected bank account correction request to the partner app', async () => {
+    const reviewedAt = new Date('2026-06-28T09:30:00.000Z');
+    const updatedAt = new Date('2026-06-28T09:35:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          userId: 'provider-user-1',
+          level: ProviderLevel.LEVEL_2_ACTIVE,
+          displayName: 'Smoke Partner',
+          legalName: 'Smoke Partner Legal',
+          dateOfBirth: new Date('1990-01-01T00:00:00.000Z'),
+          gender: 'female',
+          facebookId: null,
+          activityNickname: 'Smoke',
+          bio: 'Approved partner',
+          experienceYears: 4,
+          specialties: [],
+          languages: [],
+          serviceStyle: null,
+          residentialAddress: 'Cau Giay, Ha Noi',
+          city: 'Ha Noi',
+          serviceArea: null,
+          verification: { status: VerificationStatus.APPROVED },
+          kyc: { status: ProviderKycStatus.APPROVED },
+          documents: [
+            {
+              type: ProviderDocumentType.CCCD_FRONT,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+            {
+              type: ProviderDocumentType.CCCD_BACK,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+            {
+              type: ProviderDocumentType.PORTRAIT,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+          ],
+          bankAccounts: [
+            {
+              id: 'bank-rejected',
+              status: ProviderBankAccountStatus.REJECTED,
+              isPrimary: true,
+              rejectionReason: 'Account holder name does not match KYC.',
+              reviewedAt,
+              updatedAt,
+              deletedAt: null,
+            },
+          ],
+          taxProfile: null,
+          agreements: [
+            { type: ProviderAgreementType.PAYOUT_TERMS },
+            { type: ProviderAgreementType.TAX_WITHHOLDING },
+          ],
+          verificationLogs: [],
+        }),
+      },
+      booking: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+      taxPolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(service.getSnapshot('provider-user-1')).resolves.toMatchObject({
+      payoutGate: {
+        bankCorrectionRequest: {
+          required: true,
+          action: 'UPDATE_BANK_ACCOUNT',
+          bankAccountId: 'bank-rejected',
+          message: '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+          reason: 'Account holder name does not match KYC.',
+          reviewedAt,
+          updatedAt,
+        },
+      },
+      nextRequiredActions: expect.arrayContaining(['BANK_ACCOUNT_CORRECTION']),
+    });
   });
 });

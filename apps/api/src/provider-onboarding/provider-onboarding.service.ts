@@ -24,6 +24,7 @@ import {
   REQUIRED_KYC_DOCUMENT_TYPES,
   REQUIRED_PAYOUT_AGREEMENTS,
 } from './provider-onboarding.policy';
+import { providerBankCorrectionRequest } from './provider-bank-correction';
 
 const ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE = 20;
 const ADMIN_TAX_POLICY_VERSION_MAX_TAKE = 100;
@@ -54,6 +55,7 @@ export class ProviderOnboardingService {
     ]);
 
     const readiness = this.providerReadiness(provider, completedBookingCount);
+    const bankCorrectionRequest = providerBankCorrectionRequest(provider.bankAccounts);
 
     return {
       providerProfileId: provider.id,
@@ -96,6 +98,7 @@ export class ProviderOnboardingService {
           residentialAddress: readiness.payoutSetupStarted && !readiness.hasAddress,
           agreements: readiness.payoutSetupStarted ? readiness.missingAgreements : [],
         },
+        bankCorrectionRequest,
       },
       activeTaxPolicy,
       requirements: {
@@ -114,6 +117,7 @@ export class ProviderOnboardingService {
         completedBookingCount,
         hasAddress: readiness.hasAddress,
         missingAgreements: readiness.missingAgreements,
+        bankCorrectionRequest,
       }),
     };
   }
@@ -945,6 +949,7 @@ export class ProviderOnboardingService {
     completedBookingCount: number;
     hasAddress: boolean;
     missingAgreements: ProviderAgreementType[];
+    bankCorrectionRequest: ReturnType<typeof providerBankCorrectionRequest>;
   }) {
     const actions = [];
     if (!input.provider.legalName || !input.provider.dateOfBirth || !input.provider.displayName) {
@@ -964,6 +969,9 @@ export class ProviderOnboardingService {
     }
     if (input.completedBookingCount > 0 && input.missingAgreements.length > 0) {
       actions.push('AGREEMENTS');
+    }
+    if (input.bankCorrectionRequest) {
+      actions.push('BANK_ACCOUNT_CORRECTION');
     }
     return actions;
   }

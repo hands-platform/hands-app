@@ -30,6 +30,50 @@ type EarningsServiceWithWithdrawalRequests = EarningsService & {
 };
 
 describe('EarningsService payout batches', () => {
+  it('exposes a partner bank correction request on the wallet summary', async () => {
+    const reviewedAt = new Date('2026-06-28T09:30:00.000Z');
+    const updatedAt = new Date('2026-06-28T09:35:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          userId: 'provider-user-1',
+          bankAccounts: [
+            {
+              id: 'bank-rejected',
+              status: ProviderBankAccountStatus.REJECTED,
+              isPrimary: true,
+              rejectionReason: 'Account holder name does not match KYC.',
+              reviewedAt,
+              updatedAt,
+              deletedAt: null,
+            },
+          ],
+        }),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: {} }),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.summaryForProviderUser('provider-user-1')).resolves.toMatchObject({
+      bankCorrectionRequest: {
+        required: true,
+        action: 'UPDATE_BANK_ACCOUNT',
+        bankAccountId: 'bank-rejected',
+        message: '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+        reason: 'Account holder name does not match KYC.',
+        reviewedAt,
+        updatedAt,
+      },
+    });
+  });
+
   it('filters admin earnings by range, review state, and bounded limit', async () => {
     const prisma = {
       providerEarning: {
