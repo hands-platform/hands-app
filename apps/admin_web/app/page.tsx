@@ -22,6 +22,7 @@ import {
   AdminExternalReadiness,
   AdminAppSession,
   AdminNotification,
+  AdminNotificationBoardSummary,
   AdminOperationalPolicySetting,
   AdminPayment,
   AdminPayoutBatch,
@@ -413,6 +414,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     refunds,
     refundSummary,
     notifications,
+    notificationSummary,
     payoutBatches,
     payoutBatchSummary,
     appSessions,
@@ -445,6 +447,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, []),
     adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
     adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, []),
+    adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
     adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, []),
@@ -482,7 +485,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     isInDateRange(bookingLatestActivityAt(booking), filters.range),
   );
   const rangePayments = payments;
-  const rangeNotifications = notifications;
   const rangeEarningRows = earningRows;
   const rangePayoutBatches = payoutBatches;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
@@ -495,10 +497,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+  const failedNotificationCount = notificationSummary?.failed ?? failedNotifications.length;
   const bookingEvidenceCommandQueue = buildBookingEvidenceCommandQueue({
     bookings,
     bookingDeepDive: liveBookingDeepDive,
     cashSettlementSummary,
+    failedNotificationCount,
     failedNotifications,
   });
   const marketplaceParticipantSnapshot = buildMarketplaceParticipantSnapshot(bookings);
@@ -528,6 +532,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     appPresence,
     partnerSupply,
     cashSettlementSummary,
+    failedNotificationCount,
     failedNotifications,
     activePayoutBatches,
     externalReadiness,
@@ -636,11 +641,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ],
     [
       'Failed notifications',
-      rangeNotifications
-        .filter((notification) =>
-          (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
-        )
-        .length.toString(),
+      failedNotificationCount.toString(),
       `${selectedRangeLabel} delivery failures that may need retry or disabled-device review.`,
     ],
     [
@@ -3031,6 +3032,7 @@ function buildOperationsCommandBoard(input: {
   appPresence: ReturnType<typeof buildAppPresence>;
   partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
   cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotificationCount: number;
   failedNotifications: AdminNotification[];
   activePayoutBatches: AdminPayoutBatch[];
   externalReadiness: AdminExternalReadiness;
@@ -3166,14 +3168,14 @@ function buildOperationsCommandBoard(input: {
     {
       lane: 'Notifications',
       owner: 'Support',
-      status: input.failedNotifications.length ? 'Retry' : 'Clear',
-      value: `${input.failedNotifications.length} failed`,
+      status: input.failedNotificationCount ? 'Retry' : 'Clear',
+      value: `${input.failedNotificationCount} failed`,
       detail:
-        input.failedNotifications.length > 0
+        input.failedNotificationCount > 0
           ? 'Failed delivery rows should be retried or marked so operators know whether the customer or Partner saw it.'
           : 'No failed notification rows are visible in the current operations window.',
-      href: input.failedNotifications.length ? '/notifications?review=failed' : '/notifications',
-      tone: input.failedNotifications.length ? 'warn' : 'ok',
+      href: input.failedNotificationCount ? '/notifications?review=failed' : '/notifications',
+      tone: input.failedNotificationCount ? 'warn' : 'ok',
       checks: ['Delivery status', 'Disabled device', 'Retry log'],
     },
     {
@@ -3195,6 +3197,7 @@ function buildBookingEvidenceCommandQueue(input: {
   bookings: AdminBooking[];
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotificationCount: number;
   failedNotifications: AdminNotification[];
 }): BookingEvidenceCommandQueueItem[] {
   const addressRows = input.bookings.filter((booking) => !booking.addressSnapshot);
@@ -3213,7 +3216,7 @@ function buildBookingEvidenceCommandQueue(input: {
     input.bookingDeepDive.manualCloseout +
     input.cashSettlementSummary.rowCount;
   const locationChecks = locationRows.length;
-  const alertChecks = input.failedNotifications.length + alertRows.length;
+  const alertChecks = input.failedNotificationCount + alertRows.length;
   const closeoutChecks = closeoutRows.length;
 
   const items: BookingEvidenceCommandQueueItem[] = [

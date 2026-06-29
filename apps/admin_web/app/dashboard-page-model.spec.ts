@@ -72,6 +72,7 @@ describe('dashboard page model', () => {
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=today');
     expect(hrefs.refundsSummaryHref).toBe('/admin/refunds/summary?range=today');
     expect(hrefs.payoutBatchSummaryHref).toBe('/admin/payout-batches/summary?range=today');
+    expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
     expect(refundUrl.searchParams.get('range')).toBe('today');
     expect(refundUrl.searchParams.get('take')).toBe('5');
@@ -111,6 +112,7 @@ describe('dashboard page model', () => {
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=7d');
     expect(hrefs.refundsSummaryHref).toBe('/admin/refunds/summary?range=7d');
     expect(hrefs.payoutBatchSummaryHref).toBe('/admin/payout-batches/summary?range=7d');
+    expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(payoutBatchUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchUrl.searchParams.get('take')).toBe('5');

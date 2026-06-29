@@ -6,6 +6,7 @@ import type {
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
+  AdminNotificationBoardSummary,
   AdminPayoutBatchSummary,
   AdminRefundSummary,
 } from '../lib/admin-api';
@@ -170,5 +171,37 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('<span>Payout evidence</span><strong>7</strong>');
+  });
+
+  it('uses notification summary for default dashboard failed notification counters', async () => {
+    const notificationSummary: AdminNotificationBoardSummary = {
+      failed: 19,
+      generatedAt: '2026-06-28T00:00:00.000Z',
+      totalCount: 2400,
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (typeof href === 'string' && href.startsWith('/admin/notifications/summary?')) {
+        return notificationSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/admin\/notifications\/summary\?/),
+      null,
+    );
+    expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
+    expect(markup).toContain('<h3>Alert evidence</h3><strong>19 alert</strong>');
   });
 });
