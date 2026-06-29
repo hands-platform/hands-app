@@ -12,6 +12,7 @@ import {
   buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
+  buildFinancePayoutPriorityLinks,
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingAccountingJournalCsvHref,
   buildMonthlyTaxClosingRowsCsvHref,
@@ -97,6 +98,17 @@ describe('tax settlement page model', () => {
       ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06'],
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
       ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06'],
+    ]);
+  });
+
+  it('builds payout priority shortcuts without adding list payload to tax overview', () => {
+    const settlementFilters = readBookingSettlementFilters({ range: '7d', review: 'open' });
+
+    expect(buildFinancePayoutPriorityLinks(settlementFilters).map((link) => [link.label, link.href])).toEqual([
+      ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED'],
+      ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED'],
+      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING'],
+      ['Cash debt gate', '/cash-settlements?range=7d'],
     ]);
   });
 

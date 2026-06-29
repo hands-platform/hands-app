@@ -14,6 +14,7 @@ import {
   buildPartnerWithholdingTaxSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
+  buildFinancePayoutPriorityLinks,
   emptyBookingSettlementSummary,
   emptyPartnerWithholdingTaxSummary,
   monthlyTaxClosingHref,
@@ -102,6 +103,26 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             </div>
             <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
           </div>
+        </div>
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
+          status={<span className="pill pill-info">Priority links</span>}
+          title="Payout and wallet priority desk"
+        />
+        <div className="setup-stage-list admin-mt-12">
+          {buildFinancePayoutPriorityLinks(settlementFilters).map((link) => (
+            <Link className="setup-stage-item" href={link.href} key={link.key}>
+              <span>{link.signal}</span>
+              <div>
+                <strong>{link.label}</strong>
+                <p className="muted">{link.helper}</p>
+              </div>
+              <small>Open queue</small>
+            </Link>
+          ))}
         </div>
       </section>
 

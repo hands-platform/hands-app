@@ -61,6 +61,14 @@ export type TaxFinanceWorkflowLink = {
   readonly href: string;
 };
 
+export type FinancePayoutPriorityLink = {
+  readonly key: string;
+  readonly label: string;
+  readonly helper: string;
+  readonly href: string;
+  readonly signal: string;
+};
+
 export const TAX_SETTLEMENT_DEFAULT_TAKE = 25;
 export const TAX_SETTLEMENT_MAX_TAKE = 100;
 
@@ -231,6 +239,42 @@ export function buildTaxFinanceWorkflowLinks({
   ];
 
   return links.filter((link) => link.key !== current);
+}
+
+export function buildFinancePayoutPriorityLinks(
+  settlementFilters: BookingSettlementFilters,
+): FinancePayoutPriorityLink[] {
+  const range = settlementFilters.range;
+  return [
+    {
+      key: 'withdrawal-requested',
+      label: 'Withdrawal requested',
+      helper: 'Partner withdrawal requests waiting for first finance review.',
+      href: payoutWithdrawalStatusHref(range, 'REQUESTED'),
+      signal: 'Finance review',
+    },
+    {
+      key: 'review-required',
+      label: 'Review required',
+      helper: 'Withdrawal requests blocked by an explicit review flag before bank payout.',
+      href: payoutWithdrawalStatusHref(range, 'REVIEW_REQUIRED'),
+      signal: 'Needs action',
+    },
+    {
+      key: 'bank-transfer-pending',
+      label: 'Bank transfer pending',
+      helper: 'Approved requests already moved into the manual bank transfer lane.',
+      href: payoutWithdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
+      signal: 'Banking',
+    },
+    {
+      key: 'cash-debt-gate',
+      label: 'Cash debt gate',
+      helper: 'Partner cash booking fee debt that can block final acceptance, service start, or payout release.',
+      href: `/cash-settlements?${new URLSearchParams({ range }).toString()}`,
+      signal: 'Cash debt',
+    },
+  ];
 }
 
 export function buildTaxFinanceMetrics(
@@ -892,6 +936,10 @@ function normalizeBookingSettlementReview(value: string): BookingSettlementRevie
   return BOOKING_SETTLEMENT_REVIEW_VALUES.includes(value as BookingSettlementReview)
     ? (value as BookingSettlementReview)
     : 'open';
+}
+
+function payoutWithdrawalStatusHref(range: AdminDateRange, withdrawalStatus: string) {
+  return `/payouts?${new URLSearchParams({ range, withdrawalStatus }).toString()}`;
 }
 
 function normalizeTaxPeriod(value: string) {
