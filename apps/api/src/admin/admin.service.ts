@@ -356,9 +356,12 @@ type AdminBookingDetailPreviewQuery = {
   readonly take?: number | string | null;
 };
 type AdminPaymentOperationsQuery = {
+  readonly q?: string | null;
   readonly providerProfileId?: string | null;
+  readonly queue?: string | null;
   readonly range?: string | null;
   readonly review?: string | null;
+  readonly skip?: number | string | null;
   readonly status?: string | null;
   readonly take?: number | string | null;
 };

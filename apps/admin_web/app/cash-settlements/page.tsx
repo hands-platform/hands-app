@@ -30,12 +30,12 @@ import {
 import {
   buildCashSettlementApiHref,
   buildCashSettlementFilters,
+  buildCashSettlementServerPagination,
   buildCashSettlementSummaryApiHref,
 } from './cash-settlement-page-filters';
 import { buildCashSettlementPriorityBoard, buildCashSettlementPriorityBoardRows } from './cash-settlement-page-priority';
 import { buildAppliedCashSettlementPolicyCards, buildCashSettlementRuleCards } from './cash-settlement-page-rule-cards';
 import {
-  applyCashSettlementRowFilters,
   buildCashSettlementOpenDebtTableRows,
   buildCashSettlementRows,
 } from './cash-settlement-page-rows';
@@ -71,15 +71,12 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     adminGet<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
     adminGet<AdminOperationalPolicySetting[]>(CASH_SETTLEMENT_POLICY_HREF, []),
   ]);
-  const filteredEarnings = earnings;
-  const allRowsInRange = buildCashSettlementRows(filteredEarnings);
-  const rows = applyCashSettlementRowFilters(allRowsInRange, filters);
+  const rows = buildCashSettlementRows(earnings);
   const providers = buildProviderGroups(rows);
   const visibleSummary = buildSummary(rows, providers);
-  const summary =
-    filters.queue === 'all' && !filters.q
-      ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
-      : visibleSummary;
+  const summary = mergeAuthoritativeSummary(visibleSummary, apiSummary);
+  const openDebtRows = buildCashSettlementOpenDebtTableRows(rows);
+  const openDebtPagination = buildCashSettlementServerPagination(openDebtRows, filters, summary.rowCount);
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
   const priorityBoard = buildCashSettlementPriorityBoard(rows);
   const confirmation =
@@ -142,9 +139,9 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       ) : null}
 
       <CashSettlementFilterSection
-        allRowsInRangeCount={allRowsInRange.length}
         filters={filters}
         visibleRowCount={rows.length}
+        totalRowCount={summary.rowCount}
       />
       <CashSettlementExecutionSection
         executionDesk={buildCashSettlementExecutionDesk(rows, providers, summary)}
@@ -162,7 +159,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         settlementHandoff={buildCashSettlementHandoffMap(rows, providers, summary)}
       />
       <CashSettlementProviderGroupsSection providers={providers} />
-      <CashSettlementOpenDebtTableSection rows={buildCashSettlementOpenDebtTableRows(rows)} />
+      <CashSettlementOpenDebtTableSection filters={filters} pagination={openDebtPagination} />
     </AdminPageTemplate>
   );
 }

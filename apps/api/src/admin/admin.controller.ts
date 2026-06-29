@@ -759,13 +759,23 @@ export class AdminController {
   }
 
   @Get('cash-settlement-earnings')
-  cashSettlementEarnings(@Query('take') take?: string, @Query('range') range?: string) {
-    return this.admin.listCashSettlementEarnings({ range, take });
+  cashSettlementEarnings(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('queue') queue?: string,
+    @Query('q') q?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listCashSettlementEarnings({ q, queue, range, skip, take });
   }
 
   @Get('cash-settlement-summary')
-  cashSettlementSummary(@Query('range') range?: string) {
-    return this.admin.cashSettlementSummary({ range });
+  cashSettlementSummary(
+    @Query('range') range?: string,
+    @Query('queue') queue?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.cashSettlementSummary({ q, queue, range });
   }
 
   @Get('earnings/summary')

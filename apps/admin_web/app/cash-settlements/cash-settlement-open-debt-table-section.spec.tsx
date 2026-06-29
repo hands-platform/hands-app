@@ -6,7 +6,8 @@ import {
 describe('CashSettlementOpenDebtTableSection', () => {
   it('renders open cash debt rows with settlement form defaults', () => {
     const section = CashSettlementOpenDebtTableSection({
-      rows: [buildRow()],
+      pagination: pagination([buildRow()], { totalRows: 12 }),
+      filters: { page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' },
     });
 
     const rendered = textContent(section);
@@ -17,18 +18,42 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).toContain('Cash settlement action execution map');
     expect(rendered).toContain('Record bank deposit');
     expect(rendered).toContain('Review settlement');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 12 entries');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1', '/bookings/booking-1']));
+    expect(hrefsIn(section)).toContain('/cash-settlements?page=2');
     expect(inputDefaultsIn(section)).toEqual(
       expect.arrayContaining(['earning-1', 'provider-1', '500000', 'HANDS-CASH-BOOKIN']),
     );
   });
 
   it('renders empty state when no open cash debt rows exist', () => {
-    const section = CashSettlementOpenDebtTableSection({ rows: [] });
+    const section = CashSettlementOpenDebtTableSection({
+      pagination: pagination([]),
+      filters: { page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' },
+    });
 
     expect(textContent(section)).toContain('No cash fee debt is waiting for settlement.');
   });
 });
+
+function pagination(
+  rows: readonly CashSettlementOpenDebtTableRow[],
+  input: { page?: number; pageSize?: number; totalRows?: number } = {},
+) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 10;
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
+    page,
+    pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
+    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
+    totalRows,
+  };
+}
 
 function buildRow(): CashSettlementOpenDebtTableRow {
   return {

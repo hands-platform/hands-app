@@ -776,14 +776,19 @@ describe('AdminController notification and push actions', () => {
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {
     admin.listCashSettlementEarnings.mockResolvedValue([{ id: 'cash-earning-1' }]);
 
-    await expect(controller.cashSettlementEarnings('100', '7d')).resolves.toEqual([{ id: 'cash-earning-1' }]);
+    await expect(controller.cashSettlementEarnings('100', '7d', 'high-debt', 'Mai', '25')).resolves.toEqual([
+      { id: 'cash-earning-1' },
+    ]);
 
     expect(routeMetadata('cashSettlementEarnings')).toEqual({
       method: RequestMethod.GET,
       path: 'cash-settlement-earnings',
     });
     expect(admin.listCashSettlementEarnings).toHaveBeenCalledWith({
+      q: 'Mai',
       range: '7d',
+      queue: 'high-debt',
+      skip: '25',
       take: '100',
     });
   });
@@ -791,7 +796,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes cash settlement summary with the same finance range filter', async () => {
     admin.cashSettlementSummary.mockResolvedValue({ rowCount: 1, totalDebtAmount: 300000 });
 
-    await expect(controller.cashSettlementSummary('7d')).resolves.toEqual({
+    await expect(controller.cashSettlementSummary('7d', 'payment-check', 'booking-1')).resolves.toEqual({
       rowCount: 1,
       totalDebtAmount: 300000,
     });
@@ -800,7 +805,11 @@ describe('AdminController notification and push actions', () => {
       method: RequestMethod.GET,
       path: 'cash-settlement-summary',
     });
-    expect(admin.cashSettlementSummary).toHaveBeenCalledWith({ range: '7d' });
+    expect(admin.cashSettlementSummary).toHaveBeenCalledWith({
+      q: 'booking-1',
+      queue: 'payment-check',
+      range: '7d',
+    });
   });
 
   it('exposes payout batches as a bounded filtered finance list', async () => {

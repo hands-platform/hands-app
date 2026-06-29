@@ -61,25 +61,31 @@ describe('cash settlement page model', () => {
       earning({ id: 'fresh-row', netAmount: -10000, platformFee: 10000, settlementRef: 'BANK-REF' }),
     ]);
 
-    expect(buildCashSettlementFilters({ q: ' partner ', queue: 'missing-ref', range: '7d' })).toEqual({
+    expect(buildCashSettlementFilters({ page: '3', pageSize: '25', q: ' partner ', queue: 'missing-ref', range: '7d' })).toEqual({
+      page: 3,
+      pageSize: 25,
       q: 'partner',
       queue: 'missing-ref',
       range: '7d',
     });
-    expect(applyCashSettlementRowFilters(rows, { q: '', queue: 'stale', range: 'all' }).map((row) => row.earning.id)).toEqual([
-      'stale-row',
-    ]);
-    expect(applyCashSettlementRowFilters(rows, { q: 'fresh-row', queue: 'all', range: 'all' })).toHaveLength(1);
-    expect(cashSettlementHref({ q: 'Mai', queue: 'high-debt', range: '30d' })).toBe(
-      '/cash-settlements?range=30d&queue=high-debt&q=Mai',
+    expect(
+      applyCashSettlementRowFilters(rows, { page: 1, pageSize: 10, q: '', queue: 'stale', range: 'all' }).map(
+        (row) => row.earning.id,
+      ),
+    ).toEqual(['stale-row']);
+    expect(applyCashSettlementRowFilters(rows, { page: 1, pageSize: 10, q: 'fresh-row', queue: 'all', range: 'all' })).toHaveLength(1);
+    expect(cashSettlementHref({ page: 2, pageSize: 25, q: 'Mai', queue: 'high-debt', range: '30d' })).toBe(
+      '/cash-settlements?range=30d&queue=high-debt&q=Mai&pageSize=25&page=2',
     );
-    expect(buildCashSettlementFilters({})).toEqual({ q: '', queue: 'all', range: 'today' });
-    expect(cashSettlementHref({ q: '', queue: 'all', range: 'all' })).toBe('/cash-settlements?range=all');
-    expect(buildCashSettlementApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
-      '/admin/cash-settlement-earnings?range=7d&take=10',
+    expect(buildCashSettlementFilters({})).toEqual({ page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' });
+    expect(cashSettlementHref({ page: 1, pageSize: 10, q: '', queue: 'all', range: 'all' })).toBe(
+      '/cash-settlements?range=all',
     );
-    expect(buildCashSettlementSummaryApiHref(buildCashSettlementFilters({ range: '7d' }))).toBe(
-      '/admin/cash-settlement-summary?range=7d',
+    expect(buildCashSettlementApiHref(buildCashSettlementFilters({ page: '3', pageSize: '25', q: 'Mai', queue: 'high-debt', range: '7d' }))).toBe(
+      '/admin/cash-settlement-earnings?range=7d&take=25&queue=high-debt&q=Mai&skip=50',
+    );
+    expect(buildCashSettlementSummaryApiHref(buildCashSettlementFilters({ q: 'Mai', queue: 'high-debt', range: '7d' }))).toBe(
+      '/admin/cash-settlement-summary?range=7d&queue=high-debt&q=Mai',
     );
     expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
   });

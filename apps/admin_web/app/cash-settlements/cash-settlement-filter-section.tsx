@@ -11,14 +11,14 @@ import {
 } from './cash-settlement-page-types';
 
 type CashSettlementFilterSectionProps = {
-  readonly allRowsInRangeCount: number;
   readonly filters: CashSettlementFilters;
+  readonly totalRowCount: number;
   readonly visibleRowCount: number;
 };
 
 export function CashSettlementFilterSection({
-  allRowsInRangeCount,
   filters,
+  totalRowCount,
   visibleRowCount,
 }: CashSettlementFilterSectionProps) {
   return (
@@ -31,18 +31,18 @@ export function CashSettlementFilterSection({
         }
         description={
           <>
-            Range: {dateRangeLabel(filters.range)}. All date-filtered totals are calculated from visible cash
-            earning records; all-date totals use the API summary.
+            Range: {dateRangeLabel(filters.range)}. List rows are server paginated; totals come from the summary API
+            for the same range, queue, and search filters.
           </>
         }
         title="Cash settlement date range"
       />
       <div className="filter-row admin-mt-12">
         {[
-          ['All dates', cashSettlementHref({ range: 'all', queue: filters.queue, q: filters.q })],
-          ['Today', cashSettlementHref({ range: 'today', queue: filters.queue, q: filters.q })],
-          ['Last 7 days', cashSettlementHref({ range: '7d', queue: filters.queue, q: filters.q })],
-          ['Last 30 days', cashSettlementHref({ range: '30d', queue: filters.queue, q: filters.q })],
+          ['All dates', cashSettlementHref({ range: 'all', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
+          ['Today', cashSettlementHref({ range: 'today', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
+          ['Last 7 days', cashSettlementHref({ range: '7d', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
+          ['Last 30 days', cashSettlementHref({ range: '30d', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
         ].map(([label, href]) => (
           <Link className="filter-pill" href={href} key={href}>
             {label}
@@ -51,6 +51,7 @@ export function CashSettlementFilterSection({
       </div>
       <form className="inline-form admin-mt-12" action="/cash-settlements">
         <input type="hidden" name="range" value={filters.range} />
+        <input type="hidden" name="pageSize" value={filters.pageSize} />
         <input
           aria-label="Search cash settlement queue"
           defaultValue={filters.q}
@@ -73,7 +74,7 @@ export function CashSettlementFilterSection({
         {cashSettlementQueueOptions.map((option) => (
           <Link
             className="filter-pill"
-            href={cashSettlementHref({ range: filters.range, queue: option.value, q: filters.q })}
+            href={cashSettlementHref({ range: filters.range, pageSize: filters.pageSize, queue: option.value, q: filters.q })}
             key={option.value}
           >
             {option.label}
@@ -81,7 +82,7 @@ export function CashSettlementFilterSection({
         ))}
       </div>
       <p className="muted admin-mt-10">
-        Showing {visibleRowCount} of {allRowsInRangeCount} open cash debt row(s) for this date range.
+        Showing {visibleRowCount} of {totalRowCount} open cash debt row(s) for this filter.
         {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
         {filters.queue !== 'all' ? `Queue: ${cashSettlementQueueLabel(filters.queue)}.` : ''}
       </p>

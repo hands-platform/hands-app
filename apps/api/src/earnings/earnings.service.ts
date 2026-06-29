@@ -60,8 +60,11 @@ type PricedBookingService = {
 };
 
 type AdminFinanceListQuery = {
+  readonly q?: string | null;
+  readonly queue?: string | null;
   readonly range?: string | null;
   readonly review?: string | null;
+  readonly skip?: number | string | null;
   readonly take?: number | string | null;
 };
 
@@ -72,6 +75,8 @@ type AdminWithdrawalRequestListQuery = AdminFinanceListQuery & {
 
 const ADMIN_FINANCE_LIST_DEFAULT_LIMIT = 50;
 const ADMIN_FINANCE_LIST_MAX_LIMIT = 100;
+const CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD = 500_000;
+const CASH_SETTLEMENT_STALE_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_WITHDRAWAL_REQUEST_STATUSES = [
   ProviderWalletWithdrawalRequestStatus.REQUESTED,
   ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
@@ -100,6 +105,80 @@ function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
         },
       },
     },
+  };
+}
+
+function cashSettlementDebtListWhere(options: AdminFinanceListQuery): Prisma.ProviderEarningWhereInput {
+  const where = cashSettlementDebtWhere();
+  const dateRange = adminFinanceDateRangeWhere(options.range);
+  const queueWhere = cashSettlementQueueWhere(options.queue);
+  const searchWhere = cashSettlementSearchWhere(options.q);
+
+  if (dateRange) {
+    where.createdAt = dateRange;
+  }
+  appendProviderEarningAndWhere(where, queueWhere);
+  appendProviderEarningAndWhere(where, searchWhere);
+
+  return where;
+}
+
+function appendProviderEarningAndWhere(
+  where: Prisma.ProviderEarningWhereInput,
+  next: Prisma.ProviderEarningWhereInput | null,
+) {
+  if (!next) {
+    return;
+  }
+
+  const existing = where.AND;
+  const existingItems = Array.isArray(existing) ? existing : existing ? [existing] : [];
+  where.AND = [...existingItems, next];
+}
+
+function cashSettlementQueueWhere(queue: string | null | undefined): Prisma.ProviderEarningWhereInput | null {
+  switch (normalizeOptionalQuery(queue)) {
+    case 'stale':
+      return { createdAt: { lte: new Date(Date.now() - CASH_SETTLEMENT_STALE_MS) } };
+    case 'high-debt':
+      return { netAmount: { lte: -CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD } };
+    case 'missing-ref':
+      return {
+        settlementRef: null,
+        walletLedgerEntries: { none: { reference: { not: null } } },
+      };
+    case 'payment-check':
+      return {
+        OR: [
+          { booking: { is: { payment: { is: null } } } },
+          { booking: { is: { payment: { is: { method: { not: PaymentMethod.CASH } } } } } },
+        ],
+      };
+    default:
+      return null;
+  }
+}
+
+function cashSettlementSearchWhere(q: string | null | undefined): Prisma.ProviderEarningWhereInput | null {
+  const query = cleanQueryText(q);
+  if (!query) {
+    return null;
+  }
+
+  const textFilter = { contains: query, mode: Prisma.QueryMode.insensitive };
+
+  return {
+    OR: [
+      { id: textFilter },
+      { bookingId: textFilter },
+      { providerProfileId: textFilter },
+      { settlementRef: textFilter },
+      { settlementNotes: textFilter },
+      { providerProfile: { is: { displayName: textFilter } } },
+      { providerProfile: { is: { user: { is: { fullName: textFilter } } } } },
+      { providerProfile: { is: { user: { is: { phone: textFilter } } } } },
+      { walletLedgerEntries: { some: { reference: textFilter } } },
+    ],
   };
 }
 
@@ -399,6 +478,19 @@ function adminFinanceListTake(value: number | string | null | undefined) {
   return Math.min(Math.trunc(parsed), ADMIN_FINANCE_LIST_MAX_LIMIT);
 }
 
+function adminFinanceListSkip(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+
+  const parsed = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(Math.trunc(parsed), 10_000);
+}
+
 function normalizeOptionalQuery(value: string | null | undefined) {
   if (typeof value !== 'string') {
     return null;
@@ -640,26 +732,20 @@ export class EarningsService {
   }
 
   listCashSettlementDebtForAdmin(options: AdminFinanceListQuery = {}) {
-    const where = cashSettlementDebtWhere();
-    const dateRange = adminFinanceDateRangeWhere(options.range);
-    if (dateRange) {
-      where.createdAt = dateRange;
-    }
+    const where = cashSettlementDebtListWhere(options);
+    const skip = adminFinanceListSkip(options.skip);
 
     return this.prisma.providerEarning.findMany({
       where,
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       take: adminFinanceListTake(options.take),
+      ...(skip > 0 ? { skip } : {}),
       include: adminEarningListInclude,
     });
   }
 
   async cashSettlementSummaryForAdmin(options: AdminFinanceListQuery = {}) {
-    const where = cashSettlementDebtWhere();
-    const dateRange = adminFinanceDateRangeWhere(options.range);
-    if (dateRange) {
-      where.createdAt = dateRange;
-    }
+    const where = cashSettlementDebtListWhere(options);
 
     const debtRows = await this.prisma.providerEarning.findMany({
       where,

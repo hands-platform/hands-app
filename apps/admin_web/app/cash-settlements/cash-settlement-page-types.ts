@@ -94,9 +94,21 @@ export type CashSettlementSummary = {
 export type CashSettlementQueueFilter = 'all' | 'stale' | 'high-debt' | 'missing-ref' | 'payment-check';
 
 export type CashSettlementFilters = {
+  page: number;
+  pageSize: number;
   range: AdminDateRange;
   queue: CashSettlementQueueFilter;
   q: string;
+};
+
+export type CashSettlementPagination<T> = {
+  readonly from: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly rows: readonly T[];
+  readonly to: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
 };
 
 export const cashSettlementQueueOptions: Array<{ value: CashSettlementQueueFilter; label: string }> = [

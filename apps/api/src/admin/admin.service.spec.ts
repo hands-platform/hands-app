@@ -7051,13 +7051,19 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.listCashSettlementEarnings({
+        q: 'Mai',
         range: '7d',
+        queue: 'high-debt',
+        skip: '25',
         take: '100',
       }),
     ).resolves.toEqual([{ id: 'cash-earning-1' }]);
 
     expect(earnings.listCashSettlementDebtForAdmin).toHaveBeenCalledWith({
+      q: 'Mai',
       range: '7d',
+      queue: 'high-debt',
+      skip: '25',
       take: '100',
     });
   });
@@ -7068,12 +7074,16 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService({}, { earnings });
 
-    await expect(service.cashSettlementSummary({ range: '7d' })).resolves.toEqual({
+    await expect(service.cashSettlementSummary({ q: 'booking-1', queue: 'payment-check', range: '7d' })).resolves.toEqual({
       rowCount: 1,
       totalDebtAmount: 300000,
     });
 
-    expect(earnings.cashSettlementSummaryForAdmin).toHaveBeenCalledWith({ range: '7d' });
+    expect(earnings.cashSettlementSummaryForAdmin).toHaveBeenCalledWith({
+      q: 'booking-1',
+      queue: 'payment-check',
+      range: '7d',
+    });
   });
 
   it('delegates bounded payout batch filters to the earnings service', async () => {

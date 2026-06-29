@@ -379,6 +379,49 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('applies server-side cash settlement search, queue, and pagination filters', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listCashSettlementDebtForAdmin({
+        q: 'Mai +8490',
+        queue: 'high-debt',
+        skip: '25',
+        take: '25',
+      }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 25,
+        take: 25,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            { netAmount: { lte: -500000 } },
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { id: { contains: 'Mai +8490', mode: 'insensitive' } },
+                { bookingId: { contains: 'Mai +8490', mode: 'insensitive' } },
+                {
+                  providerProfile: {
+                    is: expect.objectContaining({
+                      displayName: { contains: 'Mai +8490', mode: 'insensitive' },
+                    }),
+                  },
+                },
+              ]),
+            }),
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
     const prisma = {
       providerEarning: {
@@ -408,7 +451,7 @@ describe('EarningsService payout batches', () => {
     );
   });
 
-  it('filters cash settlement summaries by range without hydrating unrelated earning rows', async () => {
+  it('filters cash settlement summaries by range and queue without hydrating unrelated earning rows', async () => {
     const prisma = {
       providerEarning: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -416,7 +459,7 @@ describe('EarningsService payout batches', () => {
     };
     const service = new EarningsService(prisma as never);
 
-    await expect(service.cashSettlementSummaryForAdmin({ range: '7d' })).resolves.toMatchObject({
+    await expect(service.cashSettlementSummaryForAdmin({ q: 'Mai', queue: 'missing-ref', range: '7d' })).resolves.toMatchObject({
       rowCount: 0,
       totalDebtAmount: 0,
     });
@@ -425,6 +468,14 @@ describe('EarningsService payout batches', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              settlementRef: null,
+            }),
+            expect.objectContaining({
+              OR: expect.arrayContaining([{ id: { contains: 'Mai', mode: 'insensitive' } }]),
+            }),
+          ]),
           NOT: {
             booking: {
               is: expect.objectContaining({

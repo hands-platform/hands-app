@@ -1,7 +1,10 @@
 import Link from 'next/link';
 
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { recordPartnerBankDeposit } from './actions';
+import { cashSettlementHref } from './cash-settlement-page-filters';
+import type { CashSettlementFilters, CashSettlementPagination } from './cash-settlement-page-types';
 
 export type CashSettlementOpenDebtActionExecutionRow = {
   readonly action: string;
@@ -39,10 +42,13 @@ export type CashSettlementOpenDebtTableRow = {
 };
 
 type CashSettlementOpenDebtTableSectionProps = {
-  readonly rows: readonly CashSettlementOpenDebtTableRow[];
+  readonly filters: CashSettlementFilters;
+  readonly pagination: CashSettlementPagination<CashSettlementOpenDebtTableRow>;
 };
 
-export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenDebtTableSectionProps) {
+export function CashSettlementOpenDebtTableSection({ filters, pagination }: CashSettlementOpenDebtTableSectionProps) {
+  const rows = pagination.rows;
+
   return (
     <div className="card admin-card-scroll">
       <div className="ops-section-header">
@@ -174,6 +180,27 @@ export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenD
           </tr>
         ))}
       </AdminDataTable>
+      <div className="vuexy-booking-table-footer">
+        <span>
+          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+        </span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel="Cash settlement debt pages"
+          className="vuexy-booking-pagination"
+          hrefForPage={(page) =>
+            cashSettlementHref({
+              page,
+              pageSize: filters.pageSize,
+              q: filters.q,
+              queue: filters.queue,
+              range: filters.range,
+            })
+          }
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </div>
   );
 }
