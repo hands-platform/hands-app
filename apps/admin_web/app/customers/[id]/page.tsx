@@ -7,6 +7,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForCustomer,
 } from '../../../components/admin-review-records-section';
+import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -26,6 +27,7 @@ import {
   AdminBookingDetail,
   AdminChatMessage,
   AdminCustomerDetail,
+  AdminManualWalletAdjustmentRow,
   AdminNotification,
   adminGet,
 } from '../../../lib/admin-api';
@@ -116,6 +118,7 @@ const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
 const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
 const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
 const CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
+const CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT = 5;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
 
@@ -125,7 +128,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
-  const customer = await adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null);
+  const [customer, customerManualAdjustmentRows] = await Promise.all([
+    adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null),
+    adminGet<AdminManualWalletAdjustmentRow[]>(
+      `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
+        id,
+      )}&take=${CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
+      [],
+    ),
+  ]);
 
   if (!customer) {
     notFound();
@@ -746,6 +757,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
         </div>
       </section>
+      <AdminManualWalletAdjustmentHistory
+        rows={customerManualAdjustmentRows}
+        walletAdjustmentsHref={customerWalletAdjustmentHref}
+      />
       </CustomerDetailSectionBand>
 
       <CustomerDetailSectionBand

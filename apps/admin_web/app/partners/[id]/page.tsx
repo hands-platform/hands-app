@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type {
   AdminAuditLog,
+  AdminManualWalletAdjustmentRow,
   AdminOperationalPolicySetting,
   AdminPartnerCustomerReview,
   AdminProvider,
@@ -16,6 +17,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
 } from '../../../components/admin-review-records-section';
+import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import {
   bookingLatestActivityAt,
@@ -345,6 +347,7 @@ type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 
 const PARTNER_ACTIVITY_CSV_EXPORT_LIMIT = 30;
 const PARTNER_DETAIL_REVIEW_RECORD_LIMIT = 10;
+const PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT = 5;
 
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
@@ -466,11 +469,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     range: 'all',
     take: '10',
   }).toString();
-  const [customerReviews, partnerEvaluations, walletWithdrawalRequests] = await Promise.all([
+  const partnerManualAdjustmentHref = `/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(provider.id)}`;
+  const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] = await Promise.all([
     adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, []),
     adminGet<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, []),
     adminGet<AdminProviderWalletWithdrawalRequest[]>(
       `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
+      [],
+    ),
+    adminGet<AdminManualWalletAdjustmentRow[]>(
+      `/admin/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(
+        provider.id,
+      )}&take=${PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
       [],
     ),
   ]);
@@ -1112,6 +1122,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             rows={cashDebtOriginRows}
           />
           <PartnerDetailWalletSummarySection summary={partnerWalletSummary} />
+          <AdminManualWalletAdjustmentHistory
+            rows={partnerManualAdjustmentRows}
+            walletAdjustmentsHref={partnerManualAdjustmentHref}
+          />
           <PartnerDetailWalletWithdrawalRequestSection
             requests={walletWithdrawalRequests}
             updateWithdrawalRequestAction={updatePartnerWalletWithdrawalRequest}
