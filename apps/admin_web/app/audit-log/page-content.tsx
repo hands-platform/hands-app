@@ -33,7 +33,14 @@ type AuditLogFilters = {
   range: ReturnType<typeof normalizeDateRange>;
 };
 type AuditLogSummaryResponse = {
+  dispatch?: number;
+  financeCloseout?: number;
   generatedAt: string;
+  needsReview?: number;
+  notifications?: number;
+  payments?: number;
+  recentHour?: number;
+  servicePricing?: number;
   totalCount: number;
 };
 type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -50,7 +57,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     adminGet<AuditLogSummaryResponse | null>(buildAuditLogSummaryApiHref(params), null),
   ]);
   const logs = sortLogs(serverLogs);
-  const summary = buildSummary(logs);
+  const summary = buildSummary(logs, serverSummary);
   const totalEvents = serverSummary?.totalCount ?? logs.length;
   const totalPages = Math.max(1, Math.ceil(totalEvents / AUDIT_LOG_PAGE_SIZE));
   const commandBoard = buildAuditCommandBoard(logs, filters.range);
@@ -210,9 +217,9 @@ function sortLogs(logs: AdminAuditLog[]) {
   });
 }
 
-function buildSummary(logs: AdminAuditLog[]) {
+function buildSummary(logs: AdminAuditLog[], serverSummary?: AuditLogSummaryResponse | null) {
   const now = Date.now();
-  return {
+  const fallback = {
     total: logs.length,
     dispatch: logs.filter((log) => isDispatchAction(log.action)).length,
     payments: logs.filter((log) => isPaymentAction(log.action)).length,
@@ -221,6 +228,17 @@ function buildSummary(logs: AdminAuditLog[]) {
     notifications: logs.filter((log) => isNotificationAction(log.action)).length,
     needsReview: logs.filter((log) => auditPriority(log.action) >= 3).length,
     recentHour: logs.filter((log) => now - Date.parse(log.createdAt) <= 60 * 60 * 1000).length,
+  };
+
+  return {
+    ...fallback,
+    dispatch: serverSummary?.dispatch ?? fallback.dispatch,
+    financeCloseout: serverSummary?.financeCloseout ?? fallback.financeCloseout,
+    needsReview: serverSummary?.needsReview ?? fallback.needsReview,
+    notifications: serverSummary?.notifications ?? fallback.notifications,
+    payments: serverSummary?.payments ?? fallback.payments,
+    recentHour: serverSummary?.recentHour ?? fallback.recentHour,
+    servicePricing: serverSummary?.servicePricing ?? fallback.servicePricing,
   };
 }
 

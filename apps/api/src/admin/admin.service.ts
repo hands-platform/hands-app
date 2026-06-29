@@ -5818,12 +5818,26 @@ export class AdminService {
 
   async auditLogSummary(options: AdminAuditLogListOptions = {}) {
     const where = adminAuditLogWhere(options);
-    const totalCount = await this.prisma.adminAuditLog.count({
-      ...(where ? { where } : {}),
-    });
+    const recentHourSince = new Date(Date.now() - 60 * 60 * 1000);
+    const [totalCount, recentHour, actionGroups] = await Promise.all([
+      this.prisma.adminAuditLog.count({
+        ...(where ? { where } : {}),
+      }),
+      this.prisma.adminAuditLog.count({
+        where: withAdminAuditLogWhere(where, { createdAt: { gte: recentHourSince } }),
+      }),
+      this.prisma.adminAuditLog.groupBy({
+        by: ['action'],
+        ...(where ? { where } : {}),
+        _count: { _all: true },
+      }),
+    ]);
+    const actionSummary = adminAuditLogActionSummary(actionGroups);
 
     return {
+      ...actionSummary,
       generatedAt: new Date().toISOString(),
+      recentHour,
       totalCount,
     };
   }
@@ -7401,6 +7415,120 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
   }
 
   return { AND: filters };
+}
+
+function withAdminAuditLogWhere(
+  baseWhere: Prisma.AdminAuditLogWhereInput | undefined,
+  nextWhere: Prisma.AdminAuditLogWhereInput,
+): Prisma.AdminAuditLogWhereInput {
+  if (!baseWhere) {
+    return nextWhere;
+  }
+
+  return { AND: [baseWhere, nextWhere] };
+}
+
+function adminAuditLogActionSummary(
+  actionGroups: Array<{ action: string; _count: { _all: number } }>,
+) {
+  return actionGroups.reduce(
+    (summary, group) => {
+      const count = group._count._all;
+      if (isAdminAuditDispatchAction(group.action)) {
+        summary.dispatch += count;
+      }
+      if (isAdminAuditPaymentAction(group.action)) {
+        summary.payments += count;
+      }
+      if (isAdminAuditFinanceCloseoutAction(group.action)) {
+        summary.financeCloseout += count;
+      }
+      if (isAdminAuditServicePricingAction(group.action)) {
+        summary.servicePricing += count;
+      }
+      if (isAdminAuditNotificationAction(group.action)) {
+        summary.notifications += count;
+      }
+      if (adminAuditLogActionPriority(group.action) >= 3) {
+        summary.needsReview += count;
+      }
+      return summary;
+    },
+    {
+      dispatch: 0,
+      financeCloseout: 0,
+      needsReview: 0,
+      notifications: 0,
+      payments: 0,
+      servicePricing: 0,
+    },
+  );
+}
+
+function adminAuditLogActionPriority(action: string) {
+  if (action.startsWith('operational_policy.')) {
+    return 4;
+  }
+  if (action.startsWith('service_payout_rule.')) {
+    return 4;
+  }
+  if (action === 'booking.completed.closeout') {
+    return 4;
+  }
+  if (action.startsWith('payout_batch.')) {
+    return 3;
+  }
+  if (action.startsWith('service.')) {
+    return 3;
+  }
+  if (action.endsWith('.refund') || action.includes('reject') || action.endsWith('.retry')) {
+    return 4;
+  }
+  if (action.startsWith('payment.') || action.startsWith('refund.')) {
+    return 3;
+  }
+  if (action.startsWith('booking.') || action.startsWith('notification.')) {
+    return 2;
+  }
+  return 1;
+}
+
+function isAdminAuditDispatchAction(action: string) {
+  return (
+    action.startsWith('booking.') ||
+    action.startsWith('provider.') ||
+    action.startsWith('provider_') ||
+    action.startsWith('provider-')
+  );
+}
+
+function isAdminAuditPaymentAction(action: string) {
+  return action.startsWith('payment.') || action.startsWith('refund.');
+}
+
+function isAdminAuditPayoutAction(action: string) {
+  return action.startsWith('payout.') || action.startsWith('payout_batch.');
+}
+
+function isAdminAuditFinanceCloseoutAction(action: string) {
+  return (
+    isAdminAuditPaymentAction(action) ||
+    isAdminAuditPayoutAction(action) ||
+    action === 'booking.completed.closeout' ||
+    action === 'booking.expire.manual' ||
+    action === 'booking.no_show.mark' ||
+    action.startsWith('earning.') ||
+    action.startsWith('provider_wallet.') ||
+    action.startsWith('wallet_ledger.')
+  );
+}
+
+function isAdminAuditNotificationAction(action: string) {
+  return action.startsWith('notification.') || action.startsWith('push_device.');
+}
+
+function isAdminAuditServicePricingAction(action: string) {
+  return action.startsWith('service.') || action.startsWith('service_payout_rule.');
 }
 
 function adminAuditLogDateWhere(

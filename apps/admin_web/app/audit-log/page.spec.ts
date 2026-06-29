@@ -24,7 +24,17 @@ describe('audit log page model', () => {
   it('renders the bounded server page rows without applying a second local date filter', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/audit-logs/summary')) {
-        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 125 };
+        return {
+          dispatch: 77,
+          financeCloseout: 44,
+          generatedAt: '2026-06-28T00:00:00.000Z',
+          needsReview: 33,
+          notifications: 22,
+          payments: 55,
+          recentHour: 11,
+          servicePricing: 66,
+          totalCount: 125,
+        };
       }
 
       if (href.startsWith('/admin/audit-logs')) {
@@ -48,6 +58,12 @@ describe('audit log page model', () => {
 
     expect(markup).toContain('booking:booking-1');
     expect(markup).toContain('Showing 1 of 125 events');
+    expect(markup).toContain('>77<');
+    expect(markup).toContain('>55<');
+    expect(markup).toContain('>66<');
+    expect(markup).toContain('>22<');
+    expect(markup).toContain('>33<');
+    expect(markup).toContain('>11<');
   });
 
   it('surfaces FCM sent evidence for notification retry audit rows', () => {

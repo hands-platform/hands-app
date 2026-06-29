@@ -563,8 +563,18 @@ describe('AdminService query orchestration', () => {
     const prisma = {
       adminAuditLog: {
         count: vi.fn().mockResolvedValue(120),
+        groupBy: vi.fn().mockResolvedValue([
+          { _count: { _all: 20 }, action: 'booking.completed' },
+          { _count: { _all: 15 }, action: 'payment.capture' },
+          { _count: { _all: 7 }, action: 'refund.retry' },
+          { _count: { _all: 9 }, action: 'service.update' },
+          { _count: { _all: 30 }, action: 'notification.retry' },
+          { _count: { _all: 4 }, action: 'push_device.disable' },
+          { _count: { _all: 2 }, action: 'operational_policy.update' },
+        ]),
       },
     };
+    prisma.adminAuditLog.count.mockResolvedValueOnce(120).mockResolvedValueOnce(3);
     const service = createAdminService(prisma);
 
     await expect(
@@ -575,7 +585,14 @@ describe('AdminService query orchestration', () => {
         to: '2026-06-28T00:00:00.000Z',
       }),
     ).resolves.toMatchObject({
+      dispatch: 20,
+      financeCloseout: 22,
       generatedAt: expect.any(String),
+      needsReview: 63,
+      notifications: 34,
+      payments: 22,
+      recentHour: 3,
+      servicePricing: 9,
       totalCount: 120,
     });
 
@@ -593,6 +610,22 @@ describe('AdminService query orchestration', () => {
           },
         ]),
       }),
+    });
+    expect(prisma.adminAuditLog.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([{ createdAt: { gte: expect.any(Date) } }]),
+      }),
+    });
+    expect(prisma.adminAuditLog.groupBy).toHaveBeenCalledWith({
+      by: ['action'],
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          {
+            OR: [{ action: { startsWith: 'notification.' } }, { action: { startsWith: 'push_device.' } }],
+          },
+        ]),
+      }),
+      _count: { _all: true },
     });
   });
 
