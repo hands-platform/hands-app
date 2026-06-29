@@ -84,7 +84,12 @@ function WithdrawalRequestActions({
   if (request.status === 'PAID') {
     return <span className="muted">Paid {formatDate(request.paidAt)}</span>;
   }
-  if (request.status === 'REJECTED' || request.status === 'CANCELLED') {
+  if (
+    request.status === 'REJECTED' ||
+    request.status === 'CANCELLED' ||
+    request.status === 'FAILED' ||
+    request.status === 'REVERSED'
+  ) {
     return <span className="muted">Closed</span>;
   }
   if (request.status === 'NEEDS_BANK_CORRECTION') {
@@ -97,10 +102,16 @@ function WithdrawalRequestActions({
       </div>
     );
   }
-
   return (
     <div className="admin-inline-action-stack">
-      {request.status === 'REQUESTED' ? (
+      {request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
+        <>
+          <span className="pill pill-warn">Finance review required before payout</span>
+          <p className="muted">Resolve the review flag before moving this request to a bank payout run.</p>
+        </>
+      ) : null}
+
+      {request.status === 'REQUESTED' || request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
@@ -109,16 +120,38 @@ function WithdrawalRequestActions({
             aria-label={`Approval note for withdrawal ${request.id}`}
             className="form-control"
             name="adminNote"
-            placeholder="Approval note"
+            placeholder={request.status === 'REQUESTED' ? 'Approval note' : 'Review resolution note'}
             type="text"
           />
           <button className="btn btn-sm btn-primary" type="submit">
-            Approve
+            {request.status === 'REQUESTED' ? 'Approve' : 'Clear review'}
           </button>
         </form>
       ) : null}
 
       {request.status === 'APPROVED' ? (
+        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
+          <input
+            aria-label={`Bank pending note for withdrawal ${request.id}`}
+            className="form-control"
+            name="adminNote"
+            placeholder="Bank payout run note"
+            type="text"
+          />
+          <button className="btn btn-sm btn-info" type="submit">
+            Bank pending
+          </button>
+        </form>
+      ) : null}
+
+      {request.status === 'BANK_TRANSFER_PENDING' ? (
+        <span className="pill pill-info">Manual bank transfer pending</span>
+      ) : null}
+
+      {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
@@ -171,7 +204,11 @@ function WithdrawalRequestActions({
         </form>
       ) : null}
 
-      {request.status === 'REQUESTED' || request.status === 'APPROVED' ? (
+      {request.status === 'REQUESTED' ||
+      request.status === 'APPROVED' ||
+      request.status === 'BANK_TRANSFER_PENDING' ||
+      request.status === 'HOLD' ||
+      request.status === 'REVIEW_REQUIRED' ? (
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
@@ -226,11 +263,16 @@ function statusPillClass(status: AdminProviderWalletWithdrawalRequest['status'])
     case 'PAID':
       return 'pill-success';
     case 'APPROVED':
+    case 'BANK_TRANSFER_PENDING':
       return 'pill-info';
     case 'NEEDS_BANK_CORRECTION':
+    case 'REVIEW_REQUIRED':
+    case 'HOLD':
       return 'pill-warn';
     case 'REJECTED':
     case 'CANCELLED':
+    case 'FAILED':
+    case 'REVERSED':
       return 'pill-danger';
     default:
       return 'pill-neutral';
@@ -242,5 +284,11 @@ function withdrawalResultTone(needsActionCount: number): StatusBadgeTone {
 }
 
 function isTerminalStatus(status: AdminProviderWalletWithdrawalRequest['status']) {
-  return status === 'PAID' || status === 'REJECTED' || status === 'CANCELLED';
+  return (
+    status === 'PAID' ||
+    status === 'REJECTED' ||
+    status === 'CANCELLED' ||
+    status === 'FAILED' ||
+    status === 'REVERSED'
+  );
 }

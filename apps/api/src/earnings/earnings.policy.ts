@@ -246,6 +246,20 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
     throw new BadRequestException('Invalid withdrawal request status');
   }
   if (
+    nextStatus === ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING &&
+    input.currentStatus !== ProviderWalletWithdrawalRequestStatus.APPROVED
+  ) {
+    throw new BadRequestException('Withdrawal request must be approved before bank transfer pending');
+  }
+  if (
+    nextStatus === ProviderWalletWithdrawalRequestStatus.PAID &&
+    input.currentStatus !== ProviderWalletWithdrawalRequestStatus.PAID &&
+    input.currentStatus !== ProviderWalletWithdrawalRequestStatus.APPROVED &&
+    input.currentStatus !== ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING
+  ) {
+    throw new BadRequestException('Withdrawal request must be approved or bank-transfer pending before paid');
+  }
+  if (
     input.currentStatus === ProviderWalletWithdrawalRequestStatus.PAID &&
     nextStatus &&
     nextStatus !== ProviderWalletWithdrawalRequestStatus.PAID

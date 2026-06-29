@@ -75,6 +75,9 @@ const ACTIVE_WITHDRAWAL_REQUEST_STATUSES = [
   ProviderWalletWithdrawalRequestStatus.REQUESTED,
   ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
   ProviderWalletWithdrawalRequestStatus.APPROVED,
+  ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+  ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+  ProviderWalletWithdrawalRequestStatus.HOLD,
 ] as const;
 
 function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {

@@ -1502,9 +1502,14 @@ export type AdminProviderWalletWithdrawalRequestStatus =
   | 'REQUESTED'
   | 'NEEDS_BANK_CORRECTION'
   | 'APPROVED'
+  | 'BANK_TRANSFER_PENDING'
+  | 'REVIEW_REQUIRED'
+  | 'HOLD'
   | 'PAID'
   | 'REJECTED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'REVERSED';
 
 export type AdminProviderWalletWithdrawalRequest = {
   id: string;

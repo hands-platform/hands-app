@@ -377,6 +377,64 @@ describe('earnings policy', () => {
     });
   });
 
+  it('allows approved withdrawals to move into bank transfer pending', () => {
+    expect(
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        adminNote: 'Queued for Monday payout run',
+      }),
+    ).toMatchObject({
+      status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+      adminNote: 'Queued for Monday payout run',
+    });
+  });
+
+  it('rejects bank transfer pending before finance approval', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+      }),
+    ).toThrow('Withdrawal request must be approved before bank transfer pending');
+  });
+
+  it('allows bank transfer pending withdrawals to be marked paid with bank evidence', () => {
+    expect(
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: 'BANK-OUT-002',
+        bankTransferDate: '2026-06-29T10:30:00.000Z',
+        attachmentUrl: 'https://storage.example/payouts/proof-2.jpg',
+      }),
+    ).toMatchObject({
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      transferRef: 'BANK-OUT-002',
+      bankTransferDate: new Date('2026-06-29T10:30:00.000Z'),
+      attachmentUrl: 'https://storage.example/payouts/proof-2.jpg',
+    });
+  });
+
+  it('prevents held or review-required withdrawals from being marked paid directly', () => {
+    for (const currentStatus of [
+      ProviderWalletWithdrawalRequestStatus.HOLD,
+      ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+      ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+      ProviderWalletWithdrawalRequestStatus.REQUESTED,
+    ]) {
+      expect(() =>
+        normalizeProviderWalletWithdrawalRequestUpdateInput({
+          currentStatus,
+          requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+          transferRef: 'BANK-OUT-003',
+          bankTransferDate: '2026-06-29T10:30:00.000Z',
+          attachmentUrl: 'https://storage.example/payouts/proof-3.jpg',
+        }),
+      ).toThrow('Withdrawal request must be approved or bank-transfer pending before paid');
+    }
+  });
+
   it('prevents paid withdrawal requests from moving back to unpaid states', () => {
     expect(() =>
       normalizeProviderWalletWithdrawalRequestUpdateInput({
