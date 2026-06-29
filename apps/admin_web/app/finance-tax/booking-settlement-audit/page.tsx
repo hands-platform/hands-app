@@ -13,6 +13,7 @@ import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   buildBookingSettlementSnapshotApiHref,
+  buildBookingSettlementSnapshotRowsCsvHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyBookingSettlementSummary,
@@ -46,6 +47,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
     ),
     adminGet<AdminBookingSettlementSnapshot[]>(buildBookingSettlementSnapshotApiHref(filters), []),
   ]);
+  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(snapshots);
 
   return (
     <AdminPageTemplate
@@ -57,7 +59,15 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             settlementFilters: filters,
             withholdingFilters,
           })}
-        />
+        >
+          <a
+            className="pill pill-success"
+            download={`hands-booking-settlement-audit-${filters.range}-${filters.review}.csv`}
+            href={csvHref}
+          >
+            Export settlement CSV
+          </a>
+        </TaxFinanceWorkflowActions>
       }
       description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
       metrics={[

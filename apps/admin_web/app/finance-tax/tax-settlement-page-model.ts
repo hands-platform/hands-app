@@ -1,4 +1,5 @@
 import type {
+  AdminBookingSettlementSnapshot,
   AdminBookingSettlementSnapshotSummary,
   AdminPaymentFeeSummary,
   AdminPlatformVatSummary,
@@ -584,6 +585,40 @@ export function buildPartnerWithholdingTaxRowsCsvHref(rows: AdminPartnerWithhold
   );
 }
 
+export function buildBookingSettlementSnapshotRowsCsvHref(rows: AdminBookingSettlementSnapshot[]) {
+  return buildCsvDataHref(
+    rows.map((row) => ({
+      snapshot_id: row.id,
+      booking_id: row.bookingId,
+      monthly_period: row.monthlyPeriod,
+      posted_at: row.postedAt,
+      closed_at: row.closedAt ?? row.booking?.closedAt ?? '',
+      payment_method: row.paymentMethod,
+      currency: row.currency,
+      customer_profile_id: row.customerProfileId,
+      customer_name: row.customerProfile?.user?.fullName ?? '',
+      customer_phone: row.customerProfile?.user?.phone ?? '',
+      provider_profile_id: row.providerProfileId,
+      partner_name: row.providerProfile?.displayName ?? row.providerProfile?.user?.fullName ?? '',
+      partner_phone: row.providerProfile?.user?.phone ?? '',
+      customer_payment_amount: row.customerPaymentAmount,
+      partner_payout_amount: row.partnerPayoutAmount,
+      partner_taxable_revenue: row.partnerTaxableRevenue,
+      partner_vat_withheld: row.partnerVatAmount,
+      partner_pit_withheld: row.partnerPitAmount,
+      total_partner_tax_withheld: row.partnerWithholdingTotal,
+      payment_processing_fee: row.paymentProcessingFee,
+      platform_fee_gross: row.platformFeeGross,
+      platform_fee_net_revenue: row.platformFeeNetRevenue,
+      company_output_vat: row.companyOutputVat,
+      settlement_status: row.settlementStatus,
+      tax_status: row.taxStatus,
+      booking_status: row.booking?.status ?? '',
+    })),
+    BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS,
+  );
+}
+
 export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMonthlyTaxClosingSummary) {
   return buildCsvDataHref(
     [
@@ -716,6 +751,35 @@ const PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS = [
   'partner_vat_withheld_total',
   'partner_pit_withheld_total',
   'total_partner_tax_withheld',
+];
+
+const BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS = [
+  'snapshot_id',
+  'booking_id',
+  'monthly_period',
+  'posted_at',
+  'closed_at',
+  'payment_method',
+  'currency',
+  'customer_profile_id',
+  'customer_name',
+  'customer_phone',
+  'provider_profile_id',
+  'partner_name',
+  'partner_phone',
+  'customer_payment_amount',
+  'partner_payout_amount',
+  'partner_taxable_revenue',
+  'partner_vat_withheld',
+  'partner_pit_withheld',
+  'total_partner_tax_withheld',
+  'payment_processing_fee',
+  'platform_fee_gross',
+  'platform_fee_net_revenue',
+  'company_output_vat',
+  'settlement_status',
+  'tax_status',
+  'booking_status',
 ];
 
 const ACCOUNTING_JOURNAL_CSV_COLUMNS = [

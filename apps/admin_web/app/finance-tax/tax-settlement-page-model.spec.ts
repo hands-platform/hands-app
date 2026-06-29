@@ -1,5 +1,6 @@
 import {
   buildBookingSettlementSnapshotApiHref,
+  buildBookingSettlementSnapshotRowsCsvHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxRowsCsvHref,
@@ -261,6 +262,64 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain("\"'+84900000001\"");
     expect(rowsCsv).toContain('"1800000"');
     expect(rowsCsv).toContain('"126000"');
+  });
+
+  it('exports booking settlement snapshot rows as CSV', () => {
+    const rowsCsv = decodeURIComponent(
+      buildBookingSettlementSnapshotRowsCsvHref([
+        {
+          id: 'snapshot-1',
+          bookingId: 'booking-1',
+          customerProfileId: 'customer-1',
+          providerProfileId: 'provider-1',
+          paymentId: 'payment-1',
+          providerEarningId: 'earning-1',
+          paymentMethod: 'MOMO',
+          currency: 'VND',
+          customerPaymentAmount: 600_000,
+          partnerPayoutAmount: 430_000,
+          partnerTaxableRevenue: 600_000,
+          partnerVatAmount: 30_000,
+          partnerPitAmount: 12_000,
+          partnerWithholdingTotal: 42_000,
+          platformFeeGross: 128_000,
+          platformFeeNetRevenue: 118_519,
+          companyOutputVat: 9_481,
+          paymentProcessingFee: 0,
+          settlementStatus: 'POSTED',
+          taxStatus: 'OPEN',
+          monthlyPeriod: '2026-06',
+          postedAt: '2026-06-13T03:02:00.000Z',
+          closedAt: null,
+          booking: {
+            id: 'booking-1',
+            createdAt: '2026-06-13T02:40:00.000Z',
+            status: 'COMPLETED',
+            closedAt: '2026-06-13T03:02:00.000Z',
+          },
+          customerProfile: {
+            id: 'customer-1',
+            user: { id: 'user-customer', fullName: 'Demo Customer', phone: '+84900000001' },
+          },
+          providerProfile: {
+            id: 'provider-1',
+            displayName: 'Smoke Partner',
+            user: { id: 'user-provider', fullName: 'Smoke Partner Legal', phone: '+84900000002' },
+          },
+        },
+      ]),
+    );
+
+    expect(rowsCsv).toContain('"snapshot_id","booking_id","monthly_period"');
+    expect(rowsCsv).toContain('"snapshot-1","booking-1","2026-06"');
+    expect(rowsCsv).toContain('"Demo Customer"');
+    expect(rowsCsv).toContain("\"'+84900000001\"");
+    expect(rowsCsv).toContain('"Smoke Partner"');
+    expect(rowsCsv).toContain("\"'+84900000002\"");
+    expect(rowsCsv).toContain('"600000"');
+    expect(rowsCsv).toContain('"128000"');
+    expect(rowsCsv).toContain('"118519"');
+    expect(rowsCsv).toContain('"9481"');
   });
 
   it('exports a monthly accounting journal CSV from visible closing totals', () => {
