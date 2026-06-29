@@ -459,6 +459,59 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('summarizes company coupon offsets for cash settlement debt', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            booking: { payment: { amount: 540_000, method: PaymentMethod.CASH, status: 'PENDING' } },
+            bookingId: 'booking-cash-coupon-1',
+            createdAt: new Date('2026-06-13T03:02:00.000Z'),
+            currency: 'VND',
+            grossAmount: 600_000,
+            id: 'earning-cash-coupon-1',
+            netAmount: -110_000,
+            platformFee: 170_000,
+            providerProfile: {
+              displayName: 'Coupon Partner',
+              user: { fullName: 'Coupon Partner', phone: '+8490' },
+            },
+            providerProfileId: 'provider-coupon-1',
+            walletLedgerEntries: [
+              {
+                metadata: {
+                  cashBookingCompanyCouponExpense: 60_000,
+                  totalPartnerDueToCompany: 110_000,
+                },
+              },
+            ],
+            withholdingAmount: 42_000,
+          },
+        ]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cashSettlementSummaryForAdmin()).resolves.toMatchObject({
+      rowCount: 1,
+      totalCompanyCouponOffset: 60_000,
+      totalDebtAmount: 110_000,
+      totalPlatformFee: 170_000,
+      totalTaxAmount: 42_000,
+    });
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          walletLedgerEntries: expect.objectContaining({
+            select: { metadata: true },
+            take: 1,
+          }),
+        }),
+      }),
+    );
+  });
+
   it('filters cash settlement summaries by range and queue without hydrating unrelated earning rows', async () => {
     const prisma = {
       providerEarning: {

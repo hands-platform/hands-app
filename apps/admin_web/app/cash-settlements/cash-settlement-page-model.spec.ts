@@ -143,35 +143,10 @@ describe('cash settlement page model', () => {
   });
 
   it('builds cash coupon settlement breakdown from wallet ledger metadata', () => {
-    const [row] = buildCashSettlementOpenDebtTableRows(
-      buildCashSettlementRows([
-        earning({
-          booking: { payment: { amount: 540_000, method: 'CASH', status: 'PENDING' } },
-          grossAmount: 600_000,
-          id: 'cash-coupon',
-          netAmount: -110_000,
-          platformFee: 170_000,
-          withholdingAmount: 42_000,
-          walletLedgerEntries: [
-            {
-              amount: -58_519,
-              currency: 'VND',
-              id: 'ledger-platform',
-              metadata: {
-                accountingComponentAmount: 118_519,
-                cashBookingCompanyCouponExpense: 60_000,
-                totalPartnerDueToCompany: 110_000,
-                walletDeductionCompanyOutputVat: 9_481,
-                walletDeductionPartnerTaxPayable: 42_000,
-                walletDeductionPlatformFeeNetRevenue: 58_519,
-              },
-              sourceKey: 'earning:cash-coupon:cash-platform-fee-net',
-              type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
-            },
-          ],
-        }),
-      ]),
-    );
+    const cashCouponRows = buildCashSettlementRows([cashCouponEarning()]);
+    const [row] = buildCashSettlementOpenDebtTableRows(cashCouponRows);
+    const providers = buildProviderGroups(cashCouponRows);
+    const summary = buildSummary(cashCouponRows, providers);
 
     expect(row).toMatchObject({
       bookingAmountLabel: '540.000 VND',
@@ -184,12 +159,20 @@ describe('cash settlement page model', () => {
         'Partner tax wallet deduction 42.000 VND',
       ],
     });
+    expect(providers[0]).toMatchObject({ companyCouponOffset: 60_000 });
+    expect(summary).toMatchObject({
+      companyCouponOffset: 60_000,
+      debtAmount: 110_000,
+      platformFee: 170_000,
+      taxAmount: 42_000,
+    });
   });
 
   it('uses authoritative all-date API summary when available', () => {
     const visible = buildSummary([], []);
     const summary = mergeAuthoritativeSummary(visible, {
       cashPaymentRowCount: 2,
+      totalCompanyCouponOffset: 60_000,
       currency: 'VND',
       generatedAt: '2026-06-10T09:00:00.000Z',
       highDebtProviderCount: 1,
@@ -206,6 +189,7 @@ describe('cash settlement page model', () => {
     } satisfies AdminCashSettlementSummary);
 
     expect(summary).toMatchObject({
+      companyCouponOffset: 60_000,
       cashPaymentRowCount: 2,
       debtAmount: 700000,
       providerCount: 4,
@@ -250,4 +234,32 @@ function earning(input: Partial<AdminEarning> = {}): AdminEarning {
     ...input,
     booking,
   };
+}
+
+function cashCouponEarning(): AdminEarning {
+  return earning({
+    booking: { payment: { amount: 540_000, method: 'CASH', status: 'PENDING' } },
+    grossAmount: 600_000,
+    id: 'cash-coupon',
+    netAmount: -110_000,
+    platformFee: 170_000,
+    withholdingAmount: 42_000,
+    walletLedgerEntries: [
+      {
+        amount: -58_519,
+        currency: 'VND',
+        id: 'ledger-platform',
+        metadata: {
+          accountingComponentAmount: 118_519,
+          cashBookingCompanyCouponExpense: 60_000,
+          totalPartnerDueToCompany: 110_000,
+          walletDeductionCompanyOutputVat: 9_481,
+          walletDeductionPartnerTaxPayable: 42_000,
+          walletDeductionPlatformFeeNetRevenue: 58_519,
+        },
+        sourceKey: 'earning:cash-coupon:cash-platform-fee-net',
+        type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
+      },
+    ],
+  });
 }

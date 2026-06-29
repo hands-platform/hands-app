@@ -144,6 +144,7 @@ function cashSummary(input: Partial<AdminCashSettlementSummary>): AdminCashSettl
     staleDebtRowCount: 0,
     topProviderGroups: [],
     totalDebtAmount: 0,
+    totalCompanyCouponOffset: 0,
     totalPlatformFee: 0,
     totalTaxAmount: 0,
     cashPaymentRowCount: 0,

@@ -20,16 +20,19 @@ import type {
   CashSettlementFilters,
   CashSettlementQueueFilter,
   CashSettlementRow,
+  CashSettlementWalletDeductionBreakdown,
 } from './cash-settlement-page-types';
 
 export function buildCashSettlementRows(earnings: readonly AdminEarning[]): CashSettlementRow[] {
   return earnings
     .filter((earning) => isOpenCashDebt(earning))
     .map((earning) => {
+      const walletDeductionBreakdown = cashCouponWalletDeductionBreakdown(earning);
       const debtAmount = Math.abs(earning.netAmount);
       const settlementReference = cashSettlementReference(earning);
       return {
         bookingAmount: earning.booking?.payment?.amount ?? earning.grossAmount,
+        companyCouponOffset: walletDeductionBreakdown.companyCouponExpense,
         createdAtLabel: earning.createdAt ? formatRelativeTime(earning.createdAt) : 'No created date',
         debtAmount,
         debtOrigin: cashDebtOriginLabel(earning),
@@ -44,6 +47,7 @@ export function buildCashSettlementRows(earnings: readonly AdminEarning[]): Cash
         settlementEvidence: cashDebtEvidenceLabel(earning),
         settlementReference,
         taxAmount: earning.withholdingAmount ?? 0,
+        walletDeductionBreakdown,
       };
     })
     .sort((left, right) => {
@@ -90,7 +94,7 @@ export function buildCashSettlementOpenDebtTableRows(
   rows: readonly CashSettlementRow[],
 ): CashSettlementOpenDebtTableRow[] {
   return rows.map((row) => {
-    const breakdown = cashCouponWalletDeductionBreakdown(row.earning);
+    const breakdown = row.walletDeductionBreakdown;
     return {
       actionRows: cashSettlementActionExecutionMap(row),
       bookingAmountLabel: formatMoney(row.bookingAmount, row.earning.currency),
@@ -212,14 +216,7 @@ function cashSettlementSearchText(row: CashSettlementRow) {
     .toLowerCase();
 }
 
-type CashCouponWalletDeductionBreakdown = {
-  readonly companyCouponExpense: number;
-  readonly walletDeductionCompanyOutputVat: number;
-  readonly walletDeductionPartnerTaxPayable: number;
-  readonly walletDeductionPlatformFeeNetRevenue: number;
-};
-
-function cashCouponWalletDeductionBreakdown(earning: AdminEarning): CashCouponWalletDeductionBreakdown {
+function cashCouponWalletDeductionBreakdown(earning: AdminEarning): CashSettlementWalletDeductionBreakdown {
   const metadata =
     earning.walletLedgerEntries
       ?.map((entry) => readRecord(entry.metadata))
@@ -233,7 +230,7 @@ function cashCouponWalletDeductionBreakdown(earning: AdminEarning): CashCouponWa
   };
 }
 
-function cashWalletDeductionLabels(breakdown: CashCouponWalletDeductionBreakdown, currency: string) {
+function cashWalletDeductionLabels(breakdown: CashSettlementWalletDeductionBreakdown, currency: string) {
   if (
     breakdown.walletDeductionPlatformFeeNetRevenue <= 0 &&
     breakdown.walletDeductionCompanyOutputVat <= 0 &&

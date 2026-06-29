@@ -57,6 +57,7 @@ describe('DashboardPage', () => {
       rowCount: 0,
       staleDebtRowCount: 0,
       topProviderGroups: [],
+      totalCompanyCouponOffset: 0,
       totalDebtAmount: 0,
       totalPlatformFee: 0,
       totalTaxAmount: 0,
@@ -238,10 +239,7 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/payments/summary?range=today',
-      null,
-    );
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/payments/summary?range=today', null);
     expect(markup).toContain('<span>Payment holds</span><strong>13</strong>');
   });
 });

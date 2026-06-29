@@ -6,10 +6,12 @@ export type CashSettlementRow = {
   providerName: string;
   providerPhone: string;
   paymentMethod: string;
+  companyCouponOffset: number;
   debtAmount: number;
   platformFee: number;
   taxAmount: number;
   bookingAmount: number;
+  walletDeductionBreakdown: CashSettlementWalletDeductionBreakdown;
   settlementReference: string;
   lastLedgerRef?: string | null;
   debtOrigin: string;
@@ -24,6 +26,7 @@ export type CashSettlementProviderGroup = {
   providerName: string;
   currency: string;
   rowCount: number;
+  companyCouponOffset: number;
   debtAmount: number;
   platformFee: number;
   taxAmount: number;
@@ -80,6 +83,7 @@ export type WalletRecoveryStep = {
 export type CashSettlementSummary = {
   providerCount: number;
   rowCount: number;
+  companyCouponOffset: number;
   debtAmount: number;
   platformFee: number;
   taxAmount: number;
@@ -89,6 +93,13 @@ export type CashSettlementSummary = {
   highDebtProviderCount: number;
   missingPaymentEvidenceCount: number;
   cashPaymentRowCount: number;
+};
+
+export type CashSettlementWalletDeductionBreakdown = {
+  readonly companyCouponExpense: number;
+  readonly walletDeductionCompanyOutputVat: number;
+  readonly walletDeductionPartnerTaxPayable: number;
+  readonly walletDeductionPlatformFeeNetRevenue: number;
 };
 
 export type CashSettlementQueueFilter = 'all' | 'stale' | 'high-debt' | 'missing-ref' | 'payment-check';

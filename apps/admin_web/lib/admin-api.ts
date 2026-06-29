@@ -18,7 +18,14 @@ export type AdminBookingMatchSource = 'FIRST_PICK_ACCEPTED_FIRST' | 'CUSTOMER_SE
 export type AdminParticipantStatus = 'JOINED' | 'ACCEPTED' | 'REJECTED' | 'SELECTED' | 'EXPIRED';
 export type AdminProviderStatus = 'OFFLINE' | 'ONLINE_AVAILABLE' | 'ONLINE_BUSY' | 'ONLINE_AVAILABLE_SOON';
 export type AdminPaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'RELEASED';
-export type AdminPaymentMethod = 'MOMO' | 'VNPAY' | 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'CUSTOMER_WALLET' | 'MANUAL';
+export type AdminPaymentMethod =
+  | 'MOMO'
+  | 'VNPAY'
+  | 'CASH'
+  | 'CARD'
+  | 'BANK_TRANSFER'
+  | 'CUSTOMER_WALLET'
+  | 'MANUAL';
 export type AdminReviewStatus = 'PUBLISHED' | 'HIDDEN' | 'REPORTED';
 export type AdminEarningStatus = 'PENDING' | 'AVAILABLE' | 'PAID' | 'CANCELLED';
 export type AdminPayoutBatchStatus = 'DRAFT' | 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED';
@@ -1405,6 +1412,7 @@ export type AdminCashSettlementSummary = {
   currency: string;
   rowCount: number;
   providerCount: number;
+  totalCompanyCouponOffset: number;
   totalDebtAmount: number;
   totalPlatformFee: number;
   totalTaxAmount: number;
@@ -1831,13 +1839,7 @@ export type AdminTaxRule = {
 
 export type AdminBookingSettlementStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
 export type AdminBookingSettlementTaxStatus = 'OPEN' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
-export type AdminMonthlyTaxClosingStatus =
-  | 'DRAFT'
-  | 'REVIEWED'
-  | 'DECLARED'
-  | 'PAID'
-  | 'CLOSED'
-  | 'REVERSED';
+export type AdminMonthlyTaxClosingStatus = 'DRAFT' | 'REVIEWED' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
 
 export type AdminBookingSettlementSnapshot = {
   id: string;

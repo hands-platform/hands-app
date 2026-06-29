@@ -20,6 +20,7 @@ export function buildProviderGroups(rows: readonly CashSettlementRow[]): CashSet
     const createdMs = Date.parse(row.earning.createdAt ?? '') || Date.now();
     const item = existing ?? {
       currency: row.earning.currency,
+      companyCouponOffset: 0,
       debtAmount: 0,
       oldestOpenLabel: formatRelativeTime(row.earning.createdAt, {
         emptyFallback: '-',
@@ -35,6 +36,7 @@ export function buildProviderGroups(rows: readonly CashSettlementRow[]): CashSet
     };
 
     item.rowCount += 1;
+    item.companyCouponOffset += row.companyCouponOffset;
     item.debtAmount += row.debtAmount;
     item.platformFee += row.platformFee;
     item.taxAmount += row.taxAmount;
@@ -63,6 +65,7 @@ export function buildSummary(
 
   return {
     cashPaymentRowCount: rows.filter((row) => row.earning.booking?.payment?.method === 'CASH').length,
+    companyCouponOffset: rows.reduce((sum, row) => sum + row.companyCouponOffset, 0),
     currency: rows[0]?.earning.currency ?? 'VND',
     debtAmount: rows.reduce((sum, row) => sum + row.debtAmount, 0),
     highDebtProviderCount: providers.filter(
@@ -96,6 +99,7 @@ export function mergeAuthoritativeSummary(
 
   return {
     cashPaymentRowCount: apiSummary.cashPaymentRowCount,
+    companyCouponOffset: apiSummary.totalCompanyCouponOffset,
     currency: apiSummary.currency,
     debtAmount: apiSummary.totalDebtAmount,
     highDebtProviderCount: apiSummary.highDebtProviderCount,

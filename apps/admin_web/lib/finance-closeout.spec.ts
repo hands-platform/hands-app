@@ -47,9 +47,7 @@ describe('finance closeout helpers', () => {
         paymentFixture({ id: 'cash', method: 'CASH', status: 'PENDING' }),
         paymentFixture({ id: 'missing-ref', providerRef: null, status: 'PENDING' }),
       ],
-      payouts: [
-        payoutFixture({ id: 'processing-missing-ref', status: 'PROCESSING', transferRef: null }),
-      ],
+      payouts: [payoutFixture({ id: 'processing-missing-ref', status: 'PROCESSING', transferRef: null })],
       range: 'all',
       refunds: [refundFixture({ id: 'requested', status: 'REQUESTED' })],
     });
@@ -66,9 +64,7 @@ describe('finance closeout helpers', () => {
     const reconciliation = buildReconciliation({
       cashSummary: null,
       currency: 'VND',
-      earnings: [
-        earningFixture({ id: 'cash-debt', netAmount: -250000, status: 'PENDING', taxLogs: [] }),
-      ],
+      earnings: [earningFixture({ id: 'cash-debt', netAmount: -250000, status: 'PENDING', taxLogs: [] })],
       earningsSummary: earningSummaryFixture({ netAmount: -250000 }),
       payments: [paymentFixture({ id: 'authorized', status: 'AUTHORIZED' })],
       payouts: [payoutFixture({ id: 'open-payout', status: 'PROCESSING', totalNetAmount: 800000 })],
@@ -158,7 +154,9 @@ function earningFixture(overrides: Partial<AdminEarning>): AdminEarning {
     platformFee: 150000,
     providerProfileId: `${overrides.id ?? 'earning'}-partner`,
     status: overrides.status ?? 'PENDING',
-    taxLogs: overrides.taxLogs ?? [{ grossAmount: 500000, id: 'tax', taxableAmount: 500000, withholdingAmount: 50000, currency: 'VND' }],
+    taxLogs: overrides.taxLogs ?? [
+      { grossAmount: 500000, id: 'tax', taxableAmount: 500000, withholdingAmount: 50000, currency: 'VND' },
+    ],
     withholdingAmount: 50000,
     ...overrides,
   };
@@ -204,6 +202,7 @@ function cashSummaryFixture(overrides: Partial<AdminCashSettlementSummary>): Adm
     rowCount: 1,
     staleDebtRowCount: 0,
     topProviderGroups: [],
+    totalCompanyCouponOffset: 0,
     totalDebtAmount: 0,
     totalPlatformFee: 0,
     totalTaxAmount: 0,

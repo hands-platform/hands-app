@@ -772,6 +772,11 @@ export class EarningsService {
         currency: true,
         createdAt: true,
         booking: { select: { payment: { select: { id: true, method: true, amount: true, status: true } } } },
+        walletLedgerEntries: {
+          orderBy: { createdAt: 'desc' },
+          select: { metadata: true },
+          take: 1,
+        },
         providerProfile: {
           select: {
             id: true,
@@ -842,6 +847,10 @@ export class EarningsService {
       currency: debtRows[0]?.currency ?? 'VND',
       rowCount: debtRows.length,
       providerCount: providerGroups.size,
+      totalCompanyCouponOffset: debtRows.reduce(
+        (sum, row) => sum + cashSettlementCompanyCouponOffset(row),
+        0,
+      ),
       totalDebtAmount: debtRows.reduce((sum, row) => sum + Math.abs(row.netAmount), 0),
       totalPlatformFee: debtRows.reduce((sum, row) => sum + row.platformFee, 0),
       totalTaxAmount: debtRows.reduce((sum, row) => sum + row.withholdingAmount, 0),
@@ -2223,6 +2232,20 @@ function jsonObjectOrEmpty(value: Prisma.JsonValue | null | undefined): Prisma.I
     return value as Prisma.InputJsonObject;
   }
   return {};
+}
+
+function cashSettlementCompanyCouponOffset(input: {
+  walletLedgerEntries?: Array<{ metadata?: Prisma.JsonValue | null }>;
+}) {
+  const metadata =
+    input.walletLedgerEntries
+      ?.map((entry) => jsonObjectOrEmpty(entry.metadata))
+      .find((entryMetadata) => jsonNumber(entryMetadata.cashBookingCompanyCouponExpense) > 0) ?? {};
+  return jsonNumber(metadata.cashBookingCompanyCouponExpense);
+}
+
+function jsonNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 function providerWalletWithdrawalRequestStatusChangeMetadata(input: {

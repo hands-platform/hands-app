@@ -33,12 +33,15 @@ import {
   buildCashSettlementServerPagination,
   buildCashSettlementSummaryApiHref,
 } from './cash-settlement-page-filters';
-import { buildCashSettlementPriorityBoard, buildCashSettlementPriorityBoardRows } from './cash-settlement-page-priority';
-import { buildAppliedCashSettlementPolicyCards, buildCashSettlementRuleCards } from './cash-settlement-page-rule-cards';
 import {
-  buildCashSettlementOpenDebtTableRows,
-  buildCashSettlementRows,
-} from './cash-settlement-page-rows';
+  buildCashSettlementPriorityBoard,
+  buildCashSettlementPriorityBoardRows,
+} from './cash-settlement-page-priority';
+import {
+  buildAppliedCashSettlementPolicyCards,
+  buildCashSettlementRuleCards,
+} from './cash-settlement-page-rule-cards';
+import { buildCashSettlementOpenDebtTableRows, buildCashSettlementRows } from './cash-settlement-page-rows';
 import { buildProviderGroups, buildSummary, mergeAuthoritativeSummary } from './cash-settlement-page-summary';
 import {
   buildCashSettlementEvidenceChecklist,
@@ -93,12 +96,25 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     <AdminPageTemplate
       description="Finance queue for cash bookings where the Partner collected customer cash and still owes HANDS platform fee or withholding."
       metrics={[
-        { helper: 'Partners with open cash-fee debt rows.', label: 'Partners with cash debt', value: summary.providerCount },
-        { helper: 'Visible settlement rows after filters.', label: 'Open debt rows', value: summary.rowCount },
+        {
+          helper: 'Partners with open cash-fee debt rows.',
+          label: 'Partners with cash debt',
+          value: summary.providerCount,
+        },
+        {
+          helper: 'Visible settlement rows after filters.',
+          label: 'Open debt rows',
+          value: summary.rowCount,
+        },
         {
           helper: 'Company fee or tax still owed to HANDS.',
           label: 'Total wallet debt',
           value: formatMoney(summary.debtAmount, summary.currency),
+        },
+        {
+          helper: 'Company-funded coupon amount already offset from Partner cash settlement.',
+          label: 'Company coupon offset',
+          value: formatMoney(summary.companyCouponOffset, summary.currency),
         },
         {
           helper: 'Platform fee portion of cash debt.',

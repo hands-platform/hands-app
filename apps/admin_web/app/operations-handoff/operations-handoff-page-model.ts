@@ -71,6 +71,7 @@ export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
     currency: 'VND',
     rowCount: 0,
     providerCount: 0,
+    totalCompanyCouponOffset: 0,
     totalDebtAmount: 0,
     totalPlatformFee: 0,
     totalTaxAmount: 0,
@@ -109,11 +110,7 @@ export function buildOperationsHandoffDataHrefs(
           }).toString()}`
         : null,
     appSessionSummaryHref: '/admin/app-sessions/summary',
-    auditLogsHref: buildDateScopedHref(
-      '/admin/audit-logs',
-      { take: String(limits.audit) },
-      range,
-    ),
+    auditLogsHref: buildDateScopedHref('/admin/audit-logs', { take: String(limits.audit) }, range),
     bookingsHref: `/admin/bookings?${new URLSearchParams({
       dateRange: range,
       take: String(limits.bookings),
@@ -132,18 +129,10 @@ export function buildOperationsHandoffDataHrefs(
             take: String(limits.list),
           }).toString()}`
         : null,
-    earningsHref: buildRangeScopedHref(
-      '/admin/earnings',
-      { take: String(limits.finance) },
-      range,
-    ),
+    earningsHref: buildRangeScopedHref('/admin/earnings', { take: String(limits.finance) }, range),
     notificationsHref:
       detailsMode === 'all'
-        ? buildDateScopedHref(
-            '/admin/notifications',
-            { take: String(limits.notifications) },
-            range,
-          )
+        ? buildDateScopedHref('/admin/notifications', { take: String(limits.notifications) }, range)
         : null,
     notificationSummaryHref: buildDateScopedHref('/admin/notifications/summary', {}, range),
     partnersHref:
@@ -152,21 +141,9 @@ export function buildOperationsHandoffDataHrefs(
             take: String(limits.list),
           }).toString()}`
         : null,
-    paymentsHref: buildRangeScopedHref(
-      '/admin/payments',
-      { take: String(limits.finance) },
-      range,
-    ),
-    payoutBatchesHref: buildRangeScopedHref(
-      '/admin/payout-batches',
-      { take: String(limits.finance) },
-      range,
-    ),
-    refundsHref: buildRangeScopedHref(
-      '/admin/refunds',
-      { take: String(limits.finance) },
-      range,
-    ),
+    paymentsHref: buildRangeScopedHref('/admin/payments', { take: String(limits.finance) }, range),
+    payoutBatchesHref: buildRangeScopedHref('/admin/payout-batches', { take: String(limits.finance) }, range),
+    refundsHref: buildRangeScopedHref('/admin/refunds', { take: String(limits.finance) }, range),
   };
 }
 
@@ -197,9 +174,7 @@ export function buildOperationsHandoffRangeData(
   return {
     rangeAuditLogs: input.auditLogs.filter((log) => isInDateRange(log.createdAt, range)),
     rangeEarnings: input.earnings.filter((earning) => isInDateRange(earning.createdAt, range)),
-    rangePayments: input.payments.filter((payment) =>
-      isInDateRange(payment.booking?.createdAt, range),
-    ),
+    rangePayments: input.payments.filter((payment) => isInDateRange(payment.booking?.createdAt, range)),
     rangePayouts: input.payouts.filter((payout) => isInDateRange(payout.createdAt, range)),
     rangeRefunds: input.refunds.filter((refund) => isInDateRange(refund.createdAt, range)),
   };
@@ -252,11 +227,7 @@ function failedNotificationRows(notifications: readonly AdminNotification[]) {
   );
 }
 
-function buildDateScopedHref(
-  pathname: string,
-  baseParams: Record<string, string>,
-  range: AdminDateRange,
-) {
+function buildDateScopedHref(pathname: string, baseParams: Record<string, string>, range: AdminDateRange) {
   const query = new URLSearchParams(baseParams);
   const window = dateRangeWindow(range);
   if (window.from) {

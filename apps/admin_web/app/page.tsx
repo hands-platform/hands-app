@@ -48,11 +48,7 @@ import {
   readPlainRecord,
   shortUnknownId as shortId,
 } from '../lib/admin-format';
-import {
-  type AdminDateRange,
-  dateRangeLabel,
-  isInDateRange,
-} from '../lib/date-range';
+import { type AdminDateRange, dateRangeLabel, isInDateRange } from '../lib/date-range';
 import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplace';
 import {
@@ -97,6 +93,7 @@ function emptyCashSettlementSummary(): AdminCashSettlementSummary {
     currency: 'VND',
     rowCount: 0,
     providerCount: 0,
+    totalCompanyCouponOffset: 0,
     totalDebtAmount: 0,
     totalPlatformFee: 0,
     totalTaxAmount: 0,
@@ -519,13 +516,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     : dashboardSummary.appPresence;
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const partnerSupply = shouldRenderFullDashboard
-    ? buildPartnerSupplyInsights(
-        providers,
-        bookings,
-        appSessions,
-        cashDebtRows,
-        cashSettlementSummary,
-      )
+    ? buildPartnerSupplyInsights(providers, bookings, appSessions, cashDebtRows, cashSettlementSummary)
     : dashboardPartnerSupplyWithLiveFinance(dashboardSummary.partnerSupply, {
         activeDemand: activeBookings.length,
         cashSettlementSummary,
@@ -616,12 +607,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       rangeBookingCreateRejections.length.toString(),
       `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerDistanceGate} customer distance, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
     ],
+    ['Online Partners', partnerSupply.online.toString(), 'Supply currently visible to customers.'],
     [
-      'Online Partners',
-      partnerSupply.online.toString(),
-      'Supply currently visible to customers.',
+      'Pending verification',
+      partnerSupply.pendingVerification.toString(),
+      'Partners waiting for admin approval.',
     ],
-    ['Pending verification', partnerSupply.pendingVerification.toString(), 'Partners waiting for admin approval.'],
     [
       'Customers in app',
       appPresence.liveAppCustomers.toString(),
@@ -642,11 +633,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       appPresence.activeBookingCustomers.toString(),
       'Unique customers currently attached to active bookings.',
     ],
-    [
-      'Payment holds',
-      paymentHoldCount.toString(),
-      'Authorized payments not yet captured or released.',
-    ],
+    ['Payment holds', paymentHoldCount.toString(), 'Authorized payments not yet captured or released.'],
     [
       'Failed notifications',
       failedNotificationCount.toString(),
@@ -1095,1161 +1082,1172 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-section-header">
               <div>
                 <h2>Live operations radar</h2>
-            <p className="muted">
-              Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat
-              handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
-            </p>
-          </div>
-          <Link className="text-link" href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}>
-            Open first lane
-          </Link>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {fullDashboardData.liveOperationsRadar.map((item) => (
-            <Link
-              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
-              href={item.href}
-              key={item.lane}
-            >
-              <small>
-                {item.owner} / {item.lane}
-              </small>
-              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list admin-mt-10">
-                <span className="pill pill-neutral">{item.value}</span>
-                {item.checks.slice(0, 3).map((check) => (
-                  <span className="pill pill-info" key={check}>
-                    {check}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Policy outcome pulse</h2>
-            <p className="muted">
-              First-screen readout of whether current matching policy is producing acceptable outcomes. Deeper
-              cohort analysis stays in Operations Policy.
-            </p>
-          </div>
-          <Link className="button button-secondary" href="/operations-policy">
-            <Settings2 size={16} aria-hidden="true" />
-            Review policy cohorts
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {fullDashboardData.policyOutcome.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {fullDashboardData.policyOutcome.cards.map((card) => (
-            <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
-              <span className={`pill ${card.pillClass}`}>{card.scope}</span>
-              <h3>{card.title}</h3>
-              <p>{card.detail}</p>
-              <small>{card.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Shift command briefing</h2>
-            <p className="muted">
-              Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt,
-              notification, and payout pressure into one operating handoff.
-            </p>
-          </div>
-          <span className={`signal ${fullDashboardData.shiftBriefing.signalClass}`}>
-            {fullDashboardData.shiftBriefing.label}
-          </span>
-        </div>
-        <div className="ops-task-note admin-mt-14">
-          <div className="ops-row">
-            <div>
-              <span className="pill pill-warn">Next best move</span>
-              <strong>{fullDashboardData.shiftBriefing.headline}</strong>
-              <p className="muted">{fullDashboardData.shiftBriefing.detail}</p>
-            </div>
-            <Link className="button button-secondary" href={fullDashboardData.shiftBriefing.primaryAction.href}>
-              <BellRing size={16} aria-hidden="true" />
-              {fullDashboardData.shiftBriefing.primaryAction.label}
-            </Link>
-          </div>
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          {fullDashboardData.shiftBriefing.stats.map((stat) => (
-            <Link
-              className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
-              href={stat.href}
-              key={stat.label}
-            >
-              <span>{stat.label}</span>
-              <strong>{stat.value}</strong>
-              <small>{stat.helper}</small>
-            </Link>
-          ))}
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
-            <Link
-              className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
-              href={item.href}
-              key={`${item.area}-${item.href}-${item.label}-${index}`}
-            >
-              <small>
-                {item.owner} / {item.area}
-              </small>
-              <h3>{item.label}</h3>
-              <p>{item.recommendedAction}</p>
-              <span className="ops-task-card-action">Open</span>
-            </Link>
-          ))}
-          {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
-            <div className="ops-task-note">
-              <strong>No same-shift queue item is visible.</strong>
-              <p className="muted">
-                Keep monitoring live matching, Partner locations, cash debt, and notification delivery as
-                demand changes.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Opening shift checklist</h2>
-            <p className="muted">
-              A simple order for the first admin pass: protect waiting customers, confirm Partner supply,
-              clear money blockers, then check external integrations.
-            </p>
-          </div>
-          <span
-            className={`signal ${
-              fullDashboardData.operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
-                ? 'signal-warn'
-                : 'signal-ok'
-            }`}
-          >
-            {fullDashboardData.operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success').length}{' '}
-            action(s)
-          </span>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {fullDashboardData.operatorStartChecklist.map((item, index) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <small>Step {index + 1}</small>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <span className="ops-task-card-action">{item.action}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Matching control room</h2>
-            <p className="muted">
-              Live view of open matching demand. Existing bookings use their saved policy snapshot; new
-              bookings use the current policy.
-            </p>
-          </div>
-          <div className="participant-list">
-            <Link className="button button-secondary" href="/bookings?view=matching">
-              <BellRing size={16} aria-hidden="true" />
-              Open matching timeline
-            </Link>
-            <Link className="button button-secondary" href="/operations-policy">
-              <Settings2 size={16} aria-hidden="true" />
-              Simulate policy
-            </Link>
-          </div>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {matchingControl.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="detail-grid admin-mt-14">
-          <div className="ops-task-note">
-            <div className="ops-section-header">
-              <div>
-                <h3>Open matching queue</h3>
                 <p className="muted">
-                  Bookings that may require dispatch intervention before the customer cancels or the timer
-                  expires.
+                  Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice,
+                  chat handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
                 </p>
               </div>
-              <span className={`pill ${matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}`}>
-                {matchingControl.openRows.length} shown
+              <Link
+                className="text-link"
+                href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}
+              >
+                Open first lane
+              </Link>
+            </div>
+            <div className="ops-task-grid admin-mt-14">
+              {fullDashboardData.liveOperationsRadar.map((item) => (
+                <Link
+                  className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
+                  href={item.href}
+                  key={item.lane}
+                >
+                  <small>
+                    {item.owner} / {item.lane}
+                  </small>
+                  <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
+                  <div className="participant-list admin-mt-10">
+                    <span className="pill pill-neutral">{item.value}</span>
+                    {item.checks.slice(0, 3).map((check) => (
+                      <span className="pill pill-info" key={check}>
+                        {check}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="card admin-mt-20">
+            <div className="ops-section-header">
+              <div>
+                <h2>Policy outcome pulse</h2>
+                <p className="muted">
+                  First-screen readout of whether current matching policy is producing acceptable outcomes.
+                  Deeper cohort analysis stays in Operations Policy.
+                </p>
+              </div>
+              <Link className="button button-secondary" href="/operations-policy">
+                <Settings2 size={16} aria-hidden="true" />
+                Review policy cohorts
+              </Link>
+            </div>
+            <div className="service-trace-summary admin-mt-12">
+              {fullDashboardData.policyOutcome.metrics.map((metric) => (
+                <div key={metric.label}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <small>{metric.helper}</small>
+                </div>
+              ))}
+            </div>
+            <div className="ops-task-grid admin-mt-14">
+              {fullDashboardData.policyOutcome.cards.map((card) => (
+                <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
+                  <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+                  <h3>{card.title}</h3>
+                  <p>{card.detail}</p>
+                  <small>{card.operatorAction}</small>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="card admin-mt-20">
+            <div className="ops-section-header">
+              <div>
+                <h2>Shift command briefing</h2>
+                <p className="muted">
+                  Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt,
+                  notification, and payout pressure into one operating handoff.
+                </p>
+              </div>
+              <span className={`signal ${fullDashboardData.shiftBriefing.signalClass}`}>
+                {fullDashboardData.shiftBriefing.label}
               </span>
             </div>
-            <div className="stack admin-mt-10">
-              {matchingControl.openRows.map((row) => (
-                <div className="ops-row" key={row.id}>
-                  <div>
-                    <Link className="text-link" href={`/bookings/${row.id}`}>
-                      {row.title}
-                    </Link>
-                    <p className="muted">{row.detail}</p>
-                    <div className="participant-list admin-mt-8">
-                      <span className={`pill ${row.customerPillClass}`}>{row.customerState}</span>
-                      <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
-                      <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
-                    </div>
-                    <p className="muted admin-mt-6">Next: {row.nextAction}</p>
-                  </div>
-                  <span className={`pill ${row.pillClass}`}>{row.status}</span>
-                </div>
-              ))}
-              {matchingControl.openRows.length === 0 ? (
-                <p className="muted">No open matching booking is waiting right now.</p>
-              ) : null}
-            </div>
-          </div>
-          <div className="ops-task-note">
-            <div className="ops-section-header">
-              <div>
-                <h3>Supply and policy checks</h3>
-                <p className="muted">
-                  The most likely reason matching will feel slow before operators touch a booking.
-                </p>
-              </div>
-              <span className={`pill ${matchingControl.healthPillClass}`}>{matchingControl.healthLabel}</span>
-            </div>
-            <div className="ops-task-grid admin-grid-single admin-mt-12">
-              {matchingControl.checks.map((check) => (
-                <div className={`ops-task-card ${check.className}`} key={check.title}>
-                  <span className={`pill ${check.pillClass}`}>{check.status}</span>
-                  <h3>{check.title}</h3>
-                  <p>{check.detail}</p>
-                  <small>{check.operatorAction}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="card admin-mt-20 dashboard-card-scroll dashboard-policy-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Operations policy snapshot</h2>
-            <p className="muted">
-              Live dispatch rules and owner decisions currently guiding matching, marketplace participation,
-              cancellation, no-show, and Partner alerts.
-            </p>
-          </div>
-          <Link className="button button-secondary" href="/operations-policy">
-            <Settings2 size={16} aria-hidden="true" />
-            Change policy
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Active overrides</span>
-            <strong>{fullDashboardData.policySummary.activeOverrideCount}</strong>
-            <small>Values different from recommended baseline.</small>
-          </div>
-          <div>
-            <span>Recent changes</span>
-            <strong>{fullDashboardData.policySummary.recentChangeCount}</strong>
-            <small>Policy records changed in the last 7 days.</small>
-          </div>
-          <div>
-            <span>Policy alignment</span>
-            <strong>{fullDashboardData.policySummary.healthLabel}</strong>
-            <small>{fullDashboardData.policySummary.healthHelper}</small>
-          </div>
-          {fullDashboardData.policySummary.enforced.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-              <Link className="text-link" href={item.href}>
-                Tune
-              </Link>
-            </div>
-          ))}
-        </div>
-        {fullDashboardData.policySummary.activeOverrides.length ||
-        fullDashboardData.policySummary.recentChanges.length ? (
-          <div className="detail-grid admin-mt-14">
-            <div className="ops-task-note">
+            <div className="ops-task-note admin-mt-14">
               <div className="ops-row">
                 <div>
-                  <strong>Active policy overrides</strong>
-                  <p className="muted">
-                    These owner choices are currently different from the recommended operating baseline.
-                  </p>
+                  <span className="pill pill-warn">Next best move</span>
+                  <strong>{fullDashboardData.shiftBriefing.headline}</strong>
+                  <p className="muted">{fullDashboardData.shiftBriefing.detail}</p>
                 </div>
-                <span
-                  className={`pill ${
-                    fullDashboardData.policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'
-                  }`}
+                <Link
+                  className="button button-secondary"
+                  href={fullDashboardData.shiftBriefing.primaryAction.href}
                 >
-                  {fullDashboardData.policySummary.activeOverrideCount} override(s)
-                </span>
-              </div>
-              <div className="stack admin-mt-10">
-                {fullDashboardData.policySummary.activeOverrides.slice(0, 4).map((override) => (
-                  <div className="ops-row" key={override.key}>
-                    <div>
-                      <strong>{override.label}</strong>
-                      <p className="muted">
-                        Current {override.current} / recommended {override.recommended}
-                      </p>
-                    </div>
-                    <Link className="pill pill-info" href={override.href}>
-                      {override.category}
-                    </Link>
-                  </div>
-                ))}
-                {fullDashboardData.policySummary.activeOverrides.length === 0 ? (
-                  <p className="muted">
-                    No active policy override is different from the recommended baseline.
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <div className="ops-task-note">
-              <div className="ops-row">
-                <div>
-                  <strong>Recent policy changes</strong>
-                  <p className="muted">
-                    Use this as a quick audit signal before investigating dispatch, payment, or alert
-                    behavior.
-                  </p>
-                </div>
-                <Link className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
-                  <FileClock size={16} aria-hidden="true" />
-                  Policy audit
+                  <BellRing size={16} aria-hidden="true" />
+                  {fullDashboardData.shiftBriefing.primaryAction.label}
                 </Link>
               </div>
-              <div className="stack admin-mt-10">
-                {fullDashboardData.policySummary.recentChanges.slice(0, 4).map((change) => (
-                  <div className="ops-row" key={change.key}>
-                    <div>
-                      <strong>{change.label}</strong>
-                      <p className="muted">
-                        {change.current} changed {change.changedAtLabel}
-                      </p>
-                    </div>
-                    <Link
-                      className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}
-                      href={change.href}
-                    >
-                      {change.enforced ? 'Live' : 'Planning'}
-                    </Link>
-                  </div>
-                ))}
-                {fullDashboardData.policySummary.recentChanges.length === 0 ? (
-                  <p className="muted">No policy setting was changed in the last 7 days.</p>
-                ) : null}
+            </div>
+            <div className="service-trace-summary admin-mt-14">
+              {fullDashboardData.shiftBriefing.stats.map((stat) => (
+                <Link
+                  className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
+                  href={stat.href}
+                  key={stat.label}
+                >
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                  <small>{stat.helper}</small>
+                </Link>
+              ))}
+            </div>
+            <div className="ops-task-grid admin-mt-14">
+              {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
+                <Link
+                  className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
+                  href={item.href}
+                  key={`${item.area}-${item.href}-${item.label}-${index}`}
+                >
+                  <small>
+                    {item.owner} / {item.area}
+                  </small>
+                  <h3>{item.label}</h3>
+                  <p>{item.recommendedAction}</p>
+                  <span className="ops-task-card-action">Open</span>
+                </Link>
+              ))}
+              {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
+                <div className="ops-task-note">
+                  <strong>No same-shift queue item is visible.</strong>
+                  <p className="muted">
+                    Keep monitoring live matching, Partner locations, cash debt, and notification delivery as
+                    demand changes.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="card admin-mt-20">
+            <div className="ops-section-header">
+              <div>
+                <h2>Opening shift checklist</h2>
+                <p className="muted">
+                  A simple order for the first admin pass: protect waiting customers, confirm Partner supply,
+                  clear money blockers, then check external integrations.
+                </p>
+              </div>
+              <span
+                className={`signal ${
+                  fullDashboardData.operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
+                    ? 'signal-warn'
+                    : 'signal-ok'
+                }`}
+              >
+                {
+                  fullDashboardData.operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success')
+                    .length
+                }{' '}
+                action(s)
+              </span>
+            </div>
+            <div className="ops-task-grid admin-mt-14">
+              {fullDashboardData.operatorStartChecklist.map((item, index) => (
+                <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+                  <small>Step {index + 1}</small>
+                  <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
+                  <span className="ops-task-card-action">{item.action}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
+            <div className="ops-section-header">
+              <div>
+                <h2>Matching control room</h2>
+                <p className="muted">
+                  Live view of open matching demand. Existing bookings use their saved policy snapshot; new
+                  bookings use the current policy.
+                </p>
+              </div>
+              <div className="participant-list">
+                <Link className="button button-secondary" href="/bookings?view=matching">
+                  <BellRing size={16} aria-hidden="true" />
+                  Open matching timeline
+                </Link>
+                <Link className="button button-secondary" href="/operations-policy">
+                  <Settings2 size={16} aria-hidden="true" />
+                  Simulate policy
+                </Link>
               </div>
             </div>
-          </div>
-        ) : null}
-        <div className="ops-task-grid admin-mt-14">
-          {fullDashboardData.policySummary.decisions.map((decision) => (
-            <div className={`ops-task-card ${decision.className}`} key={decision.key}>
-              <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
-              <h3>{decision.label}</h3>
-              <p>{decision.current}</p>
-              <small>{decision.recommendation}</small>
-              <Link className="text-link" href={decision.href}>
-                Open policy
+            <div className="service-trace-summary admin-mt-12">
+              {matchingControl.metrics.map((metric) => (
+                <div key={metric.label}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <small>{metric.helper}</small>
+                </div>
+              ))}
+            </div>
+            <div className="detail-grid admin-mt-14">
+              <div className="ops-task-note">
+                <div className="ops-section-header">
+                  <div>
+                    <h3>Open matching queue</h3>
+                    <p className="muted">
+                      Bookings that may require dispatch intervention before the customer cancels or the timer
+                      expires.
+                    </p>
+                  </div>
+                  <span className={`pill ${matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}`}>
+                    {matchingControl.openRows.length} shown
+                  </span>
+                </div>
+                <div className="stack admin-mt-10">
+                  {matchingControl.openRows.map((row) => (
+                    <div className="ops-row" key={row.id}>
+                      <div>
+                        <Link className="text-link" href={`/bookings/${row.id}`}>
+                          {row.title}
+                        </Link>
+                        <p className="muted">{row.detail}</p>
+                        <div className="participant-list admin-mt-8">
+                          <span className={`pill ${row.customerPillClass}`}>{row.customerState}</span>
+                          <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
+                          <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
+                        </div>
+                        <p className="muted admin-mt-6">Next: {row.nextAction}</p>
+                      </div>
+                      <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                    </div>
+                  ))}
+                  {matchingControl.openRows.length === 0 ? (
+                    <p className="muted">No open matching booking is waiting right now.</p>
+                  ) : null}
+                </div>
+              </div>
+              <div className="ops-task-note">
+                <div className="ops-section-header">
+                  <div>
+                    <h3>Supply and policy checks</h3>
+                    <p className="muted">
+                      The most likely reason matching will feel slow before operators touch a booking.
+                    </p>
+                  </div>
+                  <span className={`pill ${matchingControl.healthPillClass}`}>
+                    {matchingControl.healthLabel}
+                  </span>
+                </div>
+                <div className="ops-task-grid admin-grid-single admin-mt-12">
+                  {matchingControl.checks.map((check) => (
+                    <div className={`ops-task-card ${check.className}`} key={check.title}>
+                      <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                      <h3>{check.title}</h3>
+                      <p>{check.detail}</p>
+                      <small>{check.operatorAction}</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="card admin-mt-20 dashboard-card-scroll dashboard-policy-card">
+            <div className="ops-section-header">
+              <div>
+                <h2>Operations policy snapshot</h2>
+                <p className="muted">
+                  Live dispatch rules and owner decisions currently guiding matching, marketplace
+                  participation, cancellation, no-show, and Partner alerts.
+                </p>
+              </div>
+              <Link className="button button-secondary" href="/operations-policy">
+                <Settings2 size={16} aria-hidden="true" />
+                Change policy
               </Link>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Booking attention cockpit</h2>
-              <p className="muted">
-                Dispatch exceptions for the selected dashboard date range that should be checked before they
-                become customer complaints.
-              </p>
+            <div className="service-trace-summary admin-mt-12">
+              <div>
+                <span>Active overrides</span>
+                <strong>{fullDashboardData.policySummary.activeOverrideCount}</strong>
+                <small>Values different from recommended baseline.</small>
+              </div>
+              <div>
+                <span>Recent changes</span>
+                <strong>{fullDashboardData.policySummary.recentChangeCount}</strong>
+                <small>Policy records changed in the last 7 days.</small>
+              </div>
+              <div>
+                <span>Policy alignment</span>
+                <strong>{fullDashboardData.policySummary.healthLabel}</strong>
+                <small>{fullDashboardData.policySummary.healthHelper}</small>
+              </div>
+              {fullDashboardData.policySummary.enforced.map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.helper}</small>
+                  <Link className="text-link" href={item.href}>
+                    Tune
+                  </Link>
+                </div>
+              ))}
             </div>
-            <Link className="button button-secondary" href="/bookings?view=attention">
-              <BellRing size={16} aria-hidden="true" />
-              Attention bookings
-            </Link>
-          </div>
-          <div className="participant-list admin-mt-8">
-            <Link className="button button-secondary" href="/bookings?view=matching">
-              <BellRing size={16} aria-hidden="true" />
-              Matching ops
-            </Link>
-            <Link className="button button-secondary" href="/bookings?view=attention">
-              <BellRing size={16} aria-hidden="true" />
-              Attention bookings
-            </Link>
-          </div>
-          <div className="service-trace-summary">
-            <div>
-              <span>Matching escalations</span>
-              <strong>{fullDashboardData.bookingDeepDive.matchingEscalations}</strong>
-              <small>First-pick, marketplace participants, final choice, or chat handoff</small>
-            </div>
-            <div>
-              <span>Expired matching</span>
-              <strong>{fullDashboardData.bookingDeepDive.expiredOpenMatching}</strong>
-              <small>Open windows past timeout</small>
-            </div>
-            <div>
-              <span>No participants</span>
-              <strong>{fullDashboardData.bookingDeepDive.openWithoutParticipants}</strong>
-              <small>Customer waiting, no Partner participation yet</small>
-            </div>
-            <div>
-              <span>Matched no chat</span>
-              <strong>{fullDashboardData.bookingDeepDive.matchedWithoutChat}</strong>
-              <small>Partner selected, room missing</small>
-            </div>
-            <div>
-              <span>Quiet active chats</span>
-              <strong>{fullDashboardData.bookingDeepDive.quietActiveChats}</strong>
-              <small>Room exists but no messages</small>
-            </div>
-            <div>
-              <span>Payment release check</span>
-              <strong>{fullDashboardData.bookingDeepDive.releaseChecks}</strong>
-              <small>Cancelled/expired/no-show not released</small>
-            </div>
-            <div>
-              <span>Completion capture check</span>
-              <strong>{fullDashboardData.bookingDeepDive.captureChecks}</strong>
-              <small>Completed service still authorized</small>
-            </div>
-            <div>
-              <span>Avg participants</span>
-              <strong>{fullDashboardData.bookingDeepDive.averageParticipants}</strong>
-              <small>Open/matched response depth</small>
-            </div>
-            <div>
-              <span>Manual closeout</span>
-              <strong>{fullDashboardData.bookingDeepDive.manualCloseout}</strong>
-              <small>Needs operator audit trail</small>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Service and payment mix</h2>
-              <p className="muted">
-                Which services and payment methods created operational load in the selected dashboard date
-                range.
-              </p>
-            </div>
-            <Link className="text-link" href="/services">
-              Pricing setup
-            </Link>
-          </div>
-          <div className="detail-grid">
-            <div>
-              <h3>Top service demand</h3>
-              <div className="stack">
-                {fullDashboardData.bookingDeepDive.serviceDemand.map((item) => (
-                  <div className="ops-row" key={item.label}>
+            {fullDashboardData.policySummary.activeOverrides.length ||
+            fullDashboardData.policySummary.recentChanges.length ? (
+              <div className="detail-grid admin-mt-14">
+                <div className="ops-task-note">
+                  <div className="ops-row">
                     <div>
-                      <strong>{item.label}</strong>
+                      <strong>Active policy overrides</strong>
                       <p className="muted">
-                        {item.active} active / {item.completed} completed / avg {money(item.averagePrice)}
+                        These owner choices are currently different from the recommended operating baseline.
                       </p>
                     </div>
-                    <span className="pill pill-info">{item.total}</span>
+                    <span
+                      className={`pill ${
+                        fullDashboardData.policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'
+                      }`}
+                    >
+                      {fullDashboardData.policySummary.activeOverrideCount} override(s)
+                    </span>
                   </div>
-                ))}
-                {fullDashboardData.bookingDeepDive.serviceDemand.length === 0 ? (
-                  <p className="muted">No service demand loaded yet.</p>
-                ) : null}
+                  <div className="stack admin-mt-10">
+                    {fullDashboardData.policySummary.activeOverrides.slice(0, 4).map((override) => (
+                      <div className="ops-row" key={override.key}>
+                        <div>
+                          <strong>{override.label}</strong>
+                          <p className="muted">
+                            Current {override.current} / recommended {override.recommended}
+                          </p>
+                        </div>
+                        <Link className="pill pill-info" href={override.href}>
+                          {override.category}
+                        </Link>
+                      </div>
+                    ))}
+                    {fullDashboardData.policySummary.activeOverrides.length === 0 ? (
+                      <p className="muted">
+                        No active policy override is different from the recommended baseline.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="ops-task-note">
+                  <div className="ops-row">
+                    <div>
+                      <strong>Recent policy changes</strong>
+                      <p className="muted">
+                        Use this as a quick audit signal before investigating dispatch, payment, or alert
+                        behavior.
+                      </p>
+                    </div>
+                    <Link className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
+                      <FileClock size={16} aria-hidden="true" />
+                      Policy audit
+                    </Link>
+                  </div>
+                  <div className="stack admin-mt-10">
+                    {fullDashboardData.policySummary.recentChanges.slice(0, 4).map((change) => (
+                      <div className="ops-row" key={change.key}>
+                        <div>
+                          <strong>{change.label}</strong>
+                          <p className="muted">
+                            {change.current} changed {change.changedAtLabel}
+                          </p>
+                        </div>
+                        <Link
+                          className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}
+                          href={change.href}
+                        >
+                          {change.enforced ? 'Live' : 'Planning'}
+                        </Link>
+                      </div>
+                    ))}
+                    {fullDashboardData.policySummary.recentChanges.length === 0 ? (
+                      <p className="muted">No policy setting was changed in the last 7 days.</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <div className="ops-task-grid admin-mt-14">
+              {fullDashboardData.policySummary.decisions.map((decision) => (
+                <div className={`ops-task-card ${decision.className}`} key={decision.key}>
+                  <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
+                  <h3>{decision.label}</h3>
+                  <p>{decision.current}</p>
+                  <small>{decision.recommendation}</small>
+                  <Link className="text-link" href={decision.href}>
+                    Open policy
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="detail-grid admin-mt-20">
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Booking attention cockpit</h2>
+                  <p className="muted">
+                    Dispatch exceptions for the selected dashboard date range that should be checked before
+                    they become customer complaints.
+                  </p>
+                </div>
+                <Link className="button button-secondary" href="/bookings?view=attention">
+                  <BellRing size={16} aria-hidden="true" />
+                  Attention bookings
+                </Link>
+              </div>
+              <div className="participant-list admin-mt-8">
+                <Link className="button button-secondary" href="/bookings?view=matching">
+                  <BellRing size={16} aria-hidden="true" />
+                  Matching ops
+                </Link>
+                <Link className="button button-secondary" href="/bookings?view=attention">
+                  <BellRing size={16} aria-hidden="true" />
+                  Attention bookings
+                </Link>
+              </div>
+              <div className="service-trace-summary">
+                <div>
+                  <span>Matching escalations</span>
+                  <strong>{fullDashboardData.bookingDeepDive.matchingEscalations}</strong>
+                  <small>First-pick, marketplace participants, final choice, or chat handoff</small>
+                </div>
+                <div>
+                  <span>Expired matching</span>
+                  <strong>{fullDashboardData.bookingDeepDive.expiredOpenMatching}</strong>
+                  <small>Open windows past timeout</small>
+                </div>
+                <div>
+                  <span>No participants</span>
+                  <strong>{fullDashboardData.bookingDeepDive.openWithoutParticipants}</strong>
+                  <small>Customer waiting, no Partner participation yet</small>
+                </div>
+                <div>
+                  <span>Matched no chat</span>
+                  <strong>{fullDashboardData.bookingDeepDive.matchedWithoutChat}</strong>
+                  <small>Partner selected, room missing</small>
+                </div>
+                <div>
+                  <span>Quiet active chats</span>
+                  <strong>{fullDashboardData.bookingDeepDive.quietActiveChats}</strong>
+                  <small>Room exists but no messages</small>
+                </div>
+                <div>
+                  <span>Payment release check</span>
+                  <strong>{fullDashboardData.bookingDeepDive.releaseChecks}</strong>
+                  <small>Cancelled/expired/no-show not released</small>
+                </div>
+                <div>
+                  <span>Completion capture check</span>
+                  <strong>{fullDashboardData.bookingDeepDive.captureChecks}</strong>
+                  <small>Completed service still authorized</small>
+                </div>
+                <div>
+                  <span>Avg participants</span>
+                  <strong>{fullDashboardData.bookingDeepDive.averageParticipants}</strong>
+                  <small>Open/matched response depth</small>
+                </div>
+                <div>
+                  <span>Manual closeout</span>
+                  <strong>{fullDashboardData.bookingDeepDive.manualCloseout}</strong>
+                  <small>Needs operator audit trail</small>
+                </div>
               </div>
             </div>
-            <div>
-              <h3>Payment method load</h3>
+
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Service and payment mix</h2>
+                  <p className="muted">
+                    Which services and payment methods created operational load in the selected dashboard date
+                    range.
+                  </p>
+                </div>
+                <Link className="text-link" href="/services">
+                  Pricing setup
+                </Link>
+              </div>
+              <div className="detail-grid">
+                <div>
+                  <h3>Top service demand</h3>
+                  <div className="stack">
+                    {fullDashboardData.bookingDeepDive.serviceDemand.map((item) => (
+                      <div className="ops-row" key={item.label}>
+                        <div>
+                          <strong>{item.label}</strong>
+                          <p className="muted">
+                            {item.active} active / {item.completed} completed / avg {money(item.averagePrice)}
+                          </p>
+                        </div>
+                        <span className="pill pill-info">{item.total}</span>
+                      </div>
+                    ))}
+                    {fullDashboardData.bookingDeepDive.serviceDemand.length === 0 ? (
+                      <p className="muted">No service demand loaded yet.</p>
+                    ) : null}
+                  </div>
+                </div>
+                <div>
+                  <h3>Payment method load</h3>
+                  <div className="stack">
+                    {fullDashboardData.bookingDeepDive.paymentMix.map((item) => (
+                      <div className="ops-row" key={item.method}>
+                        <div>
+                          <strong>{item.method}</strong>
+                          <p className="muted">
+                            {money(item.amount, item.currency)} / {item.authorized} authorized /{' '}
+                            {item.pending} pending
+                          </p>
+                        </div>
+                        <span className={`pill ${item.checkCount ? 'pill-warn' : 'pill-info'}`}>
+                          {item.count} payment(s)
+                        </span>
+                      </div>
+                    ))}
+                    {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
+                      <p className="muted">No payment method data loaded yet.</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="detail-grid admin-mt-20">
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Booking status control</h2>
+                  <p className="muted">
+                    Total, matching, completion, cancellation, and no-show proxy for the selected dashboard
+                    date range.
+                  </p>
+                </div>
+                <Link className="text-link" href="/bookings">
+                  Open bookings
+                </Link>
+              </div>
+              <div className="service-trace-summary">
+                <div>
+                  <span>Total</span>
+                  <strong>{bookingOps.total}</strong>
+                  <small>All bookings</small>
+                </div>
+                <div>
+                  <span>Matching wait</span>
+                  <strong>{bookingOps.openMatching}</strong>
+                  <small>Customer waiting</small>
+                </div>
+                <div>
+                  <span>Completed</span>
+                  <strong>{bookingOps.completed}</strong>
+                  <small>Service finished</small>
+                </div>
+                <div>
+                  <span>Cancelled</span>
+                  <strong>{bookingOps.cancelled}</strong>
+                  <small>Refund/release check</small>
+                </div>
+                <div>
+                  <span>Expired</span>
+                  <strong>{bookingOps.expired}</strong>
+                  <small>Manual closeout</small>
+                </div>
+                <div>
+                  <span>Formal no-show</span>
+                  <strong>{bookingOps.noShowFormal}</strong>
+                  <small>Operator decision</small>
+                </div>
+                <div>
+                  <span>No-show records</span>
+                  <strong>{bookingOps.noShowSignal}</strong>
+                  <small>Formal and overdue</small>
+                </div>
+                <div>
+                  <span>Closeout checks</span>
+                  <strong>{bookingOps.completedCloseoutChecks}</strong>
+                  <small>Finance records</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Customer app presence</h2>
+                  <p className="muted">
+                    Current customer activity proxy until dedicated customer session tracking is added.
+                  </p>
+                </div>
+                <span className="pill pill-info">Presence proxy</span>
+              </div>
+              <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={10}>
+                <InfoRow
+                  label="Live app customers"
+                  value={appPresence.liveAppCustomers.toString()}
+                  detail="Customer app sessions with an unexpired heartbeat."
+                />
+                <InfoRow
+                  label="Live matching customers"
+                  value={appPresence.liveOpenMatchingCustomers.toString()}
+                  detail="Live customers attached to open matching bookings."
+                />
+                <InfoRow
+                  label="Live active-booking customers"
+                  value={appPresence.liveActiveBookingCustomers.toString()}
+                  detail="Live customers attached to active bookings."
+                />
+                <InfoRow
+                  label="Live app Partners"
+                  value={appPresence.liveAppPartners.toString()}
+                  detail="Partner app sessions with an unexpired heartbeat."
+                />
+                <InfoRow
+                  label="Recent customer sessions"
+                  value={appPresence.recentCustomerSessions.toString()}
+                  detail="Customer sessions seen in the last 30 minutes but not live now."
+                />
+                <InfoRow
+                  label="Stale customer sessions"
+                  value={appPresence.staleCustomerSessions.toString()}
+                  detail="Customer sessions seen within 24 hours but outside the recent window."
+                />
+                <InfoRow
+                  label="Active booking customers"
+                  value={appPresence.activeBookingCustomers.toString()}
+                  detail="Unique customers attached to open or in-service bookings."
+                />
+                <InfoRow
+                  label="Reachable customers"
+                  value={appPresence.reachableCustomers.toString()}
+                  detail="Alternative signal from enabled push devices when session heartbeats are missing."
+                />
+                <InfoRow
+                  label="Push-disabled customers"
+                  value={appPresence.disabledPushCustomers.toString()}
+                  detail="Customers who may not receive booking or chat updates."
+                />
+                <InfoRow
+                  label="Customer records"
+                  value={appPresence.totalCustomers.toString()}
+                  detail="Total users with a customer profile in the latest admin snapshot."
+                />
+              </AdminDataTable>
+            </div>
+          </section>
+
+          <section className="detail-grid admin-mt-20">
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Hourly booking demand</h2>
+                  <p className="muted">Bookings grouped by request hour in Vietnam time.</p>
+                </div>
+                <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
+              </div>
               <div className="stack">
-                {fullDashboardData.bookingDeepDive.paymentMix.map((item) => (
-                  <div className="ops-row" key={item.method}>
+                {fullDashboardData.hourlyDemand.map((item) => (
+                  <div className="ops-row" key={item.hour}>
                     <div>
-                      <strong>{item.method}</strong>
+                      <strong>{item.hour}</strong>
                       <p className="muted">
-                        {money(item.amount, item.currency)} / {item.authorized} authorized / {item.pending}{' '}
-                        pending
+                        {item.active} active / {item.completed} completed / {item.cancelled} cancelled
                       </p>
                     </div>
-                    <span className={`pill ${item.checkCount ? 'pill-warn' : 'pill-info'}`}>
-                      {item.count} payment(s)
+                    <span className={`pill ${item.total ? 'pill-info' : 'pill-neutral'}`}>{item.total}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Regional booking demand</h2>
+                  <p className="muted">Top service areas inferred from booking address text.</p>
+                </div>
+                <Link className="text-link" href="/bookings?view=all">
+                  Full booking list
+                </Link>
+              </div>
+              <div className="stack">
+                {fullDashboardData.regionalDemand.map((item) => (
+                  <div className="ops-row" key={item.region}>
+                    <div>
+                      <strong>{item.region}</strong>
+                      <p className="muted">
+                        {item.active} active / {item.completed} completed / {item.cancelled} cancelled
+                      </p>
+                    </div>
+                    <span className={`pill ${item.noShowSignal ? 'pill-warn' : 'pill-info'}`}>
+                      {item.total} booking(s)
                     </span>
                   </div>
                 ))}
-                {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
-                  <p className="muted">No payment method data loaded yet.</p>
-                ) : null}
+                {fullDashboardData.regionalDemand.length === 0 && (
+                  <p className="muted">No booking address data loaded yet.</p>
+                )}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Booking status control</h2>
-              <p className="muted">
-                Total, matching, completion, cancellation, and no-show proxy for the selected dashboard date
-                range.
-              </p>
-            </div>
-            <Link className="text-link" href="/bookings">
-              Open bookings
-            </Link>
-          </div>
-          <div className="service-trace-summary">
-            <div>
-              <span>Total</span>
-              <strong>{bookingOps.total}</strong>
-              <small>All bookings</small>
-            </div>
-            <div>
-              <span>Matching wait</span>
-              <strong>{bookingOps.openMatching}</strong>
-              <small>Customer waiting</small>
-            </div>
-            <div>
-              <span>Completed</span>
-              <strong>{bookingOps.completed}</strong>
-              <small>Service finished</small>
-            </div>
-            <div>
-              <span>Cancelled</span>
-              <strong>{bookingOps.cancelled}</strong>
-              <small>Refund/release check</small>
-            </div>
-            <div>
-              <span>Expired</span>
-              <strong>{bookingOps.expired}</strong>
-              <small>Manual closeout</small>
-            </div>
-            <div>
-              <span>Formal no-show</span>
-              <strong>{bookingOps.noShowFormal}</strong>
-              <small>Operator decision</small>
-            </div>
-            <div>
-              <span>No-show records</span>
-              <strong>{bookingOps.noShowSignal}</strong>
-              <small>Formal and overdue</small>
-            </div>
-            <div>
-              <span>Closeout checks</span>
-              <strong>{bookingOps.completedCloseoutChecks}</strong>
-              <small>Finance records</small>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Customer app presence</h2>
-              <p className="muted">
-                Current customer activity proxy until dedicated customer session tracking is added.
-              </p>
-            </div>
-            <span className="pill pill-info">Presence proxy</span>
-          </div>
-          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={10}>
-            <InfoRow
-              label="Live app customers"
-              value={appPresence.liveAppCustomers.toString()}
-              detail="Customer app sessions with an unexpired heartbeat."
-            />
-            <InfoRow
-              label="Live matching customers"
-              value={appPresence.liveOpenMatchingCustomers.toString()}
-              detail="Live customers attached to open matching bookings."
-            />
-            <InfoRow
-              label="Live active-booking customers"
-              value={appPresence.liveActiveBookingCustomers.toString()}
-              detail="Live customers attached to active bookings."
-            />
-            <InfoRow
-              label="Live app Partners"
-              value={appPresence.liveAppPartners.toString()}
-              detail="Partner app sessions with an unexpired heartbeat."
-            />
-            <InfoRow
-              label="Recent customer sessions"
-              value={appPresence.recentCustomerSessions.toString()}
-              detail="Customer sessions seen in the last 30 minutes but not live now."
-            />
-            <InfoRow
-              label="Stale customer sessions"
-              value={appPresence.staleCustomerSessions.toString()}
-              detail="Customer sessions seen within 24 hours but outside the recent window."
-            />
-            <InfoRow
-              label="Active booking customers"
-              value={appPresence.activeBookingCustomers.toString()}
-              detail="Unique customers attached to open or in-service bookings."
-            />
-            <InfoRow
-              label="Reachable customers"
-              value={appPresence.reachableCustomers.toString()}
-              detail="Alternative signal from enabled push devices when session heartbeats are missing."
-            />
-            <InfoRow
-              label="Push-disabled customers"
-              value={appPresence.disabledPushCustomers.toString()}
-              detail="Customers who may not receive booking or chat updates."
-            />
-            <InfoRow
-              label="Customer records"
-              value={appPresence.totalCustomers.toString()}
-              detail="Total users with a customer profile in the latest admin snapshot."
-            />
-          </AdminDataTable>
-        </div>
-      </section>
-
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Hourly booking demand</h2>
-              <p className="muted">Bookings grouped by request hour in Vietnam time.</p>
-            </div>
-            <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
-          </div>
-          <div className="stack">
-            {fullDashboardData.hourlyDemand.map((item) => (
-              <div className="ops-row" key={item.hour}>
+          <section className="detail-grid admin-mt-20">
+            <div className="card">
+              <div className="ops-section-header">
                 <div>
-                  <strong>{item.hour}</strong>
+                  <h2>Partner supply snapshot</h2>
                   <p className="muted">
-                    {item.active} active / {item.completed} completed / {item.cancelled} cancelled
+                    Current operational capacity, app presence, location freshness, and finance blockers.
                   </p>
                 </div>
-                <span className={`pill ${item.total ? 'pill-info' : 'pill-neutral'}`}>{item.total}</span>
+                <Link className="text-link" href="/partners">
+                  Open Partners
+                </Link>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Regional booking demand</h2>
-              <p className="muted">Top service areas inferred from booking address text.</p>
-            </div>
-            <Link className="text-link" href="/bookings?view=all">
-              Full booking list
-            </Link>
-          </div>
-          <div className="stack">
-            {fullDashboardData.regionalDemand.map((item) => (
-              <div className="ops-row" key={item.region}>
+              <div className="service-trace-summary">
                 <div>
-                  <strong>{item.region}</strong>
+                  <span>Total Partners</span>
+                  <strong>{partnerSupply.total}</strong>
+                  <small>All registered Partner profiles</small>
+                </div>
+                <div>
+                  <span>Online supply</span>
+                  <strong>{partnerSupply.online}</strong>
+                  <small>{partnerSupply.onlineAvailable} available now</small>
+                </div>
+                <div>
+                  <span>Live app Partners</span>
+                  <strong>{partnerSupply.liveSessions}</strong>
+                  <small>Active session heartbeat</small>
+                </div>
+                <div>
+                  <span>Supply pressure</span>
+                  <strong>{partnerSupply.supplyPressureLabel}</strong>
+                  <small>Active demand / available supply</small>
+                </div>
+                <div>
+                  <span>Stale location</span>
+                  <strong>{partnerSupply.staleLocation}</strong>
+                  <small>Last saved location older than 90m</small>
+                </div>
+                <div>
+                  <span>Cash debt gate</span>
+                  <strong>{partnerSupply.cashDebtPartners}</strong>
+                  <small>Must settle before final acceptance, service start, and payout release</small>
+                </div>
+                <div>
+                  <span>Verification queue</span>
+                  <strong>{partnerSupply.pendingVerification}</strong>
+                  <small>Submitted for review</small>
+                </div>
+                <div>
+                  <span>Account holds</span>
+                  <strong>{partnerSupply.blocked}</strong>
+                  <small>Account-control blockers</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Partner readiness funnel</h2>
                   <p className="muted">
-                    {item.active} active / {item.completed} completed / {item.cancelled} cancelled
+                    Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile
+                    review.
                   </p>
                 </div>
-                <span className={`pill ${item.noShowSignal ? 'pill-warn' : 'pill-info'}`}>
-                  {item.total} booking(s)
-                </span>
+                <Link className="text-link" href="/partner-controls">
+                  Review queue
+                </Link>
               </div>
-            ))}
-            {fullDashboardData.regionalDemand.length === 0 && (
-              <p className="muted">No booking address data loaded yet.</p>
-            )}
-          </div>
-        </div>
-      </section>
+              <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
+                <InfoRow
+                  label="Approved verification"
+                  value={partnerSupply.approvedVerification.toString()}
+                  detail="Partners whose admin verification can support work activation."
+                />
+                <InfoRow
+                  label="KYC approved"
+                  value={partnerSupply.kycApproved.toString()}
+                  detail="Identity review approved for Level 2 activity."
+                />
+                <InfoRow
+                  label="Bank approved"
+                  value={partnerSupply.bankApproved.toString()}
+                  detail="Primary bank account ready for payout routing."
+                />
+                <InfoRow
+                  label="First revenue Partners"
+                  value={partnerSupply.firstRevenue.toString()}
+                  detail="Partners who can request wallet payout setup after earning revenue."
+                />
+                <InfoRow
+                  label="Withdrawal profile ready"
+                  value={partnerSupply.withdrawalProfileReady.toString()}
+                  detail="First-revenue Partners with a saved residential address for payout review."
+                />
+                <InfoRow
+                  label="Level 2 active"
+                  value={partnerSupply.level2Active.toString()}
+                  detail="Partners whose KYC and verification support matching participation."
+                />
+              </AdminDataTable>
+            </div>
+          </section>
 
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Partner supply snapshot</h2>
-              <p className="muted">
-                Current operational capacity, app presence, location freshness, and finance blockers.
-              </p>
-            </div>
-            <Link className="text-link" href="/partners">
-              Open Partners
-            </Link>
-          </div>
-          <div className="service-trace-summary">
-            <div>
-              <span>Total Partners</span>
-              <strong>{partnerSupply.total}</strong>
-              <small>All registered Partner profiles</small>
-            </div>
-            <div>
-              <span>Online supply</span>
-              <strong>{partnerSupply.online}</strong>
-              <small>{partnerSupply.onlineAvailable} available now</small>
-            </div>
-            <div>
-              <span>Live app Partners</span>
-              <strong>{partnerSupply.liveSessions}</strong>
-              <small>Active session heartbeat</small>
-            </div>
-            <div>
-              <span>Supply pressure</span>
-              <strong>{partnerSupply.supplyPressureLabel}</strong>
-              <small>Active demand / available supply</small>
-            </div>
-            <div>
-              <span>Stale location</span>
-              <strong>{partnerSupply.staleLocation}</strong>
-              <small>Last saved location older than 90m</small>
-            </div>
-            <div>
-              <span>Cash debt gate</span>
-              <strong>{partnerSupply.cashDebtPartners}</strong>
-              <small>Must settle before final acceptance, service start, and payout release</small>
-            </div>
-            <div>
-              <span>Verification queue</span>
-              <strong>{partnerSupply.pendingVerification}</strong>
-              <small>Submitted for review</small>
-            </div>
-            <div>
-              <span>Account holds</span>
-              <strong>{partnerSupply.blocked}</strong>
-              <small>Account-control blockers</small>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Partner readiness funnel</h2>
-              <p className="muted">
-                Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile
-                review.
-              </p>
-            </div>
-            <Link className="text-link" href="/partner-controls">
-              Review queue
-            </Link>
-          </div>
-          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
-            <InfoRow
-              label="Approved verification"
-              value={partnerSupply.approvedVerification.toString()}
-              detail="Partners whose admin verification can support work activation."
-            />
-            <InfoRow
-              label="KYC approved"
-              value={partnerSupply.kycApproved.toString()}
-              detail="Identity review approved for Level 2 activity."
-            />
-            <InfoRow
-              label="Bank approved"
-              value={partnerSupply.bankApproved.toString()}
-              detail="Primary bank account ready for payout routing."
-            />
-            <InfoRow
-              label="First revenue Partners"
-              value={partnerSupply.firstRevenue.toString()}
-              detail="Partners who can request wallet payout setup after earning revenue."
-            />
-            <InfoRow
-              label="Withdrawal profile ready"
-              value={partnerSupply.withdrawalProfileReady.toString()}
-              detail="First-revenue Partners with a saved residential address for payout review."
-            />
-            <InfoRow
-              label="Level 2 active"
-              value={partnerSupply.level2Active.toString()}
-              detail="Partners whose KYC and verification support matching participation."
-            />
-          </AdminDataTable>
-        </div>
-      </section>
-
-      <section className="card admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner dispatch control</h2>
-            <p className="muted">
-              Partner checklist queue for marketplace blockers, location readiness, first-revenue payout
-              requirements, and app contactability.
-            </p>
-          </div>
-          <Link className="text-link" href="/partners">
-            Partner queue
-          </Link>
-        </div>
-        <div className="ops-task-grid admin-mt-12">
-          {fullDashboardData.partnerOpsQueue.items.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
-              <small>{item.status}</small>
-              <h3>{item.name}</h3>
-              <p>{item.detail}</p>
-              <div className="ops-task-breakdown">
-                {item.metrics.map((metric) => (
-                  <span
-                    className={`ops-task-breakdown-item ops-task-breakdown-${metric.tone}`}
-                    key={`${item.id}-${metric.label}`}
-                  >
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </span>
-                ))}
-              </div>
-              <span className="ops-task-card-action">{item.action}</span>
-            </Link>
-          ))}
-          {fullDashboardData.partnerOpsQueue.items.length === 0 && (
-            <div className="ops-task-note">
-              <strong>No Partner blocker is currently visible.</strong>
-              <p className="muted">
-                Verified Partners, wallet debt, location freshness, payout readiness, and app contactability
-                are clear in the current snapshot.
-              </p>
-            </div>
-          )}
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          <div>
-            <span>Blocked now</span>
-            <strong>{fullDashboardData.partnerOpsQueue.blockedNow}</strong>
-            <small>Marketplace or account control held</small>
-          </div>
-          <div>
-            <span>Needs payout setup</span>
-            <strong>{fullDashboardData.partnerOpsQueue.payoutSetup}</strong>
-            <small>First revenue follow-up</small>
-          </div>
-          <div>
-            <span>Location stale/missing</span>
-            <strong>{fullDashboardData.partnerOpsQueue.locationIssue}</strong>
-            <small>Dispatch visibility gap</small>
-          </div>
-          <div>
-            <span>Not contactable</span>
-            <strong>{fullDashboardData.partnerOpsQueue.contactIssue}</strong>
-            <small>No app session or push</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Marketplace unblock quick order</h2>
-            <p className="muted">
-              First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a
-              post-first-earning payout gate, not an initial marketplace gate.
-            </p>
-          </div>
-          <Link className="text-link" href="/partner-controls">
-            Full unblock playbook
-          </Link>
-        </div>
-        <div className="ops-task-grid admin-mt-12">
-          {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
-            <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
-              <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
-              <h3>{step.title}</h3>
-              <p>{step.detail}</p>
-              <div className="ops-task-breakdown">
-                <span className={`ops-task-breakdown-item ops-task-breakdown-${step.tone}`}>
-                  <span>{step.metricLabel}</span>
-                  <strong>{step.metricValue}</strong>
-                </span>
-                <span className="ops-task-breakdown-item ops-task-breakdown-info">
-                  <span>Owner</span>
-                  <strong>{step.owner}</strong>
-                </span>
-              </div>
-              <span className="ops-task-card-action">{step.action}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Today command lanes</h2>
-            <p className="muted">
-              High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and
-              setup.
-            </p>
-          </div>
-          <span
-            className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
-          >
-            {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
-          </span>
-        </div>
-        {fullDashboardData.topCommandSignal && (
-          <div className="ops-task-note admin-mt-14">
-            <div className="ops-row">
+          <section className="card admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card">
+            <div className="ops-section-header">
               <div>
-                <span className={`pill ${fullDashboardData.topCommandSignal.pillClass}`}>First move</span>
-                <strong>{fullDashboardData.topCommandSignal.title}</strong>
-                <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
-              </div>
-              <Link className="text-link" href={fullDashboardData.topCommandSignal.href}>
-                {fullDashboardData.topCommandSignal.action}
-              </Link>
-            </div>
-          </div>
-        )}
-        <div className="ops-task-grid">
-          {fullDashboardData.commandSignals.map((signal) => (
-            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-              <div>
-                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
-                <h3>{signal.title}</h3>
-                <p className="muted">{signal.detail}</p>
-                <div className="ops-task-breakdown">
-                  {signal.breakdown.map((item) => {
-                    const content = (
-                      <>
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </>
-                    );
-
-                    return item.href ? (
-                      <Link
-                        className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                        href={item.href}
-                        key={`${signal.title}-${item.label}`}
-                      >
-                        {content}
-                      </Link>
-                    ) : (
-                      <div
-                        className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                        key={`${signal.title}-${item.label}`}
-                      >
-                        {content}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <Link className="ops-task-card-action" href={signal.href}>
-                {signal.action}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="detail-grid admin-mt-20 dashboard-queue-grid">
-        <div className="card dashboard-card-scroll dashboard-checklist-card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Operations checklist queue</h2>
-              <p className="muted">
-                Generated from the latest admin API snapshot. It groups customer protection, Partner controls,
-                payment release, cash debt, and payout recovery together.
-              </p>
-            </div>
-            <span
-              className={`signal ${fullDashboardData.queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}
-            >
-              {fullDashboardData.queueSummary.high > 0
-                ? `${fullDashboardData.queueSummary.high} same-shift`
-                : 'No same-shift queue'}
-            </span>
-          </div>
-          <div className="service-trace-summary">
-            <div>
-              <span>Immediate checks</span>
-              <strong>{fullDashboardData.queueSummary.high}</strong>
-              <small>Same-shift checklist actions</small>
-            </div>
-            <div>
-              <span>Customer protection</span>
-              <strong>{fullDashboardData.queueSummary.customerProtection}</strong>
-              <small>Booking checks</small>
-            </div>
-            <div>
-              <span>Finance checks</span>
-              <strong>{fullDashboardData.queueSummary.financeImmediate}</strong>
-              <small>Payment, payout, debt</small>
-            </div>
-            <div>
-              <span>Partner ops</span>
-              <strong>{fullDashboardData.queueSummary.partnerImmediate}</strong>
-              <small>Reports or verification</small>
-            </div>
-          </div>
-          {fullDashboardData.queueSummary.first && (
-            <div className="ops-task-note admin-mt-14">
-              <div>
-                <span
-                  className={`pill ${
-                    fullDashboardData.queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'
-                  }`}
-                >
-                  First action
-                </span>
-                <h3>{fullDashboardData.queueSummary.first.label}</h3>
-                <p>{fullDashboardData.queueSummary.first.recommendedAction}</p>
+                <h2>Partner dispatch control</h2>
                 <p className="muted">
-                  Owner: {fullDashboardData.queueSummary.first.owner} - Checklist position{' '}
-                  {fullDashboardData.queueSummary.first.priority} - {fullDashboardData.queueSummary.first.detail}
+                  Partner checklist queue for marketplace blockers, location readiness, first-revenue payout
+                  requirements, and app contactability.
                 </p>
               </div>
-              <Link className="text-link" href={fullDashboardData.queueSummary.first.href}>
-                Open task
+              <Link className="text-link" href="/partners">
+                Partner queue
               </Link>
             </div>
-          )}
-          <div className="ops-check-list">
-            {queue.slice(0, 10).map((item, index) => (
-              <Link
-                className={`ops-check-item ops-check-${item.severity}`}
-                href={item.href}
-                key={`${item.area}-${item.label}-${item.href}-${index}`}
-              >
-                <div>
-                  <span className="muted">
-                    {item.area} - {item.owner} - Checklist position {item.priority}
-                  </span>
-                  <strong>{item.label}</strong>
-                  <p className="muted">{item.detail}</p>
-                  <p className="muted">{item.recommendedAction}</p>
+            <div className="ops-task-grid admin-mt-12">
+              {fullDashboardData.partnerOpsQueue.items.map((item) => (
+                <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
+                  <small>{item.status}</small>
+                  <h3>{item.name}</h3>
+                  <p>{item.detail}</p>
+                  <div className="ops-task-breakdown">
+                    {item.metrics.map((metric) => (
+                      <span
+                        className={`ops-task-breakdown-item ops-task-breakdown-${metric.tone}`}
+                        key={`${item.id}-${metric.label}`}
+                      >
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </span>
+                    ))}
+                  </div>
+                  <span className="ops-task-card-action">{item.action}</span>
+                </Link>
+              ))}
+              {fullDashboardData.partnerOpsQueue.items.length === 0 && (
+                <div className="ops-task-note">
+                  <strong>No Partner blocker is currently visible.</strong>
+                  <p className="muted">
+                    Verified Partners, wallet debt, location freshness, payout readiness, and app
+                    contactability are clear in the current snapshot.
+                  </p>
                 </div>
-                <p>{opsQueueSeverityLabel(item.severity)}</p>
-              </Link>
-            ))}
-            {queue.length === 0 && (
-              <p className="muted">No active operational issues detected from the current local data.</p>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
+            <div className="service-trace-summary admin-mt-14">
+              <div>
+                <span>Blocked now</span>
+                <strong>{fullDashboardData.partnerOpsQueue.blockedNow}</strong>
+                <small>Marketplace or account control held</small>
+              </div>
+              <div>
+                <span>Needs payout setup</span>
+                <strong>{fullDashboardData.partnerOpsQueue.payoutSetup}</strong>
+                <small>First revenue follow-up</small>
+              </div>
+              <div>
+                <span>Location stale/missing</span>
+                <strong>{fullDashboardData.partnerOpsQueue.locationIssue}</strong>
+                <small>Dispatch visibility gap</small>
+              </div>
+              <div>
+                <span>Not contactable</span>
+                <strong>{fullDashboardData.partnerOpsQueue.contactIssue}</strong>
+                <small>No app session or push</small>
+              </div>
+            </div>
+          </section>
 
-        <div className="card dashboard-card-scroll dashboard-setup-card">
-          <div className="ops-section-header">
-            <div>
-              <h2>External setup readiness</h2>
-              <p className="muted">
-                Live API environment check. Secrets are never shown, only configured/missing status.
-              </p>
+          <section className="card admin-mt-20">
+            <div className="ops-section-header">
+              <div>
+                <h2>Marketplace unblock quick order</h2>
+                <p className="muted">
+                  First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a
+                  post-first-earning payout gate, not an initial marketplace gate.
+                </p>
+              </div>
+              <Link className="text-link" href="/partner-controls">
+                Full unblock playbook
+              </Link>
             </div>
-            <span className={`signal ${externalReadiness.ok ? 'signal-ok' : 'signal-warn'}`}>
-              {externalReadiness.ok ? 'Ready' : 'Needs setup'}
-            </span>
-          </div>
-          <p className="muted">
-            These are not code errors. They require console/account values before real E2E testing.
-          </p>
-          <div className="stack">
-            {externalReadiness.checks.map((check) => (
-              <ExternalReadinessRow check={check} key={`${check.category}-${check.name}`} />
-            ))}
-            {externalReadiness.checks.length === 0 && (
-              <div className="ops-row">
-                <div>
-                  <strong>API external readiness unavailable</strong>
-                  <p className="muted">Start the HANDS API and refresh this dashboard.</p>
+            <div className="ops-task-grid admin-mt-12">
+              {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
+                <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
+                  <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.detail}</p>
+                  <div className="ops-task-breakdown">
+                    <span className={`ops-task-breakdown-item ops-task-breakdown-${step.tone}`}>
+                      <span>{step.metricLabel}</span>
+                      <strong>{step.metricValue}</strong>
+                    </span>
+                    <span className="ops-task-breakdown-item ops-task-breakdown-info">
+                      <span>Owner</span>
+                      <strong>{step.owner}</strong>
+                    </span>
+                  </div>
+                  <span className="ops-task-card-action">{step.action}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="card admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card">
+            <div className="ops-section-header">
+              <div>
+                <h2>Today command lanes</h2>
+                <p className="muted">
+                  High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts,
+                  and setup.
+                </p>
+              </div>
+              <span
+                className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
+              >
+                {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
+              </span>
+            </div>
+            {fullDashboardData.topCommandSignal && (
+              <div className="ops-task-note admin-mt-14">
+                <div className="ops-row">
+                  <div>
+                    <span className={`pill ${fullDashboardData.topCommandSignal.pillClass}`}>First move</span>
+                    <strong>{fullDashboardData.topCommandSignal.title}</strong>
+                    <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
+                  </div>
+                  <Link className="text-link" href={fullDashboardData.topCommandSignal.href}>
+                    {fullDashboardData.topCommandSignal.action}
+                  </Link>
                 </div>
-                <span className="pill pill-warn">BLOCKED</span>
               </div>
             )}
-          </div>
-        </div>
-      </section>
+            <div className="ops-task-grid">
+              {fullDashboardData.commandSignals.map((signal) => (
+                <div className={`ops-task-card ${signal.className}`} key={signal.title}>
+                  <div>
+                    <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                    <h3>{signal.title}</h3>
+                    <p className="muted">{signal.detail}</p>
+                    <div className="ops-task-breakdown">
+                      {signal.breakdown.map((item) => {
+                        const content = (
+                          <>
+                            <span>{item.label}</span>
+                            <strong>{item.value}</strong>
+                          </>
+                        );
 
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
-          <h2>Realtime flow health</h2>
-          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
-            <InfoRow
-              label="Matching"
-              value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
-              detail="Direct request first, nearby marketplace Partners can participate when needed."
-            />
-            <InfoRow
-              label="Chat"
-              value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
-              detail="Chat is expected after Partner selection/service start."
-            />
-            <InfoRow
-              label="Partner locations"
-              value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
-              detail="MVP uses last-known location, not routing or live streaming."
-            />
-            <InfoRow
-              label="Payment ops"
-              value={`${payments.filter((payment) => payment.status === 'AUTHORIZED').length} holds`}
-              detail="Capture after service completion, release/refund on cancellation."
-            />
-          </AdminDataTable>
-        </div>
+                        return item.href ? (
+                          <Link
+                            className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                            href={item.href}
+                            key={`${signal.title}-${item.label}`}
+                          >
+                            {content}
+                          </Link>
+                        ) : (
+                          <div
+                            className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                            key={`${signal.title}-${item.label}`}
+                          >
+                            {content}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <Link className="ops-task-card-action" href={signal.href}>
+                    {signal.action}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
 
-        <div className="card">
-          <h2>Finance snapshot</h2>
-          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
-            <InfoRow
-              label="Gross"
-              value={money(earnings.grossAmount, earnings.currency)}
-              detail={`${earnings.count} earning record(s)`}
-            />
-            <InfoRow
-              label="Platform fee"
-              value={money(earnings.platformFee, earnings.currency)}
-              detail="Admin revenue before Partner payout."
-            />
-            <InfoRow
-              label="Pending net"
-              value={money(earnings.pendingNetAmount, earnings.currency)}
-              detail="Not ready for payout yet."
-            />
-            <InfoRow
-              label="Paid net"
-              value={money(earnings.paidNetAmount, earnings.currency)}
-              detail="Already marked paid."
-            />
-          </AdminDataTable>
-        </div>
-      </section>
+          <section className="detail-grid admin-mt-20 dashboard-queue-grid">
+            <div className="card dashboard-card-scroll dashboard-checklist-card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>Operations checklist queue</h2>
+                  <p className="muted">
+                    Generated from the latest admin API snapshot. It groups customer protection, Partner
+                    controls, payment release, cash debt, and payout recovery together.
+                  </p>
+                </div>
+                <span
+                  className={`signal ${fullDashboardData.queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}
+                >
+                  {fullDashboardData.queueSummary.high > 0
+                    ? `${fullDashboardData.queueSummary.high} same-shift`
+                    : 'No same-shift queue'}
+                </span>
+              </div>
+              <div className="service-trace-summary">
+                <div>
+                  <span>Immediate checks</span>
+                  <strong>{fullDashboardData.queueSummary.high}</strong>
+                  <small>Same-shift checklist actions</small>
+                </div>
+                <div>
+                  <span>Customer protection</span>
+                  <strong>{fullDashboardData.queueSummary.customerProtection}</strong>
+                  <small>Booking checks</small>
+                </div>
+                <div>
+                  <span>Finance checks</span>
+                  <strong>{fullDashboardData.queueSummary.financeImmediate}</strong>
+                  <small>Payment, payout, debt</small>
+                </div>
+                <div>
+                  <span>Partner ops</span>
+                  <strong>{fullDashboardData.queueSummary.partnerImmediate}</strong>
+                  <small>Reports or verification</small>
+                </div>
+              </div>
+              {fullDashboardData.queueSummary.first && (
+                <div className="ops-task-note admin-mt-14">
+                  <div>
+                    <span
+                      className={`pill ${
+                        fullDashboardData.queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'
+                      }`}
+                    >
+                      First action
+                    </span>
+                    <h3>{fullDashboardData.queueSummary.first.label}</h3>
+                    <p>{fullDashboardData.queueSummary.first.recommendedAction}</p>
+                    <p className="muted">
+                      Owner: {fullDashboardData.queueSummary.first.owner} - Checklist position{' '}
+                      {fullDashboardData.queueSummary.first.priority} -{' '}
+                      {fullDashboardData.queueSummary.first.detail}
+                    </p>
+                  </div>
+                  <Link className="text-link" href={fullDashboardData.queueSummary.first.href}>
+                    Open task
+                  </Link>
+                </div>
+              )}
+              <div className="ops-check-list">
+                {queue.slice(0, 10).map((item, index) => (
+                  <Link
+                    className={`ops-check-item ops-check-${item.severity}`}
+                    href={item.href}
+                    key={`${item.area}-${item.label}-${item.href}-${index}`}
+                  >
+                    <div>
+                      <span className="muted">
+                        {item.area} - {item.owner} - Checklist position {item.priority}
+                      </span>
+                      <strong>{item.label}</strong>
+                      <p className="muted">{item.detail}</p>
+                      <p className="muted">{item.recommendedAction}</p>
+                    </div>
+                    <p>{opsQueueSeverityLabel(item.severity)}</p>
+                  </Link>
+                ))}
+                {queue.length === 0 && (
+                  <p className="muted">No active operational issues detected from the current local data.</p>
+                )}
+              </div>
+            </div>
 
+            <div className="card dashboard-card-scroll dashboard-setup-card">
+              <div className="ops-section-header">
+                <div>
+                  <h2>External setup readiness</h2>
+                  <p className="muted">
+                    Live API environment check. Secrets are never shown, only configured/missing status.
+                  </p>
+                </div>
+                <span className={`signal ${externalReadiness.ok ? 'signal-ok' : 'signal-warn'}`}>
+                  {externalReadiness.ok ? 'Ready' : 'Needs setup'}
+                </span>
+              </div>
+              <p className="muted">
+                These are not code errors. They require console/account values before real E2E testing.
+              </p>
+              <div className="stack">
+                {externalReadiness.checks.map((check) => (
+                  <ExternalReadinessRow check={check} key={`${check.category}-${check.name}`} />
+                ))}
+                {externalReadiness.checks.length === 0 && (
+                  <div className="ops-row">
+                    <div>
+                      <strong>API external readiness unavailable</strong>
+                      <p className="muted">Start the HANDS API and refresh this dashboard.</p>
+                    </div>
+                    <span className="pill pill-warn">BLOCKED</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="detail-grid admin-mt-20">
+            <div className="card">
+              <h2>Realtime flow health</h2>
+              <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
+                <InfoRow
+                  label="Matching"
+                  value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
+                  detail="Direct request first, nearby marketplace Partners can participate when needed."
+                />
+                <InfoRow
+                  label="Chat"
+                  value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
+                  detail="Chat is expected after Partner selection/service start."
+                />
+                <InfoRow
+                  label="Partner locations"
+                  value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
+                  detail="MVP uses last-known location, not routing or live streaming."
+                />
+                <InfoRow
+                  label="Payment ops"
+                  value={`${payments.filter((payment) => payment.status === 'AUTHORIZED').length} holds`}
+                  detail="Capture after service completion, release/refund on cancellation."
+                />
+              </AdminDataTable>
+            </div>
+
+            <div className="card">
+              <h2>Finance snapshot</h2>
+              <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
+                <InfoRow
+                  label="Gross"
+                  value={money(earnings.grossAmount, earnings.currency)}
+                  detail={`${earnings.count} earning record(s)`}
+                />
+                <InfoRow
+                  label="Platform fee"
+                  value={money(earnings.platformFee, earnings.currency)}
+                  detail="Admin revenue before Partner payout."
+                />
+                <InfoRow
+                  label="Pending net"
+                  value={money(earnings.pendingNetAmount, earnings.currency)}
+                  detail="Not ready for payout yet."
+                />
+                <InfoRow
+                  label="Paid net"
+                  value={money(earnings.paidNetAmount, earnings.currency)}
+                  detail="Already marked paid."
+                />
+              </AdminDataTable>
+            </div>
+          </section>
         </>
       ) : (
         <section className="card admin-mt-20">
@@ -2394,9 +2392,10 @@ function buildMatchingControlRoom(
     const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
     const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
-    const eligiblePartnersAll = hasProviderRows && coordinate
-      ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
-      : [];
+    const eligiblePartnersAll =
+      hasProviderRows && coordinate
+        ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
+        : [];
     const eligiblePartners = eligiblePartnersAll.slice(0, bookingBackupInvitationLimit);
     const freshEligible = eligiblePartners.filter(
       (item) => (item.ageMinutes ?? Infinity) <= bookingBackupLocationMaxAgeMinutes,
@@ -4083,7 +4082,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '3',
       owner: 'KYC',
       title: 'Approve Level 2 activity',
-      detail: 'KYC, required documents, partner verification, and service-ready profile are the Level 2 work gate for paid bookings.',
+      detail:
+        'KYC, required documents, partner verification, and service-ready profile are the Level 2 work gate for paid bookings.',
       metricLabel: 'Needs review',
       metricValue: verificationBlockers.toString(),
       action: 'Open Partner review',
@@ -4121,7 +4121,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '6',
       owner: 'Finance',
       title: 'Review withdrawal setup after first earning',
-      detail: 'Bank, address, and payout agreement review happens after revenue exists or when withdrawal is requested.',
+      detail:
+        'Bank, address, and payout agreement review happens after revenue exists or when withdrawal is requested.',
       metricLabel: 'Payout gates',
       metricValue: withdrawalSetupGate.toString(),
       action: 'Open payout setup',
