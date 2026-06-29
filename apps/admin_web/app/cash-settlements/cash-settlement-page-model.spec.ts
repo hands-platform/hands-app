@@ -150,6 +150,13 @@ describe('cash settlement page model', () => {
 
     expect(row).toMatchObject({
       bookingAmountLabel: '540.000 VND',
+      cashAccountingPreview: [
+        'Dr Partner receivable 110.000 VND',
+        'Cr Platform fee net revenue 58.519 VND',
+        'Cr Company output VAT payable 9.481 VND',
+        'Cr Partner withholding tax payable 42.000 VND',
+        'Coupon offset already applied 60.000 VND',
+      ],
       cashCouponOffsetLabel: '60.000 VND',
       debtAmountLabel: '110.000 VND',
       platformFeeLabel: '170.000 VND',

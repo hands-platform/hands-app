@@ -19,6 +19,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly bookingAmountLabel: string;
   readonly bookingHref: string;
   readonly bookingLabel: string;
+  readonly cashAccountingPreview: readonly string[];
   readonly cashCouponOffsetLabel: string | null;
   readonly createdAtLabel: string;
   readonly debtAmountLabel: string;
@@ -99,6 +100,17 @@ export function CashSettlementOpenDebtTableSection({
                 <div className="muted">Company coupon offset: {row.cashCouponOffsetLabel}</div>
               ) : null}
               <div className="muted">{row.debtOrigin}</div>
+              {row.cashAccountingPreview.length ? (
+                <div
+                  className="admin-mini-ledger"
+                  aria-label={`Cash accounting preview for ${row.earningId}`}
+                >
+                  <span>Accounting preview</span>
+                  {row.cashAccountingPreview.map((item) => (
+                    <small key={`${row.earningId}-${item}`}>{item}</small>
+                  ))}
+                </div>
+              ) : null}
             </td>
             <td>
               <div>HANDS fee {row.platformFeeLabel}</div>
