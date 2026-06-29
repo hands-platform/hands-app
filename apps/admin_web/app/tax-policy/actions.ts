@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { AdminTaxPolicyVersion, AdminTaxRule, adminPatch, adminPost } from '../../lib/admin-api';
 
+const taxRuleScopes = new Set(['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND']);
+
 export async function createTaxPolicyVersion(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const status = String(formData.get('status') || 'DRAFT');
@@ -75,22 +77,22 @@ export async function updateTaxPolicyVersion(formData: FormData) {
 
 export async function createTaxRule(formData: FormData) {
   const policyId = String(formData.get('policyId'));
-  const scope = String(formData.get('scope') || 'DEFAULT');
-  const serviceType = String(formData.get('serviceType') || '').trim();
-  const minGrossAmount = parseInteger(formData.get('minGrossAmount'));
-  const maxGrossAmount = parseInteger(formData.get('maxGrossAmount'));
-  const rateBps = parseInteger(formData.get('rateBps')) ?? 0;
-  const fixedAmount = parseInteger(formData.get('fixedAmount')) ?? 0;
+  let ruleInput: TaxRuleFormInput;
+  try {
+    ruleInput = parseTaxRuleFormInput(formData);
+  } catch (error) {
+    return redirectTaxPolicyValidation(error);
+  }
 
   await adminPost(
     `/admin/tax-policy-versions/${policyId}/rules`,
     {
-      scope,
-      serviceType: serviceType || undefined,
-      minGrossAmount: minGrossAmount ?? undefined,
-      maxGrossAmount: maxGrossAmount ?? undefined,
-      rateBps,
-      fixedAmount,
+      scope: ruleInput.scope,
+      serviceType: ruleInput.serviceType || undefined,
+      minGrossAmount: ruleInput.minGrossAmount ?? undefined,
+      maxGrossAmount: ruleInput.maxGrossAmount ?? undefined,
+      rateBps: ruleInput.rateBps,
+      fixedAmount: ruleInput.fixedAmount,
       active: true,
     },
     null,
@@ -102,23 +104,23 @@ export async function createTaxRule(formData: FormData) {
 
 export async function updateTaxRule(formData: FormData) {
   const ruleId = String(formData.get('ruleId'));
-  const scope = String(formData.get('scope') || 'DEFAULT');
-  const serviceType = String(formData.get('serviceType') || '').trim();
-  const minGrossAmount = parseInteger(formData.get('minGrossAmount'));
-  const maxGrossAmount = parseInteger(formData.get('maxGrossAmount'));
-  const rateBps = parseInteger(formData.get('rateBps')) ?? 0;
-  const fixedAmount = parseInteger(formData.get('fixedAmount')) ?? 0;
+  let ruleInput: TaxRuleFormInput;
+  try {
+    ruleInput = parseTaxRuleFormInput(formData);
+  } catch (error) {
+    return redirectTaxPolicyValidation(error);
+  }
   const active = formData.get('active') === 'on';
 
   await adminPatch<AdminTaxRule | null>(
     `/admin/tax-rules/${ruleId}`,
     {
-      scope,
-      serviceType: serviceType || null,
-      minGrossAmount,
-      maxGrossAmount,
-      rateBps,
-      fixedAmount,
+      scope: ruleInput.scope,
+      serviceType: ruleInput.serviceType,
+      minGrossAmount: ruleInput.minGrossAmount,
+      maxGrossAmount: ruleInput.maxGrossAmount,
+      rateBps: ruleInput.rateBps,
+      fixedAmount: ruleInput.fixedAmount,
       active,
     },
     null,
@@ -182,4 +184,56 @@ function redirectTaxPolicyValidation(error: unknown) {
   }
 
   throw error;
+}
+
+type TaxRuleFormInput = {
+  readonly scope: string;
+  readonly serviceType: string | null;
+  readonly minGrossAmount: number | null;
+  readonly maxGrossAmount: number | null;
+  readonly rateBps: number;
+  readonly fixedAmount: number;
+};
+
+function parseTaxRuleFormInput(formData: FormData): TaxRuleFormInput {
+  const scope = String(formData.get('scope') || 'DEFAULT').trim() || 'DEFAULT';
+  const serviceType = String(formData.get('serviceType') || '').trim();
+  const minGrossAmount = parseInteger(formData.get('minGrossAmount'));
+  const maxGrossAmount = parseInteger(formData.get('maxGrossAmount'));
+  const rateBps = parseInteger(formData.get('rateBps')) ?? 0;
+  const fixedAmount = parseInteger(formData.get('fixedAmount')) ?? 0;
+
+  if (!taxRuleScopes.has(scope)) {
+    throw new Error('Tax rule scope is invalid.');
+  }
+  if (rateBps < 0 || rateBps > 10000) {
+    throw new Error('Rate bps must be between 0 and 10000.');
+  }
+  if (fixedAmount < 0) {
+    throw new Error('Fixed amount must be zero or greater.');
+  }
+  if (minGrossAmount !== null && minGrossAmount < 0) {
+    throw new Error('Min amount must be zero or greater.');
+  }
+  if (maxGrossAmount !== null && maxGrossAmount < 0) {
+    throw new Error('Max amount must be zero or greater.');
+  }
+  if (minGrossAmount !== null && maxGrossAmount !== null && minGrossAmount > maxGrossAmount) {
+    throw new Error('Min amount cannot be greater than max amount.');
+  }
+  if (scope === 'SERVICE_TYPE' && !serviceType) {
+    throw new Error('SERVICE_TYPE tax rules require service type.');
+  }
+  if (scope === 'AMOUNT_BAND' && minGrossAmount === null && maxGrossAmount === null) {
+    throw new Error('AMOUNT_BAND tax rules require min or max amount.');
+  }
+
+  return {
+    fixedAmount,
+    maxGrossAmount: scope === 'AMOUNT_BAND' ? maxGrossAmount : null,
+    minGrossAmount: scope === 'AMOUNT_BAND' ? minGrossAmount : null,
+    rateBps,
+    scope,
+    serviceType: scope === 'SERVICE_TYPE' ? serviceType : null,
+  };
 }

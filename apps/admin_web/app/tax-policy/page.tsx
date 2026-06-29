@@ -239,6 +239,10 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </form>
 
             <h3>Rules</h3>
+            <p className="muted admin-mb-12">
+              DEFAULT is the fallback. SERVICE_TYPE requires a service type. AMOUNT_BAND requires min or
+              max amount, and min cannot be greater than max.
+            </p>
             <div className="setup-stage-list admin-mb-12">
               {(policy.rules ?? []).map((rule) => (
                 <div className="setup-stage-item" key={rule.id}>

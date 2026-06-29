@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPatch, adminPost } from '../../lib/admin-api';
-import { createTaxPolicyVersion, updateTaxPolicyVersion } from './actions';
+import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
@@ -132,6 +132,53 @@ describe('tax policy server actions', () => {
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(
       '/tax-policy?taxPolicyNotice=validation&message=Effective%20to%20must%20be%20after%20effective%20from.',
+    );
+  });
+
+  it('redirects to a form notice without creating service-type tax rules when service type is missing', async () => {
+    const formData = new FormData();
+    formData.set('policyId', 'policy-1');
+    formData.set('scope', 'SERVICE_TYPE');
+    formData.set('rateBps', '500');
+
+    await createTaxRule(formData);
+
+    expect(mockedAdminPost).not.toHaveBeenCalled();
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/tax-policy?taxPolicyNotice=validation&message=SERVICE_TYPE%20tax%20rules%20require%20service%20type.',
+    );
+  });
+
+  it('redirects to a form notice without creating amount-band tax rules when amount bounds are missing', async () => {
+    const formData = new FormData();
+    formData.set('policyId', 'policy-1');
+    formData.set('scope', 'AMOUNT_BAND');
+    formData.set('rateBps', '500');
+
+    await createTaxRule(formData);
+
+    expect(mockedAdminPost).not.toHaveBeenCalled();
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/tax-policy?taxPolicyNotice=validation&message=AMOUNT_BAND%20tax%20rules%20require%20min%20or%20max%20amount.',
+    );
+  });
+
+  it('redirects to a form notice without updating tax rules when min amount is greater than max amount', async () => {
+    const formData = new FormData();
+    formData.set('ruleId', 'rule-1');
+    formData.set('scope', 'AMOUNT_BAND');
+    formData.set('minGrossAmount', '900000');
+    formData.set('maxGrossAmount', '300000');
+    formData.set('rateBps', '500');
+
+    await updateTaxRule(formData);
+
+    expect(mockedAdminPatch).not.toHaveBeenCalled();
+    expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/tax-policy?taxPolicyNotice=validation&message=Min%20amount%20cannot%20be%20greater%20than%20max%20amount.',
     );
   });
 });
