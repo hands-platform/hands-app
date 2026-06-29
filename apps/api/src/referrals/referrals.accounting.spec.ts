@@ -1,5 +1,7 @@
 import {
+  buildReferralManualReviewFlags,
   calculateCustomerReferralReward,
+  calculateReferralTaxWithholding,
   calculatePartnerReferralWalletOffsetPlan,
 } from './referrals.accounting';
 
@@ -35,6 +37,85 @@ describe('referral accounting policy', () => {
       offsetPlatformFee: 128_000,
       remainingWallet: 130_000,
       totalOffset: 170_000,
+    });
+  });
+
+  it('flags referral rewards that require manual tax or risk review', () => {
+    expect(
+      buildReferralManualReviewFlags({
+        audience: 'CUSTOMER',
+        highMonthlyRewardThreshold: 1_000_000,
+        monthlyGrossRewardAmount: 1_250_000,
+        monthlyQualifiedReferralCount: 8,
+        repeatedReferralThreshold: 5,
+        requestedCashout: true,
+        residencyCountryCode: 'KR',
+        taxPolicy: 'INDIVIDUAL_COMMISSION_PIT_10',
+      }).map((flag) => flag.code),
+    ).toEqual([
+      'CUSTOMER_CASHOUT_TAX_REVIEW',
+      'NON_RESIDENT_MANUAL_REVIEW',
+      'HIGH_MONTHLY_REWARD_AMOUNT',
+      'REPEATED_REFERRAL_ACTIVITY',
+    ]);
+  });
+
+  it('does not flag service-credit-only customer rewards for cashout review', () => {
+    expect(
+      buildReferralManualReviewFlags({
+        audience: 'CUSTOMER',
+        highMonthlyRewardThreshold: 1_000_000,
+        monthlyGrossRewardAmount: 35_556,
+        monthlyQualifiedReferralCount: 1,
+        repeatedReferralThreshold: 5,
+        requestedCashout: false,
+        residencyCountryCode: 'VN',
+        taxPolicy: 'CUSTOMER_SERVICE_CREDIT_ONLY',
+      }),
+    ).toEqual([]);
+  });
+
+  it('calculates individual commission PIT withholding for referral rewards', () => {
+    expect(
+      calculateReferralTaxWithholding({
+        grossRewardAmount: 300_000,
+        taxPolicy: 'INDIVIDUAL_COMMISSION_PIT_10',
+      }),
+    ).toEqual({
+      grossRewardAmount: 300_000,
+      manualReviewRequired: false,
+      netWalletAmount: 270_000,
+      pitWithheldAmount: 30_000,
+      taxPolicySnapshot: 'INDIVIDUAL_COMMISSION_PIT_10',
+      totalWithheldAmount: 30_000,
+      vatWithheldAmount: 0,
+    });
+  });
+
+  it('calculates business service VAT and PIT withholding for referral rewards', () => {
+    expect(
+      calculateReferralTaxWithholding({
+        grossRewardAmount: 300_000,
+        taxPolicy: 'BUSINESS_SERVICE_VAT5_PIT2',
+      }),
+    ).toMatchObject({
+      netWalletAmount: 279_000,
+      pitWithheldAmount: 6_000,
+      totalWithheldAmount: 21_000,
+      vatWithheldAmount: 15_000,
+    });
+  });
+
+  it('marks manual referral tax policies for review without auto withholding', () => {
+    expect(
+      calculateReferralTaxWithholding({
+        grossRewardAmount: 300_000,
+        taxPolicy: 'MANUAL_REVIEW',
+      }),
+    ).toMatchObject({
+      manualReviewRequired: true,
+      netWalletAmount: 300_000,
+      totalWithheldAmount: 0,
     });
   });
 });
