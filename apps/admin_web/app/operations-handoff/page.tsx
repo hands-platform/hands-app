@@ -85,8 +85,12 @@ export default async function OperationsHandoffPage({
     chatArchive,
   ] = await Promise.all([
     adminGet<AdminBooking[]>(dataHrefs.bookingsHref, []),
-    adminGet<AdminCustomer[]>(dataHrefs.customersHref, []),
-    adminGet<AdminProvider[]>(dataHrefs.partnersHref, []),
+    dataHrefs.customersHref
+      ? adminGet<AdminCustomer[]>(dataHrefs.customersHref, [])
+      : Promise.resolve<AdminCustomer[]>([]),
+    dataHrefs.partnersHref
+      ? adminGet<AdminProvider[]>(dataHrefs.partnersHref, [])
+      : Promise.resolve<AdminProvider[]>([]),
     adminGet<AdminEarning[]>(dataHrefs.earningsHref, []),
     adminGet<AdminPayment[]>(dataHrefs.paymentsHref, []),
     adminGet<AdminRefund[]>(dataHrefs.refundsHref, []),

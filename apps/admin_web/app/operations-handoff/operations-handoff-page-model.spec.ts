@@ -46,8 +46,6 @@ describe('operations handoff page model', () => {
     const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
     const appSessionSummaryUrl = new URL(hrefs.appSessionSummaryHref, 'http://admin.local');
-    const customersUrl = new URL(hrefs.customersHref, 'http://admin.local');
-    const partnersUrl = new URL(hrefs.partnersHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const earningsUrl = new URL(hrefs.earningsHref, 'http://admin.local');
     const refundsUrl = new URL(hrefs.refundsHref, 'http://admin.local');
@@ -60,9 +58,8 @@ describe('operations handoff page model', () => {
     expect(appSessionSummaryUrl.pathname).toBe('/admin/app-sessions/summary');
     expect(appSessionSummaryUrl.searchParams.toString()).toBe('');
     expect(hrefs.chatArchiveHref).toBeNull();
-    expect(customersUrl.searchParams.get('take')).toBe('5');
-    expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('5');
+    expect(hrefs.customersHref).toBeNull();
+    expect(hrefs.partnersHref).toBeNull();
     expect(paymentsUrl.searchParams.get('range')).toBe('today');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(earningsUrl.searchParams.get('range')).toBe('today');
@@ -90,6 +87,8 @@ describe('operations handoff page model', () => {
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const appSessionsUrl = new URL(hrefs.appSessionsHref!, 'http://admin.local');
     const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
+    const customersUrl = new URL(hrefs.customersHref!, 'http://admin.local');
+    const partnersUrl = new URL(hrefs.partnersHref!, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('take')).toBe('50');
@@ -98,6 +97,10 @@ describe('operations handoff page model', () => {
     expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
     expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
     expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
+    expect(customersUrl.pathname).toBe('/admin/customers');
+    expect(customersUrl.searchParams.get('take')).toBe('50');
+    expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
+    expect(partnersUrl.searchParams.get('take')).toBe('50');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
   });
 

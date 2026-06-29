@@ -42,11 +42,11 @@ export type OperationsHandoffDataHrefs = {
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
   readonly chatArchiveHref: string | null;
-  readonly customersHref: string;
+  readonly customersHref: string | null;
   readonly earningsHref: string;
   readonly notificationSummaryHref: string;
   readonly notificationsHref: string;
-  readonly partnersHref: string;
+  readonly partnersHref: string | null;
   readonly paymentsHref: string;
   readonly payoutBatchesHref: string;
   readonly refundsHref: string;
@@ -126,9 +126,12 @@ export function buildOperationsHandoffDataHrefs(
             take: String(OPERATIONS_HANDOFF_CHAT_TAKE),
           }).toString()}`
         : null,
-    customersHref: `/admin/customers?${new URLSearchParams({
-      take: String(limits.list),
-    }).toString()}`,
+    customersHref:
+      detailsMode === 'all'
+        ? `/admin/customers?${new URLSearchParams({
+            take: String(limits.list),
+          }).toString()}`
+        : null,
     earningsHref: buildRangeScopedHref(
       '/admin/earnings',
       { take: String(limits.finance) },
@@ -140,9 +143,12 @@ export function buildOperationsHandoffDataHrefs(
       range,
     ),
     notificationSummaryHref: buildDateScopedHref('/admin/notifications/summary', {}, range),
-    partnersHref: `/admin/operations-handoff/providers?${new URLSearchParams({
-      take: String(limits.list),
-    }).toString()}`,
+    partnersHref:
+      detailsMode === 'all'
+        ? `/admin/operations-handoff/providers?${new URLSearchParams({
+            take: String(limits.list),
+          }).toString()}`
+        : null,
     paymentsHref: buildRangeScopedHref(
       '/admin/payments',
       { take: String(limits.finance) },
