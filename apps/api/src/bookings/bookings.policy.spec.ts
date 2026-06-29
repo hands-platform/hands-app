@@ -109,7 +109,8 @@ describe('booking policy helpers', () => {
     expect(() => assertBookingServiceId('service-1')).not.toThrow();
     expect(() => assertBookingServiceId('')).toThrow(BadRequestException);
     expect(() => assertBookingPaymentMethod(PaymentMethod.CASH)).not.toThrow();
-    expect(() => assertBookingPaymentMethod('CARD')).toThrow(BadRequestException);
+    expect(() => assertBookingPaymentMethod(PaymentMethod.CARD)).not.toThrow();
+    expect(() => assertBookingPaymentMethod('NOT_A_METHOD')).toThrow(BadRequestException);
     expect(normalizeBookingCoordinate('10.7769', 'lat')).toBe(10.7769);
     expect(() => normalizeBookingCoordinate(undefined, 'lng')).toThrow(BadRequestException);
     expect(vietnamBookingCoordinateGateError(10.7769, 106.7009)).toBeNull();

@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
+  calculateCashBookingPartnerDue,
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
   normalizeCashFeeDebtSettlementInput,
@@ -414,7 +415,12 @@ export class EarningsService {
 
       const platformFeeLog = await this.upsertPlatformFeeLog(tx, earning, platformFee);
       const taxLog = await this.upsertTaxLog(tx, earning, tax);
-      const walletLedger = await this.upsertEarningWalletLedger(tx, earning, booking.payment?.method);
+      const walletLedgerEntries = await this.upsertEarningWalletLedger(
+        tx,
+        earning,
+        booking.payment?.method,
+        platformFee.vatRateBps,
+      );
       const partnerPayoutAmount = Math.max(0, grossAmount - platformFee.platformFeeAmount);
       const paymentProcessingFee = 0;
       const platformFeeGross = Math.max(
@@ -445,7 +451,7 @@ export class EarningsService {
           platformFeeRuleSnapshot: platformFee.ruleSnapshot,
           providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
           providerPlatformFeeLogId: platformFeeLog?.id ?? null,
-          providerWalletLedgerEntryIds: walletLedger?.id ? [walletLedger.id] : [],
+          providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
           occurredAt: booking.updatedAt ?? new Date(),
         },
         tx,
@@ -1065,8 +1071,13 @@ export class EarningsService {
       currency: string;
     },
     paymentMethod?: PaymentMethod | null,
+    platformFeeVatRateBps = 0,
   ) {
-    return tx.providerWalletLedgerEntry.upsert({
+    if (paymentMethod === PaymentMethod.CASH) {
+      return this.upsertCashBookingWalletLedgerEntries(tx, earning, platformFeeVatRateBps);
+    }
+
+    const ledger = await tx.providerWalletLedgerEntry.upsert({
       where: { sourceKey: `earning:${earning.id}:booking` },
       update: {
         amount: earning.netAmount,
@@ -1081,13 +1092,113 @@ export class EarningsService {
         sourceKey: `earning:${earning.id}:booking`,
         amount: earning.netAmount,
         currency: earning.currency,
-        notes:
-          paymentMethod === PaymentMethod.CASH
-            ? 'Cash booking created HANDS fee/tax wallet debt'
-            : 'Completed booking created partner wallet credit',
+        notes: 'Completed booking created partner wallet credit',
         metadata: this.earningLedgerMetadata(earning, paymentMethod),
       },
     });
+    return [ledger];
+  }
+
+  private upsertCashBookingWalletLedgerEntries(
+    tx: TxClient,
+    earning: {
+      id: string;
+      providerProfileId: string;
+      bookingId: string;
+      grossAmount: number;
+      platformFee: number;
+      withholdingAmount: number;
+      currency: string;
+    },
+    platformFeeVatRateBps: number,
+  ) {
+    const platformFeeGross = Math.max(0, earning.platformFee - earning.withholdingAmount);
+    const partnerDue = calculateCashBookingPartnerDue(
+      platformFeeGross,
+      platformFeeVatRateBps,
+      earning.withholdingAmount,
+    );
+    const base = {
+      providerProfileId: earning.providerProfileId,
+      bookingId: earning.bookingId,
+      earningId: earning.id,
+      currency: earning.currency,
+    };
+    const metadataBase = {
+      ...this.earningLedgerMetadata(earning, PaymentMethod.CASH),
+      platformFeeGross: partnerDue.platformFeeGross,
+      platformFeeVatRateBps: partnerDue.platformFeeVatRateBps,
+      totalPartnerDueToCompany: partnerDue.totalPartnerDueToCompany,
+    } satisfies Prisma.InputJsonObject;
+
+    return Promise.all([
+      tx.providerWalletLedgerEntry.upsert({
+        where: { sourceKey: `earning:${earning.id}:cash-platform-fee-net` },
+        update: {
+          amount: -partnerDue.platformFeeNetRevenue,
+          currency: earning.currency,
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'PLATFORM_FEE_NET_REVENUE',
+          },
+        },
+        create: {
+          ...base,
+          type: providerWalletLedgerType('CASH_BOOKING_PLATFORM_FEE_DEDUCTED'),
+          sourceKey: `earning:${earning.id}:cash-platform-fee-net`,
+          amount: -partnerDue.platformFeeNetRevenue,
+          notes: 'Cash booking prepaid wallet deduction for HANDS platform fee net revenue',
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'PLATFORM_FEE_NET_REVENUE',
+          },
+        },
+      }),
+      tx.providerWalletLedgerEntry.upsert({
+        where: { sourceKey: `earning:${earning.id}:cash-company-output-vat` },
+        update: {
+          amount: -partnerDue.companyOutputVat,
+          currency: earning.currency,
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'COMPANY_OUTPUT_VAT_PAYABLE',
+          },
+        },
+        create: {
+          ...base,
+          type: providerWalletLedgerType('CASH_BOOKING_COMPANY_OUTPUT_VAT_DEDUCTED'),
+          sourceKey: `earning:${earning.id}:cash-company-output-vat`,
+          amount: -partnerDue.companyOutputVat,
+          notes: 'Cash booking prepaid wallet deduction for HANDS company output VAT',
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'COMPANY_OUTPUT_VAT_PAYABLE',
+          },
+        },
+      }),
+      tx.providerWalletLedgerEntry.upsert({
+        where: { sourceKey: `earning:${earning.id}:cash-partner-tax` },
+        update: {
+          amount: -partnerDue.partnerTaxPayable,
+          currency: earning.currency,
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'PARTNER_VAT_PIT_PAYABLE',
+          },
+        },
+        create: {
+          ...base,
+          type: providerWalletLedgerType('CASH_BOOKING_PARTNER_TAX_DEDUCTED'),
+          sourceKey: `earning:${earning.id}:cash-partner-tax`,
+          amount: -partnerDue.partnerTaxPayable,
+          notes: 'Cash booking prepaid wallet deduction for Partner VAT/PIT payable',
+          metadata: {
+            ...metadataBase,
+            accountingComponent: 'PARTNER_VAT_PIT_PAYABLE',
+          },
+        },
+      }),
+    ]);
   }
 
   private async upsertPaidWalletLedger(
@@ -1532,6 +1643,10 @@ function servicePayoutVatRateBps(ruleSnapshot: Prisma.InputJsonValue) {
   const lines = (ruleSnapshot as { lines?: Array<{ vatBps?: number }> }).lines;
   const firstLine = Array.isArray(lines) ? lines.find((line) => typeof line.vatBps === 'number') : null;
   return firstLine?.vatBps ?? 0;
+}
+
+function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
+  return value as ProviderWalletLedgerType;
 }
 
 function calculatePartnerTaxLine(

@@ -110,7 +110,7 @@ export function applyCashBookingDeductionToPartnerWallet(
 
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
-    return -(input.platformFee + input.withholdingAmount);
+    return -input.platformFee;
   }
 
   return input.grossAmount - input.platformFee - input.withholdingAmount;

@@ -23,7 +23,7 @@ describe('earnings policy', () => {
     expect(delta).toBe(355000);
   });
 
-  it('creates negative wallet debt for cash bookings because the partner receives cash directly', () => {
+  it('creates negative wallet debt for cash bookings from the total amount due to HANDS', () => {
     const delta = calculateProviderWalletDelta({
       paymentMethod: PaymentMethod.CASH,
       grossAmount: 500000,
@@ -31,7 +31,7 @@ describe('earnings policy', () => {
       withholdingAmount: 25000,
     });
 
-    expect(delta).toBe(-145000);
+    expect(delta).toBe(-120000);
   });
 
   it('splits gross platform fee into net revenue and company output VAT', () => {
