@@ -97,11 +97,61 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Waiting for partner bank correction');
-    expect(rendered).toContain('Partner must update bank details in the Partner app before finance can approve this withdrawal.');
+    expect(rendered).toContain(
+      'Partner must update bank details in the Partner app before finance can approve this withdrawal.',
+    );
     expect(rendered).toContain('Bank account name does not match KYC name.');
     expect(rendered).not.toContain('Approve');
     expect(rendered).not.toContain('Request correction');
     expect(rendered).not.toContain('Reject');
+  });
+
+  it('renders accounting preview labels for locked, paid, and returned withdrawal requests', () => {
+    const section = PartnerDetailWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 800000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-locked',
+          providerProfileId: 'provider-locked',
+          status: 'APPROVED',
+        },
+        {
+          amount: 500000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T10:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-paid',
+          paidAt: '2026-06-28T10:00:00.000Z',
+          providerProfileId: 'provider-paid',
+          status: 'PAID',
+        },
+        {
+          amount: 300000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T11:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-returned',
+          providerProfileId: 'provider-returned',
+          status: 'REJECTED',
+        },
+      ] as unknown as AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Accounting preview');
+    expect(rendered).toContain('Dr Partner wallet liability 800.000 VND');
+    expect(rendered).toContain('Cr Partner withdrawal payable 800.000 VND');
+    expect(rendered).toContain('Dr Partner withdrawal payable 500.000 VND');
+    expect(rendered).toContain('Cr Bank 500.000 VND');
+    expect(rendered).toContain('Cr Partner wallet liability 300.000 VND');
   });
 
   it('renders withdrawal status-change audit evidence for retained locked amounts', () => {

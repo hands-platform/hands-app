@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
@@ -50,13 +51,16 @@ export function PartnerDetailWalletWithdrawalRequestSection({
               </td>
               <td>
                 <strong>{formatCurrency(request.amount, request.currency)}</strong>
+                <AdminWithdrawalAccountingPreview request={request} />
               </td>
               <td>
                 <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <span className={`pill ${statusPillClass(request.status)}`}>{statusLabel(request.status)}</span>
+                <span className={`pill ${statusPillClass(request.status)}`}>
+                  {statusLabel(request.status)}
+                </span>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
