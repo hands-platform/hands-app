@@ -937,6 +937,36 @@ describe('EarningsService payout batches', () => {
     });
   });
 
+  it('filters admin partner wallet withdrawal requests by provider profile without loading every partner', async () => {
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'withdrawal-request-1' }]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listProviderWalletWithdrawalRequestsForAdmin({
+        providerProfileId: ' provider-1 ',
+        range: 'all',
+        status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+        take: '500',
+      }),
+    ).resolves.toEqual([{ id: 'withdrawal-request-1' }]);
+
+    expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith({
+      where: {
+        providerProfileId: 'provider-1',
+        status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: expect.objectContaining({
+        bankAccount: true,
+      }),
+    });
+  });
+
   it('rejects partner wallet withdrawal requests above prepaid wallet balance', async () => {
     const tx = {
       providerBankAccount: {

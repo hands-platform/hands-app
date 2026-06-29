@@ -333,6 +333,7 @@ type AdminBookingDetailPreviewQuery = {
   readonly take?: number | string | null;
 };
 type AdminPaymentOperationsQuery = {
+  readonly providerProfileId?: string | null;
   readonly range?: string | null;
   readonly review?: string | null;
   readonly status?: string | null;

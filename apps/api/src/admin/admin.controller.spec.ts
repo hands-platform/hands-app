@@ -56,6 +56,7 @@ describe('AdminController notification and push actions', () => {
     listCashSettlementEarnings: vi.fn(),
     cashSettlementSummary: vi.fn(),
     recordPartnerBankDeposit: vi.fn(),
+    listProviderWalletWithdrawalRequests: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
@@ -177,6 +178,25 @@ describe('AdminController notification and push actions', () => {
       bankTransactionId: 'BIDV-20260629-001',
       depositDate: '2026-06-29T09:30:00.000Z',
       attachmentFileId: 'file-deposit-proof-1',
+    });
+  });
+
+  it('exposes partner wallet withdrawal requests with provider filtering', async () => {
+    admin.listProviderWalletWithdrawalRequests.mockResolvedValue([{ id: 'withdrawal-request-1' }]);
+
+    await expect(
+      controller.providerWalletWithdrawalRequests('10', 'all', 'REQUESTED', 'provider-1'),
+    ).resolves.toEqual([{ id: 'withdrawal-request-1' }]);
+
+    expect(routeMetadata('providerWalletWithdrawalRequests')).toEqual({
+      method: RequestMethod.GET,
+      path: 'provider-wallet/withdrawal-requests',
+    });
+    expect(admin.listProviderWalletWithdrawalRequests).toHaveBeenCalledWith({
+      providerProfileId: 'provider-1',
+      range: 'all',
+      status: 'REQUESTED',
+      take: '10',
     });
   });
 

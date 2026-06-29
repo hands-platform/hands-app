@@ -1,0 +1,221 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
+import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
+import { formatCurrency, formatDate, shortRecordId } from './partner-detail-format';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
+
+type FormAction = (formData: FormData) => void | Promise<void>;
+
+type PartnerDetailWalletWithdrawalRequestSectionProps = {
+  readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
+  readonly updateWithdrawalRequestAction: FormAction;
+};
+
+const headers = ['Request', 'Amount', 'Bank account', 'Status', 'Finance action'] as const;
+
+export function PartnerDetailWalletWithdrawalRequestSection({
+  requests,
+  updateWithdrawalRequestAction,
+}: PartnerDetailWalletWithdrawalRequestSectionProps) {
+  const needsActionCount = requests.filter((request) => !isTerminalStatus(request.status)).length;
+
+  return (
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Partner wallet withdrawal history for this partner only. Finance can approve, request bank correction, reject, or mark paid after a manual transfer."
+      id="wallet-withdrawal-requests"
+      resultLabel={needsActionCount ? `${needsActionCount} needs action` : 'Clear'}
+      resultTone={withdrawalResultTone(needsActionCount)}
+      title="Wallet withdrawal requests"
+    >
+      <AdminTableScroll>
+        <AdminDataTable
+          className={partnerDetailReviewTableClassName}
+          emptyMessage={<WalletWithdrawalEmptyState />}
+          headers={headers}
+          rowCount={requests.length}
+        >
+          {requests.map((request) => (
+            <tr key={request.id}>
+              <td>
+                <strong>{shortRecordId(request.id)}</strong>
+                <p className="muted">{formatDate(request.createdAt)}</p>
+                {request.requestNote ? <p className="muted">{request.requestNote}</p> : null}
+              </td>
+              <td>
+                <strong>{formatCurrency(request.amount, request.currency)}</strong>
+              </td>
+              <td>
+                <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
+                <p className="muted">{bankAccountLabel(request)}</p>
+              </td>
+              <td>
+                <span className={`pill ${statusPillClass(request.status)}`}>{statusLabel(request.status)}</span>
+                {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
+                {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
+              </td>
+              <td>
+                <WithdrawalRequestActions
+                  request={request}
+                  updateWithdrawalRequestAction={updateWithdrawalRequestAction}
+                />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={requests.length} />
+    </AdminFilterPanel>
+  );
+}
+
+function WithdrawalRequestActions({
+  request,
+  updateWithdrawalRequestAction,
+}: {
+  readonly request: AdminProviderWalletWithdrawalRequest;
+  readonly updateWithdrawalRequestAction: FormAction;
+}) {
+  if (request.status === 'PAID') {
+    return <span className="muted">Paid {formatDate(request.paidAt)}</span>;
+  }
+  if (request.status === 'REJECTED' || request.status === 'CANCELLED') {
+    return <span className="muted">Closed</span>;
+  }
+
+  return (
+    <div className="admin-inline-action-stack">
+      {request.status === 'REQUESTED' || request.status === 'NEEDS_BANK_CORRECTION' ? (
+        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="APPROVED" />
+          <input
+            aria-label={`Approval note for withdrawal ${request.id}`}
+            className="form-control"
+            name="adminNote"
+            placeholder="Approval note"
+            type="text"
+          />
+          <button className="btn btn-sm btn-primary" type="submit">
+            Approve
+          </button>
+        </form>
+      ) : null}
+
+      {request.status === 'APPROVED' ? (
+        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="PAID" />
+          <input
+            aria-label={`Transfer reference for withdrawal ${request.id}`}
+            className="form-control"
+            name="transferRef"
+            placeholder="Bank transfer ref"
+            required
+            type="text"
+          />
+          <button className="btn btn-sm btn-success" type="submit">
+            Mark paid
+          </button>
+        </form>
+      ) : null}
+
+      {request.status === 'REQUESTED' ? (
+        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="NEEDS_BANK_CORRECTION" />
+          <input
+            aria-label={`Bank correction reason for withdrawal ${request.id}`}
+            className="form-control"
+            name="correctionReason"
+            placeholder="Bank correction reason"
+            required
+            type="text"
+          />
+          <button className="btn btn-sm btn-outline" type="submit">
+            Request correction
+          </button>
+        </form>
+      ) : null}
+
+      {request.status === 'REQUESTED' || request.status === 'APPROVED' ? (
+        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+          <input name="providerId" type="hidden" value={request.providerProfileId} />
+          <input name="requestId" type="hidden" value={request.id} />
+          <input name="status" type="hidden" value="REJECTED" />
+          <input
+            aria-label={`Reject note for withdrawal ${request.id}`}
+            className="form-control"
+            name="adminNote"
+            placeholder="Reject note"
+            type="text"
+          />
+          <button className="btn btn-sm btn-danger" type="submit">
+            Reject
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function WalletWithdrawalEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No recent partner wallet withdrawal request is loaded for this partner.</p>
+    </div>
+  );
+}
+
+function bankAccountLabel(request: AdminProviderWalletWithdrawalRequest) {
+  if (!request.bankAccount) {
+    return 'Partner bank account is missing';
+  }
+  const accountNumber =
+    request.bankAccount.accountNumberMasked ??
+    (request.bankAccount.accountNumberLast4 ? `****${request.bankAccount.accountNumberLast4}` : null);
+  return [request.bankAccount.accountHolderName, accountNumber, request.bankAccount.status]
+    .filter(Boolean)
+    .join(' / ');
+}
+
+function statusLabel(status: AdminProviderWalletWithdrawalRequest['status']) {
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function statusPillClass(status: AdminProviderWalletWithdrawalRequest['status']) {
+  switch (status) {
+    case 'PAID':
+      return 'pill-success';
+    case 'APPROVED':
+      return 'pill-info';
+    case 'NEEDS_BANK_CORRECTION':
+      return 'pill-warn';
+    case 'REJECTED':
+    case 'CANCELLED':
+      return 'pill-danger';
+    default:
+      return 'pill-neutral';
+  }
+}
+
+function withdrawalResultTone(needsActionCount: number): StatusBadgeTone {
+  return needsActionCount > 0 ? 'warning' : 'success';
+}
+
+function isTerminalStatus(status: AdminProviderWalletWithdrawalRequest['status']) {
+  return status === 'PAID' || status === 'REJECTED' || status === 'CANCELLED';
+}

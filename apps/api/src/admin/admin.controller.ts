@@ -857,8 +857,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('status') status?: string,
+    @Query('providerProfileId') providerProfileId?: string,
   ) {
-    return this.admin.listProviderWalletWithdrawalRequests({ range, status, take });
+    return this.admin.listProviderWalletWithdrawalRequests({ providerProfileId, range, status, take });
   }
 
   @Patch('provider-wallet/withdrawal-requests/:id')

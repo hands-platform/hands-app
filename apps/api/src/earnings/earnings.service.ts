@@ -64,6 +64,7 @@ type AdminFinanceListQuery = {
 };
 
 type AdminWithdrawalRequestListQuery = AdminFinanceListQuery & {
+  readonly providerProfileId?: string | null;
   readonly status?: ProviderWalletWithdrawalRequestStatus | string | null;
 };
 
@@ -114,9 +115,13 @@ function adminWithdrawalRequestListWhere(
   options: AdminWithdrawalRequestListQuery,
 ): Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined {
   const where: Prisma.ProviderWalletWithdrawalRequestWhereInput = {};
+  const providerProfileId = cleanQueryText(options.providerProfileId);
   const status = normalizeWithdrawalRequestStatus(options.status);
   const dateRange = adminFinanceDateRangeWhere(options.range);
 
+  if (providerProfileId) {
+    where.providerProfileId = providerProfileId;
+  }
   if (status) {
     where.status = status;
   }
@@ -125,6 +130,10 @@ function adminWithdrawalRequestListWhere(
   }
 
   return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function cleanQueryText(value: string | null | undefined) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function mergePayoutBatchWhere(

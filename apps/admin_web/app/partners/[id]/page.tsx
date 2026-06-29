@@ -5,6 +5,7 @@ import type {
   AdminOperationalPolicySetting,
   AdminPartnerCustomerReview,
   AdminProvider,
+  AdminProviderWalletWithdrawalRequest,
   AdminReview,
 } from '../../../lib/admin-api';
 import { adminGet, providerDocumentLabel, providerDocumentReviewHint } from '../../../lib/admin-api';
@@ -58,6 +59,7 @@ import {
   syncSupabaseProviderRole,
   unblockProviderAccount,
   unblockProviderDevice,
+  updatePartnerWalletWithdrawalRequest,
 } from '../actions';
 import { liftProviderSanction } from '../../partner-controls/actions';
 import {
@@ -166,6 +168,7 @@ import { buildPartnerFinanceFollowUpRows } from './partner-detail-finance-follow
 import { PartnerDetailFinanceFollowUpSection } from './partner-detail-finance-follow-up-section';
 import { buildPartnerWalletSummary } from './partner-detail-wallet-model';
 import { PartnerDetailWalletSummarySection } from './partner-detail-wallet-summary-section';
+import { PartnerDetailWalletWithdrawalRequestSection } from './partner-detail-wallet-withdrawal-request-section';
 import {
   PartnerDetailBookingGateDecisionSection,
   type PartnerBookingGateDecisionView,
@@ -457,9 +460,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerProfileId: provider.id,
     take: String(PARTNER_DETAIL_REVIEW_RECORD_LIMIT),
   }).toString();
-  const [customerReviews, partnerEvaluations] = await Promise.all([
+  const walletWithdrawalQuery = new URLSearchParams({
+    providerProfileId: provider.id,
+    range: 'all',
+    take: '10',
+  }).toString();
+  const [customerReviews, partnerEvaluations, walletWithdrawalRequests] = await Promise.all([
     adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, []),
     adminGet<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, []),
+    adminGet<AdminProviderWalletWithdrawalRequest[]>(
+      `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
+      [],
+    ),
   ]);
   const partnerReviewRecords = reviewRecordsForPartner(customerReviews, partnerEvaluations, provider.id);
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
@@ -1093,6 +1105,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             rows={cashDebtOriginRows}
           />
           <PartnerDetailWalletSummarySection summary={partnerWalletSummary} />
+          <PartnerDetailWalletWithdrawalRequestSection
+            requests={walletWithdrawalRequests}
+            updateWithdrawalRequestAction={updatePartnerWalletWithdrawalRequest}
+          />
           <PartnerDetailPayoutOperationsSection
             cardClassForTone={cardClass}
             earningsRows={payoutEarningRows}

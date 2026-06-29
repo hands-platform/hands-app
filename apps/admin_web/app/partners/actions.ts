@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminPost } from '../../lib/admin-api';
+import { adminPatchOrThrow, adminPost } from '../../lib/admin-api';
 
 const MIN_REVIEW_REASON_LENGTH = 12;
 
@@ -150,6 +150,28 @@ export async function rejectProviderTaxProfile(formData: FormData) {
   const reason = readReviewReason(formData);
   await adminPost(`/admin/partners/${providerId}/tax-profile/reject`, { reason }, null);
   revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function updatePartnerWalletWithdrawalRequest(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const requestId = readRequiredFormString(formData, 'requestId');
+  const status = readRequiredFormString(formData, 'status');
+  const transferRef = readOptionalFormString(formData, 'transferRef');
+  const adminNote = readOptionalFormString(formData, 'adminNote');
+  const correctionReason = readOptionalFormString(formData, 'correctionReason');
+
+  await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
+    status,
+    transferRef: transferRef || undefined,
+    adminNote: adminNote || undefined,
+    correctionReason: correctionReason || undefined,
+  });
+
+  revalidateProviderPaths(providerId);
+  revalidatePath('/payouts');
+  revalidatePath('/cash-settlements');
+  revalidatePath('/earnings');
   revalidatePath('/audit-log');
 }
 
