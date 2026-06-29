@@ -24,9 +24,9 @@ const summary: AdminReferralCashoutQueueSummary = {
 const row: AdminReferralCashoutQueueRow = {
   id: 'reward-1',
   amount: 25000,
-  audience: 'CUSTOMER',
+  audience: 'PARTNER',
   attribution: {
-    audience: 'CUSTOMER',
+    audience: 'PARTNER',
     createdAt,
     fraudReviewStatus: 'CLEAR',
     id: 'attribution-1',
@@ -38,7 +38,7 @@ const row: AdminReferralCashoutQueueRow = {
   calculationSnapshot: { taxPolicySnapshot: 'CUSTOMER_CASHOUT_REVIEW' },
   createdAt,
   currency: 'VND',
-  detailHref: '/referrals/customers/parent-customer',
+  detailHref: '/referrals/partners/parent-partner',
   latestDecision: {
     action: 'referral_reward.cashout_approve',
     actor: { id: 'admin-1', fullName: 'Ops Admin', phone: '+84000009999' },
@@ -48,16 +48,33 @@ const row: AdminReferralCashoutQueueRow = {
     walletLedgerReference: 'wallet-credit-ledger-1',
   },
   parent: {
-    href: '/customers/parent-customer',
-    id: 'parent-customer',
-    label: 'Parent Customer',
+    href: '/partners/parent-partner',
+    id: 'parent-partner',
+    label: 'Parent Partner',
     phone: '+84000000001',
+  },
+  payoutProfile: {
+    account: {
+      accountHolderName: 'Parent Partner',
+      accountNumberLast4: '1234',
+      accountNumberMasked: '****1234',
+      bankName: 'VCB',
+      id: 'bank-1',
+      isPrimary: true,
+      rejectionReason: 'Account holder name does not match KYC.',
+      reviewedAt: createdAt,
+      status: 'REJECTED',
+    },
+    helper: 'Account holder name does not match KYC.',
+    label: 'Bank correction required',
+    status: 'CORRECTION_REQUIRED',
+    type: 'PROVIDER_BANK_ACCOUNT',
   },
   qualifyingBookingId: 'booking-1',
   referred: {
-    href: '/customers/referred-customer',
-    id: 'referred-customer',
-    label: 'Referred Customer',
+    href: '/partners/referred-partner',
+    id: 'referred-partner',
+    label: 'Referred Partner',
     phone: '+84000000002',
   },
   status: 'CASHOUT_APPROVED',
@@ -89,9 +106,13 @@ describe('Referral cashout queue', () => {
 
     expect(markup).toContain('Referral Cashouts');
     expect(markup).toContain('Cashout approved');
-    expect(markup).toContain('Parent Customer');
-    expect(markup).toContain('Referred Customer');
+    expect(markup).toContain('Parent Partner');
+    expect(markup).toContain('Referred Partner');
     expect(markup).toContain('25.000 VND');
+    expect(markup).toContain('Bank correction required');
+    expect(markup).toContain('VCB');
+    expect(markup).toContain('****1234');
+    expect(markup).toContain('Account holder name does not match KYC.');
     expect(markup).toContain('approved for bank transfer');
     expect(markup).toContain('Mark paid');
     expect(markup).toContain('Transfer reference');

@@ -197,6 +197,24 @@ export type AdminReferralCashoutPerson = {
   phone?: string | null;
 };
 
+export type AdminReferralCashoutPayoutProfile = {
+  account?: {
+    accountHolderName: string;
+    accountNumberLast4?: string | null;
+    accountNumberMasked?: string | null;
+    bankName: string;
+    id: string;
+    isPrimary: boolean;
+    rejectionReason?: string | null;
+    reviewedAt?: string | null;
+    status: string;
+  } | null;
+  helper: string;
+  label: string;
+  status: 'CORRECTION_REQUIRED' | 'MISSING' | 'NEEDS_REVIEW' | 'READY' | 'WALLET_ONLY';
+  type: 'CUSTOMER_WALLET' | 'PROVIDER_BANK_ACCOUNT';
+};
+
 export type AdminReferralCashoutQueueRow = AdminReferralReward & {
   audience: AdminReferralAudience;
   attribution: {
@@ -210,6 +228,7 @@ export type AdminReferralCashoutQueueRow = AdminReferralReward & {
   };
   detailHref: string;
   parent: AdminReferralCashoutPerson;
+  payoutProfile: AdminReferralCashoutPayoutProfile;
   referred: AdminReferralCashoutPerson;
 };
 

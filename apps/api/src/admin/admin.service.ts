@@ -516,6 +516,22 @@ const adminReferralCashoutRewardSelect = {
           level: true,
           status: true,
           user: { select: adminUserSummarySelect },
+          bankAccounts: {
+            orderBy: [{ isPrimary: 'desc' }, { updatedAt: 'desc' }],
+            take: 3,
+            select: {
+              id: true,
+              bankName: true,
+              accountHolderName: true,
+              accountNumberMasked: true,
+              accountNumberLast4: true,
+              status: true,
+              isPrimary: true,
+              reviewedAt: true,
+              rejectionReason: true,
+              updatedAt: true,
+            },
+          },
         },
       },
       referredCustomerProfile: {
@@ -764,6 +780,10 @@ type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{
 type AdminReferralCashoutReward = Prisma.ReferralRewardGetPayload<{
   select: typeof adminReferralCashoutRewardSelect;
 }>;
+type AdminReferralCashoutProviderProfile = NonNullable<
+  AdminReferralCashoutReward['attribution']['referrerProviderProfile']
+>;
+type AdminReferralCashoutBankAccount = AdminReferralCashoutProviderProfile['bankAccounts'][number];
 
 type AdminReferralRewardLatestDecision = {
   action: string;
@@ -9130,6 +9150,7 @@ function adminReferralCashoutQueueRowView(
     createdAt: reward.createdAt,
     latestDecision,
     parent,
+    payoutProfile: adminReferralCashoutPayoutProfile(reward),
     referred,
     detailHref:
       audience === ReferralAudience.PARTNER
@@ -9144,6 +9165,83 @@ function adminReferralCashoutQueueRowView(
       platform: reward.attribution.platform,
       createdAt: reward.attribution.createdAt,
     },
+  };
+}
+
+function adminReferralCashoutPayoutProfile(reward: AdminReferralCashoutReward) {
+  if (reward.attribution.audience !== ReferralAudience.PARTNER) {
+    return {
+      account: null,
+      helper: 'Customer referral rewards credit to the customer wallet; bank cashout details are not collected in MVP.',
+      label: 'Customer wallet reward',
+      status: 'WALLET_ONLY',
+      type: 'CUSTOMER_WALLET',
+    };
+  }
+
+  return adminReferralPartnerCashoutPayoutProfile(reward.attribution.referrerProviderProfile?.bankAccounts ?? []);
+}
+
+function adminReferralPartnerCashoutPayoutProfile(bankAccounts: readonly AdminReferralCashoutBankAccount[]) {
+  const account = adminReferralPreferredCashoutBankAccount(bankAccounts);
+  if (!account) {
+    return {
+      account: null,
+      helper: 'Partner has not submitted bank information yet.',
+      label: 'Bank info missing',
+      status: 'MISSING',
+      type: 'PROVIDER_BANK_ACCOUNT',
+    };
+  }
+  if (account.status === ProviderBankAccountStatus.APPROVED) {
+    return {
+      account: adminReferralCashoutBankAccountView(account),
+      helper: 'Approved bank account is available for manual transfer closeout.',
+      label: 'Bank ready',
+      status: 'READY',
+      type: 'PROVIDER_BANK_ACCOUNT',
+    };
+  }
+  if (account.status === ProviderBankAccountStatus.REJECTED) {
+    return {
+      account: adminReferralCashoutBankAccountView(account),
+      helper: account.rejectionReason ?? 'Bank details were rejected; request corrected payout information.',
+      label: 'Bank correction required',
+      status: 'CORRECTION_REQUIRED',
+      type: 'PROVIDER_BANK_ACCOUNT',
+    };
+  }
+
+  return {
+    account: adminReferralCashoutBankAccountView(account),
+    helper: 'Bank details are waiting for admin review before manual transfer closeout.',
+    label: 'Bank review needed',
+    status: 'NEEDS_REVIEW',
+    type: 'PROVIDER_BANK_ACCOUNT',
+  };
+}
+
+function adminReferralPreferredCashoutBankAccount(bankAccounts: readonly AdminReferralCashoutBankAccount[]) {
+  return (
+    bankAccounts.find((account) => account.status === ProviderBankAccountStatus.APPROVED) ??
+    bankAccounts.find((account) => account.status === ProviderBankAccountStatus.REJECTED) ??
+    bankAccounts.find((account) => account.status === ProviderBankAccountStatus.PENDING_REVIEW) ??
+    bankAccounts[0] ??
+    null
+  );
+}
+
+function adminReferralCashoutBankAccountView(account: AdminReferralCashoutBankAccount) {
+  return {
+    id: account.id,
+    bankName: account.bankName,
+    accountHolderName: account.accountHolderName,
+    accountNumberMasked: account.accountNumberMasked,
+    accountNumberLast4: account.accountNumberLast4,
+    status: account.status,
+    isPrimary: account.isPrimary,
+    reviewedAt: account.reviewedAt,
+    rejectionReason: account.rejectionReason,
   };
 }
 

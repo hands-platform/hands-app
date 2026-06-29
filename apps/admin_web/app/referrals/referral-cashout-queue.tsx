@@ -15,6 +15,7 @@ import { AdminRoundedPagination } from '../../components/admin-rounded-paginatio
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
   AdminReferralAudience,
+  AdminReferralCashoutPayoutProfile,
   AdminReferralCashoutQueueRow,
   AdminReferralCashoutQueueSummary,
   AdminReferralRewardStatus,
@@ -51,6 +52,7 @@ const referralCashoutHeaders = [
   'Parent',
   'Referred',
   'Amount',
+  'Payout profile',
   'State',
   'Latest decision',
   'Actions',
@@ -230,6 +232,9 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         <div className="muted">{row.walletLedgerReference ?? 'No wallet ledger yet'}</div>
       </td>
       <td>
+        <ReferralCashoutPayoutProfileCell profile={row.payoutProfile} />
+      </td>
+      <td>
         <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
         <div className="muted">{creditState.helper}</div>
       </td>
@@ -266,6 +271,32 @@ function ReferralCashoutPersonCell({ person }: { readonly person: AdminReferralC
   ) : (
     <span className="admin-person-cell-link">{content}</span>
   );
+}
+
+function ReferralCashoutPayoutProfileCell({ profile }: { readonly profile: AdminReferralCashoutPayoutProfile }) {
+  const account = profile.account;
+
+  return (
+    <div className="referral-cashout-payout-profile">
+      <StatusBadge tone={referralCashoutPayoutProfileTone(profile.status)}>{profile.label}</StatusBadge>
+      {account ? (
+        <div className="admin-mt-6">
+          <strong>{account.bankName}</strong>
+          <div className="muted">
+            {account.accountNumberMasked ?? account.accountNumberLast4 ?? 'Masked account unavailable'}
+          </div>
+          <div className="muted">{account.accountHolderName}</div>
+        </div>
+      ) : null}
+      <div className="muted">{profile.helper}</div>
+    </div>
+  );
+}
+
+function referralCashoutPayoutProfileTone(status: AdminReferralCashoutPayoutProfile['status']): StatusBadgeTone {
+  if (status === 'READY' || status === 'WALLET_ONLY') return 'success';
+  if (status === 'CORRECTION_REQUIRED' || status === 'MISSING') return 'danger';
+  return 'warning';
 }
 
 function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQueueRow }) {

@@ -2751,6 +2751,13 @@ describe('AdminService query orchestration', () => {
           label: 'Parent Customer',
           phone: '+84000000001',
         },
+        payoutProfile: {
+          account: null,
+          helper: 'Customer referral rewards credit to the customer wallet; bank cashout details are not collected in MVP.',
+          label: 'Customer wallet reward',
+          status: 'WALLET_ONLY',
+          type: 'CUSTOMER_WALLET',
+        },
         qualifyingBookingId: 'booking-1',
         referred: {
           href: '/customers/referred-customer',
@@ -2852,6 +2859,116 @@ describe('AdminService query orchestration', () => {
       _count: { _all: true },
       _sum: { amount: true },
     });
+  });
+
+  it('surfaces partner payout bank correction status in referral cashout rows', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const reviewedAt = new Date('2026-06-24T12:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'reward-partner-bank',
+            amount: 150_000,
+            calculationSnapshot: { rewardMode: 'FIXED_AMOUNT' },
+            currency: 'VND',
+            status: ReferralRewardStatus.CASHOUT_REQUESTED,
+            qualifyingBookingId: 'booking-partner-1',
+            walletLedgerReference: null,
+            availableAt: createdAt,
+            createdAt,
+            attribution: {
+              id: 'attribution-partner-1',
+              audience: ReferralAudience.PARTNER,
+              status: ReferralAttributionStatus.QUALIFIED,
+              fraudReviewStatus: 'CLEAR',
+              installSource: 'referral-link',
+              platform: 'android',
+              createdAt,
+              referrerCustomerProfile: null,
+              referrerProviderProfile: {
+                id: 'parent-partner',
+                displayName: 'Parent Partner',
+                level: 2,
+                status: ProviderStatus.ONLINE_AVAILABLE,
+                user: { id: 'user-parent-partner', phone: '+84000000003', fullName: 'Parent Partner' },
+                bankAccounts: [
+                  {
+                    id: 'bank-1',
+                    accountHolderName: 'Parent Partner',
+                    accountNumberLast4: '1234',
+                    accountNumberMasked: '****1234',
+                    bankName: 'VCB',
+                    isPrimary: true,
+                    rejectionReason: 'Account holder name does not match KYC.',
+                    reviewedAt,
+                    status: ProviderBankAccountStatus.REJECTED,
+                    updatedAt: reviewedAt,
+                  },
+                ],
+              },
+              referredCustomerProfile: null,
+              referredProviderProfile: {
+                id: 'referred-partner',
+                displayName: 'Referred Partner',
+                level: 2,
+                status: ProviderStatus.ONLINE_AVAILABLE,
+                user: { id: 'user-referred-partner', phone: '+84000000004', fullName: 'Referred Partner' },
+              },
+            },
+          },
+        ]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listReferralCashoutQueue({ audience: 'partner' })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'reward-partner-bank',
+        audience: ReferralAudience.PARTNER,
+        parent: expect.objectContaining({
+          href: '/partners/parent-partner',
+          label: 'Parent Partner',
+        }),
+        payoutProfile: {
+          account: {
+            accountHolderName: 'Parent Partner',
+            accountNumberLast4: '1234',
+            accountNumberMasked: '****1234',
+            bankName: 'VCB',
+            id: 'bank-1',
+            isPrimary: true,
+            rejectionReason: 'Account holder name does not match KYC.',
+            reviewedAt,
+            status: ProviderBankAccountStatus.REJECTED,
+          },
+          helper: 'Account holder name does not match KYC.',
+          label: 'Bank correction required',
+          status: 'CORRECTION_REQUIRED',
+          type: 'PROVIDER_BANK_ACCOUNT',
+        },
+      }),
+    ]);
+    expect(prisma.referralReward.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          attribution: expect.objectContaining({
+            select: expect.objectContaining({
+              referrerProviderProfile: expect.objectContaining({
+                select: expect.objectContaining({
+                  bankAccounts: expect.objectContaining({
+                    take: 3,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
   });
 
   it('rejects customer referral parent detail when the customer has no referral activity', async () => {
