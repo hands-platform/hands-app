@@ -1,4 +1,5 @@
 import { normalizeDateRange, readSearchParam } from '../lib/date-range';
+import { OPERATIONAL_POLICY_KEYS } from '../lib/operations-policy';
 
 export type DashboardDetailsMode = 'summary' | 'all';
 
@@ -43,6 +44,22 @@ const DASHBOARD_SUMMARY_APP_SESSION_TAKE = 5;
 const DASHBOARD_USER_TAKE = 25;
 const DASHBOARD_PARTNER_TAKE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DASHBOARD_OPERATIONAL_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+  OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+  OPERATIONAL_POLICY_KEYS.preferredAcceptMode,
+  OPERATIONAL_POLICY_KEYS.travelBufferMinutes,
+  OPERATIONAL_POLICY_KEYS.walletNegativeGate,
+  OPERATIONAL_POLICY_KEYS.cancellationAfterMatch,
+  OPERATIONAL_POLICY_KEYS.noShowPartnerReport,
+  OPERATIONAL_POLICY_KEYS.partnerAlertChannel,
+] as const;
+const DASHBOARD_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
+  keys: DASHBOARD_OPERATIONAL_POLICY_KEYS.join(','),
+}).toString()}`;
 
 export function buildDashboardViewMode(params: DashboardParams): DashboardViewMode {
   const detailsMode = normalizeDashboardDetailsMode(readSearchParam(params.details));
@@ -90,7 +107,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       ? buildDashboardDateScopedHref('/admin/notifications', { take: String(limits.notifications) }, range)
       : null,
     notificationSummaryHref: buildDashboardDateScopedHref('/admin/notifications/summary', {}, range),
-    operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
+    operationalPolicyHref: viewMode.shouldRenderFullDashboard ? DASHBOARD_OPERATIONAL_POLICY_HREF : null,
     partnersHref: viewMode.shouldRenderFullDashboard
       ? `/admin/partners/list-providers?${new URLSearchParams({
           take: String(DASHBOARD_PARTNER_TAKE),

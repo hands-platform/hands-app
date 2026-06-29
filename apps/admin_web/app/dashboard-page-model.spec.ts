@@ -34,9 +34,23 @@ describe('dashboard page model', () => {
 
   it('loads policy diagnostics only for the full dashboard', () => {
     expect(buildDashboardDataHrefs({})).toMatchObject({ operationalPolicyHref: null });
-    expect(buildDashboardDataHrefs({ details: 'all' })).toMatchObject({
-      operationalPolicyHref: '/admin/operational-policy',
-    });
+    const policyHref = buildDashboardDataHrefs({ details: 'all' }).operationalPolicyHref;
+    const policyUrl = new URL(policyHref ?? '', 'http://admin.local');
+
+    expect(policyUrl.pathname).toBe('/admin/operational-policy');
+    expect(policyUrl.searchParams.get('keys')?.split(',')).toEqual([
+      'matching.provider_response_window_minutes',
+      'matching.marketplace_partner_radius_meters',
+      'matching.marketplace_partner_location_max_age_minutes',
+      'matching.marketplace_partner_invitation_limit',
+      'matching.marketplace_open_mode',
+      'matching.preferred_accept_mode',
+      'matching.travel_buffer_minutes',
+      'wallet.negative_balance_gate',
+      'cancellation.after_match_policy',
+      'no_show.partner_report_policy',
+      'notification.partner_alert_channel',
+    ]);
   });
 
   it('keeps default dashboard data requests bounded and scoped to today', () => {
