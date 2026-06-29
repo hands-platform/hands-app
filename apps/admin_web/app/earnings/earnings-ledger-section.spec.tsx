@@ -1,9 +1,9 @@
-import { EarningsLedgerSection } from './earnings-ledger-section';
+import { EarningsLedgerSection, type EarningsLedgerRow } from './earnings-ledger-section';
 
 describe('EarningsLedgerSection', () => {
   it('renders recent earning ledger rows and available actions', () => {
     const section = EarningsLedgerSection({
-      rows: [
+      pagination: pagination([
         {
           bookingHref: '/bookings/booking-1',
           bookingPaymentMethod: 'CASH',
@@ -36,13 +36,14 @@ describe('EarningsLedgerSection', () => {
           withholdingAmountLabel: '20.000 VND tax withheld',
           walletEntries: ['Wallet DEBIT: -80.000 VND'],
         },
-      ],
+      ], { totalRows: 12 }),
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizeText(textContent(section));
 
     expect(section.type).toBe('div');
     expect(rendered).toContain('Recent earnings ledger');
+    expect(rendered).toContain('Showing 1 to 1 of 12 entries');
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('Pending admin decision');
     expect(rendered).toContain('Fee held');
@@ -52,11 +53,30 @@ describe('EarningsLedgerSection', () => {
   });
 
   it('renders empty state when there are no ledger rows', () => {
-    const section = EarningsLedgerSection({ rows: [] });
+    const section = EarningsLedgerSection({ pagination: pagination([]) });
 
     expect(textContent(section)).toContain('No earnings loaded.');
   });
 });
+
+function pagination(
+  rows: readonly EarningsLedgerRow[],
+  input: { page?: number; pageSize?: number; totalRows?: number } = {},
+) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 10;
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
+    hrefForPage: (nextPage: number) => `/earnings?page=${nextPage}`,
+    page,
+    rows,
+    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
+    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
+    totalRows,
+  };
+}
 
 function textContent(value: unknown): string {
   value = resolveElement(value);
@@ -73,6 +93,10 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {

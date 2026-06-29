@@ -5,6 +5,7 @@ import {
   buildEarningBatchStateCards,
   buildEarningFilters,
   buildEarningOperationsApiHrefs,
+  buildEarningServerPagination,
   buildEarningsLedgerRows,
   buildEarningsMoneyFlowCards,
   buildEarningsMoneyFlowChecks,
@@ -18,14 +19,24 @@ import {
 describe('earnings page model', () => {
   it('defaults finance operations filters to today and bounded API hrefs', () => {
     const defaultFilters = buildEarningFilters({});
-    const rangeFilters = buildEarningFilters({ range: '7d', batchState: 'ready' });
+    const rangeFilters = buildEarningFilters({ range: '7d', batchState: 'ready', page: '3', pageSize: '25' });
 
     expect(defaultFilters.range).toBe('today');
     expect(buildEarningFilters({ range: 'all' }).range).toBe('all');
     expect(buildEarningOperationsApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=7d&take=10',
+      earningsHref: '/admin/earnings?range=7d&take=25&skip=50',
       earningsSummaryHref: '/admin/earnings/summary?range=7d',
       payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
+    });
+    expect(buildEarningServerPagination(['row-a'], rangeFilters, 52)).toEqual({
+      from: 51,
+      hrefForPage: expect.any(Function),
+      page: 3,
+      pageSize: 25,
+      rows: ['row-a'],
+      to: 51,
+      totalPages: 3,
+      totalRows: 52,
     });
   });
 

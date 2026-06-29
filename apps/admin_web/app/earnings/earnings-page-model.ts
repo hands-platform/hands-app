@@ -77,6 +77,7 @@ const earningBatchStateOptions: Array<{ state: EarningBatchState; label: string 
   { state: 'paid', label: 'Paid' },
 ];
 const EARNING_OPERATIONS_API_LIMIT = 10;
+const EARNING_OPERATIONS_API_MAX_LIMIT = 50;
 
 export function buildEarningPayoutConfirmationRows(
   payoutQueue: ProviderPayoutQueueItem[],
@@ -205,22 +206,72 @@ export function buildEarningFilters(params: Record<string, string | string[] | u
   const rangeParam = readSearchParam(params.range);
 
   return {
+    page: readEarningPage(params.page),
+    pageSize: readEarningPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     batchState: normalizeEarningBatchState(readSearchParam(params.batchState)),
   };
 }
 
 export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildEarningFilters>) {
-  const params = new URLSearchParams({
+  const earningParams = new URLSearchParams({
+    range: filters.range,
+    take: String(filters.pageSize),
+  });
+  const skip = (filters.page - 1) * filters.pageSize;
+  if (skip > 0) {
+    earningParams.set('skip', String(skip));
+  }
+  const payoutBatchParams = new URLSearchParams({
     range: filters.range,
     take: String(EARNING_OPERATIONS_API_LIMIT),
   });
 
   return {
-    earningsHref: `/admin/earnings?${params.toString()}`,
+    earningsHref: `/admin/earnings?${earningParams.toString()}`,
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
-    payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
+    payoutBatchesHref: `/admin/payout-batches?${payoutBatchParams.toString()}`,
   };
+}
+
+export function buildEarningServerPagination<T>(
+  rows: readonly T[],
+  filters: ReturnType<typeof buildEarningFilters>,
+  totalRows: number,
+) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    hrefForPage: (nextPage: number) => earningHref({ ...filters, page: nextPage }),
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
+function earningHref(filters: ReturnType<typeof buildEarningFilters>) {
+  const params = new URLSearchParams();
+  if (filters.range !== 'today') {
+    params.set('range', filters.range);
+  }
+  if (filters.batchState !== 'all') {
+    params.set('batchState', filters.batchState);
+  }
+  if (filters.pageSize !== EARNING_OPERATIONS_API_LIMIT) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  const query = params.toString();
+  return query ? `/earnings?${query}` : '/earnings';
 }
 
 export function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEarningSummary {
@@ -258,6 +309,19 @@ export function summarizeEarnings(earnings: AdminEarning[], currency: string): A
 
 function normalizeEarningBatchState(value: string): EarningBatchState {
   return earningBatchStateOptions.find((option) => option.state === value)?.state ?? 'all';
+}
+
+function readEarningPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function readEarningPageSize(value: string | string[] | undefined) {
+  const pageSize = Number.parseInt(readSearchParam(value), 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+    return EARNING_OPERATIONS_API_LIMIT;
+  }
+  return Math.min(Math.trunc(pageSize), EARNING_OPERATIONS_API_MAX_LIMIT);
 }
 
 export function filterEarningsByBatchState(earnings: AdminEarning[], state: EarningBatchState) {

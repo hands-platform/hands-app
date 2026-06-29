@@ -23,6 +23,7 @@ import {
   buildEarningFilters,
   buildEarningOperationsApiHrefs,
   buildEarningPayoutConfirmationRows,
+  buildEarningServerPagination,
   buildEarningsLedgerRows,
   buildEarningsMoneyFlowCards,
   buildEarningsMoneyFlowChecks,
@@ -76,6 +77,11 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const partnerPayoutQueueGroups = buildPartnerPayoutQueueGroups(payoutQueue);
   const batchStateCards = buildEarningBatchStateCards(filteredEarnings, filters.range);
   const ledgerRows = buildEarningsLedgerRows(ledgerEarnings);
+  const ledgerPagination = buildEarningServerPagination(
+    ledgerRows,
+    filters,
+    filters.batchState === 'all' ? summary.count : ledgerRows.length,
+  );
   const confirmation = buildEarningActionConfirmation(
     cashDebtQueue.map((item) => ({
       currency: item.earning.currency,
@@ -193,7 +199,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         currency={summary.currency}
         ledgerCount={ledgerEarnings.length}
       />
-      <EarningsLedgerSection rows={ledgerRows} />
+      <EarningsLedgerSection pagination={ledgerPagination} />
     </AdminPageTemplate>
   );
 }

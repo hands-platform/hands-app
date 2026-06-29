@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type EarningsLedgerRow = {
   readonly bookingHref: string;
@@ -34,7 +35,15 @@ export type EarningsLedgerRow = {
 };
 
 type EarningsLedgerSectionProps = {
-  readonly rows: readonly EarningsLedgerRow[];
+  readonly pagination: {
+    readonly from: number;
+    readonly hrefForPage: (page: number) => string;
+    readonly page: number;
+    readonly rows: readonly EarningsLedgerRow[];
+    readonly to: number;
+    readonly totalPages: number;
+    readonly totalRows: number;
+  };
 };
 
 const ledgerHeaders = [
@@ -47,7 +56,9 @@ const ledgerHeaders = [
   'Action',
 ] as const;
 
-export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
+export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps) {
+  const rows = pagination.rows;
+
   return (
     <div className="card admin-mt-20">
       <div className="ops-section-header">
@@ -147,6 +158,19 @@ export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <div className="vuexy-booking-table-footer">
+        <span>
+          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+        </span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel="Earnings ledger pagination"
+          className="vuexy-booking-pagination"
+          hrefForPage={pagination.hrefForPage}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </div>
   );
 }
