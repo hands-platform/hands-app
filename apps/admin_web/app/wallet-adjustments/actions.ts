@@ -236,7 +236,12 @@ function readMonthlyPeriod(formData: FormData) {
   if (!value) {
     return '';
   }
-  if (!/^\d{4}-\d{2}$/.test(value)) {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new WalletAdjustmentValidationError('monthly-period-invalid');
+  }
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) {
     throw new WalletAdjustmentValidationError('monthly-period-invalid');
   }
   return value;

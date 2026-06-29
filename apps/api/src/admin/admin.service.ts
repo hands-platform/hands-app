@@ -9263,8 +9263,13 @@ function normalizeManualWalletMonthlyPeriod(value?: string | null) {
   if (!normalized) {
     return null;
   }
-  if (!/^\d{4}-\d{2}$/.test(normalized)) {
-    throw new BadRequestException('Monthly period must use YYYY-MM');
+  const match = /^(\d{4})-(\d{2})$/.exec(normalized);
+  if (!match) {
+    throw new BadRequestException('Monthly period must use YYYY-MM with month 01-12');
+  }
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) {
+    throw new BadRequestException('Monthly period must use YYYY-MM with month 01-12');
   }
   return normalized;
 }

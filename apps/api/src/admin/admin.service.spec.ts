@@ -6174,6 +6174,37 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Closed monthly periods require a reversal entry instead of direct edit');
   });
 
+  it('rejects impossible manual wallet adjustment monthly periods before DB reads', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      monthlyTaxClosing: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewManualWalletAdjustment('admin-user-1', {
+        ownerType: 'CUSTOMER',
+        ownerId: 'customer-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PROMOTION_CREDIT',
+        amount: 50000,
+        reason: 'Impossible monthly period',
+        monthlyPeriod: '2026-13',
+      }),
+    ).rejects.toThrow('Monthly period must use YYYY-MM with month 01-12');
+
+    expect(prisma.customerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(prisma.customerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(prisma.monthlyTaxClosing.findFirst).not.toHaveBeenCalled();
+  });
+
   it('delegates partner wallet withdrawal request updates to the earnings service with audit', async () => {
     const prisma = {
       adminAuditLog: {
