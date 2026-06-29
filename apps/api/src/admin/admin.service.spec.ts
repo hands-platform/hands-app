@@ -5165,6 +5165,103 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('groups partner withholding tax by monthly period and provider', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-1',
+            monthlyPeriod: '2026-06',
+            currency: 'VND',
+            _count: { _all: 2 },
+            _sum: {
+              customerPaymentAmount: 1200000,
+              partnerPayoutAmount: 860000,
+              partnerVatAmount: 60000,
+              partnerPitAmount: 24000,
+              partnerWithholdingTotal: 84000,
+            },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'provider-1',
+            displayName: 'Smoke Partner',
+            user: { fullName: 'Smoke Partner User', phone: '+84900000000' },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerWithholdingTax({ period: '2026-06', take: '25' })).resolves.toEqual([
+      {
+        providerProfileId: 'provider-1',
+        partnerName: 'Smoke Partner',
+        partnerPhone: '+84900000000',
+        period: '2026-06',
+        currency: 'VND',
+        completedBookingCount: 2,
+        grossServiceRevenue: 1200000,
+        partnerPayoutTotal: 860000,
+        partnerVatWithheldTotal: 60000,
+        partnerPitWithheldTotal: 24000,
+        totalPartnerTaxWithheld: 84000,
+      },
+    ]);
+
+    expect(prisma.bookingSettlementSnapshot.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['providerProfileId', 'monthlyPeriod', 'currency'],
+        orderBy: [{ monthlyPeriod: 'desc' }, { providerProfileId: 'asc' }],
+        take: 25,
+        where: expect.objectContaining({
+          monthlyPeriod: '2026-06',
+          OR: [{ customerPaymentAmount: { gt: 0 } }, { partnerWithholdingTotal: { gt: 0 } }],
+        }),
+      }),
+    );
+  });
+
+  it('summarizes partner withholding tax monthly totals from settlement snapshots', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 2 },
+          _sum: {
+            customerPaymentAmount: 1200000,
+            partnerPayoutAmount: 860000,
+            partnerVatAmount: 60000,
+            partnerPitAmount: 24000,
+            partnerWithholdingTotal: 84000,
+          },
+        }),
+        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerWithholdingTaxSummary({ period: '2026-06' })).resolves.toEqual({
+      period: '2026-06',
+      currency: 'VND',
+      partnerCountWithRevenue: 1,
+      taxableBookingCount: 2,
+      grossServiceRevenue: 1200000,
+      partnerPayoutTotal: 860000,
+      partnerVatWithheldTotal: 60000,
+      partnerPitWithheldTotal: 24000,
+      totalPartnerTaxWithheld: 84000,
+    });
+
+    expect(prisma.bookingSettlementSnapshot.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ monthlyPeriod: '2026-06' }),
+      }),
+    );
+  });
+
   it('delegates bounded cash settlement filters to the earnings service', async () => {
     const earnings = {
       listCashSettlementDebtForAdmin: vi.fn().mockResolvedValue([{ id: 'cash-earning-1' }]),

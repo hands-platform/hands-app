@@ -332,6 +332,10 @@ type AdminPaymentOperationsQuery = {
   readonly review?: string | null;
   readonly take?: number | string | null;
 };
+type AdminPartnerWithholdingTaxQuery = {
+  readonly period?: string | null;
+  readonly take?: number | string | null;
+};
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
 const adminBookingSettlementSnapshotListSelect = {
@@ -5344,6 +5348,90 @@ export class AdminService {
     };
   }
 
+  async listPartnerWithholdingTax(options: AdminPartnerWithholdingTaxQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const where = adminPartnerWithholdingTaxWhere(period);
+    const groups = await this.prisma.bookingSettlementSnapshot.groupBy({
+      by: ['providerProfileId', 'monthlyPeriod', 'currency'],
+      where,
+      _count: { _all: true },
+      _sum: {
+        customerPaymentAmount: true,
+        partnerPayoutAmount: true,
+        partnerVatAmount: true,
+        partnerPitAmount: true,
+        partnerWithholdingTotal: true,
+      },
+      orderBy: [{ monthlyPeriod: 'desc' }, { providerProfileId: 'asc' }],
+      take: adminPaymentOperationsTake(options.take),
+    });
+
+    if (groups.length === 0) {
+      return [];
+    }
+
+    const providers = await this.prisma.providerProfile.findMany({
+      where: { id: { in: groups.map((group) => group.providerProfileId) } },
+      select: {
+        id: true,
+        displayName: true,
+        user: { select: { fullName: true, phone: true } },
+      },
+    });
+    const providerById = new Map(providers.map((provider) => [provider.id, provider]));
+
+    return groups.map((group) => {
+      const provider = providerById.get(group.providerProfileId);
+      return {
+        providerProfileId: group.providerProfileId,
+        partnerName: provider?.displayName ?? provider?.user?.fullName ?? 'Unknown partner',
+        partnerPhone: provider?.user?.phone ?? null,
+        period: group.monthlyPeriod,
+        currency: group.currency,
+        completedBookingCount: group._count._all,
+        grossServiceRevenue: group._sum.customerPaymentAmount ?? 0,
+        partnerPayoutTotal: group._sum.partnerPayoutAmount ?? 0,
+        partnerVatWithheldTotal: group._sum.partnerVatAmount ?? 0,
+        partnerPitWithheldTotal: group._sum.partnerPitAmount ?? 0,
+        totalPartnerTaxWithheld: group._sum.partnerWithholdingTotal ?? 0,
+      };
+    });
+  }
+
+  async partnerWithholdingTaxSummary(options: AdminPartnerWithholdingTaxQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const where = adminPartnerWithholdingTaxWhere(period);
+    const [totals, providerGroups] = await Promise.all([
+      this.prisma.bookingSettlementSnapshot.aggregate({
+        where,
+        _count: { _all: true },
+        _sum: {
+          customerPaymentAmount: true,
+          partnerPayoutAmount: true,
+          partnerVatAmount: true,
+          partnerPitAmount: true,
+          partnerWithholdingTotal: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.groupBy({
+        by: ['providerProfileId'],
+        where,
+      }),
+    ]);
+
+    return {
+      period,
+      currency: 'VND',
+      partnerCountWithRevenue: providerGroups.length,
+      taxableBookingCount: totals._count._all,
+      grossServiceRevenue: totals._sum.customerPaymentAmount ?? 0,
+      partnerPayoutTotal: totals._sum.partnerPayoutAmount ?? 0,
+      partnerVatWithheldTotal: totals._sum.partnerVatAmount ?? 0,
+      partnerPitWithheldTotal: totals._sum.partnerPitAmount ?? 0,
+      totalPartnerTaxWithheld: totals._sum.partnerWithholdingTotal ?? 0,
+    };
+  }
+
   listServices() {
     return this.prisma.massageService.findMany({
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
@@ -9549,6 +9637,29 @@ function adminBookingSettlementSnapshotReviewWhere(
     default:
       return undefined;
   }
+}
+
+function adminPartnerWithholdingTaxWhere(period: string): Prisma.BookingSettlementSnapshotWhereInput {
+  return {
+    monthlyPeriod: period,
+    OR: [{ customerPaymentAmount: { gt: 0 } }, { partnerWithholdingTotal: { gt: 0 } }],
+  };
+}
+
+function adminPartnerWithholdingTaxPeriod(value: string | null | undefined) {
+  const normalized = normalizeNullable(value);
+  if (normalized && /^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) {
+    return normalized;
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+  return `${year}-${month}`;
 }
 
 function adminPaymentOperationsWhere(

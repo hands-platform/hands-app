@@ -734,6 +734,16 @@ export class AdminController {
     return this.admin.bookingSettlementSnapshotSummary({ range, review });
   }
 
+  @Get('partner-withholding-tax')
+  partnerWithholdingTax(@Query('period') period?: string, @Query('take') take?: string) {
+    return this.admin.listPartnerWithholdingTax({ period, take });
+  }
+
+  @Get('partner-withholding-tax/summary')
+  partnerWithholdingTaxSummary(@Query('period') period?: string) {
+    return this.admin.partnerWithholdingTaxSummary({ period });
+  }
+
   @Get('services')
   services() {
     return this.admin.listServices();

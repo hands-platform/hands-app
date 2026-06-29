@@ -57,6 +57,8 @@ describe('AdminController notification and push actions', () => {
     cashSettlementSummary: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
+    listPartnerWithholdingTax: vi.fn(),
+    partnerWithholdingTaxSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -477,6 +479,41 @@ describe('AdminController notification and push actions', () => {
       range: '30d',
       review: 'paid',
     });
+  });
+
+  it('exposes partner withholding tax monthly summaries', async () => {
+    admin.listPartnerWithholdingTax.mockResolvedValue([{ providerProfileId: 'provider-1' }]);
+
+    await expect(controller.partnerWithholdingTax('2026-06', '25')).resolves.toEqual([
+      { providerProfileId: 'provider-1' },
+    ]);
+
+    expect(routeMetadata('partnerWithholdingTax')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partner-withholding-tax',
+    });
+    expect(admin.listPartnerWithholdingTax).toHaveBeenCalledWith({
+      period: '2026-06',
+      take: '25',
+    });
+  });
+
+  it('exposes partner withholding tax summary for a monthly period', async () => {
+    admin.partnerWithholdingTaxSummary.mockResolvedValue({
+      period: '2026-06',
+      totalPartnerTaxWithheld: 84000,
+    });
+
+    await expect(controller.partnerWithholdingTaxSummary('2026-06')).resolves.toEqual({
+      period: '2026-06',
+      totalPartnerTaxWithheld: 84000,
+    });
+
+    expect(routeMetadata('partnerWithholdingTaxSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partner-withholding-tax/summary',
+    });
+    expect(admin.partnerWithholdingTaxSummary).toHaveBeenCalledWith({ period: '2026-06' });
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {
