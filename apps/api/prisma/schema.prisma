@@ -104,6 +104,12 @@ enum TaxRuleScope {
   AMOUNT_BAND
 }
 
+enum PartnerTaxLineKind {
+  PARTNER_WITHHOLDING_COMBINED
+  PARTNER_VAT
+  PARTNER_PIT
+}
+
 enum ProviderAgreementType {
   TERMS
   PRIVACY
@@ -133,6 +139,10 @@ enum PaymentMethod {
   MOMO
   VNPAY
   CASH
+  CARD
+  BANK_TRANSFER
+  CUSTOMER_WALLET
+  MANUAL
 }
 
 enum FileVisibility {
@@ -198,6 +208,48 @@ enum CustomerWalletLedgerType {
   REFERRAL_REWARD
   REFUND
   ADMIN_ADJUSTMENT
+}
+
+enum PaymentFeeRuleType {
+  RATE
+  FIXED
+  RATE_PLUS_FIXED
+}
+
+enum PaymentFeePayer {
+  HANDS
+  CUSTOMER
+  PARTNER
+  SHARED
+}
+
+enum PaymentFeeTreatment {
+  OPERATING_EXPENSE
+  PASS_THROUGH
+  MANUAL_REVIEW
+}
+
+enum BookingSettlementStatus {
+  DRAFT
+  POSTED
+  REVERSED
+}
+
+enum BookingSettlementTaxStatus {
+  OPEN
+  DECLARED
+  PAID
+  CLOSED
+  REVERSED
+}
+
+enum MonthlyTaxClosingStatus {
+  DRAFT
+  REVIEWED
+  DECLARED
+  PAID
+  CLOSED
+  REVERSED
 }
 
 enum ReferralAudience {
@@ -301,6 +353,7 @@ model User {
   reviewedFileAssets       FileAsset[]                @relation("FileAssetReviewer")
   taxPolicyVersions        TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
   platformFeePolicies      PlatformFeePolicyVersion[] @relation("PlatformFeePolicyAuthor")
+  paymentFeePolicies       PaymentFeePolicyVersion[]  @relation("PaymentFeePolicyAuthor")
   providerVerificationLogs ProviderVerificationLog[]  @relation("ProviderVerificationLogActor")
   providerReportsCreated   ProviderReport[]           @relation("ProviderReportCreator")
   providerReportsAssigned  ProviderReport[]           @relation("ProviderReportAssignee")
@@ -358,6 +411,7 @@ model CustomerProfile {
   addresses           Json?
   bookings            Booking[]
   bookingSnapshots    BookingAddressSnapshot[]
+  settlementSnapshots BookingSettlementSnapshot[]
   favoriteProviders   CustomerFavoriteProvider[]
   viewedProviders     CustomerProviderProfileView[]
   reviews             Review[]
@@ -439,6 +493,7 @@ model ProviderProfile {
   taxProfile               ProviderTaxProfile?
   taxLogs                  ProviderTaxLog[]
   platformFeeLogs          ProviderPlatformFeeLog[]
+  settlementSnapshots      BookingSettlementSnapshot[]
   agreements               ProviderAgreement[]
   verificationLogs         ProviderVerificationLog[]
   sessions                 ProviderSession[]
@@ -767,6 +822,7 @@ model Booking {
   walletLedgerEntries         ProviderWalletLedgerEntry[]
   customerWalletLedgerEntries CustomerWalletLedgerEntry[]
   addressSnapshot             BookingAddressSnapshot?
+  settlementSnapshot          BookingSettlementSnapshot?
   referralRewards             ReferralReward[]
 
   @@index([status, closedAt])
@@ -984,17 +1040,18 @@ model ChatMessage {
 }
 
 model Payment {
-  id               String                   @id @default(cuid())
-  bookingId        String                   @unique
-  method           PaymentMethod
-  status           PaymentStatus            @default(PENDING)
-  amount           Int
-  currency         String                   @default("VND")
-  providerRef      String?                  @unique
-  rawMeta          Json?
-  booking          Booking                  @relation(fields: [bookingId], references: [id])
-  refunds          Refund[]
-  callbackAttempts PaymentCallbackAttempt[]
+  id                 String                     @id @default(cuid())
+  bookingId          String                     @unique
+  method             PaymentMethod
+  status             PaymentStatus              @default(PENDING)
+  amount             Int
+  currency           String                     @default("VND")
+  providerRef        String?                    @unique
+  rawMeta            Json?
+  booking            Booking                    @relation(fields: [bookingId], references: [id])
+  refunds            Refund[]
+  callbackAttempts   PaymentCallbackAttempt[]
+  settlementSnapshot BookingSettlementSnapshot?
 }
 
 model PaymentCallbackAttempt {
@@ -1080,6 +1137,7 @@ model ProviderEarning {
   platformFeeLogs     ProviderPlatformFeeLog[]
   taxLogs             ProviderTaxLog[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
+  settlementSnapshot  BookingSettlementSnapshot?
 
   @@index([settlementMethod, paidAt])
 }
@@ -1152,54 +1210,95 @@ model CustomerWalletLedgerEntry {
 }
 
 model TaxPolicyVersion {
-  id            String           @id @default(cuid())
-  name          String
-  status        TaxPolicyStatus  @default(DRAFT)
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  notes         String?
-  createdById   String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  createdBy     User?            @relation("TaxPolicyAuthor", fields: [createdById], references: [id])
-  rules         TaxRule[]
-  taxLogs       ProviderTaxLog[]
+  id                         String                      @id @default(cuid())
+  name                       String
+  status                     TaxPolicyStatus             @default(DRAFT)
+  effectiveFrom              DateTime
+  effectiveTo                DateTime?
+  notes                      String?
+  createdById                String?
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  createdBy                  User?                       @relation("TaxPolicyAuthor", fields: [createdById], references: [id])
+  rules                      TaxRule[]
+  taxLogs                    ProviderTaxLog[]
+  bookingSettlementSnapshots BookingSettlementSnapshot[]
 
   @@index([status, effectiveFrom])
 }
 
 model TaxRule {
-  id              String           @id @default(cuid())
+  id              String             @id @default(cuid())
   policyVersionId String
-  scope           TaxRuleScope     @default(DEFAULT)
+  scope           TaxRuleScope       @default(DEFAULT)
   serviceType     String?
   minGrossAmount  Int?
   maxGrossAmount  Int?
-  rateBps         Int              @default(0)
-  fixedAmount     Int              @default(0)
-  active          Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  policyVersion   TaxPolicyVersion @relation(fields: [policyVersionId], references: [id])
+  taxKind         PartnerTaxLineKind @default(PARTNER_WITHHOLDING_COMBINED)
+  category        String?
+  collectionMode  String?
+  rateBps         Int                @default(0)
+  fixedAmount     Int                @default(0)
+  active          Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  policyVersion   TaxPolicyVersion   @relation(fields: [policyVersionId], references: [id])
 
   @@index([policyVersionId, scope, active])
 }
 
 model PlatformFeePolicyVersion {
-  id            String                   @id @default(cuid())
-  name          String
-  status        TaxPolicyStatus          @default(DRAFT)
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  notes         String?
-  createdById   String?
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
-  createdBy     User?                    @relation("PlatformFeePolicyAuthor", fields: [createdById], references: [id])
-  rules         PlatformFeeRule[]
-  feeLogs       ProviderPlatformFeeLog[]
+  id                  String                      @id @default(cuid())
+  name                String
+  status              TaxPolicyStatus             @default(DRAFT)
+  effectiveFrom       DateTime
+  effectiveTo         DateTime?
+  notes               String?
+  vatRateBps          Int                         @default(800)
+  vatCategory         String?
+  createdById         String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  createdBy           User?                       @relation("PlatformFeePolicyAuthor", fields: [createdById], references: [id])
+  rules               PlatformFeeRule[]
+  feeLogs             ProviderPlatformFeeLog[]
+  settlementSnapshots BookingSettlementSnapshot[]
 
   @@index([status, effectiveFrom])
+}
+
+model PaymentFeePolicyVersion {
+  id                  String                      @id @default(cuid())
+  name                String
+  status              TaxPolicyStatus             @default(DRAFT)
+  effectiveFrom       DateTime
+  effectiveTo         DateTime?
+  notes               String?
+  createdById         String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  createdBy           User?                       @relation("PaymentFeePolicyAuthor", fields: [createdById], references: [id])
+  rules               PaymentFeeRule[]
+  settlementSnapshots BookingSettlementSnapshot[]
+
+  @@index([status, effectiveFrom])
+}
+
+model PaymentFeeRule {
+  id              String                  @id @default(cuid())
+  policyVersionId String
+  method          PaymentMethod
+  feeType         PaymentFeeRuleType      @default(RATE)
+  rateBps         Int                     @default(0)
+  fixedAmount     Int                     @default(0)
+  payer           PaymentFeePayer         @default(HANDS)
+  treatment       PaymentFeeTreatment     @default(OPERATING_EXPENSE)
+  active          Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  policyVersion   PaymentFeePolicyVersion @relation(fields: [policyVersionId], references: [id])
+
+  @@index([policyVersionId, method, active])
 }
 
 model PlatformFeeRule {
@@ -1249,6 +1348,7 @@ model ProviderTaxLog {
   policyVersionId   String?
   grossAmount       Int
   taxableAmount     Int
+  taxKind           PartnerTaxLineKind  @default(PARTNER_WITHHOLDING_COMBINED)
   withholdingAmount Int
   currency          String              @default("VND")
   ruleSnapshot      Json?
@@ -1263,6 +1363,108 @@ model ProviderTaxLog {
   @@index([providerProfileId, createdAt])
   @@index([bookingId])
   @@index([earningId])
+}
+
+model MonthlyTaxClosing {
+  id                         String                      @id @default(cuid())
+  period                     String
+  currency                   String                      @default("VND")
+  status                     MonthlyTaxClosingStatus     @default(DRAFT)
+  platformFeeGrossTotal      Int                         @default(0)
+  platformFeeNetRevenueTotal Int                         @default(0)
+  companyOutputVatTotal      Int                         @default(0)
+  partnerVatWithheldTotal    Int                         @default(0)
+  partnerPitWithheldTotal    Int                         @default(0)
+  partnerWithholdingTotal    Int                         @default(0)
+  paymentProcessingFeeTotal  Int                         @default(0)
+  cashDebtTotal              Int                         @default(0)
+  nonCashPartnerPayoutTotal  Int                         @default(0)
+  settlementCount            Int                         @default(0)
+  declaredAt                 DateTime?
+  paidAt                     DateTime?
+  closedAt                   DateTime?
+  createdById                String?
+  reviewedById               String?
+  declaredById               String?
+  paidById                   String?
+  closedById                 String?
+  notes                      String?
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+  settlementSnapshots        BookingSettlementSnapshot[]
+
+  @@unique([period, currency])
+  @@index([status, period])
+  @@index([currency, period])
+}
+
+model BookingSettlementSnapshot {
+  id                           String                     @id @default(cuid())
+  sourceKey                    String                     @unique
+  bookingId                    String                     @unique
+  customerProfileId            String
+  providerProfileId            String
+  paymentId                    String?                    @unique
+  providerEarningId            String?                    @unique
+  paymentMethod                PaymentMethod
+  currency                     String                     @default("VND")
+  customerPaymentAmount        Int
+  partnerPayoutAmount          Int
+  partnerTaxableRevenue        Int
+  partnerVatRateBps            Int                        @default(0)
+  partnerVatAmount             Int                        @default(0)
+  partnerPitRateBps            Int                        @default(0)
+  partnerPitAmount             Int                        @default(0)
+  partnerWithholdingTotal      Int                        @default(0)
+  platformFeeGross             Int
+  platformVatRateBps           Int                        @default(0)
+  platformFeeNetRevenue        Int
+  companyOutputVat             Int                        @default(0)
+  paymentFeePolicyVersionId    String?
+  paymentFeeRateBps            Int                        @default(0)
+  paymentFeeFixedAmount        Int                        @default(0)
+  paymentProcessingFee         Int                        @default(0)
+  paymentFeePayer              PaymentFeePayer            @default(HANDS)
+  paymentFeeTreatment          PaymentFeeTreatment        @default(OPERATING_EXPENSE)
+  taxPolicyVersionId           String?
+  platformFeePolicyVersionId   String?
+  taxRuleSnapshot              Json?
+  platformFeeRuleSnapshot      Json?
+  paymentFeeRuleSnapshot       Json?
+  providerTaxLogIds            Json?
+  providerPlatformFeeLogId     String?
+  providerWalletLedgerEntryIds Json?
+  customerWalletLedgerEntryIds Json?
+  settlementStatus             BookingSettlementStatus    @default(POSTED)
+  taxStatus                    BookingSettlementTaxStatus @default(OPEN)
+  monthlyPeriod                String
+  monthlyClosingId             String?
+  postedAt                     DateTime                   @default(now())
+  closedAt                     DateTime?
+  reversalOfId                 String?                    @unique
+  reversedById                 String?
+  reversalReason               String?
+  metadata                     Json?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  booking                      Booking                    @relation(fields: [bookingId], references: [id])
+  customerProfile              CustomerProfile            @relation(fields: [customerProfileId], references: [id])
+  providerProfile              ProviderProfile            @relation(fields: [providerProfileId], references: [id])
+  payment                      Payment?                   @relation(fields: [paymentId], references: [id])
+  providerEarning              ProviderEarning?           @relation(fields: [providerEarningId], references: [id])
+  taxPolicyVersion             TaxPolicyVersion?          @relation(fields: [taxPolicyVersionId], references: [id])
+  platformFeePolicyVersion     PlatformFeePolicyVersion?  @relation(fields: [platformFeePolicyVersionId], references: [id])
+  paymentFeePolicyVersion      PaymentFeePolicyVersion?   @relation(fields: [paymentFeePolicyVersionId], references: [id])
+  monthlyClosing               MonthlyTaxClosing?         @relation(fields: [monthlyClosingId], references: [id])
+  reversalOf                   BookingSettlementSnapshot? @relation("BookingSettlementReversal", fields: [reversalOfId], references: [id])
+  reversedBy                   BookingSettlementSnapshot? @relation("BookingSettlementReversal")
+
+  @@index([customerProfileId, postedAt])
+  @@index([providerProfileId, postedAt])
+  @@index([monthlyPeriod, taxStatus])
+  @@index([settlementStatus, postedAt])
+  @@index([paymentMethod, postedAt])
+  @@index([monthlyClosingId])
 }
 
 model WithholdingLog {
@@ -1358,20 +1560,20 @@ model NotificationTemplateTranslation {
 }
 
 model AdminPushCampaign {
-  id             String                       @id @default(cuid())
-  targetRole     Role
-  targetUserId   String?
-  locale         String?
-  title          String
-  body           String
-  status         String                       @default("SENT")
-  recipientCount Int                          @default(0)
-  notificationCount Int                       @default(0)
-  createdById    String
-  metadata       Json?
-  createdAt      DateTime                     @default(now())
-  sentAt         DateTime?
-  recipients     AdminPushCampaignRecipient[]
+  id                String                       @id @default(cuid())
+  targetRole        Role
+  targetUserId      String?
+  locale            String?
+  title             String
+  body              String
+  status            String                       @default("SENT")
+  recipientCount    Int                          @default(0)
+  notificationCount Int                          @default(0)
+  createdById       String
+  metadata          Json?
+  createdAt         DateTime                     @default(now())
+  sentAt            DateTime?
+  recipients        AdminPushCampaignRecipient[]
 
   @@index([targetRole, createdAt])
   @@index([targetUserId])
