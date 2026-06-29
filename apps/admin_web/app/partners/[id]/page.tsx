@@ -414,6 +414,14 @@ type ProviderDocument = NonNullable<ProviderDetail['documents']>[number];
 type ProviderPublicFileAsset = NonNullable<NonNullable<ProviderDetail['user']>['fileAssets']>[number];
 type ProviderBankAccount = NonNullable<ProviderDetail['bankAccounts']>[number];
 type ProviderTaxProfile = NonNullable<ProviderDetail['taxProfile']>;
+const PARTNER_DETAIL_OPERATIONAL_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+] as const;
+const PARTNER_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
+  keys: PARTNER_DETAIL_OPERATIONAL_POLICY_KEYS.join(','),
+}).toString()}`;
 
 export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -426,7 +434,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     detailSection === 'overview' ? `/admin/partners/${id}/overview` : `/admin/partners/${id}`;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(providerEndpoint, null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
   ]);
 
   if (!provider) {
