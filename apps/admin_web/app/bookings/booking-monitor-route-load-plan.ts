@@ -1,7 +1,17 @@
+import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
+
 export type BookingMonitorRouteKind = 'all' | 'completed' | 'postMatchCancellations';
 
 const BOOKING_MONITOR_LIST_TAKE = 10;
 const BOOKING_MONITOR_GATE_AUDIT_TAKE = 10;
+const BOOKING_MONITOR_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+  OPERATIONAL_POLICY_KEYS.travelBufferMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+  OPERATIONAL_POLICY_KEYS.walletNegativeGate,
+] as const;
 
 export type BookingMonitorRouteLoadPlan = {
   readonly bookingGateAuditHref: string;
@@ -16,7 +26,9 @@ export function buildBookingMonitorRouteLoadPlan(
   return {
     bookingGateAuditHref: `/admin/audit-logs?action=booking.create.rejected&take=${BOOKING_MONITOR_GATE_AUDIT_TAKE}`,
     bookingsHref: bookingListApiPath(params, kind),
-    policySettingsHref: '/admin/operational-policy',
+    policySettingsHref: `/admin/operational-policy?${new URLSearchParams({
+      keys: BOOKING_MONITOR_POLICY_KEYS.join(','),
+    }).toString()}`,
   };
 }
 
