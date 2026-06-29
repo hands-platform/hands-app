@@ -8,6 +8,6 @@ import { EarningsService } from './earnings.service';
   imports: [NotificationsModule],
   controllers: [EarningsController],
   providers: [EarningsService, SettlementsService],
-  exports: [EarningsService],
+  exports: [EarningsService, SettlementsService],
 })
 export class EarningsModule {}

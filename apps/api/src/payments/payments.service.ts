@@ -1,12 +1,13 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettlementsService } from '../settlements/settlements.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
 import {
@@ -49,6 +50,7 @@ export class PaymentsService {
     private readonly cash: CashPaymentAdapter,
     @InjectQueue(PAYMENT_STATUS_CHECK_QUEUE_NAME) private readonly paymentStatusQueue: Queue,
     private readonly notifications?: NotificationsService,
+    private readonly settlements?: SettlementsService,
   ) {}
 
   buildAuthorization(
@@ -235,15 +237,32 @@ export class PaymentsService {
 
   async refund(actorId: string, paymentId: string) {
     const existing = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
-    const payment = await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: paymentRefundUpdateData({ bookingId: existing.bookingId, amount: existing.amount }),
-      include: { refunds: true },
+    const occurredAt = new Date();
+    let settlementReversal: Prisma.InputJsonObject = { skipped: true, reason: 'NOT_ATTEMPTED' };
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const refunded = await tx.payment.update({
+        where: { id: paymentId },
+        data: paymentRefundUpdateData({ bookingId: existing.bookingId, amount: existing.amount }),
+        include: { refunds: true },
+      });
+      settlementReversal = paymentSettlementReversalAudit(
+        await this.settlements?.reverseBookingSettlementSnapshotForRefund(
+          {
+            actorId,
+            bookingId: existing.bookingId,
+            occurredAt,
+            reason: 'Admin manual refund',
+          },
+          tx,
+        ),
+      );
+      return refunded;
     });
     const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
       ...paymentRefundAuditMetadata(payment, paymentRefundEarningCancellationAudit(earningCancellation)),
+      settlementReversal,
     });
     await this.notifyPaymentUpdated(payment.id);
 
@@ -394,4 +413,25 @@ export class PaymentsService {
       // Callback verification decisions must not become unavailable because audit storage failed.
     }
   }
+}
+
+function paymentSettlementReversalAudit(result: unknown): Prisma.InputJsonObject {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    return { skipped: true, reason: 'NO_SETTLEMENT_SERVICE' };
+  }
+  const record = result as Record<string, unknown>;
+  if (record.skipped) {
+    return {
+      skipped: true,
+      reason: stringValue(record.reason) ?? 'UNKNOWN',
+    };
+  }
+  const metadata = asJsonObject(record.metadata);
+  return {
+    skipped: false,
+    couponReversalStatus: stringValue(metadata.couponReversalStatus),
+    settlementId: stringValue(record.id),
+    settlementStatus: stringValue(record.settlementStatus),
+    taxStatus: stringValue(record.taxStatus),
+  };
 }

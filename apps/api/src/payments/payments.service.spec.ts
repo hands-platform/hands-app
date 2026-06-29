@@ -200,15 +200,79 @@ describe('PaymentsService callbacks', () => {
   });
 });
 
+describe('PaymentsService refunds', () => {
+  it('reverses booking settlement snapshot when an admin refund is posted', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const earnings = {
+      cancelForRefund: vi.fn().mockResolvedValue({ skipped: false, earning: { id: 'earning-1' } }),
+    };
+    const settlements = {
+      reverseBookingSettlementSnapshotForRefund: vi.fn().mockResolvedValue({
+        id: 'settlement-1',
+        settlementStatus: 'REVERSED',
+      }),
+    };
+    const existingPayment = payment({ status: PaymentStatus.CAPTURED });
+    const refundedPayment = {
+      ...existingPayment,
+      refunds: [{ id: 'refund-1', amount: existingPayment.amount }],
+      status: PaymentStatus.REFUNDED,
+    };
+    const { prisma, service } = createService({
+      admin,
+      earnings,
+      existingPayment,
+      settlements,
+      updatedPayment: refundedPayment,
+    });
+    prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
+
+    await expect(service.refund('admin-1', 'payment-1')).resolves.toEqual(refundedPayment);
+
+    expect(prisma.payment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          booking: { update: { status: 'REFUNDED' } },
+          status: PaymentStatus.REFUNDED,
+        }),
+        include: { refunds: true },
+        where: { id: 'payment-1' },
+      }),
+    );
+    expect(settlements.reverseBookingSettlementSnapshotForRefund).toHaveBeenCalledWith({
+      actorId: 'admin-1',
+      bookingId: 'booking-1',
+      occurredAt: expect.any(Date),
+      reason: 'Admin manual refund',
+    }, expect.objectContaining({ payment: expect.any(Object) }));
+    expect(earnings.cancelForRefund).toHaveBeenCalledWith('booking-1');
+    expect(admin.writeAudit).toHaveBeenCalledWith(
+      'admin-1',
+      'payment.refund',
+      'payment:payment-1',
+      expect.objectContaining({
+        earningCancellation: { skipped: false, earningId: 'earning-1' },
+        settlementReversal: expect.objectContaining({ settlementStatus: 'REVERSED' }),
+      }),
+    );
+  });
+});
+
 function createService({
+  admin,
+  earnings,
   existingPayment,
   notificationLookupPayment,
   notifications,
+  settlements,
   updatedPayment,
 }: {
+  admin?: { writeAudit: ReturnType<typeof vi.fn> };
+  earnings?: { cancelForRefund: ReturnType<typeof vi.fn> };
   existingPayment: ReturnType<typeof payment> | null;
   notificationLookupPayment?: unknown;
   notifications?: { create: ReturnType<typeof vi.fn> };
+  settlements?: { reverseBookingSettlementSnapshotForRefund: ReturnType<typeof vi.fn> };
   updatedPayment?: ReturnType<typeof payment>;
 }) {
   const findUnique = vi.fn();
@@ -218,6 +282,7 @@ function createService({
     findUnique.mockResolvedValue(existingPayment);
   }
   const prisma = {
+    $transaction: vi.fn(async (callback: (client: unknown) => Promise<unknown>) => callback(prisma)),
     payment: {
       findUnique,
       findUniqueOrThrow: vi.fn(),
@@ -236,13 +301,14 @@ function createService({
     service: new PaymentsService(
       prisma as never,
       config as never,
-      {} as never,
-      {} as never,
+      (admin ?? { writeAudit: vi.fn() }) as never,
+      (earnings ?? { cancelForRefund: vi.fn() }) as never,
       placeholderAdapter(PaymentMethod.MOMO) as never,
       placeholderAdapter(PaymentMethod.VNPAY) as never,
       cashAdapter() as never,
       queue as never,
       notifications as never,
+      (settlements ?? { reverseBookingSettlementSnapshotForRefund: vi.fn() }) as never,
     ),
   };
 }

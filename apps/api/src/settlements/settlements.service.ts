@@ -1,5 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { PaymentFeePayer, PaymentFeeTreatment, PaymentMethod, Prisma } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BookingSettlementStatus,
+  BookingSettlementTaxStatus,
+  PaymentFeePayer,
+  PaymentFeeTreatment,
+  PaymentMethod,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   calculateBookingSettlementAmounts,
@@ -38,6 +45,12 @@ export type UpsertBookingSettlementSnapshotInput = {
   metadata?: Prisma.InputJsonObject | null;
   occurredAt: Date;
   timeZone?: string | null;
+};
+export type ReverseBookingSettlementSnapshotInput = {
+  actorId: string;
+  bookingId: string;
+  occurredAt: Date;
+  reason?: string | null;
 };
 type SettlementPrismaClient = PrismaService | Prisma.TransactionClient;
 
@@ -114,6 +127,36 @@ export class SettlementsService {
       },
     });
   }
+
+  async reverseBookingSettlementSnapshotForRefund(
+    input: ReverseBookingSettlementSnapshotInput,
+    client: SettlementPrismaClient = this.prisma,
+  ) {
+    const existing = await client.bookingSettlementSnapshot.findUnique({
+      where: { bookingId: input.bookingId },
+    });
+    if (!existing) {
+      return { skipped: true, reason: 'NO_SETTLEMENT_SNAPSHOT' };
+    }
+    if (existing.settlementStatus === BookingSettlementStatus.REVERSED) {
+      return existing;
+    }
+    if (existing.monthlyClosingId) {
+      throw new BadRequestException('Closed monthly periods require reversal entries, not direct settlement edits.');
+    }
+
+    return client.bookingSettlementSnapshot.update({
+      where: { bookingId: input.bookingId },
+      data: {
+        closedAt: input.occurredAt,
+        metadata: settlementRefundReversalMetadata(existing.metadata, input.occurredAt),
+        reversalReason: input.reason?.trim() || 'Payment refund',
+        reversedById: input.actorId,
+        settlementStatus: BookingSettlementStatus.REVERSED,
+        taxStatus: BookingSettlementTaxStatus.REVERSED,
+      },
+    });
+  }
 }
 
 export function bookingSettlementSourceKey(bookingId: string) {
@@ -129,4 +172,37 @@ export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
   const year = parts.find((part) => part.type === 'year')?.value;
   const month = parts.find((part) => part.type === 'month')?.value;
   return `${year}-${month}`;
+}
+
+function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occurredAt: Date) {
+  const record = jsonRecord(metadata);
+  const couponDiscountAmount = numberValue(record.couponDiscountAmount);
+  const companyCouponExpense = numberValue(record.companyCouponExpense);
+
+  return {
+    ...record,
+    couponReversalStatus: couponDiscountAmount > 0 || companyCouponExpense > 0 ? 'REVERSED' : record.couponReversalStatus,
+    reversedAt: occurredAt.toISOString(),
+    reversedCompanyCouponExpense: companyCouponExpense,
+    reversedCouponDiscountAmount: couponDiscountAmount,
+    reversalAffectsBookingPaymentClearing: true,
+    reversalAffectsCompanyOutputVat: true,
+    reversalAffectsCouponMarketingExpense: companyCouponExpense > 0,
+    reversalAffectsPartnerPayout: true,
+    reversalAffectsPartnerReceivable: true,
+    reversalAffectsPartnerTaxPayable: true,
+    reversalAffectsPlatformFeeRevenue: true,
+  } satisfies Prisma.InputJsonObject;
+}
+
+function jsonRecord(value: Prisma.JsonValue | null | undefined) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, Prisma.JsonValue>;
+}
+
+function numberValue(value: unknown) {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : 0;
+  return Number.isFinite(parsed) ? parsed : 0;
 }

@@ -1,4 +1,9 @@
-import { PaymentFeePayer, PaymentFeeTreatment } from '@prisma/client';
+import {
+  BookingSettlementStatus,
+  BookingSettlementTaxStatus,
+  PaymentFeePayer,
+  PaymentFeeTreatment,
+} from '@prisma/client';
 import { settlementMonthlyPeriod, SettlementsService } from './settlements.service';
 
 describe('settlementMonthlyPeriod', () => {
@@ -119,5 +124,87 @@ describe('SettlementsService', () => {
         partnerTaxableRevenue: 600_000,
       }),
     });
+  });
+
+  it('reverses an open coupon settlement snapshot for refund without changing historical amounts', async () => {
+    const existing = {
+      id: 'settlement-coupon-1',
+      bookingId: 'booking-coupon-1',
+      couponDiscountAmount: 60_000,
+      companyOutputVat: 9_481,
+      companyOutputVatTotal: undefined,
+      customerPaymentAmount: 540_000,
+      metadata: {
+        bookingServiceAmount: 600_000,
+        companyCouponExpense: 60_000,
+        couponDiscountAmount: 60_000,
+        couponReversalStatus: 'NONE',
+      },
+      monthlyClosingId: null,
+      partnerPayoutAmount: 430_000,
+      partnerWithholdingTotal: 42_000,
+      platformFeeNetRevenue: 118_519,
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    };
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi.fn().mockResolvedValue({ ...existing, settlementStatus: BookingSettlementStatus.REVERSED }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.reverseBookingSettlementSnapshotForRefund({
+        actorId: 'admin-1',
+        bookingId: 'booking-coupon-1',
+        occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+        reason: 'Admin refund',
+      }),
+    ).resolves.toMatchObject({ settlementStatus: BookingSettlementStatus.REVERSED });
+
+    expect(prisma.bookingSettlementSnapshot.update).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-coupon-1' },
+      data: expect.objectContaining({
+        closedAt: new Date('2026-06-14T03:02:00.000Z'),
+        reversalReason: 'Admin refund',
+        reversedById: 'admin-1',
+        settlementStatus: BookingSettlementStatus.REVERSED,
+        taxStatus: BookingSettlementTaxStatus.REVERSED,
+        metadata: expect.objectContaining({
+          bookingServiceAmount: 600_000,
+          companyCouponExpense: 60_000,
+          couponDiscountAmount: 60_000,
+          couponReversalStatus: 'REVERSED',
+          reversedCompanyCouponExpense: 60_000,
+          reversedCouponDiscountAmount: 60_000,
+        }),
+      }),
+    });
+  });
+
+  it('rejects direct settlement reversal after the snapshot is attached to monthly closing', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          bookingId: 'booking-closed-1',
+          monthlyClosingId: 'closing-1',
+          settlementStatus: BookingSettlementStatus.POSTED,
+          taxStatus: BookingSettlementTaxStatus.CLOSED,
+        }),
+        update: vi.fn(),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.reverseBookingSettlementSnapshotForRefund({
+        actorId: 'admin-1',
+        bookingId: 'booking-closed-1',
+        occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct settlement edits.');
+    expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
   });
 });
