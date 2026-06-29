@@ -486,7 +486,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   });
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
-  const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
+  const partnerBankPayoutGate = buildPartnerBankPayoutGateView(
+    provider.id,
+    primaryBank,
+    provider.bankAccounts ?? [],
+  );
   const partnerTaxProfile = buildPartnerTaxProfileView(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
@@ -3690,7 +3694,12 @@ function approvedBankAccount(provider: ProviderDetail) {
 }
 
 function primaryBankAccount(provider: ProviderDetail) {
-  return approvedBankAccount(provider) ?? provider.bankAccounts?.[0] ?? null;
+  return (
+    (provider.bankAccounts ?? []).find((bankAccount) => bankAccount.isPrimary) ??
+    approvedBankAccount(provider) ??
+    provider.bankAccounts?.[0] ??
+    null
+  );
 }
 
 function hasApprovedBankAccount(provider: ProviderDetail) {
@@ -3829,18 +3838,62 @@ function partnerPublicMediaReviewStatusTone(status?: string | null) {
 function buildPartnerBankPayoutGateView(
   providerId: string,
   bank: ProviderBankAccount | null,
+  bankAccounts: readonly ProviderBankAccount[] = [],
 ): PartnerBankPayoutGateView | null {
   if (!bank) {
     return null;
   }
+  const reviewState = partnerBankReviewState(bank, bankAccounts);
 
   return {
     accountLabel: bank.accountNumberMasked ?? bank.accountNumberLast4,
     bankName: bank.bankName,
     holderName: bank.accountHolderName,
     rejectionReason: bank.rejectionReason,
+    reviewStateDetail: reviewState.detail,
+    reviewStateLabel: reviewState.label,
     reviewActions: buildPartnerBankReviewActions(providerId, bank),
+    reviewedAtLabel: bank.reviewedAt ? formatDate(bank.reviewedAt) : null,
     status: bank.status,
+    submittedAtLabel: bank.createdAt ? formatDate(bank.createdAt) : null,
+    updatedAtLabel: bank.updatedAt ? formatDate(bank.updatedAt) : null,
+  };
+}
+
+function partnerBankReviewState(
+  bank: ProviderBankAccount,
+  bankAccounts: readonly ProviderBankAccount[],
+) {
+  const hasRejectedHistory = bankAccounts.some(
+    (account) => account.id !== bank.id && account.status === 'REJECTED',
+  );
+  if (bank.status === 'REJECTED') {
+    return {
+      label: 'Correction requested',
+      detail: 'Partner app shows the rejection reason until corrected bank details are submitted again.',
+    };
+  }
+  if (bank.status === 'PENDING_REVIEW') {
+    return hasRejectedHistory
+      ? {
+          label: 'Bank correction submitted',
+          detail:
+            'Partner submitted bank details after a previous correction request. Review before manual payout.',
+        }
+      : {
+          label: 'Bank review needed',
+          detail: 'Partner bank details are waiting for admin review before manual payout.',
+        };
+  }
+  if (bank.status === 'APPROVED') {
+    return {
+      label: 'Ready for manual payout',
+      detail: 'Approved bank details can be used by finance for manual wallet withdrawal.',
+    };
+  }
+  return {
+    label: 'Review needed',
+    detail: 'Check bank details before manual payout or correction request.',
   };
 }
 

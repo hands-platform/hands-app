@@ -743,6 +743,8 @@ export type AdminProvider = {
     isPrimary: boolean;
     reviewedAt?: string | null;
     rejectionReason?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
   }>;
   taxProfile?: {
     id: string;
@@ -1375,6 +1377,8 @@ export type AdminPayoutBatch = {
       isPrimary: boolean;
       reviewedAt?: string | null;
       rejectionReason?: string | null;
+      createdAt?: string | null;
+      updatedAt?: string | null;
     }>;
     displayName?: string | null;
     user?: { phone?: string; fullName?: string | null };

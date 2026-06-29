@@ -114,6 +114,10 @@ describe('admin provider profile selects', () => {
       payoutBatches: { take: 10 },
       verificationLogs: { take: 20 },
     });
+    expect(adminProviderDetailSelect.bankAccounts.select).toMatchObject({
+      createdAt: true,
+      updatedAt: true,
+    });
   });
 
   it('keeps provider booking and payout summaries location/payment aware', () => {

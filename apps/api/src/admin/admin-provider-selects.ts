@@ -205,6 +205,8 @@ export const adminProviderBankAccountSummarySelect = {
   isPrimary: true,
   reviewedAt: true,
   rejectionReason: true,
+  createdAt: true,
+  updatedAt: true,
 } satisfies Prisma.ProviderBankAccountSelect;
 
 export const adminProviderTaxProfileSummarySelect = {

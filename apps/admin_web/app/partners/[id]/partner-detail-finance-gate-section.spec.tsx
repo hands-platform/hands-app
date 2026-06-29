@@ -75,6 +75,42 @@ describe('partner detail finance gate sections', () => {
     expect(rendered).not.toContain('MISSING');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
   });
+
+  it('surfaces bank correction and resubmission review states for finance operators', () => {
+    const rejectedSection = PartnerDetailBankPayoutGateCard({
+      bank: {
+        accountLabel: '****6789',
+        bankName: 'Vietcombank',
+        holderName: 'Linh Wellness',
+        rejectionReason: 'Account holder mismatch.',
+        reviewActions: [],
+        reviewStateDetail:
+          'Partner app shows the rejection reason until corrected bank details are submitted again.',
+        reviewStateLabel: 'Correction requested',
+        status: 'REJECTED',
+      },
+    });
+    const pendingSection = PartnerDetailBankPayoutGateCard({
+      bank: {
+        accountLabel: '****9876',
+        bankName: 'Techcombank',
+        holderName: 'Linh Wellness',
+        rejectionReason: null,
+        reviewActions: [],
+        reviewStateDetail:
+          'Partner submitted bank details after a previous correction request. Review before manual payout.',
+        reviewStateLabel: 'Bank correction submitted',
+        status: 'PENDING_REVIEW',
+      },
+    });
+
+    expect(normalizeSpaces(textContent(rejectedSection))).toContain(
+      'Correction requested Partner app shows the rejection reason until corrected bank details are submitted again.',
+    );
+    expect(normalizeSpaces(textContent(pendingSection))).toContain(
+      'Bank correction submitted Partner submitted bank details after a previous correction request. Review before manual payout.',
+    );
+  });
 });
 
 function textContent(value: unknown): string {

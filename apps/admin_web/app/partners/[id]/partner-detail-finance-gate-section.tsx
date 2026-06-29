@@ -14,8 +14,13 @@ export type PartnerBankPayoutGateView = {
   readonly bankName?: string | null;
   readonly holderName?: string | null;
   readonly rejectionReason?: string | null;
+  readonly reviewStateDetail?: string | null;
+  readonly reviewStateLabel?: string | null;
   readonly reviewActions: readonly ActionMenuItem[];
+  readonly reviewedAtLabel?: string | null;
   readonly status: string;
+  readonly submittedAtLabel?: string | null;
+  readonly updatedAtLabel?: string | null;
 };
 
 export type PartnerTaxProfileView = {
@@ -70,9 +75,20 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <EvidenceLine label="Account" value={bank.accountLabel} />
                 <EvidenceLine label="Holder" value={bank.holderName} />
                 <EvidenceLine label="Rejection reason" value={bank.rejectionReason} />
+                <EvidenceLine label="Submitted" value={bank.submittedAtLabel} />
+                <EvidenceLine label="Reviewed" value={bank.reviewedAtLabel} />
+                <EvidenceLine label="Updated" value={bank.updatedAtLabel} />
               </td>
               <td>
                 <span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>{bank.status}</span>
+                {bank.reviewStateLabel ? (
+                  <div className="admin-mt-8">
+                    <span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>
+                      {bank.reviewStateLabel}
+                    </span>
+                    {bank.reviewStateDetail ? <p className="muted">{bank.reviewStateDetail}</p> : null}
+                  </div>
+                ) : null}
               </td>
               <td>
                 <ActionMenu actions={bank.reviewActions} label="Withdrawal detail review actions" variant="dropdown" />
