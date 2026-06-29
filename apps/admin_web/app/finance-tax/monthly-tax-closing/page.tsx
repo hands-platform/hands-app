@@ -9,6 +9,7 @@ import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
+  buildMonthlyTaxClosingAccountingJournalCsvHref,
   buildMonthlyTaxClosingMetrics,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
@@ -43,6 +44,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
   }).toString()}`;
   const summaryCsvHref = buildMonthlyTaxClosingSummaryCsvHref(summary);
   const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(closings);
+  const accountingJournalCsvHref = buildMonthlyTaxClosingAccountingJournalCsvHref(summary);
 
   return (
     <AdminPageTemplate
@@ -68,6 +70,13 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             href={closingRowsCsvHref}
           >
             Export rows CSV
+          </a>
+          <a
+            className="pill pill-success"
+            download={`hands-accounting-journal-${filters.period}.csv`}
+            href={accountingJournalCsvHref}
+          >
+            Export accounting journal CSV
           </a>
         </TaxFinanceWorkflowActions>
       }

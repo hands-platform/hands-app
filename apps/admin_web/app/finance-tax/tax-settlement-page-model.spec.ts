@@ -11,6 +11,7 @@ import {
   buildPlatformVatSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   buildMonthlyTaxClosingApiHref,
+  buildMonthlyTaxClosingAccountingJournalCsvHref,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
@@ -233,6 +234,45 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"closing-1"');
     expect(rowsCsv).toContain('"company_output_vat_total"');
     expect(rowsCsv).toContain('"18962"');
+  });
+
+  it('exports a monthly accounting journal CSV from visible closing totals', () => {
+    const journalCsv = decodeURIComponent(
+      buildMonthlyTaxClosingAccountingJournalCsvHref({
+        id: null,
+        period: '2026-06',
+        currency: 'VND',
+        status: 'DRAFT',
+        settlementCount: 2,
+        customerPaymentAmountTotal: 1_200_000,
+        partnerPayoutTotal: 860_000,
+        platformFeeGrossTotal: 256_000,
+        platformFeeNetRevenueTotal: 237_038,
+        companyOutputVatTotal: 18_962,
+        partnerVatWithheldTotal: 60_000,
+        partnerPitWithheldTotal: 24_000,
+        partnerWithholdingTotal: 84_000,
+        paymentProcessingFeeTotal: 10_000,
+        cashDebtTotal: 170_000,
+        nonCashPartnerPayoutTotal: 430_000,
+        partnerCountWithRevenue: 1,
+        openTaxCount: 1,
+        paidTaxCount: 1,
+        reconciliationDelta: 0,
+        netRevenueDelta: 0,
+      }),
+    );
+
+    expect(journalCsv).toContain('"entry","period","currency","direction","account","amount","memo"');
+    expect(journalCsv).toContain('"customer_payment_clearing","2026-06","VND","DEBIT"');
+    expect(journalCsv).toContain('"partner_wallet_liability","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"partner_vat_pit_payable","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"platform_fee_net_revenue","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"company_output_vat_payable","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"payment_processing_fee_clearing","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"partner_receivable_cash_debt","2026-06","VND","DEBIT"');
+    expect(journalCsv).toContain('"237038"');
+    expect(journalCsv).toContain('Closed periods require reversal entries, not direct edits.');
   });
 
   it('builds platform VAT and payment fee metrics from summary-only APIs', () => {

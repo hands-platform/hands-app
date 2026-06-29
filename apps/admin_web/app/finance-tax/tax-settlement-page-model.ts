@@ -564,6 +564,77 @@ export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClo
   );
 }
 
+export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMonthlyTaxClosingSummary) {
+  return buildCsvDataHref(
+    [
+      {
+        entry: 'customer_payment_clearing',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'DEBIT',
+        account: 'Booking payment clearing / payment receivable',
+        amount: summary.customerPaymentAmountTotal,
+        memo: 'Customer payment amount is not company revenue.',
+      },
+      {
+        entry: 'partner_wallet_liability',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'CREDIT',
+        account: 'Partner wallet liability',
+        amount: summary.nonCashPartnerPayoutTotal,
+        memo: 'Non-cash partner payout liability credited after service completion.',
+      },
+      {
+        entry: 'partner_vat_pit_payable',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'CREDIT',
+        account: 'Partner VAT/PIT payable',
+        amount: summary.partnerWithholdingTotal,
+        memo: 'Partner VAT/PIT is withholding tax collected and remitted on behalf of partners.',
+      },
+      {
+        entry: 'platform_fee_net_revenue',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'CREDIT',
+        account: 'Platform fee net revenue',
+        amount: summary.platformFeeNetRevenueTotal,
+        memo: 'Company revenue is platform fee net of company output VAT.',
+      },
+      {
+        entry: 'company_output_vat_payable',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'CREDIT',
+        account: 'Company output VAT payable',
+        amount: summary.companyOutputVatTotal,
+        memo: 'Company output VAT is VAT payable, not company net revenue.',
+      },
+      {
+        entry: 'payment_processing_fee_clearing',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'CREDIT',
+        account: 'Payment processing fee clearing',
+        amount: summary.paymentProcessingFeeTotal,
+        memo: 'Payment processing fee is not tax and must be tracked separately.',
+      },
+      {
+        entry: 'partner_receivable_cash_debt',
+        period: summary.period,
+        currency: summary.currency,
+        direction: 'DEBIT',
+        account: 'Partner receivable / negative wallet',
+        amount: summary.cashDebtTotal,
+        memo: 'Cash bookings create partner receivable when wallet is insufficient. Closed periods require reversal entries, not direct edits.',
+      },
+    ],
+    ACCOUNTING_JOURNAL_CSV_COLUMNS,
+  );
+}
+
 export function buildMonthlyTaxClosingRowsCsvHref(rows: AdminMonthlyTaxClosing[]) {
   return buildCsvDataHref(
     rows.map((row) => ({
@@ -611,6 +682,16 @@ const PAYMENT_FEE_CSV_COLUMNS = [
   'settlement_count',
   'customer_payment_amount_total',
   'payment_processing_fee_total',
+];
+
+const ACCOUNTING_JOURNAL_CSV_COLUMNS = [
+  'entry',
+  'period',
+  'currency',
+  'direction',
+  'account',
+  'amount',
+  'memo',
 ];
 
 const MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS = [
