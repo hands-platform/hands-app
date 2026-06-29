@@ -212,7 +212,6 @@ const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;
 const ADMIN_MARKETING_REGION_LIMIT = 100;
 const ADMIN_MARKETING_CAMPAIGN_LIMIT = 50;
-const ADMIN_MARKETING_SPEND_LIMIT = 100;
 const ADMIN_MARKETING_DIMENSION_PAGE_LIMIT = 10;
 const ADMIN_MARKETING_DIMENSION_PAGE_MAX_LIMIT = 20;
 const ADMIN_MARKETING_DIMENSIONS = ['source', 'platform', 'region', 'campaign'] as const;
@@ -2556,35 +2555,12 @@ export class AdminService {
           },
         },
       }),
-      this.prisma.marketingSpendDaily.findMany({
-        where: marketingSpendWhere,
-        orderBy: [{ spendDate: 'desc' }, { updatedAt: 'desc' }],
-        take: ADMIN_MARKETING_SPEND_LIMIT,
-        select: {
-          spendDate: true,
-          source: true,
-          platform: true,
-          regionCode: true,
-          campaignId: true,
-          campaignName: true,
-          spendAmount: true,
-          currency: true,
-        },
-      }),
+      this.marketingSpendDimensionRows(marketingSpendWhere),
     ]);
-    const marketingSpendDimensionRows: AdminMarketingDimensionInput[] = marketingSpendRows.map((row) => {
-      const regionCode = normalizeMarketingSpendRegionCode(row.regionCode, { allowAll: true });
-      return {
-        source: normalizeMarketingSource(row.source),
-        platform: normalizeMarketingPlatform(row.platform),
-        regionCode: regionCode ?? undefined,
-        regionName: regionCode ? vietnamRegionLabel(regionCode) : undefined,
-        campaignId: row.campaignId === 'all' ? null : row.campaignId,
-        campaignName: row.campaignName,
-        stats: { adSpend: numberValue(row.spendAmount) },
-      };
-    });
-    const manualAdSpend = marketingSpendRows.reduce((total, row) => total + numberValue(row.spendAmount), 0);
+    const manualAdSpend = marketingSpendRows.reduce(
+      (total, row) => total + numberValue(row.stats.adSpend),
+      0,
+    );
 
     const stats = {
       ...emptyMarketingStats(),
@@ -2630,7 +2606,7 @@ export class AdminService {
       [
         { source: 'unknown', stats: unknownStats },
         { source: 'referral', stats: referralStats },
-        ...marketingSpendDimensionRows,
+        ...marketingSpendRows,
       ],
       { source: filters.source },
     );
@@ -2647,7 +2623,7 @@ export class AdminService {
             platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
           },
         })),
-        ...marketingSpendDimensionRows,
+        ...marketingSpendRows,
       ],
       filters,
     );
@@ -2695,8 +2671,8 @@ export class AdminService {
           stats: { bookingCancelled: 1 },
         })),
         ...marketingSpendRows.map((row) => ({
-          regionValues: [row.regionCode === 'all' ? null : vietnamRegionLabel(row.regionCode)],
-          stats: { adSpend: numberValue(row.spendAmount) },
+          regionValues: [row.regionName, row.regionCode],
+          stats: { adSpend: numberValue(row.stats.adSpend) },
         })),
       ],
       filters,
@@ -2708,7 +2684,7 @@ export class AdminService {
           platform: normalizeMarketingPlatform(row.platform),
           stats: { firstOpens: row._count._all },
         })),
-        ...marketingSpendDimensionRows,
+        ...marketingSpendRows,
       ],
       filters,
     );
@@ -3148,20 +3124,10 @@ export class AdminService {
   private async marketingSpendDimensionRows(
     where: Prisma.MarketingSpendDailyWhereInput,
   ): Promise<AdminMarketingDimensionInput[]> {
-    const rows = await this.prisma.marketingSpendDaily.findMany({
+    const rows = await this.prisma.marketingSpendDaily.groupBy({
+      by: ['source', 'platform', 'regionCode', 'campaignId', 'campaignName'],
       where,
-      orderBy: [{ spendDate: 'desc' }, { updatedAt: 'desc' }],
-      take: ADMIN_MARKETING_SPEND_LIMIT,
-      select: {
-        spendDate: true,
-        source: true,
-        platform: true,
-        regionCode: true,
-        campaignId: true,
-        campaignName: true,
-        spendAmount: true,
-        currency: true,
-      },
+      _sum: { spendAmount: true },
     });
 
     return rows.map((row) => {
@@ -3174,7 +3140,7 @@ export class AdminService {
         regionName: regionCode ? vietnamRegionLabel(regionCode) : undefined,
         campaignId: row.campaignId === 'all' ? null : row.campaignId,
         campaignName: row.campaignName,
-        stats: { adSpend: numberValue(row.spendAmount) },
+        stats: { adSpend: numberValue(row._sum.spendAmount) },
       };
     });
   }

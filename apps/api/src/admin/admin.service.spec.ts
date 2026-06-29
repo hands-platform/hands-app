@@ -1406,16 +1406,15 @@ describe('AdminService query orchestration', () => {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       marketingSpendDaily: {
-        findMany: vi.fn().mockResolvedValue([
+        findMany: vi.fn(),
+        groupBy: vi.fn().mockResolvedValue([
           {
-            spendDate: new Date('2026-06-20T00:00:00.000Z'),
             source: 'google',
             platform: 'android',
             regionCode: 'hcm',
             campaignId: 'launch-hcm',
             campaignName: 'Launch HCMC',
-            spendAmount: 600_000,
-            currency: 'VND',
+            _sum: { spendAmount: 600_000 },
           },
         ]),
       },
@@ -1451,9 +1450,10 @@ describe('AdminService query orchestration', () => {
         adSpend: 600_000,
       }),
     ]);
-    expect(prisma.marketingSpendDaily.findMany).toHaveBeenCalledWith(
+    expect(prisma.marketingSpendDaily.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 100,
+        by: ['source', 'platform', 'regionCode', 'campaignId', 'campaignName'],
+        _sum: { spendAmount: true },
         where: expect.objectContaining({
           source: 'google',
           platform: 'android',
@@ -1462,6 +1462,7 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+    expect(prisma.marketingSpendDaily.findMany).not.toHaveBeenCalled();
     expect(prisma.customerSelectedLocation.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(3);
     expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100, 100]);
@@ -1564,16 +1565,15 @@ describe('AdminService query orchestration', () => {
         findMany: vi.fn(),
       },
       marketingSpendDaily: {
-        findMany: vi.fn().mockResolvedValue([
+        findMany: vi.fn(),
+        groupBy: vi.fn().mockResolvedValue([
           {
-            spendDate: new Date('2026-06-20T00:00:00.000Z'),
             source: 'google',
             platform: 'android',
             regionCode: 'hcm',
             campaignId: 'launch-hcm',
             campaignName: 'Launch HCMC',
-            spendAmount: 600_000,
-            currency: 'VND',
+            _sum: { spendAmount: 600_000 },
           },
         ]),
       },
@@ -1599,7 +1599,13 @@ describe('AdminService query orchestration', () => {
         platform: 'android',
       }),
     );
-    expect(prisma.marketingSpendDaily.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.marketingSpendDaily.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['source', 'platform', 'regionCode', 'campaignId', 'campaignName'],
+        _sum: { spendAmount: true },
+      }),
+    );
+    expect(prisma.marketingSpendDaily.findMany).not.toHaveBeenCalled();
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
     expect(prisma.customerSelectedLocation.findMany).not.toHaveBeenCalled();
     expect(prisma.referralAttribution.findMany).not.toHaveBeenCalled();
