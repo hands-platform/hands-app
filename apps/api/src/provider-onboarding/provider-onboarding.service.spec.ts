@@ -2,6 +2,45 @@ import { ProviderBankAccountStatus } from '@prisma/client';
 
 import { ProviderOnboardingService } from './provider-onboarding.service';
 
+describe('ProviderOnboardingService tax policy listing', () => {
+  it('keeps admin tax policy history bounded by default', async () => {
+    const prisma = {
+      taxPolicyVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(service.listTaxPolicyVersions()).resolves.toEqual([]);
+
+    expect(prisma.taxPolicyVersion.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+        include: { rules: { orderBy: { createdAt: 'asc' } } },
+        take: 20,
+      }),
+    );
+  });
+
+  it('applies bounded pagination for admin tax policy history', async () => {
+    const prisma = {
+      taxPolicyVersion: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await service.listTaxPolicyVersions({ skip: '20', take: '500' });
+
+    expect(prisma.taxPolicyVersion.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 20,
+        take: 100,
+      }),
+    );
+  });
+});
+
 describe('ProviderOnboardingService bank account submission', () => {
   it('makes a resubmitted bank account the only active primary account', async () => {
     const providerProfile = {

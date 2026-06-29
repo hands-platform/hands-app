@@ -25,6 +25,14 @@ import {
   REQUIRED_PAYOUT_AGREEMENTS,
 } from './provider-onboarding.policy';
 
+const ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE = 20;
+const ADMIN_TAX_POLICY_VERSION_MAX_TAKE = 100;
+
+type AdminTaxPolicyVersionListOptions = {
+  readonly skip?: number | string | null;
+  readonly take?: number | string | null;
+};
+
 @Injectable()
 export class ProviderOnboardingService {
   constructor(private readonly prisma: PrismaService) {}
@@ -583,12 +591,17 @@ export class ProviderOnboardingService {
     return { ok: true, taxProfile };
   }
 
-  listTaxPolicyVersions() {
-    return this.prisma.taxPolicyVersion.findMany({
+  listTaxPolicyVersions(options: AdminTaxPolicyVersionListOptions = {}) {
+    const skip = normalizeAdminTaxPolicyVersionSkip(options.skip);
+    const args: Prisma.TaxPolicyVersionFindManyArgs = {
       orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
       include: { rules: { orderBy: { createdAt: 'asc' } } },
-      take: 100,
-    });
+      take: normalizeAdminTaxPolicyVersionTake(options.take),
+    };
+    if (skip > 0) {
+      args.skip = skip;
+    }
+    return this.prisma.taxPolicyVersion.findMany(args);
   }
 
   async createTaxPolicyVersion(
@@ -1105,6 +1118,22 @@ function amountBandsOverlap(
   const bMin = rightMin ?? Number.NEGATIVE_INFINITY;
   const bMax = rightMax ?? Number.POSITIVE_INFINITY;
   return aMin <= bMax && bMin <= aMax;
+}
+
+function normalizeAdminTaxPolicyVersionTake(value: number | string | null | undefined) {
+  const parsed = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_TAX_POLICY_VERSION_DEFAULT_TAKE;
+  }
+  return Math.min(Math.floor(parsed), ADMIN_TAX_POLICY_VERSION_MAX_TAKE);
+}
+
+function normalizeAdminTaxPolicyVersionSkip(value: number | string | null | undefined) {
+  const parsed = typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  return Math.floor(parsed);
 }
 
 function normalizeTaxRuleInput(

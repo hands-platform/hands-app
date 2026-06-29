@@ -4,12 +4,16 @@ import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTa
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
+const TAX_POLICY_VERSION_PAGE_SIZE = 20;
 
 type TaxPolicyPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const policies = await adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []);
+  const policies = await adminGet<AdminTaxPolicyVersion[]>(
+    `/admin/tax-policy-versions?take=${TAX_POLICY_VERSION_PAGE_SIZE}`,
+    [],
+  );
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
   const healthItems = buildTaxPolicyHealth(policies);

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
@@ -87,8 +87,8 @@ export class ProviderOnboardingController {
 
   @Get('admin/tax-policy-versions')
   @Roles(Role.ADMIN)
-  taxPolicyVersions() {
-    return this.onboarding.listTaxPolicyVersions();
+  taxPolicyVersions(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.onboarding.listTaxPolicyVersions({ skip, take });
   }
 
   @Post('admin/tax-policy-versions')
