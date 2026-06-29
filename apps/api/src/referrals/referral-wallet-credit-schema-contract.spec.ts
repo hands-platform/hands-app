@@ -20,9 +20,32 @@ function migrationSqlContaining(token: string) {
     .find((source) => source.includes(token));
 }
 
+function migrationSqlSourcesContaining(token: string) {
+  const migrationsDir = resolve(root, 'apps/api/prisma/migrations');
+
+  return readdirSync(migrationsDir)
+    .map((name) => resolve(migrationsDir, name, 'migration.sql'))
+    .filter((path) => existsSync(path))
+    .map((path) => readFileSync(path, 'utf8'))
+    .filter((source) => source.includes(token))
+    .join('\n');
+}
+
 function expectField(block: string, name: string, type: string) {
   expect(block).toMatch(new RegExp(`\\b${name}\\s+${type}(?=\\s|$)`));
 }
+
+const referralAccountingRewardStatuses = [
+  'APPROVED',
+  'LOCKED',
+  'CREDITED',
+  'USED_FOR_SERVICE',
+  'OFFSET',
+  'CASHOUT_REQUESTED',
+  'CASHOUT_APPROVED',
+  'PAID',
+  'TAX_REVIEW_REQUIRED',
+] as const;
 
 describe('referral wallet credit schema contract', () => {
   it('defines an audited Customer wallet ledger for referral reward credits', () => {
@@ -36,6 +59,9 @@ describe('referral wallet credit schema contract', () => {
 
     expect(providerLedgerType).toContain('REFERRAL_REWARD');
     expect(rewardStatus).toContain('REWARDED');
+    for (const status of referralAccountingRewardStatuses) {
+      expect(rewardStatus).toContain(status);
+    }
     expect(ledgerType).toContain('REFERRAL_REWARD');
     expect(ledgerType).toContain('REFUND');
     expect(ledgerType).toContain('ADMIN_ADJUSTMENT');
@@ -64,12 +90,15 @@ describe('referral wallet credit schema contract', () => {
     const providerLedgerTypeMigration = migrationSqlContaining(
       'ALTER TYPE "ProviderWalletLedgerType" ADD VALUE',
     );
-    const rewardStatusMigration = migrationSqlContaining(
+    const rewardStatusMigrations = migrationSqlSourcesContaining(
       'ALTER TYPE "ReferralRewardStatus" ADD VALUE',
     );
 
     expect(providerLedgerTypeMigration).toContain("'REFERRAL_REWARD'");
-    expect(rewardStatusMigration).toContain("'REWARDED'");
+    expect(rewardStatusMigrations).toContain("'REWARDED'");
+    for (const status of referralAccountingRewardStatuses) {
+      expect(rewardStatusMigrations).toContain(`'${status}'`);
+    }
     expect(migration).toContain('CREATE TYPE "CustomerWalletLedgerType"');
     expect(migration).toContain('CREATE TABLE "CustomerWalletLedgerEntry"');
     expect(migration).toContain(
