@@ -10,7 +10,7 @@ export type DashboardViewMode = {
 };
 
 export type DashboardDataHrefs = {
-  readonly appSessionsHref: string;
+  readonly appSessionsHref: string | null;
   readonly bookingGateAuditHref: string;
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
@@ -63,10 +63,11 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       {},
       range,
     ),
-    appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
-      ...(viewMode.shouldRenderFullDashboard ? {} : { role: 'PROVIDER' }),
-      take: String(limits.appSessions),
-    }).toString()}`,
+    appSessionsHref: viewMode.shouldRenderFullDashboard
+      ? `/admin/app-sessions?${new URLSearchParams({
+          take: String(limits.appSessions),
+        }).toString()}`
+      : null,
     bookingGateAuditHref: buildDashboardDateScopedHref(
       '/admin/audit-logs',
       {

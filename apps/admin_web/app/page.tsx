@@ -453,7 +453,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
     adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
-    adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, []),
+    dashboardDataHrefs.appSessionsHref
+      ? adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, [])
+      : Promise.resolve([]),
     adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, []),
     apiGet<AdminExternalReadiness>('/health/external', {
       ok: false,

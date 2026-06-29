@@ -48,11 +48,11 @@ describe('dashboard page model', () => {
     const earningUrl = new URL(hrefs.earningsHref, 'http://admin.local');
     const refundUrl = new URL(hrefs.refundsHref, 'http://admin.local');
     const payoutBatchUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
-    const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
 
     expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary');
     expect(hrefs.usersHref).toBeNull();
     expect(hrefs.partnersHref).toBeNull();
+    expect(hrefs.appSessionsHref).toBeNull();
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
     expect(bookingUrl.searchParams.get('take')).toBe('10');
@@ -79,13 +79,11 @@ describe('dashboard page model', () => {
     expect(refundUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchUrl.searchParams.get('range')).toBe('today');
     expect(payoutBatchUrl.searchParams.get('take')).toBe('5');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('5');
-    expect(appSessionsUrl.searchParams.get('role')).toBe('PROVIDER');
   });
 
   it('keeps full dashboard diagnostics behind explicit details mode', () => {
     const hrefs = buildDashboardDataHrefs({ details: 'all' });
-    const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
+    const appSessionsUrl = new URL(hrefs.appSessionsHref ?? '', 'http://admin.local');
     const usersUrl = new URL(hrefs.usersHref ?? '', 'http://admin.local');
     const partnersUrl = new URL(hrefs.partnersHref ?? '', 'http://admin.local');
 
