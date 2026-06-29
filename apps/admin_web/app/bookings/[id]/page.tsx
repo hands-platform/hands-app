@@ -187,6 +187,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../../lib/admin-api';
+import { OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
@@ -242,6 +243,26 @@ const BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT = 12;
 const BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT = 24;
 const BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT = 40;
 const BOOKING_DETAIL_OPERATING_TIMELINE_PREVIEW_LIMIT = 18;
+const BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  OPERATIONAL_POLICY_KEYS.travelBufferMinutes,
+  OPERATIONAL_POLICY_KEYS.preferredAcceptMode,
+  OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+  OPERATIONAL_POLICY_KEYS.walletNegativeGate,
+  OPERATIONAL_POLICY_KEYS.actionEvidenceGateMode,
+  OPERATIONAL_POLICY_KEYS.cashSettlementClearance,
+  OPERATIONAL_POLICY_KEYS.firstPickExpiryAction,
+  OPERATIONAL_POLICY_KEYS.cancellationAfterMatch,
+  OPERATIONAL_POLICY_KEYS.noShowEvidenceRequirement,
+  OPERATIONAL_POLICY_KEYS.noShowPartnerReport,
+  OPERATIONAL_POLICY_KEYS.partnerAlertChannel,
+  OPERATIONAL_POLICY_KEYS.payoutBatchCycle,
+] as const;
+const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
+  keys: BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS.join(','),
+}).toString()}`;
 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -871,7 +892,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
 async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
   const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
     adminGet<AdminNotification[]>(`/admin/bookings/${id}/notifications`, []),
     adminGet<AdminProvider[]>(`/admin/bookings/${id}/marketplace-providers`, []),
   ]);
