@@ -202,7 +202,8 @@ const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
 const ADMIN_PARTNER_CONTROL_LOCATION_FRESHNESS_MINUTES = 90;
 const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 50;
-const ADMIN_REFERRAL_PARENT_LIST_LIMIT = 100;
+const ADMIN_REFERRAL_PARENT_LIST_DEFAULT_LIMIT = 10;
+const ADMIN_REFERRAL_PARENT_LIST_MAX_LIMIT = 50;
 const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT = 20;
@@ -7172,7 +7173,11 @@ function adminAppSessionListSkip(value: number | string | null | undefined): num
 }
 
 function adminReferralParentListTake(value: number | string | null | undefined): number {
-  return boundedAdminListLimit(value, ADMIN_REFERRAL_PARENT_LIST_LIMIT);
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_REFERRAL_PARENT_LIST_DEFAULT_LIMIT;
+  }
+
+  return boundedAdminListLimit(value, ADMIN_REFERRAL_PARENT_LIST_MAX_LIMIT);
 }
 
 function adminReferralParentListSkip(value: number | string | null | undefined): number {

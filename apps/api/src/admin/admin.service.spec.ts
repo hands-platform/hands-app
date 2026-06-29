@@ -2163,6 +2163,35 @@ describe('AdminService query orchestration', () => {
     expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
   });
 
+  it('bounds referral parent list defaults before hydrating nested referral rewards', async () => {
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listCustomerReferralParents();
+    expect(prisma.customerProfile.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        take: 10,
+      }),
+    );
+
+    await service.listPartnerReferralParents({ take: '500' });
+    expect(prisma.providerProfile.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        take: 50,
+      }),
+    );
+  });
+
   it('summarizes customer referral parent counts and reward queues without loading parent rows', async () => {
     const prisma = {
       customerProfile: {
