@@ -104,6 +104,7 @@ export type AdminReferralPolicy = {
   maxRewardedReferrals?: number | null;
   maxRewardsPerReferred?: number | null;
   notes?: string | null;
+  platformFeeVatRateBps: number;
   perRewardCapAmount?: number | null;
   policyId?: string | null;
   rewardMode: AdminReferralRewardMode;

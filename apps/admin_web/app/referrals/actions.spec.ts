@@ -1,15 +1,23 @@
 import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
-import { adminPost } from '../../lib/admin-api';
+import { redirect } from 'next/navigation';
+import { adminPatch, adminPost } from '../../lib/admin-api';
 import {
   creditReferralReward,
   holdReferralReward,
   releaseAvailableReferralRewards,
   reverseReferralReward,
+  updateReferralPolicy,
 } from './actions';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  }),
 }));
 
 vi.mock('../../lib/admin-api', () => ({
@@ -17,7 +25,9 @@ vi.mock('../../lib/admin-api', () => ({
   adminPatch: vi.fn(),
 }));
 
+const mockedAdminPatch = vi.mocked(adminPatch);
 const mockedAdminPost = vi.mocked(adminPost);
+const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('referral server actions', () => {
@@ -110,5 +120,30 @@ describe('referral server actions', () => {
       '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
+  });
+
+  it('saves referral platform fee VAT rate with policy updates', async () => {
+    mockedAdminPatch.mockResolvedValue({ audience: 'CUSTOMER' });
+    const formData = new FormData();
+    formData.set('audience', 'customer');
+    formData.set('enabledState', 'on');
+    formData.set('commissionPercent', '30');
+    formData.set('platformFeeVatRate', '9');
+    formData.set('holdPeriodDays', '7');
+    formData.set('currency', 'VND');
+    formData.set('reason', 'sync accounting vat rate');
+
+    await expect(updateReferralPolicy(formData)).rejects.toThrow('NEXT_REDIRECT:/referrals/customers');
+
+    expect(mockedAdminPatch).toHaveBeenCalledWith(
+      '/admin/referrals/policies/customer',
+      expect.objectContaining({
+        commissionPercentBps: 3_000,
+        platformFeeVatRateBps: 900,
+        reason: 'sync accounting vat rate',
+      }),
+      null,
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith('/referrals/customers?status=saved&reason=policy-updated');
   });
 });

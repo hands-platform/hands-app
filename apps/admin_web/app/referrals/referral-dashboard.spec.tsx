@@ -23,6 +23,7 @@ const policy: AdminReferralPolicy = {
   maxRewardedReferrals: 5,
   maxRewardsPerReferred: 1,
   notes: null,
+  platformFeeVatRateBps: 900,
   perRewardCapAmount: null,
   policyId: 'policy-1',
   rewardMode: 'COMMISSION_PERCENT',
@@ -174,6 +175,9 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Policy actions');
     expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Credited rewards');
+    expect(markup).toContain('Platform fee VAT');
+    expect(markup).toContain('9%');
+    expect(markup).toContain('name="platformFeeVatRate"');
     expect(markup).toContain('15.000 VND');
     expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');

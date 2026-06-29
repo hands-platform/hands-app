@@ -702,6 +702,7 @@ type AdminReferralPolicyRecord = {
   holdPeriodDays: number;
   currency: string;
   notes: string | null;
+  metadata: Prisma.JsonValue | null;
   updatedAt: Date;
 };
 
@@ -1505,6 +1506,7 @@ export class AdminService {
       maxRewardedReferrals?: number | null;
       maxRewardsPerReferred?: number | null;
       notes?: string | null;
+      platformFeeVatRateBps?: number | null;
       perRewardCapAmount?: number | null;
       reason?: string;
       rewardMode?: ReferralRewardMode;
@@ -1559,6 +1561,7 @@ export class AdminService {
         holdPeriodDays: input.holdPeriodDays ?? 7,
         currency: normalizeReferralCurrency(input.currency),
         notes: normalizeNullable(input.notes),
+        metadata: referralPolicyMetadata(input.platformFeeVatRateBps),
         createdById: actorId,
         updatedById: actorId,
       },
@@ -1574,6 +1577,7 @@ export class AdminService {
         holdPeriodDays: input.holdPeriodDays ?? 7,
         currency: normalizeReferralCurrency(input.currency),
         notes: normalizeNullable(input.notes),
+        metadata: referralPolicyMetadata(input.platformFeeVatRateBps),
         updatedById: actorId,
       },
     });
@@ -8761,11 +8765,37 @@ function adminReferralPolicyView(audience: ReferralAudience, policy: AdminReferr
     maxRewardedReferrals: policy?.maxRewardedReferrals ?? null,
     maxRewardsPerReferred: policy?.maxRewardsPerReferred ?? null,
     holdPeriodDays: policy?.holdPeriodDays ?? 7,
+    platformFeeVatRateBps: referralPolicyPlatformFeeVatRateBps(policy?.metadata ?? null),
     currency: policy?.currency ?? 'VND',
     notes: policy?.notes ?? null,
     source: policy ? 'stored-policy' : 'default-disabled',
     updatedAt: policy?.updatedAt ?? null,
   };
+}
+
+function referralPolicyMetadata(platformFeeVatRateBps: number | null | undefined): Prisma.InputJsonObject {
+  return {
+    platformFeeVatRateBps: normalizeReferralPolicyPlatformFeeVatRateBps(platformFeeVatRateBps),
+  };
+}
+
+function referralPolicyPlatformFeeVatRateBps(metadata: Prisma.JsonValue | null) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return normalizeReferralPolicyPlatformFeeVatRateBps(null);
+  }
+
+  const value = metadata.platformFeeVatRateBps;
+
+  return normalizeReferralPolicyPlatformFeeVatRateBps(typeof value === 'number' ? value : null);
+}
+
+function normalizeReferralPolicyPlatformFeeVatRateBps(value: number | null | undefined) {
+  if (value === null || value === undefined) return 800;
+  if (!Number.isInteger(value) || value < 0 || value > 10_000) {
+    throw new BadRequestException('Platform fee VAT rate must be between 0% and 100%');
+  }
+
+  return value;
 }
 
 function defaultReferralRewardMode(audience: ReferralAudience) {

@@ -59,6 +59,7 @@ export async function updateReferralPolicy(formData: FormData) {
     rewardMode,
     commissionPercentBps: audience === 'customer' ? parsePercentBps(formData.get('commissionPercent')) : null,
     fixedRewardAmount: audience === 'partner' ? parseInteger(formData.get('fixedRewardAmount')) : null,
+    platformFeeVatRateBps: parsePercentBps(formData.get('platformFeeVatRate')) ?? 800,
     totalRewardCapAmount: parseInteger(formData.get('totalRewardCapAmount')),
     maxRewardedReferrals: parseInteger(formData.get('maxRewardedReferrals')),
     maxRewardsPerReferred: parseInteger(formData.get('maxRewardsPerReferred')),

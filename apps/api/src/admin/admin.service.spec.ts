@@ -1268,6 +1268,7 @@ describe('AdminService query orchestration', () => {
       customer: {
         audience: ReferralAudience.CUSTOMER,
         enabled: false,
+        platformFeeVatRateBps: 800,
         rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
         source: 'default-disabled',
       },
@@ -1302,6 +1303,7 @@ describe('AdminService query orchestration', () => {
           totalRewardCapAmount: 500_000,
           maxRewardedReferrals: 8,
           maxRewardsPerReferred: 1,
+          metadata: { platformFeeVatRateBps: 900 },
           holdPeriodDays: 7,
           currency: 'VND',
           notes: 'Customer referral launch',
@@ -1320,12 +1322,14 @@ describe('AdminService query orchestration', () => {
         maxRewardedReferrals: 8,
         maxRewardsPerReferred: 1,
         notes: ' Customer referral launch ',
+        platformFeeVatRateBps: 900,
         reason: 'launch referral program',
       }),
     ).resolves.toMatchObject({
       audience: ReferralAudience.CUSTOMER,
       enabled: true,
       commissionPercentBps: 600,
+      platformFeeVatRateBps: 900,
       totalRewardCapAmount: 500_000,
       source: 'stored-policy',
     });
@@ -1337,11 +1341,13 @@ describe('AdminService query orchestration', () => {
           createdById: 'admin-1',
           updatedById: 'admin-1',
           fixedRewardAmount: null,
+          metadata: { platformFeeVatRateBps: 900 },
           rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
         }),
         update: expect.objectContaining({
           updatedById: 'admin-1',
           commissionPercentBps: 600,
+          metadata: { platformFeeVatRateBps: 900 },
         }),
       }),
     );

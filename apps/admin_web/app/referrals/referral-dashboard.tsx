@@ -369,6 +369,7 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
     policy.rewardMode === 'FIXED_AMOUNT'
       ? formatMoney(policy.fixedRewardAmount, policy.currency)
       : 'Not applicable';
+  const platformFeeVatLabel = formatBpsPercent(policy.platformFeeVatRateBps);
 
   return (
     <AdminFilterPanel
@@ -398,6 +399,11 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
           <span>Hold period</span>
           <strong>{policy.holdPeriodDays} day(s)</strong>
           <small className="muted">Wallet credit can stay pending until this window passes.</small>
+        </div>
+        <div>
+          <span>Platform fee VAT</span>
+          <strong>{platformFeeVatLabel}</strong>
+          <small className="muted">Removed from gross platform fee before customer referral reward calculation.</small>
         </div>
         <div>
           <span>Per-user cap</span>
@@ -448,6 +454,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
     policy.commissionPercentBps !== null && policy.commissionPercentBps !== undefined
       ? Number(policy.commissionPercentBps) / 100
       : '';
+  const platformFeeVatRateValue = Number(policy.platformFeeVatRateBps ?? 800) / 100;
 
   return (
     <form
@@ -544,6 +551,19 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
             label="Hold period days"
             min="0"
             name="holdPeriodDays"
+            type="number"
+          />
+        </div>
+        <div className="referral-policy-field">
+          <span className="referral-policy-field-label">Platform fee VAT</span>
+          <AdminFormInput
+            className="referral-policy-input"
+            defaultValue={platformFeeVatRateValue}
+            label="Platform fee VAT"
+            min="0"
+            max="100"
+            name="platformFeeVatRate"
+            step="0.01"
             type="number"
           />
         </div>
@@ -1055,6 +1075,12 @@ function numberOrZero(value: number | null | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
 }
 
+function formatBpsPercent(value: number | null | undefined) {
+  const percent = Number(value ?? 0) / 100;
+
+  return `${Number.isInteger(percent) ? percent.toFixed(0) : percent.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`;
+}
+
 const defaultReferralDashboardFilters: ReferralDashboardFilters = {
   q: '',
   reward: 'all',
@@ -1415,6 +1441,7 @@ export function referralPolicyFallback(audience: 'customer' | 'partner'): AdminR
     holdPeriodDays: 7,
     maxRewardedReferrals: null,
     maxRewardsPerReferred: null,
+    platformFeeVatRateBps: 800,
     perRewardCapAmount: null,
     policyId: null,
     rewardMode: audience === 'customer' ? 'COMMISSION_PERCENT' : 'FIXED_AMOUNT',
