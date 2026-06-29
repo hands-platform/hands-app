@@ -495,7 +495,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const paymentHoldCount =
     paymentSummary?.authorized ?? payments.filter((payment) => payment.status === 'AUTHORIZED').length;
   const rangeEarningRows = earningRows;
-  const rangePayoutBatches = payoutBatches;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
   const rangeBookingCreateRejections = bookingCreateRejections;
   const bookingCreateGateSummary = buildBookingCreateGateSummary(bookingCreateRejections);

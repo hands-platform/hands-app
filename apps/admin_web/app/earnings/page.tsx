@@ -52,7 +52,6 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
   ]);
-  const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
   const filteredEarnings = earnings;
   const filteredPayoutBatches = payoutBatches;
   const summary = apiSummary;
