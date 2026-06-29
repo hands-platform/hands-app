@@ -2,6 +2,7 @@ import {
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
+  buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildPaymentFeeMetrics,
   buildPaymentFeeSummaryCsvHref,
@@ -234,6 +235,32 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"closing-1"');
     expect(rowsCsv).toContain('"company_output_vat_total"');
     expect(rowsCsv).toContain('"18962"');
+  });
+
+  it('exports partner monthly withholding tax rows as CSV', () => {
+    const rowsCsv = decodeURIComponent(
+      buildPartnerWithholdingTaxRowsCsvHref([
+        {
+          providerProfileId: 'provider-1',
+          partnerName: 'Smoke Partner',
+          partnerPhone: '+84900000001',
+          period: '2026-06',
+          currency: 'VND',
+          completedBookingCount: 3,
+          grossServiceRevenue: 1_800_000,
+          partnerPayoutTotal: 1_290_000,
+          partnerVatWithheldTotal: 90_000,
+          partnerPitWithheldTotal: 36_000,
+          totalPartnerTaxWithheld: 126_000,
+        },
+      ]),
+    );
+
+    expect(rowsCsv).toContain('"provider_profile_id","period","currency"');
+    expect(rowsCsv).toContain('"provider-1","2026-06","VND","Smoke Partner"');
+    expect(rowsCsv).toContain("\"'+84900000001\"");
+    expect(rowsCsv).toContain('"1800000"');
+    expect(rowsCsv).toContain('"126000"');
   });
 
   it('exports a monthly accounting journal CSV from visible closing totals', () => {

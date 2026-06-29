@@ -4,6 +4,7 @@ import type {
   AdminPlatformVatSummary,
   AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingSummary,
+  AdminPartnerWithholdingTaxRow,
   AdminPartnerWithholdingTaxSummary,
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
@@ -564,6 +565,25 @@ export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClo
   );
 }
 
+export function buildPartnerWithholdingTaxRowsCsvHref(rows: AdminPartnerWithholdingTaxRow[]) {
+  return buildCsvDataHref(
+    rows.map((row) => ({
+      provider_profile_id: row.providerProfileId,
+      period: row.period,
+      currency: row.currency,
+      partner_name: row.partnerName,
+      partner_phone: row.partnerPhone ?? '',
+      completed_booking_count: row.completedBookingCount,
+      gross_service_revenue: row.grossServiceRevenue,
+      partner_payout_total: row.partnerPayoutTotal,
+      partner_vat_withheld_total: row.partnerVatWithheldTotal,
+      partner_pit_withheld_total: row.partnerPitWithheldTotal,
+      total_partner_tax_withheld: row.totalPartnerTaxWithheld,
+    })),
+    PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS,
+  );
+}
+
 export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMonthlyTaxClosingSummary) {
   return buildCsvDataHref(
     [
@@ -682,6 +702,20 @@ const PAYMENT_FEE_CSV_COLUMNS = [
   'settlement_count',
   'customer_payment_amount_total',
   'payment_processing_fee_total',
+];
+
+const PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS = [
+  'provider_profile_id',
+  'period',
+  'currency',
+  'partner_name',
+  'partner_phone',
+  'completed_booking_count',
+  'gross_service_revenue',
+  'partner_payout_total',
+  'partner_vat_withheld_total',
+  'partner_pit_withheld_total',
+  'total_partner_tax_withheld',
 ];
 
 const ACCOUNTING_JOURNAL_CSV_COLUMNS = [

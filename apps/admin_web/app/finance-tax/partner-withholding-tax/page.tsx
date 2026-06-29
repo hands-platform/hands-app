@@ -11,6 +11,7 @@ import { formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPartnerWithholdingTaxApiHref,
+  buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyPartnerWithholdingTaxSummary,
@@ -35,6 +36,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
     ),
     adminGet<AdminPartnerWithholdingTaxRow[]>(buildPartnerWithholdingTaxApiHref(filters), []),
   ]);
+  const csvHref = buildPartnerWithholdingTaxRowsCsvHref(rows);
 
   return (
     <AdminPageTemplate
@@ -46,7 +48,15 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             settlementFilters,
             withholdingFilters: filters,
           })}
-        />
+        >
+          <a
+            className="pill pill-success"
+            download={`hands-partner-withholding-tax-${filters.period}.csv`}
+            href={csvHref}
+          >
+            Export partner tax CSV
+          </a>
+        </TaxFinanceWorkflowActions>
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."
       metrics={[
