@@ -1535,6 +1535,7 @@ model BookingSettlementSnapshot {
   monthlyClosing               MonthlyTaxClosing?         @relation(fields: [monthlyClosingId], references: [id])
   reversalOf                   BookingSettlementSnapshot? @relation("BookingSettlementReversal", fields: [reversalOfId], references: [id])
   reversedBy                   BookingSettlementSnapshot? @relation("BookingSettlementReversal")
+  reversalEntries              BookingSettlementReversalEntry[]
 
   @@index([customerProfileId, postedAt])
   @@index([providerProfileId, postedAt])
@@ -1542,6 +1543,46 @@ model BookingSettlementSnapshot {
   @@index([settlementStatus, postedAt])
   @@index([paymentMethod, postedAt])
   @@index([monthlyClosingId])
+}
+
+model BookingSettlementReversalEntry {
+  id                           String                     @id @default(cuid())
+  sourceKey                    String                     @unique
+  originalSettlementSnapshotId String                     @unique
+  bookingId                    String
+  customerProfileId            String
+  providerProfileId            String
+  paymentId                    String?
+  providerEarningId            String?
+  paymentMethod                PaymentMethod
+  currency                     String                     @default("VND")
+  customerPaymentAmount        Int
+  partnerPayoutAmount          Int
+  partnerTaxableRevenue        Int
+  partnerVatAmount             Int                        @default(0)
+  partnerPitAmount             Int                        @default(0)
+  partnerWithholdingTotal      Int                        @default(0)
+  platformFeeGross             Int
+  platformFeeNetRevenue        Int
+  companyOutputVat             Int                        @default(0)
+  paymentProcessingFee         Int                        @default(0)
+  settlementStatus             BookingSettlementStatus    @default(REVERSED)
+  taxStatus                    BookingSettlementTaxStatus @default(REVERSED)
+  monthlyPeriod                String
+  originalMonthlyPeriod        String
+  originalMonthlyClosingId     String
+  occurredAt                   DateTime
+  createdById                  String?
+  reason                       String?
+  metadata                     Json?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  originalSettlementSnapshot   BookingSettlementSnapshot  @relation(fields: [originalSettlementSnapshotId], references: [id])
+
+  @@index([bookingId, occurredAt])
+  @@index([monthlyPeriod, taxStatus])
+  @@index([settlementStatus, occurredAt])
+  @@index([originalMonthlyClosingId])
 }
 
 model WithholdingLog {

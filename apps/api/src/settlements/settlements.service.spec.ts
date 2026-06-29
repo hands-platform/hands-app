@@ -184,15 +184,46 @@ describe('SettlementsService', () => {
     });
   });
 
-  it('rejects direct settlement reversal after the snapshot is attached to monthly closing', async () => {
+  it('creates a reversal entry instead of editing a closed monthly settlement snapshot', async () => {
+    const existing = {
+      id: 'settlement-closed-1',
+      bookingId: 'booking-closed-1',
+      customerPaymentAmount: 540_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
+      metadata: {
+        companyCouponExpense: 60_000,
+        couponDiscountAmount: 60_000,
+        couponReversalStatus: 'NONE',
+      },
+      monthlyClosingId: 'closing-1',
+      monthlyPeriod: '2026-06',
+      partnerPitAmount: 12_000,
+      partnerPayoutAmount: 430_000,
+      partnerTaxableRevenue: 600_000,
+      partnerVatAmount: 30_000,
+      partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-1',
+      paymentMethod: 'CARD',
+      paymentProcessingFee: 0,
+      platformFeeGross: 128_000,
+      platformFeeNetRevenue: 118_519,
+      companyOutputVat: 9_481,
+      providerEarningId: 'earning-1',
+      providerProfileId: 'provider-1',
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.CLOSED,
+    };
     const prisma = {
-      bookingSettlementSnapshot: {
-        findUnique: vi.fn().mockResolvedValue({
-          bookingId: 'booking-closed-1',
-          monthlyClosingId: 'closing-1',
-          settlementStatus: BookingSettlementStatus.POSTED,
-          taxStatus: BookingSettlementTaxStatus.CLOSED,
+      bookingSettlementReversalEntry: {
+        upsert: vi.fn().mockResolvedValue({
+          id: 'reversal-entry-1',
+          originalSettlementSnapshotId: 'settlement-closed-1',
+          settlementStatus: BookingSettlementStatus.REVERSED,
         }),
+      },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
         update: vi.fn(),
       },
     };
@@ -203,8 +234,40 @@ describe('SettlementsService', () => {
         actorId: 'admin-1',
         bookingId: 'booking-closed-1',
         occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+        reason: 'Closed refund',
       }),
-    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct settlement edits.');
+    ).resolves.toMatchObject({
+      id: 'reversal-entry-1',
+      originalSettlementSnapshotId: 'settlement-closed-1',
+      settlementStatus: BookingSettlementStatus.REVERSED,
+    });
     expect(prisma.bookingSettlementSnapshot.update).not.toHaveBeenCalled();
+    expect(prisma.bookingSettlementReversalEntry.upsert).toHaveBeenCalledWith({
+      where: { originalSettlementSnapshotId: 'settlement-closed-1' },
+      update: expect.objectContaining({
+        reason: 'Closed refund',
+      }),
+      create: expect.objectContaining({
+        bookingId: 'booking-closed-1',
+        companyOutputVat: -9_481,
+        customerPaymentAmount: -540_000,
+        customerProfileId: 'customer-1',
+        metadata: expect.objectContaining({
+          couponReversalStatus: 'REVERSED',
+          originalSettlementSnapshotId: 'settlement-closed-1',
+          reversedCompanyCouponExpense: 60_000,
+          reversedCouponDiscountAmount: 60_000,
+        }),
+        originalMonthlyClosingId: 'closing-1',
+        originalMonthlyPeriod: '2026-06',
+        originalSettlementSnapshotId: 'settlement-closed-1',
+        partnerPayoutAmount: -430_000,
+        partnerWithholdingTotal: -42_000,
+        platformFeeNetRevenue: -118_519,
+        reason: 'Closed refund',
+        settlementStatus: BookingSettlementStatus.REVERSED,
+        taxStatus: BookingSettlementTaxStatus.REVERSED,
+      }),
+    });
   });
 });

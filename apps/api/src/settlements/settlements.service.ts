@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
@@ -142,7 +142,11 @@ export class SettlementsService {
       return existing;
     }
     if (existing.monthlyClosingId) {
-      throw new BadRequestException('Closed monthly periods require reversal entries, not direct settlement edits.');
+      return this.upsertClosedSettlementReversalEntry(
+        { ...existing, monthlyClosingId: existing.monthlyClosingId },
+        input,
+        client,
+      );
     }
 
     return client.bookingSettlementSnapshot.update({
@@ -157,10 +161,60 @@ export class SettlementsService {
       },
     });
   }
+
+  private upsertClosedSettlementReversalEntry(
+    snapshot: ClosedSettlementSnapshot,
+    input: ReverseBookingSettlementSnapshotInput,
+    client: SettlementPrismaClient,
+  ) {
+    const metadata = settlementRefundReversalMetadata(snapshot.metadata, input.occurredAt);
+    return client.bookingSettlementReversalEntry.upsert({
+      where: { originalSettlementSnapshotId: snapshot.id },
+      update: {
+        metadata: closedSettlementReversalMetadata(metadata, snapshot.id),
+        occurredAt: input.occurredAt,
+        reason: input.reason?.trim() || 'Payment refund',
+      },
+      create: {
+        bookingId: snapshot.bookingId,
+        companyOutputVat: -snapshot.companyOutputVat,
+        createdById: input.actorId,
+        currency: snapshot.currency,
+        customerPaymentAmount: -snapshot.customerPaymentAmount,
+        customerProfileId: snapshot.customerProfileId,
+        metadata: closedSettlementReversalMetadata(metadata, snapshot.id),
+        monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
+        occurredAt: input.occurredAt,
+        originalMonthlyClosingId: snapshot.monthlyClosingId,
+        originalMonthlyPeriod: snapshot.monthlyPeriod,
+        originalSettlementSnapshotId: snapshot.id,
+        partnerPitAmount: -snapshot.partnerPitAmount,
+        partnerPayoutAmount: -snapshot.partnerPayoutAmount,
+        partnerTaxableRevenue: -snapshot.partnerTaxableRevenue,
+        partnerVatAmount: -snapshot.partnerVatAmount,
+        partnerWithholdingTotal: -snapshot.partnerWithholdingTotal,
+        paymentId: snapshot.paymentId,
+        paymentMethod: snapshot.paymentMethod,
+        paymentProcessingFee: -snapshot.paymentProcessingFee,
+        platformFeeGross: -snapshot.platformFeeGross,
+        platformFeeNetRevenue: -snapshot.platformFeeNetRevenue,
+        providerEarningId: snapshot.providerEarningId,
+        providerProfileId: snapshot.providerProfileId,
+        reason: input.reason?.trim() || 'Payment refund',
+        settlementStatus: BookingSettlementStatus.REVERSED,
+        sourceKey: bookingSettlementReversalSourceKey(snapshot.id),
+        taxStatus: BookingSettlementTaxStatus.REVERSED,
+      },
+    });
+  }
 }
 
 export function bookingSettlementSourceKey(bookingId: string) {
   return `booking-settlement:${bookingId}`;
+}
+
+export function bookingSettlementReversalSourceKey(snapshotId: string) {
+  return `booking-settlement-reversal:${snapshotId}`;
 }
 
 export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
@@ -194,6 +248,23 @@ function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occ
     reversalAffectsPlatformFeeRevenue: true,
   } satisfies Prisma.InputJsonObject;
 }
+
+function closedSettlementReversalMetadata(
+  metadata: Prisma.InputJsonObject,
+  originalSettlementSnapshotId: string,
+) {
+  return {
+    ...metadata,
+    originalSettlementSnapshotId,
+    reversalEntryType: 'CLOSED_MONTHLY_PERIOD_REFUND',
+  } satisfies Prisma.InputJsonObject;
+}
+
+type ClosedSettlementSnapshot = NonNullable<
+  Awaited<ReturnType<SettlementPrismaClient['bookingSettlementSnapshot']['findUnique']>>
+> & {
+  monthlyClosingId: string;
+};
 
 function jsonRecord(value: Prisma.JsonValue | null | undefined) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
