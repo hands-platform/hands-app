@@ -243,6 +243,7 @@ const BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT = 12;
 const BOOKING_DETAIL_ACTIVITY_PREVIEW_LIMIT = 24;
 const BOOKING_DETAIL_ACTIVITY_CSV_PREVIEW_LIMIT = 40;
 const BOOKING_DETAIL_OPERATING_TIMELINE_PREVIEW_LIMIT = 18;
+const BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT = 40;
 const BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS = [
   OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
   OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
@@ -890,11 +891,18 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
 }
 
 async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
+  const encodedId = encodeURIComponent(id);
   const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
-    adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
+    adminGet<AdminBookingDetail | null>(`/admin/bookings/${encodedId}`, null),
     adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
-    adminGet<AdminNotification[]>(`/admin/bookings/${id}/notifications`, []),
-    adminGet<AdminProvider[]>(`/admin/bookings/${id}/marketplace-providers`, []),
+    adminGet<AdminNotification[]>(
+      `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
+      [],
+    ),
+    adminGet<AdminProvider[]>(
+      `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
+      [],
+    ),
   ]);
 
   return {

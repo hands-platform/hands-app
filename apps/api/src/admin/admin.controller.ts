@@ -561,8 +561,8 @@ export class AdminController {
   }
 
   @Get('bookings/:id/notifications')
-  bookingNotifications(@Param('id') id: string) {
-    return this.admin.listBookingNotifications(id);
+  bookingNotifications(@Param('id') id: string, @Query('take') take?: string) {
+    return this.admin.listBookingNotifications(id, { take });
   }
 
   @Get('bookings/:id/chat-messages')
@@ -571,8 +571,8 @@ export class AdminController {
   }
 
   @Get('bookings/:id/marketplace-providers')
-  bookingMarketplaceProviders(@Param('id') id: string) {
-    return this.admin.listBookingMarketplaceProviders(id);
+  bookingMarketplaceProviders(@Param('id') id: string, @Query('take') take?: string) {
+    return this.admin.listBookingMarketplaceProviders(id, { take });
   }
 
   @Get('bookings/:id')

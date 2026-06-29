@@ -2326,12 +2326,12 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await service.listBookingNotifications('booking-1');
+    await service.listBookingNotifications('booking-1', { take: '12' });
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { createdAt: 'desc' },
-        take: 25,
+        take: 12,
         where: { data: { path: ['bookingId'], equals: 'booking-1' } },
         select: expect.objectContaining({
           deliveries: expect.any(Object),
@@ -2423,7 +2423,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listBookingMarketplaceProviders('booking-1')).resolves.toEqual([
+    await expect(service.listBookingMarketplaceProviders('booking-1', { take: '40' })).resolves.toEqual([
       { id: 'preferred-partner' },
       { id: 'selected-partner' },
       { id: 'nearby-partner' },
@@ -2447,7 +2447,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.providerProfile.findMany).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        take: 120,
+        take: 40,
         where: expect.objectContaining({
           currentLat: expect.objectContaining({ gte: expect.any(Number), lte: expect.any(Number) }),
           currentLng: expect.objectContaining({ gte: expect.any(Number), lte: expect.any(Number) }),

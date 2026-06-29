@@ -76,6 +76,8 @@ describe('AdminController notification and push actions', () => {
     appSessionSummary: vi.fn(),
     listChatArchive: vi.fn(),
     chatArchiveSummary: vi.fn(),
+    listBookingNotifications: vi.fn(),
+    listBookingMarketplaceProviders: vi.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -140,6 +142,34 @@ describe('AdminController notification and push actions', () => {
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
     });
+  });
+
+  it('exposes booking detail notification evidence with an optional preview limit', async () => {
+    admin.listBookingNotifications.mockResolvedValue([{ id: 'notification-1' }]);
+
+    await expect(controller.bookingNotifications('booking-1', '12')).resolves.toEqual([
+      { id: 'notification-1' },
+    ]);
+
+    expect(routeMetadata('bookingNotifications')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bookings/:id/notifications',
+    });
+    expect(admin.listBookingNotifications).toHaveBeenCalledWith('booking-1', { take: '12' });
+  });
+
+  it('exposes booking marketplace provider evidence with an optional preview limit', async () => {
+    admin.listBookingMarketplaceProviders.mockResolvedValue([{ id: 'provider-1' }]);
+
+    await expect(controller.bookingMarketplaceProviders('booking-1', '40')).resolves.toEqual([
+      { id: 'provider-1' },
+    ]);
+
+    expect(routeMetadata('bookingMarketplaceProviders')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bookings/:id/marketplace-providers',
+    });
+    expect(admin.listBookingMarketplaceProviders).toHaveBeenCalledWith('booking-1', { take: '40' });
   });
 
   it('exposes audit logs as a bounded filtered list with a separate summary', async () => {

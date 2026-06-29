@@ -319,6 +319,9 @@ type AdminReferralParentListQuery = {
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
+type AdminBookingDetailPreviewQuery = {
+  readonly take?: number | string | null;
+};
 type AdminPaymentOperationsQuery = {
   readonly range?: string | null;
   readonly review?: string | null;
@@ -4434,11 +4437,11 @@ export class AdminService {
     return withAdminBookingListMetadata(withAdminBookingMatchingEvidence({ ...booking, auditLogs }));
   }
 
-  listBookingNotifications(bookingId: string) {
+  listBookingNotifications(bookingId: string, options: AdminBookingDetailPreviewQuery = {}) {
     return this.prisma.notification.findMany({
       where: { data: { path: ['bookingId'], equals: bookingId } },
       orderBy: { createdAt: 'desc' },
-      take: ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT,
+      take: boundedAdminListLimit(options.take, ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT),
       select: adminNotificationListSelect,
     });
   }
@@ -4474,7 +4477,7 @@ export class AdminService {
     };
   }
 
-  async listBookingMarketplaceProviders(bookingId: string) {
+  async listBookingMarketplaceProviders(bookingId: string, options: AdminBookingDetailPreviewQuery = {}) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       select: {
@@ -4519,7 +4522,7 @@ export class AdminService {
             currentLng: { gte: bounds.minLng, lte: bounds.maxLng },
           },
           orderBy: [{ currentLocationUpdatedAt: 'desc' }, { id: 'desc' }],
-          take: ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT,
+          take: boundedAdminListLimit(options.take, ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT),
           select: adminBookingMarketplaceProviderSelect,
         })
       : Promise.resolve([]);
