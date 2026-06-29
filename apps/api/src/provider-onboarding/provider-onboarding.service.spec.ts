@@ -1,4 +1,4 @@
-import { ProviderBankAccountStatus } from '@prisma/client';
+import { ProviderBankAccountStatus, TaxPolicyStatus } from '@prisma/client';
 
 import { ProviderOnboardingService } from './provider-onboarding.service';
 
@@ -38,6 +38,69 @@ describe('ProviderOnboardingService tax policy listing', () => {
         take: 100,
       }),
     );
+  });
+});
+
+describe('ProviderOnboardingService tax policy effective dates', () => {
+  it('rejects tax policy creation when effectiveTo is before effectiveFrom', async () => {
+    const prisma = {
+      $transaction: vi.fn(),
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(
+      service.createTaxPolicyVersion('admin-1', {
+        name: 'Vietnam withholding',
+        effectiveFrom: '2026-07-01T00:00:00.000Z',
+        effectiveTo: '2026-06-30T23:59:00.000Z',
+      }),
+    ).rejects.toThrow('effectiveTo must be after effectiveFrom');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects tax policy updates that would create an invalid effective date window', async () => {
+    const updatedPolicy = {
+      id: 'policy-1',
+      name: 'Vietnam withholding',
+      status: TaxPolicyStatus.DRAFT,
+      effectiveFrom: new Date('2026-07-01T00:00:00.000Z'),
+      effectiveTo: new Date('2026-06-30T23:59:00.000Z'),
+      notes: null,
+      createdById: 'admin-1',
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+      rules: [],
+    };
+    const tx = {
+      taxPolicyVersion: {
+        update: vi.fn().mockResolvedValue(updatedPolicy),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const service = new ProviderOnboardingService(prisma as never);
+
+    await expect(
+      service.updateTaxPolicyVersion('admin-1', 'policy-1', {
+        effectiveFrom: '2026-07-01T00:00:00.000Z',
+        effectiveTo: '2026-06-30T23:59:00.000Z',
+      }),
+    ).rejects.toThrow('effectiveTo must be after effectiveFrom');
+
+    expect(tx.taxPolicyVersion.updateMany).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 });
 

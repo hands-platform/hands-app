@@ -615,13 +615,17 @@ export class ProviderOnboardingService {
     },
   ) {
     const status = input.status ?? TaxPolicyStatus.DRAFT;
+    const effectiveFrom = parseDate(input.effectiveFrom, 'effectiveFrom is required');
+    const effectiveTo = parseOptionalDate(input.effectiveTo, 'effectiveTo must be a valid date');
+    assertTaxPolicyEffectiveWindow(effectiveFrom, effectiveTo);
+
     const result = await this.prisma.$transaction(async (tx) => {
       const policy = await tx.taxPolicyVersion.create({
         data: {
           name: requiredString(input.name, 'Policy name is required'),
           status,
-          effectiveFrom: parseDate(input.effectiveFrom, 'effectiveFrom is required'),
-          effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
+          effectiveFrom,
+          effectiveTo,
           notes: normalizeString(input.notes),
           createdById: actorId,
         },
@@ -649,23 +653,27 @@ export class ProviderOnboardingService {
       notes?: string | null;
     },
   ) {
+    const effectiveFrom = input.effectiveFrom
+      ? parseDate(input.effectiveFrom, 'effectiveFrom must be a valid date')
+      : undefined;
+    const effectiveTo =
+      input.effectiveTo === undefined
+        ? undefined
+        : parseOptionalDate(input.effectiveTo, 'effectiveTo must be a valid date');
+
     const result = await this.prisma.$transaction(async (tx) => {
       const policy = await tx.taxPolicyVersion.update({
         where: { id },
         data: {
           name: normalizeString(input.name),
           status: input.status,
-          effectiveFrom: input.effectiveFrom ? new Date(input.effectiveFrom) : undefined,
-          effectiveTo:
-            input.effectiveTo === undefined
-              ? undefined
-              : input.effectiveTo
-                ? new Date(input.effectiveTo)
-                : null,
+          effectiveFrom,
+          effectiveTo,
           notes: input.notes === undefined ? undefined : normalizeString(input.notes),
         },
         include: { rules: true },
       });
+      assertTaxPolicyEffectiveWindow(policy.effectiveFrom, policy.effectiveTo);
       const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, policy.status);
       return { policy, deactivatedCount: deactivated.count };
     });
@@ -988,6 +996,22 @@ function parseDate(value: string | undefined, message: string) {
     throw new BadRequestException(message);
   }
   return date;
+}
+
+function parseOptionalDate(value: string | null | undefined, message: string) {
+  if (!value) {
+    return null;
+  }
+  return parseDate(value, message);
+}
+
+function assertTaxPolicyEffectiveWindow(effectiveFrom: Date, effectiveTo?: Date | null) {
+  if (!effectiveTo) {
+    return;
+  }
+  if (effectiveTo.getTime() <= effectiveFrom.getTime()) {
+    throw new BadRequestException('effectiveTo must be after effectiveFrom');
+  }
 }
 
 function requiredString(value: string | undefined, message: string) {
