@@ -10,6 +10,7 @@ import {
   FileReviewStatus,
   FileUploadStatus,
   FileVisibility,
+  MonthlyTaxClosingStatus,
   PayoutBatchStatus,
   PaymentMethod,
   PaymentStatus,
@@ -339,6 +340,10 @@ type AdminPartnerWithholdingTaxQuery = {
 type AdminMonthlyTaxClosingQuery = {
   readonly period?: string | null;
   readonly take?: number | string | null;
+};
+type AdminMonthlyTaxClosingStatusInput = {
+  readonly status?: MonthlyTaxClosingStatus | string | null;
+  readonly notes?: string | null;
 };
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
@@ -5561,6 +5566,93 @@ export class AdminService {
     };
   }
 
+  async updateMonthlyTaxClosingStatus(
+    actorId: string,
+    periodInput: string,
+    input: AdminMonthlyTaxClosingStatusInput,
+  ) {
+    const period = adminPartnerWithholdingTaxPeriod(periodInput);
+    const status = monthlyTaxClosingStatus(input.status);
+    const notes = normalizeNullable(input.notes);
+    const existing = await this.prisma.monthlyTaxClosing.findUnique({
+      where: { period_currency: { period, currency: 'VND' } },
+    });
+
+    if (existing?.status === MonthlyTaxClosingStatus.CLOSED && status !== MonthlyTaxClosingStatus.CLOSED) {
+      throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
+    }
+
+    const summary = await this.monthlyTaxClosingSummary({ period });
+    const now = new Date();
+    const statusData = monthlyTaxClosingStatusMutationData(status, actorId, now);
+    const totalsData = {
+      platformFeeGrossTotal: summary.platformFeeGrossTotal,
+      platformFeeNetRevenueTotal: summary.platformFeeNetRevenueTotal,
+      companyOutputVatTotal: summary.companyOutputVatTotal,
+      partnerVatWithheldTotal: summary.partnerVatWithheldTotal,
+      partnerPitWithheldTotal: summary.partnerPitWithheldTotal,
+      partnerWithholdingTotal: summary.partnerWithholdingTotal,
+      paymentProcessingFeeTotal: summary.paymentProcessingFeeTotal,
+      cashDebtTotal: summary.cashDebtTotal,
+      nonCashPartnerPayoutTotal: summary.nonCashPartnerPayoutTotal,
+      settlementCount: summary.settlementCount,
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      const closing = await tx.monthlyTaxClosing.upsert({
+        where: {
+          period_currency: {
+            period,
+            currency: summary.currency,
+          },
+        },
+        create: {
+          period,
+          currency: summary.currency,
+          status,
+          createdById: actorId,
+          notes,
+          ...totalsData,
+          ...statusData,
+        },
+        update: {
+          status,
+          notes,
+          ...totalsData,
+          ...statusData,
+        },
+        select: adminMonthlyTaxClosingListSelect,
+      });
+
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'monthly_tax_closing.status_update',
+          target: `monthly_tax_closing:${period}:${summary.currency}`,
+          metadata: toJson({
+            fromStatus: existing?.status ?? summary.status,
+            toStatus: status,
+            period,
+            currency: summary.currency,
+            settlementCount: summary.settlementCount,
+            customerPaymentAmountTotal: summary.customerPaymentAmountTotal,
+            partnerPayoutTotal: summary.partnerPayoutTotal,
+            platformFeeGrossTotal: summary.platformFeeGrossTotal,
+            platformFeeNetRevenueTotal: summary.platformFeeNetRevenueTotal,
+            companyOutputVatTotal: summary.companyOutputVatTotal,
+            partnerWithholdingTotal: summary.partnerWithholdingTotal,
+            paymentProcessingFeeTotal: summary.paymentProcessingFeeTotal,
+            reconciliationDelta: summary.reconciliationDelta,
+            netRevenueDelta: summary.netRevenueDelta,
+            notes,
+          }),
+        },
+      });
+
+      return closing;
+    });
+  }
+
   listServices() {
     return this.prisma.massageService.findMany({
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
@@ -9789,6 +9881,36 @@ function adminPartnerWithholdingTaxPeriod(value: string | null | undefined) {
   const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
   const month = parts.find((part) => part.type === 'month')?.value ?? '01';
   return `${year}-${month}`;
+}
+
+function monthlyTaxClosingStatus(value: MonthlyTaxClosingStatus | string | null | undefined) {
+  if (
+    value &&
+    Object.values(MonthlyTaxClosingStatus).includes(value as MonthlyTaxClosingStatus)
+  ) {
+    return value as MonthlyTaxClosingStatus;
+  }
+
+  throw new BadRequestException('Valid monthly tax closing status is required.');
+}
+
+function monthlyTaxClosingStatusMutationData(
+  status: MonthlyTaxClosingStatus,
+  actorId: string,
+  at: Date,
+) {
+  switch (status) {
+    case MonthlyTaxClosingStatus.REVIEWED:
+      return { reviewedById: actorId };
+    case MonthlyTaxClosingStatus.DECLARED:
+      return { declaredAt: at, declaredById: actorId };
+    case MonthlyTaxClosingStatus.PAID:
+      return { paidAt: at, paidById: actorId };
+    case MonthlyTaxClosingStatus.CLOSED:
+      return { closedAt: at, closedById: actorId };
+    default:
+      return {};
+  }
 }
 
 function adminPaymentOperationsWhere(

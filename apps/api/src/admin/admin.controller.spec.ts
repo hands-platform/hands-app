@@ -61,6 +61,7 @@ describe('AdminController notification and push actions', () => {
     partnerWithholdingTaxSummary: vi.fn(),
     listMonthlyTaxClosings: vi.fn(),
     monthlyTaxClosingSummary: vi.fn(),
+    updateMonthlyTaxClosingStatus: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -551,6 +552,25 @@ describe('AdminController notification and push actions', () => {
       path: 'monthly-tax-closings/summary',
     });
     expect(admin.monthlyTaxClosingSummary).toHaveBeenCalledWith({ period: '2026-06' });
+  });
+
+  it('exposes monthly tax closing status updates as audited PATCH actions', async () => {
+    const body = {
+      status: 'DECLARED' as never,
+      notes: 'Submitted to tax portal',
+    };
+    admin.updateMonthlyTaxClosingStatus.mockResolvedValue({ period: '2026-06', status: 'DECLARED' });
+
+    await expect(controller.updateMonthlyTaxClosingStatus(user, '2026-06', body)).resolves.toEqual({
+      period: '2026-06',
+      status: 'DECLARED',
+    });
+
+    expect(routeMetadata('updateMonthlyTaxClosingStatus')).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'monthly-tax-closings/:period/status',
+    });
+    expect(admin.updateMonthlyTaxClosingStatus).toHaveBeenCalledWith('admin-1', '2026-06', body);
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

@@ -23,6 +23,7 @@ import {
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  MonthlyTaxClosingStatus,
   PayoutBatchStatus,
   ProviderReportSeverity,
   ProviderReportSource,
@@ -345,6 +346,17 @@ export class AdminReasonDto {
   @IsString()
   @MaxLength(1000)
   reason?: string;
+}
+
+export class UpdateMonthlyTaxClosingStatusDto {
+  @IsEnum(MonthlyTaxClosingStatus)
+  status!: MonthlyTaxClosingStatus;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(1000)
+  notes?: string | null;
 }
 
 export class CreatePartnerReportDto {

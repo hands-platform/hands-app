@@ -28,6 +28,7 @@ import {
   ReferralRewardDecisionDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
+  UpdateMonthlyTaxClosingStatusDto,
   UpdateNotificationTemplateDto,
   UpdateOperationalPolicyDto,
   UpdateReferralPolicyDto,
@@ -752,6 +753,15 @@ export class AdminController {
   @Get('monthly-tax-closings/summary')
   monthlyTaxClosingSummary(@Query('period') period?: string) {
     return this.admin.monthlyTaxClosingSummary({ period });
+  }
+
+  @Patch('monthly-tax-closings/:period/status')
+  updateMonthlyTaxClosingStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('period') period: string,
+    @Body() body: UpdateMonthlyTaxClosingStatusDto,
+  ) {
+    return this.admin.updateMonthlyTaxClosingStatus(user.id, period, body);
   }
 
   @Get('services')

@@ -6,6 +6,7 @@ import {
   BookingOpsTaskType,
   BookingStatus,
   EarningStatus,
+  MonthlyTaxClosingStatus,
   ParticipantStatus,
   PaymentStatus,
   ProviderBankAccountStatus,
@@ -5368,6 +5369,150 @@ describe('AdminService query orchestration', () => {
     expect(prisma.monthlyTaxClosing.findUnique).toHaveBeenCalledWith({
       where: { period_currency: { period: '2026-06', currency: 'VND' } },
     });
+  });
+
+  it('updates monthly tax closing status by snapshotting summary totals and writing audit metadata', async () => {
+    const existingClosing = {
+      id: 'closing-1',
+      period: '2026-06',
+      currency: 'VND',
+      status: MonthlyTaxClosingStatus.REVIEWED,
+      declaredAt: null,
+      paidAt: null,
+      closedAt: null,
+      notes: 'Ready',
+    };
+    const updatedClosing = {
+      ...existingClosing,
+      status: MonthlyTaxClosingStatus.DECLARED,
+      declaredAt: new Date('2026-06-30T10:00:00.000Z'),
+      notes: 'Submitted to tax portal',
+    };
+    const tx = {
+      monthlyTaxClosing: {
+        upsert: vi.fn().mockResolvedValue(updatedClosing),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(existingClosing),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({
+            _count: { _all: 2 },
+            _sum: {
+              customerPaymentAmount: 1200000,
+              partnerPayoutAmount: 860000,
+              platformFeeGross: 256000,
+              platformFeeNetRevenue: 237038,
+              companyOutputVat: 18962,
+              partnerVatAmount: 60000,
+              partnerPitAmount: 24000,
+              partnerWithholdingTotal: 84000,
+              paymentProcessingFee: 0,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              platformFeeGross: 128000,
+              partnerWithholdingTotal: 42000,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              partnerPayoutAmount: 430000,
+            },
+          }),
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
+        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.DECLARED,
+        notes: ' Submitted to tax portal ',
+      }),
+    ).resolves.toEqual(updatedClosing);
+
+    expect(tx.monthlyTaxClosing.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          period: '2026-06',
+          status: MonthlyTaxClosingStatus.DECLARED,
+          settlementCount: 2,
+          platformFeeGrossTotal: 256000,
+          platformFeeNetRevenueTotal: 237038,
+          companyOutputVatTotal: 18962,
+          partnerWithholdingTotal: 84000,
+          declaredById: 'admin-1',
+          declaredAt: expect.any(Date),
+          notes: 'Submitted to tax portal',
+        }),
+        update: expect.objectContaining({
+          status: MonthlyTaxClosingStatus.DECLARED,
+          declaredById: 'admin-1',
+          declaredAt: expect.any(Date),
+          notes: 'Submitted to tax portal',
+        }),
+        where: {
+          period_currency: {
+            period: '2026-06',
+            currency: 'VND',
+          },
+        },
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'monthly_tax_closing.status_update',
+        target: 'monthly_tax_closing:2026-06:VND',
+        metadata: expect.objectContaining({
+          fromStatus: MonthlyTaxClosingStatus.REVIEWED,
+          toStatus: MonthlyTaxClosingStatus.DECLARED,
+          settlementCount: 2,
+          partnerWithholdingTotal: 84000,
+          companyOutputVatTotal: 18962,
+        }),
+      },
+    });
+  });
+
+  it('rejects direct monthly tax closing edits after a period is closed', async () => {
+    const prisma = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.CLOSED,
+          declaredAt: null,
+          paidAt: null,
+          closedAt: new Date('2026-07-01T00:00:00.000Z'),
+          notes: null,
+        }),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn(),
+        count: vi.fn(),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+      }),
+    ).rejects.toThrow('Closed monthly periods require reversal entries, not direct edits.');
   });
 
   it('delegates bounded cash settlement filters to the earnings service', async () => {

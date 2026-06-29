@@ -15,6 +15,7 @@ import {
   emptyMonthlyTaxClosingSummary,
   readMonthlyTaxClosingFilters,
 } from '../tax-settlement-page-model';
+import { updateMonthlyTaxClosingStatus } from './actions';
 
 type MonthlyTaxClosingPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -30,6 +31,10 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
     ),
     adminGet<AdminMonthlyTaxClosing[]>(buildMonthlyTaxClosingApiHref(filters), []),
   ]);
+  const returnTo = `/finance-tax/monthly-tax-closing?${new URLSearchParams({
+    period: filters.period,
+    take: String(filters.take),
+  }).toString()}`;
 
   return (
     <AdminPageTemplate
@@ -69,6 +74,36 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             </select>
           </label>
           <button type="submit">Apply period</button>
+        </form>
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Save the reviewed monthly totals into the closing row before declaration, payment, or final closeout. Closed periods require reversal entries, not direct edits."
+          status={<span className={`pill ${closingStatusPill(summary.status)}`}>{summary.status}</span>}
+          title="Monthly closing action"
+        />
+        <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
+          <input name="period" type="hidden" value={filters.period} />
+          <input name="returnTo" type="hidden" value={returnTo} />
+          <label>
+            Next status
+            <select name="status" defaultValue={summary.status === 'DRAFT' ? 'REVIEWED' : summary.status}>
+              <option value="REVIEWED">Reviewed</option>
+              <option value="DECLARED">Declared</option>
+              <option value="PAID">Paid</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+          </label>
+          <label>
+            Operator notes
+            <input
+              name="notes"
+              placeholder="Tax portal reference, declaration note, or closeout memo"
+              defaultValue={summary.notes ?? ''}
+            />
+          </label>
+          <button type="submit">Save closing status</button>
         </form>
       </section>
 
