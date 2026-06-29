@@ -2552,6 +2552,82 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('keeps Vietnam realtime customer points current even when the period range is all', async () => {
+    const now = new Date();
+    const staleSeenAt = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'fresh-customer',
+            addresses: ['85/9 Pham Viet Chanh, Ho Chi Minh City'],
+            selectedLocations: [
+              {
+                id: 'fresh-location',
+                addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+                createdAt: now,
+              },
+            ],
+            user: {
+              appSessions: [
+                {
+                  lastLoginAddress: 'Ho Chi Minh City',
+                  lastSeenAt: now,
+                },
+              ],
+            },
+          },
+          {
+            id: 'stale-customer',
+            addresses: ['159 P. Chua Lang, Ha Noi'],
+            selectedLocations: [
+              {
+                id: 'stale-location',
+                addressText: '159 P. Chua Lang, Ha Noi',
+                latitude: 21.0278,
+                longitude: 105.8342,
+                createdAt: staleSeenAt,
+              },
+            ],
+            user: {
+              appSessions: [
+                {
+                  lastLoginAddress: 'Ha Noi',
+                  lastSeenAt: staleSeenAt,
+                },
+              ],
+            },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const pointFeed = await service.getVietnamOverviewRealtimePoints('all');
+
+    expect(pointFeed.realtimePoints).toEqual([
+      expect.objectContaining({
+        customerProfileId: 'fresh-customer',
+        kind: 'active',
+      }),
+    ]);
+    expect(pointFeed.realtimePoints).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          customerProfileId: 'stale-customer',
+        }),
+      ]),
+    );
+  });
+
   it('adds server-computed activity summaries to provider list rows', async () => {
     const latestWorkAt = new Date('2026-06-20T10:00:00.000Z');
     const prisma = {

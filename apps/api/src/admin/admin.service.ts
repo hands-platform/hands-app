@@ -1801,11 +1801,12 @@ export class AdminService {
       }
 
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
+      const isCustomerCurrentlyActive = Boolean(lastSeenAt && lastSeenAt >= activeCustomerSince);
       if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
         if (region) {
           region.activeCustomerCount += 1;
         }
-        if (options.includeRealtimePoints) {
+        if (options.includeRealtimePoints && isCustomerCurrentlyActive) {
           const activePoint = vietnamOverviewEventPoint({
             id: `active-customer:${customer.id}:${lastSeenAt.toISOString()}`,
             kind: 'active',
