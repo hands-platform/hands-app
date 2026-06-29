@@ -88,10 +88,20 @@ function WithdrawalRequestActions({
   if (request.status === 'REJECTED' || request.status === 'CANCELLED') {
     return <span className="muted">Closed</span>;
   }
+  if (request.status === 'NEEDS_BANK_CORRECTION') {
+    return (
+      <div className="admin-inline-action-stack">
+        <span className="pill pill-warn">Waiting for partner bank correction</span>
+        <p className="muted">
+          Partner must update bank details in the Partner app before finance can approve this withdrawal.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-inline-action-stack">
-      {request.status === 'REQUESTED' || request.status === 'NEEDS_BANK_CORRECTION' ? (
+      {request.status === 'REQUESTED' ? (
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="APPROVED" />
