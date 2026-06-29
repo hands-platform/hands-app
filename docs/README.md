@@ -31,7 +31,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 - Product architecture: `docs/architecture/product-architecture.md`
 - Realtime matching: `docs/architecture/realtime-matching.md`
 - Operations policy: `docs/architecture/partner-acceptance-operations.md`
-- Payments and settlement: `docs/architecture/payments.md`, `docs/architecture/earnings.md`
+- Payments and settlement: `docs/architecture/payments.md`, `docs/architecture/earnings.md`, `docs/finance/tax-fee-settlement-design.md`
 - Notifications and push: `docs/architecture/notifications.md`
 - Admin design system: `docs/architecture/admin-vuexy-design-system.md`
 - Service pricing: `docs/architecture/service-pricing.md`
