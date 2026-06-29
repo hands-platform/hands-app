@@ -1,6 +1,10 @@
 import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
 
 import {
+  allocatePartnerBankDeposit,
+  applyCashBookingDeductionToPartnerWallet,
+  calculateCashBookingPartnerDue,
+  calculatePlatformFeeBreakdown,
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
   normalizeCashFeeDebtSettlementInput,
@@ -28,6 +32,57 @@ describe('earnings policy', () => {
     });
 
     expect(delta).toBe(-145000);
+  });
+
+  it('splits gross platform fee into net revenue and company output VAT', () => {
+    expect(calculatePlatformFeeBreakdown(128000, 800)).toEqual({
+      platformFeeGross: 128000,
+      platformFeeVatRateBps: 800,
+      platformFeeNetRevenue: 118519,
+      companyOutputVat: 9481,
+    });
+  });
+
+  it('calculates cash booking partner due to HANDS from fee gross and partner tax', () => {
+    expect(calculateCashBookingPartnerDue(128000, 800, 42000)).toEqual({
+      platformFeeGross: 128000,
+      platformFeeVatRateBps: 800,
+      platformFeeNetRevenue: 118519,
+      companyOutputVat: 9481,
+      partnerTaxPayable: 42000,
+      totalPartnerDueToCompany: 170000,
+    });
+  });
+
+  it('allocates partner bank deposit to negative wallet first and liability second', () => {
+    expect(allocatePartnerBankDeposit(-170000, 1000000)).toEqual({
+      depositAmount: 1000000,
+      currentWalletBalance: -170000,
+      currentNegativeWalletAmount: 170000,
+      amountAppliedToNegativeWallet: 170000,
+      amountCreditedToWalletLiability: 830000,
+      resultingWalletBalance: 830000,
+    });
+  });
+
+  it('applies cash booking deduction against prepaid wallet liability when enough balance exists', () => {
+    expect(applyCashBookingDeductionToPartnerWallet(830000, 170000)).toEqual({
+      currentWalletBalance: 830000,
+      totalDeduction: 170000,
+      walletLiabilityUsed: 170000,
+      negativeWalletCreated: 0,
+      resultingWalletBalance: 660000,
+    });
+  });
+
+  it('splits cash booking deduction between wallet liability and negative receivable when balance is short', () => {
+    expect(applyCashBookingDeductionToPartnerWallet(150000, 170000)).toEqual({
+      currentWalletBalance: 150000,
+      totalDeduction: 170000,
+      walletLiabilityUsed: 150000,
+      negativeWalletCreated: 20000,
+      resultingWalletBalance: -20000,
+    });
   });
 
   it('calculates service payout fee snapshots from admin-defined service duration rules', () => {

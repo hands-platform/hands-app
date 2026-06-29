@@ -44,6 +44,70 @@ type SelectedServicePayoutRule = {
   rule: ServicePayoutRuleLine;
 };
 
+export function calculatePlatformFeeBreakdown(platformFeeGross: number, platformFeeVatRateBps: number) {
+  const gross = nonNegativeWholeVnd(platformFeeGross, 'Platform fee gross');
+  const vatRateBps = nonNegativeWholeVnd(platformFeeVatRateBps, 'Platform fee VAT rate');
+  const vatMultiplier = 1 + vatRateBps / BPS_DENOMINATOR;
+  const platformFeeNetRevenue = Math.round(gross / vatMultiplier);
+
+  return {
+    platformFeeGross: gross,
+    platformFeeVatRateBps: vatRateBps,
+    platformFeeNetRevenue,
+    companyOutputVat: gross - platformFeeNetRevenue,
+  };
+}
+
+export function calculateCashBookingPartnerDue(
+  platformFeeGross: number,
+  platformFeeVatRateBps: number,
+  partnerTaxPayable: number,
+) {
+  const fee = calculatePlatformFeeBreakdown(platformFeeGross, platformFeeVatRateBps);
+  const tax = nonNegativeWholeVnd(partnerTaxPayable, 'Partner tax payable');
+
+  return {
+    ...fee,
+    partnerTaxPayable: tax,
+    totalPartnerDueToCompany: fee.platformFeeGross + tax,
+  };
+}
+
+export function allocatePartnerBankDeposit(currentWalletBalance: number, depositAmount: number) {
+  const balance = wholeVnd(currentWalletBalance, 'Current wallet balance');
+  const deposit = nonNegativeWholeVnd(depositAmount, 'Deposit amount');
+  const currentNegativeWalletAmount = Math.max(0, -balance);
+  const amountAppliedToNegativeWallet = Math.min(currentNegativeWalletAmount, deposit);
+  const amountCreditedToWalletLiability = deposit - amountAppliedToNegativeWallet;
+
+  return {
+    depositAmount: deposit,
+    currentWalletBalance: balance,
+    currentNegativeWalletAmount,
+    amountAppliedToNegativeWallet,
+    amountCreditedToWalletLiability,
+    resultingWalletBalance: balance + deposit,
+  };
+}
+
+export function applyCashBookingDeductionToPartnerWallet(
+  currentWalletBalance: number,
+  totalDeduction: number,
+) {
+  const balance = wholeVnd(currentWalletBalance, 'Current wallet balance');
+  const deduction = nonNegativeWholeVnd(totalDeduction, 'Total deduction');
+  const currentWalletLiability = Math.max(0, balance);
+  const walletLiabilityUsed = Math.min(currentWalletLiability, deduction);
+
+  return {
+    currentWalletBalance: balance,
+    totalDeduction: deduction,
+    walletLiabilityUsed,
+    negativeWalletCreated: deduction - walletLiabilityUsed,
+    resultingWalletBalance: balance - deduction,
+  };
+}
+
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
     return -(input.platformFee + input.withholdingAmount);
@@ -180,6 +244,21 @@ function payoutRuleLookupKey(serviceId: string, customerPrice: number) {
 
 function sumBy<T>(items: readonly T[], select: (item: T) => number) {
   return items.reduce((sum, item) => sum + select(item), 0);
+}
+
+function wholeVnd(value: number, label: string) {
+  if (!Number.isFinite(value)) {
+    throw new BadRequestException(`${label} must be a finite VND amount`);
+  }
+  return Math.round(value);
+}
+
+function nonNegativeWholeVnd(value: number, label: string) {
+  const amount = wholeVnd(value, label);
+  if (amount < 0) {
+    throw new BadRequestException(`${label} must be greater than or equal to zero`);
+  }
+  return amount;
 }
 
 function cleanOptionalText(value: string | null | undefined): string | null {
