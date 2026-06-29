@@ -60,6 +60,7 @@ describe('AdminController notification and push actions', () => {
     previewManualWalletAdjustment: vi.fn(),
     createManualWalletAdjustment: vi.fn(),
     listManualWalletAdjustments: vi.fn(),
+    manualWalletAdjustmentSummary: vi.fn(),
     recordPartnerBankDeposit: vi.fn(),
     listProviderWalletWithdrawalRequests: vi.fn(),
     providerWalletWithdrawalRequestSummary: vi.fn(),
@@ -228,7 +229,12 @@ describe('AdminController notification and push actions', () => {
     admin.listManualWalletAdjustments.mockResolvedValue([{ id: 'ledger-1' }]);
 
     await expect(
-      controller.manualWalletAdjustments('25', 'PARTNER', 'provider-1'),
+      (controller.manualWalletAdjustments as (...args: string[]) => Promise<unknown>)(
+        '25',
+        'PARTNER',
+        'provider-1',
+        '50',
+      ),
     ).resolves.toEqual([{ id: 'ledger-1' }]);
 
     expect(routeMetadata('manualWalletAdjustments')).toEqual({
@@ -238,7 +244,25 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listManualWalletAdjustments).toHaveBeenCalledWith({
       ownerId: 'provider-1',
       ownerType: 'PARTNER',
+      skip: '50',
       take: '25',
+    });
+  });
+
+  it('exposes manual wallet adjustment summary with owner filtering', async () => {
+    admin.manualWalletAdjustmentSummary.mockResolvedValue({ total: 12 });
+
+    await expect(controller.manualWalletAdjustmentSummary('PARTNER', 'provider-1')).resolves.toEqual({
+      total: 12,
+    });
+
+    expect(routeMetadata('manualWalletAdjustmentSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'wallet-adjustments/summary',
+    });
+    expect(admin.manualWalletAdjustmentSummary).toHaveBeenCalledWith({
+      ownerId: 'provider-1',
+      ownerType: 'PARTNER',
     });
   });
 

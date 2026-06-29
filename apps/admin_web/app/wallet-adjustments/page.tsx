@@ -9,12 +9,14 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge } from '../../components/status-badge';
 import type {
   AdminManualWalletAdjustmentDirection,
   AdminManualWalletAdjustmentOwnerType,
   AdminManualWalletAdjustmentPreview,
   AdminManualWalletAdjustmentRow,
+  AdminManualWalletAdjustmentSummary,
   AdminManualWalletAdjustmentType,
 } from '../../lib/admin-api';
 import { adminGet, adminPost } from '../../lib/admin-api';
@@ -47,16 +49,25 @@ const adjustmentTypeOptions: Array<{ label: string; value: AdminManualWalletAdju
   { label: 'Cash booking deduction - blocked here', value: 'CASH_BOOKING_DEDUCTION' },
 ];
 const WALLET_ADJUSTMENT_HISTORY_TAKE = 25;
+const WALLET_ADJUSTMENT_HISTORY_MAX_TAKE = 100;
 
 export default async function WalletAdjustmentsPage({ searchParams }: WalletAdjustmentsPageProps) {
   const params = searchParams ? await searchParams : {};
   const formState = readWalletAdjustmentFormState(params);
+  const historyFilters = readWalletAdjustmentHistoryFilters(params);
   const notice = walletAdjustmentNotice(readParam(params, 'adjustmentNotice'));
-  const [preview, adjustmentRows] = await Promise.all([
+  const [preview, adjustmentRows, adjustmentSummary] = await Promise.all([
     formState.intent === 'preview' ? fetchPreview(formState) : Promise.resolve(null),
-    fetchAdjustmentHistory(formState),
+    fetchAdjustmentHistory(formState, historyFilters),
+    fetchAdjustmentHistorySummary(formState),
   ]);
   const currency = preview?.currency ?? 'VND';
+  const adjustmentTotal = walletAdjustmentSummaryTotal(adjustmentSummary);
+  const historyPagination = buildWalletAdjustmentHistoryPagination(
+    adjustmentRows,
+    historyFilters,
+    adjustmentTotal,
+  );
 
   return (
     <AdminPageTemplate
@@ -182,17 +193,17 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
             : 'Showing the latest manual wallet adjustments only. Use owner id to narrow the list before reviewing old data.'
         }
-        resultLabel={`${adjustmentRows.length} row(s)`}
-        resultTone={adjustmentRows.length > 0 ? 'info' : 'warning'}
+        resultLabel={`${adjustmentTotal} total`}
+        resultTone={adjustmentTotal > 0 ? 'info' : 'warning'}
         title="Manual adjustment history"
       >
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No manual wallet adjustment ledger rows found for this filter."
             headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
-            rowCount={adjustmentRows.length}
+            rowCount={historyPagination.rows.length}
           >
-            {adjustmentRows.map((row) => (
+            {historyPagination.rows.map((row) => (
               <tr key={row.id}>
                 <td>
                   <strong>{formatDateTime(row.createdAt)}</strong>
@@ -227,6 +238,19 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {historyPagination.from} to {historyPagination.to} of {historyPagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={historyPagination.page}
+            ariaLabel="Manual wallet adjustment history pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => walletAdjustmentHistoryPageHref(formState, historyFilters, page)}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={historyPagination.totalPages}
+          />
+        </div>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -436,22 +460,54 @@ async function fetchPreview(formState: WalletAdjustmentFormState) {
   );
 }
 
-async function fetchAdjustmentHistory(formState: WalletAdjustmentFormState) {
+async function fetchAdjustmentHistory(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
   return adminGet<AdminManualWalletAdjustmentRow[]>(
-    buildAdjustmentHistoryHref(formState),
+    buildAdjustmentHistoryHref(formState, historyFilters),
     [],
   );
 }
 
-function buildAdjustmentHistoryHref(formState: WalletAdjustmentFormState) {
+async function fetchAdjustmentHistorySummary(formState: WalletAdjustmentFormState) {
+  return adminGet<AdminManualWalletAdjustmentSummary>(
+    buildAdjustmentHistorySummaryHref(formState),
+    { total: 0 },
+  );
+}
+
+function buildAdjustmentHistoryHref(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
   const params = new URLSearchParams();
   if (formState.ownerId) {
     params.set('ownerType', formState.ownerType);
     params.set('ownerId', formState.ownerId);
   }
-  params.set('take', String(WALLET_ADJUSTMENT_HISTORY_TAKE));
+  params.set('take', String(historyFilters.pageSize));
+  const skip = (historyFilters.page - 1) * historyFilters.pageSize;
+  if (skip > 0) {
+    params.set('skip', String(skip));
+  }
   return `/admin/wallet-adjustments?${params.toString()}`;
 }
+
+function buildAdjustmentHistorySummaryHref(formState: WalletAdjustmentFormState) {
+  const params = new URLSearchParams();
+  if (formState.ownerId) {
+    params.set('ownerType', formState.ownerType);
+    params.set('ownerId', formState.ownerId);
+  }
+  const query = params.toString();
+  return query ? `/admin/wallet-adjustments/summary?${query}` : '/admin/wallet-adjustments/summary';
+}
+
+type WalletAdjustmentHistoryFilters = {
+  readonly page: number;
+  readonly pageSize: number;
+};
 
 type WalletAdjustmentFormState = {
   readonly adjustmentType: AdminManualWalletAdjustmentType;
@@ -481,9 +537,77 @@ function readWalletAdjustmentFormState(params: Record<string, string | string[] 
   };
 }
 
+function readWalletAdjustmentHistoryFilters(
+  params: Record<string, string | string[] | undefined>,
+): WalletAdjustmentHistoryFilters {
+  return {
+    page: readPositiveIntParam(params, 'page', 1),
+    pageSize: Math.min(
+      readPositiveIntParam(params, 'pageSize', WALLET_ADJUSTMENT_HISTORY_TAKE),
+      WALLET_ADJUSTMENT_HISTORY_MAX_TAKE,
+    ),
+  };
+}
+
+function buildWalletAdjustmentHistoryPagination(
+  rows: readonly AdminManualWalletAdjustmentRow[],
+  filters: WalletAdjustmentHistoryFilters,
+  totalRows: number,
+) {
+  const safeTotalRows = Number.isFinite(totalRows) ? Math.max(0, Math.trunc(totalRows)) : 0;
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
+function walletAdjustmentSummaryTotal(summary: AdminManualWalletAdjustmentSummary) {
+  return typeof summary.total === 'number' && Number.isFinite(summary.total)
+    ? Math.max(0, Math.trunc(summary.total))
+    : 0;
+}
+
+function walletAdjustmentHistoryPageHref(
+  formState: WalletAdjustmentFormState,
+  filters: WalletAdjustmentHistoryFilters,
+  page: number,
+) {
+  const params = new URLSearchParams();
+  if (formState.ownerId) {
+    params.set('ownerType', formState.ownerType);
+    params.set('ownerId', formState.ownerId);
+  }
+  if (filters.pageSize !== WALLET_ADJUSTMENT_HISTORY_TAKE) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+  if (page > 1) {
+    params.set('page', String(page));
+  }
+  const query = params.toString();
+  return query ? `/wallet-adjustments?${query}` : '/wallet-adjustments';
+}
+
 function readParam(params: Record<string, string | string[] | undefined>, key: string, fallback = '') {
   const value = params[key];
   return Array.isArray(value) ? (value[0] ?? fallback) : (value ?? fallback);
+}
+
+function readPositiveIntParam(
+  params: Record<string, string | string[] | undefined>,
+  key: string,
+  fallback: number,
+) {
+  const value = Number.parseInt(readParam(params, key), 10);
+  return Number.isFinite(value) && value > 0 ? Math.trunc(value) : fallback;
 }
 
 function formatAccountName(value: string) {

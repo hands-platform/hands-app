@@ -368,6 +368,7 @@ type AdminPaymentOperationsQuery = {
 type AdminManualWalletAdjustmentQuery = {
   readonly ownerId?: string | null;
   readonly ownerType?: string | null;
+  readonly skip?: number | string | null;
   readonly take?: number | string | null;
 };
 type AdminPartnerWithholdingTaxQuery = {
@@ -6521,19 +6522,17 @@ export class AdminService {
       options.take ?? ADMIN_MANUAL_WALLET_ADJUSTMENT_DEFAULT_LIMIT,
       ADMIN_MANUAL_WALLET_ADJUSTMENT_MAX_LIMIT,
     );
+    const skip = boundedAdminListSkip(options.skip);
+    const fetchLimit = skip + take;
     const ownerType = normalizeManualWalletAdjustmentOwnerTypeFilter(options.ownerType);
     const ownerId = normalizeNullable(options.ownerId);
     const [customerRows, providerRows] = await Promise.all([
       ownerType === 'PARTNER'
         ? []
         : this.prisma.customerWalletLedgerEntry.findMany({
-            where: {
-              type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
-              sourceKey: { startsWith: 'manual-wallet-adjustment:' },
-              ...(ownerId ? { customerProfileId: ownerId } : {}),
-            },
+            where: manualWalletAdjustmentCustomerWhere(ownerId),
             orderBy: { createdAt: 'desc' },
-            take,
+            take: fetchLimit,
             select: {
               id: true,
               customerProfileId: true,
@@ -6561,19 +6560,9 @@ export class AdminService {
       ownerType === 'CUSTOMER'
         ? []
         : this.prisma.providerWalletLedgerEntry.findMany({
-            where: {
-              type: {
-                in: [
-                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
-                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
-                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
-                ],
-              },
-              sourceKey: { startsWith: 'manual-wallet-adjustment:' },
-              ...(ownerId ? { providerProfileId: ownerId } : {}),
-            },
+            where: manualWalletAdjustmentProviderWhere(ownerId),
             orderBy: { createdAt: 'desc' },
-            take,
+            take: fetchLimit,
             select: {
               id: true,
               providerProfileId: true,
@@ -6606,7 +6595,28 @@ export class AdminService {
       ...providerRows.map((row) => manualWalletAdjustmentProviderRow(row)),
     ]
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
-      .slice(0, take);
+      .slice(skip, skip + take);
+  }
+
+  async manualWalletAdjustmentSummary(options: AdminManualWalletAdjustmentQuery = {}) {
+    const ownerType = normalizeManualWalletAdjustmentOwnerTypeFilter(options.ownerType);
+    const ownerId = normalizeNullable(options.ownerId);
+    const [customerCount, providerCount] = await Promise.all([
+      ownerType === 'PARTNER'
+        ? Promise.resolve(0)
+        : this.prisma.customerWalletLedgerEntry.count({
+            where: manualWalletAdjustmentCustomerWhere(ownerId),
+          }),
+      ownerType === 'CUSTOMER'
+        ? Promise.resolve(0)
+        : this.prisma.providerWalletLedgerEntry.count({
+            where: manualWalletAdjustmentProviderWhere(ownerId),
+          }),
+    ]);
+
+    return {
+      total: customerCount + providerCount,
+    };
   }
 
   private async buildManualWalletAdjustmentPreviewForAdmin(
@@ -9486,6 +9496,32 @@ function normalizeManualWalletAdjustmentOwnerTypeFilter(value?: string | null) {
     return null;
   }
   return manualWalletAdjustmentOwnerType(normalized);
+}
+
+function manualWalletAdjustmentCustomerWhere(
+  ownerId: string | null,
+): Prisma.CustomerWalletLedgerEntryWhereInput {
+  return {
+    type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+    sourceKey: { startsWith: 'manual-wallet-adjustment:' },
+    ...(ownerId ? { customerProfileId: ownerId } : {}),
+  };
+}
+
+function manualWalletAdjustmentProviderWhere(
+  ownerId: string | null,
+): Prisma.ProviderWalletLedgerEntryWhereInput {
+  return {
+    type: {
+      in: [
+        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
+        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
+        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
+      ],
+    },
+    sourceKey: { startsWith: 'manual-wallet-adjustment:' },
+    ...(ownerId ? { providerProfileId: ownerId } : {}),
+  };
 }
 
 function manualWalletAdjustmentCustomerRow(row: {

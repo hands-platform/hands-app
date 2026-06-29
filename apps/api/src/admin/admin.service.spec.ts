@@ -6053,17 +6053,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listManualWalletAdjustments({ take: '5' })).resolves.toEqual([
-      expect.objectContaining({
-        id: 'provider-ledger-1',
-        ownerLabel: 'Smoke Partner',
-        ownerType: 'PARTNER',
-        direction: 'CREDIT',
-        adjustmentType: 'PARTNER_BONUS',
-        amount: 200000,
-        beforeBalance: 0,
-        afterBalance: 200000,
-      }),
+    await expect(service.listManualWalletAdjustments({ skip: '1', take: '1' })).resolves.toEqual([
       expect.objectContaining({
         id: 'customer-ledger-1',
         ownerLabel: 'Demo Customer',
@@ -6078,7 +6068,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.customerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 5,
+        take: 2,
         orderBy: { createdAt: 'desc' },
         where: expect.objectContaining({
           type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
@@ -6087,7 +6077,7 @@ describe('AdminService query orchestration', () => {
     );
     expect(prisma.providerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 5,
+        take: 2,
         orderBy: { createdAt: 'desc' },
         where: expect.objectContaining({
           type: {
@@ -6098,6 +6088,43 @@ describe('AdminService query orchestration', () => {
             ],
           },
         }),
+      }),
+    );
+  });
+
+  it('summarizes manual wallet adjustment history with count queries only', async () => {
+    const prisma = {
+      customerWalletLedgerEntry: {
+        count: vi.fn().mockResolvedValue(4),
+        findMany: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        count: vi.fn().mockResolvedValue(8),
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.manualWalletAdjustmentSummary({ ownerType: 'PARTNER', ownerId: 'provider-1' })).resolves.toEqual({
+      total: 8,
+    });
+    await expect(service.manualWalletAdjustmentSummary({ ownerType: 'CUSTOMER', ownerId: 'customer-1' })).resolves.toEqual({
+      total: 4,
+    });
+    await expect(service.manualWalletAdjustmentSummary()).resolves.toEqual({
+      total: 12,
+    });
+
+    expect(prisma.customerWalletLedgerEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ providerProfileId: 'provider-1' }),
+      }),
+    );
+    expect(prisma.customerWalletLedgerEntry.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ customerProfileId: 'customer-1' }),
       }),
     );
   });

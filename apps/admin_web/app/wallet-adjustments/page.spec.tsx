@@ -268,6 +268,7 @@ describe('WalletAdjustmentsPage', () => {
         walletDelta: 200000,
       },
     ]);
+    mockedAdminGet.mockResolvedValueOnce({ total: 1 });
 
     const page = await WalletAdjustmentsPage({
       searchParams: Promise.resolve({ ownerId: 'provider-1', ownerType: 'PARTNER' }),
@@ -278,10 +279,35 @@ describe('WalletAdjustmentsPage', () => {
       '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
       [],
     );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments/summary?ownerType=PARTNER&ownerId=provider-1',
+      { total: 0 },
+    );
     expect(markup).toContain('Manual adjustment history');
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-partner-1');
     expect(markup).toContain('Launch bonus');
+  });
+
+  it('uses server pagination for manual wallet adjustment history', async () => {
+    mockedAdminGet.mockResolvedValueOnce([]);
+    mockedAdminGet.mockResolvedValueOnce({ total: 62 });
+
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ page: '3', pageSize: '20' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments?take=20&skip=40',
+      [],
+    );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments/summary',
+      { total: 0 },
+    );
+    expect(markup).toMatch(/Showing\s+0\s+to\s+0\s+of\s+62\s+entries/);
+    expect(markup).toContain('/wallet-adjustments?pageSize=20&amp;page=4');
   });
 });

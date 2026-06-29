@@ -942,8 +942,17 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('ownerType') ownerType?: string,
     @Query('ownerId') ownerId?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listManualWalletAdjustments({ ownerId, ownerType, take });
+    return this.admin.listManualWalletAdjustments({ ownerId, ownerType, skip, take });
+  }
+
+  @Get('wallet-adjustments/summary')
+  manualWalletAdjustmentSummary(
+    @Query('ownerType') ownerType?: string,
+    @Query('ownerId') ownerId?: string,
+  ) {
+    return this.admin.manualWalletAdjustmentSummary({ ownerId, ownerType });
   }
 
   @Post('wallet-adjustments/preview')

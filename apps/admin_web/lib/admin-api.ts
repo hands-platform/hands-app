@@ -1384,6 +1384,10 @@ export type AdminManualWalletAdjustmentRow = {
   walletDelta: number;
 };
 
+export type AdminManualWalletAdjustmentSummary = {
+  total: number;
+};
+
 export type AdminEarningSummary = {
   count: number;
   grossAmount: number;
