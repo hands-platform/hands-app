@@ -33,7 +33,9 @@ const payoutActionMetadata: Record<PayoutConfirmationAction, PayoutActionMetadat
   failed: {
     confirmLabel: 'Mark failed',
     description: (batch) =>
-      `Mark payout batch ${shortId(batch.id)} as failed so finance can preserve the transfer failure before retry or rebuild.`,
+      `Mark payout batch ${shortId(
+        batch.id,
+      )} as failed so finance can preserve the transfer failure before retry or rebuild. Accounting boundary: no bank/cash or wallet liability movement is recorded; Partner wallet liability remains for retry or rebuild.`,
     title: (batch) => `Mark payout ${shortId(batch.id)} failed?`,
     tone: 'danger',
   },

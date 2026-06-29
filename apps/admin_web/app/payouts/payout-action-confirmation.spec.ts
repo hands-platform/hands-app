@@ -40,6 +40,14 @@ describe('payout action confirmation', () => {
     );
   });
 
+  it('builds a failed confirmation without implying bank or wallet movement', () => {
+    const confirmation = buildPayoutActionConfirmation([draftBatch], 'failed', draftBatch.id);
+
+    expect(confirmation?.description).toBe(
+      'Mark payout batch payout-b as failed so finance can preserve the transfer failure before retry or rebuild. Accounting boundary: no bank/cash or wallet liability movement is recorded; Partner wallet liability remains for retry or rebuild.',
+    );
+  });
+
   it('uses disabled reason and neutral tone when a payout action is blocked', () => {
     const confirmation = buildPayoutActionConfirmation([draftBatch], 'paid', draftBatch.id, {
       disabledReason: 'Resolve transfer reference before marking paid.',
