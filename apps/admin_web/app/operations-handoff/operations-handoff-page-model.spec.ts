@@ -43,7 +43,6 @@ describe('operations handoff page model', () => {
   it('keeps default handoff board requests bounded and scoped to today', () => {
     const hrefs = buildOperationsHandoffDataHrefs({});
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
-    const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
     const appSessionSummaryUrl = new URL(hrefs.appSessionSummaryHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
@@ -65,17 +64,12 @@ describe('operations handoff page model', () => {
     expect(earningsUrl.searchParams.get('range')).toBe('today');
     expect(earningsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
+    expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(refundsUrl.searchParams.get('range')).toBe('today');
     expect(refundsUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
-    expect(notificationsUrl.pathname).toBe('/admin/notifications');
-    expect(notificationsUrl.searchParams.get('take')).toBe('5');
-    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
-      true,
-    );
-    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
     expect(auditUrl.searchParams.get('take')).toBe('5');
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
@@ -88,6 +82,7 @@ describe('operations handoff page model', () => {
     const appSessionsUrl = new URL(hrefs.appSessionsHref!, 'http://admin.local');
     const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
     const customersUrl = new URL(hrefs.customersHref!, 'http://admin.local');
+    const notificationsUrl = new URL(hrefs.notificationsHref!, 'http://admin.local');
     const partnersUrl = new URL(hrefs.partnersHref!, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
@@ -99,6 +94,8 @@ describe('operations handoff page model', () => {
     expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
     expect(customersUrl.pathname).toBe('/admin/customers');
     expect(customersUrl.searchParams.get('take')).toBe('50');
+    expect(notificationsUrl.pathname).toBe('/admin/notifications');
+    expect(notificationsUrl.searchParams.get('take')).toBe('50');
     expect(partnersUrl.pathname).toBe('/admin/operations-handoff/providers');
     expect(partnersUrl.searchParams.get('take')).toBe('50');
     expect(paymentsUrl.searchParams.get('take')).toBe('50');
@@ -107,7 +104,6 @@ describe('operations handoff page model', () => {
   it('keeps selected handoff range on bounded list requests', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ range: '7d' });
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
-    const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const payoutBatchesUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
@@ -116,14 +112,10 @@ describe('operations handoff page model', () => {
     expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
+    expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
-    expect(notificationsUrl.searchParams.get('take')).toBe('5');
-    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(
-      true,
-    );
-    expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
   });
 
   it('prefers notification summary failed counts over bounded notification samples', () => {

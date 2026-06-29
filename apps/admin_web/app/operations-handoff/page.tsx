@@ -95,7 +95,9 @@ export default async function OperationsHandoffPage({
     adminGet<AdminPayment[]>(dataHrefs.paymentsHref, []),
     adminGet<AdminRefund[]>(dataHrefs.refundsHref, []),
     adminGet<AdminPayoutBatch[]>(dataHrefs.payoutBatchesHref, []),
-    adminGet<AdminNotification[]>(dataHrefs.notificationsHref, []),
+    dataHrefs.notificationsHref
+      ? adminGet<AdminNotification[]>(dataHrefs.notificationsHref, [])
+      : Promise.resolve<AdminNotification[]>([]),
     adminGet<AdminNotificationBoardSummary | null>(dataHrefs.notificationSummaryHref, null),
     dataHrefs.appSessionsHref
       ? adminGet<AdminAppSession[]>(dataHrefs.appSessionsHref, [])

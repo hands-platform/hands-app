@@ -45,7 +45,7 @@ export type OperationsHandoffDataHrefs = {
   readonly customersHref: string | null;
   readonly earningsHref: string;
   readonly notificationSummaryHref: string;
-  readonly notificationsHref: string;
+  readonly notificationsHref: string | null;
   readonly partnersHref: string | null;
   readonly paymentsHref: string;
   readonly payoutBatchesHref: string;
@@ -137,11 +137,14 @@ export function buildOperationsHandoffDataHrefs(
       { take: String(limits.finance) },
       range,
     ),
-    notificationsHref: buildDateScopedHref(
-      '/admin/notifications',
-      { take: String(limits.notifications) },
-      range,
-    ),
+    notificationsHref:
+      detailsMode === 'all'
+        ? buildDateScopedHref(
+            '/admin/notifications',
+            { take: String(limits.notifications) },
+            range,
+          )
+        : null,
     notificationSummaryHref: buildDateScopedHref('/admin/notifications/summary', {}, range),
     partnersHref:
       detailsMode === 'all'
