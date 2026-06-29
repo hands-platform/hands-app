@@ -23,15 +23,24 @@ const adjustmentTypes = new Set<AdminManualWalletAdjustmentType>([
   'RECEIVABLE_WRITE_OFF',
   'MANUAL_REVERSAL',
 ]);
+const HIGH_AMOUNT_ATTACHMENT_THRESHOLD = 10_000_000;
+const ATTACHMENT_REQUIRED_ADJUSTMENT_TYPES = new Set<AdminManualWalletAdjustmentType>([
+  'RECEIVABLE_WRITE_OFF',
+]);
+const SETTLEMENT_ONLY_ADJUSTMENT_TYPES = new Set<AdminManualWalletAdjustmentType>([
+  'CASH_BOOKING_DEDUCTION',
+]);
 
 export async function createManualWalletAdjustment(formData: FormData) {
   let payload: ReturnType<typeof readManualWalletAdjustmentPayload>;
 
   try {
     payload = readManualWalletAdjustmentPayload(formData, true);
-  } catch {
+  } catch (error) {
+    const notice =
+      error instanceof WalletAdjustmentValidationError ? error.notice : 'failed';
     return redirect(
-      walletAdjustmentNoticeRedirect('failed', readManualWalletAdjustmentRedirectContext(formData)),
+      walletAdjustmentNoticeRedirect(notice, readManualWalletAdjustmentRedirectContext(formData)),
     );
   }
 
@@ -54,7 +63,13 @@ export async function createManualWalletAdjustment(formData: FormData) {
   redirect(walletAdjustmentNoticeRedirect('created', payload));
 }
 
-type WalletAdjustmentNotice = 'admin-auth' | 'created' | 'failed';
+type WalletAdjustmentNotice =
+  | 'admin-auth'
+  | 'approval-required'
+  | 'attachment-required'
+  | 'created'
+  | 'failed'
+  | 'settlement-required';
 
 type WalletAdjustmentRedirectContext = {
   readonly ownerId?: string;
@@ -98,8 +113,16 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
   const attachmentUrl = readOptionalString(formData, 'attachmentUrl');
 
+  if (SETTLEMENT_ONLY_ADJUSTMENT_TYPES.has(adjustmentType)) {
+    throw new WalletAdjustmentValidationError('settlement-required');
+  }
+
   if (requireApproval && !approvalId) {
-    throw new Error('Approval id is required');
+    throw new WalletAdjustmentValidationError('approval-required');
+  }
+
+  if (requiresAttachmentEvidence(adjustmentType, amount) && !attachmentUrl) {
+    throw new WalletAdjustmentValidationError('attachment-required');
   }
 
   return {
@@ -147,4 +170,20 @@ function readEnum<T extends string>(
     throw new Error(`${label} is invalid`);
   }
   return value as T;
+}
+
+function requiresAttachmentEvidence(
+  adjustmentType: AdminManualWalletAdjustmentType,
+  amount: number,
+) {
+  return (
+    amount >= HIGH_AMOUNT_ATTACHMENT_THRESHOLD ||
+    ATTACHMENT_REQUIRED_ADJUSTMENT_TYPES.has(adjustmentType)
+  );
+}
+
+class WalletAdjustmentValidationError extends Error {
+  constructor(readonly notice: WalletAdjustmentNotice) {
+    super(notice);
+  }
 }

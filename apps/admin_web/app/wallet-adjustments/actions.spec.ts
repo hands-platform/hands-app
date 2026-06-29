@@ -121,6 +121,73 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
+  it('redirects missing approvals before posting to the Admin API', async () => {
+    const formData = new FormData();
+    formData.set('ownerType', 'PARTNER');
+    formData.set('ownerId', 'provider-1');
+    formData.set('direction', 'CREDIT');
+    formData.set('adjustmentType', 'PARTNER_BONUS');
+    formData.set('amount', '200000');
+    formData.set('reason', 'Needs approval');
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=approval-required'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+  });
+
+  it('requires attachment evidence before posting high amount or receivable write-off adjustments', async () => {
+    const highAmount = new FormData();
+    highAmount.set('ownerType', 'PARTNER');
+    highAmount.set('ownerId', 'provider-1');
+    highAmount.set('direction', 'CREDIT');
+    highAmount.set('adjustmentType', 'PARTNER_BONUS');
+    highAmount.set('amount', '10000000');
+    highAmount.set('approvalId', 'approval-2026-06');
+    highAmount.set('reason', 'High amount adjustment');
+
+    await createManualWalletAdjustment(highAmount);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
+
+    vi.clearAllMocks();
+
+    const writeOff = new FormData();
+    writeOff.set('ownerType', 'PARTNER');
+    writeOff.set('ownerId', 'provider-1');
+    writeOff.set('direction', 'CREDIT');
+    writeOff.set('adjustmentType', 'RECEIVABLE_WRITE_OFF');
+    writeOff.set('amount', '100000');
+    writeOff.set('approvalId', 'approval-2026-06');
+    writeOff.set('reason', 'Write off approved by finance');
+
+    await createManualWalletAdjustment(writeOff);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
+  });
+
+  it('blocks cash booking deduction from the manual wallet adjustment action', async () => {
+    const formData = new FormData();
+    formData.set('ownerType', 'PARTNER');
+    formData.set('ownerId', 'provider-1');
+    formData.set('direction', 'DEBIT');
+    formData.set('adjustmentType', 'CASH_BOOKING_DEDUCTION');
+    formData.set('amount', '200000');
+    formData.set('approvalId', 'approval-2026-06');
+    formData.set('reason', 'Cash booking settlement should use settlement flow');
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=settlement-required'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+  });
+
   it('exports only async server actions from the server action module', () => {
     expect(Object.keys(walletAdjustmentActions)).toEqual(['createManualWalletAdjustment']);
   });

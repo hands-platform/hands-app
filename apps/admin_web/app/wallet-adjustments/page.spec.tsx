@@ -113,6 +113,119 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('200.000 VND');
   });
 
+  it('keeps create disabled when preview requires an attachment that is not present', async () => {
+    mockedAdminPost.mockResolvedValue({
+      accountingEntries: [
+        {
+          accountDebit: 'partner_bonus_expense',
+          accountCredit: 'partner_wallet_liability',
+          amount: 10000000,
+        },
+      ],
+      adjustmentType: 'PARTNER_BONUS',
+      afterBalance: 10000000,
+      affects: {
+        bankCash: false,
+        expense: true,
+        partnerReceivable: false,
+        revenue: false,
+        taxPayable: false,
+        walletLiability: true,
+      },
+      amount: 10000000,
+      approvalId: 'approval-1',
+      bankCashAmount: 0,
+      beforeBalance: 0,
+      companyOutputVat: 0,
+      currency: 'VND',
+      direction: 'CREDIT',
+      expenseAmount: 10000000,
+      ownerId: 'provider-1',
+      ownerType: 'PARTNER',
+      platformRevenueAmount: 0,
+      reason: 'High amount correction',
+      requiresApproval: true,
+      requiresAttachment: true,
+      revenueAmount: 0,
+      walletDelta: 10000000,
+      walletLiabilityIncrease: 10000000,
+    });
+
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({
+        adjustmentType: 'PARTNER_BONUS',
+        amount: '10000000',
+        approvalId: 'approval-1',
+        direction: 'CREDIT',
+        intent: 'preview',
+        ownerId: 'provider-1',
+        ownerType: 'PARTNER',
+        reason: 'High amount correction',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Attachment required');
+    expect(markup).toContain('disabled="" type="submit">Create manual adjustment');
+  });
+
+  it('keeps create disabled when preview shows booking settlement accounting impact', async () => {
+    mockedAdminPost.mockResolvedValue({
+      accountingEntries: [
+        {
+          accountDebit: 'partner_wallet_liability',
+          accountCredit: 'platform_fee_net_revenue',
+          amount: 200000,
+        },
+      ],
+      adjustmentType: 'CASH_BOOKING_DEDUCTION',
+      afterBalance: 300000,
+      affects: {
+        bankCash: false,
+        expense: false,
+        partnerReceivable: false,
+        revenue: true,
+        taxPayable: true,
+        walletLiability: true,
+      },
+      amount: 200000,
+      approvalId: 'approval-1',
+      bankCashAmount: 0,
+      beforeBalance: 500000,
+      companyOutputVat: 16000,
+      currency: 'VND',
+      direction: 'DEBIT',
+      expenseAmount: 0,
+      ownerId: 'provider-1',
+      ownerType: 'PARTNER',
+      platformRevenueAmount: 184000,
+      reason: 'Cash booking settlement attempt',
+      requiresApproval: true,
+      requiresAttachment: false,
+      revenueAmount: 184000,
+      walletDelta: -200000,
+      walletLiabilityDecrease: 200000,
+    });
+
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({
+        adjustmentType: 'CASH_BOOKING_DEDUCTION',
+        amount: '200000',
+        approvalId: 'approval-1',
+        direction: 'DEBIT',
+        intent: 'preview',
+        ownerId: 'provider-1',
+        ownerType: 'PARTNER',
+        reason: 'Cash booking settlement attempt',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Use booking settlement');
+    expect(markup).toContain('Blocked accounting impact');
+    expect(markup).toContain('disabled="" type="submit">Create manual adjustment');
+  });
+
   it('renders recent manual wallet adjustment history from the Admin API', async () => {
     mockedAdminGet.mockResolvedValueOnce([
       {

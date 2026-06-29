@@ -369,16 +369,25 @@ function CreateAdjustmentForm({
 }) {
   const missingRequiredAttachment = preview.requiresAttachment && !formState.attachmentUrl;
   const missingApproval = !formState.approvalId;
+  const bookingSettlementOnly = preview.adjustmentType === 'CASH_BOOKING_DEDUCTION';
+  const blockedAccountingImpact =
+    bookingSettlementOnly ||
+    preview.affects.revenue ||
+    preview.affects.taxPayable ||
+    preview.affects.bankCash;
 
   return (
     <form action={createManualWalletAdjustment} className="participant-list">
       <HiddenAdjustmentInputs formState={formState} />
-      {preview.affects.revenue || preview.affects.taxPayable || preview.affects.bankCash ? (
+      {blockedAccountingImpact ? (
         <StatusBadge tone="danger">Blocked accounting impact</StatusBadge>
       ) : null}
+      {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
       {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
       {missingApproval ? <StatusBadge tone="warning">Approval id required</StatusBadge> : null}
-      <AdminFormControlButton disabled={missingApproval || missingRequiredAttachment}>
+      <AdminFormControlButton
+        disabled={missingApproval || missingRequiredAttachment || blockedAccountingImpact}
+      >
         Create manual adjustment
       </AdminFormControlButton>
     </form>
@@ -528,6 +537,35 @@ function walletAdjustmentNotice(notice: string) {
       badge: 'Blocked',
       detail: 'No wallet ledger was written. Check owner id, approval id, attachment, and closed-period rules.',
       title: 'Manual adjustment was not saved',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (notice === 'approval-required') {
+    return {
+      badge: 'Approval',
+      detail: 'No wallet ledger was written. Every manual wallet adjustment needs an approval id.',
+      title: 'Approval id is required',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (notice === 'attachment-required') {
+    return {
+      badge: 'Evidence',
+      detail:
+        'No wallet ledger was written. High amount adjustments and receivable write-offs need an attachment URL.',
+      title: 'Attachment evidence is required',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (notice === 'settlement-required') {
+    return {
+      badge: 'Settlement',
+      detail:
+        'No wallet ledger was written. Cash booking deductions must use booking settlement logic so revenue and tax are calculated correctly.',
+      title: 'Use booking settlement instead',
       tone: 'danger' as const,
     };
   }
