@@ -45,7 +45,6 @@ describe('operations handoff page model', () => {
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
-    const appSessionsUrl = new URL(hrefs.appSessionsHref, 'http://admin.local');
     const appSessionSummaryUrl = new URL(hrefs.appSessionSummaryHref, 'http://admin.local');
     const customersUrl = new URL(hrefs.customersHref, 'http://admin.local');
     const partnersUrl = new URL(hrefs.partnersHref, 'http://admin.local');
@@ -57,7 +56,7 @@ describe('operations handoff page model', () => {
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
     expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
     expect(bookingsUrl.searchParams.get('take')).toBe('10');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('5');
+    expect(hrefs.appSessionsHref).toBeNull();
     expect(appSessionSummaryUrl.pathname).toBe('/admin/app-sessions/summary');
     expect(appSessionSummaryUrl.searchParams.toString()).toBe('');
     expect(hrefs.chatArchiveHref).toBeNull();
@@ -89,10 +88,13 @@ describe('operations handoff page model', () => {
   it('keeps retained chat archive behind full handoff details', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ details: 'all', range: '7d' });
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
+    const appSessionsUrl = new URL(hrefs.appSessionsHref!, 'http://admin.local');
     const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('take')).toBe('50');
+    expect(appSessionsUrl.pathname).toBe('/admin/app-sessions');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
     expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
     expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
     expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
