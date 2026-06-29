@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminPost } from '../../lib/admin-api';
+import { adminPost, adminPostOrThrow } from '../../lib/admin-api';
 
 export async function settleCashFeeDebt(formData: FormData) {
   const earningId = String(formData.get('earningId') ?? '').trim();
@@ -22,6 +22,44 @@ export async function settleCashFeeDebt(formData: FormData) {
     },
     null,
   );
+
+  revalidatePath('/cash-settlements');
+  revalidatePath('/earnings');
+  revalidatePath('/payments');
+  revalidatePath('/bookings');
+  revalidatePath('/payouts');
+  revalidatePath('/partner-controls');
+  revalidatePath('/partners');
+  revalidatePath('/audit-log');
+}
+
+export async function recordPartnerBankDeposit(formData: FormData) {
+  const providerProfileId = String(formData.get('providerProfileId') ?? '').trim();
+  const amount = Number(formData.get('amount'));
+  const bankTransactionId = String(formData.get('bankTransactionId') ?? '').trim();
+  const depositDate = String(formData.get('depositDate') ?? '').trim();
+  const bankAccount = String(formData.get('bankAccount') ?? '').trim();
+  const attachmentFileId = String(formData.get('attachmentFileId') ?? '').trim();
+  const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
+  const notes = String(formData.get('notes') ?? '').trim();
+
+  if (!providerProfileId || !Number.isFinite(amount) || amount <= 0 || !bankTransactionId || !depositDate) {
+    throw new Error('Partner bank deposit requires partner, amount, transaction id, and deposit date');
+  }
+  if (!attachmentFileId && !attachmentUrl) {
+    throw new Error('Partner bank deposit requires attachment evidence');
+  }
+
+  await adminPostOrThrow('/admin/provider-wallet/deposits', {
+    providerProfileId,
+    amount,
+    bankTransactionId,
+    depositDate,
+    bankAccount: bankAccount || undefined,
+    attachmentFileId: attachmentFileId || undefined,
+    attachmentUrl: attachmentUrl || undefined,
+    notes: notes || undefined,
+  });
 
   revalidatePath('/cash-settlements');
   revalidatePath('/earnings');

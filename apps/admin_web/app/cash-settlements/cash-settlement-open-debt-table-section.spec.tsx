@@ -15,9 +15,12 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('Final acceptance blocked');
     expect(rendered).toContain('Cash settlement action execution map');
+    expect(rendered).toContain('Record bank deposit');
     expect(rendered).toContain('Review settlement');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1', '/bookings/booking-1']));
-    expect(inputDefaultsIn(section)).toEqual(expect.arrayContaining(['earning-1', 'HANDS-CASH-BOOKIN']));
+    expect(inputDefaultsIn(section)).toEqual(
+      expect.arrayContaining(['earning-1', 'provider-1', '500000', 'HANDS-CASH-BOOKIN']),
+    );
   });
 
   it('renders empty state when no open cash debt rows exist', () => {
@@ -43,6 +46,7 @@ function buildRow(): CashSettlementOpenDebtTableRow {
     bookingLabel: 'bookin',
     createdAtLabel: '26h ago',
     debtAmountLabel: '500.000 VND',
+    depositAmountDefault: '500000',
     debtOrigin: 'Partner collected customer cash; HANDS fee/tax is still unpaid.',
     earningId: 'earning-1',
     lastLedgerRef: 'ledger-1',
@@ -50,6 +54,7 @@ function buildRow(): CashSettlementOpenDebtTableRow {
     partnerHref: '/partners/partner-1',
     paymentMethod: 'CASH',
     platformFeeLabel: '400.000 VND',
+    providerProfileId: 'provider-1',
     providerName: 'Partner One',
     providerPhone: '+84900000000',
     serviceLabel: 'Massage / 60 min',

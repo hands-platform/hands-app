@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable } from '../../components/admin-data-table';
+import { recordPartnerBankDeposit } from './actions';
 
 export type CashSettlementOpenDebtActionExecutionRow = {
   readonly action: string;
@@ -17,6 +18,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly bookingLabel: string;
   readonly createdAtLabel: string;
   readonly debtAmountLabel: string;
+  readonly depositAmountDefault: string;
   readonly debtOrigin: string;
   readonly earningId: string;
   readonly lastLedgerRef: string | null;
@@ -24,6 +26,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly partnerHref: string;
   readonly paymentMethod: string;
   readonly platformFeeLabel: string;
+  readonly providerProfileId: string;
   readonly providerName: string;
   readonly providerPhone: string;
   readonly serviceLabel: string;
@@ -113,6 +116,39 @@ export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenD
               </div>
             </td>
             <td>
+              <form action={recordPartnerBankDeposit} className="inline-form">
+                <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
+                <input
+                  aria-label="Deposit amount"
+                  name="amount"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue={row.depositAmountDefault}
+                  required
+                />
+                <input
+                  aria-label="Bank transaction id"
+                  name="bankTransactionId"
+                  placeholder="Bank transaction id"
+                  defaultValue={row.settlementReference}
+                  required
+                />
+                <input aria-label="Deposit date" name="depositDate" type="datetime-local" required />
+                <input aria-label="Bank account" name="bankAccount" placeholder="Bank account" />
+                <input aria-label="Attachment evidence" name="attachmentUrl" placeholder="Evidence file URL" required />
+                <input
+                  aria-label="Deposit notes"
+                  name="notes"
+                  placeholder="Deposit notes"
+                  defaultValue={row.settlementNotesDefault}
+                />
+                <button type="submit">Record bank deposit</button>
+              </form>
+              <p className="muted admin-mt-8">
+                Partner deposit is not platform revenue. It first settles negative wallet receivable, then becomes
+                partner wallet liability.
+              </p>
               <form action="/cash-settlements" className="inline-form">
                 <input type="hidden" name="confirm" value="settle" />
                 <input type="hidden" name="earningId" value={row.earningId} />
