@@ -29,6 +29,8 @@ import {
 import { PayoutBatchListSection } from './payout-batch-list-section';
 import type { PayoutBatchTableRow } from './payout-batch-table';
 import { PayoutCommandQueueSection, type PayoutCommandSignal } from './payout-command-queue-section';
+import { buildPayoutPartnerFinanceQueueRows } from './payout-partner-finance-queue-model';
+import { PayoutPartnerFinanceQueueSection } from './payout-partner-finance-queue-section';
 import {
   PayoutMoneyFlowSection,
   type PayoutMoneyFlowCard,
@@ -77,6 +79,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const marketplaceUnblockBridge = buildPayoutMarketplaceUnblockBridge(batches, earnings, summary);
   const releaseQueue = buildPayoutReleaseQueue(batches);
   const releaseBlockerRows = buildPayoutReleaseBlockerRows(releaseQueue);
+  const partnerFinanceQueueRows = buildPayoutPartnerFinanceQueueRows(batches);
   const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
   const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
   const confirmationBatchId = readSearchParam(params.payoutBatchId);
@@ -281,6 +284,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       <PayoutInclusionAuditSection audit={inclusionAudit} />
 
       <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
+
+      <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
 
       <PayoutServiceEvidenceSection
         batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}

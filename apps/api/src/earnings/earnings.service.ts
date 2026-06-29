@@ -271,12 +271,43 @@ const adminEarningListInclude = {
 
 function adminProviderPayoutInclude() {
   return {
+    bankAccounts: {
+      orderBy: [{ isPrimary: 'desc' as const }, { updatedAt: 'desc' as const }],
+      take: 3,
+      select: {
+        id: true,
+        bankName: true,
+        accountNumberMasked: true,
+        accountNumberLast4: true,
+        accountHolderName: true,
+        status: true,
+        isPrimary: true,
+        reviewedAt: true,
+        rejectionReason: true,
+      },
+    },
     sanctions: {
       orderBy: { startsAt: 'desc' as const },
       take: 3,
       where: activePayoutHoldWhere(),
     },
     user: { select: { fullName: true, id: true, phone: true } },
+    walletLedgerEntries: {
+      orderBy: { createdAt: 'desc' as const },
+      take: 5,
+      select: {
+        id: true,
+        type: true,
+        sourceKey: true,
+        amount: true,
+        currency: true,
+        reference: true,
+        notes: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
   } satisfies Prisma.ProviderProfileInclude;
 }
 

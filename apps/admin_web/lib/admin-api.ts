@@ -1290,9 +1290,21 @@ export type AdminPayoutBatch = {
   createdAt: string;
   paidAt?: string | null;
   providerProfile?: {
+    bankAccounts?: Array<{
+      id: string;
+      bankName: string;
+      accountNumberMasked?: string | null;
+      accountNumberLast4?: string | null;
+      accountHolderName: string;
+      status: string;
+      isPrimary: boolean;
+      reviewedAt?: string | null;
+      rejectionReason?: string | null;
+    }>;
     displayName?: string | null;
     user?: { phone?: string; fullName?: string | null };
     sanctions?: AdminProviderSanction[];
+    walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
   };
   earnings?: AdminEarning[];
   withholdingLogs?: AdminWithholdingLog[];

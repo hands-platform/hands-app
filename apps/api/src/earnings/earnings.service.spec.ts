@@ -232,6 +232,16 @@ describe('EarningsService payout batches', () => {
               }),
             }),
           }),
+          providerProfile: expect.objectContaining({
+            include: expect.objectContaining({
+              bankAccounts: expect.objectContaining({
+                take: 3,
+              }),
+              walletLedgerEntries: expect.objectContaining({
+                take: 5,
+              }),
+            }),
+          }),
         }),
       }),
     );

@@ -1,0 +1,170 @@
+import type { AdminPayoutBatch, AdminProviderSanction } from '../../lib/admin-api';
+import { formatMoney } from '../../lib/admin-format';
+
+type PayoutPartnerBankAccount = NonNullable<NonNullable<AdminPayoutBatch['providerProfile']>['bankAccounts']>[number];
+type PayoutPartnerFinanceTone = 'danger' | 'success' | 'warning';
+
+export type PayoutPartnerFinanceQueueRow = {
+  readonly actionLabel: string;
+  readonly amountLabel: string;
+  readonly batchId: string;
+  readonly detail: string;
+  readonly evidenceLabel: string;
+  readonly href: string;
+  readonly id: string;
+  readonly partnerLabel: string;
+  readonly tone: PayoutPartnerFinanceTone;
+  readonly title: string;
+};
+
+export function buildPayoutPartnerFinanceQueueRows(
+  batches: readonly AdminPayoutBatch[],
+): PayoutPartnerFinanceQueueRow[] {
+  return batches.flatMap((batch) => payoutPartnerFinanceRows(batch));
+}
+
+function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinanceQueueRow[] {
+  const rows: PayoutPartnerFinanceQueueRow[] = [];
+  const partnerLabel = batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner';
+  const amountLabel = formatMoney(batch.totalNetAmount, batch.currency);
+  const activeHold = activePayoutHold(batch.providerProfile?.sanctions ?? []);
+  const approvedBank = firstBankByStatus(batch, 'APPROVED');
+  const rejectedBank = firstBankByStatus(batch, 'REJECTED');
+  const pendingBank = firstBankByStatus(batch, 'PENDING_REVIEW');
+  const recentWalletMovement = recentWalletMovementAmount(batch);
+  const isTerminal = batch.status === 'PAID' || batch.status === 'CANCELLED';
+
+  if (rejectedBank) {
+    rows.push({
+      actionLabel: 'Request corrected bank details',
+      amountLabel,
+      batchId: batch.id,
+      detail:
+        rejectedBank.rejectionReason ??
+        'Withdrawal bank details were rejected. Ask the Partner to correct them before payout release.',
+      evidenceLabel: bankEvidenceLabel(rejectedBank),
+      href: `/partners/${batch.providerProfileId}#bank`,
+      id: `${batch.id}-bank-correction`,
+      partnerLabel,
+      title: 'Bank correction required',
+      tone: 'danger',
+    });
+  } else if (pendingBank) {
+    rows.push({
+      actionLabel: 'Review bank details',
+      amountLabel,
+      batchId: batch.id,
+      detail:
+        'Partner withdrawal bank details are waiting for admin review before manual payout release.',
+      evidenceLabel: bankEvidenceLabel(pendingBank),
+      href: `/partners/${batch.providerProfileId}#bank`,
+      id: `${batch.id}-bank-review`,
+      partnerLabel,
+      title: 'Bank details pending',
+      tone: 'warning',
+    });
+  } else if (!approvedBank && !isTerminal) {
+    rows.push({
+      actionLabel: 'Ask Partner to add bank details',
+      amountLabel,
+      batchId: batch.id,
+      detail: 'No approved withdrawal bank details are loaded for this partner payout batch.',
+      evidenceLabel: 'Missing approved bank',
+      href: `/partners/${batch.providerProfileId}#bank`,
+      id: `${batch.id}-bank-missing`,
+      partnerLabel,
+      title: 'Bank details missing',
+      tone: 'warning',
+    });
+  }
+
+  if (activeHold) {
+    rows.push({
+      actionLabel: 'Open partner controls',
+      amountLabel,
+      batchId: batch.id,
+      detail: activeHold.reason ?? 'Partner has an active payout hold.',
+      evidenceLabel: 'Active payout hold',
+      href: `/partner-controls?q=${encodeURIComponent(batch.providerProfileId)}`,
+      id: `${batch.id}-payout-hold`,
+      partnerLabel,
+      title: 'Payout hold',
+      tone: 'danger',
+    });
+  }
+
+  if (recentWalletMovement < 0) {
+    rows.push({
+      actionLabel: 'Open cash settlements',
+      amountLabel,
+      batchId: batch.id,
+      detail:
+        'Recent partner wallet ledger evidence is negative. Confirm deposit or admin offset before payout release.',
+      evidenceLabel: `Recent wallet movement ${formatMoney(recentWalletMovement, batch.currency)}`,
+      href: '/cash-settlements',
+      id: `${batch.id}-wallet-negative`,
+      partnerLabel,
+      title: 'Wallet recovery check',
+      tone: 'danger',
+    });
+  }
+
+  if (!isTerminal && !batch.transferRef) {
+    rows.push({
+      actionLabel: 'Save transfer reference',
+      amountLabel,
+      batchId: batch.id,
+      detail: 'A bank transfer reference must be saved before this batch can be marked paid.',
+      evidenceLabel: 'Missing transfer ref',
+      href: `#${batch.id}`,
+      id: `${batch.id}-transfer-ref`,
+      partnerLabel,
+      title: 'Transfer reference needed',
+      tone: 'warning',
+    });
+  }
+
+  if (!rows.length && approvedBank && !isTerminal) {
+    rows.push({
+      actionLabel: 'Review transfer execution',
+      amountLabel,
+      batchId: batch.id,
+      detail:
+        'Approved bank details and transfer reference are available. Finance can review execution before marking paid.',
+      evidenceLabel: 'Approved bank details',
+      href: `#${batch.id}`,
+      id: `${batch.id}-withdrawal-ready`,
+      partnerLabel,
+      title: 'Withdrawal ready',
+      tone: 'success',
+    });
+  }
+
+  return rows;
+}
+
+function firstBankByStatus(batch: AdminPayoutBatch, status: string) {
+  const bankAccounts = batch.providerProfile?.bankAccounts ?? [];
+  return bankAccounts.find((account) => account.status === status && account.isPrimary) ??
+    bankAccounts.find((account) => account.status === status);
+}
+
+function bankEvidenceLabel(bank: PayoutPartnerBankAccount) {
+  return `${bank.bankName || 'Bank missing'} / ${bank.accountHolderName || 'Holder missing'}`;
+}
+
+function activePayoutHold(sanctions: readonly AdminProviderSanction[]) {
+  const now = Date.now();
+  return sanctions.find((sanction) => {
+    if (sanction.type !== 'PAYOUT_HOLD' || sanction.status !== 'ACTIVE') return false;
+    if (!sanction.expiresAt) return true;
+    const expiresAt = Date.parse(sanction.expiresAt);
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
+}
+
+function recentWalletMovementAmount(batch: AdminPayoutBatch) {
+  return (batch.providerProfile?.walletLedgerEntries ?? [])
+    .slice(0, 5)
+    .reduce((total, row) => total + row.amount, 0);
+}
