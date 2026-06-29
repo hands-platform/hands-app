@@ -1360,6 +1360,30 @@ export type AdminManualWalletAdjustmentResult = {
   preview: AdminManualWalletAdjustmentPreview;
 };
 
+export type AdminManualWalletAdjustmentRow = {
+  adjustmentType: string;
+  affects?: Record<string, unknown>;
+  afterBalance?: number | null;
+  amount: number;
+  approvalId?: string | null;
+  attachmentUrl?: string | null;
+  beforeBalance?: number | null;
+  createdAt?: string;
+  currency: string;
+  direction: string;
+  id: string;
+  ledgerType: string;
+  monthlyPeriod?: string | null;
+  ownerId: string;
+  ownerLabel: string;
+  ownerPhone: string;
+  ownerType: AdminManualWalletAdjustmentOwnerType;
+  reason?: string | null;
+  sourceKey: string;
+  updatedAt?: string;
+  walletDelta: number;
+};
+
 export type AdminEarningSummary = {
   count: number;
   grossAmount: number;

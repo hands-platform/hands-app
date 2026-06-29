@@ -14,10 +14,11 @@ import type {
   AdminManualWalletAdjustmentDirection,
   AdminManualWalletAdjustmentOwnerType,
   AdminManualWalletAdjustmentPreview,
+  AdminManualWalletAdjustmentRow,
   AdminManualWalletAdjustmentType,
 } from '../../lib/admin-api';
-import { adminPost } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
+import { adminGet, adminPost } from '../../lib/admin-api';
+import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createManualWalletAdjustment } from './actions';
 
 type WalletAdjustmentsPageProps = {
@@ -45,12 +46,16 @@ const adjustmentTypeOptions: Array<{ label: string; value: AdminManualWalletAdju
   { label: 'Manual reversal', value: 'MANUAL_REVERSAL' },
   { label: 'Cash booking deduction - blocked here', value: 'CASH_BOOKING_DEDUCTION' },
 ];
+const WALLET_ADJUSTMENT_HISTORY_TAKE = 25;
 
 export default async function WalletAdjustmentsPage({ searchParams }: WalletAdjustmentsPageProps) {
   const params = searchParams ? await searchParams : {};
   const formState = readWalletAdjustmentFormState(params);
   const notice = walletAdjustmentNotice(readParam(params, 'adjustmentNotice'));
-  const preview = formState.intent === 'preview' ? await fetchPreview(formState) : null;
+  const [preview, adjustmentRows] = await Promise.all([
+    formState.intent === 'preview' ? fetchPreview(formState) : Promise.resolve(null),
+    fetchAdjustmentHistory(formState),
+  ]);
   const currency = preview?.currency ?? 'VND';
 
   return (
@@ -168,6 +173,60 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           <AdminFormControlButton>Preview accounting</AdminFormControlButton>
         </form>
         <AdjustmentPolicyChecklist />
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="admin-mt-16"
+        description={
+          formState.ownerId
+            ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
+            : 'Showing the latest manual wallet adjustments only. Use owner id to narrow the list before reviewing old data.'
+        }
+        resultLabel={`${adjustmentRows.length} row(s)`}
+        resultTone={adjustmentRows.length > 0 ? 'info' : 'warning'}
+        title="Manual adjustment history"
+      >
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage="No manual wallet adjustment ledger rows found for this filter."
+            headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
+            rowCount={adjustmentRows.length}
+          >
+            {adjustmentRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{formatDateTime(row.createdAt)}</strong>
+                  <p className="muted">{row.ledgerType}</p>
+                </td>
+                <td>
+                  <strong>{row.ownerLabel}</strong>
+                  <p className="muted">
+                    {row.ownerType} / {row.ownerPhone}
+                  </p>
+                </td>
+                <td>
+                  <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
+                    {row.direction}
+                  </StatusBadge>
+                  <p className="muted admin-mt-6">{row.adjustmentType}</p>
+                </td>
+                <td>
+                  <strong>{formatMoney(row.amount, row.currency)}</strong>
+                  <p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>
+                </td>
+                <td>
+                  <strong>{row.approvalId ?? 'Missing approval'}</strong>
+                  <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
+                </td>
+                <td>
+                  <strong>{formatBalanceChange(row)}</strong>
+                  <p className="muted">{walletImpactLabel(row)}</p>
+                </td>
+                <td>{row.reason ?? 'No reason stored'}</td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -368,6 +427,23 @@ async function fetchPreview(formState: WalletAdjustmentFormState) {
   );
 }
 
+async function fetchAdjustmentHistory(formState: WalletAdjustmentFormState) {
+  return adminGet<AdminManualWalletAdjustmentRow[]>(
+    buildAdjustmentHistoryHref(formState),
+    [],
+  );
+}
+
+function buildAdjustmentHistoryHref(formState: WalletAdjustmentFormState) {
+  const params = new URLSearchParams();
+  if (formState.ownerId) {
+    params.set('ownerType', formState.ownerType);
+    params.set('ownerId', formState.ownerId);
+  }
+  params.set('take', String(WALLET_ADJUSTMENT_HISTORY_TAKE));
+  return `/admin/wallet-adjustments?${params.toString()}`;
+}
+
 type WalletAdjustmentFormState = {
   readonly adjustmentType: AdminManualWalletAdjustmentType;
   readonly amount: string;
@@ -406,6 +482,26 @@ function formatAccountName(value: string) {
     .split('_')
     .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
     .join(' ');
+}
+
+function formatBalanceChange(row: AdminManualWalletAdjustmentRow) {
+  if (typeof row.beforeBalance !== 'number' || typeof row.afterBalance !== 'number') {
+    return 'Balance preview unavailable';
+  }
+
+  return `${formatMoney(row.beforeBalance, row.currency)} -> ${formatMoney(row.afterBalance, row.currency)}`;
+}
+
+function walletImpactLabel(row: AdminManualWalletAdjustmentRow) {
+  const impacts = [
+    row.affects?.walletLiability ? 'wallet liability' : null,
+    row.affects?.partnerReceivable ? 'partner receivable' : null,
+    row.affects?.expense ? 'expense' : null,
+    row.affects?.revenue ? 'revenue review' : null,
+    row.affects?.taxPayable ? 'tax review' : null,
+  ].filter(Boolean);
+
+  return impacts.length > 0 ? impacts.join(', ') : 'No accounting impact metadata';
 }
 
 function walletAdjustmentNotice(notice: string) {

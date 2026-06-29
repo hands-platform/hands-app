@@ -59,6 +59,7 @@ describe('AdminController notification and push actions', () => {
     cashSettlementSummary: vi.fn(),
     previewManualWalletAdjustment: vi.fn(),
     createManualWalletAdjustment: vi.fn(),
+    listManualWalletAdjustments: vi.fn(),
     recordPartnerBankDeposit: vi.fn(),
     listProviderWalletWithdrawalRequests: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
@@ -218,6 +219,24 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.previewManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
     expect(admin.createManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
+  });
+
+  it('exposes manual wallet adjustment history with owner filtering', async () => {
+    admin.listManualWalletAdjustments.mockResolvedValue([{ id: 'ledger-1' }]);
+
+    await expect(
+      controller.manualWalletAdjustments('25', 'PARTNER', 'provider-1'),
+    ).resolves.toEqual([{ id: 'ledger-1' }]);
+
+    expect(routeMetadata('manualWalletAdjustments')).toEqual({
+      method: RequestMethod.GET,
+      path: 'wallet-adjustments',
+    });
+    expect(admin.listManualWalletAdjustments).toHaveBeenCalledWith({
+      ownerId: 'provider-1',
+      ownerType: 'PARTNER',
+      take: '25',
+    });
   });
 
   it('exposes partner wallet withdrawal requests with provider filtering', async () => {

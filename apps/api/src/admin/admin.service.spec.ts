@@ -20,6 +20,7 @@ import {
   ProviderStatus,
   ProviderTaxProfileStatus,
   ProviderWalletLedgerType,
+  CustomerWalletLedgerType,
   ReferralAttributionStatus,
   ReferralAudience,
   ReferralRewardMode,
@@ -5925,6 +5926,117 @@ describe('AdminService query orchestration', () => {
         target: 'provider_wallet_ledger:ledger-1',
       }),
     });
+  });
+
+  it('lists recent manual wallet adjustments across customer and partner ledgers without loading all rows', async () => {
+    const prisma = {
+      customerWalletLedgerEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'customer-ledger-1',
+            customerProfileId: 'customer-1',
+            type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+            sourceKey: 'manual-wallet-adjustment:CUSTOMER:customer-1:approval-customer-1',
+            amount: 100000,
+            currency: 'VND',
+            reference: 'approval-customer-1',
+            notes: 'Welcome credit',
+            createdAt: new Date('2026-06-28T10:00:00.000Z'),
+            metadata: {
+              manualWalletAdjustment: true,
+              ownerType: 'CUSTOMER',
+              direction: 'CREDIT',
+              adjustmentType: 'PROMOTION_CREDIT',
+              beforeBalance: 0,
+              afterBalance: 100000,
+              approvalId: 'approval-customer-1',
+              affects: { walletLiability: true, revenue: false },
+            },
+            customerProfile: {
+              user: { fullName: 'Demo Customer', phone: '+84111111111' },
+            },
+          },
+        ]),
+      },
+      providerWalletLedgerEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'provider-ledger-1',
+            providerProfileId: 'provider-1',
+            type: ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
+            sourceKey: 'manual-wallet-adjustment:PARTNER:provider-1:approval-partner-1',
+            amount: 200000,
+            currency: 'VND',
+            reference: 'approval-partner-1',
+            notes: 'Launch bonus',
+            createdAt: new Date('2026-06-29T09:00:00.000Z'),
+            metadata: {
+              manualWalletAdjustment: true,
+              ownerType: 'PARTNER',
+              direction: 'CREDIT',
+              adjustmentType: 'PARTNER_BONUS',
+              beforeBalance: 0,
+              afterBalance: 200000,
+              approvalId: 'approval-partner-1',
+              affects: { walletLiability: true, revenue: false },
+            },
+            providerProfile: {
+              displayName: 'Smoke Partner',
+              user: { fullName: 'Smoke Partner Legal', phone: '+84222222222' },
+            },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listManualWalletAdjustments({ take: '5' })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-ledger-1',
+        ownerLabel: 'Smoke Partner',
+        ownerType: 'PARTNER',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        beforeBalance: 0,
+        afterBalance: 200000,
+      }),
+      expect.objectContaining({
+        id: 'customer-ledger-1',
+        ownerLabel: 'Demo Customer',
+        ownerType: 'CUSTOMER',
+        direction: 'CREDIT',
+        adjustmentType: 'PROMOTION_CREDIT',
+        amount: 100000,
+        beforeBalance: 0,
+        afterBalance: 100000,
+      }),
+    ]);
+
+    expect(prisma.customerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        where: expect.objectContaining({
+          type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+        }),
+      }),
+    );
+    expect(prisma.providerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        where: expect.objectContaining({
+          type: {
+            in: [
+              ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
+              ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
+              ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
+            ],
+          },
+        }),
+      }),
+    );
   });
 
   it('rejects high-value manual adjustments without an attachment before writing a ledger', async () => {

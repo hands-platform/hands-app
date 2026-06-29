@@ -902,6 +902,15 @@ export class AdminController {
     return this.admin.recordPartnerBankDeposit(user.id, body);
   }
 
+  @Get('wallet-adjustments')
+  manualWalletAdjustments(
+    @Query('take') take?: string,
+    @Query('ownerType') ownerType?: string,
+    @Query('ownerId') ownerId?: string,
+  ) {
+    return this.admin.listManualWalletAdjustments({ ownerId, ownerType, take });
+  }
+
   @Post('wallet-adjustments/preview')
   previewManualWalletAdjustment(
     @CurrentUser() user: AuthenticatedUser,

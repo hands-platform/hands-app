@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminPost } from '../../lib/admin-api';
+import { adminGet, adminPost } from '../../lib/admin-api';
 import WalletAdjustmentsPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -9,14 +9,18 @@ vi.mock('../../lib/admin-api', async () => {
 
   return {
     ...actual,
+    adminGet: vi.fn(),
     adminPost: vi.fn(),
   };
 });
 
+const mockedAdminGet = vi.mocked(adminGet);
 const mockedAdminPost = vi.mocked(adminPost);
 
 describe('WalletAdjustmentsPage', () => {
   beforeEach(() => {
+    mockedAdminGet.mockReset();
+    mockedAdminGet.mockResolvedValue([]);
     mockedAdminPost.mockReset();
   });
 
@@ -107,5 +111,44 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('No bank/cash movement');
     expect(markup).toContain('No output VAT');
     expect(markup).toContain('200.000 VND');
+  });
+
+  it('renders recent manual wallet adjustment history from the Admin API', async () => {
+    mockedAdminGet.mockResolvedValueOnce([
+      {
+        id: 'provider-ledger-1',
+        adjustmentType: 'PARTNER_BONUS',
+        afterBalance: 200000,
+        amount: 200000,
+        approvalId: 'approval-partner-1',
+        beforeBalance: 0,
+        createdAt: '2026-06-29T09:00:00.000Z',
+        currency: 'VND',
+        direction: 'CREDIT',
+        ledgerType: 'MANUAL_ADJUSTMENT_CREDIT',
+        ownerId: 'provider-1',
+        ownerLabel: 'Smoke Partner',
+        ownerPhone: '+84222222222',
+        ownerType: 'PARTNER',
+        reason: 'Launch bonus',
+        sourceKey: 'manual-wallet-adjustment:PARTNER:provider-1:approval-partner-1',
+        walletDelta: 200000,
+      },
+    ]);
+
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ ownerId: 'provider-1', ownerType: 'PARTNER' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
+      [],
+    );
+    expect(markup).toContain('Manual adjustment history');
+    expect(markup).toContain('Smoke Partner');
+    expect(markup).toContain('PARTNER_BONUS');
+    expect(markup).toContain('approval-partner-1');
+    expect(markup).toContain('Launch bonus');
   });
 });

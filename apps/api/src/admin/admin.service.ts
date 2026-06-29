@@ -310,6 +310,8 @@ const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
 const ADMIN_COUPON_LIST_DEFAULT_LIMIT = 10;
 const ADMIN_COUPON_LIST_MAX_LIMIT = 50;
 const ADMIN_COUPON_USAGE_LIST_LIMIT = 20;
+const ADMIN_MANUAL_WALLET_ADJUSTMENT_DEFAULT_LIMIT = 25;
+const ADMIN_MANUAL_WALLET_ADJUSTMENT_MAX_LIMIT = 100;
 
 type AdminBookingListQuery = {
   readonly dateFrom?: string;
@@ -358,6 +360,11 @@ type AdminPaymentOperationsQuery = {
   readonly range?: string | null;
   readonly review?: string | null;
   readonly status?: string | null;
+  readonly take?: number | string | null;
+};
+type AdminManualWalletAdjustmentQuery = {
+  readonly ownerId?: string | null;
+  readonly ownerType?: string | null;
   readonly take?: number | string | null;
 };
 type AdminPartnerWithholdingTaxQuery = {
@@ -6405,6 +6412,99 @@ export class AdminService {
     });
   }
 
+  async listManualWalletAdjustments(options: AdminManualWalletAdjustmentQuery = {}) {
+    const take = boundedAdminListLimit(
+      options.take ?? ADMIN_MANUAL_WALLET_ADJUSTMENT_DEFAULT_LIMIT,
+      ADMIN_MANUAL_WALLET_ADJUSTMENT_MAX_LIMIT,
+    );
+    const ownerType = normalizeManualWalletAdjustmentOwnerTypeFilter(options.ownerType);
+    const ownerId = normalizeNullable(options.ownerId);
+    const [customerRows, providerRows] = await Promise.all([
+      ownerType === 'PARTNER'
+        ? []
+        : this.prisma.customerWalletLedgerEntry.findMany({
+            where: {
+              type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+              sourceKey: { startsWith: 'manual-wallet-adjustment:' },
+              ...(ownerId ? { customerProfileId: ownerId } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+            take,
+            select: {
+              id: true,
+              customerProfileId: true,
+              type: true,
+              sourceKey: true,
+              amount: true,
+              currency: true,
+              reference: true,
+              notes: true,
+              metadata: true,
+              createdAt: true,
+              updatedAt: true,
+              customerProfile: {
+                select: {
+                  user: {
+                    select: {
+                      fullName: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+      ownerType === 'CUSTOMER'
+        ? []
+        : this.prisma.providerWalletLedgerEntry.findMany({
+            where: {
+              type: {
+                in: [
+                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
+                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
+                  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
+                ],
+              },
+              sourceKey: { startsWith: 'manual-wallet-adjustment:' },
+              ...(ownerId ? { providerProfileId: ownerId } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+            take,
+            select: {
+              id: true,
+              providerProfileId: true,
+              type: true,
+              sourceKey: true,
+              amount: true,
+              currency: true,
+              reference: true,
+              notes: true,
+              metadata: true,
+              createdAt: true,
+              updatedAt: true,
+              providerProfile: {
+                select: {
+                  displayName: true,
+                  user: {
+                    select: {
+                      fullName: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+    ]);
+
+    return [
+      ...customerRows.map((row) => manualWalletAdjustmentCustomerRow(row)),
+      ...providerRows.map((row) => manualWalletAdjustmentProviderRow(row)),
+    ]
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .slice(0, take);
+  }
+
   private async buildManualWalletAdjustmentPreviewForAdmin(
     db: ManualWalletAdjustmentDb,
     actorId: string,
@@ -9232,6 +9332,142 @@ function manualWalletAdjustmentMetadata(
     walletLiabilityDecrease: preview.walletLiabilityDecrease,
     walletLiabilityIncrease: preview.walletLiabilityIncrease,
   });
+}
+
+function normalizeManualWalletAdjustmentOwnerTypeFilter(value?: string | null) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return null;
+  }
+  return manualWalletAdjustmentOwnerType(normalized);
+}
+
+function manualWalletAdjustmentCustomerRow(row: {
+  amount: number;
+  createdAt: Date;
+  currency: string;
+  customerProfile: {
+    user: {
+      fullName: string | null;
+      phone: string;
+    };
+  };
+  customerProfileId: string;
+  id: string;
+  metadata: Prisma.JsonValue | null;
+  notes: string | null;
+  reference: string | null;
+  sourceKey: string;
+  type: CustomerWalletLedgerType;
+  updatedAt: Date;
+}) {
+  const metadata = recordFromJsonValue(row.metadata);
+  return manualWalletAdjustmentLedgerRow({
+    amount: row.amount,
+    createdAt: row.createdAt,
+    currency: row.currency,
+    ledgerType: row.type,
+    metadata,
+    notes: row.notes,
+    ownerId: row.customerProfileId,
+    ownerLabel: row.customerProfile.user.fullName ?? row.customerProfile.user.phone,
+    ownerPhone: row.customerProfile.user.phone,
+    ownerType: 'CUSTOMER',
+    reference: row.reference,
+    sourceKey: row.sourceKey,
+    updatedAt: row.updatedAt,
+    id: row.id,
+  });
+}
+
+function manualWalletAdjustmentProviderRow(row: {
+  amount: number;
+  createdAt: Date;
+  currency: string;
+  id: string;
+  metadata: Prisma.JsonValue | null;
+  notes: string | null;
+  providerProfile: {
+    displayName: string | null;
+    user: {
+      fullName: string | null;
+      phone: string;
+    };
+  };
+  providerProfileId: string;
+  reference: string | null;
+  sourceKey: string;
+  type: ProviderWalletLedgerType;
+  updatedAt: Date;
+}) {
+  const metadata = recordFromJsonValue(row.metadata);
+  return manualWalletAdjustmentLedgerRow({
+    amount: row.amount,
+    createdAt: row.createdAt,
+    currency: row.currency,
+    ledgerType: row.type,
+    metadata,
+    notes: row.notes,
+    ownerId: row.providerProfileId,
+    ownerLabel: row.providerProfile.displayName ?? row.providerProfile.user.fullName ?? row.providerProfile.user.phone,
+    ownerPhone: row.providerProfile.user.phone,
+    ownerType: 'PARTNER',
+    reference: row.reference,
+    sourceKey: row.sourceKey,
+    updatedAt: row.updatedAt,
+    id: row.id,
+  });
+}
+
+function manualWalletAdjustmentLedgerRow(input: {
+  amount: number;
+  createdAt: Date;
+  currency: string;
+  id: string;
+  ledgerType: string;
+  metadata: Record<string, unknown>;
+  notes: string | null;
+  ownerId: string;
+  ownerLabel: string;
+  ownerPhone: string;
+  ownerType: ManualWalletAdjustmentOwnerType;
+  reference: string | null;
+  sourceKey: string;
+  updatedAt: Date;
+}) {
+  return {
+    id: input.id,
+    adjustmentType: stringFromRecord(input.metadata, 'adjustmentType') ?? input.ledgerType,
+    affects: objectFromRecord(input.metadata, 'affects'),
+    afterBalance: numberFromRecord(input.metadata, 'afterBalance'),
+    amount: input.amount,
+    approvalId: stringFromRecord(input.metadata, 'approvalId') ?? input.reference,
+    attachmentUrl: stringFromRecord(input.metadata, 'attachmentUrl'),
+    beforeBalance: numberFromRecord(input.metadata, 'beforeBalance'),
+    createdAt: input.createdAt,
+    currency: input.currency,
+    direction:
+      stringFromRecord(input.metadata, 'direction') ??
+      (input.amount >= 0 ? 'CREDIT' : 'DEBIT'),
+    ledgerType: input.ledgerType,
+    monthlyPeriod: stringFromRecord(input.metadata, 'monthlyPeriod'),
+    ownerId: input.ownerId,
+    ownerLabel: input.ownerLabel,
+    ownerPhone: input.ownerPhone,
+    ownerType: input.ownerType,
+    reason: stringFromRecord(input.metadata, 'reason') ?? input.notes,
+    sourceKey: input.sourceKey,
+    updatedAt: input.updatedAt,
+    walletDelta: numberFromRecord(input.metadata, 'walletDelta') ?? input.amount,
+  };
+}
+
+function objectFromRecord(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
 }
 
 function uniqueStrings(values: Array<string | null | undefined>) {
