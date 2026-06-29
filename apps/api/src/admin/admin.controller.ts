@@ -720,6 +720,20 @@ export class AdminController {
     return this.admin.earningsSummary({ range });
   }
 
+  @Get('booking-settlement-snapshots')
+  bookingSettlementSnapshots(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listBookingSettlementSnapshots({ range, review, take });
+  }
+
+  @Get('booking-settlement-snapshots/summary')
+  bookingSettlementSnapshotSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.bookingSettlementSnapshotSummary({ range, review });
+  }
+
   @Get('services')
   services() {
     return this.admin.listServices();

@@ -55,6 +55,8 @@ describe('AdminController notification and push actions', () => {
     earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
     cashSettlementSummary: vi.fn(),
+    listBookingSettlementSnapshots: vi.fn(),
+    bookingSettlementSnapshotSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -436,6 +438,45 @@ describe('AdminController notification and push actions', () => {
       path: 'earnings/summary',
     });
     expect(admin.earningsSummary).toHaveBeenCalledWith({ range: 'today' });
+  });
+
+  it('exposes booking settlement snapshots as a bounded filtered finance list', async () => {
+    admin.listBookingSettlementSnapshots.mockResolvedValue([{ id: 'settlement-1' }]);
+
+    await expect(controller.bookingSettlementSnapshots('50', '7d', 'open')).resolves.toEqual([
+      { id: 'settlement-1' },
+    ]);
+
+    expect(routeMetadata('bookingSettlementSnapshots')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-snapshots',
+    });
+    expect(admin.listBookingSettlementSnapshots).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'open',
+      take: '50',
+    });
+  });
+
+  it('exposes booking settlement snapshot summary with the same filters', async () => {
+    admin.bookingSettlementSnapshotSummary.mockResolvedValue({
+      count: 1,
+      partnerWithholdingTotal: 42000,
+    });
+
+    await expect(controller.bookingSettlementSnapshotSummary('30d', 'paid')).resolves.toEqual({
+      count: 1,
+      partnerWithholdingTotal: 42000,
+    });
+
+    expect(routeMetadata('bookingSettlementSnapshotSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-snapshots/summary',
+    });
+    expect(admin.bookingSettlementSnapshotSummary).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'paid',
+    });
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

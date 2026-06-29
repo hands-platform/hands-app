@@ -1,4 +1,6 @@
 import {
+  BookingSettlementStatus,
+  BookingSettlementTaxStatus,
   BookingMatchSource,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
@@ -5081,6 +5083,86 @@ describe('AdminService query orchestration', () => {
     });
 
     expect(earnings.adminSummary).toHaveBeenCalledWith({ range: 'today' });
+  });
+
+  it('lists booking settlement snapshots with bounded range and review filters', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'settlement-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listBookingSettlementSnapshots({
+        range: '7d',
+        review: 'open',
+        take: '75',
+      }),
+    ).resolves.toEqual([{ id: 'settlement-1' }]);
+
+    expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { postedAt: 'desc' },
+        take: 75,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ postedAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { taxStatus: BookingSettlementTaxStatus.OPEN },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes booking settlement snapshots from snapshot aggregates only', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: {
+            customerPaymentAmount: 600000,
+            partnerPayoutAmount: 430000,
+            partnerWithholdingTotal: 42000,
+            platformFeeGross: 128000,
+            platformFeeNetRevenue: 118519,
+            companyOutputVat: 9481,
+            paymentProcessingFee: 10000,
+          },
+        }),
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(0).mockResolvedValueOnce(1),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bookingSettlementSnapshotSummary({ range: '30d', review: 'posted' })).resolves.toEqual({
+      count: 1,
+      currency: 'VND',
+      customerPaymentAmount: 600000,
+      partnerPayoutAmount: 430000,
+      partnerWithholdingTotal: 42000,
+      platformFeeGross: 128000,
+      platformFeeNetRevenue: 118519,
+      companyOutputVat: 9481,
+      paymentProcessingFee: 10000,
+      openTaxCount: 0,
+      paidTaxCount: 1,
+    });
+
+    expect(prisma.bookingSettlementSnapshot.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: expect.objectContaining({
+          partnerWithholdingTotal: true,
+          companyOutputVat: true,
+          paymentProcessingFee: true,
+        }),
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ postedAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { settlementStatus: BookingSettlementStatus.POSTED },
+          ]),
+        }),
+      }),
+    );
   });
 
   it('delegates bounded cash settlement filters to the earnings service', async () => {

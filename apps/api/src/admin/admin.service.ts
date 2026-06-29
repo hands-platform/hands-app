@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BookingSettlementStatus,
+  BookingSettlementTaxStatus,
   BookingStatus,
   EarningStatus,
   BookingOpsTaskStatus,
@@ -332,6 +334,53 @@ type AdminPaymentOperationsQuery = {
 };
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
+const adminBookingSettlementSnapshotListSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  paymentId: true,
+  providerEarningId: true,
+  paymentMethod: true,
+  currency: true,
+  customerPaymentAmount: true,
+  partnerPayoutAmount: true,
+  partnerTaxableRevenue: true,
+  partnerVatAmount: true,
+  partnerPitAmount: true,
+  partnerWithholdingTotal: true,
+  platformFeeGross: true,
+  platformFeeNetRevenue: true,
+  companyOutputVat: true,
+  paymentProcessingFee: true,
+  settlementStatus: true,
+  taxStatus: true,
+  monthlyPeriod: true,
+  postedAt: true,
+  closedAt: true,
+  booking: {
+    select: {
+      id: true,
+      createdAt: true,
+      scheduledStartAt: true,
+      status: true,
+      closedAt: true,
+    },
+  },
+  customerProfile: {
+    select: {
+      id: true,
+      user: { select: { id: true, fullName: true, phone: true } },
+    },
+  },
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { id: true, fullName: true, phone: true } },
+    },
+  },
+} satisfies Prisma.BookingSettlementSnapshotSelect;
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -5243,6 +5292,58 @@ export class AdminService {
     return this.earnings.adminSummary(options);
   }
 
+  listBookingSettlementSnapshots(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingSettlementSnapshotWhere(options);
+
+    return this.prisma.bookingSettlementSnapshot.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { postedAt: 'desc' },
+      take: adminPaymentOperationsTake(options.take),
+      select: adminBookingSettlementSnapshotListSelect,
+    });
+  }
+
+  async bookingSettlementSnapshotSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingSettlementSnapshotWhere(options);
+    const openTaxWhere = adminMergeBookingSettlementSnapshotWhere(where, {
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    });
+    const paidTaxWhere = adminMergeBookingSettlementSnapshotWhere(where, {
+      taxStatus: BookingSettlementTaxStatus.PAID,
+    });
+    const [count, sums, openTaxCount, paidTaxCount] = await Promise.all([
+      this.prisma.bookingSettlementSnapshot.count(adminBookingSettlementSnapshotCountArgs(where)),
+      this.prisma.bookingSettlementSnapshot.aggregate({
+        ...(where ? { where } : {}),
+        _sum: {
+          customerPaymentAmount: true,
+          partnerPayoutAmount: true,
+          partnerWithholdingTotal: true,
+          platformFeeGross: true,
+          platformFeeNetRevenue: true,
+          companyOutputVat: true,
+          paymentProcessingFee: true,
+        },
+      }),
+      this.prisma.bookingSettlementSnapshot.count(adminBookingSettlementSnapshotCountArgs(openTaxWhere)),
+      this.prisma.bookingSettlementSnapshot.count(adminBookingSettlementSnapshotCountArgs(paidTaxWhere)),
+    ]);
+
+    return {
+      count,
+      currency: 'VND',
+      customerPaymentAmount: sums._sum.customerPaymentAmount ?? 0,
+      partnerPayoutAmount: sums._sum.partnerPayoutAmount ?? 0,
+      partnerWithholdingTotal: sums._sum.partnerWithholdingTotal ?? 0,
+      platformFeeGross: sums._sum.platformFeeGross ?? 0,
+      platformFeeNetRevenue: sums._sum.platformFeeNetRevenue ?? 0,
+      companyOutputVat: sums._sum.companyOutputVat ?? 0,
+      paymentProcessingFee: sums._sum.paymentProcessingFee ?? 0,
+      openTaxCount,
+      paidTaxCount,
+    };
+  }
+
   listServices() {
     return this.prisma.massageService.findMany({
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
@@ -9384,6 +9485,70 @@ function adminRefundOperationsTake(value: number | string | null | undefined) {
     ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT,
     ADMIN_REFUND_OPERATIONS_MAX_LIMIT,
   );
+}
+
+function adminBookingSettlementSnapshotWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.BookingSettlementSnapshotWhereInput | undefined {
+  const filters: Prisma.BookingSettlementSnapshotWhereInput[] = [];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const reviewWhere = adminBookingSettlementSnapshotReviewWhere(options.review);
+
+  if (dateRange) {
+    filters.push({ postedAt: dateRange });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminMergeBookingSettlementSnapshotWhere(
+  base: Prisma.BookingSettlementSnapshotWhereInput | undefined,
+  next: Prisma.BookingSettlementSnapshotWhereInput,
+): Prisma.BookingSettlementSnapshotWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminBookingSettlementSnapshotCountArgs(
+  where: Prisma.BookingSettlementSnapshotWhereInput | undefined,
+): Prisma.BookingSettlementSnapshotCountArgs {
+  return where ? { where } : {};
+}
+
+function adminBookingSettlementSnapshotReviewWhere(
+  review: string | null | undefined,
+): Prisma.BookingSettlementSnapshotWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'needs-action':
+    case 'open':
+      return { taxStatus: BookingSettlementTaxStatus.OPEN };
+    case 'declared':
+      return { taxStatus: BookingSettlementTaxStatus.DECLARED };
+    case 'paid':
+      return { taxStatus: BookingSettlementTaxStatus.PAID };
+    case 'closed':
+      return { taxStatus: BookingSettlementTaxStatus.CLOSED };
+    case 'posted':
+      return { settlementStatus: BookingSettlementStatus.POSTED };
+    case 'reversed':
+      return {
+        OR: [
+          { settlementStatus: BookingSettlementStatus.REVERSED },
+          { taxStatus: BookingSettlementTaxStatus.REVERSED },
+        ],
+      };
+    case 'cash':
+      return { paymentMethod: PaymentMethod.CASH };
+    case 'non-cash':
+      return { paymentMethod: { not: PaymentMethod.CASH } };
+    default:
+      return undefined;
+  }
 }
 
 function adminPaymentOperationsWhere(
