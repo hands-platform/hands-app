@@ -47,6 +47,24 @@ const referralAccountingRewardStatuses = [
   'TAX_REVIEW_REQUIRED',
 ] as const;
 
+const customerReferralWalletLedgerTypes = [
+  'CUSTOMER_REFERRAL_EARNED',
+  'CUSTOMER_REFERRAL_TAX_WITHHELD',
+  'CUSTOMER_REFERRAL_USED_FOR_SERVICE',
+  'CUSTOMER_REFERRAL_CASHOUT',
+  'CUSTOMER_REFERRAL_REVERSED',
+] as const;
+
+const providerReferralWalletLedgerTypes = [
+  'PARTNER_REFERRAL_EARNED',
+  'PARTNER_REFERRAL_TAX_WITHHELD',
+  'OFFSET_PLATFORM_FEE',
+  'OFFSET_PARTNER_TAX',
+  'OFFSET_NEGATIVE_WALLET',
+  'PARTNER_REFERRAL_CASHOUT',
+  'PARTNER_REFERRAL_REVERSED',
+] as const;
+
 describe('referral wallet credit schema contract', () => {
   it('defines an audited Customer wallet ledger for referral reward credits', () => {
     const providerLedgerType = schemaBlock('enum', 'ProviderWalletLedgerType');
@@ -63,6 +81,12 @@ describe('referral wallet credit schema contract', () => {
       expect(rewardStatus).toContain(status);
     }
     expect(ledgerType).toContain('REFERRAL_REWARD');
+    for (const type of customerReferralWalletLedgerTypes) {
+      expect(ledgerType).toContain(type);
+    }
+    for (const type of providerReferralWalletLedgerTypes) {
+      expect(providerLedgerType).toContain(type);
+    }
     expect(ledgerType).toContain('REFUND');
     expect(ledgerType).toContain('ADMIN_ADJUSTMENT');
     expectField(customerProfile, 'walletLedgerEntries', 'CustomerWalletLedgerEntry\\[\\]');
@@ -93,11 +117,19 @@ describe('referral wallet credit schema contract', () => {
     const rewardStatusMigrations = migrationSqlSourcesContaining(
       'ALTER TYPE "ReferralRewardStatus" ADD VALUE',
     );
+    const customerLedgerTypeMigrations = migrationSqlSourcesContaining('"CustomerWalletLedgerType"');
+    const providerLedgerTypeMigrations = migrationSqlSourcesContaining('"ProviderWalletLedgerType"');
 
     expect(providerLedgerTypeMigration).toContain("'REFERRAL_REWARD'");
     expect(rewardStatusMigrations).toContain("'REWARDED'");
     for (const status of referralAccountingRewardStatuses) {
       expect(rewardStatusMigrations).toContain(`'${status}'`);
+    }
+    for (const type of customerReferralWalletLedgerTypes) {
+      expect(customerLedgerTypeMigrations).toContain(`'${type}'`);
+    }
+    for (const type of providerReferralWalletLedgerTypes) {
+      expect(providerLedgerTypeMigrations).toContain(`'${type}'`);
     }
     expect(migration).toContain('CREATE TYPE "CustomerWalletLedgerType"');
     expect(migration).toContain('CREATE TABLE "CustomerWalletLedgerEntry"');
