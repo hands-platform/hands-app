@@ -13,6 +13,25 @@ describe('payouts page model', () => {
         '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
       payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
+      providerWalletWithdrawalRequestsHref: '/admin/provider-wallet/withdrawal-requests?range=30d&take=10',
+    });
+  });
+
+  it('passes withdrawal status filters only to partner wallet withdrawal requests', () => {
+    const filters = buildPayoutFilters({
+      range: '7d',
+      withdrawalStatus: 'BANK_TRANSFER_PENDING',
+    });
+
+    expect(filters).toMatchObject({
+      range: '7d',
+      withdrawalStatus: 'BANK_TRANSFER_PENDING',
+    });
+    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
+      earningsHref: '/admin/earnings?range=7d&take=10',
+      payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=7d&take=10&status=BANK_TRANSFER_PENDING',
     });
   });
 });

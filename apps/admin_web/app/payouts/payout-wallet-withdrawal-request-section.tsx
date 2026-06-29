@@ -3,12 +3,17 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
-import type { AdminProviderWalletWithdrawalRequest } from '../../lib/admin-api';
+import type {
+  AdminProviderWalletWithdrawalRequest,
+  AdminProviderWalletWithdrawalRequestStatus,
+} from '../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../lib/provider-wallet-withdrawal-status-change';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
 type PayoutWalletWithdrawalRequestSectionProps = {
+  readonly activeStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
+  readonly range?: string;
   readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
   readonly updateWithdrawalRequestAction: FormAction;
 };
@@ -16,10 +21,13 @@ type PayoutWalletWithdrawalRequestSectionProps = {
 const headers = ['Partner', 'Amount', 'Bank account', 'Status', 'Requested', 'Action'] as const;
 
 export function PayoutWalletWithdrawalRequestSection({
+  activeStatus = null,
+  range = 'today',
   requests,
   updateWithdrawalRequestAction,
 }: PayoutWalletWithdrawalRequestSectionProps) {
   const needsActionCount = requests.filter((request) => !isTerminalStatus(request.status)).length;
+  const summary = buildWithdrawalRequestSummary(requests);
 
   return (
     <AdminFilterPanel
@@ -30,6 +38,34 @@ export function PayoutWalletWithdrawalRequestSection({
       resultTone={needsActionCount ? 'warning' : 'success'}
       title="Partner wallet withdrawal requests"
     >
+      <div className="payout-wallet-withdrawal-summary-grid" aria-label="Withdrawal request status summary">
+        <span className="sr-only">Withdrawal request status summary</span>
+        <WithdrawalSummaryStatusCard
+          active={activeStatus === 'REQUESTED'}
+          count={summary.requested}
+          href={withdrawalStatusHref(range, 'REQUESTED')}
+          label="Requested"
+        />
+        <WithdrawalSummaryStatusCard
+          active={activeStatus === 'REVIEW_REQUIRED'}
+          count={summary.reviewRequired}
+          href={withdrawalStatusHref(range, 'REVIEW_REQUIRED')}
+          label="Review required"
+          tone="warning"
+        />
+        <WithdrawalSummaryStatusCard
+          active={activeStatus === 'BANK_TRANSFER_PENDING'}
+          count={summary.bankTransferPending}
+          href={withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING')}
+          label="Bank transfer pending"
+          tone="info"
+        />
+        <div className="payout-wallet-withdrawal-summary-card is-audit">
+          <span>Lock released</span>
+          <strong>{summary.lockReleased}</strong>
+          <small>Audit evidence</small>
+        </div>
+      </div>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
@@ -75,6 +111,66 @@ export function PayoutWalletWithdrawalRequestSection({
       </AdminTableScroll>
     </AdminFilterPanel>
   );
+}
+
+function WithdrawalSummaryStatusCard({
+  active,
+  count,
+  href,
+  label,
+  tone = 'neutral',
+}: {
+  readonly active: boolean;
+  readonly count: number;
+  readonly href: string;
+  readonly label: string;
+  readonly tone?: 'info' | 'neutral' | 'warning';
+}) {
+  return (
+    <Link
+      className={joinClassNames(
+        'payout-wallet-withdrawal-summary-card',
+        `is-${tone}`,
+        active ? 'is-active' : undefined,
+      )}
+      href={href}
+    >
+      <span>{label}</span>
+      <strong>{count}</strong>
+      <small>{active ? 'Selected' : 'Open filter'}</small>
+    </Link>
+  );
+}
+
+function buildWithdrawalRequestSummary(requests: readonly AdminProviderWalletWithdrawalRequest[]) {
+  return requests.reduce(
+    (summary, request) => {
+      if (request.status === 'REQUESTED') {
+        summary.requested += 1;
+      }
+      if (request.status === 'REVIEW_REQUIRED') {
+        summary.reviewRequired += 1;
+      }
+      if (request.status === 'BANK_TRANSFER_PENDING') {
+        summary.bankTransferPending += 1;
+      }
+      const statusChange = providerWalletWithdrawalStatusChangeView(request.metadata);
+      if (statusChange?.lockedAmountReleased) {
+        summary.lockReleased += 1;
+      }
+      return summary;
+    },
+    {
+      bankTransferPending: 0,
+      lockReleased: 0,
+      requested: 0,
+      reviewRequired: 0,
+    },
+  );
+}
+
+function withdrawalStatusHref(range: string, status: AdminProviderWalletWithdrawalRequestStatus) {
+  return `/payouts?${new URLSearchParams({ range, withdrawalStatus: status }).toString()}`;
 }
 
 function WithdrawalRequestActions({
@@ -322,4 +418,8 @@ function isTerminalStatus(status: AdminProviderWalletWithdrawalRequest['status']
     status === 'FAILED' ||
     status === 'REVERSED'
   );
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
 }

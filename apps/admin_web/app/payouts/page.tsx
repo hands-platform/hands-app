@@ -297,6 +297,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
 
       <PayoutWalletWithdrawalRequestSection
+        activeStatus={filters.withdrawalStatus}
+        range={filters.range}
         requests={walletWithdrawalRequests}
         updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
       />

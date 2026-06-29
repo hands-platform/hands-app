@@ -130,6 +130,71 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Approved -> Rejected');
     expect(rendered).toContain('Lock released 500.000 VND');
   });
+
+  it('summarizes finance queue status filters before the withdrawal table', () => {
+    const section = PayoutWalletWithdrawalRequestSection({
+      activeStatus: 'BANK_TRANSFER_PENDING',
+      range: '7d',
+      requests: [
+        {
+          amount: 500000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-review-required',
+          providerProfileId: 'provider-review',
+          status: 'REVIEW_REQUIRED',
+        },
+        {
+          amount: 650000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T09:30:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-bank-pending',
+          providerProfileId: 'provider-bank',
+          status: 'BANK_TRANSFER_PENDING',
+        },
+        {
+          amount: 500000,
+          bankAccount: null,
+          bankAccountId: null,
+          createdAt: '2026-06-27T10:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-rejected',
+          metadata: {
+            lastStatusChange: {
+              previousStatus: 'APPROVED',
+              nextStatus: 'REJECTED',
+              lockedAmountReleased: true,
+              releasedAmount: 500000,
+            },
+          },
+          providerProfileId: 'provider-rejected',
+          status: 'REJECTED',
+        },
+      ] as unknown as AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const hrefs = hrefsIn(section);
+
+    expect(rendered).toContain('Withdrawal request status summary');
+    expect(rendered).toContain('Review required 1');
+    expect(rendered).toContain('Bank transfer pending 1');
+    expect(rendered).toContain('Lock released 1');
+    expect(rendered).toContain('Selected');
+    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED');
+    expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'payout-wallet-withdrawal-summary-grid',
+        'payout-wallet-withdrawal-summary-card is-info is-active',
+      ]),
+    );
+  });
 });
 
 function textContent(value: unknown): string {

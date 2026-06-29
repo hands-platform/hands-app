@@ -742,6 +742,67 @@ a {
   width: max-content;
 }
 
+.payout-wallet-withdrawal-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.payout-wallet-withdrawal-summary-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 16px;
+  text-decoration: none;
+  transition:
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition);
+}
+
+.payout-wallet-withdrawal-summary-card:hover,
+.payout-wallet-withdrawal-summary-card.is-active {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.payout-wallet-withdrawal-summary-card span {
+  color: var(--admin-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.payout-wallet-withdrawal-summary-card strong {
+  color: var(--admin-text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.payout-wallet-withdrawal-summary-card small {
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.payout-wallet-withdrawal-summary-card.is-active small,
+.payout-wallet-withdrawal-summary-card.is-info strong {
+  color: var(--admin-accent-strong);
+}
+
+.payout-wallet-withdrawal-summary-card.is-warning strong {
+  color: var(--admin-warning);
+}
+
+.payout-wallet-withdrawal-summary-card.is-audit strong {
+  color: var(--admin-success);
+}
+
 .booking-monitor .admin-table-scroll {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
