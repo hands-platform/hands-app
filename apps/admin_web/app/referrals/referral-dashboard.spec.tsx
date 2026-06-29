@@ -178,6 +178,10 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Credited 15.000 VND');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
+    expect(markup).toContain('Referral rewards are company marketing/acquisition expenses');
+    expect(markup).toContain('Wallet offsets settle payable and receivable balances');
+    expect(markup).toContain('Customer referral cashout requires admin approval and tax review');
+    expect(markup).toContain('Tax policies are configurable and must be confirmed by accounting before production use');
     expect(markup).toContain('Referral link readiness');
     expect(markup).toContain('Customer referral links route visitors to the correct store before attribution starts.');
     expect(markup).not.toContain('Clear filters');

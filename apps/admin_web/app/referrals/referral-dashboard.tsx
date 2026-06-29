@@ -164,6 +164,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       }
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />
+      <ReferralAccountingGuardrailsPanel />
       <ReferralLinkReadinessPanel audience={props.audience} />
       <ReferralListFilterPanel
         audience={props.audience}
@@ -192,6 +193,46 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
         />
       )}
     </AdminPageTemplate>
+  );
+}
+
+function ReferralAccountingGuardrailsPanel() {
+  return (
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16"
+      resultLabel="Accounting"
+      resultTone="info"
+      title="Referral accounting guardrails"
+    >
+      <div className="service-trace-summary">
+        <div>
+          <span>Expense treatment</span>
+          <strong>Acquisition cost</strong>
+          <small className="muted">
+            Referral rewards are company marketing/acquisition expenses, not reductions of platform fee revenue.
+          </small>
+        </div>
+        <div>
+          <span>Wallet offsets</span>
+          <strong>No revenue netting</strong>
+          <small className="muted">
+            Wallet offsets settle payable and receivable balances. They must not reduce revenue.
+          </small>
+        </div>
+        <div>
+          <span>Customer cashout</span>
+          <strong>Approval required</strong>
+          <small className="muted">Customer referral cashout requires admin approval and tax review.</small>
+        </div>
+        <div>
+          <span>Tax policy</span>
+          <strong>Accounting owned</strong>
+          <small className="muted">
+            Tax policies are configurable and must be confirmed by accounting before production use.
+          </small>
+        </div>
+      </div>
+    </AdminFilterPanel>
   );
 }
 
