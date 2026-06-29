@@ -255,6 +255,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                 <td>
                   <strong>{formatMoney(reward.amount, reward.currency, '0 VND')}</strong>
                   {reward.availableAt ? <p className="muted">Available {formatDateTime(reward.availableAt)}</p> : null}
+                  <ReferralRewardCalculationSnapshot reward={reward} />
                 </td>
                 <td>
                   <StatusBadge tone={rewardStatusTone(reward.status)}>{reward.status}</StatusBadge>
@@ -622,6 +623,42 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
   );
 }
 
+function ReferralRewardCalculationSnapshot({ reward }: { readonly reward: AdminReferralReward }) {
+  const snapshot = reward.calculationSnapshot;
+  const grossFee = snapshotNumber(snapshot, 'platformFeeGross');
+  const vatRateBps = snapshotNumber(snapshot, 'platformFeeVatRateBps');
+  const netFee = snapshotNumber(snapshot, 'platformFeeNetRevenue');
+  const rewardRateBps = snapshotNumber(snapshot, 'rewardRateSnapshotBps');
+  const snapshotReward = snapshotNumber(snapshot, 'rewardAmountSnapshot');
+
+  if (
+    grossFee === null &&
+    vatRateBps === null &&
+    netFee === null &&
+    rewardRateBps === null &&
+    snapshotReward === null
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="referral-reward-calculation-snapshot">
+      <span className="muted">Calculation snapshot</span>
+      <p className="muted">
+        {grossFee !== null ? `Gross fee ${formatMoney(grossFee, reward.currency, '0 VND')}` : null}
+        {vatRateBps !== null ? ` · VAT ${formatBpsPercent(vatRateBps)}` : null}
+      </p>
+      <p className="muted">
+        {netFee !== null ? `Net fee ${formatMoney(netFee, reward.currency, '0 VND')}` : null}
+        {rewardRateBps !== null ? ` · Rate ${formatBpsPercent(rewardRateBps)}` : null}
+      </p>
+      {snapshotReward !== null ? (
+        <p className="muted">Snapshot reward {formatMoney(snapshotReward, reward.currency, '0 VND')}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function referralRewardDecisionSummary(reward: AdminReferralReward) {
   if (reward.latestDecision) {
     const decisionLabel = referralRewardDecisionLabel(reward.latestDecision.action);
@@ -834,4 +871,17 @@ function userLabel(user: AdminReferralUserSummary | null | undefined, fallback: 
 
 function numberOrZero(value: number | null | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
+}
+
+function snapshotNumber(snapshot: Record<string, unknown> | null | undefined, key: string) {
+  const value = snapshot?.[key];
+  const numericValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function formatBpsPercent(value: number) {
+  const percent = value / 100;
+
+  return `${Number.isInteger(percent) ? percent.toFixed(0) : percent.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`;
 }

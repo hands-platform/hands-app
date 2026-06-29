@@ -146,6 +146,43 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('Reverse reward');
   });
 
+  it('renders customer reward calculation snapshots for accounting review', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              amount: 35556,
+              calculationSnapshot: {
+                companyOutputVat: 9481,
+                platformFeeGross: 128000,
+                platformFeeNetRevenue: 118519,
+                platformFeeVatRateBps: 800,
+                rewardAmountSnapshot: 35556,
+                rewardRateSnapshotBps: 3000,
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Calculation snapshot');
+    expect(markup).toContain('Gross fee 128.000 VND');
+    expect(markup).toContain('VAT 8%');
+    expect(markup).toContain('Net fee 118.519 VND');
+    expect(markup).toContain('Rate 30%');
+    expect(markup).toContain('Snapshot reward 35.556 VND');
+  });
+
   it('shows referral public link and store URL readiness on the parent detail', () => {
     const markup = renderToStaticMarkup(
       <ReferralParentDetailPage audience="customer" row={customerReferralParent} />,
