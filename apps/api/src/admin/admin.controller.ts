@@ -158,8 +158,8 @@ export class AdminController {
   }
 
   @Get(['vietnam-overview/realtime-points', 'maps/vietnam-overview/realtime-points'])
-  vietnamOverviewRealtimePoints(@Query('range') range?: string) {
-    return this.admin.getVietnamOverviewRealtimePoints(range);
+  vietnamOverviewRealtimePoints(@Query('range') range?: string, @Query('take') take?: string) {
+    return this.admin.getVietnamOverviewRealtimePoints(range, { take });
   }
 
   @Get('usage-overview')

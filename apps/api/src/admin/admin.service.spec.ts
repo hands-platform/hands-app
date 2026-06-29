@@ -2744,7 +2744,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 50,
+        take: 20,
         where: {
           status: expect.objectContaining({
             in: expect.arrayContaining([BookingStatus.OPEN_MATCHING]),
@@ -2752,6 +2752,27 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
+  });
+
+  it('clamps Vietnam realtime point feed source reads', async () => {
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.getVietnamOverviewRealtimePoints('today', { take: '500' });
+
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
   });
 
   it('keeps Vietnam realtime customer points current even when the period range is all', async () => {

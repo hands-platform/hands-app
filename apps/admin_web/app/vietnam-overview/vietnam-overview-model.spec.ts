@@ -34,7 +34,9 @@ describe('Vietnam overview page model', () => {
   });
 
   it('keeps realtime map point feed independent from period range filters', () => {
-    expect(vietnamOverviewRealtimePointsApiHref()).toBe('/admin/vietnam-overview/realtime-points');
+    expect(vietnamOverviewRealtimePointsApiHref()).toBe(
+      '/admin/vietnam-overview/realtime-points?take=20',
+    );
   });
 
   it('builds ranked positioned map markers from stored region aggregates only', () => {

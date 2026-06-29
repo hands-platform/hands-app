@@ -205,6 +205,8 @@ const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 50;
 const ADMIN_REFERRAL_PARENT_LIST_LIMIT = 100;
 const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 50;
+const ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT = 20;
+const ADMIN_VIETNAM_REALTIME_POINT_MAX_LIMIT = 50;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;
 const ADMIN_MARKETING_REGION_LIMIT = 100;
@@ -1689,10 +1691,14 @@ export class AdminService {
     return summary;
   }
 
-  async getVietnamOverviewRealtimePoints(rangeInput?: string) {
+  async getVietnamOverviewRealtimePoints(
+    rangeInput?: string,
+    options: { readonly take?: number | string | null } = {},
+  ) {
     const overview = await this.buildVietnamOverview(rangeInput, {
       includePeriodMetrics: false,
       includeRealtimePoints: true,
+      realtimeListLimit: adminVietnamRealtimePointLimit(options.take),
     });
 
     return {
@@ -1712,6 +1718,7 @@ export class AdminService {
     options: {
       includePeriodMetrics: boolean;
       includeRealtimePoints: boolean;
+      realtimeListLimit?: number;
     },
   ) {
     const now = new Date();
@@ -1765,11 +1772,14 @@ export class AdminService {
         },
       ]),
     );
+    const sourceListLimit = options.includePeriodMetrics
+      ? ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT
+      : (options.realtimeListLimit ?? ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT);
 
     const [customers, providers, bookings, realtimeBookings] = await Promise.all([
       this.prisma.customerProfile.findMany({
         orderBy: { id: 'desc' },
-        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        take: sourceListLimit,
         ...(realtimeOnlyCustomerWhere ? { where: realtimeOnlyCustomerWhere } : {}),
         select: {
           id: true,
@@ -1804,7 +1814,7 @@ export class AdminService {
       }),
       this.prisma.providerProfile.findMany({
         orderBy: { updatedAt: 'desc' },
-        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        take: sourceListLimit,
         ...(realtimeOnlyProviderWhere ? { where: realtimeOnlyProviderWhere } : {}),
         select: {
           id: true,
@@ -1822,7 +1832,7 @@ export class AdminService {
         ? this.prisma.booking.findMany({
             where: bookingWhere,
             orderBy: { createdAt: 'desc' },
-            take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+            take: sourceListLimit,
             select: {
               id: true,
               status: true,
@@ -1856,7 +1866,7 @@ export class AdminService {
               status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) },
             },
             orderBy: { updatedAt: 'desc' },
-            take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+            take: sourceListLimit,
             select: {
               id: true,
               address: true,
@@ -7973,6 +7983,14 @@ function adminMarketingDimensionTake(value: number | string | null | undefined):
   }
 
   return boundedAdminListLimit(value, ADMIN_MARKETING_DIMENSION_PAGE_MAX_LIMIT);
+}
+
+function adminVietnamRealtimePointLimit(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT;
+  }
+
+  return boundedAdminListLimit(value, ADMIN_VIETNAM_REALTIME_POINT_MAX_LIMIT);
 }
 
 function normalizeAdminMarketingDimensionKey(value: unknown): AdminMarketingDimensionKey {

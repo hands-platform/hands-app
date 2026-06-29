@@ -989,13 +989,15 @@ describe('AdminController notification and push actions', () => {
   it('exposes Vietnam realtime map points as a bounded point feed', async () => {
     admin.getVietnamOverviewRealtimePoints.mockResolvedValue({ realtimePoints: [] });
 
-    await expect(controller.vietnamOverviewRealtimePoints('today')).resolves.toEqual({ realtimePoints: [] });
+    await expect(controller.vietnamOverviewRealtimePoints('today', '20')).resolves.toEqual({
+      realtimePoints: [],
+    });
 
     expect(routeMetadata('vietnamOverviewRealtimePoints')).toEqual({
       method: RequestMethod.GET,
       path: ['vietnam-overview/realtime-points', 'maps/vietnam-overview/realtime-points'],
     });
-    expect(admin.getVietnamOverviewRealtimePoints).toHaveBeenCalledWith('today');
+    expect(admin.getVietnamOverviewRealtimePoints).toHaveBeenCalledWith('today', { take: '20' });
   });
 
   it('exposes usage overview as a bounded aggregate GET list', async () => {
