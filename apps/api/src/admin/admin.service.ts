@@ -5581,6 +5581,7 @@ export class AdminService {
     if (existing?.status === MonthlyTaxClosingStatus.CLOSED && status !== MonthlyTaxClosingStatus.CLOSED) {
       throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
     }
+    assertMonthlyTaxClosingStatusTransition(existing?.status ?? MonthlyTaxClosingStatus.DRAFT, status);
 
     const summary = await this.monthlyTaxClosingSummary({ period });
     const now = new Date();
@@ -10026,6 +10027,31 @@ function monthlyTaxClosingStatusMutationData(
       return { closedAt: at, closedById: actorId };
     default:
       return {};
+  }
+}
+
+const MONTHLY_TAX_CLOSING_STATUS_ORDER: readonly MonthlyTaxClosingStatus[] = [
+  MonthlyTaxClosingStatus.DRAFT,
+  MonthlyTaxClosingStatus.REVIEWED,
+  MonthlyTaxClosingStatus.DECLARED,
+  MonthlyTaxClosingStatus.PAID,
+  MonthlyTaxClosingStatus.CLOSED,
+];
+
+function assertMonthlyTaxClosingStatusTransition(
+  currentStatus: MonthlyTaxClosingStatus,
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (currentStatus === nextStatus) {
+    return;
+  }
+
+  const currentIndex = MONTHLY_TAX_CLOSING_STATUS_ORDER.indexOf(currentStatus);
+  const nextIndex = MONTHLY_TAX_CLOSING_STATUS_ORDER.indexOf(nextStatus);
+  if (currentIndex < 0 || nextIndex !== currentIndex + 1) {
+    throw new BadRequestException(
+      'Monthly tax closing status must move in order: REVIEWED, DECLARED, PAID, CLOSED.',
+    );
   }
 }
 

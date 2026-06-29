@@ -5518,6 +5518,39 @@ describe('AdminService query orchestration', () => {
     ).rejects.toThrow('Closed monthly periods require reversal entries, not direct edits.');
   });
 
+  it.each([
+    [MonthlyTaxClosingStatus.DRAFT, MonthlyTaxClosingStatus.PAID],
+    [MonthlyTaxClosingStatus.PAID, MonthlyTaxClosingStatus.DECLARED],
+  ])('rejects unsafe monthly tax closing transition from %s to %s', async (fromStatus, toStatus) => {
+    const prisma = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: fromStatus,
+          declaredAt: null,
+          paidAt: null,
+          closedAt: null,
+          notes: null,
+        }),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn(),
+        count: vi.fn(),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: toStatus,
+      }),
+    ).rejects.toThrow('Monthly tax closing status must move in order: REVIEWED, DECLARED, PAID, CLOSED.');
+    expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
+  });
+
   it('summarizes platform VAT totals and rate buckets for a monthly period', async () => {
     const prisma = {
       bookingSettlementSnapshot: {
