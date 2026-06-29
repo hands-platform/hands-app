@@ -37,7 +37,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
-export function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: boolean) {
+function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: boolean) {
   const ownerType = readEnum(formData, 'ownerType', ownerTypes, 'Owner type');
   const ownerId = readRequiredString(formData, 'ownerId', 'Owner profile id');
   const direction = readEnum(formData, 'direction', directions, 'Direction');

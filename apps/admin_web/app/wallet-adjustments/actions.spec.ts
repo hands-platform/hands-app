@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 
 import { adminPostOrThrow } from '../../lib/admin-api';
 import { createManualWalletAdjustment } from './actions';
+import * as walletAdjustmentActions from './actions';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
@@ -66,5 +67,9 @@ describe('manual wallet adjustment server actions', () => {
 
     await expect(createManualWalletAdjustment(formData)).rejects.toThrow('Amount must be greater than zero');
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('exports only async server actions from the server action module', () => {
+    expect(Object.keys(walletAdjustmentActions)).toEqual(['createManualWalletAdjustment']);
   });
 });
