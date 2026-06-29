@@ -7,6 +7,7 @@ import {
   PayoutBatchStatus,
   Prisma,
   ProviderWalletLedgerType,
+  ProviderWalletWithdrawalRequestStatus,
   Role,
   ProviderBankAccountStatus,
   ProviderSanctionStatus,
@@ -25,9 +26,13 @@ import {
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
   normalizePartnerBankDepositInput,
+  normalizeProviderWalletWithdrawalRequestInput,
+  normalizeProviderWalletWithdrawalRequestUpdateInput,
   normalizeCashFeeDebtSettlementInput,
   normalizePayoutBatchUpdateStatus,
   type PartnerBankDepositInput,
+  type ProviderWalletWithdrawalRequestInput,
+  type ProviderWalletWithdrawalRequestUpdateInput,
 } from './earnings.policy';
 import {
   PROVIDER_WALLET_BLOCK_CODE,
@@ -56,6 +61,10 @@ type AdminFinanceListQuery = {
   readonly range?: string | null;
   readonly review?: string | null;
   readonly take?: number | string | null;
+};
+
+type AdminWithdrawalRequestListQuery = AdminFinanceListQuery & {
+  readonly status?: ProviderWalletWithdrawalRequestStatus | string | null;
 };
 
 const ADMIN_FINANCE_LIST_DEFAULT_LIMIT = 50;
@@ -94,6 +103,23 @@ function adminPayoutBatchListWhere(
   const where = adminPayoutBatchReviewWhere(options.review) ?? {};
   const dateRange = adminFinanceDateRangeWhere(options.range);
 
+  if (dateRange) {
+    where.createdAt = dateRange;
+  }
+
+  return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function adminWithdrawalRequestListWhere(
+  options: AdminWithdrawalRequestListQuery,
+): Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined {
+  const where: Prisma.ProviderWalletWithdrawalRequestWhereInput = {};
+  const status = normalizeWithdrawalRequestStatus(options.status);
+  const dateRange = adminFinanceDateRangeWhere(options.range);
+
+  if (status) {
+    where.status = status;
+  }
   if (dateRange) {
     where.createdAt = dateRange;
   }
@@ -341,6 +367,16 @@ function normalizeOptionalQuery(value: string | null | undefined) {
   }
   const trimmed = value.trim().toLowerCase();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeWithdrawalRequestStatus(
+  value: ProviderWalletWithdrawalRequestStatus | string | null | undefined,
+) {
+  if (!value) {
+    return null;
+  }
+  const status = String(value).trim().toUpperCase() as ProviderWalletWithdrawalRequestStatus;
+  return Object.values(ProviderWalletWithdrawalRequestStatus).includes(status) ? status : null;
 }
 
 function startOfLocalDay(timestamp: number) {
@@ -1035,6 +1071,158 @@ export class EarningsService {
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: { earnings: { orderBy: { createdAt: 'desc' } } },
+    });
+  }
+
+  async listProviderWalletWithdrawalRequestsForProviderUser(userId: string) {
+    const provider = await this.requireProviderProfile(userId);
+    return this.prisma.providerWalletWithdrawalRequest.findMany({
+      where: { providerProfileId: provider.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { bankAccount: true },
+    });
+  }
+
+  listProviderWalletWithdrawalRequestsForAdmin(options: AdminWithdrawalRequestListQuery = {}) {
+    return this.prisma.providerWalletWithdrawalRequest.findMany({
+      where: adminWithdrawalRequestListWhere(options),
+      orderBy: { createdAt: 'desc' },
+      take: adminFinanceListTake(options.take),
+      include: {
+        providerProfile: {
+          include: {
+            user: { select: { id: true, phone: true, fullName: true } },
+          },
+        },
+        bankAccount: true,
+      },
+    });
+  }
+
+  async createProviderWalletWithdrawalRequestForProviderUser(
+    userId: string,
+    input: ProviderWalletWithdrawalRequestInput,
+  ) {
+    const provider = await this.requireProviderProfile(userId);
+    const request = normalizeProviderWalletWithdrawalRequestInput(input);
+
+    return this.prisma.$transaction(async (tx) => {
+      const bankAccount = await tx.providerBankAccount.findFirst({
+        where: {
+          ...(request.bankAccountId ? { id: request.bankAccountId } : {}),
+          providerProfileId: provider.id,
+          status: ProviderBankAccountStatus.APPROVED,
+          deletedAt: null,
+        },
+        ...(request.bankAccountId
+          ? {}
+          : { orderBy: [{ isPrimary: 'desc' as const }, { updatedAt: 'desc' as const }] }),
+      });
+      if (!bankAccount) {
+        throw new BadRequestException('Partner needs an approved bank account before withdrawal');
+      }
+
+      const currentWalletBalance = await this.providerWalletLedgerBalance(tx, provider.id);
+      if (request.amount > currentWalletBalance) {
+        throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
+      }
+
+      return tx.providerWalletWithdrawalRequest.create({
+        data: {
+          providerProfileId: provider.id,
+          bankAccountId: bankAccount.id,
+          amount: request.amount,
+          currency: 'VND',
+          status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+          requestNote: request.requestNote,
+          metadata: {
+            currentWalletBalance,
+            source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
+          },
+        },
+      });
+    });
+  }
+
+  async updateProviderWalletWithdrawalRequestForAdmin(
+    requestId: string,
+    input: ProviderWalletWithdrawalRequestUpdateInput,
+    adminId: string,
+  ) {
+    const existing = await this.prisma.providerWalletWithdrawalRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Partner wallet withdrawal request not found');
+    }
+    const update = normalizeProviderWalletWithdrawalRequestUpdateInput({
+      ...input,
+      currentStatus: existing.status,
+    });
+    const shouldMarkPaid =
+      update.status === ProviderWalletWithdrawalRequestStatus.PAID &&
+      existing.status !== ProviderWalletWithdrawalRequestStatus.PAID;
+    const nextTransferRef = update.transferRef ?? existing.transferRef;
+    const nextAdminNote = update.adminNote ?? existing.adminNote;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (shouldMarkPaid) {
+        const currentWalletBalance = await this.providerWalletLedgerBalance(
+          tx,
+          existing.providerProfileId,
+        );
+        if (existing.amount > currentWalletBalance) {
+          throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
+        }
+        await tx.providerWalletLedgerEntry.upsert({
+          where: { sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id) },
+          update: {
+            amount: -existing.amount,
+            currency: existing.currency,
+            reference: nextTransferRef,
+            notes: nextAdminNote,
+            metadata: {
+              withdrawalRequestId: existing.id,
+              adminId,
+            },
+          },
+          create: {
+            providerProfileId: existing.providerProfileId,
+            type: ProviderWalletLedgerType.PARTNER_WALLET_WITHDRAWAL_PAID,
+            sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id),
+            amount: -existing.amount,
+            currency: existing.currency,
+            reference: nextTransferRef,
+            notes: nextAdminNote,
+            metadata: {
+              withdrawalRequestId: existing.id,
+              adminId,
+            },
+          },
+        });
+      }
+
+      return tx.providerWalletWithdrawalRequest.update({
+        where: { id: existing.id },
+        data: {
+          ...(update.status ? { status: update.status } : {}),
+          transferRef: nextTransferRef,
+          adminNote: nextAdminNote,
+          correctionReason: update.correctionReason ?? existing.correctionReason,
+          reviewedByAdminId: adminId,
+          reviewedAt: new Date(),
+          ...(shouldMarkPaid ? { paidAt: new Date() } : {}),
+        },
+        include: {
+          providerProfile: {
+            include: {
+              user: { select: { id: true, phone: true, fullName: true } },
+            },
+          },
+          bankAccount: true,
+        },
+      });
     });
   }
 
@@ -1748,6 +1936,10 @@ function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
 
 function partnerBankDepositSourceKey(providerProfileId: string, bankTransactionId: string) {
   return `partner-bank-deposit:${providerProfileId}:${bankTransactionId}`;
+}
+
+function partnerWalletWithdrawalPaidSourceKey(requestId: string) {
+  return `partner-wallet-withdrawal:${requestId}:paid`;
 }
 
 function calculatePartnerTaxLine(

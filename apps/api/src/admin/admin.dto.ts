@@ -25,6 +25,7 @@ import {
   BookingOpsTaskType,
   MonthlyTaxClosingStatus,
   PayoutBatchStatus,
+  ProviderWalletWithdrawalRequestStatus,
   ProviderReportSeverity,
   ProviderReportSource,
   ProviderReportStatus,
@@ -810,6 +811,30 @@ export class RecordPartnerBankDepositDto {
   @IsString()
   @MaxLength(500)
   notes?: string | null;
+}
+
+export class UpdateProviderWalletWithdrawalRequestDto {
+  @IsOptional()
+  @IsEnum(ProviderWalletWithdrawalRequestStatus)
+  status?: ProviderWalletWithdrawalRequestStatus;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  transferRef?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  adminNote?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  correctionReason?: string | null;
 }
 
 export class CreatePayoutBatchDto {

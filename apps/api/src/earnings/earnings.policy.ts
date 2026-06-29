@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
+import {
+  CashFeeSettlementMethod,
+  PaymentMethod,
+  PayoutBatchStatus,
+  ProviderWalletWithdrawalRequestStatus,
+} from '@prisma/client';
 
 const BPS_DENOMINATOR = 10_000;
 
@@ -43,6 +48,21 @@ export type PartnerBankDepositInput = {
   attachmentUrl?: string | null;
   notes?: string | null;
   adminId?: string | null;
+};
+
+export type ProviderWalletWithdrawalRequestInput = {
+  amount: number;
+  bankAccountId?: string | null;
+  requestNote?: string | null;
+};
+
+export type ProviderWalletWithdrawalRequestUpdateInput = {
+  currentStatus?: ProviderWalletWithdrawalRequestStatus | string;
+  status?: ProviderWalletWithdrawalRequestStatus | string | null;
+  requestedStatus?: ProviderWalletWithdrawalRequestStatus | string | null;
+  transferRef?: string | null;
+  adminNote?: string | null;
+  correctionReason?: string | null;
 };
 
 export type PayoutBatchUpdateStatusInput = {
@@ -181,6 +201,63 @@ export function normalizePartnerBankDepositInput(input: PartnerBankDepositInput)
     attachmentUrl,
     notes,
     adminId,
+  };
+}
+
+export function normalizeProviderWalletWithdrawalRequestInput(
+  input: ProviderWalletWithdrawalRequestInput,
+) {
+  const amount = wholeVnd(input.amount, 'Withdrawal amount');
+  const bankAccountId = cleanOptionalText(input.bankAccountId) ?? undefined;
+  const requestNote = cleanOptionalText(input.requestNote) ?? undefined;
+
+  if (amount <= 0) {
+    throw new BadRequestException('Withdrawal amount must be greater than 0 VND');
+  }
+
+  return {
+    amount,
+    bankAccountId,
+    requestNote,
+  };
+}
+
+export function normalizeProviderWalletWithdrawalRequestUpdateInput(
+  input: ProviderWalletWithdrawalRequestUpdateInput,
+) {
+  const requestedStatus = input.requestedStatus ?? input.status;
+  const nextStatus = requestedStatus
+    ? (requestedStatus as ProviderWalletWithdrawalRequestStatus)
+    : undefined;
+  const transferRef = cleanOptionalText(input.transferRef);
+  const adminNote = cleanOptionalText(input.adminNote);
+  const correctionReason = cleanOptionalText(input.correctionReason);
+
+  if (nextStatus && !Object.values(ProviderWalletWithdrawalRequestStatus).includes(nextStatus)) {
+    throw new BadRequestException('Invalid withdrawal request status');
+  }
+  if (
+    input.currentStatus === ProviderWalletWithdrawalRequestStatus.PAID &&
+    nextStatus &&
+    nextStatus !== ProviderWalletWithdrawalRequestStatus.PAID
+  ) {
+    throw new BadRequestException('Paid withdrawal requests cannot be moved back to an unpaid status');
+  }
+  if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !transferRef) {
+    throw new BadRequestException('Transfer reference is required before marking a withdrawal request paid');
+  }
+  if (
+    nextStatus === ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION &&
+    !correctionReason
+  ) {
+    throw new BadRequestException('Bank correction reason is required');
+  }
+
+  return {
+    status: nextStatus,
+    transferRef,
+    adminNote,
+    correctionReason,
   };
 }
 

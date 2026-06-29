@@ -1,4 +1,9 @@
-import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
+import {
+  CashFeeSettlementMethod,
+  PaymentMethod,
+  PayoutBatchStatus,
+  ProviderWalletWithdrawalRequestStatus,
+} from '@prisma/client';
 
 import {
   allocatePartnerBankDeposit,
@@ -7,6 +12,8 @@ import {
   calculatePlatformFeeBreakdown,
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
+  normalizeProviderWalletWithdrawalRequestInput,
+  normalizeProviderWalletWithdrawalRequestUpdateInput,
   normalizePartnerBankDepositInput,
   normalizeCashFeeDebtSettlementInput,
   normalizePayoutBatchUpdateStatus,
@@ -273,5 +280,58 @@ describe('earnings policy', () => {
     });
 
     expect(nextStatus).toBeUndefined();
+  });
+
+  it('normalizes partner wallet withdrawal request input', () => {
+    const request = normalizeProviderWalletWithdrawalRequestInput({
+      amount: 500000,
+      bankAccountId: ' bank-account-1 ',
+      requestNote: '  Send to my primary bank  ',
+    });
+
+    expect(request).toEqual({
+      amount: 500000,
+      bankAccountId: 'bank-account-1',
+      requestNote: 'Send to my primary bank',
+    });
+  });
+
+  it('rejects empty partner wallet withdrawal amounts', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestInput({
+        amount: 0,
+        bankAccountId: 'bank-account-1',
+      }),
+    ).toThrow('Withdrawal amount must be greater than 0 VND');
+  });
+
+  it('requires a correction reason before sending withdrawal requests back to the partner', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+        correctionReason: ' ',
+      }),
+    ).toThrow('Bank correction reason is required');
+  });
+
+  it('requires a transfer reference before marking withdrawal requests paid', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: null,
+      }),
+    ).toThrow('Transfer reference is required before marking a withdrawal request paid');
+  });
+
+  it('prevents paid withdrawal requests from moving back to unpaid states', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        transferRef: 'BANK-001',
+      }),
+    ).toThrow('Paid withdrawal requests cannot be moved back to an unpaid status');
   });
 });

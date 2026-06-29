@@ -335,6 +335,7 @@ type AdminBookingDetailPreviewQuery = {
 type AdminPaymentOperationsQuery = {
   readonly range?: string | null;
   readonly review?: string | null;
+  readonly status?: string | null;
   readonly take?: number | string | null;
 };
 type AdminPartnerWithholdingTaxQuery = {
@@ -6166,6 +6167,40 @@ export class AdminService {
       },
     );
     return ledger;
+  }
+
+  listProviderWalletWithdrawalRequests(options: AdminPaymentOperationsQuery = {}) {
+    return this.earnings.listProviderWalletWithdrawalRequestsForAdmin(options);
+  }
+
+  async updateProviderWalletWithdrawalRequest(
+    actorId: string,
+    requestId: string,
+    input: {
+      status?: string | null;
+      transferRef?: string | null;
+      adminNote?: string | null;
+      correctionReason?: string | null;
+    },
+  ) {
+    const request = await this.earnings.updateProviderWalletWithdrawalRequestForAdmin(
+      requestId,
+      input,
+      actorId,
+    );
+    await this.writeAudit(
+      actorId,
+      'provider_wallet.withdrawal_request.update',
+      `provider_wallet_withdrawal_request:${request.id}`,
+      {
+        providerProfileId: request.providerProfileId,
+        amount: request.amount,
+        currency: request.currency,
+        status: request.status,
+        transferRef: request.transferRef,
+      },
+    );
+    return request;
   }
 
   listPayoutBatches(options: AdminPaymentOperationsQuery = {}) {

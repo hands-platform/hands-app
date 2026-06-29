@@ -195,6 +195,15 @@ enum PayoutBatchStatus {
   CANCELLED
 }
 
+enum ProviderWalletWithdrawalRequestStatus {
+  REQUESTED
+  NEEDS_BANK_CORRECTION
+  APPROVED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
 enum ProviderWalletLedgerType {
   BOOKING_EARNING
   CASH_BOOKING_PLATFORM_FEE_CHARGE
@@ -216,6 +225,7 @@ enum ProviderWalletLedgerType {
   MANUAL_ADJUSTMENT_CREDIT
   MANUAL_ADJUSTMENT_DEBIT
   MANUAL_ADJUSTMENT_REVERSAL
+  PARTNER_WALLET_WITHDRAWAL_PAID
 }
 
 enum CustomerWalletLedgerType {
@@ -524,6 +534,7 @@ model ProviderProfile {
   earnings                 ProviderEarning[]
   payoutBatches            ProviderPayoutBatch[]
   walletLedgerEntries      ProviderWalletLedgerEntry[]
+  walletWithdrawalRequests ProviderWalletWithdrawalRequest[]
   reports                  ProviderReport[]
   sanctions                ProviderSanction[]
   referralCodes            ReferralCode[]                @relation("ProviderReferralCodeOwner")
@@ -580,6 +591,7 @@ model ProviderBankAccount {
   updatedAt           DateTime                  @updatedAt
   deletedAt           DateTime?
   providerProfile     ProviderProfile           @relation(fields: [providerProfileId], references: [id])
+  withdrawalRequests  ProviderWalletWithdrawalRequest[]
 
   @@index([providerProfileId, status])
 }
@@ -1197,6 +1209,31 @@ model ProviderWalletLedgerEntry {
   @@index([earningId])
   @@index([payoutBatchId])
   @@index([type, createdAt])
+}
+
+model ProviderWalletWithdrawalRequest {
+  id                String                                  @id @default(cuid())
+  providerProfileId String
+  bankAccountId     String?
+  amount            Int
+  currency          String                                  @default("VND")
+  status            ProviderWalletWithdrawalRequestStatus   @default(REQUESTED)
+  requestNote       String?
+  adminNote         String?
+  correctionReason  String?
+  transferRef       String?
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  paidAt            DateTime?
+  metadata          Json?
+  createdAt         DateTime                                @default(now())
+  updatedAt         DateTime                                @updatedAt
+  providerProfile   ProviderProfile                         @relation(fields: [providerProfileId], references: [id])
+  bankAccount       ProviderBankAccount?                    @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  @@index([providerProfileId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([bankAccountId])
 }
 
 model CustomerWalletLedgerEntry {

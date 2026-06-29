@@ -4,11 +4,30 @@ import {
   PartnerTaxLineKind,
   PaymentMethod,
   PayoutBatchStatus,
+  ProviderBankAccountStatus,
   ProviderTaxProfileStatus,
   ProviderWalletLedgerType,
+  ProviderWalletWithdrawalRequestStatus,
   Role,
 } from '@prisma/client';
 import { EarningsService } from './earnings.service';
+
+type EarningsServiceWithWithdrawalRequests = EarningsService & {
+  createProviderWalletWithdrawalRequestForProviderUser: (
+    userId: string,
+    input: { amount: number; bankAccountId?: string | null; requestNote?: string | null },
+  ) => Promise<unknown>;
+  updateProviderWalletWithdrawalRequestForAdmin: (
+    requestId: string,
+    input: {
+      status?: ProviderWalletWithdrawalRequestStatus | string | null;
+      transferRef?: string | null;
+      adminNote?: string | null;
+      correctionReason?: string | null;
+    },
+    adminId: string,
+  ) => Promise<unknown>;
+};
 
 describe('EarningsService payout batches', () => {
   it('filters admin earnings by range, review state, and bounded limit', async () => {
@@ -854,6 +873,186 @@ describe('EarningsService payout batches', () => {
 
     expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('creates partner wallet withdrawal requests against approved bank accounts and prepaid balance', async () => {
+    const createdRequest = {
+      id: 'withdrawal-request-1',
+      providerProfileId: 'provider-1',
+      bankAccountId: 'bank-account-1',
+      amount: 500000,
+      currency: 'VND',
+      status: 'REQUESTED',
+    };
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+      },
+      providerWalletWithdrawalRequest: {
+        create: vi.fn().mockResolvedValue(createdRequest),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'partner-user-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        amount: 500000,
+        bankAccountId: ' bank-account-1 ',
+        requestNote: ' Please send after the shift ',
+      }),
+    ).resolves.toEqual(createdRequest);
+
+    expect(tx.providerBankAccount.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'bank-account-1',
+        providerProfileId: 'provider-1',
+        status: ProviderBankAccountStatus.APPROVED,
+        deletedAt: null,
+      },
+    });
+    expect(tx.providerWalletWithdrawalRequest.create).toHaveBeenCalledWith({
+      data: {
+        providerProfileId: 'provider-1',
+        bankAccountId: 'bank-account-1',
+        amount: 500000,
+        currency: 'VND',
+        status: 'REQUESTED',
+        requestNote: 'Please send after the shift',
+        metadata: {
+          currentWalletBalance: 750000,
+          source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
+        },
+      },
+    });
+  });
+
+  it('rejects partner wallet withdrawal requests above prepaid wallet balance', async () => {
+    const tx = {
+      providerBankAccount: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 300000 } }),
+      },
+      providerWalletWithdrawalRequest: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1', userId: 'partner-user-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.createProviderWalletWithdrawalRequestForProviderUser('partner-user-1', {
+        amount: 500000,
+        bankAccountId: 'bank-account-1',
+      }),
+    ).rejects.toThrow('Withdrawal amount exceeds partner wallet balance');
+
+    expect(tx.providerWalletWithdrawalRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('marks partner wallet withdrawal requests paid and records the prepaid wallet debit', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-1',
+      providerProfileId: 'provider-1',
+      bankAccountId: 'bank-account-1',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      transferRef: null,
+      adminNote: null,
+      correctionReason: null,
+      paidAt: null,
+    };
+    const updatedRequest = {
+      ...existingRequest,
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      transferRef: 'BANK-OUT-001',
+    };
+    const tx = {
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
+        upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-ledger-1' }),
+      },
+      providerWalletWithdrawalRequest: {
+        update: vi.fn().mockResolvedValue(updatedRequest),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(existingRequest),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequestForAdmin(
+        'withdrawal-request-1',
+        {
+          status: ProviderWalletWithdrawalRequestStatus.PAID,
+          transferRef: ' BANK-OUT-001 ',
+          adminNote: ' Manual transfer completed ',
+        },
+        'admin-user-1',
+      ),
+    ).resolves.toEqual(updatedRequest);
+
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'partner-wallet-withdrawal:withdrawal-request-1:paid' },
+      update: expect.objectContaining({
+        amount: -500000,
+        reference: 'BANK-OUT-001',
+        notes: 'Manual transfer completed',
+      }),
+      create: expect.objectContaining({
+        providerProfileId: 'provider-1',
+        type: ProviderWalletLedgerType.PARTNER_WALLET_WITHDRAWAL_PAID,
+        sourceKey: 'partner-wallet-withdrawal:withdrawal-request-1:paid',
+        amount: -500000,
+        currency: 'VND',
+        reference: 'BANK-OUT-001',
+        notes: 'Manual transfer completed',
+        metadata: {
+          withdrawalRequestId: 'withdrawal-request-1',
+          adminId: 'admin-user-1',
+        },
+      }),
+    });
+    expect(tx.providerWalletWithdrawalRequest.update).toHaveBeenCalledWith({
+      where: { id: 'withdrawal-request-1' },
+      data: expect.objectContaining({
+        status: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: 'BANK-OUT-001',
+        adminNote: 'Manual transfer completed',
+        reviewedByAdminId: 'admin-user-1',
+        reviewedAt: expect.any(Date),
+        paidAt: expect.any(Date),
+      }),
+      include: expect.objectContaining({
+        bankAccount: true,
+      }),
+    });
   });
 
   it('marks payout batch earnings, withholding, and wallet ledger paid together', async () => {

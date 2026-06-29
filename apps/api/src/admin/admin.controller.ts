@@ -32,6 +32,7 @@ import {
   UpdateMonthlyTaxClosingStatusDto,
   UpdateNotificationTemplateDto,
   UpdateOperationalPolicyDto,
+  UpdateProviderWalletWithdrawalRequestDto,
   UpdateReferralPolicyDto,
   UpdatePartnerReportDto,
   UpdatePayoutBatchDto,
@@ -849,6 +850,24 @@ export class AdminController {
     @Body() body: RecordPartnerBankDepositDto,
   ) {
     return this.admin.recordPartnerBankDeposit(user.id, body);
+  }
+
+  @Get('provider-wallet/withdrawal-requests')
+  providerWalletWithdrawalRequests(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.admin.listProviderWalletWithdrawalRequests({ range, status, take });
+  }
+
+  @Patch('provider-wallet/withdrawal-requests/:id')
+  updateProviderWalletWithdrawalRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: UpdateProviderWalletWithdrawalRequestDto,
+  ) {
+    return this.admin.updateProviderWalletWithdrawalRequest(user.id, id, body);
   }
 
   @Get('payout-batches/summary')

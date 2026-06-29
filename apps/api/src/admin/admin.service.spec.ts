@@ -5140,6 +5140,56 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('delegates partner wallet withdrawal request updates to the earnings service with audit', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const earnings = {
+      updateProviderWalletWithdrawalRequestForAdmin: vi.fn().mockResolvedValue({
+        id: 'withdrawal-request-1',
+        providerProfileId: 'provider-1',
+        amount: 500000,
+        currency: 'VND',
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+      }),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+        adminNote: 'Manual bank transfer confirmed',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'withdrawal-request-1',
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+      }),
+    );
+
+    expect(earnings.updateProviderWalletWithdrawalRequestForAdmin).toHaveBeenCalledWith(
+      'withdrawal-request-1',
+      {
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+        adminNote: 'Manual bank transfer confirmed',
+      },
+      'admin-user-1',
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'provider_wallet.withdrawal_request.update',
+        target: 'provider_wallet_withdrawal_request:withdrawal-request-1',
+      }),
+    });
+  });
+
   it('lists booking settlement snapshots with bounded range and review filters', async () => {
     const prisma = {
       bookingSettlementSnapshot: {
