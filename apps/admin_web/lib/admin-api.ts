@@ -1289,6 +1289,77 @@ export type AdminProviderWalletLedgerEntry = {
   updatedAt?: string;
 };
 
+export type AdminManualWalletAdjustmentOwnerType = 'CUSTOMER' | 'PARTNER';
+
+export type AdminManualWalletAdjustmentDirection = 'CREDIT' | 'DEBIT';
+
+export type AdminManualWalletAdjustmentType =
+  | 'PROMOTION_CREDIT'
+  | 'CUSTOMER_COMPENSATION'
+  | 'PARTNER_BONUS'
+  | 'REFERRAL_CORRECTION'
+  | 'ERROR_CORRECTION'
+  | 'PENALTY'
+  | 'CASH_BOOKING_DEDUCTION'
+  | 'RECEIVABLE_WRITE_OFF'
+  | 'MANUAL_REVERSAL';
+
+export type AdminManualWalletAdjustmentAccountingEntry = {
+  accountCredit: string;
+  accountDebit: string;
+  amount: number;
+};
+
+export type AdminManualWalletAdjustmentPreview = {
+  accountingEntries: AdminManualWalletAdjustmentAccountingEntry[];
+  adjustmentType: AdminManualWalletAdjustmentType;
+  adminId?: string;
+  affects: {
+    bankCash: boolean;
+    expense: boolean;
+    partnerReceivable: boolean;
+    revenue: boolean;
+    taxPayable: boolean;
+    walletLiability: boolean;
+  };
+  afterBalance: number;
+  amount: number;
+  approvalId?: string;
+  attachmentUrl?: string | null;
+  bankCashAmount: number;
+  beforeBalance: number;
+  companyOutputVat: number;
+  currency: string;
+  direction: AdminManualWalletAdjustmentDirection;
+  expenseAmount: number;
+  expenseContraAmount?: number;
+  monthlyPeriod?: string | null;
+  ownerId: string;
+  ownerType: AdminManualWalletAdjustmentOwnerType;
+  partnerReceivableDecrease?: number;
+  partnerReceivableIncrease?: number;
+  platformRevenueAmount: number;
+  reason: string;
+  requiresApproval: boolean;
+  requiresAttachment: boolean;
+  revenueAccount?: string | null;
+  revenueAmount: number;
+  walletDelta: number;
+  walletLiabilityDecrease?: number;
+  walletLiabilityIncrease?: number;
+};
+
+export type AdminManualWalletAdjustmentResult = {
+  auditLog?: AdminAuditLog;
+  ledger: {
+    id: string;
+    amount: number;
+    currency: string;
+    createdAt?: string;
+  };
+  preview: AdminManualWalletAdjustmentPreview;
+};
+
 export type AdminEarningSummary = {
   count: number;
   grossAmount: number;

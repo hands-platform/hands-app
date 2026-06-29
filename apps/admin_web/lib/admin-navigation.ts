@@ -135,6 +135,12 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Clear Partner wallet debt from cash bookings.',
       },
       {
+        href: '/wallet-adjustments',
+        label: 'Wallet Adjustments',
+        description:
+          'Preview and create approved customer or Partner wallet credits, debits, and reversals without moving bank/cash.',
+      },
+      {
         href: '/finance-tax',
         label: 'Tax Overview',
         description: 'Tax, fee, VAT, PIT, payment fee, and settlement snapshot command view.',
