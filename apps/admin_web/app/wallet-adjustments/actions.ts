@@ -25,15 +25,23 @@ const adjustmentTypes = new Set<AdminManualWalletAdjustmentType>([
 ]);
 
 export async function createManualWalletAdjustment(formData: FormData) {
-  const payload = readManualWalletAdjustmentPayload(formData, true);
+  let payload: ReturnType<typeof readManualWalletAdjustmentPayload>;
+
+  try {
+    payload = readManualWalletAdjustmentPayload(formData, true);
+  } catch {
+    return redirect(
+      walletAdjustmentNoticeRedirect('failed', readManualWalletAdjustmentRedirectContext(formData)),
+    );
+  }
 
   try {
     await adminPostOrThrow('/admin/wallet-adjustments', payload);
   } catch (error) {
     if (isAdminApiAuthError(error)) {
-      return redirect('/wallet-adjustments?adjustmentNotice=admin-auth');
+      return redirect(walletAdjustmentNoticeRedirect('admin-auth', payload));
     }
-    return redirect('/wallet-adjustments?adjustmentNotice=failed');
+    return redirect(walletAdjustmentNoticeRedirect('failed', payload));
   }
 
   revalidatePath('/wallet-adjustments');
@@ -43,7 +51,40 @@ export async function createManualWalletAdjustment(formData: FormData) {
   revalidatePath('/partners');
   revalidatePath('/customers');
   revalidatePath('/audit-log');
-  redirect('/wallet-adjustments?adjustmentNotice=created');
+  redirect(walletAdjustmentNoticeRedirect('created', payload));
+}
+
+type WalletAdjustmentNotice = 'admin-auth' | 'created' | 'failed';
+
+type WalletAdjustmentRedirectContext = {
+  readonly ownerId?: string;
+  readonly ownerType?: AdminManualWalletAdjustmentOwnerType;
+};
+
+function walletAdjustmentNoticeRedirect(notice: WalletAdjustmentNotice, context: WalletAdjustmentRedirectContext) {
+  const params = new URLSearchParams({ adjustmentNotice: notice });
+
+  if (context.ownerType) {
+    params.set('ownerType', context.ownerType);
+  }
+
+  if (context.ownerId) {
+    params.set('ownerId', context.ownerId);
+  }
+
+  return `/wallet-adjustments?${params.toString()}`;
+}
+
+function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAdjustmentRedirectContext {
+  const ownerType = readOptionalString(formData, 'ownerType');
+  const ownerId = readOptionalString(formData, 'ownerId');
+
+  return {
+    ...(ownerTypes.has(ownerType as AdminManualWalletAdjustmentOwnerType)
+      ? { ownerType: ownerType as AdminManualWalletAdjustmentOwnerType }
+      : {}),
+    ...(ownerId ? { ownerId } : {}),
+  };
 }
 
 function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: boolean) {

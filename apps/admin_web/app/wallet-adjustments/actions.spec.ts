@@ -60,7 +60,11 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/wallet-adjustments');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/partners');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/customers');
-    expect(mockedRedirect).toHaveBeenCalledWith('/wallet-adjustments?adjustmentNotice=created');
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      expect.stringContaining('adjustmentNotice=created'),
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
   it('redirects to a form notice when the Admin API rejects creation', async () => {
@@ -76,7 +80,9 @@ describe('manual wallet adjustment server actions', () => {
 
     await createManualWalletAdjustment(formData);
 
-    expect(mockedRedirect).toHaveBeenCalledWith('/wallet-adjustments?adjustmentNotice=failed');
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=failed'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
   it('redirects to an auth notice when the Admin token is missing or expired', async () => {
@@ -92,10 +98,12 @@ describe('manual wallet adjustment server actions', () => {
 
     await createManualWalletAdjustment(formData);
 
-    expect(mockedRedirect).toHaveBeenCalledWith('/wallet-adjustments?adjustmentNotice=admin-auth');
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=admin-auth'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
-  it('rejects unsafe or incomplete adjustment requests before posting', async () => {
+  it('redirects unsafe or incomplete adjustment requests before posting', async () => {
     const formData = new FormData();
     formData.set('ownerType', 'PARTNER');
     formData.set('ownerId', 'provider-1');
@@ -105,8 +113,12 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('approvalId', 'approval-2026-06');
     formData.set('reason', 'No amount');
 
-    await expect(createManualWalletAdjustment(formData)).rejects.toThrow('Amount must be greater than zero');
+    await createManualWalletAdjustment(formData);
+
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=failed'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
   it('exports only async server actions from the server action module', () => {
