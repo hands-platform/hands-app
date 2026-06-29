@@ -875,6 +875,44 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
 
+  it('rejects duplicate partner bank deposit references when the amount does not match', async () => {
+    const existingLedger = {
+      id: 'wallet-deposit-existing',
+      providerProfileId: 'provider-1',
+      sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
+      amount: 1000000,
+    };
+    const tx = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(existingLedger),
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.recordPartnerBankDeposit({
+        providerProfileId: 'provider-1',
+        amount: 900000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentUrl: 'https://storage.example/deposits/proof.jpg',
+      }),
+    ).rejects.toThrow('Partner bank deposit reference already exists with a different amount');
+
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
   it('creates partner wallet withdrawal requests against approved bank accounts and prepaid balance', async () => {
     const createdRequest = {
       id: 'withdrawal-request-1',

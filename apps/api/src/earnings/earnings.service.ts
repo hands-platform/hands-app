@@ -785,6 +785,11 @@ export class EarningsService {
 
       const existing = await tx.providerWalletLedgerEntry.findUnique({ where: { sourceKey } });
       if (existing) {
+        if (existing.amount !== deposit.amount) {
+          throw new BadRequestException(
+            'Partner bank deposit reference already exists with a different amount',
+          );
+        }
         return existing;
       }
 
