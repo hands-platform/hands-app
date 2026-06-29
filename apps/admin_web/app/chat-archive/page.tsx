@@ -58,8 +58,15 @@ const CHAT_ARCHIVE_INDEX_HEADERS = [
 ] as const;
 
 type ChatArchiveServerSummary = {
-  readonly generatedAt: string;
-  readonly totalCount: number;
+  readonly activeRooms?: number;
+  readonly completedRooms?: number;
+  readonly customerMessages?: number;
+  readonly emptyRooms?: number;
+  readonly generatedAt?: string;
+  readonly latestMessageAt?: string | null;
+  readonly messageCount?: number;
+  readonly partnerMessages?: number;
+  readonly totalCount?: number;
 };
 
 export default async function ChatArchivePage({ searchParams }: { searchParams?: ChatArchiveSearchParams }) {
@@ -80,14 +87,15 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     adminGet<AdminBookingDetail[]>(repairBookingsHref, []),
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
-  const totalRooms = readChatArchiveTotalCount(archiveSummaryResponse) ?? rooms.length;
+  const pageSummary = buildChatArchiveSummary(rooms);
+  const summary = buildChatArchiveSummaryView(archiveSummaryResponse, pageSummary, rooms.length);
+  const totalRooms = summary.totalCount;
   const totalPages = Math.max(1, Math.ceil(totalRooms / archivePageSize));
   const repairRows = filterChatRepairRows(
     buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
     filters,
     dateFilters,
   );
-  const summary = buildChatArchiveSummary(rooms);
   const repairSummary = buildChatRepairSummary(repairRows);
   const visibleRepairRows = repairRows.slice(0, 30);
   const messageCsvHref = buildCsvDataHref(
@@ -506,11 +514,34 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   );
 }
 
-function readChatArchiveTotalCount(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const totalCount = (value as Partial<ChatArchiveServerSummary>).totalCount;
-  if (typeof totalCount !== 'number' || !Number.isFinite(totalCount)) return null;
-  return Math.max(0, Math.trunc(totalCount));
+function buildChatArchiveSummaryView(
+  value: unknown,
+  fallback: ReturnType<typeof buildChatArchiveSummary>,
+  fallbackTotalCount: number,
+) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {
+      ...fallback,
+      totalCount: fallbackTotalCount,
+    };
+  }
+  const summary = value as Partial<ChatArchiveServerSummary>;
+
+  return {
+    activeRooms: readChatArchiveSummaryNumber(summary.activeRooms) ?? fallback.activeRooms,
+    completedRooms: readChatArchiveSummaryNumber(summary.completedRooms) ?? fallback.completedRooms,
+    customerMessages: readChatArchiveSummaryNumber(summary.customerMessages) ?? fallback.customerMessages,
+    emptyRooms: readChatArchiveSummaryNumber(summary.emptyRooms) ?? fallback.emptyRooms,
+    latestMessageAt: summary.latestMessageAt ? formatDate(summary.latestMessageAt) : fallback.latestMessageAt,
+    messageCount: readChatArchiveSummaryNumber(summary.messageCount) ?? fallback.messageCount,
+    partnerMessages: readChatArchiveSummaryNumber(summary.partnerMessages) ?? fallback.partnerMessages,
+    totalCount: readChatArchiveSummaryNumber(summary.totalCount) ?? fallbackTotalCount,
+  };
+}
+
+function readChatArchiveSummaryNumber(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.trunc(value));
 }
 
 type ChatArchivePersonCellProps = {

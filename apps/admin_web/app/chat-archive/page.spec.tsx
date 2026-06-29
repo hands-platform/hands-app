@@ -23,6 +23,20 @@ describe('ChatArchivePage', () => {
 
   it('renders retained chat totals separately from bounded preview messages', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/chat-archive/summary')) {
+        return {
+          activeRooms: 12,
+          completedRooms: 25,
+          customerMessages: 800,
+          emptyRooms: 3,
+          generatedAt: '2026-06-29T01:30:00.000Z',
+          latestMessageAt: '2026-06-29T01:20:00.000Z',
+          messageCount: 1234,
+          partnerMessages: 434,
+          totalCount: 99,
+        };
+      }
+
       if (href.startsWith('/admin/chat-archive')) {
         return [chatArchiveBooking()];
       }
@@ -37,7 +51,9 @@ describe('ChatArchivePage', () => {
     const page = await ChatArchivePage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('1 room(s), 42 message(s)');
+    expect(markup).toContain('1 room(s), 1234 message(s)');
+    expect(markup).toContain('99');
+    expect(markup).toContain('800 customer / 434 Partner');
     expect(markup).toContain('Chat window previews');
     expect(markup).toContain('2 shown / 42 total');
   });

@@ -491,7 +491,20 @@ describe('AdminService query orchestration', () => {
   it('counts chat archive summaries with the same server filters', async () => {
     const prisma = {
       booking: {
-        count: vi.fn().mockResolvedValue(34),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(34)
+          .mockResolvedValueOnce(11)
+          .mockResolvedValueOnce(9)
+          .mockResolvedValueOnce(4),
+      },
+      chatMessage: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(120)
+          .mockResolvedValueOnce(70)
+          .mockResolvedValueOnce(50),
+        findFirst: vi.fn().mockResolvedValue({ createdAt: new Date('2026-06-27T03:00:00.000Z') }),
       },
     };
     const service = createAdminService(prisma);
@@ -504,7 +517,14 @@ describe('AdminService query orchestration', () => {
         status: 'no-message',
       }),
     ).resolves.toEqual({
+      activeRooms: 9,
+      completedRooms: 11,
+      customerMessages: 70,
+      emptyRooms: 4,
       generatedAt: expect.any(String),
+      latestMessageAt: '2026-06-27T03:00:00.000Z',
+      messageCount: 120,
+      partnerMessages: 50,
       totalCount: 34,
     });
 
@@ -515,6 +535,36 @@ describe('AdminService query orchestration', () => {
           { chatRoom: { is: { messages: { none: {} } } } },
         ]),
       }),
+    });
+    expect(prisma.chatMessage.count).toHaveBeenCalledWith({
+      where: {
+        chatRoom: {
+          is: {
+            booking: expect.objectContaining({
+              AND: expect.arrayContaining([
+                { chatRoom: { isNot: null } },
+                { chatRoom: { is: { messages: { none: {} } } } },
+              ]),
+            }),
+          },
+        },
+      },
+    });
+    expect(prisma.chatMessage.findFirst).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+      where: {
+        chatRoom: {
+          is: {
+            booking: expect.objectContaining({
+              AND: expect.arrayContaining([
+                { chatRoom: { isNot: null } },
+                { chatRoom: { is: { messages: { none: {} } } } },
+              ]),
+            }),
+          },
+        },
+      },
     });
     expect(prisma.booking.findMany).toBeUndefined();
   });

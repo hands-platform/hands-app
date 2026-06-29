@@ -4230,12 +4230,58 @@ export class AdminService {
   }
 
   async chatArchiveSummary(query: AdminChatArchiveListQuery = {}) {
-    const totalCount = await this.prisma.booking.count({
-      where: adminChatArchiveWhere(query),
-    });
+    const bookingWhere = adminChatArchiveWhere(query);
+    const messageWhere: Prisma.ChatMessageWhereInput = {
+      chatRoom: {
+        is: {
+          booking: bookingWhere,
+        },
+      },
+    };
+
+    const [
+      totalCount,
+      completedRooms,
+      activeRooms,
+      emptyRooms,
+      messageCount,
+      customerMessages,
+      partnerMessages,
+      latestMessage,
+    ] = await Promise.all([
+      this.prisma.booking.count({ where: bookingWhere }),
+      this.prisma.booking.count({
+        where: { AND: [bookingWhere, { status: BookingStatus.COMPLETED }] },
+      }),
+      this.prisma.booking.count({
+        where: { AND: [bookingWhere, adminBookingListStatusGroupWhere('realtime') ?? {}] },
+      }),
+      this.prisma.booking.count({
+        where: { AND: [bookingWhere, { chatRoom: { is: { messages: { none: {} } } } }] },
+      }),
+      this.prisma.chatMessage.count({ where: messageWhere }),
+      this.prisma.chatMessage.count({
+        where: { AND: [messageWhere, { sender: { roles: { has: Role.CUSTOMER } } }] },
+      }),
+      this.prisma.chatMessage.count({
+        where: { AND: [messageWhere, { sender: { roles: { has: Role.PROVIDER } } }] },
+      }),
+      this.prisma.chatMessage.findFirst({
+        where: messageWhere,
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
+    ]);
 
     return {
+      activeRooms,
+      completedRooms,
+      customerMessages,
+      emptyRooms,
       generatedAt: new Date().toISOString(),
+      latestMessageAt: latestMessage?.createdAt ? new Date(latestMessage.createdAt).toISOString() : null,
+      messageCount,
+      partnerMessages,
       totalCount,
     };
   }
