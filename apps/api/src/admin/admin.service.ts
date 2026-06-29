@@ -286,7 +286,8 @@ const ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_REFUND_OPERATIONS_MAX_LIMIT = 100;
 const ADMIN_REVIEW_BOARD_DEFAULT_LIMIT = 25;
 const ADMIN_REVIEW_BOARD_MAX_LIMIT = 100;
-const ADMIN_COUPON_LIST_LIMIT = 100;
+const ADMIN_COUPON_LIST_DEFAULT_LIMIT = 10;
+const ADMIN_COUPON_LIST_MAX_LIMIT = 50;
 const ADMIN_COUPON_USAGE_LIST_LIMIT = 20;
 
 type AdminBookingListQuery = {
@@ -7130,7 +7131,11 @@ function adminAuditLogListSkip(value: number | string | null | undefined): numbe
 }
 
 function adminCouponListTake(value: number | string | null | undefined): number {
-  return boundedAdminListLimit(value, ADMIN_COUPON_LIST_LIMIT);
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_COUPON_LIST_DEFAULT_LIMIT;
+  }
+
+  return boundedAdminListLimit(value, ADMIN_COUPON_LIST_MAX_LIMIT);
 }
 
 function adminCouponListSkip(value: number | string | null | undefined): number {

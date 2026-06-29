@@ -845,7 +845,19 @@ describe('AdminService query orchestration', () => {
         usageBookings: [],
       }),
     ]);
+    expect(prisma.coupon.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        take: 10,
+      }),
+    );
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
+
+    await service.listCoupons({ take: '500' });
+    expect(prisma.coupon.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        take: 50,
+      }),
+    );
 
     await expect(service.listCouponUsageBookings('coupon-1', { skip: '10', take: '10' })).resolves.toEqual({
       couponCode: 'WELCOME10',
