@@ -788,8 +788,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listBookingSettlementSnapshots({ range, review, take });
+    return this.admin.listBookingSettlementSnapshots({ range, review, skip, take });
   }
 
   @Get('booking-settlement-snapshots/summary')
@@ -802,8 +803,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listCouponFinanceSnapshots({ range, review, take });
+    return this.admin.listCouponFinanceSnapshots({ range, review, skip, take });
   }
 
   @Get('booking-settlement-snapshots/coupon-finance-summary')

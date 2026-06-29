@@ -6348,6 +6348,7 @@ describe('AdminService query orchestration', () => {
       service.listBookingSettlementSnapshots({
         range: '7d',
         review: 'open',
+        skip: '50',
         take: '75',
       }),
     ).resolves.toEqual([{ id: 'settlement-1' }]);
@@ -6355,6 +6356,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { postedAt: 'desc' },
+        skip: 50,
         take: 75,
         where: expect.objectContaining({
           AND: expect.arrayContaining([
@@ -6461,9 +6463,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listCouponFinanceSnapshots({ range: '7d', review: 'posted', take: '25' })).resolves.toEqual([
-      settlementRow,
-    ]);
+    await expect(
+      service.listCouponFinanceSnapshots({ range: '7d', review: 'posted', skip: '50', take: '25' }),
+    ).resolves.toEqual([settlementRow]);
 
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(

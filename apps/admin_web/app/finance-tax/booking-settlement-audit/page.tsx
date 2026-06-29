@@ -7,21 +7,23 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
+  bookingSettlementAuditHref,
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
   buildBookingSettlementSnapshotSummaryApiHref,
+  buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
   emptyBookingSettlementSummary,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
   reviewLabel,
-  type BookingSettlementReview,
 } from '../tax-settlement-page-model';
 
 type BookingSettlementAuditPageProps = {
@@ -47,7 +49,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
     ),
     adminGet<AdminBookingSettlementSnapshot[]>(buildBookingSettlementSnapshotApiHref(filters), []),
   ]);
-  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(snapshots);
+  const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.count);
+  const tableRows = pagination.rows;
+  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(tableRows);
 
   return (
     <AdminPageTemplate
@@ -94,15 +98,15 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
     >
       <section className="card admin-mb-16">
         <AdminSectionHeader
-          description={`Showing ${snapshots.length} bounded rows. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
-          status={<span className="pill pill-success">take {filters.take}</span>}
+          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
+          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
           title="Settlement audit filters"
         />
         <div className="participant-list admin-mt-12">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
               className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
-              href={auditHref({ ...filters, range })}
+              href={bookingSettlementAuditHref({ ...filters, page: 1, range })}
               key={range}
             >
               {label}
@@ -113,7 +117,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           {BOOKING_SETTLEMENT_REVIEW_LINKS.map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-              href={auditHref({ ...filters, review: item.review })}
+              href={bookingSettlementAuditHref({ ...filters, page: 1, review: item.review })}
               key={item.review}
             >
               {item.label}
@@ -131,9 +135,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           <AdminDataTable
             emptyMessage="No settlement snapshots match the current filters."
             headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon', 'Partner tax', 'HANDS fee', 'Status']}
-            rowCount={snapshots.length}
+            rowCount={tableRows.length}
           >
-            {snapshots.map((snapshot) => {
+            {tableRows.map((snapshot) => {
               const coupon = couponSettlementInfo(snapshot);
 
               return (
@@ -189,20 +193,22 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             })}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="Booking settlement audit pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => bookingSettlementAuditHref({ ...filters, page })}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={pagination.totalPages}
+          />
+        </div>
       </section>
     </AdminPageTemplate>
   );
-}
-
-function auditHref(filters: {
-  readonly range: string;
-  readonly review: BookingSettlementReview;
-}) {
-  const params = new URLSearchParams({ range: filters.range });
-  if (filters.review !== 'all') {
-    params.set('review', filters.review);
-  }
-  return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
 function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {

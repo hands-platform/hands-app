@@ -22,6 +22,9 @@ import {
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
   monthlyTaxClosingNextStatusOptions,
+  bookingSettlementAuditHref,
+  buildTaxSettlementServerPagination,
+  couponFinanceHref,
   buildTaxFinanceMetrics,
   buildMonthlyTaxClosingMetrics,
   readBookingSettlementFilters,
@@ -34,6 +37,7 @@ describe('tax settlement page model', () => {
     const filters = readBookingSettlementFilters({});
 
     expect(filters).toEqual({
+      page: 1,
       range: 'today',
       review: 'open',
       take: 25,
@@ -50,6 +54,36 @@ describe('tax settlement page model', () => {
     expect(buildCouponFinanceApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/coupon-finance?range=today&review=open&take=25',
     );
+  });
+
+  it('keeps booking settlement audit and coupon finance lists server-paginated', () => {
+    const filters = readBookingSettlementFilters({ page: '3', range: '7d', review: 'posted', take: '25' });
+
+    expect(filters).toEqual({
+      page: 3,
+      range: '7d',
+      review: 'posted',
+      take: 25,
+    });
+    expect(buildBookingSettlementSnapshotApiHref(filters)).toBe(
+      '/admin/booking-settlement-snapshots?range=7d&review=posted&take=25&skip=50',
+    );
+    expect(buildCouponFinanceApiHref(filters)).toBe(
+      '/admin/booking-settlement-snapshots/coupon-finance?range=7d&review=posted&take=25&skip=50',
+    );
+    expect(bookingSettlementAuditHref(filters)).toBe(
+      '/finance-tax/booking-settlement-audit?range=7d&review=posted&page=3',
+    );
+    expect(couponFinanceHref(filters)).toBe('/finance-tax/coupon-finance?range=7d&review=posted&page=3');
+    expect(buildTaxSettlementServerPagination(['row-a', 'row-b'], filters, 57)).toEqual({
+      from: 51,
+      page: 3,
+      pageSize: 25,
+      rows: ['row-a', 'row-b'],
+      to: 52,
+      totalPages: 3,
+      totalRows: 57,
+    });
   });
 
   it('keeps partner withholding tax grouped by explicit monthly period', () => {
@@ -111,8 +145,8 @@ describe('tax settlement page model', () => {
 
     expect(links.map((link) => [link.label, link.href])).toEqual([
       ['Tax overview', '/finance-tax'],
-      ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid'],
-      ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid'],
+      ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
+      ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid&take=50'],
       ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06'],
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
       ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06'],

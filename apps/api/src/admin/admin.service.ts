@@ -5524,10 +5524,12 @@ export class AdminService {
 
   listBookingSettlementSnapshots(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBookingSettlementSnapshotWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
 
     return this.prisma.bookingSettlementSnapshot.findMany({
       ...(where ? { where } : {}),
       orderBy: { postedAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: adminBookingSettlementSnapshotListSelect,
     });
@@ -5535,12 +5537,14 @@ export class AdminService {
 
   async listCouponFinanceSnapshots(options: AdminPaymentOperationsQuery = {}) {
     const take = adminPaymentOperationsTake(options.take);
+    const skip = boundedAdminListSkip(options.skip);
     const idRows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       SELECT "id"
       FROM "BookingSettlementSnapshot"
       ${adminCouponFinanceSqlWhere(options)}
       ORDER BY "postedAt" DESC
       LIMIT ${take}
+      OFFSET ${skip}
     `);
     const ids = idRows.map((row) => row.id).filter(Boolean);
     if (!ids.length) {

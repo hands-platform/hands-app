@@ -28,6 +28,7 @@ export type BookingSettlementReview =
   | 'non-cash';
 
 export type BookingSettlementFilters = {
+  readonly page: number;
   readonly range: AdminDateRange;
   readonly review: BookingSettlementReview;
   readonly take: number;
@@ -105,6 +106,7 @@ export function readBookingSettlementFilters(
   params: Record<string, string | string[] | undefined>,
 ): BookingSettlementFilters {
   return {
+    page: readTaxSettlementPage(readSearchParam(params.page)),
     range: normalizeDateRange(readSearchParam(params.range)),
     review: normalizeBookingSettlementReview(readSearchParam(params.review)),
     take: boundedTake(readSearchParam(params.take)),
@@ -137,6 +139,7 @@ export function buildBookingSettlementSnapshotApiHref(filters: BookingSettlement
     params.set('review', filters.review);
   }
   params.set('take', String(filters.take));
+  appendTaxSettlementSkip(params, filters);
   return `/admin/booking-settlement-snapshots?${params.toString()}`;
 }
 
@@ -164,6 +167,7 @@ export function buildCouponFinanceApiHref(filters: BookingSettlementFilters) {
     params.set('review', filters.review);
   }
   params.set('take', String(filters.take));
+  appendTaxSettlementSkip(params, filters);
   return `/admin/booking-settlement-snapshots/coupon-finance?${params.toString()}`;
 }
 
@@ -216,6 +220,7 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   if (filters.review !== 'all') {
     params.set('review', filters.review);
   }
+  appendTaxSettlementUiPagination(params, filters);
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
@@ -224,7 +229,29 @@ export function couponFinanceHref(filters: BookingSettlementFilters) {
   if (filters.review !== 'all') {
     params.set('review', filters.review);
   }
+  appendTaxSettlementUiPagination(params, filters);
   return `/finance-tax/coupon-finance?${params.toString()}`;
+}
+
+export function buildTaxSettlementServerPagination<T>(
+  rows: readonly T[],
+  filters: BookingSettlementFilters,
+  totalRows: number,
+) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.take));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.take;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.take,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
 }
 
 export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters) {
@@ -763,7 +790,7 @@ export function buildPartnerWithholdingTaxRowsCsvHref(rows: AdminPartnerWithhold
   );
 }
 
-export function buildBookingSettlementSnapshotRowsCsvHref(rows: AdminBookingSettlementSnapshot[]) {
+export function buildBookingSettlementSnapshotRowsCsvHref(rows: readonly AdminBookingSettlementSnapshot[]) {
   return buildCsvDataHref(
     rows.map((row) => ({
       snapshot_id: row.id,
@@ -1073,4 +1100,28 @@ function boundedTake(value: string) {
     return TAX_SETTLEMENT_DEFAULT_TAKE;
   }
   return Math.min(parsed, TAX_SETTLEMENT_MAX_TAKE);
+}
+
+function readTaxSettlementPage(value: string) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return 1;
+  }
+  return Math.min(parsed, 1000);
+}
+
+function appendTaxSettlementSkip(params: URLSearchParams, filters: BookingSettlementFilters) {
+  const skip = (filters.page - 1) * filters.take;
+  if (skip > 0) {
+    params.set('skip', String(skip));
+  }
+}
+
+function appendTaxSettlementUiPagination(params: URLSearchParams, filters: BookingSettlementFilters) {
+  if (filters.take !== TAX_SETTLEMENT_DEFAULT_TAKE) {
+    params.set('take', String(filters.take));
+  }
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
 }

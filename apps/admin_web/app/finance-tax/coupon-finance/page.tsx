@@ -7,6 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -15,13 +16,14 @@ import {
   buildBookingSettlementSnapshotRowsCsvHref,
   buildCouponFinanceApiHref,
   buildCouponFinanceSummaryApiHref,
+  buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
+  couponFinanceHref,
   emptyCouponFinanceSummary,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
   reviewLabel,
-  type BookingSettlementReview,
 } from '../tax-settlement-page-model';
 
 type CouponFinancePageProps = {
@@ -47,7 +49,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
     ),
     adminGet<AdminBookingSettlementSnapshot[]>(buildCouponFinanceApiHref(filters), []),
   ]);
-  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(snapshots);
+  const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.couponSettlementCount);
+  const tableRows = pagination.rows;
+  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(tableRows);
 
   return (
     <AdminPageTemplate
@@ -106,17 +110,17 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
     >
       <section className="card admin-mb-16">
         <AdminSectionHeader
-          description={`Showing ${snapshots.length} coupon settlement rows. Range: ${dateRangeLabel(
+          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(
             filters.range,
           )}. Queue: ${reviewLabel(filters.review)}.`}
-          status={<span className="pill pill-success">take {filters.take}</span>}
+          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
           title="Coupon finance filters"
         />
         <div className="participant-list admin-mt-12">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
               className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
-              href={couponFinanceHref({ ...filters, range })}
+              href={couponFinanceHref({ ...filters, page: 1, range })}
               key={range}
             >
               {label}
@@ -127,7 +131,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           {BOOKING_SETTLEMENT_REVIEW_LINKS.map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-              href={couponFinanceHref({ ...filters, review: item.review })}
+              href={couponFinanceHref({ ...filters, page: 1, review: item.review })}
               key={item.review}
             >
               {item.label}
@@ -154,9 +158,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
               'Amounts',
               'Review',
             ]}
-            rowCount={snapshots.length}
+            rowCount={tableRows.length}
           >
-            {snapshots.map((snapshot) => {
+            {tableRows.map((snapshot) => {
               const coupon = couponSettlementInfo(snapshot);
 
               return (
@@ -210,20 +214,22 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             })}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="Coupon finance settlement pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => couponFinanceHref({ ...filters, page })}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={pagination.totalPages}
+          />
+        </div>
       </section>
     </AdminPageTemplate>
   );
-}
-
-function couponFinanceHref(filters: {
-  readonly range: string;
-  readonly review: BookingSettlementReview;
-}) {
-  const params = new URLSearchParams({ range: filters.range });
-  if (filters.review !== 'all') {
-    params.set('review', filters.review);
-  }
-  return `/finance-tax/coupon-finance?${params.toString()}`;
 }
 
 function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {

@@ -575,7 +575,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes booking settlement snapshots as a bounded filtered finance list', async () => {
     admin.listBookingSettlementSnapshots.mockResolvedValue([{ id: 'settlement-1' }]);
 
-    await expect(controller.bookingSettlementSnapshots('50', '7d', 'open')).resolves.toEqual([
+    await expect(controller.bookingSettlementSnapshots('50', '7d', 'open', '100')).resolves.toEqual([
       { id: 'settlement-1' },
     ]);
 
@@ -586,6 +586,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listBookingSettlementSnapshots).toHaveBeenCalledWith({
       range: '7d',
       review: 'open',
+      skip: '100',
       take: '50',
     });
   });
@@ -639,7 +640,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes coupon finance rows with bounded booking settlement filters', async () => {
     admin.listCouponFinanceSnapshots.mockResolvedValue([{ id: 'settlement-1' }]);
 
-    await expect(controller.couponFinanceSnapshots('25', '7d', 'posted')).resolves.toEqual([
+    await expect(controller.couponFinanceSnapshots('25', '7d', 'posted', '50')).resolves.toEqual([
       { id: 'settlement-1' },
     ]);
 
@@ -650,6 +651,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listCouponFinanceSnapshots).toHaveBeenCalledWith({
       range: '7d',
       review: 'posted',
+      skip: '50',
       take: '25',
     });
   });
