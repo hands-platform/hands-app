@@ -53,12 +53,35 @@ describe('earnings policy', () => {
 
   it('calculates cash booking partner due to HANDS from fee gross and partner tax', () => {
     expect(calculateCashBookingPartnerDue(128000, 800, 42000)).toEqual({
+      companyCouponExpense: 0,
       platformFeeGross: 128000,
       platformFeeVatRateBps: 800,
       platformFeeNetRevenue: 118519,
       companyOutputVat: 9481,
       partnerTaxPayable: 42000,
       totalPartnerDueToCompany: 170000,
+      walletDeductionCompanyOutputVat: 9481,
+      walletDeductionPartnerTaxPayable: 42000,
+      walletDeductionPlatformFeeNetRevenue: 118519,
+    });
+  });
+
+  it('reduces cash booking partner due by company-funded coupon without reducing tax or revenue facts', () => {
+    expect(
+      calculateCashBookingPartnerDue(128000, 800, 42000, {
+        companyCouponExpense: 60000,
+      }),
+    ).toEqual({
+      companyCouponExpense: 60000,
+      companyOutputVat: 9481,
+      partnerTaxPayable: 42000,
+      platformFeeGross: 128000,
+      platformFeeNetRevenue: 118519,
+      platformFeeVatRateBps: 800,
+      totalPartnerDueToCompany: 110000,
+      walletDeductionCompanyOutputVat: 9481,
+      walletDeductionPartnerTaxPayable: 42000,
+      walletDeductionPlatformFeeNetRevenue: 58519,
     });
   });
 

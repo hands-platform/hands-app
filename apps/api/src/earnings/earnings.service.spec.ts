@@ -148,7 +148,9 @@ describe('EarningsService payout batches', () => {
       }),
     );
     expect(prisma.providerEarning.findMany.mock.calls[0][0].include.booking).not.toHaveProperty('include');
-    expect(prisma.providerEarning.findMany.mock.calls[0][0].include.booking.select).not.toHaveProperty('review');
+    expect(prisma.providerEarning.findMany.mock.calls[0][0].include.booking.select).not.toHaveProperty(
+      'review',
+    );
   });
 
   it('filters admin earning summary by range without hydrating earning rows', async () => {
@@ -290,7 +292,9 @@ describe('EarningsService payout batches', () => {
                   payment: { select: expect.objectContaining({ amount: true, method: true, status: true }) },
                   services: expect.objectContaining({
                     select: expect.objectContaining({
-                      service: { select: expect.objectContaining({ durationMin: true, id: true, name: true }) },
+                      service: {
+                        select: expect.objectContaining({ durationMin: true, id: true, name: true }),
+                      },
                     }),
                   }),
                 }),
@@ -463,7 +467,9 @@ describe('EarningsService payout batches', () => {
     };
     const service = new EarningsService(prisma as never);
 
-    await expect(service.cashSettlementSummaryForAdmin({ q: 'Mai', queue: 'missing-ref', range: '7d' })).resolves.toMatchObject({
+    await expect(
+      service.cashSettlementSummaryForAdmin({ q: 'Mai', queue: 'missing-ref', range: '7d' }),
+    ).resolves.toMatchObject({
       rowCount: 0,
       totalDebtAmount: 0,
     });
@@ -950,6 +956,179 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('reduces cash booking wallet debt by company-funded coupon while preserving settlement facts', async () => {
+    const occurredAt = new Date('2026-06-13T03:02:00.000Z');
+    const booking = {
+      id: 'booking-cash-coupon-1',
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'provider-1',
+      status: BookingStatus.COMPLETED,
+      updatedAt: occurredAt,
+      payment: {
+        id: 'payment-cash-coupon-1',
+        amount: 540_000,
+        currency: 'VND',
+        method: PaymentMethod.CASH,
+        rawMeta: {
+          originalAmount: 600_000,
+          discountAmount: 60_000,
+          couponId: 'coupon-1',
+          couponCode: 'WELCOME10',
+          couponFundingSourceSnapshot: 'COMPANY',
+          couponAccountingTreatmentSnapshot: 'MARKETING_EXPENSE',
+        },
+      },
+      review: null,
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 600_000,
+          quantity: 1,
+          service: { id: 'service-1', name: 'Massage' },
+        },
+      ],
+    };
+    const earning = {
+      id: 'earning-cash-coupon-1',
+      bookingId: 'booking-cash-coupon-1',
+      providerProfileId: 'provider-1',
+      grossAmount: 600_000,
+      platformFee: 170_000,
+      withholdingAmount: 42_000,
+      netAmount: -110_000,
+      currency: 'VND',
+    };
+    const walletUpsert = vi.fn(async (input) => ({ id: `wallet-${input.where.sourceKey}` }));
+    const tx = {
+      platformFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'platform-policy-1',
+          name: 'Default platform fee',
+          vatRateBps: 800,
+          rules: [
+            {
+              id: 'platform-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              rateBps: 0,
+              fixedAmount: 170_000,
+            },
+          ],
+        }),
+      },
+      servicePayoutRule: { findMany: vi.fn().mockResolvedValue([]) },
+      taxPolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'tax-policy-1',
+          name: 'Default partner tax',
+          rules: [
+            {
+              id: 'tax-vat-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_VAT,
+              rateBps: 500,
+              fixedAmount: 0,
+            },
+            {
+              id: 'tax-pit-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_PIT,
+              rateBps: 200,
+              fixedAmount: 0,
+            },
+          ],
+        }),
+      },
+      providerTaxProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'tax-profile-1',
+          status: ProviderTaxProfileStatus.APPROVED,
+        }),
+      },
+      providerEarning: {
+        upsert: vi.fn().mockResolvedValue(earning),
+      },
+      providerPlatformFeeLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
+      },
+      providerTaxLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
+      },
+      providerWalletLedgerEntry: {
+        upsert: walletUpsert,
+      },
+    };
+    const prisma = {
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const settlements = {
+      upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-cash-coupon-1' }),
+    };
+    const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+    await expect(service.createForCompletedBooking('booking-cash-coupon-1', 'provider-1')).resolves.toEqual(
+      earning,
+    );
+
+    expect(tx.providerEarning.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ netAmount: -110_000 }),
+        update: expect.objectContaining({ netAmount: -110_000 }),
+      }),
+    );
+    expect(walletUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          amount: -58_519,
+          sourceKey: 'earning:earning-cash-coupon-1:cash-platform-fee-net',
+        }),
+      }),
+    );
+    expect(walletUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          amount: -9_481,
+          sourceKey: 'earning:earning-cash-coupon-1:cash-company-output-vat',
+        }),
+      }),
+    );
+    expect(walletUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          amount: -42_000,
+          sourceKey: 'earning:earning-cash-coupon-1:cash-partner-tax',
+        }),
+      }),
+    );
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerPaymentAmount: 540_000,
+        metadata: expect.objectContaining({
+          companyCouponExpense: 60_000,
+          couponDiscountAmount: 60_000,
+          settlementBaseAmount: 600_000,
+        }),
+        providerWalletLedgerEntryIds: [
+          'wallet-earning:earning-cash-coupon-1:cash-platform-fee-net',
+          'wallet-earning:earning-cash-coupon-1:cash-company-output-vat',
+          'wallet-earning:earning-cash-coupon-1:cash-partner-tax',
+        ],
+      }),
+      tx,
+    );
+  });
+
   it('notifies the partner when a payout batch status changes', async () => {
     const existingBatch = {
       id: 'payout-batch-1',
@@ -1360,7 +1539,10 @@ describe('EarningsService payout batches', () => {
     });
     expect(prisma.providerWalletWithdrawalRequest.count).toHaveBeenCalledWith({
       where: {
-        AND: [{ providerProfileId: 'provider-1' }, { status: ProviderWalletWithdrawalRequestStatus.REQUESTED }],
+        AND: [
+          { providerProfileId: 'provider-1' },
+          { status: ProviderWalletWithdrawalRequestStatus.REQUESTED },
+        ],
       },
     });
     expect(prisma.providerWalletWithdrawalRequest.count).toHaveBeenCalledWith({

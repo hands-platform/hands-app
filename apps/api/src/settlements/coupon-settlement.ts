@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 export type CouponSettlementContext = {
+  companyCouponExpense: number;
   customerPaymentAmount: number;
   metadata?: Prisma.InputJsonObject;
   partnerTaxableRevenueAmount?: number;
@@ -9,9 +10,7 @@ export type CouponSettlementContext = {
 
 type JsonRecord = Record<string, unknown>;
 
-export function bookingServiceAmount(
-  services: Array<{ price: number; quantity?: number | null }>,
-) {
+export function bookingServiceAmount(services: Array<{ price: number; quantity?: number | null }>) {
   return services.reduce((total, service) => total + service.price * (service.quantity ?? 1), 0);
 }
 
@@ -32,6 +31,7 @@ export function buildCouponSettlementContext(input: {
 
   if (!hasCoupon) {
     return {
+      companyCouponExpense: 0,
       customerPaymentAmount: input.customerPaymentAmount,
       settlementBaseAmount,
     };
@@ -42,10 +42,10 @@ export function buildCouponSettlementContext(input: {
   const companyCouponExpense = fundingSource === 'COMPANY' ? discountAmount : 0;
   const partnerFundedCouponAmount = fundingSource === 'PARTNER' ? discountAmount : 0;
   const platformFeeDiscountAmount = fundingSource === 'PLATFORM_FEE' ? discountAmount : 0;
-  const reviewFlag =
-    discountAmount > 0 && !couponId && !couponCode ? 'MISSING_COUPON_REFERENCE' : undefined;
+  const reviewFlag = discountAmount > 0 && !couponId && !couponCode ? 'MISSING_COUPON_REFERENCE' : undefined;
 
   return {
+    companyCouponExpense,
     customerPaymentAmount: input.customerPaymentAmount,
     partnerTaxableRevenueAmount: settlementBaseAmount,
     settlementBaseAmount,
@@ -67,7 +67,8 @@ export function buildCouponSettlementContext(input: {
         stringValue(rawMeta?.partnerTaxBasePolicySnapshot) ?? 'PRE_COUPON_SERVICE_AMOUNT',
       platformFeeBasePolicySnapshot:
         stringValue(rawMeta?.platformFeeBasePolicySnapshot) ?? 'PRE_COUPON_SERVICE_AMOUNT',
-      referralBasePolicySnapshot: stringValue(rawMeta?.referralBasePolicySnapshot) ?? 'PLATFORM_FEE_NET_REVENUE',
+      referralBasePolicySnapshot:
+        stringValue(rawMeta?.referralBasePolicySnapshot) ?? 'PLATFORM_FEE_NET_REVENUE',
       companyCouponExpense,
       partnerFundedCouponAmount,
       platformFeeDiscountAmount,

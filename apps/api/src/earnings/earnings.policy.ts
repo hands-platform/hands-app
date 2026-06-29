@@ -13,6 +13,7 @@ export type WalletDeltaInput = {
   grossAmount: number;
   platformFee: number;
   withholdingAmount: number;
+  companyCouponExpense?: number | null;
 };
 
 export type PricedServiceLine = {
@@ -97,14 +98,38 @@ export function calculateCashBookingPartnerDue(
   platformFeeGross: number,
   platformFeeVatRateBps: number,
   partnerTaxPayable: number,
+  options: { companyCouponExpense?: number | null } = {},
 ) {
   const fee = calculatePlatformFeeBreakdown(platformFeeGross, platformFeeVatRateBps);
   const tax = nonNegativeWholeVnd(partnerTaxPayable, 'Partner tax payable');
+  const companyCouponExpense = nonNegativeWholeVnd(
+    options.companyCouponExpense ?? 0,
+    'Company coupon expense',
+  );
+  let remainingCouponOffset = Math.min(
+    companyCouponExpense,
+    fee.platformFeeNetRevenue + fee.companyOutputVat + tax,
+  );
+  const platformFeeNetOffset = Math.min(remainingCouponOffset, fee.platformFeeNetRevenue);
+  remainingCouponOffset -= platformFeeNetOffset;
+  const companyOutputVatOffset = Math.min(remainingCouponOffset, fee.companyOutputVat);
+  remainingCouponOffset -= companyOutputVatOffset;
+  const partnerTaxOffset = Math.min(remainingCouponOffset, tax);
+  const walletDeductionPlatformFeeNetRevenue = fee.platformFeeNetRevenue - platformFeeNetOffset;
+  const walletDeductionCompanyOutputVat = fee.companyOutputVat - companyOutputVatOffset;
+  const walletDeductionPartnerTaxPayable = tax - partnerTaxOffset;
 
   return {
     ...fee,
+    companyCouponExpense,
     partnerTaxPayable: tax,
-    totalPartnerDueToCompany: fee.platformFeeGross + tax,
+    totalPartnerDueToCompany:
+      walletDeductionPlatformFeeNetRevenue +
+      walletDeductionCompanyOutputVat +
+      walletDeductionPartnerTaxPayable,
+    walletDeductionCompanyOutputVat,
+    walletDeductionPartnerTaxPayable,
+    walletDeductionPlatformFeeNetRevenue,
   };
 }
 
@@ -145,7 +170,10 @@ export function applyCashBookingDeductionToPartnerWallet(
 
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
-    return -input.platformFee;
+    return -Math.max(
+      0,
+      input.platformFee - nonNegativeWholeVnd(input.companyCouponExpense ?? 0, 'Company coupon expense'),
+    );
   }
 
   return input.grossAmount - input.platformFee - input.withholdingAmount;
@@ -210,9 +238,7 @@ export function normalizePartnerBankDepositInput(input: PartnerBankDepositInput)
   };
 }
 
-export function normalizeProviderWalletWithdrawalRequestInput(
-  input: ProviderWalletWithdrawalRequestInput,
-) {
+export function normalizeProviderWalletWithdrawalRequestInput(input: ProviderWalletWithdrawalRequestInput) {
   const amount = wholeVnd(input.amount, 'Withdrawal amount');
   const bankAccountId = cleanOptionalText(input.bankAccountId) ?? undefined;
   const requestNote = cleanOptionalText(input.requestNote) ?? undefined;
@@ -232,9 +258,7 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
   input: ProviderWalletWithdrawalRequestUpdateInput,
 ) {
   const requestedStatus = input.requestedStatus ?? input.status;
-  const nextStatus = requestedStatus
-    ? (requestedStatus as ProviderWalletWithdrawalRequestStatus)
-    : undefined;
+  const nextStatus = requestedStatus ? (requestedStatus as ProviderWalletWithdrawalRequestStatus) : undefined;
   const transferRef = cleanOptionalText(input.transferRef);
   const bankTransferDate = normalizeOptionalDate(input.bankTransferDate, 'Bank transfer date');
   const attachmentFileId = cleanOptionalText(input.attachmentFileId);
@@ -272,17 +296,12 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
   if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !bankTransferDate) {
     throw new BadRequestException('Bank transfer date is required before marking a withdrawal request paid');
   }
-  if (
-    nextStatus === ProviderWalletWithdrawalRequestStatus.PAID &&
-    !attachmentFileId &&
-    !attachmentUrl
-  ) {
-    throw new BadRequestException('Bank transfer evidence is required before marking a withdrawal request paid');
+  if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !attachmentFileId && !attachmentUrl) {
+    throw new BadRequestException(
+      'Bank transfer evidence is required before marking a withdrawal request paid',
+    );
   }
-  if (
-    nextStatus === ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION &&
-    !correctionReason
-  ) {
+  if (nextStatus === ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION && !correctionReason) {
     throw new BadRequestException('Bank correction reason is required');
   }
 
@@ -454,10 +473,7 @@ function normalizeDepositDate(value: Date | string | null | undefined) {
   return date;
 }
 
-function normalizeOptionalDate(
-  value: Date | string | null | undefined,
-  label: string,
-): Date | undefined {
+function normalizeOptionalDate(value: Date | string | null | undefined, label: string): Date | undefined {
   if (value == null || value === '') {
     return undefined;
   }
@@ -478,17 +494,12 @@ function normalizeOptionalDate(
   return date;
 }
 
-function normalizeCashFeeSettlementMethod(
-  value: string | null | undefined,
-): CashFeeSettlementMethod | null {
+function normalizeCashFeeSettlementMethod(value: string | null | undefined): CashFeeSettlementMethod | null {
   const clean = cleanOptionalText(value);
   if (!clean) {
     return null;
   }
-  if (
-    clean === CashFeeSettlementMethod.PARTNER_DEPOSIT ||
-    clean === CashFeeSettlementMethod.ADMIN_OFFSET
-  ) {
+  if (clean === CashFeeSettlementMethod.PARTNER_DEPOSIT || clean === CashFeeSettlementMethod.ADMIN_OFFSET) {
     return clean;
   }
   throw new BadRequestException('Invalid cash fee settlement method');

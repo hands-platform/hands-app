@@ -263,7 +263,9 @@ function withholdingLogWhereForPayoutBatchSummary(
   return where ? { payoutBatch: { is: where } } : { payoutBatchId: { not: null } };
 }
 
-function adminEarningReviewWhere(review: string | null | undefined): Prisma.ProviderEarningWhereInput | undefined {
+function adminEarningReviewWhere(
+  review: string | null | undefined,
+): Prisma.ProviderEarningWhereInput | undefined {
   switch (normalizeOptionalQuery(review)) {
     case 'ready':
       return {
@@ -394,7 +396,11 @@ const adminEarningWalletLedgerSelect = {
 
 const adminEarningRelationInclude = {
   booking: { select: adminEarningBookingSelect },
-  platformFeeLogs: { orderBy: { createdAt: 'desc' as const }, select: adminEarningPlatformFeeLogSelect, take: 1 },
+  platformFeeLogs: {
+    orderBy: { createdAt: 'desc' as const },
+    select: adminEarningPlatformFeeLogSelect,
+    take: 1,
+  },
   taxLogs: { orderBy: { createdAt: 'desc' as const }, select: adminEarningTaxLogSelect, take: 1 },
   walletLedgerEntries: {
     orderBy: { createdAt: 'desc' as const },
@@ -592,6 +598,7 @@ export class EarningsService {
         grossAmount,
         platformFee: platformFee.platformFeeAmount,
         withholdingAmount: tax.withholdingAmount,
+        companyCouponExpense: couponSettlement.companyCouponExpense,
       });
       const earning = await tx.providerEarning.upsert({
         where: { bookingId },
@@ -625,6 +632,7 @@ export class EarningsService {
         earning,
         booking.payment?.method,
         platformFee.vatRateBps,
+        { companyCouponExpense: couponSettlement.companyCouponExpense },
       );
       const partnerPayoutAmount = Math.max(0, grossAmount - platformFee.platformFeeAmount);
       const paymentProcessingFee = 0;
@@ -866,13 +874,12 @@ export class EarningsService {
     if (!earning) {
       throw new NotFoundException('Earning not found');
     }
-    const { settlementRef, settlementNotes, settlementMethod } =
-      normalizeCashFeeDebtSettlementInput({
-        netAmount: earning.netAmount,
-        settlementRef: input.settlementRef,
-        settlementNotes: input.settlementNotes,
-        settlementMethod: input.settlementMethod,
-      });
+    const { settlementRef, settlementNotes, settlementMethod } = normalizeCashFeeDebtSettlementInput({
+      netAmount: earning.netAmount,
+      settlementRef: input.settlementRef,
+      settlementNotes: input.settlementNotes,
+      settlementMethod: input.settlementMethod,
+    });
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.providerEarning.update({
@@ -895,10 +902,7 @@ export class EarningsService {
 
   async recordPartnerBankDeposit(input: PartnerBankDepositInput) {
     const deposit = normalizePartnerBankDepositInput(input);
-    const sourceKey = partnerBankDepositSourceKey(
-      deposit.providerProfileId,
-      deposit.bankTransactionId,
-    );
+    const sourceKey = partnerBankDepositSourceKey(deposit.providerProfileId, deposit.bankTransactionId);
 
     return this.prisma.$transaction(async (tx) => {
       const provider = await tx.providerProfile.findUnique({
@@ -919,10 +923,7 @@ export class EarningsService {
         return existing;
       }
 
-      const currentWalletBalance = await this.providerWalletLedgerBalance(
-        tx,
-        deposit.providerProfileId,
-      );
+      const currentWalletBalance = await this.providerWalletLedgerBalance(tx, deposit.providerProfileId);
       const allocation = allocatePartnerBankDeposit(currentWalletBalance, deposit.amount);
       const metadata: Prisma.InputJsonObject = {
         source: 'ADMIN_PARTNER_BANK_DEPOSIT',
@@ -1258,7 +1259,9 @@ export class EarningsService {
       ),
       this.prisma.providerWalletWithdrawalRequest.count(
         withdrawalRequestCountArgs(
-          mergeWithdrawalRequestWhere(where, { status: ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED }),
+          mergeWithdrawalRequestWhere(where, {
+            status: ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+          }),
         ),
       ),
       this.prisma.providerWalletWithdrawalRequest.count(
@@ -1393,10 +1396,7 @@ export class EarningsService {
 
     return this.prisma.$transaction(async (tx) => {
       if (shouldMarkPaid) {
-        const currentWalletBalance = await this.providerWalletLedgerBalance(
-          tx,
-          existing.providerProfileId,
-        );
+        const currentWalletBalance = await this.providerWalletLedgerBalance(tx, existing.providerProfileId);
         if (existing.amount > currentWalletBalance) {
           throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
         }
@@ -1586,9 +1586,10 @@ export class EarningsService {
     },
     paymentMethod?: PaymentMethod | null,
     platformFeeVatRateBps = 0,
+    options: { companyCouponExpense?: number | null } = {},
   ) {
     if (paymentMethod === PaymentMethod.CASH) {
-      return this.upsertCashBookingWalletLedgerEntries(tx, earning, platformFeeVatRateBps);
+      return this.upsertCashBookingWalletLedgerEntries(tx, earning, platformFeeVatRateBps, options);
     }
 
     const ledger = await tx.providerWalletLedgerEntry.upsert({
@@ -1625,12 +1626,14 @@ export class EarningsService {
       currency: string;
     },
     platformFeeVatRateBps: number,
+    options: { companyCouponExpense?: number | null } = {},
   ) {
     const platformFeeGross = Math.max(0, earning.platformFee - earning.withholdingAmount);
     const partnerDue = calculateCashBookingPartnerDue(
       platformFeeGross,
       platformFeeVatRateBps,
       earning.withholdingAmount,
+      { companyCouponExpense: options.companyCouponExpense },
     );
     const base = {
       providerProfileId: earning.providerProfileId,
@@ -1642,73 +1645,83 @@ export class EarningsService {
       ...this.earningLedgerMetadata(earning, PaymentMethod.CASH),
       platformFeeGross: partnerDue.platformFeeGross,
       platformFeeVatRateBps: partnerDue.platformFeeVatRateBps,
+      cashBookingCompanyCouponExpense: partnerDue.companyCouponExpense,
       totalPartnerDueToCompany: partnerDue.totalPartnerDueToCompany,
+      walletDeductionCompanyOutputVat: partnerDue.walletDeductionCompanyOutputVat,
+      walletDeductionPartnerTaxPayable: partnerDue.walletDeductionPartnerTaxPayable,
+      walletDeductionPlatformFeeNetRevenue: partnerDue.walletDeductionPlatformFeeNetRevenue,
     } satisfies Prisma.InputJsonObject;
 
     return Promise.all([
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-platform-fee-net` },
         update: {
-          amount: -partnerDue.platformFeeNetRevenue,
+          amount: -partnerDue.walletDeductionPlatformFeeNetRevenue,
           currency: earning.currency,
           metadata: {
             ...metadataBase,
             accountingComponent: 'PLATFORM_FEE_NET_REVENUE',
+            accountingComponentAmount: partnerDue.platformFeeNetRevenue,
           },
         },
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_PLATFORM_FEE_DEDUCTED'),
           sourceKey: `earning:${earning.id}:cash-platform-fee-net`,
-          amount: -partnerDue.platformFeeNetRevenue,
+          amount: -partnerDue.walletDeductionPlatformFeeNetRevenue,
           notes: 'Cash booking prepaid wallet deduction for HANDS platform fee net revenue',
           metadata: {
             ...metadataBase,
             accountingComponent: 'PLATFORM_FEE_NET_REVENUE',
+            accountingComponentAmount: partnerDue.platformFeeNetRevenue,
           },
         },
       }),
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-company-output-vat` },
         update: {
-          amount: -partnerDue.companyOutputVat,
+          amount: -partnerDue.walletDeductionCompanyOutputVat,
           currency: earning.currency,
           metadata: {
             ...metadataBase,
             accountingComponent: 'COMPANY_OUTPUT_VAT_PAYABLE',
+            accountingComponentAmount: partnerDue.companyOutputVat,
           },
         },
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_COMPANY_OUTPUT_VAT_DEDUCTED'),
           sourceKey: `earning:${earning.id}:cash-company-output-vat`,
-          amount: -partnerDue.companyOutputVat,
+          amount: -partnerDue.walletDeductionCompanyOutputVat,
           notes: 'Cash booking prepaid wallet deduction for HANDS company output VAT',
           metadata: {
             ...metadataBase,
             accountingComponent: 'COMPANY_OUTPUT_VAT_PAYABLE',
+            accountingComponentAmount: partnerDue.companyOutputVat,
           },
         },
       }),
       tx.providerWalletLedgerEntry.upsert({
         where: { sourceKey: `earning:${earning.id}:cash-partner-tax` },
         update: {
-          amount: -partnerDue.partnerTaxPayable,
+          amount: -partnerDue.walletDeductionPartnerTaxPayable,
           currency: earning.currency,
           metadata: {
             ...metadataBase,
             accountingComponent: 'PARTNER_VAT_PIT_PAYABLE',
+            accountingComponentAmount: partnerDue.partnerTaxPayable,
           },
         },
         create: {
           ...base,
           type: providerWalletLedgerType('CASH_BOOKING_PARTNER_TAX_DEDUCTED'),
           sourceKey: `earning:${earning.id}:cash-partner-tax`,
-          amount: -partnerDue.partnerTaxPayable,
+          amount: -partnerDue.walletDeductionPartnerTaxPayable,
           notes: 'Cash booking prepaid wallet deduction for Partner VAT/PIT payable',
           metadata: {
             ...metadataBase,
             accountingComponent: 'PARTNER_VAT_PIT_PAYABLE',
+            accountingComponentAmount: partnerDue.partnerTaxPayable,
           },
         },
       }),
@@ -2042,7 +2055,8 @@ export class EarningsService {
       splitWithholdingAmount > 0
         ? null
         : calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_WITHHOLDING_COMBINED);
-    const withholdingAmount = splitWithholdingAmount > 0 ? splitWithholdingAmount : combinedLine?.amount ?? 0;
+    const withholdingAmount =
+      splitWithholdingAmount > 0 ? splitWithholdingAmount : (combinedLine?.amount ?? 0);
 
     return {
       taxableAmount,
@@ -2220,8 +2234,7 @@ function providerWalletWithdrawalRequestStatusChangeMetadata(input: {
 }): Prisma.InputJsonObject {
   const previousStatusWasActive = isActiveWithdrawalRequestStatus(input.previousStatus);
   const nextStatusKeepsLock = isActiveWithdrawalRequestStatus(input.nextStatus);
-  const lockedAmountReleased =
-    previousStatusWasActive && isReleasedWithdrawalRequestStatus(input.nextStatus);
+  const lockedAmountReleased = previousStatusWasActive && isReleasedWithdrawalRequestStatus(input.nextStatus);
 
   return {
     previousStatus: input.previousStatus,
