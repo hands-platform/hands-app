@@ -18,6 +18,7 @@ describe('app sessions page model', () => {
 
   it('passes role, state, platform, and search filters through to the API href', () => {
     const filters = buildSessionFilters({
+      page: '3',
       platform: ' IOS ',
       q: ' 8490 ',
       role: 'partner',
@@ -25,12 +26,12 @@ describe('app sessions page model', () => {
     });
 
     expect(buildAppSessionApiHref(filters)).toBe(
-      '/admin/app-sessions?take=10&role=PROVIDER&state=live&platform=ios&q=8490',
+      '/admin/app-sessions?take=10&role=PROVIDER&state=live&platform=ios&q=8490&skip=20',
     );
     expect(buildAppSessionSummaryApiHref(filters)).toBe(
       '/admin/app-sessions/summary?role=PROVIDER&state=live&platform=ios&q=8490',
     );
-    expect(sessionFilterHref(filters)).toBe('/app-sessions?role=PROVIDER&state=live&platform=ios&q=8490');
+    expect(sessionFilterHref(filters)).toBe('/app-sessions?role=PROVIDER&state=live&platform=ios&q=8490&page=3');
     expect(sessionFilterLabel(filters)).toBe(
       'Filtered to partner sessions, live heartbeat, ios platform, search "8490"',
     );

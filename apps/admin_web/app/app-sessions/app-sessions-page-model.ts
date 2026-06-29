@@ -1,8 +1,11 @@
 const DEFAULT_APP_SESSION_LIST_TAKE = 10;
+const MAX_APP_SESSION_LIST_TAKE = 50;
 
 export type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 
 export type SessionFilters = {
+  readonly page: number;
+  readonly pageSize: number;
   readonly platform: string | null;
   readonly q: string | null;
   readonly role: 'CUSTOMER' | 'PROVIDER' | null;
@@ -16,6 +19,8 @@ export function buildSessionFilters(params: Record<string, string | string[] | u
   const q = singleParam(params.q)?.trim() ?? null;
 
   return {
+    page: readSessionPage(params.page),
+    pageSize: readSessionPageSize(params.pageSize),
     role: role === 'PARTNER' || role === 'PROVIDER' ? 'PROVIDER' : role === 'CUSTOMER' ? 'CUSTOMER' : null,
     state: isSessionState(state) ? state : null,
     platform: platform || null,
@@ -24,8 +29,12 @@ export function buildSessionFilters(params: Record<string, string | string[] | u
 }
 
 export function buildAppSessionApiHref(filters: SessionFilters) {
-  const params = new URLSearchParams({ take: String(DEFAULT_APP_SESSION_LIST_TAKE) });
+  const params = new URLSearchParams({ take: String(filters.pageSize) });
   appendAppSessionFilterParams(params, filters);
+  const skip = (filters.page - 1) * filters.pageSize;
+  if (skip > 0) {
+    params.set('skip', String(skip));
+  }
   return `/admin/app-sessions?${params.toString()}`;
 }
 
@@ -49,8 +58,32 @@ export function sessionFilterHref(filters: SessionFilters) {
   if (filters.state) params.set('state', filters.state);
   if (filters.platform) params.set('platform', filters.platform);
   if (filters.q) params.set('q', filters.q);
+  if (filters.pageSize !== DEFAULT_APP_SESSION_LIST_TAKE) params.set('pageSize', String(filters.pageSize));
+  if (filters.page > 1) params.set('page', String(filters.page));
   const query = params.toString();
   return query ? `/app-sessions?${query}` : '/app-sessions';
+}
+
+export function buildAppSessionServerPagination<T>(
+  rows: readonly T[],
+  filters: SessionFilters,
+  totalRows: number,
+) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    hrefForPage: (nextPage: number) => sessionFilterHref({ ...filters, page: nextPage }),
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
 }
 
 export function sessionFilterLabel(filters: SessionFilters) {
@@ -72,6 +105,19 @@ export function sessionFilterLabel(filters: SessionFilters) {
 
 function singleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function readSessionPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(singleParam(value) ?? '', 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function readSessionPageSize(value: string | string[] | undefined) {
+  const pageSize = Number.parseInt(singleParam(value) ?? '', 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+    return DEFAULT_APP_SESSION_LIST_TAKE;
+  }
+  return Math.min(Math.trunc(pageSize), MAX_APP_SESSION_LIST_TAKE);
 }
 
 function isSessionState(value: string | undefined): value is SessionState {

@@ -18,6 +18,7 @@ import {
 import { AppSessionsCheckQueueSection, type SessionCheckQueueItem } from './app-sessions-check-queue-section';
 import {
   buildAppSessionApiHref,
+  buildAppSessionServerPagination,
   buildAppSessionSummaryApiHref,
   buildSessionFilters,
   sessionFilterHref,
@@ -70,6 +71,11 @@ export default async function AppSessionsPage({
   const checkRows = buildSessionCheckRows(sessions);
   const commandCards = buildSessionCommandCards(sessions, checkRows);
   const sessionRows = buildAppSessionTableRows(sessions);
+  const sessionPagination = buildAppSessionServerPagination(
+    sessionRows,
+    filters,
+    serverSummary?.totalCount ?? sessions.length,
+  );
   const activeFilterLabel = sessionFilterLabel(filters);
 
   return (
@@ -116,14 +122,14 @@ export default async function AppSessionsPage({
           status={<span className="pill pill-info">{sessions.length} loaded</span>}
           title="Latest app sessions"
         />
-        <AppSessionsTableSection emptyMessage="No app sessions loaded." rows={sessionRows} />
+        <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />
       </section>
     </AdminPageTemplate>
   );
 }
 
 function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSessionTableRow[] {
-  return sessions.slice(0, 80).map((session) => {
+  return sessions.map((session) => {
     const state = sessionState(session);
     const partnerId = session.user?.providerProfile?.id;
     const customerId = session.user?.customerProfile?.id;

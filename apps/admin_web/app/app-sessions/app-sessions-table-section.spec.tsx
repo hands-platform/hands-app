@@ -4,12 +4,13 @@ describe('AppSessionsTableSection', () => {
   it('renders session rows with device and Partner links', () => {
     const section = AppSessionsTableSection({
       emptyMessage: 'No app sessions loaded.',
-      rows: [buildRow()],
+      pagination: pagination([buildRow()], { totalRows: 12 }),
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizeText(textContent(section));
 
     expect(rendered).toContain('Massage Partner');
+    expect(rendered).toContain('Showing 1 to 1 of 12 entries');
     expect(rendered).toContain('+84900000000');
     expect(rendered).toContain('Partner');
     expect(rendered).toContain('live');
@@ -26,12 +27,31 @@ describe('AppSessionsTableSection', () => {
   it('renders the empty state when there are no session rows', () => {
     const section = AppSessionsTableSection({
       emptyMessage: 'No app sessions loaded.',
-      rows: [],
+      pagination: pagination([]),
     });
 
     expect(textContent(section)).toContain('No app sessions loaded.');
   });
 });
+
+function pagination(
+  rows: readonly AppSessionTableRow[],
+  input: { page?: number; pageSize?: number; totalRows?: number } = {},
+) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 10;
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
+    hrefForPage: (nextPage: number) => `/app-sessions?page=${nextPage}`,
+    page,
+    rows,
+    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
+    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
+    totalRows,
+  };
+}
 
 function buildRow(): AppSessionTableRow {
   return {
@@ -68,6 +88,10 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {
