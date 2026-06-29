@@ -94,6 +94,24 @@ describe('buildPartnerFinanceFollowUpRows', () => {
       }),
     ]);
   });
+
+  it('links manual adjustment follow-up to the prefilled wallet adjustment workspace', () => {
+    const rows = buildPartnerFinanceFollowUpRows({
+      bankAccounts: [],
+      providerProfileId: 'provider-1',
+      walletSummary: walletSummary({
+        manualAdjustmentCount: 2,
+      }),
+    });
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        actionLabel: 'Review or create adjustment',
+        href: '/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1',
+        id: 'manual-adjustment-review',
+      }),
+    ]);
+  });
 });
 
 function walletSummary(overrides: Partial<PartnerWalletSummary>): PartnerWalletSummary {

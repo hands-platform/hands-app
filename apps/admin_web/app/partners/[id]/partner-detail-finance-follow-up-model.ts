@@ -25,11 +25,13 @@ export type PartnerFinanceFollowUpRow = {
 
 type PartnerFinanceFollowUpInput = {
   readonly bankAccounts?: readonly PartnerFinanceFollowUpBankAccount[] | null;
+  readonly providerProfileId?: string | null;
   readonly walletSummary: PartnerWalletSummary;
 };
 
 export function buildPartnerFinanceFollowUpRows({
   bankAccounts,
+  providerProfileId,
   walletSummary,
 }: PartnerFinanceFollowUpInput): PartnerFinanceFollowUpRow[] {
   const rows: PartnerFinanceFollowUpRow[] = [];
@@ -126,12 +128,12 @@ export function buildPartnerFinanceFollowUpRows({
 
   if (walletSummary.manualAdjustmentCount > 0) {
     rows.push({
-      actionLabel: 'Review audit trail',
+      actionLabel: 'Review or create adjustment',
       amountLabel: '-',
       detail:
         'Manual wallet adjustments are visible. Review operator notes and audit log before payout release.',
       evidenceLabel: `${walletSummary.manualAdjustmentCount} adjustment row(s)`,
-      href: '#partner-wallet-detail',
+      href: partnerWalletAdjustmentHref(providerProfileId),
       id: 'manual-adjustment-review',
       title: 'Manual adjustment review',
       tone: 'warning',
@@ -153,4 +155,17 @@ function bankAccountLabel(account: PartnerFinanceFollowUpBankAccount) {
   const bank = account.bankName?.trim() || 'Bank missing';
   const holder = account.accountHolderName?.trim() || 'Holder missing';
   return `${bank} / ${holder}`;
+}
+
+function partnerWalletAdjustmentHref(providerProfileId?: string | null) {
+  const normalized = providerProfileId?.trim();
+  if (!normalized) {
+    return '/wallet-adjustments?ownerType=PARTNER';
+  }
+
+  const params = new URLSearchParams({
+    ownerType: 'PARTNER',
+    ownerId: normalized,
+  });
+  return `/wallet-adjustments?${params.toString()}`;
 }

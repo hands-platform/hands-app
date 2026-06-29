@@ -483,6 +483,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerWalletSummary = buildPartnerWalletSummary(provider);
   const partnerFinanceFollowUpRows = buildPartnerFinanceFollowUpRows({
     bankAccounts: provider.bankAccounts,
+    providerProfileId: provider.id,
     walletSummary: partnerWalletSummary,
   });
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
