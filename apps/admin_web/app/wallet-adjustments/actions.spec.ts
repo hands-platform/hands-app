@@ -200,6 +200,27 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('javascript'));
   });
 
+  it('rejects invalid monthly periods before posting to the Admin API', async () => {
+    const formData = new FormData();
+    formData.set('ownerType', 'PARTNER');
+    formData.set('ownerId', 'provider-1');
+    formData.set('direction', 'CREDIT');
+    formData.set('adjustmentType', 'PARTNER_BONUS');
+    formData.set('amount', '200000');
+    formData.set('approvalId', 'approval-2026-06');
+    formData.set('monthlyPeriod', '2026/06');
+    formData.set('reason', 'Malformed monthly period');
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=monthly-period-invalid'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Malformed+monthly+period'));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('2026%2F06'));
+  });
+
   it('blocks cash booking deduction from the manual wallet adjustment action', async () => {
     const formData = new FormData();
     formData.set('ownerType', 'PARTNER');

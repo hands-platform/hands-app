@@ -70,6 +70,7 @@ type WalletAdjustmentNotice =
   | 'attachment-required'
   | 'created'
   | 'failed'
+  | 'monthly-period-invalid'
   | 'settlement-required';
 
 type WalletAdjustmentRedirectContext = {
@@ -134,7 +135,7 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
   const amount = readOptionalString(formData, 'amount');
   const approvalId = readOptionalString(formData, 'approvalId');
   const attachmentUrl = readSafeAttachmentUrlForRedirect(formData);
-  const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
+  const monthlyPeriod = readSafeMonthlyPeriodForRedirect(formData);
   const reason = readOptionalString(formData, 'reason');
 
   return {
@@ -164,7 +165,7 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   const amount = readPositiveAmount(formData);
   const reason = readRequiredString(formData, 'reason', 'Reason');
   const approvalId = readOptionalString(formData, 'approvalId');
-  const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
+  const monthlyPeriod = readMonthlyPeriod(formData);
   const attachmentUrl = readAttachmentUrl(formData);
 
   if (SETTLEMENT_ONLY_ADJUSTMENT_TYPES.has(adjustmentType)) {
@@ -227,6 +228,25 @@ function readAttachmentUrl(formData: FormData) {
     return url.toString();
   } catch {
     throw new WalletAdjustmentValidationError('attachment-invalid');
+  }
+}
+
+function readMonthlyPeriod(formData: FormData) {
+  const value = readOptionalString(formData, 'monthlyPeriod');
+  if (!value) {
+    return '';
+  }
+  if (!/^\d{4}-\d{2}$/.test(value)) {
+    throw new WalletAdjustmentValidationError('monthly-period-invalid');
+  }
+  return value;
+}
+
+function readSafeMonthlyPeriodForRedirect(formData: FormData) {
+  try {
+    return readMonthlyPeriod(formData);
+  } catch {
+    return '';
   }
 }
 

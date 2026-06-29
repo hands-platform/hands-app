@@ -569,6 +569,15 @@ function walletAdjustmentNotice(notice: string) {
     };
   }
 
+  if (notice === 'monthly-period-invalid') {
+    return {
+      badge: 'Period',
+      detail: 'No wallet ledger was written. Monthly period must use YYYY-MM before the wallet ledger can be written.',
+      title: 'Monthly period is invalid',
+      tone: 'danger' as const,
+    };
+  }
+
   if (notice === 'settlement-required') {
     return {
       badge: 'Settlement',

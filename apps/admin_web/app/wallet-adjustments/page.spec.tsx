@@ -53,6 +53,16 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('Attachment evidence must be a valid http or https URL.');
   });
 
+  it('renders a clear notice when monthly period format is invalid', async () => {
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ adjustmentNotice: 'monthly-period-invalid' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Monthly period is invalid');
+    expect(markup).toContain('Monthly period must use YYYY-MM before the wallet ledger can be written.');
+  });
+
   it('renders the accounting preview returned by the Admin API', async () => {
     mockedAdminPost.mockResolvedValue({
       accountingEntries: [
