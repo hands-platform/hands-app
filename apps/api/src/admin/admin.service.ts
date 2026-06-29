@@ -5704,7 +5704,7 @@ export class AdminService {
   async monthlyTaxClosingSummary(options: AdminMonthlyTaxClosingQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = { monthlyPeriod: period };
-    const [closing, totals, cashTotals, nonCashTotals, providerGroups, openTaxCount, paidTaxCount] =
+    const [closing, totals, cashTotals, nonCashTotals, providerGroups, openTaxCount, paidTaxCount, couponTotals] =
       await Promise.all([
         this.prisma.monthlyTaxClosing.findUnique({
           where: { period_currency: { period, currency: 'VND' } },
@@ -5747,6 +5747,27 @@ export class AdminService {
         this.prisma.bookingSettlementSnapshot.count({
           where: { ...where, taxStatus: BookingSettlementTaxStatus.PAID },
         }),
+        this.prisma.$queryRaw<
+          Array<{
+            companyCouponExpense: bigint | number | null;
+            couponDiscountAmount: bigint | number | null;
+            couponReviewFlagCount: bigint | number | null;
+            couponSettlementCount: bigint | number | null;
+            partnerFundedCouponAmount: bigint | number | null;
+            platformFeeDiscountAmount: bigint | number | null;
+          }>
+        >(Prisma.sql`
+          SELECT
+            COUNT(*)::bigint AS "couponSettlementCount",
+            COALESCE(SUM(${adminJsonIntSql('couponDiscountAmount')}), 0)::bigint AS "couponDiscountAmount",
+            COALESCE(SUM(${adminJsonIntSql('companyCouponExpense')}), 0)::bigint AS "companyCouponExpense",
+            COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "partnerFundedCouponAmount",
+            COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
+            COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
+          FROM "BookingSettlementSnapshot"
+          WHERE "monthlyPeriod" = ${period}
+            AND ("metadata" ? 'couponDiscountAmount' OR "metadata" ? 'couponCodeSnapshot' OR "metadata" ? 'couponId')
+        `),
       ]);
 
     const customerPaymentAmountTotal = totals._sum.customerPaymentAmount ?? 0;
@@ -5756,6 +5777,7 @@ export class AdminService {
     const platformFeeGrossTotal = totals._sum.platformFeeGross ?? 0;
     const companyOutputVatTotal = totals._sum.companyOutputVat ?? 0;
     const platformFeeNetRevenueTotal = totals._sum.platformFeeNetRevenue ?? 0;
+    const couponSummary = couponTotals[0];
 
     return {
       id: closing?.id ?? null,
@@ -5772,6 +5794,12 @@ export class AdminService {
       partnerPitWithheldTotal: totals._sum.partnerPitAmount ?? 0,
       partnerWithholdingTotal,
       paymentProcessingFeeTotal,
+      couponSettlementCount: numberValue(couponSummary?.couponSettlementCount),
+      couponDiscountAmountTotal: numberValue(couponSummary?.couponDiscountAmount),
+      companyCouponExpenseTotal: numberValue(couponSummary?.companyCouponExpense),
+      partnerFundedCouponAmountTotal: numberValue(couponSummary?.partnerFundedCouponAmount),
+      platformFeeDiscountAmountTotal: numberValue(couponSummary?.platformFeeDiscountAmount),
+      couponReviewFlagCount: numberValue(couponSummary?.couponReviewFlagCount),
       cashDebtTotal:
         (cashTotals._sum.platformFeeGross ?? 0) + (cashTotals._sum.partnerWithholdingTotal ?? 0),
       nonCashPartnerPayoutTotal: nonCashTotals._sum.partnerPayoutAmount ?? 0,
@@ -5869,6 +5897,12 @@ export class AdminService {
             companyOutputVatTotal: summary.companyOutputVatTotal,
             partnerWithholdingTotal: summary.partnerWithholdingTotal,
             paymentProcessingFeeTotal: summary.paymentProcessingFeeTotal,
+            couponSettlementCount: summary.couponSettlementCount,
+            couponDiscountAmountTotal: summary.couponDiscountAmountTotal,
+            companyCouponExpenseTotal: summary.companyCouponExpenseTotal,
+            partnerFundedCouponAmountTotal: summary.partnerFundedCouponAmountTotal,
+            platformFeeDiscountAmountTotal: summary.platformFeeDiscountAmountTotal,
+            couponReviewFlagCount: summary.couponReviewFlagCount,
             reconciliationDelta: summary.reconciliationDelta,
             netRevenueDelta: summary.netRevenueDelta,
             notes,

@@ -1965,6 +1965,12 @@ export type AdminMonthlyTaxClosingSummary = {
   partnerPitWithheldTotal: number;
   partnerWithholdingTotal: number;
   paymentProcessingFeeTotal: number;
+  couponSettlementCount: number;
+  couponDiscountAmountTotal: number;
+  companyCouponExpenseTotal: number;
+  partnerFundedCouponAmountTotal: number;
+  platformFeeDiscountAmountTotal: number;
+  couponReviewFlagCount: number;
   cashDebtTotal: number;
   nonCashPartnerPayoutTotal: number;
   partnerCountWithRevenue: number;

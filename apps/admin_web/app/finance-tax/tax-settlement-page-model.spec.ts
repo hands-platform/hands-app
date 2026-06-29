@@ -181,6 +181,12 @@ describe('tax settlement page model', () => {
       partnerPitWithheldTotal: 24_000,
       partnerWithholdingTotal: 84_000,
       paymentProcessingFeeTotal: 0,
+      couponSettlementCount: 1,
+      couponDiscountAmountTotal: 60_000,
+      companyCouponExpenseTotal: 60_000,
+      partnerFundedCouponAmountTotal: 0,
+      platformFeeDiscountAmountTotal: 0,
+      couponReviewFlagCount: 1,
       cashDebtTotal: 170_000,
       nonCashPartnerPayoutTotal: 430_000,
       partnerCountWithRevenue: 1,
@@ -201,6 +207,7 @@ describe('tax settlement page model', () => {
       ['Partner withholding', '84.000 VND'],
       ['Company output VAT', '18.962 VND'],
       ['Payment fees', '0 VND'],
+      ['Coupon expense', '60.000 VND'],
       ['Formula delta', '0 VND'],
       ['Net revenue delta', '0 VND'],
     ]);
@@ -232,6 +239,12 @@ describe('tax settlement page model', () => {
         partnerPitWithheldTotal: 24000,
         partnerWithholdingTotal: 84000,
         paymentProcessingFeeTotal: 0,
+        couponSettlementCount: 1,
+        couponDiscountAmountTotal: 60000,
+        companyCouponExpenseTotal: 60000,
+        partnerFundedCouponAmountTotal: 0,
+        platformFeeDiscountAmountTotal: 0,
+        couponReviewFlagCount: 1,
         cashDebtTotal: 170000,
         nonCashPartnerPayoutTotal: 430000,
         partnerCountWithRevenue: 1,
@@ -374,6 +387,12 @@ describe('tax settlement page model', () => {
         partnerPitWithheldTotal: 24_000,
         partnerWithholdingTotal: 84_000,
         paymentProcessingFeeTotal: 10_000,
+        couponSettlementCount: 1,
+        couponDiscountAmountTotal: 60_000,
+        companyCouponExpenseTotal: 60_000,
+        partnerFundedCouponAmountTotal: 0,
+        platformFeeDiscountAmountTotal: 0,
+        couponReviewFlagCount: 1,
         cashDebtTotal: 170_000,
         nonCashPartnerPayoutTotal: 430_000,
         partnerCountWithRevenue: 1,
@@ -391,6 +410,8 @@ describe('tax settlement page model', () => {
     expect(journalCsv).toContain('"platform_fee_net_revenue","2026-06","VND","CREDIT"');
     expect(journalCsv).toContain('"company_output_vat_payable","2026-06","VND","CREDIT"');
     expect(journalCsv).toContain('"payment_processing_fee_clearing","2026-06","VND","CREDIT"');
+    expect(journalCsv).toContain('"customer_coupon_marketing_expense","2026-06","VND","DEBIT"');
+    expect(journalCsv).toContain('"coupon_discount_clearing","2026-06","VND","CREDIT"');
     expect(journalCsv).toContain('"partner_receivable_cash_debt","2026-06","VND","DEBIT"');
     expect(journalCsv).toContain('"237038"');
     expect(journalCsv).toContain('Closed periods require reversal entries, not direct edits.');

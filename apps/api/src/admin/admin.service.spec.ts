@@ -6507,6 +6507,16 @@ describe('AdminService query orchestration', () => {
 
   it('summarizes monthly tax closing preview from settlement snapshots and existing closing status', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          companyCouponExpense: 60_000n,
+          couponDiscountAmount: 60_000n,
+          couponReviewFlagCount: 1n,
+          couponSettlementCount: 1n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+        },
+      ]),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -6568,6 +6578,12 @@ describe('AdminService query orchestration', () => {
       partnerPitWithheldTotal: 24000,
       partnerWithholdingTotal: 84000,
       paymentProcessingFeeTotal: 0,
+      couponSettlementCount: 1,
+      couponDiscountAmountTotal: 60000,
+      companyCouponExpenseTotal: 60000,
+      partnerFundedCouponAmountTotal: 0,
+      platformFeeDiscountAmountTotal: 0,
+      couponReviewFlagCount: 1,
       cashDebtTotal: 170000,
       nonCashPartnerPayoutTotal: 430000,
       partnerCountWithRevenue: 1,
@@ -6590,6 +6606,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.monthlyTaxClosing.findUnique).toHaveBeenCalledWith({
       where: { period_currency: { period: '2026-06', currency: 'VND' } },
     });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('updates monthly tax closing status by snapshotting summary totals and writing audit metadata', async () => {
@@ -6618,6 +6635,16 @@ describe('AdminService query orchestration', () => {
       },
     };
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          companyCouponExpense: 60_000n,
+          couponDiscountAmount: 60_000n,
+          couponReviewFlagCount: 1n,
+          couponSettlementCount: 1n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+        },
+      ]),
       $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue(existingClosing),

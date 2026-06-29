@@ -178,6 +178,17 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           <div className="setup-stage-item">
             <span>3</span>
             <div>
+              <strong>Coupon expense closeout</strong>
+              <p className="muted">
+                {summary.couponSettlementCount} coupon settlement row(s), {summary.couponReviewFlagCount} review flag(s).
+                Company-funded coupons stay outside platform revenue and VAT.
+              </p>
+            </div>
+            <small>{formatMoney(summary.companyCouponExpenseTotal, summary.currency)}</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>4</span>
+            <div>
               <strong>Partner withholding closeout</strong>
               <p className="muted">
                 {summary.partnerCountWithRevenue} Partner(s), {summary.openTaxCount} open tax rows,{' '}
