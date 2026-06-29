@@ -14,8 +14,10 @@ import {
   buildTaxFinanceMetrics,
   emptyBookingSettlementSummary,
   emptyPartnerWithholdingTaxSummary,
+  monthlyTaxClosingHref,
   partnerWithholdingTaxHref,
   readBookingSettlementFilters,
+  readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
 } from './tax-settlement-page-model';
 
@@ -27,6 +29,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const params = searchParams ? await searchParams : {};
   const settlementFilters = readBookingSettlementFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
+  const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
   const [settlementSummary, withholdingSummary] = await Promise.all([
     adminGet<AdminBookingSettlementSnapshotSummary>(
       buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
@@ -49,6 +52,9 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           </Link>
           <Link className="pill pill-info" href={partnerWithholdingTaxHref(withholdingFilters)}>
             Partner withholding tax
+          </Link>
+          <Link className="pill pill-info" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
+            Monthly tax closing
           </Link>
         </>
       }
@@ -123,6 +129,16 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               </p>
             </div>
             <small>{formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}</small>
+          </Link>
+          <Link className="setup-stage-item" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
+            <span>CLOSE</span>
+            <div>
+              <strong>Monthly Tax Closing</strong>
+              <p className="muted">
+                Preview platform VAT, Partner withholding, payment fee, cash debt, and reconciliation deltas.
+              </p>
+            </div>
+            <small>{monthlyClosingFilters.period}</small>
           </Link>
           <Link className="setup-stage-item" href="/tax-policy">
             <span>RULES</span>

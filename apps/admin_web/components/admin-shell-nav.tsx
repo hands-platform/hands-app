@@ -69,6 +69,7 @@ const iconByLabel = {
   'Tax Overview': CircleDollarSign,
   'Partner Withholding Tax': ReceiptText,
   'Booking Settlement Audit': FileText,
+  'Monthly Tax Closing': ClipboardCheck,
   'Unapproved Partners': BadgeCheck,
   'Unsettled Partners': WalletCards,
   'Usage Overview': ChartNoAxesCombined,

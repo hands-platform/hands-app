@@ -1570,6 +1570,13 @@ export type AdminTaxRule = {
 
 export type AdminBookingSettlementStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
 export type AdminBookingSettlementTaxStatus = 'OPEN' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
+export type AdminMonthlyTaxClosingStatus =
+  | 'DRAFT'
+  | 'REVIEWED'
+  | 'DECLARED'
+  | 'PAID'
+  | 'CLOSED'
+  | 'REVERSED';
 
 export type AdminBookingSettlementSnapshot = {
   id: string;
@@ -1651,6 +1658,57 @@ export type AdminPartnerWithholdingTaxSummary = {
   partnerVatWithheldTotal: number;
   partnerPitWithheldTotal: number;
   totalPartnerTaxWithheld: number;
+};
+
+export type AdminMonthlyTaxClosing = {
+  id: string;
+  period: string;
+  currency: string;
+  status: AdminMonthlyTaxClosingStatus;
+  platformFeeGrossTotal: number;
+  platformFeeNetRevenueTotal: number;
+  companyOutputVatTotal: number;
+  partnerVatWithheldTotal: number;
+  partnerPitWithheldTotal: number;
+  partnerWithholdingTotal: number;
+  paymentProcessingFeeTotal: number;
+  cashDebtTotal: number;
+  nonCashPartnerPayoutTotal: number;
+  settlementCount: number;
+  declaredAt?: string | null;
+  paidAt?: string | null;
+  closedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminMonthlyTaxClosingSummary = {
+  id?: string | null;
+  period: string;
+  currency: string;
+  status: AdminMonthlyTaxClosingStatus;
+  settlementCount: number;
+  customerPaymentAmountTotal: number;
+  partnerPayoutTotal: number;
+  platformFeeGrossTotal: number;
+  platformFeeNetRevenueTotal: number;
+  companyOutputVatTotal: number;
+  partnerVatWithheldTotal: number;
+  partnerPitWithheldTotal: number;
+  partnerWithholdingTotal: number;
+  paymentProcessingFeeTotal: number;
+  cashDebtTotal: number;
+  nonCashPartnerPayoutTotal: number;
+  partnerCountWithRevenue: number;
+  openTaxCount: number;
+  paidTaxCount: number;
+  reconciliationDelta: number;
+  netRevenueDelta: number;
+  declaredAt?: string | null;
+  paidAt?: string | null;
+  closedAt?: string | null;
+  notes?: string | null;
 };
 
 export type AdminAuditLog = {

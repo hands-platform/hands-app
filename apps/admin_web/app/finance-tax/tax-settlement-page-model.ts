@@ -1,5 +1,6 @@
 import type {
   AdminBookingSettlementSnapshotSummary,
+  AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxSummary,
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
@@ -24,6 +25,11 @@ export type BookingSettlementFilters = {
 };
 
 export type PartnerWithholdingTaxFilters = {
+  readonly period: string;
+  readonly take: number;
+};
+
+export type MonthlyTaxClosingFilters = {
   readonly period: string;
   readonly take: number;
 };
@@ -75,6 +81,15 @@ export function readPartnerWithholdingTaxFilters(
   };
 }
 
+export function readMonthlyTaxClosingFilters(
+  params: Record<string, string | string[] | undefined>,
+): MonthlyTaxClosingFilters {
+  return {
+    period: normalizeTaxPeriod(readSearchParam(params.period)),
+    take: boundedTake(readSearchParam(params.take)),
+  };
+}
+
 export function buildBookingSettlementSnapshotApiHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({
     range: filters.range,
@@ -107,6 +122,19 @@ export function buildPartnerWithholdingTaxSummaryApiHref(filters: PartnerWithhol
   }).toString()}`;
 }
 
+export function buildMonthlyTaxClosingApiHref(filters: MonthlyTaxClosingFilters) {
+  return `/admin/monthly-tax-closings?${new URLSearchParams({
+    period: filters.period,
+    take: String(filters.take),
+  }).toString()}`;
+}
+
+export function buildMonthlyTaxClosingSummaryApiHref(filters: MonthlyTaxClosingFilters) {
+  return `/admin/monthly-tax-closings/summary?${new URLSearchParams({
+    period: filters.period,
+  }).toString()}`;
+}
+
 export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
   if (filters.review !== 'all') {
@@ -117,6 +145,10 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
 
 export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters) {
   return `/finance-tax/partner-withholding-tax?${new URLSearchParams({ period: filters.period }).toString()}`;
+}
+
+export function monthlyTaxClosingHref(filters: MonthlyTaxClosingFilters) {
+  return `/finance-tax/monthly-tax-closing?${new URLSearchParams({ period: filters.period }).toString()}`;
 }
 
 export function buildTaxFinanceMetrics(
@@ -201,6 +233,81 @@ export function emptyPartnerWithholdingTaxSummary(period = normalizeTaxPeriod(''
     partnerPitWithheldTotal: 0,
     totalPartnerTaxWithheld: 0,
   };
+}
+
+export function emptyMonthlyTaxClosingSummary(period = normalizeTaxPeriod('')): AdminMonthlyTaxClosingSummary {
+  return {
+    id: null,
+    period,
+    currency: 'VND',
+    status: 'DRAFT',
+    settlementCount: 0,
+    customerPaymentAmountTotal: 0,
+    partnerPayoutTotal: 0,
+    platformFeeGrossTotal: 0,
+    platformFeeNetRevenueTotal: 0,
+    companyOutputVatTotal: 0,
+    partnerVatWithheldTotal: 0,
+    partnerPitWithheldTotal: 0,
+    partnerWithholdingTotal: 0,
+    paymentProcessingFeeTotal: 0,
+    cashDebtTotal: 0,
+    nonCashPartnerPayoutTotal: 0,
+    partnerCountWithRevenue: 0,
+    openTaxCount: 0,
+    paidTaxCount: 0,
+    reconciliationDelta: 0,
+    netRevenueDelta: 0,
+    declaredAt: null,
+    paidAt: null,
+    closedAt: null,
+    notes: null,
+  };
+}
+
+export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSummary) {
+  return [
+    {
+      label: 'Period status',
+      value: summary.status,
+      helper: 'Current stored closing status, or draft preview when no closing row exists yet.',
+    },
+    {
+      label: 'Settlements',
+      value: summary.settlementCount,
+      helper: 'Settlement snapshots included in this monthly tax period.',
+    },
+    {
+      label: 'Customer paid',
+      value: formatMoney(summary.customerPaymentAmountTotal, summary.currency),
+      helper: 'Customer payment total. This is not company revenue.',
+    },
+    {
+      label: 'Partner withholding',
+      value: formatMoney(summary.partnerWithholdingTotal, summary.currency),
+      helper: 'Partner VAT plus PIT withheld for the month.',
+    },
+    {
+      label: 'Company output VAT',
+      value: formatMoney(summary.companyOutputVatTotal, summary.currency),
+      helper: 'Company VAT payable from platform fee gross.',
+    },
+    {
+      label: 'Payment fees',
+      value: formatMoney(summary.paymentProcessingFeeTotal, summary.currency),
+      helper: 'Processing fees tracked separately from tax.',
+    },
+    {
+      label: 'Formula delta',
+      value: formatMoney(summary.reconciliationDelta, summary.currency),
+      helper: 'Customer payment minus payout, withholding, payment fees, and platform fee gross.',
+    },
+    {
+      label: 'Net revenue delta',
+      value: formatMoney(summary.netRevenueDelta, summary.currency),
+      helper: 'Platform fee gross minus company output VAT and net revenue.',
+    },
+  ];
 }
 
 export function reviewLabel(review: BookingSettlementReview) {

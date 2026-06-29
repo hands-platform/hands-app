@@ -3,8 +3,12 @@ import {
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildMonthlyTaxClosingApiHref,
+  buildMonthlyTaxClosingSummaryApiHref,
   buildTaxFinanceMetrics,
+  buildMonthlyTaxClosingMetrics,
   readBookingSettlementFilters,
+  readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
 } from './tax-settlement-page-model';
 
@@ -37,6 +41,21 @@ describe('tax settlement page model', () => {
     );
     expect(buildPartnerWithholdingTaxSummaryApiHref(filters)).toBe(
       '/admin/partner-withholding-tax/summary?period=2026-06',
+    );
+  });
+
+  it('loads monthly tax closing with a bounded monthly period list', () => {
+    const filters = readMonthlyTaxClosingFilters({ period: '2026-06', take: '50' });
+
+    expect(filters).toEqual({
+      period: '2026-06',
+      take: 50,
+    });
+    expect(buildMonthlyTaxClosingApiHref(filters)).toBe(
+      '/admin/monthly-tax-closings?period=2026-06&take=50',
+    );
+    expect(buildMonthlyTaxClosingSummaryApiHref(filters)).toBe(
+      '/admin/monthly-tax-closings/summary?period=2026-06',
     );
   });
 
@@ -77,6 +96,47 @@ describe('tax settlement page model', () => {
       ['Company VAT', '38.182 VND'],
       ['Payment fees', '20.000 VND'],
       ['Partners with revenue', 2],
+    ]);
+  });
+
+  it('builds monthly closing metrics with reconciliation signals', () => {
+    const metrics = buildMonthlyTaxClosingMetrics({
+      id: 'closing-1',
+      period: '2026-06',
+      currency: 'VND',
+      status: 'DRAFT',
+      settlementCount: 2,
+      customerPaymentAmountTotal: 1_200_000,
+      partnerPayoutTotal: 860_000,
+      platformFeeGrossTotal: 256_000,
+      platformFeeNetRevenueTotal: 237_038,
+      companyOutputVatTotal: 18_962,
+      partnerVatWithheldTotal: 60_000,
+      partnerPitWithheldTotal: 24_000,
+      partnerWithholdingTotal: 84_000,
+      paymentProcessingFeeTotal: 0,
+      cashDebtTotal: 170_000,
+      nonCashPartnerPayoutTotal: 430_000,
+      partnerCountWithRevenue: 1,
+      openTaxCount: 1,
+      paidTaxCount: 1,
+      reconciliationDelta: 0,
+      netRevenueDelta: 0,
+      declaredAt: null,
+      paidAt: null,
+      closedAt: null,
+      notes: null,
+    });
+
+    expect(metrics.map((metric) => [metric.label, metric.value])).toEqual([
+      ['Period status', 'DRAFT'],
+      ['Settlements', 2],
+      ['Customer paid', '1.200.000 VND'],
+      ['Partner withholding', '84.000 VND'],
+      ['Company output VAT', '18.962 VND'],
+      ['Payment fees', '0 VND'],
+      ['Formula delta', '0 VND'],
+      ['Net revenue delta', '0 VND'],
     ]);
   });
 });

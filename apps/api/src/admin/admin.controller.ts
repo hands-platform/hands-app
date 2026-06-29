@@ -744,6 +744,16 @@ export class AdminController {
     return this.admin.partnerWithholdingTaxSummary({ period });
   }
 
+  @Get('monthly-tax-closings')
+  monthlyTaxClosings(@Query('period') period?: string, @Query('take') take?: string) {
+    return this.admin.listMonthlyTaxClosings({ period, take });
+  }
+
+  @Get('monthly-tax-closings/summary')
+  monthlyTaxClosingSummary(@Query('period') period?: string) {
+    return this.admin.monthlyTaxClosingSummary({ period });
+  }
+
   @Get('services')
   services() {
     return this.admin.listServices();

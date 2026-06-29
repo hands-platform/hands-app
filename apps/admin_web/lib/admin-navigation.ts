@@ -150,6 +150,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Immutable booking settlement snapshots for tax and finance audit review.',
       },
       {
+        href: '/finance-tax/monthly-tax-closing',
+        label: 'Monthly Tax Closing',
+        description: 'Monthly platform VAT, Partner withholding, payment fee, and reconciliation closeout.',
+      },
+      {
         href: '/payments',
         label: 'Payments',
         description: 'Gateway, cash, refund, and payment-state operations.',

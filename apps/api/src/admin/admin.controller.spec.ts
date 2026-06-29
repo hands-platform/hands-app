@@ -59,6 +59,8 @@ describe('AdminController notification and push actions', () => {
     bookingSettlementSnapshotSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
     partnerWithholdingTaxSummary: vi.fn(),
+    listMonthlyTaxClosings: vi.fn(),
+    monthlyTaxClosingSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -514,6 +516,41 @@ describe('AdminController notification and push actions', () => {
       path: 'partner-withholding-tax/summary',
     });
     expect(admin.partnerWithholdingTaxSummary).toHaveBeenCalledWith({ period: '2026-06' });
+  });
+
+  it('exposes monthly tax closings as a bounded finance list', async () => {
+    admin.listMonthlyTaxClosings.mockResolvedValue([{ period: '2026-06' }]);
+
+    await expect(controller.monthlyTaxClosings('2026-06', '25')).resolves.toEqual([{ period: '2026-06' }]);
+
+    expect(routeMetadata('monthlyTaxClosings')).toEqual({
+      method: RequestMethod.GET,
+      path: 'monthly-tax-closings',
+    });
+    expect(admin.listMonthlyTaxClosings).toHaveBeenCalledWith({
+      period: '2026-06',
+      take: '25',
+    });
+  });
+
+  it('exposes monthly tax closing summary for a monthly period', async () => {
+    admin.monthlyTaxClosingSummary.mockResolvedValue({
+      period: '2026-06',
+      settlementCount: 2,
+      reconciliationDelta: 0,
+    });
+
+    await expect(controller.monthlyTaxClosingSummary('2026-06')).resolves.toEqual({
+      period: '2026-06',
+      settlementCount: 2,
+      reconciliationDelta: 0,
+    });
+
+    expect(routeMetadata('monthlyTaxClosingSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'monthly-tax-closings/summary',
+    });
+    expect(admin.monthlyTaxClosingSummary).toHaveBeenCalledWith({ period: '2026-06' });
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

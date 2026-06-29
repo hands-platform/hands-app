@@ -336,8 +336,34 @@ type AdminPartnerWithholdingTaxQuery = {
   readonly period?: string | null;
   readonly take?: number | string | null;
 };
+type AdminMonthlyTaxClosingQuery = {
+  readonly period?: string | null;
+  readonly take?: number | string | null;
+};
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
+const adminMonthlyTaxClosingListSelect = {
+  id: true,
+  period: true,
+  currency: true,
+  status: true,
+  platformFeeGrossTotal: true,
+  platformFeeNetRevenueTotal: true,
+  companyOutputVatTotal: true,
+  partnerVatWithheldTotal: true,
+  partnerPitWithheldTotal: true,
+  partnerWithholdingTotal: true,
+  paymentProcessingFeeTotal: true,
+  cashDebtTotal: true,
+  nonCashPartnerPayoutTotal: true,
+  settlementCount: true,
+  declaredAt: true,
+  paidAt: true,
+  closedAt: true,
+  notes: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.MonthlyTaxClosingSelect;
 const adminBookingSettlementSnapshotListSelect = {
   id: true,
   bookingId: true,
@@ -5429,6 +5455,109 @@ export class AdminService {
       partnerVatWithheldTotal: totals._sum.partnerVatAmount ?? 0,
       partnerPitWithheldTotal: totals._sum.partnerPitAmount ?? 0,
       totalPartnerTaxWithheld: totals._sum.partnerWithholdingTotal ?? 0,
+    };
+  }
+
+  listMonthlyTaxClosings(options: AdminMonthlyTaxClosingQuery = {}) {
+    const period = normalizeNullable(options.period);
+    const where = period ? { period: adminPartnerWithholdingTaxPeriod(period) } : undefined;
+
+    return this.prisma.monthlyTaxClosing.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { period: 'desc' },
+      take: adminPaymentOperationsTake(options.take),
+      select: adminMonthlyTaxClosingListSelect,
+    });
+  }
+
+  async monthlyTaxClosingSummary(options: AdminMonthlyTaxClosingQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const where = { monthlyPeriod: period };
+    const [closing, totals, cashTotals, nonCashTotals, providerGroups, openTaxCount, paidTaxCount] =
+      await Promise.all([
+        this.prisma.monthlyTaxClosing.findUnique({
+          where: { period_currency: { period, currency: 'VND' } },
+        }),
+        this.prisma.bookingSettlementSnapshot.aggregate({
+          where,
+          _count: { _all: true },
+          _sum: {
+            customerPaymentAmount: true,
+            partnerPayoutAmount: true,
+            platformFeeGross: true,
+            platformFeeNetRevenue: true,
+            companyOutputVat: true,
+            partnerVatAmount: true,
+            partnerPitAmount: true,
+            partnerWithholdingTotal: true,
+            paymentProcessingFee: true,
+          },
+        }),
+        this.prisma.bookingSettlementSnapshot.aggregate({
+          where: { ...where, paymentMethod: PaymentMethod.CASH },
+          _sum: {
+            platformFeeGross: true,
+            partnerWithholdingTotal: true,
+          },
+        }),
+        this.prisma.bookingSettlementSnapshot.aggregate({
+          where: { ...where, paymentMethod: { not: PaymentMethod.CASH } },
+          _sum: {
+            partnerPayoutAmount: true,
+          },
+        }),
+        this.prisma.bookingSettlementSnapshot.groupBy({
+          by: ['providerProfileId'],
+          where,
+        }),
+        this.prisma.bookingSettlementSnapshot.count({
+          where: { ...where, taxStatus: BookingSettlementTaxStatus.OPEN },
+        }),
+        this.prisma.bookingSettlementSnapshot.count({
+          where: { ...where, taxStatus: BookingSettlementTaxStatus.PAID },
+        }),
+      ]);
+
+    const customerPaymentAmountTotal = totals._sum.customerPaymentAmount ?? 0;
+    const partnerPayoutTotal = totals._sum.partnerPayoutAmount ?? 0;
+    const partnerWithholdingTotal = totals._sum.partnerWithholdingTotal ?? 0;
+    const paymentProcessingFeeTotal = totals._sum.paymentProcessingFee ?? 0;
+    const platformFeeGrossTotal = totals._sum.platformFeeGross ?? 0;
+    const companyOutputVatTotal = totals._sum.companyOutputVat ?? 0;
+    const platformFeeNetRevenueTotal = totals._sum.platformFeeNetRevenue ?? 0;
+
+    return {
+      id: closing?.id ?? null,
+      period,
+      currency: closing?.currency ?? 'VND',
+      status: closing?.status ?? 'DRAFT',
+      settlementCount: totals._count._all,
+      customerPaymentAmountTotal,
+      partnerPayoutTotal,
+      platformFeeGrossTotal,
+      platformFeeNetRevenueTotal,
+      companyOutputVatTotal,
+      partnerVatWithheldTotal: totals._sum.partnerVatAmount ?? 0,
+      partnerPitWithheldTotal: totals._sum.partnerPitAmount ?? 0,
+      partnerWithholdingTotal,
+      paymentProcessingFeeTotal,
+      cashDebtTotal:
+        (cashTotals._sum.platformFeeGross ?? 0) + (cashTotals._sum.partnerWithholdingTotal ?? 0),
+      nonCashPartnerPayoutTotal: nonCashTotals._sum.partnerPayoutAmount ?? 0,
+      partnerCountWithRevenue: providerGroups.length,
+      openTaxCount,
+      paidTaxCount,
+      reconciliationDelta:
+        customerPaymentAmountTotal -
+        partnerPayoutTotal -
+        partnerWithholdingTotal -
+        paymentProcessingFeeTotal -
+        platformFeeGrossTotal,
+      netRevenueDelta: platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal,
+      declaredAt: closing?.declaredAt ?? null,
+      paidAt: closing?.paidAt ?? null,
+      closedAt: closing?.closedAt ?? null,
+      notes: closing?.notes ?? null,
     };
   }
 
