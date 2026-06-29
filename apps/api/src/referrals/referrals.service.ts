@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 import { calculatePlatformFeeBreakdown } from '../earnings/earnings.policy';
 import { PrismaService } from '../prisma/prisma.service';
+import { calculateCustomerReferralReward } from './referrals.accounting';
 
 const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
 
@@ -544,12 +545,13 @@ export class ReferralsService {
       return null;
     }
 
-    const platformFeeBreakdown = referralPlatformFeeBreakdown(booking.earning.platformFee, policy);
+    const customerReferralReward = calculateCustomerReferralReward({
+      platformFeeGross: booking.earning.platformFee,
+      platformFeeVatRateBps: referralPlatformFeeVatRateBps(policy),
+      referralRateBps: policy.commissionPercentBps,
+    });
     const amount = await this.rewardAmountAfterLifetimeCap(
-      cappedRewardAmount(
-        Math.round((platformFeeBreakdown.platformFeeNetRevenue * policy.commissionPercentBps) / 10_000),
-        policy.perRewardCapAmount,
-      ),
+      cappedRewardAmount(customerReferralReward.rewardGross, policy.perRewardCapAmount),
       {
         audience: ReferralAudience.CUSTOMER,
         totalRewardCapAmount: policy.totalRewardCapAmount,
