@@ -224,6 +224,7 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
       discountLabel: formatMoney(booking.discountAmount, booking.currency ?? 'VND', '-'),
       partnerLabel: booking.partnerName ?? 'Not matched',
       requestTimeLabel: formatDate(booking.requestTime, 'Not set'),
+      reversalStatusLabel: booking.reversalStatus ?? 'ACTIVE',
       serviceLabel: booking.serviceName ?? '-',
       statusLabel: booking.status ?? '-',
     })),

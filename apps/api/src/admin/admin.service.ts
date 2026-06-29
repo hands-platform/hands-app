@@ -10063,11 +10063,18 @@ function couponUsageBookingView(booking: {
     paymentMethod: booking.payment?.method ?? null,
     paymentStatus: booking.payment?.status ?? null,
     requestTime: booking.createdAt,
+    reversalStatus: couponUsageReversalStatus(booking),
     scheduledStartAt: booking.scheduledStartAt,
     serviceName: service ? `${service.service.name} / ${service.service.durationMin} min` : null,
     servicePrice: service?.price ?? null,
     status: booking.status,
   };
+}
+
+function couponUsageReversalStatus(booking: { payment: { status: PaymentStatus } | null; status: BookingStatus }) {
+  return booking.payment?.status === PaymentStatus.REFUNDED || booking.status === BookingStatus.REFUNDED
+    ? 'REVERSED'
+    : 'ACTIVE';
 }
 
 function stringFromRecord(record: Record<string, unknown>, key: string) {

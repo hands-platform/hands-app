@@ -15,6 +15,7 @@ export type CouponUsageBookingRow = {
   readonly discountLabel: string;
   readonly partnerLabel: string;
   readonly requestTimeLabel: string;
+  readonly reversalStatusLabel: string;
   readonly serviceLabel: string;
   readonly statusLabel: string;
 };
@@ -56,7 +57,7 @@ type CouponSection = {
 };
 
 const COUPON_USAGE_PAGE_SIZE = 10;
-const usageHeaders = ['Request Time', 'Customer', 'Partner', 'Service Type', 'Amount', 'Discount', 'State'];
+const usageHeaders = ['Request Time', 'Customer', 'Partner', 'Service Type', 'Amount', 'Discount', 'State', 'Reversal'];
 
 export function CouponsTableSection({
   rows,
@@ -235,6 +236,11 @@ function CouponUsageBookingTable({
               <td>{booking.discountLabel}</td>
               <td>
                 <span className="pill pill-neutral">{booking.statusLabel}</span>
+              </td>
+              <td>
+                <span className={booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'}>
+                  {booking.reversalStatusLabel}
+                </span>
               </td>
             </tr>
           ))}

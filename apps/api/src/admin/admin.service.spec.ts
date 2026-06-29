@@ -881,6 +881,7 @@ describe('AdminService query orchestration', () => {
           customerName: 'Demo Customer',
           discountAmount: 30000,
           partnerName: 'Smoke Partner',
+          reversalStatus: 'ACTIVE',
           serviceName: 'Massage / 60 min',
         }),
       ],
@@ -910,6 +911,66 @@ describe('AdminService query orchestration', () => {
         take: 10,
       }),
     );
+  });
+
+  it('marks refunded coupon usage bookings as reversed without hiding the audit row', async () => {
+    const coupon = {
+      active: true,
+      code: 'WELCOME10',
+      discount: { type: 'percent', value: 10 },
+      id: 'coupon-1',
+    };
+    const prisma = {
+      booking: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            closedAt: new Date('2026-06-13T09:00:00.000Z'),
+            createdAt: new Date('2026-06-12T09:00:00.000Z'),
+            customerProfile: {
+              user: {
+                email: 'demo@example.com',
+                fullName: 'Demo Customer',
+                phone: '+84000000000',
+              },
+            },
+            id: 'booking-refunded-1',
+            payment: {
+              amount: 270000,
+              currency: 'VND',
+              method: 'MOMO',
+              rawMeta: {
+                couponCode: 'WELCOME10',
+                couponId: 'coupon-1',
+                discountAmount: 30000,
+                originalAmount: 300000,
+              },
+              status: PaymentStatus.REFUNDED,
+            },
+            scheduledStartAt: new Date('2026-06-12T10:00:00.000Z'),
+            selectedProvider: null,
+            services: [],
+            status: BookingStatus.REFUNDED,
+          },
+        ]),
+      },
+      coupon: {
+        findUnique: vi.fn().mockResolvedValue(coupon),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCouponUsageBookings('coupon-1')).resolves.toMatchObject({
+      rows: [
+        expect.objectContaining({
+          bookingId: 'booking-refunded-1',
+          paymentStatus: PaymentStatus.REFUNDED,
+          reversalStatus: 'REVERSED',
+          status: BookingStatus.REFUNDED,
+        }),
+      ],
+      totalCount: 1,
+    });
   });
 
   it('returns coupon status summary without hydrating booking usage rows', async () => {

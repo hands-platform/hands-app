@@ -1707,6 +1707,7 @@ export type AdminCouponUsageBooking = {
   paymentMethod?: string | null;
   paymentStatus?: string | null;
   requestTime?: string | null;
+  reversalStatus?: string | null;
   scheduledStartAt?: string | null;
   serviceName?: string | null;
   servicePrice?: number | null;

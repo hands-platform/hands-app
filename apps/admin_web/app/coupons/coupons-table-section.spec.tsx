@@ -23,6 +23,7 @@ describe('CouponsTableSection', () => {
     expect(rendered).toContain('Delete');
     expect(rendered).toContain('Demo Customer');
     expect(rendered).toContain('Smoke Partner');
+    expect(rendered).toContain('REVERSED');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(hrefsIn(section)).toContain('/coupons?confirm=delete&couponId=coupon-1');
     expect(elementTypesIn(section)).not.toContain('article');
@@ -67,8 +68,9 @@ function buildRow(): CouponTableRow {
         discountLabel: '30,000 VND',
         partnerLabel: 'Smoke Partner',
         requestTimeLabel: '12 Jun 2026, 16:00',
+        reversalStatusLabel: 'REVERSED',
         serviceLabel: 'Massage / 60 min',
-        statusLabel: 'OPEN_MATCHING',
+        statusLabel: 'REFUNDED',
       },
     ],
     windowLabel: 'Immediate -> No end date',
