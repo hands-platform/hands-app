@@ -241,6 +241,7 @@ import {
   type PartnerBankPayoutGateView,
   type PartnerTaxProfileView,
 } from './partner-detail-finance-gate-section';
+import { buildPartnerBankReviewTimeline } from './partner-detail-bank-review-timeline-model';
 import {
   PartnerDetailFastOverviewSection,
   type PartnerDetailFastOverviewCard,
@@ -490,6 +491,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     provider.id,
     primaryBank,
     provider.bankAccounts ?? [],
+    provider.verificationLogs ?? [],
   );
   const partnerTaxProfile = buildPartnerTaxProfileView(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
@@ -3839,6 +3841,7 @@ function buildPartnerBankPayoutGateView(
   providerId: string,
   bank: ProviderBankAccount | null,
   bankAccounts: readonly ProviderBankAccount[] = [],
+  logs: NonNullable<ProviderDetail['verificationLogs']> = [],
 ): PartnerBankPayoutGateView | null {
   if (!bank) {
     return null;
@@ -3853,6 +3856,7 @@ function buildPartnerBankPayoutGateView(
     reviewStateDetail: reviewState.detail,
     reviewStateLabel: reviewState.label,
     reviewActions: buildPartnerBankReviewActions(providerId, bank),
+    reviewTimeline: buildPartnerBankReviewTimeline({ bank, bankAccounts, logs }),
     reviewedAtLabel: bank.reviewedAt ? formatDate(bank.reviewedAt) : null,
     status: bank.status,
     submittedAtLabel: bank.createdAt ? formatDate(bank.createdAt) : null,

@@ -111,6 +111,49 @@ describe('partner detail finance gate sections', () => {
       'Bank correction submitted Partner submitted bank details after a previous correction request. Review before manual payout.',
     );
   });
+
+  it('renders bank correction audit history as a compact Vuexy timeline', () => {
+    const section = PartnerDetailBankPayoutGateCard({
+      bank: {
+        accountLabel: '****9876',
+        bankName: 'Techcombank',
+        holderName: 'Linh Wellness',
+        rejectionReason: null,
+        reviewActions: [],
+        reviewTimeline: [
+          {
+            actorLabel: 'Admin Hoa',
+            atLabel: '20 Jun 2026, 10:00',
+            detail: 'Reason: account holder mismatch.',
+            id: 'bank-log-1',
+            title: 'Correction requested',
+            tone: 'danger',
+          },
+          {
+            actorLabel: 'Partner app',
+            atLabel: '21 Jun 2026, 09:00',
+            detail: 'Partner submitted corrected bank details.',
+            id: 'bank-log-2',
+            title: 'Bank correction submitted',
+            tone: 'info',
+          },
+        ],
+        status: 'PENDING_REVIEW',
+      },
+    });
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Bank review timeline');
+    expect(rendered).toContain('Correction requested 20 Jun 2026, 10:00 Reason: account holder mismatch. Actor Admin Hoa');
+    expect(rendered).toContain('Bank correction submitted 21 Jun 2026, 09:00 Partner submitted corrected bank details. Actor Partner app');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'vuexy-basic-timeline partner-bank-review-timeline admin-mt-16',
+        'vuexy-basic-timeline-dot is-danger',
+        'vuexy-basic-timeline-dot is-info',
+      ]),
+    );
+  });
 });
 
 function textContent(value: unknown): string {

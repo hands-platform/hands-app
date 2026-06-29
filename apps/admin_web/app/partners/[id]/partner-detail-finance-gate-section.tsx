@@ -21,6 +21,7 @@ export type PartnerBankPayoutGateView = {
   readonly status: string;
   readonly submittedAtLabel?: string | null;
   readonly updatedAtLabel?: string | null;
+  readonly reviewTimeline?: readonly PartnerBankReviewTimelineItem[];
 };
 
 export type PartnerTaxProfileView = {
@@ -30,6 +31,15 @@ export type PartnerTaxProfileView = {
   readonly reviewActions: readonly ActionMenuItem[];
   readonly status: string;
   readonly taxCodeLabel: string;
+};
+
+export type PartnerBankReviewTimelineItem = {
+  readonly actorLabel?: string | null;
+  readonly atLabel: string;
+  readonly detail: string;
+  readonly id: string;
+  readonly title: string;
+  readonly tone: 'danger' | 'info' | 'primary' | 'success' | 'warning';
 };
 
 type PartnerDetailBankPayoutGateCardProps = {
@@ -98,6 +108,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
+      {bank?.reviewTimeline?.length ? <BankReviewTimeline items={bank.reviewTimeline} /> : null}
     </AdminFilterPanel>
   );
 }
@@ -159,6 +170,39 @@ function EvidenceLine({ label, value }: { readonly label: string; readonly value
     <p className="muted">
       <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
     </p>
+  );
+}
+
+function BankReviewTimeline({ items }: { readonly items: readonly PartnerBankReviewTimelineItem[] }) {
+  return (
+    <div className="admin-mt-16">
+      <h3>Bank review timeline</h3>
+      <div className="vuexy-basic-timeline partner-bank-review-timeline admin-mt-16">
+        {items.map((item, index) => (
+          <article className="vuexy-basic-timeline-item" key={item.id}>
+            <div className="vuexy-basic-timeline-separator" aria-hidden="true">
+              <span className={`vuexy-basic-timeline-dot is-${item.tone}`} />
+              {index < items.length - 1 ? <span className="vuexy-basic-timeline-connector" /> : null}
+            </div>
+            <div className="vuexy-basic-timeline-content">
+              <div className="vuexy-basic-timeline-title-row">
+                <h3>{item.title}</h3>
+                <time>{item.atLabel}</time>
+              </div>
+              <p>{item.detail}</p>
+              {item.actorLabel ? (
+                <div className="vuexy-basic-timeline-meta is-compact">
+                  <div className="vuexy-basic-timeline-meta-item">
+                    <span>Actor</span>
+                    <strong>{item.actorLabel}</strong>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
