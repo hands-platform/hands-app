@@ -7,6 +7,7 @@ import type {
   AdminEarningSummary,
   AdminExternalReadiness,
   AdminNotificationBoardSummary,
+  AdminPaymentSummary,
   AdminPayoutBatchSummary,
   AdminRefundSummary,
 } from '../lib/admin-api';
@@ -203,5 +204,43 @@ describe('DashboardPage', () => {
     );
     expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
     expect(markup).toContain('<h3>Alert evidence</h3><strong>19 alert</strong>');
+  });
+
+  it('uses payment summary for default dashboard payment hold counters', async () => {
+    const paymentSummary: AdminPaymentSummary = {
+      authorized: 13,
+      callbackReview: 0,
+      callbackVerified: 0,
+      captured: 0,
+      cashDebt: 0,
+      linkedRefunds: 0,
+      needsAction: 13,
+      pendingCash: 0,
+      refunded: 0,
+      totalCount: 30,
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payments/summary?range=today') {
+        return paymentSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/payments/summary?range=today',
+      null,
+    );
+    expect(markup).toContain('<span>Payment holds</span><strong>13</strong>');
   });
 });

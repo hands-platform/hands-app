@@ -67,6 +67,7 @@ describe('dashboard page model', () => {
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(paymentUrl.searchParams.get('range')).toBe('today');
     expect(paymentUrl.searchParams.get('take')).toBe('5');
+    expect(hrefs.paymentSummaryHref).toBe('/admin/payments/summary?range=today');
     expect(earningUrl.searchParams.get('range')).toBe('today');
     expect(earningUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=today');
@@ -109,6 +110,7 @@ describe('dashboard page model', () => {
     expect(Number.isFinite(Date.parse(notificationUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(paymentUrl.searchParams.get('range')).toBe('7d');
     expect(paymentUrl.searchParams.get('take')).toBe('5');
+    expect(hrefs.paymentSummaryHref).toBe('/admin/payments/summary?range=7d');
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=7d');
     expect(hrefs.refundsSummaryHref).toBe('/admin/refunds/summary?range=7d');
     expect(hrefs.payoutBatchSummaryHref).toBe('/admin/payout-batches/summary?range=7d');

@@ -25,6 +25,7 @@ import {
   AdminNotificationBoardSummary,
   AdminOperationalPolicySetting,
   AdminPayment,
+  AdminPaymentSummary,
   AdminPayoutBatch,
   AdminPayoutBatchSummary,
   AdminProvider,
@@ -409,6 +410,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     providers,
     bookings,
     payments,
+    paymentSummary,
     earnings,
     earningRows,
     refunds,
@@ -432,6 +434,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       : Promise.resolve([]),
     adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
     adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
+    adminGet<AdminPaymentSummary | null>(dashboardDataHrefs.paymentSummaryHref, null),
     adminGet<AdminEarningSummary>(dashboardDataHrefs.earningsSummaryHref, {
       count: 0,
       grossAmount: 0,
@@ -485,6 +488,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     isInDateRange(bookingLatestActivityAt(booking), filters.range),
   );
   const rangePayments = payments;
+  const paymentHoldCount =
+    paymentSummary?.authorized ?? payments.filter((payment) => payment.status === 'AUTHORIZED').length;
   const rangeEarningRows = earningRows;
   const rangePayoutBatches = payoutBatches;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
@@ -636,7 +641,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     ],
     [
       'Payment holds',
-      payments.filter((payment) => payment.status === 'AUTHORIZED').length.toString(),
+      paymentHoldCount.toString(),
       'Authorized payments not yet captured or released.',
     ],
     [

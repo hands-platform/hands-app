@@ -22,6 +22,7 @@ export type DashboardDataHrefs = {
   readonly operationalPolicyHref: string | null;
   readonly partnersHref: string | null;
   readonly paymentsHref: string;
+  readonly paymentSummaryHref: string;
   readonly payoutBatchSummaryHref: string;
   readonly payoutBatchesHref: string;
   readonly refundsHref: string;
@@ -101,6 +102,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       { take: String(limits.finance) },
       range,
     ),
+    paymentSummaryHref: buildDashboardRangeScopedHref('/admin/payments/summary', {}, range),
     payoutBatchesHref: buildDashboardRangeScopedHref(
       '/admin/payout-batches',
       { take: String(limits.finance) },
