@@ -34,6 +34,8 @@ import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-
 import { ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT } from './admin-booking-selects';
 import { AdminService } from './admin.service';
 
+const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((innerResolve) => {
@@ -2239,6 +2241,40 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('treats legacy rewarded and credited referral rewards as credited in parent filters', async () => {
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCustomerReferralParents({ reward: 'credited' })).resolves.toEqual([]);
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: expect.arrayContaining([
+            { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+            {
+              referralsMade: {
+                some: {
+                  audience: ReferralAudience.CUSTOMER,
+                  rewards: {
+                    some: {
+                      status: {
+                        in: [ReferralRewardStatus.REWARDED, creditedReferralRewardStatus],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ]),
+        },
+      }),
+    );
+  });
+
   it('loads one customer referral parent detail only when referral activity exists', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
@@ -2387,6 +2423,11 @@ describe('AdminService query orchestration', () => {
             _count: { _all: 2 },
             _sum: { amount: 50_000 },
           },
+          {
+            status: creditedReferralRewardStatus,
+            _count: { _all: 1 },
+            _sum: { amount: 35_000 },
+          },
         ]),
       },
     };
@@ -2395,11 +2436,11 @@ describe('AdminService query orchestration', () => {
     await expect(service.customerReferralParentSummary()).resolves.toEqual({
       totalCount: 12,
       rewardQueueSummaries: [
-        { reward: 'all', count: 5, amount: 125_000 },
+        { reward: 'all', count: 6, amount: 160_000 },
         { reward: 'available', count: 3, amount: 75_000 },
         { reward: 'pending', count: 0, amount: 0 },
         { reward: 'held', count: 0, amount: 0 },
-        { reward: 'credited', count: 2, amount: 50_000 },
+        { reward: 'credited', count: 3, amount: 85_000 },
       ],
     });
     expect(prisma.customerProfile.count).toHaveBeenCalledWith({

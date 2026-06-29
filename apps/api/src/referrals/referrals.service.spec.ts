@@ -13,6 +13,8 @@ function createService(prisma: unknown) {
   return new ReferralsService(prisma as never);
 }
 
+const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
+
 describe('ReferralsService', () => {
   it('returns an existing customer referral code without creating a new one', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
@@ -84,6 +86,7 @@ describe('ReferralsService', () => {
           { status: 'PENDING', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 25_000 } },
           { status: 'AVAILABLE', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
           { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 50_000 } },
+          { status: 'CREDITED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 35_000 } },
         ]),
       },
     };
@@ -106,9 +109,9 @@ describe('ReferralsService', () => {
         heldAmount: 0,
         pendingAmount: 25_000,
         referralCount: 2,
-        rewardedAmount: 50_000,
+        rewardedAmount: 85_000,
         reversedAmount: 0,
-        rewardCount: 3,
+        rewardCount: 4,
       },
     });
     expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
@@ -440,6 +443,7 @@ describe('ReferralsService', () => {
         groupBy: vi.fn().mockResolvedValue([
           { status: 'HELD', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 100_000 } },
           { status: 'REWARDED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
+          { status: 'CREDITED', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 300_000 } },
         ]),
       },
     };
@@ -462,9 +466,9 @@ describe('ReferralsService', () => {
         heldAmount: 100_000,
         pendingAmount: 0,
         referralCount: 3,
-        rewardedAmount: 75_000,
+        rewardedAmount: 375_000,
         reversedAmount: 0,
-        rewardCount: 2,
+        rewardCount: 3,
       },
     });
     expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
@@ -914,7 +918,7 @@ describe('ReferralsService', () => {
         findUnique: vi.fn().mockResolvedValue(reward),
         update: vi.fn().mockResolvedValue({
           ...reward,
-          status: ReferralRewardStatus.REWARDED,
+          status: creditedReferralRewardStatus,
           walletLedgerReference: ledger.id,
         }),
       },
@@ -928,7 +932,7 @@ describe('ReferralsService', () => {
 
     await expect(service.creditRewardCandidate('reward-1')).resolves.toMatchObject({
       id: 'reward-1',
-      status: ReferralRewardStatus.REWARDED,
+      status: creditedReferralRewardStatus,
       walletLedgerReference: 'customer-wallet-ledger-1',
     });
     expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
@@ -951,7 +955,7 @@ describe('ReferralsService', () => {
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
     expect(tx.referralReward.update).toHaveBeenCalledWith({
       data: {
-        status: ReferralRewardStatus.REWARDED,
+        status: creditedReferralRewardStatus,
         walletLedgerReference: 'customer-wallet-ledger-1',
       },
       where: { id: 'reward-1' },
@@ -985,7 +989,7 @@ describe('ReferralsService', () => {
         findUnique: vi.fn().mockResolvedValue(reward),
         update: vi.fn().mockResolvedValue({
           ...reward,
-          status: ReferralRewardStatus.REWARDED,
+          status: creditedReferralRewardStatus,
           walletLedgerReference: ledger.id,
         }),
       },
@@ -999,7 +1003,7 @@ describe('ReferralsService', () => {
 
     await expect(service.creditRewardCandidate('reward-2')).resolves.toMatchObject({
       id: 'reward-2',
-      status: ReferralRewardStatus.REWARDED,
+      status: creditedReferralRewardStatus,
       walletLedgerReference: 'provider-wallet-ledger-1',
     });
     expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
@@ -1021,7 +1025,7 @@ describe('ReferralsService', () => {
     expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
     expect(tx.referralReward.update).toHaveBeenCalledWith({
       data: {
-        status: ReferralRewardStatus.REWARDED,
+        status: creditedReferralRewardStatus,
         walletLedgerReference: 'provider-wallet-ledger-1',
       },
       where: { id: 'reward-2' },

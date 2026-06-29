@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { calculateCustomerReferralReward } from './referrals.accounting';
 
 const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
+const CREDITED_REFERRAL_REWARD_STATUS = referralRewardStatus('CREDITED');
 
 const referralCodeSelect = {
   id: true,
@@ -459,7 +460,7 @@ export class ReferralsService {
 
       return tx.referralReward.update({
         data: {
-          status: ReferralRewardStatus.REWARDED,
+          status: CREDITED_REFERRAL_REWARD_STATUS,
           walletLedgerReference: ledger.id,
         },
         where: { id: reward.id },
@@ -857,7 +858,7 @@ function referralRewardTotals(referralCount: number, groups: ReferralRewardSumma
       totals.heldAmount += amount;
     } else if (group.status === ReferralRewardStatus.PENDING) {
       totals.pendingAmount += amount;
-    } else if (group.status === ReferralRewardStatus.REWARDED) {
+    } else if (isCreditedReferralRewardStatus(group.status)) {
       totals.rewardedAmount += amount;
     } else if (group.status === ReferralRewardStatus.REVERSED) {
       totals.reversedAmount += amount;
@@ -935,6 +936,14 @@ function customerWalletLedgerType(value: string): CustomerWalletLedgerType {
 
 function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
   return value as ProviderWalletLedgerType;
+}
+
+function referralRewardStatus(value: string): ReferralRewardStatus {
+  return value as ReferralRewardStatus;
+}
+
+function isCreditedReferralRewardStatus(status: ReferralRewardStatus) {
+  return status === ReferralRewardStatus.REWARDED || status === CREDITED_REFERRAL_REWARD_STATUS;
 }
 
 function referralMetadataWholeBps(metadata: Prisma.JsonValue | null, key: string) {

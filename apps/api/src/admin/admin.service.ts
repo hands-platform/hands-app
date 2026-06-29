@@ -7981,7 +7981,7 @@ function adminReferralAttributionStatusFilter(
 function adminReferralRewardStatusFilter(value: string | null | undefined): ReferralRewardStatus[] | null {
   const normalized = normalizeNullable(value);
   if (normalized === 'available') return [ReferralRewardStatus.AVAILABLE];
-  if (normalized === 'credited') return [ReferralRewardStatus.REWARDED];
+  if (normalized === 'credited') return creditedReferralRewardStatuses();
   if (normalized === 'pending') return [ReferralRewardStatus.PENDING];
   if (normalized === 'held') return [ReferralRewardStatus.HELD];
   return null;
@@ -9018,13 +9018,13 @@ function adminReferralRewardTotals(referralCount: number, rewards: AdminReferral
     pendingRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.PENDING),
     availableRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.AVAILABLE),
     heldRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.HELD),
-    rewardedRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.REWARDED),
+    rewardedRewardCount: countReferralRewardsByStatuses(rewards, creditedReferralRewardStatuses()),
     reversedRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.REVERSED),
     cancelledRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.CANCELLED),
     pendingRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.PENDING),
     availableRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.AVAILABLE),
     heldRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.HELD),
-    rewardedRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.REWARDED),
+    rewardedRewardAmount: sumReferralRewardsByStatuses(rewards, creditedReferralRewardStatuses()),
     reversedRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.REVERSED),
     cancelledRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.CANCELLED),
     totalRewardAmount: rewards.reduce((total, reward) => total + reward.amount, 0),
@@ -9048,6 +9048,17 @@ function adminReferralRewardQueueSummaries(
     ]),
   );
   const statusSummary = (status: ReferralRewardStatus) => byStatus.get(status) ?? { amount: 0, count: 0 };
+  const aggregateStatusSummaries = (statuses: readonly ReferralRewardStatus[]) =>
+    statuses.reduce(
+      (summary, status) => {
+        const nextSummary = statusSummary(status);
+        return {
+          amount: summary.amount + nextSummary.amount,
+          count: summary.count + nextSummary.count,
+        };
+      },
+      { amount: 0, count: 0 },
+    );
   const allSummary = rewardGroups.reduce(
     (summary, group) => ({
       amount: summary.amount + (group._sum.amount ?? 0),
@@ -9061,7 +9072,7 @@ function adminReferralRewardQueueSummaries(
     { reward: 'available', ...statusSummary(ReferralRewardStatus.AVAILABLE) },
     { reward: 'pending', ...statusSummary(ReferralRewardStatus.PENDING) },
     { reward: 'held', ...statusSummary(ReferralRewardStatus.HELD) },
-    { reward: 'credited', ...statusSummary(ReferralRewardStatus.REWARDED) },
+    { reward: 'credited', ...aggregateStatusSummaries(creditedReferralRewardStatuses()) },
   ];
 }
 
@@ -9073,6 +9084,26 @@ function sumReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], statu
   return rewards
     .filter((reward) => reward.status === status)
     .reduce((total, reward) => total + reward.amount, 0);
+}
+
+function countReferralRewardsByStatuses(rewards: AdminReferralRewardSummary[], statuses: readonly ReferralRewardStatus[]) {
+  const statusSet = new Set(statuses);
+  return rewards.filter((reward) => statusSet.has(reward.status)).length;
+}
+
+function sumReferralRewardsByStatuses(rewards: AdminReferralRewardSummary[], statuses: readonly ReferralRewardStatus[]) {
+  const statusSet = new Set(statuses);
+  return rewards
+    .filter((reward) => statusSet.has(reward.status))
+    .reduce((total, reward) => total + reward.amount, 0);
+}
+
+function creditedReferralRewardStatuses() {
+  return [ReferralRewardStatus.REWARDED, referralRewardStatus('CREDITED')];
+}
+
+function referralRewardStatus(value: string): ReferralRewardStatus {
+  return value as ReferralRewardStatus;
 }
 
 function adminBookingMarketplacePin(booking: {
