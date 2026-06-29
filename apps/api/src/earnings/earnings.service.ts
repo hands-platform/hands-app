@@ -240,6 +240,15 @@ function withdrawalRequestCountArgs(
   return where ? { where } : {};
 }
 
+function withdrawalRequestAmountAggregateArgs(
+  where: Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined,
+): Prisma.ProviderWalletWithdrawalRequestAggregateArgs {
+  return {
+    ...(where ? { where } : {}),
+    _sum: { amount: true },
+  };
+}
+
 function cleanQueryText(value: string | null | undefined) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -1260,27 +1269,41 @@ export class EarningsService {
     options: Omit<AdminWithdrawalRequestListQuery, 'status' | 'take'> = {},
   ) {
     const where = adminWithdrawalRequestListWhere({ ...options, status: null });
-    const [total, requested, reviewRequired, bankTransferPending, lockReleased] = await Promise.all([
+    const requestedWhere = mergeWithdrawalRequestWhere(where, {
+      status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+    });
+    const reviewRequiredWhere = mergeWithdrawalRequestWhere(where, {
+      status: ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+    });
+    const bankTransferPendingWhere = mergeWithdrawalRequestWhere(where, {
+      status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+    });
+    const activeWhere = mergeWithdrawalRequestWhere(where, {
+      status: { in: [...ACTIVE_WITHDRAWAL_REQUEST_STATUSES] },
+    });
+    const returnedWhere = mergeWithdrawalRequestWhere(where, {
+      status: { in: [...RELEASED_WITHDRAWAL_REQUEST_STATUSES] },
+    });
+    const paidWhere = mergeWithdrawalRequestWhere(where, {
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+    });
+    const [
+      total,
+      requested,
+      reviewRequired,
+      bankTransferPending,
+      lockReleased,
+      totalAmount,
+      requestedAmount,
+      pendingWithdrawalPayableAmount,
+      bankTransferPendingAmount,
+      paidAmount,
+      returnedAmount,
+    ] = await Promise.all([
       this.prisma.providerWalletWithdrawalRequest.count(withdrawalRequestCountArgs(where)),
-      this.prisma.providerWalletWithdrawalRequest.count(
-        withdrawalRequestCountArgs(
-          mergeWithdrawalRequestWhere(where, { status: ProviderWalletWithdrawalRequestStatus.REQUESTED }),
-        ),
-      ),
-      this.prisma.providerWalletWithdrawalRequest.count(
-        withdrawalRequestCountArgs(
-          mergeWithdrawalRequestWhere(where, {
-            status: ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
-          }),
-        ),
-      ),
-      this.prisma.providerWalletWithdrawalRequest.count(
-        withdrawalRequestCountArgs(
-          mergeWithdrawalRequestWhere(where, {
-            status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
-          }),
-        ),
-      ),
+      this.prisma.providerWalletWithdrawalRequest.count(withdrawalRequestCountArgs(requestedWhere)),
+      this.prisma.providerWalletWithdrawalRequest.count(withdrawalRequestCountArgs(reviewRequiredWhere)),
+      this.prisma.providerWalletWithdrawalRequest.count(withdrawalRequestCountArgs(bankTransferPendingWhere)),
       this.prisma.providerWalletWithdrawalRequest.count(
         withdrawalRequestCountArgs(
           mergeWithdrawalRequestWhere(where, {
@@ -1291,6 +1314,20 @@ export class EarningsService {
           }),
         ),
       ),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(withdrawalRequestAmountAggregateArgs(where)),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(
+        withdrawalRequestAmountAggregateArgs(requestedWhere),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(
+        withdrawalRequestAmountAggregateArgs(activeWhere),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(
+        withdrawalRequestAmountAggregateArgs(bankTransferPendingWhere),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(withdrawalRequestAmountAggregateArgs(paidWhere)),
+      this.prisma.providerWalletWithdrawalRequest.aggregate(
+        withdrawalRequestAmountAggregateArgs(returnedWhere),
+      ),
     ]);
 
     return {
@@ -1299,6 +1336,13 @@ export class EarningsService {
       reviewRequired,
       bankTransferPending,
       lockReleased,
+      totalAmount: aggregateAmount(totalAmount),
+      requestedAmount: aggregateAmount(requestedAmount),
+      pendingWithdrawalPayableAmount: aggregateAmount(pendingWithdrawalPayableAmount),
+      bankTransferPendingAmount: aggregateAmount(bankTransferPendingAmount),
+      paidAmount: aggregateAmount(paidAmount),
+      returnedAmount: aggregateAmount(returnedAmount),
+      currency: 'VND',
     };
   }
 
@@ -2246,6 +2290,10 @@ function cashSettlementCompanyCouponOffset(input: {
 
 function jsonNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function aggregateAmount(result: { _sum?: { amount?: number | null } | null }) {
+  return result._sum?.amount ?? 0;
 }
 
 function providerWalletWithdrawalRequestStatusChangeMetadata(input: {

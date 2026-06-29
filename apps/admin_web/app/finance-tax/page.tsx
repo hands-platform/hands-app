@@ -41,24 +41,25 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const settlementFilters = readBookingSettlementFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
-  const [settlementSummary, couponFinanceSummary, withholdingSummary, withdrawalRequestSummary] = await Promise.all([
-    adminGet<AdminBookingSettlementSnapshotSummary>(
-      buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
-      emptyBookingSettlementSummary(),
-    ),
-    adminGet<AdminCouponFinanceSummary>(
-      buildCouponFinanceSummaryApiHref(settlementFilters),
-      emptyCouponFinanceSummary(),
-    ),
-    adminGet<AdminPartnerWithholdingTaxSummary>(
-      buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
-      emptyPartnerWithholdingTaxSummary(withholdingFilters.period),
-    ),
-    adminGet<AdminProviderWalletWithdrawalRequestSummary>(
-      buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
-      emptyProviderWalletWithdrawalRequestSummary(),
-    ),
-  ]);
+  const [settlementSummary, couponFinanceSummary, withholdingSummary, withdrawalRequestSummary] =
+    await Promise.all([
+      adminGet<AdminBookingSettlementSnapshotSummary>(
+        buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
+        emptyBookingSettlementSummary(),
+      ),
+      adminGet<AdminCouponFinanceSummary>(
+        buildCouponFinanceSummaryApiHref(settlementFilters),
+        emptyCouponFinanceSummary(),
+      ),
+      adminGet<AdminPartnerWithholdingTaxSummary>(
+        buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
+        emptyPartnerWithholdingTaxSummary(withholdingFilters.period),
+      ),
+      adminGet<AdminProviderWalletWithdrawalRequestSummary>(
+        buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
+        emptyProviderWalletWithdrawalRequestSummary(),
+      ),
+    ]);
 
   const currency = settlementSummary.currency || withholdingSummary.currency || 'VND';
 
@@ -90,8 +91,8 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <div>
               <strong>Booking snapshot is immutable</strong>
               <p className="muted">
-                Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee, and
-                company VAT values at posting time.
+                Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee,
+                and company VAT values at posting time.
               </p>
             </div>
             <small>{settlementSummary.count} rows</small>
@@ -101,7 +102,8 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <div>
               <strong>Partner tax is monthly</strong>
               <p className="muted">
-                Partner withholding is grouped by month and Partner. Current period: {withholdingSummary.period}.
+                Partner withholding is grouped by month and Partner. Current period:{' '}
+                {withholdingSummary.period}.
               </p>
             </div>
             <small>{withholdingSummary.partnerCountWithRevenue} partners</small>
@@ -111,8 +113,8 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <div>
               <strong>Finance uses snapshot totals</strong>
               <p className="muted">
-                Company net fee is {formatMoney(settlementSummary.platformFeeNetRevenue, currency)} before payment
-                processing cost of {formatMoney(settlementSummary.paymentProcessingFee, currency)}.
+                Company net fee is {formatMoney(settlementSummary.platformFeeNetRevenue, currency)} before
+                payment processing cost of {formatMoney(settlementSummary.paymentProcessingFee, currency)}.
               </p>
             </div>
             <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
@@ -131,9 +133,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <span>COUPON</span>
             <div>
               <strong>Coupon settlement rows</strong>
-              <p className="muted">
-                Bookings with coupon metadata in the current finance range and queue.
-              </p>
+              <p className="muted">Bookings with coupon metadata in the current finance range and queue.</p>
             </div>
             <small>{couponFinanceSummary.couponSettlementCount} rows</small>
           </Link>
@@ -145,17 +145,22 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 Discount applied to customer payment while settlement keeps the pre-coupon service amount.
               </p>
             </div>
-            <small>{formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}</small>
+            <small>
+              {formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}
+            </small>
           </div>
           <div className="setup-stage-item">
             <span>PAID</span>
             <div>
               <strong>Customer paid amount</strong>
               <p className="muted">
-                Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.
+                Actual customer payment after coupon discount. This feeds clearing and is not platform
+                revenue.
               </p>
             </div>
-            <small>{formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}</small>
+            <small>
+              {formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}
+            </small>
           </div>
           <div className="setup-stage-item">
             <span>BASE</span>
@@ -180,15 +185,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.
               </p>
             </div>
-            <small>{formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}</small>
+            <small>
+              {formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}
+            </small>
           </div>
           <div className="setup-stage-item">
             <span>FLAG</span>
             <div>
               <strong>Coupon review flags</strong>
-              <p className="muted">
-                Rows where coupon metadata needs finance review before closing.
-              </p>
+              <p className="muted">Rows where coupon metadata needs finance review before closing.</p>
             </div>
             <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
           </div>
@@ -200,7 +205,9 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 Refund or reversal metadata for coupon discount and company coupon expense recovery.
               </p>
             </div>
-            <small>{formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}</small>
+            <small>
+              {formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}
+            </small>
           </div>
         </div>
       </section>
@@ -219,7 +226,9 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 <strong>{link.label}</strong>
                 <p className="muted">{link.helper}</p>
               </div>
-              <small>{typeof link.count === 'number' ? `${link.count} open` : 'Open queue'}</small>
+              <small>
+                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
+              </small>
             </Link>
           ))}
         </div>
@@ -236,7 +245,8 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <div>
               <strong>Booking Settlement Audit</strong>
               <p className="muted">
-                Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed snapshots.
+                Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed
+                snapshots.
               </p>
             </div>
             <small>{settlementSummary.openTaxCount} open</small>
@@ -249,7 +259,9 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 Monthly Partner VAT/PIT totals for manual tax and payout closeout review.
               </p>
             </div>
-            <small>{formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}</small>
+            <small>
+              {formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}
+            </small>
           </Link>
           <Link className="setup-stage-item" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
             <span>CLOSE</span>

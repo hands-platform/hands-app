@@ -137,9 +137,7 @@ describe('tax settlement page model', () => {
       period: '2026-06',
       take: 50,
     });
-    expect(buildMonthlyTaxClosingApiHref(filters)).toBe(
-      '/admin/monthly-tax-closings?period=2026-06&take=50',
-    );
+    expect(buildMonthlyTaxClosingApiHref(filters)).toBe('/admin/monthly-tax-closings?period=2026-06&take=50');
     expect(buildMonthlyTaxClosingSummaryApiHref(filters)).toBe(
       '/admin/monthly-tax-closings/summary?period=2026-06',
     );
@@ -153,7 +151,9 @@ describe('tax settlement page model', () => {
       period: '2026-06',
       take: 25,
     });
-    expect(buildMonthlyTaxClosingApiHref(filters)).toBe('/admin/monthly-tax-closings?period=2026-06&take=25&skip=25');
+    expect(buildMonthlyTaxClosingApiHref(filters)).toBe(
+      '/admin/monthly-tax-closings?period=2026-06&take=25&skip=25',
+    );
     expect(monthlyTaxClosingHref(filters)).toBe('/finance-tax/monthly-tax-closing?period=2026-06&page=2');
   });
 
@@ -197,11 +197,26 @@ describe('tax settlement page model', () => {
   it('builds payout priority shortcuts without adding list payload to tax overview', () => {
     const settlementFilters = readBookingSettlementFilters({ range: '7d', review: 'open' });
 
-    expect(buildFinancePayoutPriorityLinks(settlementFilters).map((link) => [link.label, link.href])).toEqual([
-      ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED'],
-      ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED'],
-      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING'],
-      ['Cash debt gate', '/cash-settlements?range=7d'],
+    const links = buildFinancePayoutPriorityLinks(settlementFilters, {
+      bankTransferPending: 3,
+      bankTransferPendingAmount: 900_000,
+      currency: 'VND',
+      lockReleased: 1,
+      paidAmount: 500_000,
+      pendingWithdrawalPayableAmount: 1_600_000,
+      requested: 2,
+      requestedAmount: 700_000,
+      returnedAmount: 300_000,
+      reviewRequired: 1,
+      total: 6,
+      totalAmount: 2_400_000,
+    });
+
+    expect(links.map((link) => [link.label, link.href, link.amountLabel])).toEqual([
+      ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED', '700.000 VND'],
+      ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED', '1.600.000 VND locked'],
+      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING', '900.000 VND'],
+      ['Cash debt gate', '/cash-settlements?range=7d', null],
     ]);
   });
 
@@ -295,7 +310,9 @@ describe('tax settlement page model', () => {
 
   it('limits monthly tax closing status actions to the next safe status', () => {
     expect(monthlyTaxClosingNextStatusOptions('DRAFT').map((option) => option.value)).toEqual(['REVIEWED']);
-    expect(monthlyTaxClosingNextStatusOptions('REVIEWED').map((option) => option.value)).toEqual(['DECLARED']);
+    expect(monthlyTaxClosingNextStatusOptions('REVIEWED').map((option) => option.value)).toEqual([
+      'DECLARED',
+    ]);
     expect(monthlyTaxClosingNextStatusOptions('DECLARED').map((option) => option.value)).toEqual(['PAID']);
     expect(monthlyTaxClosingNextStatusOptions('PAID').map((option) => option.value)).toEqual(['CLOSED']);
     expect(monthlyTaxClosingNextStatusOptions('CLOSED')).toEqual([]);
@@ -387,7 +404,7 @@ describe('tax settlement page model', () => {
 
     expect(rowsCsv).toContain('"provider_profile_id","period","currency"');
     expect(rowsCsv).toContain('"provider-1","2026-06","VND","Smoke Partner"');
-    expect(rowsCsv).toContain("\"'+84900000001\"");
+    expect(rowsCsv).toContain('"\'+84900000001"');
     expect(rowsCsv).toContain('"1800000"');
     expect(rowsCsv).toContain('"126000"');
   });
@@ -441,9 +458,9 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"snapshot_id","booking_id","monthly_period"');
     expect(rowsCsv).toContain('"snapshot-1","booking-1","2026-06"');
     expect(rowsCsv).toContain('"Demo Customer"');
-    expect(rowsCsv).toContain("\"'+84900000001\"");
+    expect(rowsCsv).toContain('"\'+84900000001"');
     expect(rowsCsv).toContain('"Smoke Partner"');
-    expect(rowsCsv).toContain("\"'+84900000002\"");
+    expect(rowsCsv).toContain('"\'+84900000002"');
     expect(rowsCsv).toContain('"600000"');
     expect(rowsCsv).toContain('"128000"');
     expect(rowsCsv).toContain('"118519"');

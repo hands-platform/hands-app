@@ -1568,6 +1568,14 @@ describe('EarningsService payout batches', () => {
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(3)
           .mockResolvedValueOnce(1),
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 2_400_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 700_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 1_600_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 900_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 500_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 300_000 } }),
         findMany: vi.fn(),
       },
     };
@@ -1584,6 +1592,13 @@ describe('EarningsService payout batches', () => {
       reviewRequired: 1,
       bankTransferPending: 3,
       lockReleased: 1,
+      totalAmount: 2_400_000,
+      requestedAmount: 700_000,
+      pendingWithdrawalPayableAmount: 1_600_000,
+      bankTransferPendingAmount: 900_000,
+      paidAmount: 500_000,
+      returnedAmount: 300_000,
+      currency: 'VND',
     });
 
     expect(prisma.providerWalletWithdrawalRequest.findMany).not.toHaveBeenCalled();
@@ -1610,6 +1625,30 @@ describe('EarningsService payout batches', () => {
           },
         ],
       },
+    });
+    expect(prisma.providerWalletWithdrawalRequest.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+      _sum: { amount: true },
+    });
+    expect(prisma.providerWalletWithdrawalRequest.aggregate).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { providerProfileId: 'provider-1' },
+          {
+            status: {
+              in: [
+                ProviderWalletWithdrawalRequestStatus.REQUESTED,
+                ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+                ProviderWalletWithdrawalRequestStatus.APPROVED,
+                ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+                ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+                ProviderWalletWithdrawalRequestStatus.HOLD,
+              ],
+            },
+          },
+        ],
+      },
+      _sum: { amount: true },
     });
   });
 

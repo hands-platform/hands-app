@@ -70,6 +70,7 @@ export type TaxFinanceWorkflowLink = {
 export type FinancePayoutPriorityLink = {
   readonly key: string;
   readonly count: number | null;
+  readonly amountLabel: string | null;
   readonly label: string;
   readonly helper: string;
   readonly href: string;
@@ -330,6 +331,9 @@ export function buildFinancePayoutPriorityLinks(
   return [
     {
       key: 'withdrawal-requested',
+      amountLabel: withdrawalSummary
+        ? formatMoney(withdrawalSummary.requestedAmount, withdrawalSummary.currency)
+        : null,
       count: withdrawalSummary?.requested ?? null,
       label: 'Withdrawal requested',
       helper: 'Partner withdrawal requests waiting for first finance review.',
@@ -338,6 +342,9 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'review-required',
+      amountLabel: withdrawalSummary
+        ? `${formatMoney(withdrawalSummary.pendingWithdrawalPayableAmount, withdrawalSummary.currency)} locked`
+        : null,
       count: withdrawalSummary?.reviewRequired ?? null,
       label: 'Review required',
       helper: 'Withdrawal requests blocked by an explicit review flag before bank payout.',
@@ -346,6 +353,9 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'bank-transfer-pending',
+      amountLabel: withdrawalSummary
+        ? formatMoney(withdrawalSummary.bankTransferPendingAmount, withdrawalSummary.currency)
+        : null,
       count: withdrawalSummary?.bankTransferPending ?? null,
       label: 'Bank transfer pending',
       helper: 'Approved requests already moved into the manual bank transfer lane.',
@@ -354,9 +364,11 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'cash-debt-gate',
+      amountLabel: null,
       count: null,
       label: 'Cash debt gate',
-      helper: 'Partner cash booking fee debt that can block final acceptance, service start, or payout release.',
+      helper:
+        'Partner cash booking fee debt that can block final acceptance, service start, or payout release.',
       href: `/cash-settlements?${new URLSearchParams({ range }).toString()}`,
       signal: 'Cash debt',
     },
@@ -396,7 +408,11 @@ export function buildTaxFinanceMetrics(
       label: 'Partner tax withheld',
       value: formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency || currency),
       helper: 'VAT plus PIT withheld for the selected monthly tax period.',
-      href: partnerWithholdingTaxHref({ page: 1, period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+      href: partnerWithholdingTaxHref({
+        page: 1,
+        period: withholdingSummary.period,
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
     },
     {
       label: 'Company VAT',
@@ -412,7 +428,11 @@ export function buildTaxFinanceMetrics(
       label: 'Partners with revenue',
       value: withholdingSummary.partnerCountWithRevenue,
       helper: 'Partners with taxable settlement rows in the selected period.',
-      href: partnerWithholdingTaxHref({ page: 1, period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+      href: partnerWithholdingTaxHref({
+        page: 1,
+        period: withholdingSummary.period,
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
     },
   ];
 }
@@ -450,7 +470,9 @@ export function emptyCouponFinanceSummary(): AdminCouponFinanceSummary {
   };
 }
 
-export function emptyPartnerWithholdingTaxSummary(period = normalizeTaxPeriod('')): AdminPartnerWithholdingTaxSummary {
+export function emptyPartnerWithholdingTaxSummary(
+  period = normalizeTaxPeriod(''),
+): AdminPartnerWithholdingTaxSummary {
   return {
     period,
     currency: 'VND',
@@ -471,10 +493,19 @@ export function emptyProviderWalletWithdrawalRequestSummary(): AdminProviderWall
     reviewRequired: 0,
     bankTransferPending: 0,
     lockReleased: 0,
+    totalAmount: 0,
+    requestedAmount: 0,
+    pendingWithdrawalPayableAmount: 0,
+    bankTransferPendingAmount: 0,
+    paidAmount: 0,
+    returnedAmount: 0,
+    currency: 'VND',
   };
 }
 
-export function emptyMonthlyTaxClosingSummary(period = normalizeTaxPeriod('')): AdminMonthlyTaxClosingSummary {
+export function emptyMonthlyTaxClosingSummary(
+  period = normalizeTaxPeriod(''),
+): AdminMonthlyTaxClosingSummary {
   return {
     id: null,
     period,
@@ -1127,14 +1158,20 @@ function readTaxSettlementPage(value: string) {
   return Math.min(parsed, 1000);
 }
 
-function appendTaxSettlementSkip(params: URLSearchParams, filters: { readonly page: number; readonly take: number }) {
+function appendTaxSettlementSkip(
+  params: URLSearchParams,
+  filters: { readonly page: number; readonly take: number },
+) {
   const skip = (filters.page - 1) * filters.take;
   if (skip > 0) {
     params.set('skip', String(skip));
   }
 }
 
-function appendTaxSettlementUiPagination(params: URLSearchParams, filters: { readonly page: number; readonly take: number }) {
+function appendTaxSettlementUiPagination(
+  params: URLSearchParams,
+  filters: { readonly page: number; readonly take: number },
+) {
   if (filters.take !== TAX_SETTLEMENT_DEFAULT_TAKE) {
     params.set('take', String(filters.take));
   }

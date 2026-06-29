@@ -1562,6 +1562,13 @@ export type AdminProviderWalletWithdrawalRequestSummary = {
   reviewRequired: number;
   bankTransferPending: number;
   lockReleased: number;
+  totalAmount: number;
+  requestedAmount: number;
+  pendingWithdrawalPayableAmount: number;
+  bankTransferPendingAmount: number;
+  paidAmount: number;
+  returnedAmount: number;
+  currency: string;
 };
 
 export type AdminProviderTaxLog = {
