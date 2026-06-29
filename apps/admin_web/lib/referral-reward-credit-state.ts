@@ -170,6 +170,9 @@ export function referralRewardDecisionLabel(action: string) {
   if (action === 'referral_reward.cashout_approve') {
     return 'Approve cashout';
   }
+  if (action === 'referral_reward.cashout_paid') {
+    return 'Mark paid';
+  }
   if (action === 'referral_reward.tax_review_required') {
     return 'Require tax review';
   }

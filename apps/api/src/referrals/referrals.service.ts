@@ -18,6 +18,7 @@ const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
 const CASHOUT_APPROVED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_APPROVED');
 const CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_REQUESTED');
 const CREDITED_REFERRAL_REWARD_STATUS = referralRewardStatus('CREDITED');
+const PAID_REFERRAL_REWARD_STATUS = referralRewardStatus('PAID');
 const TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS = referralRewardStatus('TAX_REVIEW_REQUIRED');
 
 const referralCodeSelect = {
@@ -484,6 +485,81 @@ export class ReferralsService {
     });
   }
 
+  async payRewardCashout(
+    rewardId: string,
+    input: { notes?: string | null; reference?: string | null } = {},
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const reward = await tx.referralReward.findUnique({
+        where: { id: rewardId },
+        select: referralRewardCreditCandidateSelect,
+      });
+      if (!reward) {
+        throw new NotFoundException('Referral reward was not found');
+      }
+      this.assertRewardCashoutCanBePaid(reward);
+
+      const ledgerSourceKey = referralWalletCashoutSourceKey(reward.id);
+      const reference = normalizeOptionalText(input.reference ?? undefined);
+      const notes = normalizeOptionalText(input.notes ?? undefined);
+      const ledger = reward.walletOwnerCustomerProfileId
+        ? await tx.customerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {
+              amount: -reward.amount,
+              currency: reward.currency,
+              metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
+              notes,
+              reference,
+            },
+            create: {
+              amount: -reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              customerProfileId: reward.walletOwnerCustomerProfileId,
+              metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
+              notes,
+              referralRewardId: reward.id,
+              reference,
+              sourceKey: ledgerSourceKey,
+              type: customerWalletLedgerType('CUSTOMER_REFERRAL_CASHOUT'),
+            },
+            select: { id: true },
+          })
+        : await tx.providerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {
+              amount: -reward.amount,
+              currency: reward.currency,
+              metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
+              notes,
+              reference,
+            },
+            create: {
+              amount: -reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
+              notes,
+              providerProfileId: reward.walletOwnerProviderProfileId as string,
+              reference,
+              sourceKey: ledgerSourceKey,
+              type: providerWalletLedgerType('PARTNER_REFERRAL_CASHOUT'),
+            },
+            select: { id: true },
+          });
+
+      return tx.referralReward.update({
+        data: {
+          status: PAID_REFERRAL_REWARD_STATUS,
+          walletLedgerReference: ledger.id,
+        },
+        where: { id: reward.id },
+        select: referralRewardSelect,
+      });
+    });
+  }
+
   async createRewardsForCompletedBooking(bookingId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
@@ -859,6 +935,18 @@ export class ReferralsService {
       throw new BadRequestException('Referral reward does not have a wallet owner');
     }
   }
+
+  private assertRewardCashoutCanBePaid(reward: ReferralRewardCreditCandidate) {
+    if (reward.status !== CASHOUT_APPROVED_REFERRAL_REWARD_STATUS) {
+      throw new BadRequestException('Only approved referral cashouts can be marked paid');
+    }
+    if (!reward.walletLedgerReference) {
+      throw new BadRequestException('Referral cashout requires an existing wallet ledger reference');
+    }
+    if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
+      throw new BadRequestException('Referral reward does not have a wallet owner');
+    }
+  }
 }
 
 function referralCodeView(code: ReferralCodeRecord) {
@@ -1014,11 +1102,25 @@ function referralWalletCreditSourceKey(rewardId: string) {
   return `referral:wallet-credit:${rewardId}`;
 }
 
+function referralWalletCashoutSourceKey(rewardId: string) {
+  return `referral:wallet-cashout:${rewardId}`;
+}
+
 function referralWalletCreditMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
   return {
     bookingId: reward.qualifyingBookingId,
     referralRewardId: reward.id,
     rewardSourceKey: reward.sourceKey,
+    walletOwner,
+  };
+}
+
+function referralWalletCashoutMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+  return {
+    bookingId: reward.qualifyingBookingId,
+    referralRewardId: reward.id,
+    rewardSourceKey: reward.sourceKey,
+    walletCreditLedgerReference: reward.walletLedgerReference,
     walletOwner,
   };
 }

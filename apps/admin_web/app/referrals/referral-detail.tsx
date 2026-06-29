@@ -27,6 +27,7 @@ import {
   approveReferralRewardCashout,
   creditReferralReward,
   holdReferralReward,
+  markReferralRewardCashoutPaid,
   requireReferralRewardTaxReview,
   reverseReferralReward,
 } from './actions';
@@ -500,16 +501,17 @@ function ReferralRewardActions({
   readonly reward: AdminReferralReward;
 }) {
   const canApproveCashout = reward.status === 'CASHOUT_REQUESTED';
+  const canMarkCashoutPaid = reward.status === 'CASHOUT_APPROVED';
   const canRequireTaxReview = reward.status === 'CASHOUT_REQUESTED' || reward.status === 'CASHOUT_APPROVED';
 
-  if (reward.walletLedgerReference && !canApproveCashout && !canRequireTaxReview) {
+  if (reward.walletLedgerReference && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
     return <span className="muted">Ledger posted</span>;
   }
 
   const canHold = reward.status === 'PENDING' || reward.status === 'AVAILABLE';
   const canCredit = reward.status === 'AVAILABLE';
   const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
-  if (!canHold && !canCredit && !canReverse && !canApproveCashout && !canRequireTaxReview) {
+  if (!canHold && !canCredit && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
     return <span className="muted">No action</span>;
   }
 
@@ -517,6 +519,7 @@ function ReferralRewardActions({
     canApproveCashout,
     canCredit,
     canHold,
+    canMarkCashoutPaid,
     canRequireTaxReview,
     canReverse,
   });
@@ -546,6 +549,18 @@ function ReferralRewardActions({
               placeholder="Operator decision reason"
             />
           </div>
+          {canMarkCashoutPaid ? (
+            <div className="referral-reward-action-reason">
+              <span>Transfer reference</span>
+              <AdminFormInput
+                className="referral-reward-action-reason-input"
+                label="Transfer reference"
+                name="transferRef"
+                placeholder="Bank transfer reference"
+                required
+              />
+            </div>
+          ) : null}
           <div className="referral-reward-action-button-list">
             {actions.map((item) => (
               <button
@@ -569,12 +584,14 @@ function referralRewardActionItems({
   canApproveCashout,
   canCredit,
   canHold,
+  canMarkCashoutPaid,
   canRequireTaxReview,
   canReverse,
 }: {
   readonly canApproveCashout: boolean;
   readonly canCredit: boolean;
   readonly canHold: boolean;
+  readonly canMarkCashoutPaid: boolean;
   readonly canRequireTaxReview: boolean;
   readonly canReverse: boolean;
 }): ReferralRewardActionForm[] {
@@ -584,6 +601,13 @@ function referralRewardActionItems({
     actions.push({
       action: approveReferralRewardCashout,
       label: 'Approve cashout',
+    });
+  }
+
+  if (canMarkCashoutPaid) {
+    actions.push({
+      action: markReferralRewardCashoutPaid,
+      label: 'Mark paid',
     });
   }
 

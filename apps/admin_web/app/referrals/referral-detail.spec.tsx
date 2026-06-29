@@ -318,6 +318,35 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('<td><span class="muted">Ledger posted</span></td>');
   });
 
+  it('renders a paid closeout action with transfer reference for approved cashouts', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'CASHOUT_APPROVED',
+              walletLedgerReference: 'customer-earned-ledger-1',
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
+    expect(markup).toContain('Mark paid');
+    expect(markup).toContain('Require tax review');
+    expect(markup).toContain('Transfer reference');
+    expect(markup).toContain('name="transferRef"');
+    expect(markup).toContain('Cashout approved');
+  });
+
   it('summarizes reward rows into an operator review board', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,

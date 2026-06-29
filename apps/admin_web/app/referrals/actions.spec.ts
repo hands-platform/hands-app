@@ -6,6 +6,7 @@ import {
   approveReferralRewardCashout,
   creditReferralReward,
   holdReferralReward,
+  markReferralRewardCashoutPaid,
   releaseAvailableReferralRewards,
   requireReferralRewardTaxReview,
   reverseReferralReward,
@@ -172,6 +173,36 @@ describe('referral server actions', () => {
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
       '/referrals/partners/parent-partner',
+      '/audit-log',
+    ]);
+  });
+
+  it('marks an approved referral reward cashout as paid and refreshes referral detail views', async () => {
+    mockedAdminPost.mockResolvedValue({
+      id: 'reward-1',
+      status: 'PAID',
+      walletLedgerReference: 'customer-cashout-ledger-1',
+    });
+    const formData = new FormData();
+    formData.set('rewardId', 'reward-1');
+    formData.set('audience', 'customer');
+    formData.set('parentId', 'parent-customer');
+    formData.set('reason', 'manual bank transfer complete');
+    formData.set('transferRef', 'VCB-REF-001');
+
+    await expect(markReferralRewardCashoutPaid(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/referrals/rewards/reward-1/cashout-paid',
+      {
+        reason: 'manual bank transfer complete',
+        transferRef: 'VCB-REF-001',
+      },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/customers',
+      '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
   });

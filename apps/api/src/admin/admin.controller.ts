@@ -25,6 +25,7 @@ import {
   ModerateReviewDto,
   OperationsHandoffNoteDto,
   PartnerOpsNoteDto,
+  ReferralRewardCashoutPaidDto,
   ReferralRewardDecisionDto,
   RecordPartnerBankDepositDto,
   UpdateAdminServiceDto,
@@ -288,6 +289,15 @@ export class AdminController {
     @Body() body: ReferralRewardDecisionDto,
   ) {
     return this.admin.requireReferralRewardTaxReview(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/cashout-paid')
+  markReferralRewardCashoutPaid(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardCashoutPaidDto,
+  ) {
+    return this.admin.markReferralRewardCashoutPaid(user.id, rewardId, body);
   }
 
   @Post('referrals/rewards/:id/reverse')

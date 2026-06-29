@@ -36,6 +36,7 @@ import { AdminService } from './admin.service';
 
 const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
 const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralRewardStatus;
+const paidReferralRewardStatus = 'PAID' as ReferralRewardStatus;
 const taxReviewRequiredReferralRewardStatus = 'TAX_REVIEW_REQUIRED' as ReferralRewardStatus;
 
 function deferred<T>() {
@@ -2079,6 +2080,57 @@ describe('AdminService query orchestration', () => {
           taxReviewRequired: true,
           walletCreditCreated: false,
           walletLedgerReference: 'customer-wallet-ledger-1',
+        },
+      },
+    });
+  });
+
+  it('marks approved referral reward cashouts as paid with transfer evidence', async () => {
+    const referrals = {
+      payRewardCashout: vi.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: paidReferralRewardStatus,
+        walletLedgerReference: 'customer-cashout-ledger-1',
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        reason: ' customer cashout transfer completed ',
+        transferRef: ' VCB-REF-001 ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: paidReferralRewardStatus,
+      walletLedgerReference: 'customer-cashout-ledger-1',
+    });
+
+    expect(referrals.payRewardCashout).toHaveBeenCalledWith('reward-1', {
+      notes: 'customer cashout transfer completed',
+      reference: 'VCB-REF-001',
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.cashout_paid',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          cashoutPaid: true,
+          currency: 'VND',
+          reason: 'customer cashout transfer completed',
+          status: paidReferralRewardStatus,
+          transferRef: 'VCB-REF-001',
+          walletCreditCreated: false,
+          walletLedgerReference: 'customer-cashout-ledger-1',
         },
       },
     });

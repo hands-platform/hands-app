@@ -75,6 +75,7 @@ describe('AdminController notification and push actions', () => {
     creditReferralReward: vi.fn(),
     holdReferralReward: vi.fn(),
     listCustomers: vi.fn(),
+    markReferralRewardCashoutPaid: vi.fn(),
     releaseAvailableReferralRewards: vi.fn(),
     requireReferralRewardTaxReview: vi.fn(),
     reverseReferralReward: vi.fn(),
@@ -1540,6 +1541,34 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.requireReferralRewardTaxReview).toHaveBeenCalledWith('admin-1', 'reward-1', {
       reason: 'tax review',
+    });
+  });
+
+  it('exposes referral reward cashout paid closeout as a POST action', async () => {
+    admin.markReferralRewardCashoutPaid.mockResolvedValue({
+      id: 'reward-1',
+      status: 'PAID',
+      walletLedgerReference: 'customer-cashout-ledger-1',
+    });
+
+    await expect(
+      controller.markReferralRewardCashoutPaid(user, 'reward-1', {
+        reason: 'paid manually',
+        transferRef: 'VCB-REF-001',
+      }),
+    ).resolves.toEqual({
+      id: 'reward-1',
+      status: 'PAID',
+      walletLedgerReference: 'customer-cashout-ledger-1',
+    });
+
+    expect(routeMetadata('markReferralRewardCashoutPaid')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/cashout-paid',
+    });
+    expect(admin.markReferralRewardCashoutPaid).toHaveBeenCalledWith('admin-1', 'reward-1', {
+      reason: 'paid manually',
+      transferRef: 'VCB-REF-001',
     });
   });
 

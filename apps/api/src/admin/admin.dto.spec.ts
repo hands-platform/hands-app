@@ -47,6 +47,9 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('reverseReferralReward', 2) as { name?: string })?.name).toBe(
       'ReferralRewardDecisionDto',
     );
+    expect((bodyMetatype('markReferralRewardCashoutPaid', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardCashoutPaidDto',
+    );
   });
 
   it('strips unsupported operational policy fields while preserving value', async () => {
@@ -127,6 +130,23 @@ describe('admin request DTO validation', () => {
     );
 
     expect(transformed).toHaveProperty('reason', 'suspicious referral activity');
+    expect(transformed).not.toHaveProperty('walletCreditCreated');
+  });
+
+  it('normalizes referral reward cashout paid transfer evidence', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        reason: '  bank transfer completed  ',
+        transferRef: ' VCB-REF-001 ',
+        walletCreditCreated: true,
+      },
+      { type: 'body', metatype: bodyMetatype('markReferralRewardCashoutPaid', 2) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('reason', 'bank transfer completed');
+    expect(transformed).toHaveProperty('transferRef', 'VCB-REF-001');
     expect(transformed).not.toHaveProperty('walletCreditCreated');
   });
 

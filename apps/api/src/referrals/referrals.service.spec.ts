@@ -16,6 +16,7 @@ function createService(prisma: unknown) {
 const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
 const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralRewardStatus;
 const cashoutRequestedReferralRewardStatus = 'CASHOUT_REQUESTED' as ReferralRewardStatus;
+const paidReferralRewardStatus = 'PAID' as ReferralRewardStatus;
 const taxReviewRequiredReferralRewardStatus = 'TAX_REVIEW_REQUIRED' as ReferralRewardStatus;
 
 describe('ReferralsService', () => {
@@ -1098,6 +1099,165 @@ describe('ReferralsService', () => {
       data: {
         status: creditedReferralRewardStatus,
         walletLedgerReference: 'provider-wallet-ledger-1',
+      },
+      where: { id: 'reward-2' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('marks an approved customer referral cashout as paid with a customer cashout ledger entry', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-1',
+      amount: 25_000,
+      availableAt: now,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-1',
+      sourceKey: 'referral:CUSTOMER:attribution-1:booking-1',
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'customer-earned-ledger-1',
+      walletOwnerCustomerProfileId: 'customer-profile-1',
+      walletOwnerProviderProfileId: null,
+    };
+    const ledger = { id: 'customer-cashout-ledger-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          status: paidReferralRewardStatus,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.payRewardCashout('reward-1', {
+        notes: 'Manual bank transfer completed.',
+        reference: 'VCB-REF-001',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: paidReferralRewardStatus,
+      walletLedgerReference: 'customer-cashout-ledger-1',
+    });
+    expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-cashout:reward-1' },
+        update: expect.objectContaining({
+          amount: -25_000,
+          reference: 'VCB-REF-001',
+        }),
+        create: expect.objectContaining({
+          amount: -25_000,
+          bookingId: 'booking-1',
+          currency: 'VND',
+          customerProfileId: 'customer-profile-1',
+          notes: 'Manual bank transfer completed.',
+          referralRewardId: 'reward-1',
+          reference: 'VCB-REF-001',
+          sourceKey: 'referral:wallet-cashout:reward-1',
+          type: 'CUSTOMER_REFERRAL_CASHOUT',
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).toHaveBeenCalledWith({
+      data: {
+        status: paidReferralRewardStatus,
+        walletLedgerReference: 'customer-cashout-ledger-1',
+      },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('marks an approved Partner referral cashout as paid with a Partner cashout ledger entry', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-2',
+      amount: 50_000,
+      availableAt: now,
+      currency: 'VND',
+      qualifyingBookingId: 'booking-2',
+      sourceKey: 'referral:PARTNER:attribution-2:booking-2',
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'provider-earned-ledger-1',
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const ledger = { id: 'provider-cashout-ledger-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          status: paidReferralRewardStatus,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.payRewardCashout('reward-2', {
+        notes: 'Partner referral cashout paid.',
+        reference: 'BIDV-REF-002',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-2',
+      status: paidReferralRewardStatus,
+      walletLedgerReference: 'provider-cashout-ledger-1',
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-cashout:reward-2' },
+        update: expect.objectContaining({
+          amount: -50_000,
+          reference: 'BIDV-REF-002',
+        }),
+        create: expect.objectContaining({
+          amount: -50_000,
+          bookingId: 'booking-2',
+          currency: 'VND',
+          notes: 'Partner referral cashout paid.',
+          providerProfileId: 'provider-profile-1',
+          reference: 'BIDV-REF-002',
+          sourceKey: 'referral:wallet-cashout:reward-2',
+          type: 'PARTNER_REFERRAL_CASHOUT',
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(tx.customerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.referralReward.update).toHaveBeenCalledWith({
+      data: {
+        status: paidReferralRewardStatus,
+        walletLedgerReference: 'provider-cashout-ledger-1',
       },
       where: { id: 'reward-2' },
       select: expect.any(Object),

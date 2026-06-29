@@ -746,6 +746,15 @@ export class ReferralRewardDecisionDto {
   reason?: string;
 }
 
+export class ReferralRewardCashoutPaidDto extends ReferralRewardDecisionDto {
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  transferRef!: string;
+}
+
 export class MarkEarningPaidDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))

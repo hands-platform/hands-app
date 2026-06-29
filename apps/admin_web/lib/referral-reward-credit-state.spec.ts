@@ -100,6 +100,7 @@ describe('referralRewardCreditState', () => {
 
   it('labels referral cashout and tax review decisions for operators', () => {
     expect(referralRewardDecisionLabel('referral_reward.cashout_approve')).toBe('Approve cashout');
+    expect(referralRewardDecisionLabel('referral_reward.cashout_paid')).toBe('Mark paid');
     expect(referralRewardDecisionLabel('referral_reward.tax_review_required')).toBe('Require tax review');
   });
 });

@@ -492,6 +492,7 @@ const REFERRAL_REWARD_DECISION_ACTIONS = [
   'referral_reward.reverse',
   'referral_reward.cashout_approve',
   'referral_reward.tax_review_required',
+  'referral_reward.cashout_paid',
 ] as const;
 
 const adminReferralCodeSelect = {
@@ -1660,6 +1661,32 @@ export class AdminService {
       reason: normalizeAuditReason(input.reason),
       status: reward.status,
       taxReviewRequired: true,
+      walletCreditCreated: false,
+      walletLedgerReference: reward.walletLedgerReference,
+    });
+
+    return reward;
+  }
+
+  async markReferralRewardCashoutPaid(
+    actorId: string,
+    rewardId: string,
+    input: { reason?: string; transferRef: string },
+  ) {
+    const reason = normalizeAuditReason(input.reason);
+    const transferRef = normalizeAuditReason(input.transferRef);
+    const reward = await this.referrals.payRewardCashout(rewardId, {
+      notes: reason,
+      reference: transferRef,
+    });
+
+    await this.writeAudit(actorId, 'referral_reward.cashout_paid', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      cashoutPaid: true,
+      currency: reward.currency,
+      reason,
+      status: reward.status,
+      transferRef,
       walletCreditCreated: false,
       walletLedgerReference: reward.walletLedgerReference,
     });

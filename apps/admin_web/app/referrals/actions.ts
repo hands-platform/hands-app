@@ -60,6 +60,21 @@ export async function requireReferralRewardTaxReview(formData: FormData) {
   revalidateReferralRewardDecisionPaths(input);
 }
 
+export async function markReferralRewardCashoutPaid(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+  const transferRef = String(formData.get('transferRef') || '').trim();
+  if (!transferRef) {
+    throw new Error('Referral cashout paid closeout requires a transfer reference');
+  }
+
+  await adminPost(
+    `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/cashout-paid`,
+    { reason: input.reason, transferRef },
+    null,
+  );
+  revalidateReferralRewardDecisionPaths(input);
+}
+
 export async function reverseReferralReward(formData: FormData) {
   const input = referralRewardDecisionInput(formData);
 
