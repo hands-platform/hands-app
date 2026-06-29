@@ -89,6 +89,46 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('filters operational policy settings by requested keys before returning definitions', async () => {
+    const prisma = {
+      operationalPolicySetting: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            key: 'notification.partner_alert_channel',
+            value: 'FCM_FOR_ALL_BOOKINGS',
+            updatedAt: new Date('2026-06-20T00:00:00.000Z'),
+            updatedBy: { id: 'admin-1', phone: '+84000000000', fullName: 'Ops Admin' },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listOperationalPolicySettings({
+        keys: 'notification.partner_alert_channel,booking.max_customer_current_to_booking_address_km',
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        key: 'booking.max_customer_current_to_booking_address_km',
+      }),
+      expect.objectContaining({
+        key: 'notification.partner_alert_channel',
+        value: 'FCM_FOR_ALL_BOOKINGS',
+      }),
+    ]);
+
+    expect(prisma.operationalPolicySetting.findMany).toHaveBeenCalledWith({
+      include: { updatedBy: { select: { id: true, phone: true, fullName: true } } },
+      orderBy: [{ category: 'asc' }, { key: 'asc' }],
+      where: {
+        key: {
+          in: ['notification.partner_alert_channel', 'booking.max_customer_current_to_booking_address_km'],
+        },
+      },
+    });
+  });
+
   it('keeps audit log list bounded by default', async () => {
     const prisma = {
       adminAuditLog: {

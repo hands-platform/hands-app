@@ -290,6 +290,12 @@ export function buildNotificationSummaryApiHref(params: Record<string, string | 
   return value ? `/admin/notifications/summary?${value}` : '/admin/notifications/summary';
 }
 
+export function buildNotificationPolicyApiHref() {
+  return `/admin/operational-policy?${new URLSearchParams({
+    keys: OPERATIONAL_POLICY_KEYS.partnerAlertChannel,
+  }).toString()}`;
+}
+
 export function notificationDateRangeLabel(range: NotificationDateRange) {
   if (range === 'today') {
     return 'Today';

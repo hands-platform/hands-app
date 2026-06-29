@@ -15,6 +15,7 @@ import { NotificationFilterBoardSection } from './notification-filter-board-sect
 import {
   emptyNotificationMessage,
   buildNotificationApiHref,
+  buildNotificationPolicyApiHref,
   buildNotificationSummaryApiHref,
   buildNotificationPageModel,
   notificationFilterDescription,
@@ -36,7 +37,7 @@ export default async function NotificationsPage({
   const [rawNotifications, notificationSummary, operationalPolicies] = await Promise.all([
     adminGet<AdminNotification[]>(buildNotificationApiHref(params), []),
     adminGet<AdminNotificationBoardSummary | null>(buildNotificationSummaryApiHref(params), null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(buildNotificationPolicyApiHref(), []),
   ]);
   const diagnosticsMode = readSearchParam(params.diagnostics) === 'full' ? 'full' : 'compact';
   const model = buildNotificationPageModel({

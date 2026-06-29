@@ -496,6 +496,10 @@ type AdminAuditLogListOptions = {
   to?: string | null;
 };
 
+type AdminOperationalPolicyListOptions = {
+  keys?: string | string[] | null;
+};
+
 type AdminCustomerDirectorySummaryOptions = {
   country?: string | null;
   gender?: string | null;
@@ -879,6 +883,18 @@ function addLocalDays(timestamp: number, days: number) {
   const date = new Date(timestamp);
   date.setDate(date.getDate() + days);
   return date.getTime();
+}
+
+function normalizeOperationalPolicyKeys(value: string | string[] | null | undefined) {
+  const values = Array.isArray(value) ? value : [value];
+  return [
+    ...new Set(
+      values
+        .flatMap((item) => String(item ?? '').split(','))
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 @Injectable()
@@ -6046,14 +6062,20 @@ export class AdminService {
     return { ok: true, auditLog };
   }
 
-  async listOperationalPolicySettings() {
+  async listOperationalPolicySettings(options: AdminOperationalPolicyListOptions = {}) {
+    const requestedKeys = normalizeOperationalPolicyKeys(options.keys);
     const savedSettings = await this.prisma.operationalPolicySetting.findMany({
       include: { updatedBy: { select: { id: true, phone: true, fullName: true } } },
       orderBy: [{ category: 'asc' }, { key: 'asc' }],
+      ...(requestedKeys.length > 0 ? { where: { key: { in: requestedKeys } } } : {}),
     });
     const savedByKey = new Map(savedSettings.map((setting) => [setting.key, setting]));
+    const definitions =
+      requestedKeys.length > 0
+        ? OPERATIONAL_POLICY_DEFINITIONS.filter((definition) => requestedKeys.includes(definition.key))
+        : OPERATIONAL_POLICY_DEFINITIONS;
 
-    return OPERATIONAL_POLICY_DEFINITIONS.map((definition) => {
+    return definitions.map((definition) => {
       const saved = savedByKey.get(definition.key);
       const savedValue =
         saved && this.isOperationalPolicyValueSupported(definition, saved.value)

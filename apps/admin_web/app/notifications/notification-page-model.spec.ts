@@ -10,6 +10,7 @@ import {
   buildNotificationListHref,
   buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
+  buildNotificationPolicyApiHref,
   buildNotificationReviewState,
   buildNotificationSummary,
   buildNotificationTableRows,
@@ -1254,6 +1255,9 @@ describe('notification page model', () => {
     expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=20');
     expect(buildNotificationApiHref({ page: '3', range: 'all' })).toBe('/admin/notifications?take=20&skip=40');
     expect(buildNotificationSummaryApiHref({ range: 'all' })).toBe('/admin/notifications/summary');
+    expect(buildNotificationPolicyApiHref()).toBe(
+      '/admin/operational-policy?keys=notification.partner_alert_channel',
+    );
     const filteredApiHref = buildNotificationApiHref({
       booking: 'booking-1',
       page: '2',

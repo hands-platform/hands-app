@@ -967,8 +967,8 @@ export class AdminController {
   }
 
   @Get('operational-policy')
-  operationalPolicy() {
-    return this.admin.listOperationalPolicySettings();
+  operationalPolicy(@Query('keys') keys?: string | string[]) {
+    return this.admin.listOperationalPolicySettings({ keys });
   }
 
   @Patch('operational-policy/:key')

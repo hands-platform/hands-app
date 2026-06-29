@@ -27,6 +27,7 @@ describe('AdminController notification and push actions', () => {
     listReferralPolicies: vi.fn(),
     listOperationsHandoffProviders: vi.fn(),
     listOperationsPolicyProviders: vi.fn(),
+    listOperationalPolicySettings: vi.fn(),
     listAuditLogs: vi.fn(),
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
@@ -911,6 +912,24 @@ describe('AdminController notification and push actions', () => {
       path: 'operations-policy/providers',
     });
     expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith({ take: '50' });
+  });
+
+  it('exposes operational policy settings with optional key filtering', async () => {
+    admin.listOperationalPolicySettings.mockResolvedValue([
+      { key: 'notification.partner_alert_channel', value: 'IN_APP_WITH_PUSH_LATER' },
+    ]);
+
+    await expect(controller.operationalPolicy('notification.partner_alert_channel')).resolves.toEqual([
+      { key: 'notification.partner_alert_channel', value: 'IN_APP_WITH_PUSH_LATER' },
+    ]);
+
+    expect(routeMetadata('operationalPolicy')).toEqual({
+      method: RequestMethod.GET,
+      path: 'operational-policy',
+    });
+    expect(admin.listOperationalPolicySettings).toHaveBeenCalledWith({
+      keys: 'notification.partner_alert_channel',
+    });
   });
 
   it('exposes Vietnam region overview as an aggregate GET list', async () => {
