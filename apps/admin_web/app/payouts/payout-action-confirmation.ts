@@ -53,7 +53,9 @@ const payoutActionMetadata: Record<PayoutConfirmationAction, PayoutActionMetadat
   processing: {
     confirmLabel: 'Start processing',
     description: (batch) =>
-      `Move payout batch ${shortId(batch.id)} into processing after finance review is complete.`,
+      `Move payout batch ${shortId(
+        batch.id,
+      )} into processing after finance review is complete. Accounting boundary: transfer preparation can begin, but bank/cash and Partner wallet liability move only when the batch is marked PAID.`,
     title: (batch) => `Start payout ${shortId(batch.id)} processing?`,
     tone: 'info',
   },

@@ -23,7 +23,8 @@ describe('payout action confirmation', () => {
       action: 'processing',
       cancelHref: '/payouts',
       confirmLabel: 'Start processing',
-      description: 'Move payout batch payout-b into processing after finance review is complete.',
+      description:
+        'Move payout batch payout-b into processing after finance review is complete. Accounting boundary: transfer preparation can begin, but bank/cash and Partner wallet liability move only when the batch is marked PAID.',
       disabled: false,
       payoutBatchId: draftBatch.id,
       title: 'Start payout payout-b processing?',
