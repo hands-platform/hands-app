@@ -6,7 +6,7 @@ import { AdminTaxPolicyVersion, AdminTaxRule, adminPatch, adminPost } from '../.
 export async function createTaxPolicyVersion(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const status = String(formData.get('status') || 'DRAFT');
-  const effectiveFrom = String(formData.get('effectiveFrom') || new Date().toISOString());
+  const effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
   const notes = String(formData.get('notes') || '').trim();
   const defaultRateBps = parseInteger(formData.get('defaultRateBps'));
 
@@ -41,16 +41,18 @@ export async function createTaxPolicyVersion(formData: FormData) {
 export async function updateTaxPolicyVersion(formData: FormData) {
   const id = String(formData.get('policyId'));
   const status = String(formData.get('status') || 'DRAFT');
-  const effectiveFrom = String(formData.get('effectiveFrom') || '');
-  const effectiveTo = String(formData.get('effectiveTo') || '').trim();
+  const effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
+  const effectiveTo = parseOptionalDate(formData.get('effectiveTo'), 'Effective to');
   const notes = String(formData.get('notes') || '').trim();
+
+  assertEffectiveDateWindow(effectiveFrom, effectiveTo);
 
   await adminPatch(
     `/admin/tax-policy-versions/${id}`,
     {
       status,
-      effectiveFrom: effectiveFrom || undefined,
-      effectiveTo: effectiveTo || null,
+      effectiveFrom,
+      effectiveTo,
       notes: notes || null,
     },
     null,
@@ -122,4 +124,41 @@ function parseInteger(value: FormDataEntryValue | null) {
   }
   const number = Number(raw);
   return Number.isInteger(number) ? number : null;
+}
+
+function parseRequiredDate(value: FormDataEntryValue | null, label: string) {
+  const raw = String(value ?? '').trim();
+  if (!raw) {
+    throw new Error(`${label} is required.`);
+  }
+
+  return parseDateToIso(raw, label);
+}
+
+function parseOptionalDate(value: FormDataEntryValue | null, label: string) {
+  const raw = String(value ?? '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  return parseDateToIso(raw, label);
+}
+
+function parseDateToIso(value: string, label: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${label} must be a valid date.`);
+  }
+
+  return date.toISOString();
+}
+
+function assertEffectiveDateWindow(effectiveFrom: string, effectiveTo: string | null) {
+  if (!effectiveTo) {
+    return;
+  }
+
+  if (Date.parse(effectiveTo) <= Date.parse(effectiveFrom)) {
+    throw new Error('Effective to must be after effective from.');
+  }
 }
