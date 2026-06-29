@@ -427,6 +427,7 @@ const adminBookingSettlementSnapshotListSelect = {
   monthlyPeriod: true,
   postedAt: true,
   closedAt: true,
+  metadata: true,
   booking: {
     select: {
       id: true,

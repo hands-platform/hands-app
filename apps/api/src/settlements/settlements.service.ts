@@ -16,6 +16,7 @@ export type UpsertBookingSettlementSnapshotInput = {
   currency?: string | null;
   customerPaymentAmount: number;
   partnerPayoutAmount: number;
+  partnerTaxableRevenueAmount?: number | null;
   platformFeeGross: number;
   partnerVatRateBps: number;
   partnerPitRateBps: number;
@@ -34,6 +35,7 @@ export type UpsertBookingSettlementSnapshotInput = {
   providerPlatformFeeLogId?: string | null;
   providerWalletLedgerEntryIds?: string[] | null;
   customerWalletLedgerEntryIds?: string[] | null;
+  metadata?: Prisma.InputJsonObject | null;
   occurredAt: Date;
   timeZone?: string | null;
 };
@@ -59,6 +61,7 @@ export class SettlementsService {
       platformVatRateBps: input.platformVatRateBps,
       paymentFeeRateBps,
       paymentFeeFixedAmount,
+      partnerTaxableRevenueAmount: input.partnerTaxableRevenueAmount ?? undefined,
     });
     const sourceKey = bookingSettlementSourceKey(input.bookingId);
     const monthlyPeriod = settlementMonthlyPeriod(input.occurredAt, input.timeZone ?? undefined);
@@ -97,6 +100,7 @@ export class SettlementsService {
       providerPlatformFeeLogId: input.providerPlatformFeeLogId ?? null,
       providerWalletLedgerEntryIds: input.providerWalletLedgerEntryIds ?? undefined,
       customerWalletLedgerEntryIds: input.customerWalletLedgerEntryIds ?? undefined,
+      metadata: input.metadata ?? undefined,
       monthlyPeriod,
       postedAt: input.occurredAt,
     };

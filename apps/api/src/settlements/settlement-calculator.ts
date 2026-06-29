@@ -17,6 +17,7 @@ export type BookingSettlementCalculationInput = {
   platformVatRateBps: number;
   paymentFeeRateBps: number;
   paymentFeeFixedAmount: number;
+  partnerTaxableRevenueAmount?: number;
 };
 
 export function bpsAmount(baseAmount: number, rateBps: number) {
@@ -24,7 +25,7 @@ export function bpsAmount(baseAmount: number, rateBps: number) {
 }
 
 export function calculateBookingSettlementAmounts(input: BookingSettlementCalculationInput) {
-  const partnerTaxableRevenue = input.customerPaymentAmount;
+  const partnerTaxableRevenue = input.partnerTaxableRevenueAmount ?? input.customerPaymentAmount;
   const partnerVatAmount = bpsAmount(partnerTaxableRevenue, input.partnerVatRateBps);
   const partnerPitAmount = bpsAmount(partnerTaxableRevenue, input.partnerPitRateBps);
   const partnerWithholdingTotal = partnerVatAmount + partnerPitAmount;

@@ -66,4 +66,58 @@ describe('SettlementsService', () => {
       }),
     });
   });
+
+  it('stores coupon accounting policy metadata while keeping paid amount separate from taxable base', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        upsert: vi.fn().mockResolvedValue({ id: 'settlement-coupon-1' }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.upsertBookingSettlementSnapshot({
+      bookingId: 'booking-coupon-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'provider-1',
+      paymentId: 'payment-1',
+      providerEarningId: 'earning-1',
+      paymentMethod: 'CARD',
+      currency: 'VND',
+      customerPaymentAmount: 540_000,
+      partnerPayoutAmount: 430_000,
+      partnerTaxableRevenueAmount: 600_000,
+      platformFeeGross: 128_000,
+      partnerVatRateBps: 500,
+      partnerPitRateBps: 200,
+      platformVatRateBps: 800,
+      metadata: {
+        couponId: 'coupon-1',
+        couponCodeSnapshot: 'WELCOME10',
+        couponDiscountAmount: 60_000,
+        companyCouponExpense: 60_000,
+        couponFundingSourceSnapshot: 'COMPANY',
+      },
+      occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+    });
+
+    expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-coupon-1' },
+      update: expect.objectContaining({
+        customerPaymentAmount: 540_000,
+        partnerTaxableRevenue: 600_000,
+        metadata: expect.objectContaining({
+          couponId: 'coupon-1',
+          couponCodeSnapshot: 'WELCOME10',
+          couponDiscountAmount: 60_000,
+          companyCouponExpense: 60_000,
+          couponFundingSourceSnapshot: 'COMPANY',
+        }),
+      }),
+      create: expect.objectContaining({
+        bookingId: 'booking-coupon-1',
+        customerPaymentAmount: 540_000,
+        partnerTaxableRevenue: 600_000,
+      }),
+    });
+  });
 });

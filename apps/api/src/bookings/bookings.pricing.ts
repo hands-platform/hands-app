@@ -22,6 +22,48 @@ export function calculateCouponDiscount(discount: Prisma.JsonValue, subtotal: nu
   return Math.min(subtotal, Math.round((subtotal * value) / 100));
 }
 
+function couponDiscountRecord(discount: Prisma.JsonValue) {
+  if (!discount || typeof discount !== 'object' || Array.isArray(discount)) {
+    return null;
+  }
+  return discount as Record<string, unknown>;
+}
+
+function couponSnapshotNumber(value: unknown) {
+  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function couponSnapshotString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function couponPricingPolicyMetadata(coupon: { discount: Prisma.JsonValue } | null | undefined) {
+  if (!coupon) {
+    return {};
+  }
+
+  const discount = couponDiscountRecord(coupon.discount);
+  const type = couponSnapshotString(discount?.type);
+  const value = couponSnapshotNumber(discount?.value);
+
+  return {
+    couponTypeSnapshot: type,
+    couponRateSnapshot: type === 'percent' ? value : null,
+    couponFixedAmountSnapshot: type === 'fixed' ? value : null,
+    couponFundingSourceSnapshot: couponSnapshotString(discount?.fundingSource) ?? 'COMPANY',
+    couponAccountingTreatmentSnapshot:
+      couponSnapshotString(discount?.accountingTreatment) ?? 'MARKETING_EXPENSE',
+    settlementBasePolicySnapshot:
+      couponSnapshotString(discount?.settlementBasePolicy) ?? 'PRE_COUPON_SERVICE_AMOUNT',
+    partnerTaxBasePolicySnapshot:
+      couponSnapshotString(discount?.partnerTaxBasePolicy) ?? 'PRE_COUPON_SERVICE_AMOUNT',
+    platformFeeBasePolicySnapshot:
+      couponSnapshotString(discount?.platformFeeBasePolicy) ?? 'PRE_COUPON_SERVICE_AMOUNT',
+    referralBasePolicySnapshot: couponSnapshotString(discount?.referralBasePolicy) ?? 'PLATFORM_FEE_NET_REVENUE',
+  };
+}
+
 export function resolveCustomerPrice(
   service: { basePrice: number; priceStep?: number | null },
   providerPrice?: number | null,
@@ -60,6 +102,7 @@ export function resolveBookingPriceSummary(input: {
       discountAmount,
       couponCode: input.coupon?.code,
       couponId: input.coupon?.id,
+      ...couponPricingPolicyMetadata(input.coupon),
     },
     discountAmount,
   };

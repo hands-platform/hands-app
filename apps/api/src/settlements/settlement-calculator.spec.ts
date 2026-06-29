@@ -66,4 +66,22 @@ describe('calculateBookingSettlementAmounts', () => {
       paymentProcessingFee: 10_000,
     });
   });
+
+  it('keeps coupon-paid amount separate from pre-coupon partner tax base', () => {
+    expect(
+      calculateBookingSettlementAmounts({
+        ...baseInput,
+        paymentMethod: 'CARD',
+        customerPaymentAmount: 540_000,
+        partnerTaxableRevenueAmount: 600_000,
+      }),
+    ).toMatchObject({
+      customerWalletDebitAmount: 0,
+      partnerTaxableRevenue: 600_000,
+      partnerVatAmount: 30_000,
+      partnerPitAmount: 12_000,
+      partnerWithholdingTotal: 42_000,
+      partnerWalletDelta: 388_000,
+    });
+  });
 });

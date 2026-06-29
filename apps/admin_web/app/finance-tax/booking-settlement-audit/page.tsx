@@ -130,53 +130,63 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No settlement snapshots match the current filters."
-            headers={['Booking', 'Customer', 'Partner', 'Payment', 'Partner tax', 'HANDS fee', 'Status']}
+            headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon', 'Partner tax', 'HANDS fee', 'Status']}
             rowCount={snapshots.length}
           >
-            {snapshots.map((snapshot) => (
-              <tr key={snapshot.id}>
-                <td>
-                  <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
-                    {shortId(snapshot.bookingId)}
-                  </Link>
-                  <div className="muted">{formatDateTime(snapshot.postedAt)}</div>
-                  <div className="muted">{snapshot.booking?.status ?? 'Unknown status'}</div>
-                </td>
-                <td>
-                  <strong>{personName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
-                  <div className="muted">{snapshot.customerProfile?.user?.phone ?? '-'}</div>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
-                    {snapshot.providerProfile?.displayName ??
-                      personName(snapshot.providerProfile?.user, 'Unknown partner')}
-                  </Link>
-                  <div className="muted">{snapshot.providerProfile?.user?.phone ?? '-'}</div>
-                </td>
-                <td>
-                  <strong>{snapshot.paymentMethod}</strong>
-                  <div className="muted">
-                    Customer {formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
-                  </div>
-                  <div className="muted">Processing {formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>
-                  <div className="muted">VAT {formatMoney(snapshot.partnerVatAmount, snapshot.currency)}</div>
-                  <div className="muted">PIT {formatMoney(snapshot.partnerPitAmount, snapshot.currency)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>
-                  <div className="muted">Net {formatMoney(snapshot.platformFeeNetRevenue, snapshot.currency)}</div>
-                  <div className="muted">VAT {formatMoney(snapshot.companyOutputVat, snapshot.currency)}</div>
-                </td>
-                <td>
-                  <span className={`pill ${taxStatusPill(snapshot.taxStatus)}`}>{snapshot.taxStatus}</span>
-                  <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
-                  <div className="muted">{snapshot.monthlyPeriod}</div>
-                </td>
-              </tr>
-            ))}
+            {snapshots.map((snapshot) => {
+              const coupon = couponSettlementInfo(snapshot);
+
+              return (
+                <tr key={snapshot.id}>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
+                      {shortId(snapshot.bookingId)}
+                    </Link>
+                    <div className="muted">{formatDateTime(snapshot.postedAt)}</div>
+                    <div className="muted">{snapshot.booking?.status ?? 'Unknown status'}</div>
+                  </td>
+                  <td>
+                    <strong>{personName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
+                    <div className="muted">{snapshot.customerProfile?.user?.phone ?? '-'}</div>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
+                      {snapshot.providerProfile?.displayName ??
+                        personName(snapshot.providerProfile?.user, 'Unknown partner')}
+                    </Link>
+                    <div className="muted">{snapshot.providerProfile?.user?.phone ?? '-'}</div>
+                  </td>
+                  <td>
+                    <strong>{snapshot.paymentMethod}</strong>
+                    <div className="muted">
+                      Customer {formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
+                    </div>
+                    <div className="muted">Processing {formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}</div>
+                  </td>
+                  <td>
+                    <strong>{coupon.code}</strong>
+                    <div className="muted">Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</div>
+                    <div className="muted">Expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>
+                    {coupon.reviewFlag ? <span className="pill pill-warn">{coupon.reviewFlag}</span> : null}
+                  </td>
+                  <td>
+                    <strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>
+                    <div className="muted">VAT {formatMoney(snapshot.partnerVatAmount, snapshot.currency)}</div>
+                    <div className="muted">PIT {formatMoney(snapshot.partnerPitAmount, snapshot.currency)}</div>
+                  </td>
+                  <td>
+                    <strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>
+                    <div className="muted">Net {formatMoney(snapshot.platformFeeNetRevenue, snapshot.currency)}</div>
+                    <div className="muted">VAT {formatMoney(snapshot.companyOutputVat, snapshot.currency)}</div>
+                  </td>
+                  <td>
+                    <span className={`pill ${taxStatusPill(snapshot.taxStatus)}`}>{snapshot.taxStatus}</span>
+                    <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
+                    <div className="muted">{snapshot.monthlyPeriod}</div>
+                  </td>
+                </tr>
+              );
+            })}
           </AdminDataTable>
         </AdminTableScroll>
       </section>
@@ -210,4 +220,31 @@ function taxStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
+  const metadata = jsonRecord(snapshot.metadata);
+  const discountAmount = numberValue(metadata?.couponDiscountAmount);
+  const companyExpense = numberValue(metadata?.companyCouponExpense);
+  return {
+    code: stringValue(metadata?.couponCodeSnapshot) ?? '-',
+    companyExpense,
+    discountAmount,
+    reviewFlag: stringValue(metadata?.couponReviewFlag),
+  };
+}
+
+function jsonRecord(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function numberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

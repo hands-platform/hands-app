@@ -20,6 +20,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { providerBankCorrectionRequest } from '../provider-onboarding/provider-bank-correction';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
+import { bookingServiceAmount, buildCouponSettlementContext } from '../settlements/coupon-settlement';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
   allocatePartnerBankDeposit,
@@ -258,7 +259,7 @@ const adminEarningBookingSelect = {
   closedNote: true,
   closedReason: true,
   matchedAt: true,
-  payment: { select: { amount: true, currency: true, method: true, status: true } },
+  payment: { select: { amount: true, currency: true, method: true, rawMeta: true, status: true } },
   scheduledStartAt: true,
   selectedProviderId: true,
   services: {
@@ -458,9 +459,14 @@ export class EarningsService {
       throw new BadRequestException('Partner is not selected for this booking');
     }
 
-    const grossAmount =
-      booking.payment?.amount ??
-      booking.services.reduce((total, service) => total + service.price * service.quantity, 0);
+    const bookingServiceGrossAmount = bookingServiceAmount(booking.services);
+    const customerPaymentAmount = booking.payment?.amount ?? bookingServiceGrossAmount;
+    const couponSettlement = buildCouponSettlementContext({
+      bookingServiceAmount: bookingServiceGrossAmount,
+      customerPaymentAmount,
+      paymentRawMeta: booking.payment?.rawMeta,
+    });
+    const grossAmount = couponSettlement.settlementBaseAmount;
     const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
     const currency = booking.payment?.currency ?? 'VND';
     const serviceTypes = booking.services.flatMap((item) =>
@@ -544,8 +550,9 @@ export class EarningsService {
           providerEarningId: earning.id,
           paymentMethod: booking.payment?.method ?? PaymentMethod.MANUAL,
           currency,
-          customerPaymentAmount: grossAmount,
+          customerPaymentAmount: couponSettlement.customerPaymentAmount,
           partnerPayoutAmount,
+          partnerTaxableRevenueAmount: couponSettlement.partnerTaxableRevenueAmount,
           platformFeeGross,
           partnerVatRateBps: tax.partnerVatRateBps,
           partnerPitRateBps: tax.partnerPitRateBps,
@@ -559,6 +566,7 @@ export class EarningsService {
           providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
           providerPlatformFeeLogId: platformFeeLog?.id ?? null,
           providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
+          metadata: couponSettlement.metadata,
           occurredAt: booking.updatedAt ?? new Date(),
         },
         tx,

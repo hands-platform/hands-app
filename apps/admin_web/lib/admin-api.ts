@@ -1858,6 +1858,7 @@ export type AdminBookingSettlementSnapshot = {
   monthlyPeriod: string;
   postedAt: string;
   closedAt?: string | null;
+  metadata?: unknown;
   booking?: {
     id: string;
     createdAt: string;

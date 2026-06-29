@@ -55,6 +55,15 @@ describe('booking pricing helpers', () => {
         discountAmount: 50000,
         couponCode: 'WELCOME10',
         couponId: 'coupon-1',
+        couponTypeSnapshot: 'percent',
+        couponRateSnapshot: 10,
+        couponFixedAmountSnapshot: null,
+        couponFundingSourceSnapshot: 'COMPANY',
+        couponAccountingTreatmentSnapshot: 'MARKETING_EXPENSE',
+        settlementBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
+        partnerTaxBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
+        platformFeeBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
+        referralBasePolicySnapshot: 'PLATFORM_FEE_NET_REVENUE',
       },
     });
   });
