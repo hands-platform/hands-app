@@ -19,6 +19,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly bookingAmountLabel: string;
   readonly bookingHref: string;
   readonly bookingLabel: string;
+  readonly cashCouponOffsetLabel: string | null;
   readonly createdAtLabel: string;
   readonly debtAmountLabel: string;
   readonly depositAmountDefault: string;
@@ -39,6 +40,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly settlementNotesDefault: string;
   readonly settlementReference: string;
   readonly taxAmountLabel: string;
+  readonly walletDeductionBreakdown: readonly string[];
 };
 
 type CashSettlementOpenDebtTableSectionProps = {
@@ -46,7 +48,10 @@ type CashSettlementOpenDebtTableSectionProps = {
   readonly pagination: CashSettlementPagination<CashSettlementOpenDebtTableRow>;
 };
 
-export function CashSettlementOpenDebtTableSection({ filters, pagination }: CashSettlementOpenDebtTableSectionProps) {
+export function CashSettlementOpenDebtTableSection({
+  filters,
+  pagination,
+}: CashSettlementOpenDebtTableSectionProps) {
   const rows = pagination.rows;
 
   return (
@@ -55,8 +60,8 @@ export function CashSettlementOpenDebtTableSection({ filters, pagination }: Cash
         <div>
           <h2>Open cash fee debt rows</h2>
           <p className="muted">
-            Settle only after confirming a Partner deposit or a documented admin offset. The backend rejects missing
-            references.
+            Settle only after confirming a Partner deposit or a documented admin offset. The backend rejects
+            missing references.
           </p>
         </div>
         <Link className="text-link" href="/payments?review=cash-debt">
@@ -90,11 +95,21 @@ export function CashSettlementOpenDebtTableSection({ filters, pagination }: Cash
             <td>
               <strong>{row.debtAmountLabel}</strong>
               <div className="muted">Cash collected: {row.bookingAmountLabel}</div>
+              {row.cashCouponOffsetLabel ? (
+                <div className="muted">Company coupon offset: {row.cashCouponOffsetLabel}</div>
+              ) : null}
               <div className="muted">{row.debtOrigin}</div>
             </td>
             <td>
               <div>HANDS fee {row.platformFeeLabel}</div>
               <div className="muted">Tax {row.taxAmountLabel}</div>
+              {row.walletDeductionBreakdown.length ? (
+                <div className="service-matrix-cell admin-mt-8">
+                  {row.walletDeductionBreakdown.map((item) => (
+                    <small key={`${row.earningId}-${item}`}>{item}</small>
+                  ))}
+                </div>
+              ) : null}
             </td>
             <td>
               <div className="service-matrix-cell">
@@ -142,7 +157,12 @@ export function CashSettlementOpenDebtTableSection({ filters, pagination }: Cash
                 />
                 <input aria-label="Deposit date" name="depositDate" type="datetime-local" required />
                 <input aria-label="Bank account" name="bankAccount" placeholder="Bank account" />
-                <input aria-label="Attachment evidence" name="attachmentUrl" placeholder="Evidence file URL" required />
+                <input
+                  aria-label="Attachment evidence"
+                  name="attachmentUrl"
+                  placeholder="Evidence file URL"
+                  required
+                />
                 <input
                   aria-label="Deposit notes"
                   name="notes"
@@ -152,13 +172,17 @@ export function CashSettlementOpenDebtTableSection({ filters, pagination }: Cash
                 <button type="submit">Record bank deposit</button>
               </form>
               <p className="muted admin-mt-8">
-                Partner deposit is not platform revenue. It first settles negative wallet receivable, then becomes
-                partner wallet liability.
+                Partner deposit is not platform revenue. It first settles negative wallet receivable, then
+                becomes partner wallet liability.
               </p>
               <form action="/cash-settlements" className="inline-form">
                 <input type="hidden" name="confirm" value="settle" />
                 <input type="hidden" name="earningId" value={row.earningId} />
-                <select aria-label="Settlement method" name="settlementMethod" defaultValue={row.settlementMethodDefault}>
+                <select
+                  aria-label="Settlement method"
+                  name="settlementMethod"
+                  defaultValue={row.settlementMethodDefault}
+                >
                   <option value="PARTNER_DEPOSIT">Partner deposit</option>
                   <option value="ADMIN_OFFSET">Admin offset</option>
                 </select>

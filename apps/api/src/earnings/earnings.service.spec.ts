@@ -142,7 +142,7 @@ describe('EarningsService payout batches', () => {
             select: expect.objectContaining({ id: true, ruleSnapshot: true, withholdingAmount: true }),
           }),
           walletLedgerEntries: expect.objectContaining({
-            select: expect.objectContaining({ id: true, reference: true, type: true }),
+            select: expect.objectContaining({ id: true, metadata: true, reference: true, type: true }),
           }),
         }),
       }),

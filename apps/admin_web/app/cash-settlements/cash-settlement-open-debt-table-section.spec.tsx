@@ -16,6 +16,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('Final acceptance blocked');
     expect(rendered).toContain('Cash settlement action execution map');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Company coupon offset: 60.000 VND');
+    expect(rendered).toContain('Platform net wallet deduction 58.519 VND');
     expect(rendered).toContain('Record bank deposit');
     expect(rendered).toContain('Review settlement');
     expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 12 entries');
@@ -69,6 +71,7 @@ function buildRow(): CashSettlementOpenDebtTableRow {
     bookingAmountLabel: '1.000.000 VND',
     bookingHref: '/bookings/booking-1',
     bookingLabel: 'bookin',
+    cashCouponOffsetLabel: '60.000 VND',
     createdAtLabel: '26h ago',
     debtAmountLabel: '500.000 VND',
     depositAmountDefault: '500000',
@@ -89,6 +92,11 @@ function buildRow(): CashSettlementOpenDebtTableRow {
     settlementNotesDefault: 'Partner deposit or approved offset for 500.000 VND using HANDS-CASH-BOOKIN',
     settlementReference: 'HANDS-CASH-BOOKIN',
     taxAmountLabel: '100.000 VND',
+    walletDeductionBreakdown: [
+      'Platform net wallet deduction 58.519 VND',
+      'Company VAT wallet deduction 9.481 VND',
+      'Partner tax wallet deduction 42.000 VND',
+    ],
   };
 }
 

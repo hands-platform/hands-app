@@ -388,6 +388,7 @@ const adminEarningWalletLedgerSelect = {
   createdAt: true,
   currency: true,
   id: true,
+  metadata: true,
   notes: true,
   reference: true,
   sourceKey: true,

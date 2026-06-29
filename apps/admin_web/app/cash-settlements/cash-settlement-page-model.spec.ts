@@ -29,7 +29,10 @@ describe('cash settlement page model', () => {
     const rows = buildCashSettlementRows([
       earning({ id: 'cash-high', netAmount: -600000, platformFee: 500000, withholdingAmount: 100000 }),
       earning({ id: 'paid', netAmount: -50000, status: 'PAID' }),
-      earning({ booking: { payment: { amount: 100000, method: 'CARD', status: 'AUTHORIZED' } }, id: 'card-negative' }),
+      earning({
+        booking: { payment: { amount: 100000, method: 'CARD', status: 'AUTHORIZED' } },
+        id: 'card-negative',
+      }),
       earning({
         booking: {
           closedAt: '2026-06-10T08:30:00.000Z',
@@ -61,7 +64,15 @@ describe('cash settlement page model', () => {
       earning({ id: 'fresh-row', netAmount: -10000, platformFee: 10000, settlementRef: 'BANK-REF' }),
     ]);
 
-    expect(buildCashSettlementFilters({ page: '3', pageSize: '25', q: ' partner ', queue: 'missing-ref', range: '7d' })).toEqual({
+    expect(
+      buildCashSettlementFilters({
+        page: '3',
+        pageSize: '25',
+        q: ' partner ',
+        queue: 'missing-ref',
+        range: '7d',
+      }),
+    ).toEqual({
       page: 3,
       pageSize: 25,
       q: 'partner',
@@ -73,26 +84,49 @@ describe('cash settlement page model', () => {
         (row) => row.earning.id,
       ),
     ).toEqual(['stale-row']);
-    expect(applyCashSettlementRowFilters(rows, { page: 1, pageSize: 10, q: 'fresh-row', queue: 'all', range: 'all' })).toHaveLength(1);
+    expect(
+      applyCashSettlementRowFilters(rows, {
+        page: 1,
+        pageSize: 10,
+        q: 'fresh-row',
+        queue: 'all',
+        range: 'all',
+      }),
+    ).toHaveLength(1);
     expect(cashSettlementHref({ page: 2, pageSize: 25, q: 'Mai', queue: 'high-debt', range: '30d' })).toBe(
       '/cash-settlements?range=30d&queue=high-debt&q=Mai&pageSize=25&page=2',
     );
-    expect(buildCashSettlementFilters({})).toEqual({ page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' });
+    expect(buildCashSettlementFilters({})).toEqual({
+      page: 1,
+      pageSize: 10,
+      q: '',
+      queue: 'all',
+      range: 'today',
+    });
     expect(cashSettlementHref({ page: 1, pageSize: 10, q: '', queue: 'all', range: 'all' })).toBe(
       '/cash-settlements?range=all',
     );
-    expect(buildCashSettlementApiHref(buildCashSettlementFilters({ page: '3', pageSize: '25', q: 'Mai', queue: 'high-debt', range: '7d' }))).toBe(
-      '/admin/cash-settlement-earnings?range=7d&take=25&queue=high-debt&q=Mai&skip=50',
-    );
-    expect(buildCashSettlementSummaryApiHref(buildCashSettlementFilters({ q: 'Mai', queue: 'high-debt', range: '7d' }))).toBe(
-      '/admin/cash-settlement-summary?range=7d&queue=high-debt&q=Mai',
-    );
+    expect(
+      buildCashSettlementApiHref(
+        buildCashSettlementFilters({ page: '3', pageSize: '25', q: 'Mai', queue: 'high-debt', range: '7d' }),
+      ),
+    ).toBe('/admin/cash-settlement-earnings?range=7d&take=25&queue=high-debt&q=Mai&skip=50');
+    expect(
+      buildCashSettlementSummaryApiHref(
+        buildCashSettlementFilters({ q: 'Mai', queue: 'high-debt', range: '7d' }),
+      ),
+    ).toBe('/admin/cash-settlement-summary?range=7d&queue=high-debt&q=Mai');
     expect(cashSettlementQueueLabel('payment-check')).toBe('Payment check');
   });
 
   it('builds priority board and table row action evidence', () => {
     const rows = buildCashSettlementRows([
-      earning({ createdAt: '2026-06-08T08:00:00.000Z', id: 'old-high', netAmount: -600000, platformFee: 600000 }),
+      earning({
+        createdAt: '2026-06-08T08:00:00.000Z',
+        id: 'old-high',
+        netAmount: -600000,
+        platformFee: 600000,
+      }),
     ]);
 
     expect(buildCashSettlementPriorityBoard(rows)[0]).toMatchObject({
@@ -106,6 +140,50 @@ describe('cash settlement page model', () => {
       'Ledger trace',
       'Aging follow-up',
     ]);
+  });
+
+  it('builds cash coupon settlement breakdown from wallet ledger metadata', () => {
+    const [row] = buildCashSettlementOpenDebtTableRows(
+      buildCashSettlementRows([
+        earning({
+          booking: { payment: { amount: 540_000, method: 'CASH', status: 'PENDING' } },
+          grossAmount: 600_000,
+          id: 'cash-coupon',
+          netAmount: -110_000,
+          platformFee: 170_000,
+          withholdingAmount: 42_000,
+          walletLedgerEntries: [
+            {
+              amount: -58_519,
+              currency: 'VND',
+              id: 'ledger-platform',
+              metadata: {
+                accountingComponentAmount: 118_519,
+                cashBookingCompanyCouponExpense: 60_000,
+                totalPartnerDueToCompany: 110_000,
+                walletDeductionCompanyOutputVat: 9_481,
+                walletDeductionPartnerTaxPayable: 42_000,
+                walletDeductionPlatformFeeNetRevenue: 58_519,
+              },
+              sourceKey: 'earning:cash-coupon:cash-platform-fee-net',
+              type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
+            },
+          ],
+        }),
+      ]),
+    );
+
+    expect(row).toMatchObject({
+      bookingAmountLabel: '540.000 VND',
+      cashCouponOffsetLabel: '60.000 VND',
+      debtAmountLabel: '110.000 VND',
+      platformFeeLabel: '170.000 VND',
+      walletDeductionBreakdown: [
+        'Platform net wallet deduction 58.519 VND',
+        'Company VAT wallet deduction 9.481 VND',
+        'Partner tax wallet deduction 42.000 VND',
+      ],
+    });
   });
 
   it('uses authoritative all-date API summary when available', () => {

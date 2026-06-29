@@ -89,35 +89,43 @@ export function cashSettlementRowMatchesQueue(row: CashSettlementRow, queue: Cas
 export function buildCashSettlementOpenDebtTableRows(
   rows: readonly CashSettlementRow[],
 ): CashSettlementOpenDebtTableRow[] {
-  return rows.map((row) => ({
-    actionRows: cashSettlementActionExecutionMap(row),
-    bookingAmountLabel: formatMoney(row.bookingAmount, row.earning.currency),
-    bookingHref: `/bookings/${row.earning.bookingId}`,
-    bookingLabel: shortRecordId(row.earning.bookingId),
-    createdAtLabel: row.createdAtLabel,
-    debtAmountLabel: formatMoney(row.debtAmount, row.earning.currency),
-    depositAmountDefault: String(row.debtAmount),
-    debtOrigin: row.debtOrigin,
-    earningId: row.earning.id,
-    lastLedgerRef: row.lastLedgerRef ?? null,
-    nextAction: row.nextAction,
-    partnerHref: `/partners/${row.earning.providerProfileId}`,
-    paymentMethod: row.paymentMethod,
-    platformFeeLabel: formatMoney(row.platformFee, row.earning.currency),
-    providerProfileId: row.earning.providerProfileId,
-    providerName: row.providerName,
-    providerPhone: row.providerPhone,
-    serviceLabel: row.serviceLabel,
-    settlementEvidence: row.settlementEvidence,
-    settlementMethodDefault: row.earning.settlementMethod ?? 'PARTNER_DEPOSIT',
-    settlementMethodLabel: settlementMethodLabel(row.earning.settlementMethod),
-    settlementNotesDefault: `Partner deposit or approved offset for ${formatMoney(
-      row.debtAmount,
-      row.earning.currency,
-    )} using ${row.settlementReference}`,
-    settlementReference: row.settlementReference,
-    taxAmountLabel: formatMoney(row.taxAmount, row.earning.currency),
-  }));
+  return rows.map((row) => {
+    const breakdown = cashCouponWalletDeductionBreakdown(row.earning);
+    return {
+      actionRows: cashSettlementActionExecutionMap(row),
+      bookingAmountLabel: formatMoney(row.bookingAmount, row.earning.currency),
+      bookingHref: `/bookings/${row.earning.bookingId}`,
+      bookingLabel: shortRecordId(row.earning.bookingId),
+      cashCouponOffsetLabel:
+        breakdown.companyCouponExpense > 0
+          ? formatMoney(breakdown.companyCouponExpense, row.earning.currency)
+          : null,
+      createdAtLabel: row.createdAtLabel,
+      debtAmountLabel: formatMoney(row.debtAmount, row.earning.currency),
+      depositAmountDefault: String(row.debtAmount),
+      debtOrigin: row.debtOrigin,
+      earningId: row.earning.id,
+      lastLedgerRef: row.lastLedgerRef ?? null,
+      nextAction: row.nextAction,
+      partnerHref: `/partners/${row.earning.providerProfileId}`,
+      paymentMethod: row.paymentMethod,
+      platformFeeLabel: formatMoney(row.platformFee, row.earning.currency),
+      providerProfileId: row.earning.providerProfileId,
+      providerName: row.providerName,
+      providerPhone: row.providerPhone,
+      serviceLabel: row.serviceLabel,
+      settlementEvidence: row.settlementEvidence,
+      settlementMethodDefault: row.earning.settlementMethod ?? 'PARTNER_DEPOSIT',
+      settlementMethodLabel: settlementMethodLabel(row.earning.settlementMethod),
+      settlementNotesDefault: `Partner deposit or approved offset for ${formatMoney(
+        row.debtAmount,
+        row.earning.currency,
+      )} using ${row.settlementReference}`,
+      settlementReference: row.settlementReference,
+      taxAmountLabel: formatMoney(row.taxAmount, row.earning.currency),
+      walletDeductionBreakdown: cashWalletDeductionLabels(breakdown, row.earning.currency),
+    };
+  });
 }
 
 export function cashSettlementActionExecutionMap(
@@ -202,4 +210,51 @@ function cashSettlementSearchText(row: CashSettlementRow) {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+type CashCouponWalletDeductionBreakdown = {
+  readonly companyCouponExpense: number;
+  readonly walletDeductionCompanyOutputVat: number;
+  readonly walletDeductionPartnerTaxPayable: number;
+  readonly walletDeductionPlatformFeeNetRevenue: number;
+};
+
+function cashCouponWalletDeductionBreakdown(earning: AdminEarning): CashCouponWalletDeductionBreakdown {
+  const metadata =
+    earning.walletLedgerEntries
+      ?.map((entry) => readRecord(entry.metadata))
+      .find((entryMetadata) => numberValue(entryMetadata?.totalPartnerDueToCompany) > 0) ?? null;
+
+  return {
+    companyCouponExpense: numberValue(metadata?.cashBookingCompanyCouponExpense),
+    walletDeductionCompanyOutputVat: numberValue(metadata?.walletDeductionCompanyOutputVat),
+    walletDeductionPartnerTaxPayable: numberValue(metadata?.walletDeductionPartnerTaxPayable),
+    walletDeductionPlatformFeeNetRevenue: numberValue(metadata?.walletDeductionPlatformFeeNetRevenue),
+  };
+}
+
+function cashWalletDeductionLabels(breakdown: CashCouponWalletDeductionBreakdown, currency: string) {
+  if (
+    breakdown.walletDeductionPlatformFeeNetRevenue <= 0 &&
+    breakdown.walletDeductionCompanyOutputVat <= 0 &&
+    breakdown.walletDeductionPartnerTaxPayable <= 0
+  ) {
+    return [];
+  }
+
+  return [
+    `Platform net wallet deduction ${formatMoney(breakdown.walletDeductionPlatformFeeNetRevenue, currency)}`,
+    `Company VAT wallet deduction ${formatMoney(breakdown.walletDeductionCompanyOutputVat, currency)}`,
+    `Partner tax wallet deduction ${formatMoney(breakdown.walletDeductionPartnerTaxPayable, currency)}`,
+  ];
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function numberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
