@@ -39,10 +39,12 @@ const payoutActionMetadata: Record<PayoutConfirmationAction, PayoutActionMetadat
   },
   paid: {
     confirmLabel: 'Mark paid',
-    description: (batch) =>
-      `Mark ${formatMoney(batch.totalNetAmount, batch.currency)} payout batch ${shortId(
+    description: (batch) => {
+      const amount = formatMoney(batch.totalNetAmount, batch.currency);
+      return `Mark ${amount} payout batch ${shortId(
         batch.id,
-      )} as paid after transfer reference, tax, earnings, and Partner checks are clean.`,
+      )} as paid after transfer reference, tax, earnings, and Partner checks are clean. Accounting preview: Dr Partner wallet liability ${amount} / Cr Bank ${amount}.`;
+    },
     title: (batch) => `Mark payout ${shortId(batch.id)} paid?`,
     tone: 'warning',
   },

@@ -32,6 +32,14 @@ describe('payout action confirmation', () => {
     });
   });
 
+  it('builds a paid confirmation with the wallet liability and bank accounting preview', () => {
+    const confirmation = buildPayoutActionConfirmation([draftBatch], 'paid', draftBatch.id);
+
+    expect(confirmation?.description).toBe(
+      'Mark 240.000 VND payout batch payout-b as paid after transfer reference, tax, earnings, and Partner checks are clean. Accounting preview: Dr Partner wallet liability 240.000 VND / Cr Bank 240.000 VND.',
+    );
+  });
+
   it('uses disabled reason and neutral tone when a payout action is blocked', () => {
     const confirmation = buildPayoutActionConfirmation([draftBatch], 'paid', draftBatch.id, {
       disabledReason: 'Resolve transfer reference before marking paid.',
