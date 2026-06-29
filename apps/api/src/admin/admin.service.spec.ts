@@ -6387,6 +6387,32 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.findMany).not.toHaveBeenCalled();
   });
 
+  it('lists coupon finance settlement rows by bounded coupon metadata ids', async () => {
+    const settlementRow = {
+      id: 'settlement-1',
+      postedAt: new Date('2026-06-13T03:02:00.000Z'),
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'settlement-1' }]),
+      bookingSettlementSnapshot: {
+        findMany: vi.fn().mockResolvedValue([settlementRow]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCouponFinanceSnapshots({ range: '7d', review: 'posted', take: '25' })).resolves.toEqual([
+      settlementRow,
+    ]);
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['settlement-1'] } },
+        select: expect.objectContaining({ metadata: true }),
+      }),
+    );
+  });
+
   it('groups partner withholding tax by monthly period and provider', async () => {
     const prisma = {
       bookingSettlementSnapshot: {

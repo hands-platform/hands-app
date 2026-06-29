@@ -787,6 +787,15 @@ export class AdminController {
     return this.admin.bookingSettlementSnapshotSummary({ range, review });
   }
 
+  @Get('booking-settlement-snapshots/coupon-finance')
+  couponFinanceSnapshots(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listCouponFinanceSnapshots({ range, review, take });
+  }
+
   @Get('booking-settlement-snapshots/coupon-finance-summary')
   couponFinanceSummary(@Query('range') range?: string, @Query('review') review?: string) {
     return this.admin.couponFinanceSummary({ range, review });

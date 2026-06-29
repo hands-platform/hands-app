@@ -52,6 +52,7 @@ export type MonthlyTaxClosingStatusOption = {
 export type TaxFinanceWorkflowPage =
   | 'overview'
   | 'booking-settlement-audit'
+  | 'coupon-finance'
   | 'monthly-tax-closing'
   | 'platform-vat'
   | 'payment-fees'
@@ -155,6 +156,17 @@ export function buildCouponFinanceSummaryApiHref(filters: BookingSettlementFilte
   return `/admin/booking-settlement-snapshots/coupon-finance-summary?${params.toString()}`;
 }
 
+export function buildCouponFinanceApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+  });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  params.set('take', String(filters.take));
+  return `/admin/booking-settlement-snapshots/coupon-finance?${params.toString()}`;
+}
+
 export function buildPartnerWithholdingTaxApiHref(filters: PartnerWithholdingTaxFilters) {
   return `/admin/partner-withholding-tax?${new URLSearchParams({
     period: filters.period,
@@ -207,6 +219,14 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
+export function couponFinanceHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  return `/finance-tax/coupon-finance?${params.toString()}`;
+}
+
 export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters) {
   return `/finance-tax/partner-withholding-tax?${new URLSearchParams({ period: filters.period }).toString()}`;
 }
@@ -240,6 +260,11 @@ export function buildTaxFinanceWorkflowLinks({
       key: 'booking-settlement-audit',
       label: 'Booking settlement audit',
       href: bookingSettlementAuditHref(settlementFilters),
+    },
+    {
+      key: 'coupon-finance',
+      label: 'Coupon finance',
+      href: couponFinanceHref(settlementFilters),
     },
     {
       key: 'monthly-tax-closing',

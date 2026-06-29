@@ -5530,6 +5530,28 @@ export class AdminService {
     });
   }
 
+  async listCouponFinanceSnapshots(options: AdminPaymentOperationsQuery = {}) {
+    const take = adminPaymentOperationsTake(options.take);
+    const idRows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT "id"
+      FROM "BookingSettlementSnapshot"
+      ${adminCouponFinanceSqlWhere(options)}
+      ORDER BY "postedAt" DESC
+      LIMIT ${take}
+    `);
+    const ids = idRows.map((row) => row.id).filter(Boolean);
+    if (!ids.length) {
+      return [];
+    }
+
+    const snapshots = await this.prisma.bookingSettlementSnapshot.findMany({
+      where: { id: { in: ids } },
+      select: adminBookingSettlementSnapshotListSelect,
+    });
+    const order = new Map(ids.map((id, index) => [id, index]));
+    return snapshots.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
+  }
+
   async bookingSettlementSnapshotSummary(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBookingSettlementSnapshotWhere(options);
     const openTaxWhere = adminMergeBookingSettlementSnapshotWhere(where, {
@@ -5590,7 +5612,7 @@ export class AdminService {
         COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
         COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
       FROM "BookingSettlementSnapshot"
-      ${adminCouponFinanceSummarySqlWhere(options)}
+      ${adminCouponFinanceSqlWhere(options)}
     `);
     const row = rows[0];
 
@@ -11179,7 +11201,7 @@ function adminBookingSettlementSnapshotReviewWhere(
   }
 }
 
-function adminCouponFinanceSummarySqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {
+function adminCouponFinanceSqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {
   const conditions: Prisma.Sql[] = [
     Prisma.sql`("metadata" ? 'couponDiscountAmount' OR "metadata" ? 'couponCodeSnapshot' OR "metadata" ? 'couponId')`,
   ];
