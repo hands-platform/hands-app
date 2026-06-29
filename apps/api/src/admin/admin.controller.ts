@@ -309,6 +309,26 @@ export class AdminController {
     return this.admin.reverseReferralReward(user.id, rewardId, body);
   }
 
+  @Get('referrals/cashouts')
+  referralCashoutQueue(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('audience') audience?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.listReferralCashoutQueue({ take, skip, audience, status, q });
+  }
+
+  @Get('referrals/cashouts/summary')
+  referralCashoutQueueSummary(
+    @Query('audience') audience?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.referralCashoutQueueSummary({ audience, status, q });
+  }
+
   @Get('referrals/customers')
   customerReferralParents(
     @Query('take') take?: string,

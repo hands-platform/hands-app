@@ -211,6 +211,8 @@ const ADMIN_PARTNER_CONTROL_LOCATION_FRESHNESS_MINUTES = 90;
 const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 50;
 const ADMIN_REFERRAL_PARENT_LIST_DEFAULT_LIMIT = 10;
 const ADMIN_REFERRAL_PARENT_LIST_MAX_LIMIT = 50;
+const ADMIN_REFERRAL_CASHOUT_LIST_DEFAULT_LIMIT = 10;
+const ADMIN_REFERRAL_CASHOUT_LIST_MAX_LIMIT = 50;
 const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT = 20;
@@ -325,6 +327,13 @@ type AdminChatArchiveListQuery = {
 type AdminReferralParentListQuery = {
   readonly q?: string | null;
   readonly reward?: string | null;
+  readonly skip?: number | string | null;
+  readonly status?: string | null;
+  readonly take?: number | string | null;
+};
+type AdminReferralCashoutQueueQuery = {
+  readonly audience?: string | null;
+  readonly q?: string | null;
   readonly skip?: number | string | null;
   readonly status?: string | null;
   readonly take?: number | string | null;
@@ -484,6 +493,45 @@ const adminReferralRewardSelect = {
   walletLedgerReference: true,
   availableAt: true,
   createdAt: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+const adminReferralCashoutRewardSelect = {
+  ...adminReferralRewardSelect,
+  attribution: {
+    select: {
+      id: true,
+      audience: true,
+      status: true,
+      fraudReviewStatus: true,
+      installSource: true,
+      platform: true,
+      createdAt: true,
+      referrerCustomerProfile: {
+        select: { id: true, user: { select: adminUserSummarySelect } },
+      },
+      referrerProviderProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          level: true,
+          status: true,
+          user: { select: adminUserSummarySelect },
+        },
+      },
+      referredCustomerProfile: {
+        select: { id: true, user: { select: adminUserSummarySelect } },
+      },
+      referredProviderProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          level: true,
+          status: true,
+          user: { select: adminUserSummarySelect },
+        },
+      },
+    },
+  },
 } satisfies Prisma.ReferralRewardSelect;
 
 const REFERRAL_REWARD_DECISION_ACTIONS = [
@@ -711,6 +759,10 @@ type AdminReferralPolicyRecord = {
 
 type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{
   select: typeof adminReferralRewardSelect;
+}>;
+
+type AdminReferralCashoutReward = Prisma.ReferralRewardGetPayload<{
+  select: typeof adminReferralCashoutRewardSelect;
 }>;
 
 type AdminReferralRewardLatestDecision = {
@@ -1788,6 +1840,35 @@ export class AdminService {
       totalCount,
       rewardQueueSummaries: adminReferralRewardQueueSummaries(rewardGroups),
     };
+  }
+
+  async listReferralCashoutQueue(options: AdminReferralCashoutQueueQuery = {}) {
+    const skip = adminReferralCashoutListSkip(options.skip);
+    const rows = await this.prisma.referralReward.findMany({
+      where: adminReferralCashoutWhere(options),
+      orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
+      take: adminReferralCashoutListTake(options.take),
+      select: adminReferralCashoutRewardSelect,
+    });
+    const decisions = await this.listLatestReferralRewardDecisions(uniqueReferralRewardIds(rows));
+
+    return rows.map((row) => adminReferralCashoutQueueRowView(row, decisions));
+  }
+
+  async referralCashoutQueueSummary(options: AdminReferralCashoutQueueQuery = {}) {
+    const where = adminReferralCashoutWhere(options);
+    const [totalCount, rewardGroups] = await Promise.all([
+      this.prisma.referralReward.count({ where }),
+      this.prisma.referralReward.groupBy({
+        by: ['status'],
+        where,
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return adminReferralCashoutQueueSummary(totalCount, rewardGroups);
   }
 
   async getPartnerReferralParent(providerProfileId: string) {
@@ -7794,6 +7875,80 @@ function adminReferralParentListSkip(value: number | string | null | undefined):
   return Math.min(Math.max(Math.trunc(numeric), 0), 10_000);
 }
 
+function adminReferralCashoutListTake(value: number | string | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return ADMIN_REFERRAL_CASHOUT_LIST_DEFAULT_LIMIT;
+  }
+
+  return boundedAdminListLimit(value, ADMIN_REFERRAL_CASHOUT_LIST_MAX_LIMIT);
+}
+
+function adminReferralCashoutListSkip(value: number | string | null | undefined): number {
+  return boundedAdminListSkip(value);
+}
+
+function adminReferralCashoutWhere(options: AdminReferralCashoutQueueQuery): Prisma.ReferralRewardWhereInput {
+  const filters: Prisma.ReferralRewardWhereInput[] = [
+    { status: { in: adminReferralCashoutStatuses(options.status) } },
+  ];
+  const audience = adminReferralCashoutAudience(options.audience);
+  const q = normalizeNullable(options.q);
+
+  if (audience) {
+    filters.push({ attribution: { audience } });
+  }
+  if (q) {
+    filters.push({ OR: adminReferralCashoutSearchFilters(q) });
+  }
+
+  return { AND: filters };
+}
+
+function adminReferralCashoutStatuses(value: string | null | undefined): ReferralRewardStatus[] {
+  const normalized = normalizeNullable(value);
+  if (normalized === 'requested') return [ReferralRewardStatus.CASHOUT_REQUESTED];
+  if (normalized === 'approved') return [referralRewardStatus('CASHOUT_APPROVED')];
+  if (normalized === 'tax-review') return [referralRewardStatus('TAX_REVIEW_REQUIRED')];
+  if (normalized === 'paid') return [referralRewardStatus('PAID')];
+  if (normalized === 'all') return referralCashoutLifecycleStatuses();
+  return [
+    ReferralRewardStatus.CASHOUT_REQUESTED,
+    referralRewardStatus('CASHOUT_APPROVED'),
+    referralRewardStatus('TAX_REVIEW_REQUIRED'),
+  ];
+}
+
+function adminReferralCashoutAudience(value: string | null | undefined): ReferralAudience | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (normalized === ReferralAudience.CUSTOMER) return ReferralAudience.CUSTOMER;
+  if (normalized === ReferralAudience.PARTNER) return ReferralAudience.PARTNER;
+  return null;
+}
+
+function adminReferralCashoutSearchFilters(q: string): Prisma.ReferralRewardWhereInput[] {
+  const textFilter = adminInsensitiveContains(q);
+  return [
+    { id: textFilter },
+    { qualifyingBookingId: textFilter },
+    { attribution: { id: textFilter } },
+    { attribution: { installSource: textFilter } },
+    { attribution: { platform: textFilter } },
+    { attribution: { referralCode: { code: textFilter } } },
+    { attribution: { referrerCustomerProfile: { is: { user: { fullName: textFilter } } } } },
+    { attribution: { referrerCustomerProfile: { is: { user: { phone: textFilter } } } } },
+    { attribution: { referrerCustomerProfile: { is: { user: { email: textFilter } } } } },
+    { attribution: { referrerProviderProfile: { is: { displayName: textFilter } } } },
+    { attribution: { referrerProviderProfile: { is: { user: { fullName: textFilter } } } } },
+    { attribution: { referrerProviderProfile: { is: { user: { phone: textFilter } } } } },
+    { attribution: { referrerProviderProfile: { is: { user: { email: textFilter } } } } },
+    { attribution: { referredCustomerProfile: { is: { user: { fullName: textFilter } } } } },
+    { attribution: { referredCustomerProfile: { is: { user: { phone: textFilter } } } } },
+    { attribution: { referredProviderProfile: { is: { displayName: textFilter } } } },
+    { attribution: { referredProviderProfile: { is: { user: { fullName: textFilter } } } } },
+    { attribution: { referredProviderProfile: { is: { user: { phone: textFilter } } } } },
+  ];
+}
+
 function adminCustomerReferralParentWhere(
   options: AdminReferralParentListQuery,
 ): Prisma.CustomerProfileWhereInput {
@@ -8947,6 +9102,92 @@ function adminReferralRewardView(
   return latestDecision ? { ...reward, latestDecision } : reward;
 }
 
+function adminReferralCashoutQueueRowView(
+  reward: AdminReferralCashoutReward,
+  decisions: AdminReferralRewardDecisionMap,
+) {
+  const audience = reward.attribution.audience;
+  const parent =
+    audience === ReferralAudience.PARTNER
+      ? adminReferralProviderPersonView(reward.attribution.referrerProviderProfile, 'Unknown Partner')
+      : adminReferralCustomerPersonView(reward.attribution.referrerCustomerProfile, 'Unknown customer');
+  const referred =
+    audience === ReferralAudience.PARTNER
+      ? adminReferralProviderPersonView(reward.attribution.referredProviderProfile, 'Unknown referred Partner')
+      : adminReferralCustomerPersonView(reward.attribution.referredCustomerProfile, 'Unknown referred customer');
+  const latestDecision = decisions.get(reward.id);
+
+  return {
+    id: reward.id,
+    audience,
+    amount: reward.amount,
+    calculationSnapshot: reward.calculationSnapshot,
+    currency: reward.currency,
+    status: reward.status,
+    qualifyingBookingId: reward.qualifyingBookingId,
+    walletLedgerReference: reward.walletLedgerReference,
+    availableAt: reward.availableAt,
+    createdAt: reward.createdAt,
+    latestDecision,
+    parent,
+    referred,
+    detailHref:
+      audience === ReferralAudience.PARTNER
+        ? `/referrals/partners/${encodeURIComponent(parent.id)}`
+        : `/referrals/customers/${encodeURIComponent(parent.id)}`,
+    attribution: {
+      id: reward.attribution.id,
+      audience: reward.attribution.audience,
+      status: reward.attribution.status,
+      fraudReviewStatus: reward.attribution.fraudReviewStatus,
+      installSource: reward.attribution.installSource,
+      platform: reward.attribution.platform,
+      createdAt: reward.attribution.createdAt,
+    },
+  };
+}
+
+function adminReferralCustomerPersonView(
+  profile: {
+    id: string;
+    user: {
+      email: string | null;
+      fullName: string | null;
+      phone: string;
+    };
+  } | null,
+  fallback: string,
+) {
+  const user = profile?.user;
+  return {
+    id: profile?.id ?? '',
+    label: user?.fullName ?? user?.phone ?? user?.email ?? fallback,
+    phone: user?.phone ?? null,
+    href: profile?.id ? `/customers/${encodeURIComponent(profile.id)}` : null,
+  };
+}
+
+function adminReferralProviderPersonView(
+  profile: {
+    displayName: string;
+    id: string;
+    user: {
+      email: string | null;
+      fullName: string | null;
+      phone: string;
+    };
+  } | null,
+  fallback: string,
+) {
+  const user = profile?.user;
+  return {
+    id: profile?.id ?? '',
+    label: profile?.displayName ?? user?.fullName ?? user?.phone ?? user?.email ?? fallback,
+    phone: user?.phone ?? null,
+    href: profile?.id ? `/partners/${encodeURIComponent(profile.id)}` : null,
+  };
+}
+
 function adminCustomerReferralRewardIds(rows: readonly AdminCustomerReferralParent[]) {
   return uniqueReferralRewardIds(
     rows.flatMap((row) => row.referralsMade.flatMap((referral) => referral.rewards)),
@@ -9137,6 +9378,41 @@ function adminReferralRewardQueueSummaries(
   ];
 }
 
+function adminReferralCashoutQueueSummary(
+  totalCount: number,
+  rewardGroups: readonly {
+    readonly status: ReferralRewardStatus;
+    readonly _count: { readonly _all: number };
+    readonly _sum: { readonly amount: number | null };
+  }[],
+) {
+  const byStatus = new Map(
+    rewardGroups.map((group) => [
+      group.status,
+      {
+        amount: group._sum.amount ?? 0,
+        count: group._count._all,
+      },
+    ]),
+  );
+  const statusSummary = (status: ReferralRewardStatus, slug: string) => ({
+    status: slug,
+    ...(byStatus.get(status) ?? { amount: 0, count: 0 }),
+  });
+  const statusSummaries = [
+    statusSummary(ReferralRewardStatus.CASHOUT_REQUESTED, 'requested'),
+    statusSummary(referralRewardStatus('CASHOUT_APPROVED'), 'approved'),
+    statusSummary(referralRewardStatus('TAX_REVIEW_REQUIRED'), 'tax-review'),
+    statusSummary(referralRewardStatus('PAID'), 'paid'),
+  ];
+
+  return {
+    totalCount,
+    totalAmount: statusSummaries.reduce((total, summary) => total + summary.amount, 0),
+    statusSummaries,
+  };
+}
+
 function countReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], status: ReferralRewardStatus) {
   return rewards.filter((reward) => reward.status === status).length;
 }
@@ -9161,6 +9437,15 @@ function sumReferralRewardsByStatuses(rewards: AdminReferralRewardSummary[], sta
 
 function creditedReferralRewardStatuses() {
   return [ReferralRewardStatus.REWARDED, referralRewardStatus('CREDITED')];
+}
+
+function referralCashoutLifecycleStatuses() {
+  return [
+    ReferralRewardStatus.CASHOUT_REQUESTED,
+    referralRewardStatus('CASHOUT_APPROVED'),
+    referralRewardStatus('TAX_REVIEW_REQUIRED'),
+    referralRewardStatus('PAID'),
+  ];
 }
 
 function referralRewardStatus(value: string): ReferralRewardStatus {

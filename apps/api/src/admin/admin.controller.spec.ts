@@ -20,6 +20,8 @@ describe('AdminController notification and push actions', () => {
     getVietnamOverviewSummary: vi.fn(),
     getCustomerReferralParent: vi.fn(),
     getPartnerReferralParent: vi.fn(),
+    listReferralCashoutQueue: vi.fn(),
+    referralCashoutQueueSummary: vi.fn(),
     customerReferralParentSummary: vi.fn(),
     partnerReferralParentSummary: vi.fn(),
     listCustomerReferralParents: vi.fn(),
@@ -1452,6 +1454,40 @@ describe('AdminController notification and push actions', () => {
       q: undefined,
       reward: undefined,
       status: undefined,
+    });
+  });
+
+  it('exposes referral cashout queue as a bounded cross-audience reward list', async () => {
+    admin.listReferralCashoutQueue.mockResolvedValue([{ id: 'reward-1', audience: 'CUSTOMER' }]);
+    admin.referralCashoutQueueSummary.mockResolvedValue({ totalCount: 3, statusSummaries: [] });
+
+    await expect(controller.referralCashoutQueue('25', '50', 'customer', 'approved', 'parent')).resolves.toEqual([
+      { id: 'reward-1', audience: 'CUSTOMER' },
+    ]);
+    await expect(controller.referralCashoutQueueSummary('partner', 'needs-action', 'smoke')).resolves.toEqual({
+      totalCount: 3,
+      statusSummaries: [],
+    });
+
+    expect(routeMetadata('referralCashoutQueue')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/cashouts',
+    });
+    expect(routeMetadata('referralCashoutQueueSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/cashouts/summary',
+    });
+    expect(admin.listReferralCashoutQueue).toHaveBeenCalledWith({
+      audience: 'customer',
+      q: 'parent',
+      skip: '50',
+      status: 'approved',
+      take: '25',
+    });
+    expect(admin.referralCashoutQueueSummary).toHaveBeenCalledWith({
+      audience: 'partner',
+      q: 'smoke',
+      status: 'needs-action',
     });
   });
 

@@ -180,6 +180,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Weekly, monthly, and manual payout batches.',
       },
       {
+        href: '/referrals/cashouts',
+        label: 'Referral Cashouts',
+        description: 'Customer and Partner referral cashout requests, tax review, and manual paid closeout.',
+      },
+      {
         href: '/refunds',
         label: 'Refunds',
         description: 'Admin refund queue and refund history.',

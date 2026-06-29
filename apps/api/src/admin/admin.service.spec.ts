@@ -2375,7 +2375,16 @@ describe('AdminService query orchestration', () => {
         target: true,
       }),
       where: {
-        action: { in: ['referral_reward.hold', 'referral_reward.credit', 'referral_reward.reverse'] },
+        action: {
+          in: [
+            'referral_reward.hold',
+            'referral_reward.credit',
+            'referral_reward.reverse',
+            'referral_reward.cashout_approve',
+            'referral_reward.tax_review_required',
+            'referral_reward.cashout_paid',
+          ],
+        },
         target: {
           in: [
             'referral_reward:reward-available',
@@ -2642,6 +2651,204 @@ describe('AdminService query orchestration', () => {
     expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
       by: ['status'],
       where: { attribution: { AND: [{ audience: ReferralAudience.PARTNER }] } },
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
+  });
+
+  it('lists referral cashout rewards without hydrating full referral parent records', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const decisionAt = new Date('2026-06-24T11:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'reward-1',
+            amount: 25_000,
+            calculationSnapshot: { taxPolicySnapshot: 'CUSTOMER_CASHOUT_REVIEW' },
+            currency: 'VND',
+            status: cashoutApprovedReferralRewardStatus,
+            qualifyingBookingId: 'booking-1',
+            walletLedgerReference: 'customer-wallet-credit-1',
+            availableAt: createdAt,
+            createdAt,
+            attribution: {
+              id: 'attribution-1',
+              audience: ReferralAudience.CUSTOMER,
+              status: ReferralAttributionStatus.QUALIFIED,
+              fraudReviewStatus: 'CLEAR',
+              installSource: 'referral-link',
+              platform: 'ios',
+              createdAt,
+              referrerCustomerProfile: {
+                id: 'parent-customer',
+                user: { id: 'user-parent', phone: '+84000000001', fullName: 'Parent Customer' },
+              },
+              referrerProviderProfile: null,
+              referredCustomerProfile: {
+                id: 'referred-customer',
+                user: { id: 'user-referred', phone: '+84000000002', fullName: 'Referred Customer' },
+              },
+              referredProviderProfile: null,
+            },
+          },
+        ]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'audit-1',
+            action: 'referral_reward.cashout_approve',
+            target: 'referral_reward:reward-1',
+            metadata: {
+              reason: 'approved for manual bank transfer',
+              status: cashoutApprovedReferralRewardStatus,
+              walletLedgerReference: 'customer-wallet-credit-1',
+            },
+            createdAt: decisionAt,
+            actor: { id: 'admin-1', phone: '+84000009999', fullName: 'Ops Admin' },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listReferralCashoutQueue({
+        audience: 'customer',
+        q: 'Parent',
+        skip: '20',
+        status: 'approved',
+        take: '10',
+      }),
+    ).resolves.toEqual([
+      {
+        id: 'reward-1',
+        amount: 25_000,
+        attribution: expect.objectContaining({
+          audience: ReferralAudience.CUSTOMER,
+          id: 'attribution-1',
+          platform: 'ios',
+          status: ReferralAttributionStatus.QUALIFIED,
+        }),
+        audience: ReferralAudience.CUSTOMER,
+        availableAt: createdAt,
+        calculationSnapshot: { taxPolicySnapshot: 'CUSTOMER_CASHOUT_REVIEW' },
+        createdAt,
+        currency: 'VND',
+        detailHref: '/referrals/customers/parent-customer',
+        latestDecision: {
+          action: 'referral_reward.cashout_approve',
+          actor: { id: 'admin-1', phone: '+84000009999', fullName: 'Ops Admin' },
+          createdAt: decisionAt,
+          reason: 'approved for manual bank transfer',
+          status: cashoutApprovedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-credit-1',
+        },
+        parent: {
+          href: '/customers/parent-customer',
+          id: 'parent-customer',
+          label: 'Parent Customer',
+          phone: '+84000000001',
+        },
+        qualifyingBookingId: 'booking-1',
+        referred: {
+          href: '/customers/referred-customer',
+          id: 'referred-customer',
+          label: 'Referred Customer',
+          phone: '+84000000002',
+        },
+        status: cashoutApprovedReferralRewardStatus,
+        walletLedgerReference: 'customer-wallet-credit-1',
+      },
+    ]);
+    expect(prisma.referralReward.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      select: expect.objectContaining({
+        attribution: expect.objectContaining({
+          select: expect.objectContaining({
+            referrerCustomerProfile: expect.any(Object),
+            referredCustomerProfile: expect.any(Object),
+          }),
+        }),
+      }),
+      skip: 20,
+      take: 10,
+      where: {
+        AND: expect.arrayContaining([
+          { status: { in: [cashoutApprovedReferralRewardStatus] } },
+          { attribution: { audience: ReferralAudience.CUSTOMER } },
+          {
+            OR: expect.arrayContaining([
+              { id: { contains: 'Parent', mode: 'insensitive' } },
+              {
+                attribution: {
+                  referrerCustomerProfile: {
+                    is: { user: { fullName: { contains: 'Parent', mode: 'insensitive' } } },
+                  },
+                },
+              },
+            ]),
+          },
+        ]),
+      },
+    });
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      select: expect.objectContaining({
+        action: true,
+        actor: expect.any(Object),
+        createdAt: true,
+        metadata: true,
+        target: true,
+      }),
+      where: {
+        action: { in: expect.arrayContaining(['referral_reward.cashout_paid']) },
+        target: { in: ['referral_reward:reward-1'] },
+      },
+    });
+  });
+
+  it('summarizes referral cashout queue statuses without loading reward rows', async () => {
+    const prisma = {
+      referralReward: {
+        count: vi.fn().mockResolvedValue(6),
+        groupBy: vi.fn().mockResolvedValue([
+          { status: ReferralRewardStatus.CASHOUT_REQUESTED, _count: { _all: 2 }, _sum: { amount: 50_000 } },
+          { status: cashoutApprovedReferralRewardStatus, _count: { _all: 1 }, _sum: { amount: 25_000 } },
+          { status: taxReviewRequiredReferralRewardStatus, _count: { _all: 1 }, _sum: { amount: 30_000 } },
+          { status: paidReferralRewardStatus, _count: { _all: 2 }, _sum: { amount: 80_000 } },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.referralCashoutQueueSummary({
+        audience: 'partner',
+        q: 'smoke',
+        status: 'all',
+      }),
+    ).resolves.toEqual({
+      totalAmount: 185_000,
+      totalCount: 6,
+      statusSummaries: [
+        { amount: 50_000, count: 2, status: 'requested' },
+        { amount: 25_000, count: 1, status: 'approved' },
+        { amount: 30_000, count: 1, status: 'tax-review' },
+        { amount: 80_000, count: 2, status: 'paid' },
+      ],
+    });
+    expect(prisma.referralReward.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([{ attribution: { audience: ReferralAudience.PARTNER } }]),
+      }),
+    });
+    expect(prisma.referralReward.groupBy).toHaveBeenCalledWith({
+      by: ['status'],
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([{ attribution: { audience: ReferralAudience.PARTNER } }]),
+      }),
       _count: { _all: true },
       _sum: { amount: true },
     });

@@ -178,6 +178,41 @@ export type AdminReferralRewardQueueSummary = {
   reward: 'all' | 'available' | 'credited' | 'pending' | 'held';
 };
 
+export type AdminReferralCashoutQueueStatus = 'requested' | 'approved' | 'tax-review' | 'paid';
+
+export type AdminReferralCashoutQueueSummary = {
+  statusSummaries: Array<{
+    amount: number;
+    count: number;
+    status: AdminReferralCashoutQueueStatus;
+  }>;
+  totalAmount: number;
+  totalCount: number;
+};
+
+export type AdminReferralCashoutPerson = {
+  href?: string | null;
+  id: string;
+  label: string;
+  phone?: string | null;
+};
+
+export type AdminReferralCashoutQueueRow = AdminReferralReward & {
+  audience: AdminReferralAudience;
+  attribution: {
+    audience: AdminReferralAudience;
+    createdAt: string;
+    fraudReviewStatus: string;
+    id: string;
+    installSource?: string | null;
+    platform?: string | null;
+    status: string;
+  };
+  detailHref: string;
+  parent: AdminReferralCashoutPerson;
+  referred: AdminReferralCashoutPerson;
+};
+
 export type AdminReferralParentSummary = {
   rewardQueueSummaries: AdminReferralRewardQueueSummary[];
   totalCount: number;

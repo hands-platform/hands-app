@@ -142,6 +142,7 @@ function referralRewardDecisionInput(formData: FormData) {
 function revalidateReferralRewardDecisionPaths(input: ReturnType<typeof referralRewardDecisionInput>) {
   const basePath = input.audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
   revalidatePath(basePath);
+  revalidatePath('/referrals/cashouts');
   if (input.parentId) {
     revalidatePath(`${basePath}/${encodeURIComponent(input.parentId)}`);
   }

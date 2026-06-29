@@ -72,6 +72,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
+      '/referrals/cashouts',
       '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
@@ -94,6 +95,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
+      '/referrals/cashouts',
       '/referrals/partners/parent-partner',
       '/audit-log',
     ]);
@@ -120,6 +122,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
+      '/referrals/cashouts',
       '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
@@ -146,6 +149,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
+      '/referrals/cashouts',
       '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
@@ -172,6 +176,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/partners',
+      '/referrals/cashouts',
       '/referrals/partners/parent-partner',
       '/audit-log',
     ]);
@@ -202,6 +207,7 @@ describe('referral server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
+      '/referrals/cashouts',
       '/referrals/customers/parent-customer',
       '/audit-log',
     ]);
