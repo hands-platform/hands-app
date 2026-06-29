@@ -18,7 +18,7 @@ export type DashboardDataHrefs = {
   readonly earningsHref: string;
   readonly earningsSummaryHref: string;
   readonly notificationSummaryHref: string;
-  readonly notificationsHref: string;
+  readonly notificationsHref: string | null;
   readonly operationalPolicyHref: string | null;
   readonly partnersHref: string | null;
   readonly paymentsHref: string;
@@ -86,11 +86,9 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       range,
     ),
     earningsSummaryHref: buildDashboardRangeScopedHref('/admin/earnings/summary', {}, range),
-    notificationsHref: buildDashboardDateScopedHref(
-      '/admin/notifications',
-      { take: String(limits.notifications) },
-      range,
-    ),
+    notificationsHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardDateScopedHref('/admin/notifications', { take: String(limits.notifications) }, range)
+      : null,
     notificationSummaryHref: buildDashboardDateScopedHref('/admin/notifications/summary', {}, range),
     operationalPolicyHref: viewMode.shouldRenderFullDashboard ? '/admin/operational-policy' : null,
     partnersHref: viewMode.shouldRenderFullDashboard

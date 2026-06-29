@@ -137,6 +137,7 @@ describe('DashboardPage', () => {
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');
     expect(hrefs).not.toContain('/admin/app-sessions?role=PROVIDER&take=5');
+    expect(hrefs.some((href) => String(href).startsWith('/admin/notifications?'))).toBe(false);
   });
 
   it('uses payout batch summary for default dashboard payout counters', async () => {

@@ -449,7 +449,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, []),
     adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, []),
     adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
-    adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, []),
+    dashboardDataHrefs.notificationsHref
+      ? adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, [])
+      : Promise.resolve([]),
     adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
     adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
@@ -964,7 +966,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <div>
             <span>Alert evidence</span>
-            <strong>{failedNotifications.length}</strong>
+            <strong>{failedNotificationCount}</strong>
             <small>
               <Link className="text-link" href="/notifications?review=failed">
                 Failed push and in-app delivery rows
