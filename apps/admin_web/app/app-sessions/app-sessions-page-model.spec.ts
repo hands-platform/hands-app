@@ -1,5 +1,6 @@
 import {
   buildAppSessionApiHref,
+  buildAppSessionSummaryApiHref,
   buildSessionFilters,
   sessionFilterHref,
   sessionFilterLabel,
@@ -10,6 +11,7 @@ describe('app sessions page model', () => {
     const filters = buildSessionFilters({});
 
     expect(buildAppSessionApiHref(filters)).toBe('/admin/app-sessions?take=10&state=live');
+    expect(buildAppSessionSummaryApiHref(filters)).toBe('/admin/app-sessions/summary?state=live');
     expect(sessionFilterHref(filters)).toBe('/app-sessions');
     expect(sessionFilterLabel(filters)).toBe('Showing live customer, partner, and admin app sessions');
   });
@@ -24,6 +26,9 @@ describe('app sessions page model', () => {
 
     expect(buildAppSessionApiHref(filters)).toBe(
       '/admin/app-sessions?take=10&role=PROVIDER&state=live&platform=ios&q=8490',
+    );
+    expect(buildAppSessionSummaryApiHref(filters)).toBe(
+      '/admin/app-sessions/summary?role=PROVIDER&state=live&platform=ios&q=8490',
     );
     expect(sessionFilterHref(filters)).toBe('/app-sessions?role=PROVIDER&state=live&platform=ios&q=8490');
     expect(sessionFilterLabel(filters)).toBe(

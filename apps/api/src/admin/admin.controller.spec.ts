@@ -71,6 +71,7 @@ describe('AdminController notification and push actions', () => {
     updateReferralPolicy: vi.fn(),
     upsertMarketingSpendDaily: vi.fn(),
     listAppSessions: vi.fn(),
+    appSessionSummary: vi.fn(),
     listChatArchive: vi.fn(),
     chatArchiveSummary: vi.fn(),
   };
@@ -489,6 +490,39 @@ describe('AdminController notification and push actions', () => {
       skip: '100',
       state: 'live',
       take: '50',
+    });
+  });
+
+  it('exposes app session summary with the same filtered query contract', async () => {
+    admin.appSessionSummary.mockResolvedValue({
+      expired: 2,
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      liveCustomers: 11,
+      livePartners: 7,
+      recent: 5,
+      stale: 3,
+      totalCount: 120,
+    });
+
+    await expect(controller.appSessionSummary('customer', 'live', 'ios', '8490')).resolves.toEqual({
+      expired: 2,
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      liveCustomers: 11,
+      livePartners: 7,
+      recent: 5,
+      stale: 3,
+      totalCount: 120,
+    });
+
+    expect(routeMetadata('appSessionSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'app-sessions/summary',
+    });
+    expect(admin.appSessionSummary).toHaveBeenCalledWith({
+      platform: 'ios',
+      q: '8490',
+      role: 'customer',
+      state: 'live',
     });
   });
 

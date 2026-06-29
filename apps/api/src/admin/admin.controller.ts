@@ -132,6 +132,16 @@ export class AdminController {
     return this.admin.listAppSessions({ platform, q, role, skip, state, take });
   }
 
+  @Get('app-sessions/summary')
+  appSessionSummary(
+    @Query('role') role?: string,
+    @Query('state') state?: string,
+    @Query('platform') platform?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.appSessionSummary({ platform, q, role, state });
+  }
+
   @Get('dashboard/summary')
   dashboardSummary() {
     return this.admin.dashboardSummary();

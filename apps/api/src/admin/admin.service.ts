@@ -1111,6 +1111,39 @@ export class AdminService {
     });
   }
 
+  async appSessionSummary(options: AdminAppSessionListQuery = {}) {
+    const where = adminAppSessionListWhere(options);
+    const liveStateWhere = adminAppSessionStateWhere('live') ?? {};
+    const [totalCount, liveCustomers, livePartners, recent, stale, expired] = await Promise.all([
+      this.prisma.appSession.count({ ...(where ? { where } : {}) }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, { role: Role.CUSTOMER }, liveStateWhere),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, { role: Role.PROVIDER }, liveStateWhere),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, adminAppSessionStateWhere('recent') ?? {}),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, adminAppSessionStateWhere('stale') ?? {}),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, adminAppSessionStateWhere('expired') ?? {}),
+      }),
+    ]);
+
+    return {
+      expired,
+      generatedAt: new Date().toISOString(),
+      liveCustomers,
+      livePartners,
+      recent,
+      stale,
+      totalCount,
+    };
+  }
+
   async dashboardSummary() {
     const now = new Date();
     const liveBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_LIVE_WINDOW_MS);
@@ -7211,6 +7244,25 @@ function adminAppSessionListWhere(
   }
 
   return filters.length > 0 ? { AND: filters } : undefined;
+}
+
+function withAdminAppSessionWhere(
+  baseWhere: Prisma.AppSessionWhereInput | undefined,
+  ...nextWhere: Prisma.AppSessionWhereInput[]
+): Prisma.AppSessionWhereInput {
+  const filters = [baseWhere, ...nextWhere].filter(
+    (filter): filter is Prisma.AppSessionWhereInput =>
+      filter !== undefined && Object.keys(filter).length > 0,
+  );
+
+  if (filters.length === 0) {
+    return {};
+  }
+  if (filters.length === 1) {
+    return filters[0];
+  }
+
+  return { AND: filters };
 }
 
 function normalizeAdminAppSessionRole(value: string | null | undefined): Role | undefined {

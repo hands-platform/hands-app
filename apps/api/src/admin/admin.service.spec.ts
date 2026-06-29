@@ -221,6 +221,52 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('summarizes app sessions with aggregate counts instead of full session hydration', async () => {
+    const prisma = {
+      appSession: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(120)
+          .mockResolvedValueOnce(11)
+          .mockResolvedValueOnce(7)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(2),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.appSessionSummary({
+        platform: 'IOS',
+        q: '8490',
+        state: 'live',
+      }),
+    ).resolves.toMatchObject({
+      expired: 2,
+      liveCustomers: 11,
+      livePartners: 7,
+      recent: 5,
+      stale: 3,
+      totalCount: 120,
+    });
+
+    expect(prisma.appSession.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          { platform: { equals: 'IOS', mode: 'insensitive' } },
+          expect.objectContaining({
+            OR: expect.arrayContaining([
+              { active: true, expiresAt: { gte: expect.any(Date) } },
+              { lastSeenAt: { gte: expect.any(Date) } },
+            ]),
+          }),
+        ]),
+      }),
+    });
+    expect(prisma.appSession.findMany).toBeUndefined();
+  });
+
   it('builds dashboard app presence summary with aggregate queries instead of full user/session lists', async () => {
     const prisma = {
       appSession: {

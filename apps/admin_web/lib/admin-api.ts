@@ -233,6 +233,16 @@ export type AdminAppSession = {
   user?: AdminUser | null;
 };
 
+export type AdminAppSessionSummary = {
+  expired: number;
+  generatedAt: string;
+  liveCustomers: number;
+  livePartners: number;
+  recent: number;
+  stale: number;
+  totalCount: number;
+};
+
 export type AdminDashboardSummary = {
   generatedAt: string;
   appPresence: {

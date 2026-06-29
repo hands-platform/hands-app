@@ -25,11 +25,22 @@ export function buildSessionFilters(params: Record<string, string | string[] | u
 
 export function buildAppSessionApiHref(filters: SessionFilters) {
   const params = new URLSearchParams({ take: String(DEFAULT_APP_SESSION_LIST_TAKE) });
+  appendAppSessionFilterParams(params, filters);
+  return `/admin/app-sessions?${params.toString()}`;
+}
+
+export function buildAppSessionSummaryApiHref(filters: SessionFilters) {
+  const params = new URLSearchParams();
+  appendAppSessionFilterParams(params, filters);
+  const query = params.toString();
+  return query ? `/admin/app-sessions/summary?${query}` : '/admin/app-sessions/summary';
+}
+
+function appendAppSessionFilterParams(params: URLSearchParams, filters: SessionFilters) {
   if (filters.role) params.set('role', filters.role);
   params.set('state', filters.state ?? 'live');
   if (filters.platform) params.set('platform', filters.platform);
   if (filters.q) params.set('q', filters.q);
-  return `/admin/app-sessions?${params.toString()}`;
 }
 
 export function sessionFilterHref(filters: SessionFilters) {

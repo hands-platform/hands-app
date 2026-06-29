@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Bell, LayoutDashboard } from 'lucide-react';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import type { AdminAppSession } from '../../lib/admin-api';
+import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
@@ -18,6 +18,7 @@ import {
 import { AppSessionsCheckQueueSection, type SessionCheckQueueItem } from './app-sessions-check-queue-section';
 import {
   buildAppSessionApiHref,
+  buildAppSessionSummaryApiHref,
   buildSessionFilters,
   sessionFilterHref,
   sessionFilterLabel,
@@ -57,9 +58,12 @@ export default async function AppSessionsPage({
   searchParams?: AppSessionsPageSearchParams;
 }) {
   const filters = buildSessionFilters((await searchParams) ?? {});
-  const loadedSessions = await adminGet<AdminAppSession[]>(buildAppSessionApiHref(filters), []);
+  const [loadedSessions, serverSummary] = await Promise.all([
+    adminGet<AdminAppSession[]>(buildAppSessionApiHref(filters), []),
+    adminGet<AdminAppSessionSummary | null>(buildAppSessionSummaryApiHref(filters), null),
+  ]);
   const sessions = loadedSessions;
-  const summary = buildSessionSummary(sessions);
+  const summary = buildSessionSummary(sessions, serverSummary);
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
   const versionRows = buildVersionRows(sessions);
@@ -93,7 +97,7 @@ export default async function AppSessionsPage({
         activeFilterLabel={activeFilterLabel}
         loadedCount={sessions.length}
         quickFilters={sessionQuickFilters}
-        totalCount={loadedSessions.length}
+        totalCount={serverSummary?.totalCount ?? loadedSessions.length}
       />
 
       <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
@@ -157,7 +161,10 @@ const sessionQuickFilters: AppSessionQuickFilter[] = [
   { label: 'Expired sessions', href: '/app-sessions?state=expired' },
 ];
 
-function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string, string]> {
+function buildSessionSummary(
+  sessions: AdminAppSession[],
+  serverSummary?: AdminAppSessionSummary | null,
+): Array<[string, string, string]> {
   const states = sessions.map(sessionState);
   const live = states.filter((state) => state === 'live').length;
   const recent = states.filter((state) => state === 'recent').length;
@@ -169,14 +176,26 @@ function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string
   const livePartners = sessions.filter(
     (session) => session.role === 'PROVIDER' && sessionState(session) === 'live',
   );
+  const loadedTotal = serverSummary?.totalCount ?? sessions.length;
+  const loadedLive = serverSummary
+    ? serverSummary.liveCustomers + serverSummary.livePartners
+    : live;
 
   return [
-    ['Live customers', liveCustomers.length.toString(), 'Customers actively seen within the session window.'],
-    ['Live partners', livePartners.length.toString(), 'Partners actively seen within the session window.'],
-    ['Recent sessions', recent.toString(), 'Seen in the last 30 minutes but not live now.'],
-    ['Stale sessions', stale.toString(), 'Seen within 24 hours but outside the recent window.'],
-    ['Expired sessions', expired.toString(), 'Older than the operational freshness window.'],
-    ['Loaded sessions', sessions.length.toString(), `${live} live session(s) in this snapshot.`],
+    [
+      'Live customers',
+      String(serverSummary?.liveCustomers ?? liveCustomers.length),
+      'Customers actively seen within the session window.',
+    ],
+    [
+      'Live partners',
+      String(serverSummary?.livePartners ?? livePartners.length),
+      'Partners actively seen within the session window.',
+    ],
+    ['Recent sessions', String(serverSummary?.recent ?? recent), 'Seen in the last 30 minutes but not live now.'],
+    ['Stale sessions', String(serverSummary?.stale ?? stale), 'Seen within 24 hours but outside the recent window.'],
+    ['Expired sessions', String(serverSummary?.expired ?? expired), 'Older than the operational freshness window.'],
+    ['Loaded sessions', String(loadedTotal), `${loadedLive} live session(s) in this filtered summary.`],
   ];
 }
 
