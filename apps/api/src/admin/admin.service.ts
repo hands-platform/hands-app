@@ -6367,7 +6367,7 @@ export class AdminService {
         throw new BadRequestException('Attachment is required for this manual wallet adjustment');
       }
 
-      const metadata = manualWalletAdjustmentMetadata(preview, input.attachmentUrl);
+      const metadata = manualWalletAdjustmentMetadata(preview, preview.attachmentUrl);
       const ledger =
         preview.ownerType === 'CUSTOMER'
           ? await tx.customerWalletLedgerEntry.create({
@@ -6518,6 +6518,7 @@ export class AdminService {
     const currency = normalizeManualWalletCurrency(input.currency);
     const monthlyPeriod = normalizeManualWalletMonthlyPeriod(input.monthlyPeriod);
     const approvalId = normalizeManualWalletApprovalId(input.approvalId, requireApproval);
+    const attachmentUrl = normalizeManualWalletAttachmentUrl(input.attachmentUrl);
     const [currentBalance, monthlyPeriodStatus] = await Promise.all([
       this.manualWalletCurrentBalance(db, ownerType, ownerId, currency),
       this.manualWalletMonthlyPeriodStatus(db, monthlyPeriod, currency),
@@ -6529,7 +6530,7 @@ export class AdminService {
         adjustmentType,
         amount: integerValue(input.amount),
         approvalId,
-        attachmentUrl: normalizeNullable(input.attachmentUrl),
+        attachmentUrl,
         currentBalance,
         direction,
         monthlyPeriodStatus,
@@ -9274,6 +9275,23 @@ function normalizeManualWalletApprovalId(value: string | undefined, requireAppro
     throw new BadRequestException('Approval id is required for manual wallet adjustment');
   }
   return normalized ?? 'PREVIEW_ONLY';
+}
+
+function normalizeManualWalletAttachmentUrl(value?: string | null) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const url = new URL(normalized);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('unsupported protocol');
+    }
+    return url.toString();
+  } catch {
+    throw new BadRequestException('Attachment URL must use http or https');
+  }
 }
 
 async function assertManualWalletOwnerExists(ownerLookup: Promise<unknown>) {

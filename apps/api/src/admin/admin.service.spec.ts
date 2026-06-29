@@ -6046,7 +6046,15 @@ describe('AdminService query orchestration', () => {
       },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
-        create: vi.fn(),
+        create: vi.fn().mockResolvedValue({
+          id: 'ledger-invalid-url',
+          providerProfileId: 'provider-1',
+          amount: 10000000,
+          currency: 'VND',
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-invalid-url' }),
       },
     };
     const prisma = {
@@ -6065,6 +6073,45 @@ describe('AdminService query orchestration', () => {
         approvalId: 'approval-high',
       }),
     ).rejects.toThrow('Attachment is required for this manual wallet adjustment');
+
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid manual wallet adjustment attachment URLs before writing a ledger', async () => {
+    const tx = {
+      providerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'ledger-invalid-url',
+          providerProfileId: 'provider-1',
+          amount: 10000000,
+          currency: 'VND',
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-invalid-url' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 10000000,
+        reason: 'High-value correction with invalid evidence URL',
+        approvalId: 'approval-high',
+        attachmentUrl: 'javascript:alert(1)',
+      }),
+    ).rejects.toThrow('Attachment URL must use http or https');
 
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
