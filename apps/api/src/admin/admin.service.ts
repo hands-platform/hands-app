@@ -1720,6 +1720,28 @@ export class AdminService {
       : {};
     const activeCustomerSince = new Date(now.getTime() - ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS);
     const onlinePartnerSince = new Date(now.getTime() - ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS);
+    const activeCustomerSessionWhere: Prisma.AppSessionWhereInput = {
+      active: true,
+      lastSeenAt: { gte: activeCustomerSince },
+      role: Role.CUSTOMER,
+    };
+    const realtimeOnlyCustomerWhere: Prisma.CustomerProfileWhereInput | undefined =
+      options.includePeriodMetrics
+        ? undefined
+        : {
+            user: {
+              appSessions: {
+                some: activeCustomerSessionWhere,
+              },
+            },
+          };
+    const realtimeOnlyProviderWhere: Prisma.ProviderProfileWhereInput | undefined =
+      options.includePeriodMetrics
+        ? undefined
+        : {
+            currentLocationUpdatedAt: { gte: onlinePartnerSince },
+            status: { not: ProviderStatus.OFFLINE },
+          };
     const regions = new Map<string, AdminVietnamOverviewRegion>(
       VIETNAM_REGION_BUCKETS.map((bucket) => [
         bucket.code,
@@ -1744,6 +1766,7 @@ export class AdminService {
       this.prisma.customerProfile.findMany({
         orderBy: { id: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        ...(realtimeOnlyCustomerWhere ? { where: realtimeOnlyCustomerWhere } : {}),
         select: {
           id: true,
           addresses: true,
@@ -1762,7 +1785,7 @@ export class AdminService {
             select: {
               appSessions: {
                 where: {
-                  role: Role.CUSTOMER,
+                  ...activeCustomerSessionWhere,
                 },
                 orderBy: { lastSeenAt: 'desc' },
                 take: 1,
@@ -1778,6 +1801,7 @@ export class AdminService {
       this.prisma.providerProfile.findMany({
         orderBy: { updatedAt: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        ...(realtimeOnlyProviderWhere ? { where: realtimeOnlyProviderWhere } : {}),
         select: {
           id: true,
           displayName: true,

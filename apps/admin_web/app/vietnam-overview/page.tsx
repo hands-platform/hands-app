@@ -24,6 +24,7 @@ import {
   vietnamOverviewGeoapifyTileGrid,
   vietnamOverviewRealtimeMetricDotLegend,
   vietnamOverviewRealtimeMapPoints,
+  vietnamOverviewRealtimePointsApiHref,
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -85,7 +86,7 @@ export default async function VietnamOverviewPage({
       emptyVietnamOverview,
     ),
     adminGet<AdminVietnamOverviewRealtimePointFeed>(
-      `/admin/vietnam-overview/realtime-points?range=${range}`,
+      vietnamOverviewRealtimePointsApiHref(),
       emptyVietnamOverviewRealtimePointFeed,
     ),
   ]);

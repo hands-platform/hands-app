@@ -155,6 +155,10 @@ export function vietnamOverviewHref(range: VietnamOverviewRange) {
   return `/vietnam-overview?range=${range}`;
 }
 
+export function vietnamOverviewRealtimePointsApiHref() {
+  return '/admin/vietnam-overview/realtime-points';
+}
+
 export function vietnamOverviewMapMarkers(
   regions: readonly VietnamOverviewRegionMarkerInput[],
 ): VietnamOverviewMapMarker[] {

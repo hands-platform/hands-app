@@ -7,6 +7,7 @@ import {
   vietnamOverviewRealtimeMapPoints,
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
+  vietnamOverviewRealtimePointsApiHref,
   vietnamOverviewGeoapifyTileGrid,
   vietnamOverviewMapZoomLevels,
   vietnamOverviewRangeOptions,
@@ -30,6 +31,10 @@ describe('Vietnam overview page model', () => {
     expect(normalizeVietnamOverviewRange('month')).toBe('today');
     expect(vietnamOverviewHref('today')).toBe('/vietnam-overview?range=today');
     expect(vietnamOverviewHref('all')).toBe('/vietnam-overview?range=all');
+  });
+
+  it('keeps realtime map point feed independent from period range filters', () => {
+    expect(vietnamOverviewRealtimePointsApiHref()).toBe('/admin/vietnam-overview/realtime-points');
   });
 
   it('builds ranked positioned map markers from stored region aggregates only', () => {

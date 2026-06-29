@@ -2718,6 +2718,29 @@ describe('AdminService query orchestration', () => {
     });
     expect(pointFeed).not.toHaveProperty('totals');
     expect(pointFeed).not.toHaveProperty('regions');
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          user: {
+            appSessions: {
+              some: expect.objectContaining({
+                active: true,
+                lastSeenAt: { gte: expect.any(Date) },
+                role: Role.CUSTOMER,
+              }),
+            },
+          },
+        },
+      }),
+    );
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          currentLocationUpdatedAt: { gte: expect.any(Date) },
+          status: { not: ProviderStatus.OFFLINE },
+        },
+      }),
+    );
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
