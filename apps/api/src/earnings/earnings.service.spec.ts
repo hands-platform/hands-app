@@ -1229,7 +1229,7 @@ describe('EarningsService payout batches', () => {
         reviewedByAdminId: 'admin-user-1',
         reviewedAt: expect.any(Date),
         paidAt: expect.any(Date),
-        metadata: {
+        metadata: expect.objectContaining({
           requestedFrom: 'partner-app',
           bankPayout: {
             transferRef: 'BANK-OUT-001',
@@ -1238,7 +1238,14 @@ describe('EarningsService payout batches', () => {
             attachmentUrl: null,
             completedByAdminId: 'admin-user-1',
           },
-        },
+          lastStatusChange: expect.objectContaining({
+            previousStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+            nextStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+            lockedAmountReleased: false,
+            releasedAmount: 0,
+            changedByAdminId: 'admin-user-1',
+          }),
+        }),
       }),
       include: expect.objectContaining({
         bankAccount: true,
@@ -1311,6 +1318,73 @@ describe('EarningsService payout batches', () => {
     });
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
     expect(tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('records lock-release metadata when an active withdrawal request is rejected', async () => {
+    const existingRequest = {
+      id: 'withdrawal-request-1',
+      providerProfileId: 'provider-1',
+      bankAccountId: 'bank-account-1',
+      amount: 500000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+      transferRef: null,
+      adminNote: null,
+      correctionReason: null,
+      paidAt: null,
+      metadata: { requestedFrom: 'partner-app' },
+    };
+    const tx = {
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        upsert: vi.fn(),
+      },
+      providerWalletWithdrawalRequest: {
+        update: vi.fn().mockResolvedValue({
+          ...existingRequest,
+          status: ProviderWalletWithdrawalRequestStatus.REJECTED,
+        }),
+      },
+    };
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(existingRequest),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await service.updateProviderWalletWithdrawalRequestForAdmin(
+      'withdrawal-request-1',
+      {
+        status: ProviderWalletWithdrawalRequestStatus.REJECTED,
+        adminNote: 'Bank account ownership could not be verified',
+      },
+      'admin-user-1',
+    );
+
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.providerWalletWithdrawalRequest.update).toHaveBeenCalledWith({
+      where: { id: 'withdrawal-request-1' },
+      data: expect.objectContaining({
+        status: ProviderWalletWithdrawalRequestStatus.REJECTED,
+        metadata: expect.objectContaining({
+          requestedFrom: 'partner-app',
+          lastStatusChange: expect.objectContaining({
+            previousStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+            nextStatus: ProviderWalletWithdrawalRequestStatus.REJECTED,
+            lockedAmountReleased: true,
+            releasedAmount: 500000,
+            changedByAdminId: 'admin-user-1',
+          }),
+        }),
+      }),
+      include: expect.objectContaining({
+        bankAccount: true,
+      }),
+    });
   });
 
   it('marks payout batch earnings, withholding, and wallet ledger paid together', async () => {

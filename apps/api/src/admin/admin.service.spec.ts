@@ -6219,6 +6219,14 @@ describe('AdminService query orchestration', () => {
         currency: 'VND',
         status: 'PAID',
         transferRef: 'BANK-OUT-001',
+        metadata: {
+          lastStatusChange: {
+            previousStatus: 'BANK_TRANSFER_PENDING',
+            nextStatus: 'PAID',
+            lockedAmountReleased: false,
+            lockedAmountRetained: false,
+          },
+        },
       }),
     };
     const service = createAdminService(prisma, { earnings });
@@ -6255,6 +6263,14 @@ describe('AdminService query orchestration', () => {
         actorId: 'admin-user-1',
         action: 'provider_wallet.withdrawal_request.update',
         target: 'provider_wallet_withdrawal_request:withdrawal-request-1',
+        metadata: expect.objectContaining({
+          status: 'PAID',
+          previousStatus: 'BANK_TRANSFER_PENDING',
+          withdrawalStatusChange: expect.objectContaining({
+            previousStatus: 'BANK_TRANSFER_PENDING',
+            nextStatus: 'PAID',
+          }),
+        }),
       }),
     });
   });

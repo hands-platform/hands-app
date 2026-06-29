@@ -6614,6 +6614,13 @@ export class AdminService {
       input,
       actorId,
     );
+    const withdrawalStatusChange = providerWalletWithdrawalStatusChangeForAudit(
+      request.metadata ?? null,
+    );
+    const previousStatus =
+      typeof withdrawalStatusChange?.previousStatus === 'string'
+        ? withdrawalStatusChange.previousStatus
+        : null;
     await this.writeAudit(
       actorId,
       'provider_wallet.withdrawal_request.update',
@@ -6623,6 +6630,8 @@ export class AdminService {
         amount: request.amount,
         currency: request.currency,
         status: request.status,
+        previousStatus,
+        withdrawalStatusChange,
         transferRef: request.transferRef,
         bankTransferDate: input.bankTransferDate,
         attachmentFileId: input.attachmentFileId,
@@ -9892,6 +9901,14 @@ function recordFromJsonValue(value: Prisma.JsonValue | null) {
     return value as Record<string, unknown>;
   }
   return {};
+}
+
+function providerWalletWithdrawalStatusChangeForAudit(
+  metadata: Prisma.JsonValue | null,
+): Prisma.InputJsonObject | null {
+  const record = recordFromJsonValue(metadata);
+  const statusChange = recordFromJsonValue((record.lastStatusChange as Prisma.JsonValue) ?? null);
+  return Object.keys(statusChange).length > 0 ? (statusChange as Prisma.InputJsonObject) : null;
 }
 
 function couponUsageBookingView(booking: {

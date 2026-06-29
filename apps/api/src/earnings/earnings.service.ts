@@ -79,6 +79,12 @@ const ACTIVE_WITHDRAWAL_REQUEST_STATUSES = [
   ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
   ProviderWalletWithdrawalRequestStatus.HOLD,
 ] as const;
+const RELEASED_WITHDRAWAL_REQUEST_STATUSES = [
+  ProviderWalletWithdrawalRequestStatus.REJECTED,
+  ProviderWalletWithdrawalRequestStatus.CANCELLED,
+  ProviderWalletWithdrawalRequestStatus.FAILED,
+  ProviderWalletWithdrawalRequestStatus.REVERSED,
+] as const;
 
 function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
   return {
@@ -1195,6 +1201,7 @@ export class EarningsService {
     const shouldMarkPaid =
       update.status === ProviderWalletWithdrawalRequestStatus.PAID &&
       existing.status !== ProviderWalletWithdrawalRequestStatus.PAID;
+    const reviewedAt = new Date();
     const nextTransferRef = update.transferRef ?? existing.transferRef;
     const nextAdminNote = update.adminNote ?? existing.adminNote;
     const bankPayoutMetadata = shouldMarkPaid
@@ -1206,6 +1213,25 @@ export class EarningsService {
           completedByAdminId: adminId,
         }
       : undefined;
+    const statusChangeMetadata =
+      update.status && update.status !== existing.status
+        ? providerWalletWithdrawalRequestStatusChangeMetadata({
+            adminId,
+            amount: existing.amount,
+            changedAt: reviewedAt,
+            currency: existing.currency,
+            nextStatus: update.status,
+            previousStatus: existing.status,
+          })
+        : undefined;
+    const nextMetadata =
+      bankPayoutMetadata || statusChangeMetadata
+        ? {
+            ...jsonObjectOrEmpty(existing.metadata),
+            ...(bankPayoutMetadata ? { bankPayout: bankPayoutMetadata } : {}),
+            ...(statusChangeMetadata ? { lastStatusChange: statusChangeMetadata } : {}),
+          }
+        : undefined;
 
     return this.prisma.$transaction(async (tx) => {
       if (shouldMarkPaid) {
@@ -1263,16 +1289,9 @@ export class EarningsService {
           adminNote: nextAdminNote,
           correctionReason: update.correctionReason ?? existing.correctionReason,
           reviewedByAdminId: adminId,
-          reviewedAt: new Date(),
-          ...(shouldMarkPaid ? { paidAt: new Date() } : {}),
-          ...(shouldMarkPaid
-            ? {
-                metadata: {
-                  ...jsonObjectOrEmpty(existing.metadata),
-                  bankPayout: bankPayoutMetadata,
-                },
-              }
-            : {}),
+          reviewedAt,
+          ...(shouldMarkPaid ? { paidAt: reviewedAt } : {}),
+          ...(nextMetadata ? { metadata: nextMetadata } : {}),
         },
         include: {
           providerProfile: {
@@ -2031,6 +2050,44 @@ function jsonObjectOrEmpty(value: Prisma.JsonValue | null | undefined): Prisma.I
     return value as Prisma.InputJsonObject;
   }
   return {};
+}
+
+function providerWalletWithdrawalRequestStatusChangeMetadata(input: {
+  adminId: string;
+  amount: number;
+  changedAt: Date;
+  currency: string;
+  nextStatus: ProviderWalletWithdrawalRequestStatus;
+  previousStatus: ProviderWalletWithdrawalRequestStatus;
+}): Prisma.InputJsonObject {
+  const previousStatusWasActive = isActiveWithdrawalRequestStatus(input.previousStatus);
+  const nextStatusKeepsLock = isActiveWithdrawalRequestStatus(input.nextStatus);
+  const lockedAmountReleased =
+    previousStatusWasActive && isReleasedWithdrawalRequestStatus(input.nextStatus);
+
+  return {
+    previousStatus: input.previousStatus,
+    nextStatus: input.nextStatus,
+    changedAt: input.changedAt.toISOString(),
+    changedByAdminId: input.adminId,
+    amount: input.amount,
+    currency: input.currency,
+    lockedAmountReleased,
+    lockedAmountRetained: previousStatusWasActive && nextStatusKeepsLock,
+    releasedAmount: lockedAmountReleased ? input.amount : 0,
+  };
+}
+
+function isActiveWithdrawalRequestStatus(status: ProviderWalletWithdrawalRequestStatus) {
+  return ACTIVE_WITHDRAWAL_REQUEST_STATUSES.includes(
+    status as (typeof ACTIVE_WITHDRAWAL_REQUEST_STATUSES)[number],
+  );
+}
+
+function isReleasedWithdrawalRequestStatus(status: ProviderWalletWithdrawalRequestStatus) {
+  return RELEASED_WITHDRAWAL_REQUEST_STATUSES.includes(
+    status as (typeof RELEASED_WITHDRAWAL_REQUEST_STATUSES)[number],
+  );
 }
 
 function partnerBankDepositSourceKey(providerProfileId: string, bankTransactionId: string) {
