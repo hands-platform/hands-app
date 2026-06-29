@@ -643,6 +643,89 @@ describe('ReferralsService', () => {
     );
   });
 
+  it('calculates customer referral rewards from platform fee net revenue after company output VAT', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'referred-customer-1',
+          selectedProviderId: 'provider-1',
+          updatedAt: createdAt,
+          earning: {
+            id: 'earning-1',
+            grossAmount: 640_000,
+            platformFee: 128_000,
+            currency: 'VND',
+          },
+        }),
+      },
+      referralAttribution: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'customer-attribution-1',
+            audience: ReferralAudience.CUSTOMER,
+            referrerCustomerProfileId: 'referrer-customer-1',
+            referredCustomerProfileId: 'referred-customer-1',
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralPolicy: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.CUSTOMER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+            commissionPercentBps: 3_000,
+            fixedRewardAmount: null,
+            perRewardCapAmount: null,
+            totalRewardCapAmount: null,
+            maxRewardedReferrals: 10,
+            maxRewardsPerReferred: 1,
+            holdPeriodDays: 5,
+            currency: 'VND',
+            metadata: { platformFeeVatRateBps: 800 },
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralReward: {
+        count: vi.fn().mockResolvedValue(0),
+        create: vi.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 35_556,
+          currency: 'VND',
+          status: ReferralRewardStatus.PENDING,
+          sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
+        }),
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-1')).resolves.toMatchObject({
+      customerReward: {
+        amount: 35_556,
+      },
+      partnerReward: null,
+    });
+    expect(prisma.referralReward.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          amount: 35_556,
+          calculationSnapshot: expect.objectContaining({
+            basePlatformFee: 128_000,
+            platformFeeNetRevenue: 118_519,
+            platformFeeVatRateBps: 800,
+            rewardRateSnapshotBps: 3_000,
+          }),
+        }),
+      }),
+    );
+  });
+
   it('skips customer referral reward when the referred account reward count is already capped', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {

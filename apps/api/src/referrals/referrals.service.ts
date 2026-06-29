@@ -10,7 +10,10 @@ import {
   ReferralRewardMode,
   ReferralRewardStatus,
 } from '@prisma/client';
+import { calculatePlatformFeeBreakdown } from '../earnings/earnings.policy';
 import { PrismaService } from '../prisma/prisma.service';
+
+const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
 
 const referralCodeSelect = {
   id: true,
@@ -87,6 +90,7 @@ const referralPolicySelect = {
   holdPeriodDays: true,
   maxRewardedReferrals: true,
   maxRewardsPerReferred: true,
+  metadata: true,
   perRewardCapAmount: true,
   rewardMode: true,
   totalRewardCapAmount: true,
@@ -540,9 +544,10 @@ export class ReferralsService {
       return null;
     }
 
+    const platformFeeBreakdown = referralPlatformFeeBreakdown(booking.earning.platformFee, policy);
     const amount = await this.rewardAmountAfterLifetimeCap(
       cappedRewardAmount(
-        Math.round((booking.earning.platformFee * policy.commissionPercentBps) / 10_000),
+        Math.round((platformFeeBreakdown.platformFeeNetRevenue * policy.commissionPercentBps) / 10_000),
         policy.perRewardCapAmount,
       ),
       {
@@ -722,6 +727,8 @@ export class ReferralsService {
       return existing;
     }
 
+    const platformFeeBreakdown = referralPlatformFeeBreakdown(input.booking.earning.platformFee, input.policy);
+
     return this.prisma.referralReward.create({
       data: {
         amount: input.amount,
@@ -731,12 +738,17 @@ export class ReferralsService {
           audience: input.attribution.audience,
           basePlatformFee: input.booking.earning.platformFee,
           bookingId: input.booking.id,
+          companyOutputVat: platformFeeBreakdown.companyOutputVat,
           commissionPercentBps: input.policy.commissionPercentBps,
           fixedRewardAmount: input.policy.fixedRewardAmount,
           grossAmount: input.booking.earning.grossAmount,
           maxRewardsPerReferred: input.policy.maxRewardsPerReferred,
           perRewardCapAmount: input.policy.perRewardCapAmount,
+          platformFeeNetRevenue: platformFeeBreakdown.platformFeeNetRevenue,
+          platformFeeVatRateBps: platformFeeBreakdown.platformFeeVatRateBps,
+          rewardAmountSnapshot: input.amount,
           rewardMode: input.policy.rewardMode,
+          rewardRateSnapshotBps: input.policy.commissionPercentBps,
           totalRewardCapAmount: input.policy.totalRewardCapAmount,
         },
         currency: input.policy.currency || input.booking.earning.currency,
@@ -903,6 +915,35 @@ function cappedRewardAmount(amount: number, capAmount: number | null) {
   }
 
   return amount;
+}
+
+function referralPlatformFeeBreakdown(platformFeeGross: number, policy: ReferralPolicyRecord) {
+  return calculatePlatformFeeBreakdown(platformFeeGross, referralPlatformFeeVatRateBps(policy));
+}
+
+function referralPlatformFeeVatRateBps(policy: ReferralPolicyRecord) {
+  const configuredVatRateBps = referralMetadataWholeBps(policy.metadata, 'platformFeeVatRateBps');
+
+  return configuredVatRateBps ?? DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS;
+}
+
+function referralMetadataWholeBps(metadata: Prisma.JsonValue | null, key: string) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const value = metadata[key];
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 10_000) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 10_000) {
+      return parsed;
+    }
+  }
+
+  return null;
 }
 
 function referralRewardAvailableAt(referenceDate: Date, holdPeriodDays: number) {
