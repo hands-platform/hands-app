@@ -1,12 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { AdminTaxPolicyVersion, AdminTaxRule, adminPatch, adminPost } from '../../lib/admin-api';
 
 export async function createTaxPolicyVersion(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const status = String(formData.get('status') || 'DRAFT');
-  const effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
+  let effectiveFrom: string;
+  try {
+    effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
+  } catch (error) {
+    return redirectTaxPolicyValidation(error);
+  }
   const notes = String(formData.get('notes') || '').trim();
   const defaultRateBps = parseInteger(formData.get('defaultRateBps'));
 
@@ -41,11 +47,16 @@ export async function createTaxPolicyVersion(formData: FormData) {
 export async function updateTaxPolicyVersion(formData: FormData) {
   const id = String(formData.get('policyId'));
   const status = String(formData.get('status') || 'DRAFT');
-  const effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
-  const effectiveTo = parseOptionalDate(formData.get('effectiveTo'), 'Effective to');
+  let effectiveFrom: string;
+  let effectiveTo: string | null;
+  try {
+    effectiveFrom = parseRequiredDate(formData.get('effectiveFrom'), 'Effective from');
+    effectiveTo = parseOptionalDate(formData.get('effectiveTo'), 'Effective to');
+    assertEffectiveDateWindow(effectiveFrom, effectiveTo);
+  } catch (error) {
+    return redirectTaxPolicyValidation(error);
+  }
   const notes = String(formData.get('notes') || '').trim();
-
-  assertEffectiveDateWindow(effectiveFrom, effectiveTo);
 
   await adminPatch(
     `/admin/tax-policy-versions/${id}`,
@@ -161,4 +172,14 @@ function assertEffectiveDateWindow(effectiveFrom: string, effectiveTo: string | 
   if (Date.parse(effectiveTo) <= Date.parse(effectiveFrom)) {
     throw new Error('Effective to must be after effective from.');
   }
+}
+
+function redirectTaxPolicyValidation(error: unknown) {
+  if (error instanceof Error) {
+    return redirect(
+      `/tax-policy?taxPolicyNotice=validation&message=${encodeURIComponent(error.message)}`,
+    );
+  }
+
+  throw error;
 }

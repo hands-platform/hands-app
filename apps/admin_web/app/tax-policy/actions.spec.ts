@@ -1,10 +1,15 @@
 import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { adminPatch, adminPost } from '../../lib/admin-api';
 import { createTaxPolicyVersion, updateTaxPolicyVersion } from './actions';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
 }));
 
 vi.mock('../../lib/admin-api', () => ({
@@ -14,6 +19,7 @@ vi.mock('../../lib/admin-api', () => ({
 
 const mockedAdminPatch = vi.mocked(adminPatch);
 const mockedAdminPost = vi.mocked(adminPost);
+const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('tax policy server actions', () => {
@@ -71,14 +77,17 @@ describe('tax policy server actions', () => {
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
   });
 
-  it('does not create tax policy versions without an effective date', async () => {
+  it('redirects to a form notice without creating tax policy versions when the effective date is missing', async () => {
     const formData = new FormData();
     formData.set('name', 'Vietnam withholding');
 
-    await expect(createTaxPolicyVersion(formData)).rejects.toThrow('Effective from is required.');
+    await createTaxPolicyVersion(formData);
 
     expect(mockedAdminPost).not.toHaveBeenCalled();
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/tax-policy?taxPolicyNotice=validation&message=Effective%20from%20is%20required.',
+    );
   });
 
   it('updates tax policy versions with API-safe effective date windows', async () => {
@@ -110,18 +119,19 @@ describe('tax policy server actions', () => {
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
   });
 
-  it('does not update tax policy versions when effective to is before effective from', async () => {
+  it('redirects to a form notice without updating tax policy versions when effective to is before effective from', async () => {
     const formData = new FormData();
     formData.set('policyId', 'policy-1');
     formData.set('status', 'ACTIVE');
     formData.set('effectiveFrom', '2026-07-01T00:00');
     formData.set('effectiveTo', '2026-06-30T23:59');
 
-    await expect(updateTaxPolicyVersion(formData)).rejects.toThrow(
-      'Effective to must be after effective from.',
-    );
+    await updateTaxPolicyVersion(formData);
 
     expect(mockedAdminPatch).not.toHaveBeenCalled();
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/tax-policy?taxPolicyNotice=validation&message=Effective%20to%20must%20be%20after%20effective%20from.',
+    );
   });
 });

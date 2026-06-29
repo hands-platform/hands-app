@@ -1,6 +1,7 @@
 import { AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
+import { taxPolicyNotice } from './tax-policy-notice';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
@@ -18,6 +19,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
   const healthItems = buildTaxPolicyHealth(policies);
   const preview = buildTaxPreview(policies, params);
+  const notice = taxPolicyNotice(params);
 
   return (
     <div className="tax-policy-page">
@@ -36,6 +38,24 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <span className="pill pill-info">{ruleCount} rule(s)</span>
         </div>
       </section>
+
+      {notice ? (
+        <section
+          className={`card admin-mb-16 admin-notice-card ${
+            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
+          }`}
+        >
+          <div className="ops-section-header">
+            <div>
+              <h2>{notice.title}</h2>
+              <p className="muted">{notice.detail}</p>
+            </div>
+            <span className={`pill ${notice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
+              {notice.badge}
+            </span>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
