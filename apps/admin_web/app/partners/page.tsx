@@ -15,7 +15,7 @@ import {
   partnerHasAdvancedOperationalFilters,
   partnerSortLabel,
 } from './partner-filters';
-import { buildProviderOpsPolicy } from './partner-list-ops';
+import { buildProviderOpsPolicy, buildProviderOpsPolicyApiHref } from './partner-list-ops';
 import { partnerUnsettledWalletBalance as providerUnsettledWalletBalance } from './partner-activity-facts';
 import {
   filterPartners as filterProviders,
@@ -123,7 +123,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const [rawProviders, providerDirectorySummary, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>(dataHrefs.listHref, []),
     adminGet<AdminProviderSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(buildProviderOpsPolicyApiHref(), []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = dataHrefs.listIsServerPaginated

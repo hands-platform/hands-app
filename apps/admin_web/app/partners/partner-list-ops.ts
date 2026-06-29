@@ -23,6 +23,18 @@ export const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
   responseWindowMinutes: 10,
 };
 
+const PROVIDER_OPS_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+] as const;
+
+export function buildProviderOpsPolicyApiHref() {
+  return `/admin/operational-policy?${new URLSearchParams({
+    keys: PROVIDER_OPS_POLICY_KEYS.join(','),
+  }).toString()}`;
+}
+
 export function providerLocationStatus(
   provider: AdminProvider,
   opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,

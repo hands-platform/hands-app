@@ -45,7 +45,7 @@ describe('ProvidersPage', () => {
         return [serverRow];
       }
 
-      if (href === '/admin/operational-policy') {
+      if (href.startsWith('/admin/operational-policy?keys=')) {
         return [];
       }
 
@@ -57,5 +57,15 @@ describe('ProvidersPage', () => {
 
     expect(markup).toContain('Server Trusted Partner');
     expect(markup).toContain('Showing 1 to 1 of 120 entries');
+    const policyHref = mockedAdminGet.mock.calls.map(([href]) => href).find((href) => {
+      return href.startsWith('/admin/operational-policy?keys=');
+    });
+    expect(policyHref).toBeDefined();
+    const policyUrl = new URL(policyHref ?? '', 'http://admin.local');
+    expect(policyUrl.searchParams.get('keys')?.split(',')).toEqual([
+      'matching.marketplace_partner_location_max_age_minutes',
+      'matching.marketplace_partner_radius_meters',
+      'matching.provider_response_window_minutes',
+    ]);
   });
 });

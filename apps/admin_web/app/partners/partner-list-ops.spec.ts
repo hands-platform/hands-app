@@ -1,5 +1,9 @@
 import type { AdminProvider } from '../../lib/admin-api';
-import { DEFAULT_PROVIDER_OPS_POLICY, providerLocationStatus } from './partner-list-ops';
+import {
+  buildProviderOpsPolicyApiHref,
+  DEFAULT_PROVIDER_OPS_POLICY,
+  providerLocationStatus,
+} from './partner-list-ops';
 
 describe('partner list ops policy', () => {
   afterEach(() => {
@@ -20,6 +24,17 @@ describe('partner list ops policy', () => {
         expiredLocationHours: 24,
       }),
     ).toBe('stale');
+  });
+
+  it('requests only the policy keys needed by the partner list', () => {
+    const url = new URL(buildProviderOpsPolicyApiHref(), 'http://admin.local');
+
+    expect(url.pathname).toBe('/admin/operational-policy');
+    expect(url.searchParams.get('keys')?.split(',')).toEqual([
+      'matching.marketplace_partner_location_max_age_minutes',
+      'matching.marketplace_partner_radius_meters',
+      'matching.provider_response_window_minutes',
+    ]);
   });
 });
 
