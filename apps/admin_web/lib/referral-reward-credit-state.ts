@@ -16,11 +16,83 @@ export function referralRewardCreditState(reward: AdminReferralReward): Referral
     };
   }
 
+  if (reward.status === 'APPROVED') {
+    return {
+      helper: 'Approved for referral wallet processing.',
+      label: 'Approved',
+      tone: 'info',
+    };
+  }
+
   if (reward.status === 'AVAILABLE') {
     return {
       helper: 'Ready for wallet credit; no wallet ledger exists yet.',
       label: 'Ready for credit',
       tone: 'info',
+    };
+  }
+
+  if (reward.status === 'LOCKED') {
+    return {
+      helper: 'Locked until the configured referral hold window clears.',
+      label: 'Locked',
+      tone: 'warning',
+    };
+  }
+
+  if (reward.status === 'CREDITED') {
+    return {
+      helper: 'Referral reward has been credited to wallet liability.',
+      label: 'Credited',
+      tone: 'success',
+    };
+  }
+
+  if (reward.status === 'USED_FOR_SERVICE') {
+    return {
+      helper: 'Customer referral wallet was applied to service payment.',
+      label: 'Used for service',
+      tone: 'success',
+    };
+  }
+
+  if (reward.status === 'OFFSET') {
+    return {
+      helper: 'Partner referral wallet was offset against payable or receivable balances.',
+      label: 'Offset',
+      tone: 'success',
+    };
+  }
+
+  if (reward.status === 'CASHOUT_REQUESTED') {
+    return {
+      helper: 'Cashout requested and waiting for admin approval or tax review.',
+      label: 'Cashout requested',
+      tone: 'warning',
+    };
+  }
+
+  if (reward.status === 'CASHOUT_APPROVED') {
+    return {
+      helper: 'Cashout approved and waiting for payout posting.',
+      label: 'Cashout approved',
+      tone: 'info',
+    };
+  }
+
+  if (reward.status === 'PAID') {
+    return {
+      helper: 'Cashout has been paid.',
+      label: 'Paid',
+      tone: 'success',
+    };
+  }
+
+  if (reward.status === 'TAX_REVIEW_REQUIRED') {
+    return {
+      helper: 'Tax review is required before this reward can move further.',
+      label: 'Tax review required',
+      tone: 'warning',
     };
   }
 

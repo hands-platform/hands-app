@@ -48,6 +48,45 @@ describe('referralRewardCreditState', () => {
     });
   });
 
+  it('maps referral accounting lifecycle statuses to operator-readable states', () => {
+    expect(referralRewardCreditState({ ...baseReward, status: 'APPROVED' })).toMatchObject({
+      label: 'Approved',
+      tone: 'info',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'LOCKED' })).toMatchObject({
+      label: 'Locked',
+      tone: 'warning',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'CREDITED' })).toMatchObject({
+      label: 'Credited',
+      tone: 'success',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'USED_FOR_SERVICE' })).toMatchObject({
+      label: 'Used for service',
+      tone: 'success',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'OFFSET' })).toMatchObject({
+      label: 'Offset',
+      tone: 'success',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'CASHOUT_REQUESTED' })).toMatchObject({
+      label: 'Cashout requested',
+      tone: 'warning',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'CASHOUT_APPROVED' })).toMatchObject({
+      label: 'Cashout approved',
+      tone: 'info',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'PAID' })).toMatchObject({
+      label: 'Paid',
+      tone: 'success',
+    });
+    expect(referralRewardCreditState({ ...baseReward, status: 'TAX_REVIEW_REQUIRED' })).toMatchObject({
+      label: 'Tax review required',
+      tone: 'warning',
+    });
+  });
+
   it('marks reversed or cancelled rewards as not payable', () => {
     expect(referralRewardCreditState({ ...baseReward, status: 'REVERSED' })).toMatchObject({
       label: 'Not payable',
