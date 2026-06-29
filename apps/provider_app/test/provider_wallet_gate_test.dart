@@ -8,7 +8,8 @@ void main() {
       'walletBalance': -120000,
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
-      'walletSettlementInstruction': 'Pay the HANDS fee to participate in bookings.',
+      'walletSettlementInstruction':
+          'Pay the HANDS fee to participate in bookings.',
       'walletSettlementReference': 'HANDS-WALLET-TEST1234',
     };
 
@@ -157,6 +158,28 @@ void main() {
         'Wallet payouts are checked when you request withdrawal or report a deposit.',
       ),
     );
+  });
+
+  test(
+      'shows bank correction request without blocking marketplace participation',
+      () {
+    final summary = {
+      'walletBalance': 0,
+      'bankCorrectionRequest': {
+        'required': true,
+        'reason': 'Account holder name does not match KYC.',
+        'message': '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+      },
+    };
+
+    final view = ProviderWalletSettlementView.fromSummary(summary);
+
+    expect(view.blocked, isFalse);
+    expect(view.bankCorrectionRequired, isTrue);
+    expect(view.statusLabel, 'Bank details need correction');
+    expect(view.bankCorrectionReasonLabel,
+        contains('Account holder name does not match KYC'));
+    expect(providerWalletMarketplaceJoinBlocked(summary), isFalse);
   });
 
   test('negative wallet overrides stale explicit marketplace open policy', () {
@@ -361,7 +384,9 @@ void main() {
     );
   });
 
-  test('keeps marketplace booking visible but explains participation is blocked', () {
+  test(
+      'keeps marketplace booking visible but explains participation is blocked',
+      () {
     final guidance = providerRequestGuidance(
       booking: {
         'status': 'OPEN_MATCHING',
@@ -375,7 +400,8 @@ void main() {
     expect(guidance.modeLabel, 'Marketplace opportunity');
     expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
     expect(guidance.contextMessage, contains('visible'));
-    expect(guidance.contextMessage, contains('before marketplace participation'));
+    expect(
+        guidance.contextMessage, contains('before marketplace participation'));
     expect(guidance.infoMessage, contains('Deposit the unpaid HANDS fee'));
     expect(guidance.detailMessage,
         'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.');

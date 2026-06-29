@@ -76,6 +76,11 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
 }
 
 String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
+  final bankCorrection = providerWalletBankCorrectionRequest(summary);
+  if (bankCorrection != null && providerWalletBlockReason(summary) == null) {
+    return providerWalletBankCorrectionReason(summary);
+  }
+
   final instruction = summary['walletSettlementInstruction']?.toString().trim();
   if (instruction != null && instruction.isNotEmpty) {
     return instruction;
@@ -111,8 +116,10 @@ class ProviderWalletSettlementView {
     required this.statusLabel,
     required this.instruction,
     required this.steps,
+    required this.bankCorrectionRequired,
     this.reason,
     this.reference,
+    this.bankCorrectionReason,
   });
 
   factory ProviderWalletSettlementView.fromSummary(
@@ -123,6 +130,10 @@ class ProviderWalletSettlementView {
     final debtAmount = asNum(summary['walletDebtAmount']) ??
         (walletBalance < 0 ? walletBalance.abs() : 0);
     final reason = providerWalletBlockReason(summary);
+    final bankCorrection = providerWalletBankCorrectionRequest(summary);
+    final bankCorrectionReason = bankCorrection == null
+        ? null
+        : providerWalletBankCorrectionReason(summary);
 
     return ProviderWalletSettlementView(
       currency: currency == null || currency.isEmpty ? 'VND' : currency,
@@ -134,6 +145,8 @@ class ProviderWalletSettlementView {
       statusLabel: providerWalletStatusLabel(summary),
       instruction: providerWalletSettlementInstruction(summary),
       steps: providerWalletSettlementSteps(summary),
+      bankCorrectionRequired: bankCorrection != null,
+      bankCorrectionReason: bankCorrectionReason,
     );
   }
 
@@ -144,20 +157,29 @@ class ProviderWalletSettlementView {
   final String statusLabel;
   final String instruction;
   final List<String> steps;
+  final bool bankCorrectionRequired;
   final String? reason;
   final String? reference;
+  final String? bankCorrectionReason;
 
   String get amountLabel => '${formatCurrency(debtAmount)} $currency';
 
   String get balanceLabel => '${formatCurrency(walletBalance)} $currency';
 
   String get reasonLabel => reason ?? providerWalletBlockFallbackReasonClean;
+
+  String get bankCorrectionReasonLabel =>
+      bankCorrectionReason ??
+      'Update bank details before withdrawal/deposit support can continue.';
 }
 
 String providerWalletStatusLabel(Map<String, dynamic> summary) {
   final walletBalance = providerWalletBalance(summary);
   if (providerWalletBlockReason(summary) != null) {
     return 'Settlement required';
+  }
+  if (providerWalletBankCorrectionRequest(summary) != null) {
+    return 'Bank details need correction';
   }
   if (walletBalance == 0) {
     return 'No unsettled balance';
@@ -172,6 +194,14 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
       .toList();
   if (serverSteps.isNotEmpty) {
     return serverSteps;
+  }
+  if (providerWalletBankCorrectionRequest(summary) != null &&
+      providerWalletBlockReason(summary) == null) {
+    return const [
+      'Open wallet bank details from Earnings.',
+      'Submit corrected bank account information.',
+      'HANDS admin will review the correction before withdrawal/deposit support continues.',
+    ];
   }
   if (providerWalletBlockReason(summary) == null) {
     return const [
@@ -191,4 +221,26 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     'After admin confirms the deposit or offset, refresh wallet status.',
     'Marketplace participation and payout release resume when the wallet is no longer negative.',
   ];
+}
+
+Map<String, dynamic>? providerWalletBankCorrectionRequest(
+    Map<String, dynamic> summary) {
+  final correction = asMap(summary['bankCorrectionRequest']);
+  if (correction?['required'] != true) {
+    return null;
+  }
+  return correction;
+}
+
+String providerWalletBankCorrectionReason(Map<String, dynamic> summary) {
+  final correction = providerWalletBankCorrectionRequest(summary);
+  final reason = correction?['reason']?.toString().trim();
+  if (reason != null && reason.isNotEmpty) {
+    return reason;
+  }
+  final message = correction?['message']?.toString().trim();
+  if (message != null && message.isNotEmpty) {
+    return message;
+  }
+  return 'Update bank details before withdrawal/deposit support can continue.';
 }

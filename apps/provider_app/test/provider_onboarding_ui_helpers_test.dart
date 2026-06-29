@@ -225,7 +225,8 @@ void main() {
     );
     expect(
       bankAccountFormDescription(status: 'REJECTED'),
-      startsWith('Withdrawal bank information is incorrect, so the payout cannot be sent.'),
+      startsWith(
+          'Withdrawal bank information is incorrect, so the payout cannot be sent.'),
     );
     expect(
       taxProfileFormDescription(
@@ -403,6 +404,25 @@ void main() {
 
     expect(bankPriority.title, 'Fix wallet bank details');
     expect(bankPriority.detail, contains('Account holder does not match CCCD'));
+    expect(bankPriority.buttonLabel, 'Resubmit bank details');
+  });
+
+  test('prioritizes bank correction requests from the payout gate payload', () {
+    final bankPriority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['BANK_ACCOUNT_CORRECTION'],
+      'payoutGate': {
+        'bankCorrectionRequest': {
+          'required': true,
+          'reason': 'Account holder name does not match KYC.',
+          'message': '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+        },
+      },
+    });
+
+    expect(bankPriority.actionKey, 'BANK_ACCOUNT_CORRECTION');
+    expect(bankPriority.title, 'Fix wallet bank details');
+    expect(bankPriority.detail,
+        contains('Account holder name does not match KYC'));
     expect(bankPriority.buttonLabel, 'Resubmit bank details');
   });
 

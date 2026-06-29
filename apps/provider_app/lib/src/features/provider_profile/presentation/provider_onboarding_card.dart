@@ -57,10 +57,17 @@ class ProviderOnboardingCard extends StatelessWidget {
     final bankStatus = bankAccounts.isEmpty
         ? null
         : asMap(bankAccounts.first)?['status']?.toString();
+    final bankCorrectionRequest =
+        providerBankCorrectionRequestFromSnapshot(snapshot);
     final addressText = basicProfile['residentialAddress']?.toString();
     final primaryBank = bankAccounts.isEmpty ? null : asMap(bankAccounts.first);
     final kycRejectionReason = reviewReason(kyc) ?? reviewReason(verification);
-    final bankRejectionReason = reviewReason(primaryBank);
+    final bankCorrectionReason =
+        bankCorrectionRequest?['reason']?.toString().trim();
+    final bankRejectionReason = reviewReason(primaryBank) ??
+        (bankCorrectionReason == null || bankCorrectionReason.isEmpty
+            ? null
+            : bankCorrectionReason);
     final rejectedDocuments = documents
         .map(asMap)
         .whereType<Map<String, dynamic>>()
@@ -96,6 +103,7 @@ class ProviderOnboardingCard extends StatelessWidget {
       'RESIDENTIAL_ADDRESS' => onFillBasicProfile,
       'KYC_REVIEW' => onSubmitKyc,
       'BANK_ACCOUNT_REVIEW' => onAddBankAccount,
+      'BANK_ACCOUNT_CORRECTION' => onAddBankAccount,
       'AGREEMENTS' => onAcceptAgreements,
       _ => null,
     };

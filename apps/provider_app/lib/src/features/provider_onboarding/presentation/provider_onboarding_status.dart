@@ -88,6 +88,8 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
       kyc?['status']?.toString() ?? verification?['status']?.toString();
   final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
   final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
+  final bankCorrectionRequest =
+      providerBankCorrectionRequestFromSnapshot(snapshot);
   final canWithdraw = payoutGate['canWithdraw'] == true;
   final completedBookingCount =
       _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
@@ -151,6 +153,16 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
       buttonLabel: bankStatus == 'REJECTED'
           ? 'Resubmit bank details'
           : 'Add bank details',
+    );
+  }
+
+  if (nextActions.contains('BANK_ACCOUNT_CORRECTION')) {
+    return ProviderOnboardingPriority(
+      title: 'Fix wallet bank details',
+      detail: providerBankCorrectionStepDetail(bankCorrectionRequest),
+      tone: 'warning',
+      actionKey: 'BANK_ACCOUNT_CORRECTION',
+      buttonLabel: 'Resubmit bank details',
     );
   }
 
@@ -319,6 +331,8 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
     Map<String, dynamic> snapshot) {
   final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
   final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
+  final bankCorrectionRequest =
+      providerBankCorrectionRequestFromSnapshot(snapshot);
   final completedBookingCount =
       _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
   final payoutSetupStarted = completedBookingCount > 0;
@@ -336,13 +350,15 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
           .clamp(0, requiredAgreements.length);
   final bankDetail = !payoutSetupStarted
       ? 'Wallet bank details are requested from Earnings when withdrawal/deposit support is needed.'
-      : bankStatus == 'APPROVED'
-          ? 'Bank details are approved for manual wallet operations.'
-          : bankStatus == 'PENDING_REVIEW'
-              ? 'Bank details are waiting for admin wallet review.'
-              : bankStatus == 'REJECTED'
-                  ? 'Bank details need correction before withdrawal/deposit support can continue.'
-                  : 'Use Earnings withdrawal or deposit actions to add bank details when needed.';
+      : bankCorrectionRequest != null
+          ? providerBankCorrectionStepDetail(bankCorrectionRequest)
+          : bankStatus == 'APPROVED'
+              ? 'Bank details are approved for manual wallet operations.'
+              : bankStatus == 'PENDING_REVIEW'
+                  ? 'Bank details are waiting for admin wallet review.'
+                  : bankStatus == 'REJECTED'
+                      ? 'Bank details need correction before withdrawal/deposit support can continue.'
+                      : 'Use Earnings withdrawal or deposit actions to add bank details when needed.';
 
   return [
     ProviderOnboardingGateItem(
@@ -454,6 +470,27 @@ String providerBankAccountStepDetail({
     return 'Approved for manual wallet operations.';
   }
   return 'Review status: $status.';
+}
+
+Map<String, dynamic>? providerBankCorrectionRequestFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final payoutGate = _asMap(snapshot['payoutGate']);
+  final correction = _asMap(payoutGate?['bankCorrectionRequest']);
+  if (correction?['required'] != true) {
+    return null;
+  }
+  return correction;
+}
+
+String providerBankCorrectionStepDetail(Map<String, dynamic>? correction) {
+  final reason = correction?['reason']?.toString().trim();
+  final message = correction?['message']?.toString().trim();
+  final detail = reason != null && reason.isNotEmpty
+      ? reason
+      : message != null && message.isNotEmpty
+          ? message
+          : partnerBankCorrectionDefaultReason;
+  return '$detail Update the bank details and submit again.';
 }
 
 String providerTaxProfileStepDetail({

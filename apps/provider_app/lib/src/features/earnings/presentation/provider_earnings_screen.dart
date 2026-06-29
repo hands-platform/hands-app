@@ -199,9 +199,13 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                             Card(
                               color: settlementView.blocked
                                   ? Theme.of(context).colorScheme.errorContainer
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
+                                  : settlementView.bankCorrectionRequired
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .tertiaryContainer
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
@@ -232,8 +236,28 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                                     Text(
                                       settlementView.blocked
                                           ? settlementView.reasonLabel
-                                          : 'You can participate in marketplace requests and receive direct booking requests.',
+                                          : settlementView
+                                                  .bankCorrectionRequired
+                                              ? settlementView
+                                                  .bankCorrectionReasonLabel
+                                              : 'You can participate in marketplace requests and receive direct booking requests.',
                                     ),
+                                    if (settlementView.bankCorrectionRequired &&
+                                        !settlementView.blocked) ...[
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Update bank details before requesting withdrawal or reporting deposit support.',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w700),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      WalletSettlementChecklist(
+                                        items: settlementView.steps,
+                                      ),
+                                    ],
                                     if (settlementView.blocked) ...[
                                       const SizedBox(height: 10),
                                       Text(
