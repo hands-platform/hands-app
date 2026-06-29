@@ -80,7 +80,7 @@ describe('earning action confirmation', () => {
       cancelHref: '/earnings',
       confirmLabel: 'Create payout batch',
       description:
-        'Create a payout batch for Partner Ready: 3 earning(s), net 450.000 VND. Transfer reference: TRANSFER-1.',
+        'Create a payout batch for Partner Ready: 3 earning(s), net 450.000 VND. Transfer reference: TRANSFER-1. Accounting preview: no bank/cash movement yet; Partner wallet liability remains until the payout batch is marked PAID.',
       hiddenInputs: [
         { name: 'providerProfileId', value: payoutRow.providerProfileId },
         { name: 'transferRef', value: 'TRANSFER-1' },

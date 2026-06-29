@@ -156,7 +156,7 @@ function buildPayoutConfirmation(
     description: `Create a payout batch for ${row.providerName}: ${row.unbatchedCount} earning(s), net ${formatMoney(
       row.unbatchedNet,
       row.currency,
-    )}. Transfer reference: ${transferRef}.`,
+    )}. Transfer reference: ${transferRef}. Accounting preview: no bank/cash movement yet; Partner wallet liability remains until the payout batch is marked PAID.`,
     hiddenInputs: [
       { name: 'providerProfileId', value: row.providerProfileId },
       { name: 'transferRef', value: transferRef },
