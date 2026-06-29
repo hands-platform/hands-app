@@ -1,21 +1,28 @@
-import { AdminAuditLog, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
+import Link from 'next/link';
+import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
+import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
 import { taxPolicyNotice } from './tax-policy-notice';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
 const TAX_POLICY_VERSION_PAGE_SIZE = 20;
 const TAX_POLICY_AUDIT_LOG_PAGE_SIZE = 8;
+const TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE = 8;
 
 type TaxPolicyPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const [policies, auditLogs] = await Promise.all([
+  const [policies, auditLogs, recentEarnings] = await Promise.all([
     adminGet<AdminTaxPolicyVersion[]>(`/admin/tax-policy-versions?take=${TAX_POLICY_VERSION_PAGE_SIZE}`, []),
     adminGet<AdminAuditLog[]>(`/admin/audit-logs?q=tax_&take=${TAX_POLICY_AUDIT_LOG_PAGE_SIZE}`, []),
+    adminGet<AdminEarning[]>(
+      `/admin/earnings?range=30d&take=${TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE}`,
+      [],
+    ),
   ]);
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
@@ -23,6 +30,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const preview = buildTaxPreview(policies, params);
   const notice = taxPolicyNotice(params);
   const auditSummary = buildTaxPolicyAuditSummary(auditLogs);
+  const snapshotConsistency = buildTaxPolicySnapshotConsistency(recentEarnings);
 
   return (
     <div className="tax-policy-page">
@@ -391,6 +399,55 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 <p className="muted">Create or update a policy/rule to populate this operator summary.</p>
               </div>
               <small>-</small>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="card admin-mt-16">
+        <div className="ops-section-header">
+          <div>
+            <h2>Settlement snapshot consistency</h2>
+            <p className="muted">
+              Recent 30-day earning sample. This does not recalculate tax; it checks whether immutable
+              earning withholding and retained tax log snapshots still line up.
+            </p>
+          </div>
+          <div className="actions">
+            <span className="pill pill-info">{snapshotConsistency.sampleCount} sampled</span>
+            <span className="pill pill-success">{snapshotConsistency.consistentCount} aligned</span>
+            <span className={snapshotConsistency.warningCount ? 'pill pill-warn' : 'pill pill-neutral'}>
+              {snapshotConsistency.warningCount} check
+            </span>
+          </div>
+        </div>
+        <div className="setup-stage-list">
+          {snapshotConsistency.rows.map((row) => (
+            <div className="setup-stage-item" key={row.id}>
+              <span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>
+              <div>
+                <strong>
+                  <Link className="text-link" href={row.bookingHref}>
+                    {row.bookingLabel}
+                  </Link>{' '}
+                  / {row.providerLabel}
+                </strong>
+                <p className="muted">
+                  Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
+                  {row.taxLogLabel} / delta {row.deltaLabel}
+                </p>
+              </div>
+              <small>{row.snapshotLabel}</small>
+            </div>
+          ))}
+          {snapshotConsistency.rows.length === 0 ? (
+            <div className="setup-stage-item">
+              <span>EMPTY</span>
+              <div>
+                <strong>No recent earning tax snapshots</strong>
+                <p className="muted">Completed earnings will appear here after the API returns recent rows.</p>
+              </div>
+              <small>30d</small>
             </div>
           ) : null}
         </div>
