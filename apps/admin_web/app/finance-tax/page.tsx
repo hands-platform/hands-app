@@ -7,10 +7,12 @@ import type {
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
   emptyBookingSettlementSummary,
   emptyPartnerWithholdingTaxSummary,
@@ -48,23 +50,14 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <Link className="pill pill-info" href={bookingSettlementAuditHref(settlementFilters)}>
-            Booking settlement audit
-          </Link>
-          <Link className="pill pill-info" href={partnerWithholdingTaxHref(withholdingFilters)}>
-            Partner withholding tax
-          </Link>
-          <Link className="pill pill-info" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
-            Monthly tax closing
-          </Link>
-          <Link className="pill pill-info" href={platformVatHref(monthlyClosingFilters)}>
-            Platform VAT
-          </Link>
-          <Link className="pill pill-info" href={paymentFeeHref(monthlyClosingFilters)}>
-            Payment fees
-          </Link>
-        </>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'overview',
+            monthlyFilters: monthlyClosingFilters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        />
       }
       description="Tax, fee, VAT, PIT, payment fee, and immutable booking settlement snapshot control view."
       metrics={buildTaxFinanceMetrics(settlementSummary, withholdingSummary)}

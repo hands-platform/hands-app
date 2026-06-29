@@ -9,12 +9,16 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementSnapshotSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   emptyBookingSettlementSummary,
   readBookingSettlementFilters,
+  readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
   reviewLabel,
   type BookingSettlementReview,
 } from '../tax-settlement-page-model';
@@ -33,6 +37,8 @@ const DATE_RANGE_LINKS = [
 export default async function BookingSettlementAuditPage({ searchParams }: BookingSettlementAuditPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readBookingSettlementFilters(params);
+  const monthlyFilters = readMonthlyTaxClosingFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const [summary, snapshots] = await Promise.all([
     adminGet<AdminBookingSettlementSnapshotSummary>(
       buildBookingSettlementSnapshotSummaryApiHref(filters),
@@ -44,9 +50,14 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
   return (
     <AdminPageTemplate
       actions={
-        <Link className="pill pill-info" href="/finance-tax">
-          Tax overview
-        </Link>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'booking-settlement-audit',
+            monthlyFilters,
+            settlementFilters: filters,
+            withholdingFilters,
+          })}
+        />
       }
       description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
       metrics={[

@@ -1,17 +1,18 @@
-import Link from 'next/link';
-
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPlatformVatMetrics,
   buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   emptyPlatformVatSummary,
-  monthlyTaxClosingHref,
+  readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
 } from '../tax-settlement-page-model';
 
 type PlatformVatPageProps = {
@@ -21,6 +22,8 @@ type PlatformVatPageProps = {
 export default async function PlatformVatPage({ searchParams }: PlatformVatPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readMonthlyTaxClosingFilters(params);
+  const settlementFilters = readBookingSettlementFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const summary = await adminGet<AdminPlatformVatSummary>(
     buildPlatformVatSummaryApiHref(filters),
     emptyPlatformVatSummary(filters.period),
@@ -30,17 +33,18 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
   return (
     <AdminPageTemplate
       actions={
-        <>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'platform-vat',
+            monthlyFilters: filters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        >
           <a className="pill pill-success" download={`hands-platform-vat-${filters.period}.csv`} href={csvHref}>
             Export company VAT CSV
           </a>
-          <Link className="pill pill-info" href="/finance-tax">
-            Tax overview
-          </Link>
-          <Link className="pill pill-info" href={monthlyTaxClosingHref(filters)}>
-            Monthly tax closing
-          </Link>
-        </>
+        </TaxFinanceWorkflowActions>
       }
       description="Company output VAT from HANDS platform fee. Customer payment amount is not company revenue."
       metrics={buildPlatformVatMetrics(summary)}

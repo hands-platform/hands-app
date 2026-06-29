@@ -1,17 +1,18 @@
-import Link from 'next/link';
-
 import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPaymentFeeMetrics,
   buildPaymentFeeSummaryCsvHref,
   buildPaymentFeeSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   emptyPaymentFeeSummary,
-  monthlyTaxClosingHref,
+  readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
 } from '../tax-settlement-page-model';
 
 type PaymentFeesPageProps = {
@@ -21,6 +22,8 @@ type PaymentFeesPageProps = {
 export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readMonthlyTaxClosingFilters(params);
+  const settlementFilters = readBookingSettlementFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const summary = await adminGet<AdminPaymentFeeSummary>(
     buildPaymentFeeSummaryApiHref(filters),
     emptyPaymentFeeSummary(filters.period),
@@ -30,17 +33,18 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
   return (
     <AdminPageTemplate
       actions={
-        <>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'payment-fees',
+            monthlyFilters: filters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        >
           <a className="pill pill-success" download={`hands-payment-fees-${filters.period}.csv`} href={csvHref}>
             Export payment fee CSV
           </a>
-          <Link className="pill pill-info" href="/finance-tax">
-            Tax overview
-          </Link>
-          <Link className="pill pill-info" href={monthlyTaxClosingHref(filters)}>
-            Monthly tax closing
-          </Link>
-        </>
+        </TaxFinanceWorkflowActions>
       }
       description="Payment processing fees are tracked separately from Partner VAT/PIT and company output VAT."
       metrics={buildPaymentFeeMetrics(summary)}

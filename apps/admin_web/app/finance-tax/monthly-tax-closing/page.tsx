@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import type {
   AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingSummary,
@@ -8,14 +6,18 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingMetrics,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   emptyMonthlyTaxClosingSummary,
+  readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
 } from '../tax-settlement-page-model';
 import { updateMonthlyTaxClosingStatus } from './actions';
 
@@ -26,6 +28,8 @@ type MonthlyTaxClosingPageProps = {
 export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTaxClosingPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readMonthlyTaxClosingFilters(params);
+  const settlementFilters = readBookingSettlementFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const [summary, closings] = await Promise.all([
     adminGet<AdminMonthlyTaxClosingSummary>(
       buildMonthlyTaxClosingSummaryApiHref(filters),
@@ -43,13 +47,14 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <Link className="pill pill-info" href="/finance-tax">
-            Tax overview
-          </Link>
-          <Link className="pill pill-info" href="/finance-tax/booking-settlement-audit">
-            Booking settlement audit
-          </Link>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'monthly-tax-closing',
+            monthlyFilters: filters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        >
           <a
             className="pill pill-info"
             download={`hands-monthly-tax-closing-${filters.period}-summary.csv`}
@@ -64,7 +69,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           >
             Export rows CSV
           </a>
-        </>
+        </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
       metrics={buildMonthlyTaxClosingMetrics(summary)}

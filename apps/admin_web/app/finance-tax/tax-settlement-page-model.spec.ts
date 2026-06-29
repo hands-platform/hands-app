@@ -9,6 +9,7 @@ import {
   buildPlatformVatMetrics,
   buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
@@ -72,6 +73,27 @@ describe('tax settlement page model', () => {
 
     expect(buildPlatformVatSummaryApiHref(filters)).toBe('/admin/platform-vat/summary?period=2026-06');
     expect(buildPaymentFeeSummaryApiHref(filters)).toBe('/admin/payment-fees/summary?period=2026-06');
+  });
+
+  it('builds tax finance workflow links while preserving active filters and excluding the current page', () => {
+    const settlementFilters = readBookingSettlementFilters({ range: '7d', review: 'paid', take: '50' });
+    const monthlyFilters = readMonthlyTaxClosingFilters({ period: '2026-06', take: '75' });
+    const withholdingFilters = readPartnerWithholdingTaxFilters({ period: '2026-06', take: '75' });
+
+    const links = buildTaxFinanceWorkflowLinks({
+      current: 'platform-vat',
+      monthlyFilters,
+      settlementFilters,
+      withholdingFilters,
+    });
+
+    expect(links.map((link) => [link.label, link.href])).toEqual([
+      ['Tax overview', '/finance-tax'],
+      ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid'],
+      ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06'],
+      ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
+      ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06'],
+    ]);
   });
 
   it('builds overview metrics from summary APIs without list data', () => {

@@ -38,6 +38,20 @@ export type MonthlyTaxClosingFilters = {
   readonly take: number;
 };
 
+export type TaxFinanceWorkflowPage =
+  | 'overview'
+  | 'booking-settlement-audit'
+  | 'monthly-tax-closing'
+  | 'platform-vat'
+  | 'payment-fees'
+  | 'partner-withholding-tax';
+
+export type TaxFinanceWorkflowLink = {
+  readonly key: TaxFinanceWorkflowPage;
+  readonly label: string;
+  readonly href: string;
+};
+
 export const TAX_SETTLEMENT_DEFAULT_TAKE = 25;
 export const TAX_SETTLEMENT_MAX_TAKE = 100;
 
@@ -173,6 +187,41 @@ export function platformVatHref(filters: MonthlyTaxClosingFilters) {
 
 export function paymentFeeHref(filters: MonthlyTaxClosingFilters) {
   return `/finance-tax/payment-fees?${new URLSearchParams({ period: filters.period }).toString()}`;
+}
+
+export function buildTaxFinanceWorkflowLinks({
+  current,
+  monthlyFilters,
+  settlementFilters,
+  withholdingFilters,
+}: {
+  readonly current: TaxFinanceWorkflowPage;
+  readonly monthlyFilters: MonthlyTaxClosingFilters;
+  readonly settlementFilters: BookingSettlementFilters;
+  readonly withholdingFilters: PartnerWithholdingTaxFilters;
+}): TaxFinanceWorkflowLink[] {
+  const links: TaxFinanceWorkflowLink[] = [
+    { key: 'overview', label: 'Tax overview', href: '/finance-tax' },
+    {
+      key: 'booking-settlement-audit',
+      label: 'Booking settlement audit',
+      href: bookingSettlementAuditHref(settlementFilters),
+    },
+    {
+      key: 'monthly-tax-closing',
+      label: 'Monthly tax closing',
+      href: monthlyTaxClosingHref(monthlyFilters),
+    },
+    { key: 'platform-vat', label: 'Platform VAT', href: platformVatHref(monthlyFilters) },
+    { key: 'payment-fees', label: 'Payment fees', href: paymentFeeHref(monthlyFilters) },
+    {
+      key: 'partner-withholding-tax',
+      label: 'Partner withholding tax',
+      href: partnerWithholdingTaxHref(withholdingFilters),
+    },
+  ];
+
+  return links.filter((link) => link.key !== current);
 }
 
 export function buildTaxFinanceMetrics(

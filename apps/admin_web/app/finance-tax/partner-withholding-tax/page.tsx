@@ -8,10 +8,14 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
   emptyPartnerWithholdingTaxSummary,
+  readBookingSettlementFilters,
+  readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
 } from '../tax-settlement-page-model';
 
@@ -22,6 +26,8 @@ type PartnerWithholdingTaxPageProps = {
 export default async function PartnerWithholdingTaxPage({ searchParams }: PartnerWithholdingTaxPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readPartnerWithholdingTaxFilters(params);
+  const settlementFilters = readBookingSettlementFilters(params);
+  const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const [summary, rows] = await Promise.all([
     adminGet<AdminPartnerWithholdingTaxSummary>(
       buildPartnerWithholdingTaxSummaryApiHref(filters),
@@ -33,14 +39,14 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <Link className="pill pill-info" href="/finance-tax">
-            Tax overview
-          </Link>
-          <Link className="pill pill-info" href="/finance-tax/booking-settlement-audit">
-            Booking settlement audit
-          </Link>
-        </>
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            current: 'partner-withholding-tax',
+            monthlyFilters,
+            settlementFilters,
+            withholdingFilters: filters,
+          })}
+        />
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."
       metrics={[
