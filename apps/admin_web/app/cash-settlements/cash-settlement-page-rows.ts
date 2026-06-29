@@ -1,4 +1,5 @@
 import type { AdminEarning } from '../../lib/admin-api';
+import { buildCashBookingAccountingPreview } from '../../lib/cash-booking-accounting-preview';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import type {
   CashSettlementOpenDebtActionExecutionRow,
@@ -248,33 +249,14 @@ function cashWalletDeductionLabels(breakdown: CashSettlementWalletDeductionBreak
 }
 
 function cashAccountingPreviewLabels(row: CashSettlementRow, currency: string) {
-  const breakdown = row.walletDeductionBreakdown;
-  const platformNetRevenue =
-    breakdown.walletDeductionPlatformFeeNetRevenue > 0
-      ? breakdown.walletDeductionPlatformFeeNetRevenue
-      : Math.max(0, row.platformFee);
-  const companyOutputVat = Math.max(0, breakdown.walletDeductionCompanyOutputVat);
-  const partnerTaxPayable =
-    breakdown.walletDeductionPartnerTaxPayable > 0
-      ? breakdown.walletDeductionPartnerTaxPayable
-      : Math.max(0, row.taxAmount);
-
-  const lines = [`Dr Partner receivable ${formatMoney(row.debtAmount, currency)}`];
-
-  if (platformNetRevenue > 0) {
-    lines.push(`Cr Platform fee net revenue ${formatMoney(platformNetRevenue, currency)}`);
-  }
-  if (companyOutputVat > 0) {
-    lines.push(`Cr Company output VAT payable ${formatMoney(companyOutputVat, currency)}`);
-  }
-  if (partnerTaxPayable > 0) {
-    lines.push(`Cr Partner withholding tax payable ${formatMoney(partnerTaxPayable, currency)}`);
-  }
-  if (breakdown.companyCouponExpense > 0) {
-    lines.push(`Coupon offset already applied ${formatMoney(breakdown.companyCouponExpense, currency)}`);
-  }
-
-  return lines;
+  return buildCashBookingAccountingPreview({
+    companyCouponOffset: row.walletDeductionBreakdown.companyCouponExpense,
+    currency,
+    debtAmount: row.debtAmount,
+    platformFee: row.platformFee,
+    taxAmount: row.taxAmount,
+    walletLedgerMetadata: row.earning.walletLedgerEntries?.map((entry) => entry.metadata),
+  });
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

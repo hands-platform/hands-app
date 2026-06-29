@@ -13,6 +13,7 @@ export type EarningsCashDebtQueueItem = {
   readonly bookingAmount: number;
   readonly bookingHref: string;
   readonly bookingShortId: string;
+  readonly cashAccountingPreview: readonly string[];
   readonly currency: string;
   readonly debtAmount: number;
   readonly earningId: string;
@@ -40,8 +41,8 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
         <div>
           <h2>Cash fee debt queue</h2>
           <p className="muted">
-            Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or
-            finance offsets it.
+            Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or finance
+            offsets it.
           </p>
         </div>
         <span className={items.length ? 'pill pill-danger' : 'pill pill-success'}>
@@ -83,9 +84,20 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                   <small>Suggested ref: {item.settlementReference}</small>
                   {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
                 </div>
+                {item.cashAccountingPreview.length ? (
+                  <div
+                    className="admin-mini-ledger"
+                    aria-label={`Cash accounting preview for ${item.earningId}`}
+                  >
+                    <span>Accounting preview</span>
+                    {item.cashAccountingPreview.map((line) => (
+                      <small key={`${item.earningId}-${line}`}>{line}</small>
+                    ))}
+                  </div>
+                ) : null}
                 <p className="muted">
-                  Settling this row records the Partner cash-fee debt as paid and can reopen final
-                  acceptance, service start, and payout release once the wallet is non-negative.
+                  Settling this row records the Partner cash-fee debt as paid and can reopen final acceptance,
+                  service start, and payout release once the wallet is non-negative.
                 </p>
               </div>
               <div className="actions">

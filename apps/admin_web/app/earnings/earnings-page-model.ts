@@ -1,4 +1,5 @@
 import type { AdminEarning, AdminEarningSummary, AdminPayoutBatch } from '../../lib/admin-api';
+import { buildCashBookingAccountingPreview } from '../../lib/cash-booking-accounting-preview';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
@@ -177,7 +178,9 @@ export function buildEarningsLedgerRows(earnings: readonly AdminEarning[]): Earn
       providerName: providerDisplayName(earning),
       providerPhone: earning.providerProfile?.user?.phone ?? 'No phone on file',
       providerProfileId: earning.providerProfileId,
-      settlementMethodLabel: earning.settlementMethod ? settlementMethodLabel(earning.settlementMethod) : null,
+      settlementMethodLabel: earning.settlementMethod
+        ? settlementMethodLabel(earning.settlementMethod)
+        : null,
       settlementRef: earning.settlementRef ?? null,
       signalClassName: earningSignalClass(earning),
       statusHint: earningHint(earning),
@@ -441,6 +444,13 @@ export function buildCashDebtQueueItems(queue: readonly CashDebtQueueItem[]): Ea
     bookingAmount: item.bookingAmount,
     bookingHref: `/bookings/${item.earning.bookingId}`,
     bookingShortId: shortRecordId(item.earning.bookingId),
+    cashAccountingPreview: buildCashBookingAccountingPreview({
+      currency: item.earning.currency,
+      debtAmount: item.debtAmount,
+      platformFee: item.platformFee,
+      taxAmount: item.taxAmount,
+      walletLedgerMetadata: item.earning.walletLedgerEntries?.map((entry) => entry.metadata),
+    }),
     currency: item.earning.currency,
     debtAmount: item.debtAmount,
     earningId: item.earning.id,

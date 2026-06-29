@@ -75,7 +75,27 @@ describe('earnings page model', () => {
 
   it('builds cash debt and payout queues from API facts only', () => {
     const rows = [
-      earning({ id: 'cash-debt', netAmount: -30000, platformFee: 25000, withholdingAmount: 5000 }),
+      earning({
+        id: 'cash-debt',
+        netAmount: -30000,
+        platformFee: 25000,
+        withholdingAmount: 5000,
+        walletLedgerEntries: [
+          {
+            amount: -30000,
+            currency: 'VND',
+            id: 'ledger-cash-debt',
+            metadata: {
+              totalPartnerDueToCompany: 30000,
+              walletDeductionCompanyOutputVat: 5000,
+              walletDeductionPartnerTaxPayable: 5000,
+              walletDeductionPlatformFeeNetRevenue: 20000,
+            },
+            sourceKey: 'earning:cash-debt:cash-platform-fee-net',
+            type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
+          },
+        ],
+      }),
       earning({ id: 'ready-row', netAmount: 90000, status: 'AVAILABLE' }),
       earning({ id: 'paid-row', netAmount: 70000, status: 'PAID' }),
     ];
@@ -85,6 +105,12 @@ describe('earnings page model', () => {
     const payoutQueue = buildProviderPayoutQueue(rows, []);
 
     expect(cashDebtItems[0]).toMatchObject({
+      cashAccountingPreview: [
+        'Dr Partner receivable 30.000 VND',
+        'Cr Platform fee net revenue 20.000 VND',
+        'Cr Company output VAT payable 5.000 VND',
+        'Cr Partner withholding tax payable 5.000 VND',
+      ],
       debtAmount: 30000,
       paymentMethod: 'CASH',
       platformFee: 25000,
@@ -185,14 +211,9 @@ describe('earnings page model', () => {
       bookingCount: 2,
       label: 'Massage 60 / 60 min',
     });
-    expect(buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals).map((card) => card.label)).toEqual([
-      'Customer charge',
-      'Partner payout',
-      'HANDS fee',
-      'Tax withheld',
-      'Company net',
-      'Cash debt',
-    ]);
+    expect(
+      buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals).map((card) => card.label),
+    ).toEqual(['Customer charge', 'Partner payout', 'HANDS fee', 'Tax withheld', 'Company net', 'Cash debt']);
     const cashJobLockCheck = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue).find(
       (check) => check.title === 'Cash job lock',
     );

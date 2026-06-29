@@ -9,6 +9,11 @@ describe('EarningsCashDebtQueueSection', () => {
           bookingAmount: 500000,
           bookingHref: '/bookings/booking-1',
           bookingShortId: 'booking-1',
+          cashAccountingPreview: [
+            'Dr Partner receivable 80.000 VND',
+            'Cr Platform fee net revenue 60.000 VND',
+            'Cr Partner withholding tax payable 20.000 VND',
+          ],
           currency: 'VND',
           debtAmount: 80000,
           earningId: 'earning-1',
@@ -37,6 +42,10 @@ describe('EarningsCashDebtQueueSection', () => {
     expect(rendered).toContain('Cash fee debt queue');
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('80.000 VND');
+    expect(rendered).toContain('Accounting preview');
+    expect(rendered).toContain('Dr Partner receivable 80.000 VND');
+    expect(rendered).toContain('Cr Platform fee net revenue 60.000 VND');
+    expect(rendered).toContain('Cr Partner withholding tax payable 20.000 VND');
     expect(rendered).toContain('Review fee settlement');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(hrefsIn(section)).toContain('/partners/partner-1');
@@ -54,7 +63,9 @@ describe('EarningsCashDebtQueueSection', () => {
       },
     });
 
-    expect(textContent(section)).toContain('No Partner has unsettled cash fee debt in the current admin result window.');
+    expect(textContent(section)).toContain(
+      'No Partner has unsettled cash fee debt in the current admin result window.',
+    );
   });
 });
 
