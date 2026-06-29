@@ -20,6 +20,8 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const payoutPolicyHref =
+  '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters';
 
 describe('PayoutsPage', () => {
   beforeEach(() => {
@@ -56,7 +58,7 @@ describe('PayoutsPage', () => {
       if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/operational-policy') {
+      if (href === payoutPolicyHref) {
         return [] as AdminOperationalPolicySetting[];
       }
       return fallback;
@@ -113,7 +115,7 @@ describe('PayoutsPage', () => {
       if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/operational-policy') {
+      if (href === payoutPolicyHref) {
         return [] as AdminOperationalPolicySetting[];
       }
       return fallback;

@@ -58,7 +58,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, []),
   ]);
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
