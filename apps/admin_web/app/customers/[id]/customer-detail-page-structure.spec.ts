@@ -13,6 +13,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
     expect(pageSource).toContain('Customer contact and evidence');
     expect(pageSource).toContain('Customer account operations');
+    expect(pageSource).toContain('customerWalletAdjustmentHref');
+    expect(pageSource).toContain('/wallet-adjustments?ownerType=CUSTOMER');
     expect(pageSource).toContain('CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 30');
     expect(pageSource).toContain('filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT)');
 

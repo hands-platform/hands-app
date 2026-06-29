@@ -139,6 +139,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   );
   const bookings = customer.bookings ?? [];
   const wallet = customerWalletSummary(bookings);
+  const customerWalletAdjustmentHref = `/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(customer.id)}`;
   const bookingStats = buildBookingStats(bookings);
   const addresses = buildAddressRows(customer);
   const latestBooking = bookings[0];
@@ -689,6 +690,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div className="participant-list">
             <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
             <span className="pill pill-neutral">{addresses.length} saved address(es)</span>
+            <Link className="text-link" href={customerWalletAdjustmentHref}>
+              Review or create adjustment
+            </Link>
           </div>
         </div>
         <div className="setup-stage-list admin-mt-12">
