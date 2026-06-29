@@ -803,6 +803,30 @@ a {
   color: var(--admin-success);
 }
 
+.admin-mini-ledger {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px;
+}
+
+.admin-mini-ledger span {
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-mini-ledger small {
+  color: var(--admin-text);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .booking-monitor .admin-table-scroll {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);

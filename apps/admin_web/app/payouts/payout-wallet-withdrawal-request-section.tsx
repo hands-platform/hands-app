@@ -76,7 +76,10 @@ export function PayoutWalletWithdrawalRequestSection({
           {requests.map((request) => (
             <tr key={request.id}>
               <td>
-                <Link className="text-link" href={`/partners/${request.providerProfileId}?section=full#finance`}>
+                <Link
+                  className="text-link"
+                  href={`/partners/${request.providerProfileId}?section=full#finance`}
+                >
                   {partnerLabel(request)}
                 </Link>
                 <p className="muted">{request.providerProfile?.user?.phone ?? 'No phone on file'}</p>
@@ -84,20 +87,25 @@ export function PayoutWalletWithdrawalRequestSection({
               <td>
                 <strong>{formatMoney(request.amount, request.currency)}</strong>
                 <p className="muted">Request {shortRecordId(request.id)}</p>
+                <WithdrawalAccountingPreview request={request} />
               </td>
               <td>
                 <strong>{request.bankAccount?.bankName ?? 'Bank not linked'}</strong>
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <span className={`pill ${statusPillClass(request.status)}`}>{statusLabel(request.status)}</span>
+                <span className={`pill ${statusPillClass(request.status)}`}>
+                  {statusLabel(request.status)}
+                </span>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
               </td>
               <td>
                 <span className="muted">{formatDateTime(request.createdAt)}</span>
-                {request.reviewedAt ? <p className="muted">Reviewed {formatDateTime(request.reviewedAt)}</p> : null}
+                {request.reviewedAt ? (
+                  <p className="muted">Reviewed {formatDateTime(request.reviewedAt)}</p>
+                ) : null}
               </td>
               <td>
                 <WithdrawalRequestActions
@@ -408,6 +416,52 @@ function WithdrawalStatusChangeEvidence({
       {amountLabel}
     </p>
   );
+}
+
+function WithdrawalAccountingPreview({
+  request,
+}: {
+  readonly request: AdminProviderWalletWithdrawalRequest;
+}) {
+  const lines = withdrawalAccountingPreviewLines(request);
+  if (lines.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="admin-mini-ledger" aria-label={`Accounting preview for withdrawal ${request.id}`}>
+      <span>Accounting preview</span>
+      {lines.map((line) => (
+        <small key={line}>{line}</small>
+      ))}
+    </div>
+  );
+}
+
+function withdrawalAccountingPreviewLines(request: AdminProviderWalletWithdrawalRequest) {
+  const amount = formatMoney(request.amount, request.currency);
+  if (request.status === 'PAID') {
+    return [`Dr Partner withdrawal payable ${amount}`, `Cr Bank ${amount}`];
+  }
+  if (
+    request.status === 'REJECTED' ||
+    request.status === 'CANCELLED' ||
+    request.status === 'FAILED' ||
+    request.status === 'REVERSED'
+  ) {
+    return [`Dr Partner withdrawal payable ${amount}`, `Cr Partner wallet liability ${amount}`];
+  }
+  if (
+    request.status === 'REQUESTED' ||
+    request.status === 'APPROVED' ||
+    request.status === 'BANK_TRANSFER_PENDING' ||
+    request.status === 'REVIEW_REQUIRED' ||
+    request.status === 'HOLD' ||
+    request.status === 'NEEDS_BANK_CORRECTION'
+  ) {
+    return [`Dr Partner wallet liability ${amount}`, `Cr Partner withdrawal payable ${amount}`];
+  }
+  return [];
 }
 
 function isTerminalStatus(status: AdminProviderWalletWithdrawalRequest['status']) {
