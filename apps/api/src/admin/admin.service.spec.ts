@@ -1474,6 +1474,93 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100, 100]);
   });
 
+  it('keeps referral rewards out of marketing platform revenue', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          firstBookingCompleted: 1n,
+          repeatBookingCompleted: 0n,
+        },
+      ]),
+      appSession: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      user: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+      referralAttribution: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'attribution-1',
+            installSource: 'referral',
+            platform: 'ANDROID',
+            createdAt: new Date('2026-06-20T00:00:00.000Z'),
+            referralCode: {
+              id: 'code-1',
+              code: 'REFSMOKE',
+            },
+            rewards: [
+              {
+                id: 'reward-1',
+                amount: 30_000,
+                status: ReferralRewardStatus.AVAILABLE,
+              },
+            ],
+          },
+        ]),
+      },
+      customerSelectedLocation: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1).mockResolvedValueOnce(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      payment: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 500_000 } }),
+      },
+      providerPlatformFeeLog: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { platformFeeAmount: 100_000 } }),
+      },
+      refund: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      marketingSpendDaily: {
+        findMany: vi.fn(),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getMarketingOverview({ range: '7d' });
+
+    expect(overview.totals.platformFeeRevenue).toBe(100_000);
+    expect(overview.bySource).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'unknown',
+          platformFeeRevenue: 100_000,
+        }),
+        expect.objectContaining({
+          source: 'referral',
+          platformFeeRevenue: 0,
+        }),
+      ]),
+    );
+    expect(overview.byCampaign).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'referral',
+          campaignId: 'REFSMOKE',
+          platformFeeRevenue: 0,
+        }),
+      ]),
+    );
+  });
+
   it('returns marketing summary without loading dimension lists', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([
@@ -1615,6 +1702,53 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
     expect(prisma.customerSelectedLocation.findMany).not.toHaveBeenCalled();
     expect(prisma.referralAttribution.findMany).not.toHaveBeenCalled();
+  });
+
+  it('keeps referral reward amounts out of campaign dimension revenue', async () => {
+    const prisma = {
+      referralAttribution: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'attribution-1',
+            installSource: 'referral',
+            platform: 'ANDROID',
+            createdAt: new Date('2026-06-20T00:00:00.000Z'),
+            referralCode: {
+              id: 'code-1',
+              code: 'REFSMOKE',
+            },
+            rewards: [
+              {
+                id: 'reward-1',
+                amount: 30_000,
+                status: ReferralRewardStatus.AVAILABLE,
+              },
+            ],
+          },
+        ]),
+      },
+      marketingSpendDaily: {
+        findMany: vi.fn(),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const page = await service.listMarketingDimensionRows({
+      dimension: 'campaign',
+      range: '7d',
+      take: '10',
+      skip: '0',
+    });
+
+    expect(page.rows).toEqual([
+      expect.objectContaining({
+        source: 'referral',
+        campaignId: 'REFSMOKE',
+        firstBookingCompleted: 1,
+        platformFeeRevenue: 0,
+      }),
+    ]);
   });
 
   it('upserts manual marketing spend and writes an audit trail', async () => {

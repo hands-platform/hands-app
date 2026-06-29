@@ -2673,25 +2673,15 @@ export class AdminService {
         total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
       0,
     );
-    const referralRewardAmount = referralCampaignRows.reduce(
-      (total, row) =>
-        total +
-        row.rewards
-          .filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED)
-          .reduce((sum, reward) => sum + numberValue(reward.amount), 0),
-      0,
-    );
     const unknownStats = {
       ...stats,
       signups: Math.max(0, signupCount - referralSignupCount),
       firstBookingCompleted: Math.max(0, stats.firstBookingCompleted - referralRewardCount),
-      platformFeeRevenue: Math.max(0, stats.platformFeeRevenue - referralRewardAmount),
     };
     const referralStats = {
       ...emptyMarketingStats(),
       signups: referralSignupCount,
       firstBookingCompleted: referralRewardCount,
-      platformFeeRevenue: referralRewardAmount,
     };
     const sourceRows = buildMarketingDimensionRows(
       [
@@ -2710,8 +2700,9 @@ export class AdminService {
           campaignName: `Referral ${row.referralCode.code}`,
           stats: {
             signups: 1,
-            firstBookingCompleted: row.rewards.length,
-            platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
+            firstBookingCompleted: row.rewards.filter(
+              (reward) => reward.status !== ReferralRewardStatus.CANCELLED,
+            ).length,
           },
         })),
         ...marketingSpendRows,
@@ -2926,8 +2917,9 @@ export class AdminService {
             campaignName: `Referral ${row.referralCode.code}`,
             stats: {
               signups: 1,
-              firstBookingCompleted: row.rewards.length,
-              platformFeeRevenue: row.rewards.reduce((sum, reward) => sum + numberValue(reward.amount), 0),
+              firstBookingCompleted: row.rewards.filter(
+                (reward) => reward.status !== ReferralRewardStatus.CANCELLED,
+              ).length,
             },
           })),
           ...marketingSpendRows,
@@ -3155,14 +3147,6 @@ export class AdminService {
           total + row.rewards.filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED).length,
         0,
       );
-      const referralRewardAmount = referralCampaignRows.reduce(
-        (total, row) =>
-          total +
-          row.rewards
-            .filter((reward) => reward.status !== ReferralRewardStatus.CANCELLED)
-            .reduce((sum, reward) => sum + numberValue(reward.amount), 0),
-        0,
-      );
 
       rows = buildMarketingDimensionRows(
         [
@@ -3172,7 +3156,6 @@ export class AdminService {
               ...stats,
               signups: Math.max(0, signupCount - referralSignupCount),
               firstBookingCompleted: Math.max(0, stats.firstBookingCompleted - referralRewardCount),
-              platformFeeRevenue: Math.max(0, stats.platformFeeRevenue - referralRewardAmount),
             },
           },
           {
@@ -3181,7 +3164,6 @@ export class AdminService {
               ...emptyMarketingStats(),
               signups: referralSignupCount,
               firstBookingCompleted: referralRewardCount,
-              platformFeeRevenue: referralRewardAmount,
             },
           },
           ...marketingSpendRows,
