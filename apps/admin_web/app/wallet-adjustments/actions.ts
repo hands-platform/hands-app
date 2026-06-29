@@ -72,8 +72,15 @@ type WalletAdjustmentNotice =
   | 'settlement-required';
 
 type WalletAdjustmentRedirectContext = {
+  readonly adjustmentType?: AdminManualWalletAdjustmentType;
+  readonly amount?: number | string;
+  readonly approvalId?: string;
+  readonly attachmentUrl?: string;
+  readonly direction?: AdminManualWalletAdjustmentDirection;
+  readonly monthlyPeriod?: string;
   readonly ownerId?: string;
   readonly ownerType?: AdminManualWalletAdjustmentOwnerType;
+  readonly reason?: string;
 };
 
 function walletAdjustmentNoticeRedirect(notice: WalletAdjustmentNotice, context: WalletAdjustmentRedirectContext) {
@@ -87,18 +94,64 @@ function walletAdjustmentNoticeRedirect(notice: WalletAdjustmentNotice, context:
     params.set('ownerId', context.ownerId);
   }
 
+  if (context.direction) {
+    params.set('direction', context.direction);
+  }
+
+  if (context.adjustmentType) {
+    params.set('adjustmentType', context.adjustmentType);
+  }
+
+  if (context.amount !== undefined && context.amount !== '') {
+    params.set('amount', String(context.amount));
+  }
+
+  if (context.approvalId) {
+    params.set('approvalId', context.approvalId);
+  }
+
+  if (context.reason) {
+    params.set('reason', context.reason);
+  }
+
+  if (context.monthlyPeriod) {
+    params.set('monthlyPeriod', context.monthlyPeriod);
+  }
+
+  if (context.attachmentUrl) {
+    params.set('attachmentUrl', context.attachmentUrl);
+  }
+
   return `/wallet-adjustments?${params.toString()}`;
 }
 
 function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAdjustmentRedirectContext {
   const ownerType = readOptionalString(formData, 'ownerType');
   const ownerId = readOptionalString(formData, 'ownerId');
+  const direction = readOptionalString(formData, 'direction');
+  const adjustmentType = readOptionalString(formData, 'adjustmentType');
+  const amount = readOptionalString(formData, 'amount');
+  const approvalId = readOptionalString(formData, 'approvalId');
+  const attachmentUrl = readOptionalString(formData, 'attachmentUrl');
+  const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
+  const reason = readOptionalString(formData, 'reason');
 
   return {
+    ...(adjustmentTypes.has(adjustmentType as AdminManualWalletAdjustmentType)
+      ? { adjustmentType: adjustmentType as AdminManualWalletAdjustmentType }
+      : {}),
+    ...(amount ? { amount } : {}),
+    ...(approvalId ? { approvalId } : {}),
+    ...(attachmentUrl ? { attachmentUrl } : {}),
+    ...(directions.has(direction as AdminManualWalletAdjustmentDirection)
+      ? { direction: direction as AdminManualWalletAdjustmentDirection }
+      : {}),
+    ...(monthlyPeriod ? { monthlyPeriod } : {}),
     ...(ownerTypes.has(ownerType as AdminManualWalletAdjustmentOwnerType)
       ? { ownerType: ownerType as AdminManualWalletAdjustmentOwnerType }
       : {}),
     ...(ownerId ? { ownerId } : {}),
+    ...(reason ? { reason } : {}),
   };
 }
 

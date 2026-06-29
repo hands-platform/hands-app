@@ -136,6 +136,10 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=approval-required'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('direction=CREDIT'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentType=PARTNER_BONUS'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('amount=200000'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Needs+approval'));
   });
 
   it('requires attachment evidence before posting high amount or receivable write-off adjustments', async () => {
@@ -152,6 +156,9 @@ describe('manual wallet adjustment server actions', () => {
 
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('amount=10000000'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('approvalId=approval-2026-06'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=High+amount+adjustment'));
 
     vi.clearAllMocks();
 
@@ -168,6 +175,8 @@ describe('manual wallet adjustment server actions', () => {
 
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentType=RECEIVABLE_WRITE_OFF'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Write+off+approved+by+finance'));
   });
 
   it('blocks cash booking deduction from the manual wallet adjustment action', async () => {
