@@ -13,6 +13,8 @@ export type MarketingAnalyticsFilters = {
   campaignId?: string | null;
 };
 
+export const MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE = 10;
+
 export const marketingAnalyticsRangeOptions: Array<{ value: AdminMarketingOverviewRange; label: string }> = [
   { value: 'today', label: 'Today' },
   { value: 'yesterday', label: 'Yesterday' },
@@ -81,14 +83,8 @@ export function normalizeMarketingAnalyticsFilters(
 }
 
 export function marketingAnalyticsHref(next: Partial<MarketingAnalyticsFilters>) {
-  const params = new URLSearchParams();
   const filters = { range: '7d', ...next } satisfies MarketingAnalyticsFilters;
-
-  params.set('range', filters.range);
-  if (filters.source) params.set('source', filters.source);
-  if (filters.platform) params.set('platform', filters.platform);
-  if (filters.regionCode) params.set('regionCode', filters.regionCode);
-  if (filters.campaignId) params.set('campaignId', filters.campaignId);
+  const params = marketingAnalyticsSearchParams(filters);
 
   return `/marketing-analytics?${params.toString()}`;
 }
@@ -111,7 +107,41 @@ export function marketingAnalyticsDimensionApiPath(
   return `${path}&take=${paging.take}&skip=${paging.skip}`;
 }
 
+export function marketingAnalyticsDimensionPaging(
+  params: Record<string, string | string[] | undefined> | undefined,
+  dimension: AdminMarketingDimensionKey,
+  pageSize = MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE,
+) {
+  const page = readPositivePage(firstParam(params?.[marketingAnalyticsDimensionPageParam(dimension)]));
+
+  return {
+    page,
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  };
+}
+
+export function marketingAnalyticsDimensionPageHref(
+  filters: MarketingAnalyticsFilters,
+  dimension: AdminMarketingDimensionKey,
+  page: number,
+) {
+  const params = marketingAnalyticsSearchParams(filters);
+  const boundedPage = readPositivePage(String(page));
+  params.set('breakdowns', '1');
+  if (boundedPage > 1) {
+    params.set(marketingAnalyticsDimensionPageParam(dimension), String(boundedPage));
+  }
+
+  return `/marketing-analytics?${params.toString()}`;
+}
+
 function marketingAnalyticsApiPathFor(basePath: string, filters: MarketingAnalyticsFilters) {
+  const params = marketingAnalyticsSearchParams(filters);
+  return `${basePath}?${params.toString()}`;
+}
+
+function marketingAnalyticsSearchParams(filters: MarketingAnalyticsFilters) {
   const params = new URLSearchParams();
   params.set('range', filters.range);
   if (filters.source) params.set('source', filters.source);
@@ -119,9 +149,18 @@ function marketingAnalyticsApiPathFor(basePath: string, filters: MarketingAnalyt
   if (filters.regionCode) params.set('regionCode', filters.regionCode);
   if (filters.campaignId) params.set('campaignId', filters.campaignId);
 
-  return `${basePath}?${params.toString()}`;
+  return params;
+}
+
+function marketingAnalyticsDimensionPageParam(dimension: AdminMarketingDimensionKey) {
+  return `${dimension}Page`;
 }
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function readPositivePage(value: string | undefined) {
+  const page = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
 }

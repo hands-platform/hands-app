@@ -1,6 +1,8 @@
 import {
   marketingAnalyticsApiPath,
   marketingAnalyticsDimensionApiPath,
+  marketingAnalyticsDimensionPageHref,
+  marketingAnalyticsDimensionPaging,
   marketingAnalyticsHref,
   marketingAnalyticsSummaryApiPath,
   normalizeMarketingAnalyticsFilters,
@@ -90,5 +92,61 @@ describe('marketing analytics model', () => {
         { skip: 10, take: 10 },
       ),
     ).toBe('/admin/marketing/dimensions/source?range=7d&source=referral&take=10&skip=10');
+  });
+
+  it('builds bounded dimension paging params for server-backed breakdown tables', () => {
+    expect(
+      marketingAnalyticsDimensionPaging(
+        {
+          sourcePage: '3',
+          regionPage: '0',
+          campaignPage: 'bad',
+        },
+        'source',
+      ),
+    ).toEqual({ page: 3, skip: 20, take: 10 });
+
+    expect(marketingAnalyticsDimensionPaging({ regionPage: '0' }, 'region')).toEqual({
+      page: 1,
+      skip: 0,
+      take: 10,
+    });
+    expect(marketingAnalyticsDimensionPaging({ campaignPage: 'bad' }, 'campaign')).toEqual({
+      page: 1,
+      skip: 0,
+      take: 10,
+    });
+  });
+
+  it('keeps breakdown mode and filters when linking a dimension page', () => {
+    expect(
+      marketingAnalyticsDimensionPageHref(
+        {
+          range: '30d',
+          source: 'google',
+          platform: 'ios',
+          regionCode: 'hcm',
+          campaignId: 'summer-launch',
+        },
+        'campaign',
+        4,
+      ),
+    ).toBe(
+      '/marketing-analytics?range=30d&source=google&platform=ios&regionCode=hcm&campaignId=summer-launch&breakdowns=1&campaignPage=4',
+    );
+
+    expect(
+      marketingAnalyticsDimensionPageHref(
+        {
+          range: '7d',
+          source: null,
+          platform: null,
+          regionCode: null,
+          campaignId: null,
+        },
+        'source',
+        1,
+      ),
+    ).toBe('/marketing-analytics?range=7d&breakdowns=1');
   });
 });

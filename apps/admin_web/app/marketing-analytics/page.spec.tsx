@@ -1,0 +1,48 @@
+import { vi } from 'vitest';
+
+import { adminGet } from '../../lib/admin-api';
+import MarketingAnalyticsPage from './page';
+
+vi.mock('../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
+
+  return {
+    ...actual,
+    adminGet: vi.fn(),
+  };
+});
+
+const mockedAdminGet = vi.mocked(adminGet);
+
+describe('MarketingAnalyticsPage', () => {
+  beforeEach(() => {
+    mockedAdminGet.mockReset();
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+  });
+
+  it('loads summary only by default', async () => {
+    await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(hrefs).toContain('/admin/marketing/summary?range=7d');
+    expect(hrefs.some((href) => String(href).includes('/admin/marketing/dimensions/'))).toBe(false);
+  });
+
+  it('uses independent server paging for requested breakdown dimensions', async () => {
+    await MarketingAnalyticsPage({
+      searchParams: Promise.resolve({
+        breakdowns: '1',
+        regionPage: '2',
+        sourcePage: '3',
+      }),
+    });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(hrefs).toContain('/admin/marketing/dimensions/source?range=7d&take=10&skip=20');
+    expect(hrefs).toContain('/admin/marketing/dimensions/region?range=7d&take=10&skip=10');
+    expect(hrefs).toContain('/admin/marketing/dimensions/campaign?range=7d&take=10&skip=0');
+    expect(hrefs).toContain('/admin/marketing/dimensions/platform?range=7d&take=10&skip=0');
+  });
+});

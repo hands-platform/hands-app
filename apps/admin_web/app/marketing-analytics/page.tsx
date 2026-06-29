@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import {
   AdminMarketingDimensionKey,
   AdminMarketingDimensionPage,
@@ -24,7 +25,10 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
+  MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE,
   marketingAnalyticsDimensionApiPath,
+  marketingAnalyticsDimensionPageHref,
+  marketingAnalyticsDimensionPaging,
   marketingAnalyticsHref,
   marketingAnalyticsSummaryApiPath,
   marketingAnalyticsPlatformOptions,
@@ -46,7 +50,6 @@ const marketingDimensionKeys: readonly AdminMarketingDimensionKey[] = [
   'campaign',
   'platform',
 ];
-const marketingDimensionPageTake = 10;
 
 const emptyStats: AdminMarketingStats = {
   firstOpens: 0,
@@ -106,15 +109,14 @@ const emptyMarketingSummary: AdminMarketingSummary = emptyMarketingOverview;
 
 async function loadMarketingDimensionPages(
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+  params: Record<string, string | string[] | undefined> | undefined,
 ): Promise<MarketingDimensionPages> {
   const pages = await Promise.all(
     marketingDimensionKeys.map(async (dimension) => {
+      const paging = marketingAnalyticsDimensionPaging(params, dimension);
       const page = await adminGet<AdminMarketingDimensionPage>(
-        marketingAnalyticsDimensionApiPath(filters, dimension, {
-          skip: 0,
-          take: marketingDimensionPageTake,
-        }),
-        emptyMarketingDimensionPage(dimension, filters),
+        marketingAnalyticsDimensionApiPath(filters, dimension, paging),
+        emptyMarketingDimensionPage(dimension, filters, paging),
       );
 
       return [dimension, page] as const;
@@ -127,6 +129,7 @@ async function loadMarketingDimensionPages(
 function emptyMarketingDimensionPage(
   dimension: AdminMarketingDimensionKey,
   filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>,
+  paging: { readonly skip: number; readonly take: number },
 ): AdminMarketingDimensionPage {
   return {
     generatedAt: new Date(0).toISOString(),
@@ -144,8 +147,8 @@ function emptyMarketingDimensionPage(
     },
     dimension,
     rows: [],
-    skip: 0,
-    take: marketingDimensionPageTake,
+    skip: paging.skip,
+    take: paging.take,
     totalCount: 0,
   };
 }
@@ -163,7 +166,7 @@ export default async function MarketingAnalyticsPage({
     emptyMarketingSummary,
   );
   const overview = marketingOverviewFromSummary(summary);
-  const dimensionPages = includeBreakdowns ? await loadMarketingDimensionPages(filters) : null;
+  const dimensionPages = includeBreakdowns ? await loadMarketingDimensionPages(filters, params) : null;
   const generatedAt = formatDateTime(overview.generatedAt);
   const cards = [
     {
@@ -338,6 +341,7 @@ export default async function MarketingAnalyticsPage({
               title="Source performance"
               description="Current first slice groups unknown demand separately from tracked referral attribution."
               emptyMessage="No source aggregate loaded."
+              filters={filters}
               page={dimensionPages.source}
               rows={dimensionPages.source.rows}
               primaryColumn="Source"
@@ -349,6 +353,7 @@ export default async function MarketingAnalyticsPage({
               title="Region performance"
               description="RegionCode rollups from saved addresses and booking address snapshots."
               emptyMessage="No regional marketing aggregate loaded."
+              filters={filters}
               page={dimensionPages.region}
               rows={dimensionPages.region.rows.filter(hasMarketingActivity)}
               primaryColumn="Region"
@@ -360,6 +365,7 @@ export default async function MarketingAnalyticsPage({
               title="Campaign performance"
               description="Referral code campaigns first; paid campaign rows can be added by manual spend/import foundation."
               emptyMessage="No tracked campaign rows in this range."
+              filters={filters}
               page={dimensionPages.campaign}
               rows={dimensionPages.campaign.rows}
               primaryColumn="Campaign"
@@ -371,6 +377,7 @@ export default async function MarketingAnalyticsPage({
               title="Platform first opens"
               description="Platform split from stored app sessions, prepared for Android, iOS, and Web."
               emptyMessage="No platform first-open rows in this range."
+              filters={filters}
               page={dimensionPages.platform}
               rows={dimensionPages.platform.rows}
               primaryColumn="Platform"
@@ -582,6 +589,7 @@ function InsightCard({ overview }: { overview: AdminMarketingOverview }) {
 function MarketingTable({
   description,
   emptyMessage,
+  filters,
   icon,
   labelFor,
   page,
@@ -592,6 +600,7 @@ function MarketingTable({
 }: {
   description: string;
   emptyMessage: string;
+  filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>;
   icon: ReactNode;
   labelFor: (row: AdminMarketingDimensionRow) => string;
   page?: AdminMarketingDimensionPage;
@@ -600,6 +609,13 @@ function MarketingTable({
   secondaryFor: (row: AdminMarketingDimensionRow) => string | null;
   title: string;
 }) {
+  const pageTake = page?.take ?? MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE;
+  const activePage = page ? Math.floor(page.skip / pageTake) + 1 : 1;
+  const totalRows = page?.totalCount ?? rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageTake));
+  const pageFrom = totalRows === 0 || rows.length === 0 || !page ? 0 : page.skip + 1;
+  const pageTo = page ? Math.min(totalRows, page.skip + rows.length) : rows.length;
+
   return (
     <article className="card usage-overview-ranking-card marketing-table-card">
       <div className="ops-section-header">
@@ -671,6 +687,23 @@ function MarketingTable({
           </tbody>
         </table>
       </div>
+      {page ? (
+        <div className="vuexy-booking-table-footer marketing-table-pagination-footer">
+          <span>
+            Showing {formatNumber(pageFrom)} to {formatNumber(pageTo)} of {formatNumber(totalRows)} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={activePage}
+            ariaLabel={`${title} pagination`}
+            className="vuexy-booking-pagination"
+            hrefForPage={(nextPage) =>
+              marketingAnalyticsDimensionPageHref(filters, page.dimension, nextPage)
+            }
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={totalPages}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }
