@@ -28,5 +28,6 @@ describe('TaxPolicyPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(hrefs).toContain('/admin/tax-policy-versions?take=20');
+    expect(hrefs).toContain('/admin/audit-logs?q=tax_&take=8');
   });
 });

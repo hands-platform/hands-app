@@ -1,25 +1,28 @@
-import { AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
+import { AdminAuditLog, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
+import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { taxPolicyNotice } from './tax-policy-notice';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
 const TAX_POLICY_VERSION_PAGE_SIZE = 20;
+const TAX_POLICY_AUDIT_LOG_PAGE_SIZE = 8;
 
 type TaxPolicyPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const policies = await adminGet<AdminTaxPolicyVersion[]>(
-    `/admin/tax-policy-versions?take=${TAX_POLICY_VERSION_PAGE_SIZE}`,
-    [],
-  );
+  const [policies, auditLogs] = await Promise.all([
+    adminGet<AdminTaxPolicyVersion[]>(`/admin/tax-policy-versions?take=${TAX_POLICY_VERSION_PAGE_SIZE}`, []),
+    adminGet<AdminAuditLog[]>(`/admin/audit-logs?q=tax_&take=${TAX_POLICY_AUDIT_LOG_PAGE_SIZE}`, []),
+  ]);
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
   const healthItems = buildTaxPolicyHealth(policies);
   const preview = buildTaxPreview(policies, params);
   const notice = taxPolicyNotice(params);
+  const auditSummary = buildTaxPolicyAuditSummary(auditLogs);
 
   return (
     <div className="tax-policy-page">
@@ -350,6 +353,47 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </form>
           </article>
         ))}
+      </section>
+
+      <section className="card admin-mt-16">
+        <div className="ops-section-header">
+          <div>
+            <h2>Tax policy audit summary</h2>
+            <p className="muted">
+              Recent policy and rule changes. Use the full audit log only when an operator needs deeper
+              evidence.
+            </p>
+          </div>
+          <div className="actions">
+            <span className="pill pill-info">{auditSummary.totalChangeCount} recent</span>
+            <span className="pill pill-neutral">{auditSummary.policyChangeCount} policy</span>
+            <span className="pill pill-neutral">{auditSummary.ruleChangeCount} rule</span>
+          </div>
+        </div>
+        <div className="setup-stage-list">
+          {auditSummary.rows.map((row) => (
+            <div className="setup-stage-item" key={row.id}>
+              <span className={`pill ${row.toneClassName}`}>{row.actionLabel.split(' ')[0].toUpperCase()}</span>
+              <div>
+                <strong>{row.actionLabel}</strong>
+                <p className="muted">
+                  {row.detail} / {row.actorLabel} / {formatDateTime(row.createdAt, 'Unknown time')}
+                </p>
+              </div>
+              <small>{row.targetLabel}</small>
+            </div>
+          ))}
+          {auditSummary.rows.length === 0 ? (
+            <div className="setup-stage-item">
+              <span>EMPTY</span>
+              <div>
+                <strong>No recent tax policy audit entries</strong>
+                <p className="muted">Create or update a policy/rule to populate this operator summary.</p>
+              </div>
+              <small>-</small>
+            </div>
+          ) : null}
+        </div>
       </section>
     </div>
   );
