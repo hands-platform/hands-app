@@ -480,6 +480,7 @@ type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof admi
 const ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT = 40;
 const ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT = 20;
+const ADMIN_PROVIDER_DETAIL_SHARED_DEVICE_LIMIT = 8;
 const ADMIN_PAYMENT_DETAIL_AUDIT_LOG_LIMIT = 20;
 const ADMIN_PAYMENT_DETAIL_CALLBACK_ATTEMPT_LIMIT = 25;
 
@@ -3731,7 +3732,7 @@ export class AdminService {
             providerProfileId: { not: provider.id },
           },
           orderBy: { lastSeenAt: 'desc' },
-          take: 20,
+          take: ADMIN_PROVIDER_DETAIL_SHARED_DEVICE_LIMIT,
           select: {
             id: true,
             deviceId: true,

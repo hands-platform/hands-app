@@ -4658,6 +4658,38 @@ describe('AdminService query orchestration', () => {
     expect(auditStartedBeforeSharedDeviceResolved).toBe(true);
   });
 
+  it('keeps partner detail shared-device preview bounded', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          devices: [{ deviceId: 'device-a' }],
+          sessions: [{ deviceId: 'device-b' }],
+        }),
+      },
+      providerDevice: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.getProviderDetail('provider-1');
+
+    expect(prisma.providerDevice.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { lastSeenAt: 'desc' },
+        take: 8,
+        where: expect.objectContaining({
+          deviceId: { in: ['device-a', 'device-b'] },
+          providerProfileId: { not: 'provider-1' },
+        }),
+      }),
+    );
+  });
+
   it('keeps payment detail callback and audit payloads bounded', async () => {
     const payment = {
       id: 'payment-1',
