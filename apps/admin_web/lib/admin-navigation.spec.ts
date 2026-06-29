@@ -15,6 +15,9 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/marketing-analytics')).toBe('Command: Marketing Analytics');
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
+    expect(linksByHref.get('/finance-tax')).toBe('Finance: Tax Overview');
+    expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe('Finance: Partner Withholding Tax');
+    expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe('Finance: Booking Settlement Audit');
   });
 
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {

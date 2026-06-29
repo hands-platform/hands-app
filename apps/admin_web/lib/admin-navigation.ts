@@ -135,6 +135,21 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Clear Partner wallet debt from cash bookings.',
       },
       {
+        href: '/finance-tax',
+        label: 'Tax Overview',
+        description: 'Tax, fee, VAT, PIT, payment fee, and settlement snapshot command view.',
+      },
+      {
+        href: '/finance-tax/partner-withholding-tax',
+        label: 'Partner Withholding Tax',
+        description: 'Monthly Partner VAT/PIT withholding totals grouped by Partner.',
+      },
+      {
+        href: '/finance-tax/booking-settlement-audit',
+        label: 'Booking Settlement Audit',
+        description: 'Immutable booking settlement snapshots for tax and finance audit review.',
+      },
+      {
         href: '/payments',
         label: 'Payments',
         description: 'Gateway, cash, refund, and payment-state operations.',

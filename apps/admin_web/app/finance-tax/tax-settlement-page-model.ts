@@ -1,0 +1,237 @@
+import type {
+  AdminBookingSettlementSnapshotSummary,
+  AdminPartnerWithholdingTaxSummary,
+} from '../../lib/admin-api';
+import type { AdminDateRange } from '../../lib/date-range';
+import { formatMoney } from '../../lib/admin-format';
+import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
+
+export type BookingSettlementReview =
+  | 'all'
+  | 'open'
+  | 'declared'
+  | 'paid'
+  | 'closed'
+  | 'posted'
+  | 'reversed'
+  | 'cash'
+  | 'non-cash';
+
+export type BookingSettlementFilters = {
+  readonly range: AdminDateRange;
+  readonly review: BookingSettlementReview;
+  readonly take: number;
+};
+
+export type PartnerWithholdingTaxFilters = {
+  readonly period: string;
+  readonly take: number;
+};
+
+export const TAX_SETTLEMENT_DEFAULT_TAKE = 25;
+export const TAX_SETTLEMENT_MAX_TAKE = 100;
+
+const BOOKING_SETTLEMENT_REVIEW_VALUES: readonly BookingSettlementReview[] = [
+  'all',
+  'open',
+  'declared',
+  'paid',
+  'closed',
+  'posted',
+  'reversed',
+  'cash',
+  'non-cash',
+];
+
+export const BOOKING_SETTLEMENT_REVIEW_LINKS: readonly {
+  readonly label: string;
+  readonly review: BookingSettlementReview;
+}[] = [
+  { label: 'Needs action', review: 'open' },
+  { label: 'Declared', review: 'declared' },
+  { label: 'Paid', review: 'paid' },
+  { label: 'Posted', review: 'posted' },
+  { label: 'Cash', review: 'cash' },
+  { label: 'Non-cash', review: 'non-cash' },
+  { label: 'All', review: 'all' },
+];
+
+export function readBookingSettlementFilters(
+  params: Record<string, string | string[] | undefined>,
+): BookingSettlementFilters {
+  return {
+    range: normalizeDateRange(readSearchParam(params.range)),
+    review: normalizeBookingSettlementReview(readSearchParam(params.review)),
+    take: boundedTake(readSearchParam(params.take)),
+  };
+}
+
+export function readPartnerWithholdingTaxFilters(
+  params: Record<string, string | string[] | undefined>,
+): PartnerWithholdingTaxFilters {
+  return {
+    period: normalizeTaxPeriod(readSearchParam(params.period)),
+    take: boundedTake(readSearchParam(params.take)),
+  };
+}
+
+export function buildBookingSettlementSnapshotApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+  });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  params.set('take', String(filters.take));
+  return `/admin/booking-settlement-snapshots?${params.toString()}`;
+}
+
+export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
+}
+
+export function buildPartnerWithholdingTaxApiHref(filters: PartnerWithholdingTaxFilters) {
+  return `/admin/partner-withholding-tax?${new URLSearchParams({
+    period: filters.period,
+    take: String(filters.take),
+  }).toString()}`;
+}
+
+export function buildPartnerWithholdingTaxSummaryApiHref(filters: PartnerWithholdingTaxFilters) {
+  return `/admin/partner-withholding-tax/summary?${new URLSearchParams({
+    period: filters.period,
+  }).toString()}`;
+}
+
+export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  return `/finance-tax/booking-settlement-audit?${params.toString()}`;
+}
+
+export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters) {
+  return `/finance-tax/partner-withholding-tax?${new URLSearchParams({ period: filters.period }).toString()}`;
+}
+
+export function buildTaxFinanceMetrics(
+  settlementSummary: AdminBookingSettlementSnapshotSummary,
+  withholdingSummary: AdminPartnerWithholdingTaxSummary,
+) {
+  const currency = settlementSummary.currency || withholdingSummary.currency || 'VND';
+
+  return [
+    {
+      label: 'Snapshot rows',
+      value: settlementSummary.count,
+      helper: 'Immutable booking settlement snapshots matching the active queue.',
+      href: '/finance-tax/booking-settlement-audit',
+    },
+    {
+      label: 'Open tax rows',
+      value: settlementSummary.openTaxCount,
+      helper: 'Snapshot rows still waiting for declaration, payment, or closeout.',
+      href: '/finance-tax/booking-settlement-audit?review=open',
+    },
+    {
+      label: 'Customer paid',
+      value: formatMoney(settlementSummary.customerPaymentAmount, currency),
+      helper: 'Customer payment amount captured by settlement snapshots.',
+    },
+    {
+      label: 'Partner payout',
+      value: formatMoney(settlementSummary.partnerPayoutAmount, currency),
+      helper: 'Partner payout amount before monthly payout execution.',
+    },
+    {
+      label: 'Partner tax withheld',
+      value: formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency || currency),
+      helper: 'VAT plus PIT withheld for the selected monthly tax period.',
+      href: partnerWithholdingTaxHref({ period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+    },
+    {
+      label: 'Company VAT',
+      value: formatMoney(settlementSummary.companyOutputVat, currency),
+      helper: 'Output VAT component from HANDS platform fee snapshots.',
+    },
+    {
+      label: 'Payment fees',
+      value: formatMoney(settlementSummary.paymentProcessingFee, currency),
+      helper: 'Payment processing fee cost recorded on settlement snapshots.',
+    },
+    {
+      label: 'Partners with revenue',
+      value: withholdingSummary.partnerCountWithRevenue,
+      helper: 'Partners with taxable settlement rows in the selected period.',
+      href: partnerWithholdingTaxHref({ period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+    },
+  ];
+}
+
+export function emptyBookingSettlementSummary(): AdminBookingSettlementSnapshotSummary {
+  return {
+    count: 0,
+    currency: 'VND',
+    customerPaymentAmount: 0,
+    partnerPayoutAmount: 0,
+    partnerWithholdingTotal: 0,
+    platformFeeGross: 0,
+    platformFeeNetRevenue: 0,
+    companyOutputVat: 0,
+    paymentProcessingFee: 0,
+    openTaxCount: 0,
+    paidTaxCount: 0,
+  };
+}
+
+export function emptyPartnerWithholdingTaxSummary(period = normalizeTaxPeriod('')): AdminPartnerWithholdingTaxSummary {
+  return {
+    period,
+    currency: 'VND',
+    partnerCountWithRevenue: 0,
+    taxableBookingCount: 0,
+    grossServiceRevenue: 0,
+    partnerPayoutTotal: 0,
+    partnerVatWithheldTotal: 0,
+    partnerPitWithheldTotal: 0,
+    totalPartnerTaxWithheld: 0,
+  };
+}
+
+export function reviewLabel(review: BookingSettlementReview) {
+  return BOOKING_SETTLEMENT_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'Needs action';
+}
+
+function normalizeBookingSettlementReview(value: string): BookingSettlementReview {
+  return BOOKING_SETTLEMENT_REVIEW_VALUES.includes(value as BookingSettlementReview)
+    ? (value as BookingSettlementReview)
+    : 'open';
+}
+
+function normalizeTaxPeriod(value: string) {
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
+    return value;
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+  return `${year}-${month}`;
+}
+
+function boundedTake(value: string) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return TAX_SETTLEMENT_DEFAULT_TAKE;
+  }
+  return Math.min(parsed, TAX_SETTLEMENT_MAX_TAKE);
+}

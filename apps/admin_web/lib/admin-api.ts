@@ -1568,6 +1568,91 @@ export type AdminTaxRule = {
   createdAt?: string;
 };
 
+export type AdminBookingSettlementStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
+export type AdminBookingSettlementTaxStatus = 'OPEN' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
+
+export type AdminBookingSettlementSnapshot = {
+  id: string;
+  bookingId: string;
+  customerProfileId: string;
+  providerProfileId: string;
+  paymentId?: string | null;
+  providerEarningId?: string | null;
+  paymentMethod: AdminPaymentMethod;
+  currency: string;
+  customerPaymentAmount: number;
+  partnerPayoutAmount: number;
+  partnerTaxableRevenue: number;
+  partnerVatAmount: number;
+  partnerPitAmount: number;
+  partnerWithholdingTotal: number;
+  platformFeeGross: number;
+  platformFeeNetRevenue: number;
+  companyOutputVat: number;
+  paymentProcessingFee: number;
+  settlementStatus: AdminBookingSettlementStatus;
+  taxStatus: AdminBookingSettlementTaxStatus;
+  monthlyPeriod: string;
+  postedAt: string;
+  closedAt?: string | null;
+  booking?: {
+    id: string;
+    createdAt: string;
+    scheduledStartAt?: string | null;
+    status: string;
+    closedAt?: string | null;
+  } | null;
+  customerProfile?: {
+    id: string;
+    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+  } | null;
+  providerProfile?: {
+    id: string;
+    displayName?: string | null;
+    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+  } | null;
+};
+
+export type AdminBookingSettlementSnapshotSummary = {
+  count: number;
+  currency: string;
+  customerPaymentAmount: number;
+  partnerPayoutAmount: number;
+  partnerWithholdingTotal: number;
+  platformFeeGross: number;
+  platformFeeNetRevenue: number;
+  companyOutputVat: number;
+  paymentProcessingFee: number;
+  openTaxCount: number;
+  paidTaxCount: number;
+};
+
+export type AdminPartnerWithholdingTaxRow = {
+  providerProfileId: string;
+  partnerName: string;
+  partnerPhone?: string | null;
+  period: string;
+  currency: string;
+  completedBookingCount: number;
+  grossServiceRevenue: number;
+  partnerPayoutTotal: number;
+  partnerVatWithheldTotal: number;
+  partnerPitWithheldTotal: number;
+  totalPartnerTaxWithheld: number;
+};
+
+export type AdminPartnerWithholdingTaxSummary = {
+  period: string;
+  currency: string;
+  partnerCountWithRevenue: number;
+  taxableBookingCount: number;
+  grossServiceRevenue: number;
+  partnerPayoutTotal: number;
+  partnerVatWithheldTotal: number;
+  partnerPitWithheldTotal: number;
+  totalPartnerTaxWithheld: number;
+};
+
 export type AdminAuditLog = {
   id: string;
   action: string;
