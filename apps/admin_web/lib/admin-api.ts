@@ -1525,6 +1525,7 @@ export type AdminProviderWalletWithdrawalRequest = {
   reviewedByAdminId?: string | null;
   reviewedAt?: string | null;
   paidAt?: string | null;
+  metadata?: unknown;
   createdAt: string;
   updatedAt?: string;
   providerProfile?: {

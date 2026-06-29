@@ -89,6 +89,47 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(rendered).not.toContain('Request correction');
     expect(rendered).not.toContain('Reject');
   });
+
+  it('renders withdrawal status-change audit evidence for released locked amounts', () => {
+    const request = {
+      amount: 500000,
+      bankAccount: {
+        accountHolderName: 'Smoke Partner',
+        accountNumberMasked: '****1234',
+        bankName: 'VCB',
+        id: 'bank-1',
+        isPrimary: true,
+        status: 'APPROVED',
+      },
+      bankAccountId: 'bank-1',
+      createdAt: '2026-06-27T09:00:00.000Z',
+      currency: 'VND',
+      id: 'withdrawal-request-rejected',
+      metadata: {
+        lastStatusChange: {
+          previousStatus: 'APPROVED',
+          nextStatus: 'REJECTED',
+          lockedAmountReleased: true,
+          releasedAmount: 500000,
+        },
+      },
+      providerProfile: {
+        displayName: 'Smoke Partner',
+        user: { phone: '+84900001111' },
+      },
+      providerProfileId: 'provider-1',
+      status: 'REJECTED',
+    } as unknown as AdminProviderWalletWithdrawalRequest;
+    const section = PayoutWalletWithdrawalRequestSection({
+      requests: [request],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Approved -> Rejected');
+    expect(rendered).toContain('Lock released 500.000 VND');
+  });
 });
 
 function textContent(value: unknown): string {

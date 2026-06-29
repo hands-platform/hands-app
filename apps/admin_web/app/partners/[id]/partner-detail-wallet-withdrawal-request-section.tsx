@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
+import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
 import { formatCurrency, formatDate, shortRecordId } from './partner-detail-format';
 import {
   PartnerDetailVuexyTableFooter,
@@ -56,6 +57,7 @@ export function PartnerDetailWalletWithdrawalRequestSection({
               </td>
               <td>
                 <span className={`pill ${statusPillClass(request.status)}`}>{statusLabel(request.status)}</span>
+                <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
               </td>
@@ -277,6 +279,34 @@ function statusPillClass(status: AdminProviderWalletWithdrawalRequest['status'])
     default:
       return 'pill-neutral';
   }
+}
+
+function WithdrawalStatusChangeEvidence({
+  request,
+}: {
+  readonly request: AdminProviderWalletWithdrawalRequest;
+}) {
+  const statusChange = providerWalletWithdrawalStatusChangeView(request.metadata);
+  if (!statusChange) {
+    return null;
+  }
+
+  const lockLabel = statusChange.lockedAmountReleased
+    ? 'Lock released'
+    : statusChange.lockedAmountRetained
+      ? 'Lock retained'
+      : 'Status changed';
+  const amountLabel =
+    typeof statusChange.evidenceAmount === 'number'
+      ? ` ${formatCurrency(statusChange.evidenceAmount, request.currency)}`
+      : '';
+
+  return (
+    <p className="muted">
+      {statusChange.transitionLabel} / {lockLabel}
+      {amountLabel}
+    </p>
+  );
 }
 
 function withdrawalResultTone(needsActionCount: number): StatusBadgeTone {

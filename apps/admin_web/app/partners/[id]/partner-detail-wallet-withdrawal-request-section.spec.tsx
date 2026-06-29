@@ -103,6 +103,43 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(rendered).not.toContain('Request correction');
     expect(rendered).not.toContain('Reject');
   });
+
+  it('renders withdrawal status-change audit evidence for retained locked amounts', () => {
+    const request = {
+      amount: 650000,
+      bankAccount: {
+        accountHolderName: 'Linh Nguyen',
+        accountNumberMasked: '****7788',
+        bankName: 'Techcombank',
+        id: 'bank-1',
+        isPrimary: true,
+        status: 'APPROVED',
+      },
+      bankAccountId: 'bank-1',
+      createdAt: '2026-06-27T09:00:00.000Z',
+      currency: 'VND',
+      id: 'withdrawal-request-bank-pending',
+      metadata: {
+        lastStatusChange: {
+          previousStatus: 'APPROVED',
+          nextStatus: 'BANK_TRANSFER_PENDING',
+          lockedAmountRetained: true,
+          amount: 650000,
+        },
+      },
+      providerProfileId: 'provider-1',
+      status: 'BANK_TRANSFER_PENDING',
+    } as unknown as AdminProviderWalletWithdrawalRequest;
+    const section = PartnerDetailWalletWithdrawalRequestSection({
+      requests: [request],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Approved -> Bank transfer pending');
+    expect(rendered).toContain('Lock retained 650.000 VND');
+  });
 });
 
 function textContent(value: unknown): string {
