@@ -51,6 +51,8 @@ describe('buildTaxPolicySnapshotConsistency', () => {
     expect(summary.rows).toEqual([
       expect.objectContaining({
         deltaLabel: '0 VND',
+        earningHref: '/earnings?earningId=earning-consistent#earning-earning-consistent',
+        financeTraceHref: '/bookings/booking-123456789#finance',
         id: 'earning-consistent',
         snapshotLabel: 'Vietnam tax 2026',
         statusLabel: 'Aligned',

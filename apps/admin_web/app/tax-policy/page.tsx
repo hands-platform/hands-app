@@ -436,6 +436,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                   Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
                   {row.taxLogLabel} / delta {row.deltaLabel}
                 </p>
+                <div className="actions admin-mt-8">
+                  <Link className="text-link" href={row.earningHref}>
+                    Open earning
+                  </Link>
+                  <Link className="text-link" href={row.financeTraceHref}>
+                    Finance trace
+                  </Link>
+                </div>
               </div>
               <small>{row.snapshotLabel}</small>
             </div>

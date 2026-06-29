@@ -13,6 +13,8 @@ export type TaxPolicySnapshotConsistency = {
 export type TaxPolicySnapshotConsistencyRow = {
   readonly id: string;
   readonly bookingHref: string;
+  readonly earningHref: string;
+  readonly financeTraceHref: string;
   readonly bookingLabel: string;
   readonly providerLabel: string;
   readonly grossAmountLabel: string;
@@ -57,7 +59,9 @@ function taxPolicySnapshotConsistencyRow(earning: AdminEarning): TaxPolicySnapsh
     bookingHref: `/bookings/${earning.bookingId}`,
     bookingLabel: shortRecordId(earning.bookingId),
     deltaLabel: formatMoney(Math.abs(delta), earning.currency, '0 VND'),
+    earningHref: `/earnings?earningId=${encodeURIComponent(earning.id)}#earning-${encodeURIComponent(earning.id)}`,
     earningTaxLabel: formatMoney(earningTax, earning.currency, '0 VND'),
+    financeTraceHref: `/bookings/${earning.bookingId}#finance`,
     grossAmountLabel: formatMoney(earning.grossAmount, earning.currency, '0 VND'),
     id: earning.id,
     providerLabel: providerLabel(earning),
