@@ -82,10 +82,11 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     filters.batchState === 'all' ? summary.count : ledgerRows.length,
   );
   const confirmation = buildEarningActionConfirmation(
-    cashDebtQueue.map((item) => ({
-      currency: item.earning.currency,
+    cashDebtItems.map((item) => ({
+      accountingPreview: item.cashAccountingPreview,
+      currency: item.currency,
       debtAmount: item.debtAmount,
-      earningId: item.earning.id,
+      earningId: item.earningId,
       paymentMethod: item.paymentMethod,
       providerName: item.providerName,
       settlementReference: item.settlementReference,
@@ -191,7 +192,11 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       <EarningsFinanceQueueSection signals={financeSignals} />
       <EarningsServiceBridgeSection currency={summary.currency} items={serviceBridge} />
       <EarningsPartnerPayoutQueueSection groups={partnerPayoutQueueGroups} />
-      <EarningsCashDebtQueueSection currency={summary.currency} items={cashDebtItems} totals={cashDebtTotals} />
+      <EarningsCashDebtQueueSection
+        currency={summary.currency}
+        items={cashDebtItems}
+        totals={cashDebtTotals}
+      />
       <EarningsBatchStateFilterSection
         activeState={filters.batchState}
         cards={batchStateCards}

@@ -4,6 +4,7 @@ import type { StatusBadgeTone } from '../../components/status-badge';
 export type EarningConfirmationAction = 'create-payout' | 'mark-paid';
 
 export type EarningSettlementConfirmationRow = {
+  readonly accountingPreview: readonly string[];
   readonly currency: string;
   readonly debtAmount: number;
   readonly earningId: string;
@@ -112,6 +113,9 @@ function buildSettlementConfirmation(
   const settlementNotes =
     input.settlementNotes ||
     `Cash fee debt settled from admin earnings queue with reference ${settlementRef}`;
+  const accountingPreview = row.accountingPreview.length
+    ? ` Accounting preview: ${row.accountingPreview.join(' / ')}.`
+    : '';
 
   return {
     action: 'mark-paid',
@@ -122,7 +126,7 @@ function buildSettlementConfirmation(
       row.currency,
     )} cash fee debt by ${settlementMethodLabel(settlementMethod)}. Payment method: ${
       row.paymentMethod
-    }. Reference: ${settlementRef}.`,
+    }. Reference: ${settlementRef}.${accountingPreview}`,
     hiddenInputs: [
       { name: 'earningId', value: row.earningId },
       { name: 'settlementMethod', value: settlementMethod },

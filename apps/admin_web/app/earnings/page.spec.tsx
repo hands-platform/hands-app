@@ -84,4 +84,90 @@ describe('EarningsPage', () => {
     expect(markup).toContain('Server Trusted Earning');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
   });
+
+  it('renders cash debt accounting preview in the fee settlement confirmation', async () => {
+    const summary: AdminEarningSummary = {
+      availableNetAmount: 0,
+      count: 1,
+      currency: 'VND',
+      grossAmount: 120000,
+      netAmount: -30000,
+      paidNetAmount: 0,
+      pendingNetAmount: -30000,
+      platformFee: 25000,
+      withholdingAmount: 5000,
+    };
+    const earning = {
+      booking: {
+        payment: {
+          amount: 120000,
+          currency: 'VND',
+          method: 'CASH',
+          status: 'PENDING',
+        },
+        services: [],
+        status: 'COMPLETED',
+      },
+      bookingId: 'cash-debt-booking',
+      createdAt: '2026-06-10T08:00:00.000Z',
+      currency: 'VND',
+      grossAmount: 120000,
+      id: 'cash-debt-earning',
+      netAmount: -30000,
+      platformFee: 25000,
+      providerProfile: {
+        displayName: 'Cash Debt Partner',
+        user: {
+          fullName: 'Cash Partner',
+          phone: '+84900006666',
+        },
+      },
+      providerProfileId: 'cash-debt-provider',
+      status: 'PENDING',
+      walletLedgerEntries: [
+        {
+          amount: -30000,
+          currency: 'VND',
+          id: 'cash-debt-ledger',
+          metadata: {
+            totalPartnerDueToCompany: 30000,
+            walletDeductionCompanyOutputVat: 5000,
+            walletDeductionPartnerTaxPayable: 5000,
+            walletDeductionPlatformFeeNetRevenue: 20000,
+          },
+          reference: 'LEDGER-CASH-1',
+          sourceKey: 'earning:cash-debt-earning:cash-platform-fee-net',
+          type: 'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
+        },
+      ],
+      withholdingAmount: 5000,
+    } as AdminEarning;
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/earnings/summary?range=today') {
+        return summary;
+      }
+      if (href === '/admin/earnings?range=today&take=10') {
+        return [earning];
+      }
+      if (href === '/admin/payout-batches?range=today&take=10') {
+        return [] as AdminPayoutBatch[];
+      }
+      return fallback;
+    });
+
+    const page = await EarningsPage({
+      searchParams: Promise.resolve({
+        confirm: 'mark-paid',
+        earningId: earning.id,
+        range: 'today',
+        settlementRef: 'BANK-CASH-1',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(
+      'Accounting preview: Dr Partner receivable 30.000 VND / Cr Platform fee net revenue 20.000 VND / Cr Company output VAT payable 5.000 VND / Cr Partner withholding tax payable 5.000 VND.',
+    );
+  });
 });

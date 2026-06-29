@@ -7,6 +7,11 @@ import {
 } from './earning-action-confirmation';
 
 const settlementRow = {
+  accountingPreview: [
+    'Dr Partner receivable 90.000 VND',
+    'Cr Platform fee net revenue 70.000 VND',
+    'Cr Partner withholding tax payable 20.000 VND',
+  ],
   currency: 'VND',
   debtAmount: 90000,
   earningId: 'earning-debt-123456',
@@ -50,7 +55,7 @@ describe('earning action confirmation', () => {
       cancelHref: '/earnings',
       confirmLabel: 'Confirm fee settlement',
       description:
-        'Partner Debt will settle 90.000 VND cash fee debt by Partner deposit. Payment method: CASH. Reference: BANK-123.',
+        'Partner Debt will settle 90.000 VND cash fee debt by Partner deposit. Payment method: CASH. Reference: BANK-123. Accounting preview: Dr Partner receivable 90.000 VND / Cr Platform fee net revenue 70.000 VND / Cr Partner withholding tax payable 20.000 VND.',
       hiddenInputs: [
         { name: 'earningId', value: settlementRow.earningId },
         { name: 'settlementMethod', value: 'PARTNER_DEPOSIT' },
