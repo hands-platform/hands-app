@@ -3,9 +3,11 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPatch, adminPost } from '../../lib/admin-api';
 import {
+  approveReferralRewardCashout,
   creditReferralReward,
   holdReferralReward,
   releaseAvailableReferralRewards,
+  requireReferralRewardTaxReview,
   reverseReferralReward,
   updateReferralPolicy,
 } from './actions';
@@ -118,6 +120,58 @@ describe('referral server actions', () => {
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/referrals/customers',
       '/referrals/customers/parent-customer',
+      '/audit-log',
+    ]);
+  });
+
+  it('approves a referral reward cashout request and refreshes referral detail views', async () => {
+    mockedAdminPost.mockResolvedValue({
+      id: 'reward-1',
+      status: 'CASHOUT_APPROVED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    const formData = new FormData();
+    formData.set('rewardId', 'reward-1');
+    formData.set('audience', 'customer');
+    formData.set('parentId', 'parent-customer');
+    formData.set('reason', 'manual cash transfer done');
+
+    await expect(approveReferralRewardCashout(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/referrals/rewards/reward-1/cashout-approve',
+      { reason: 'manual cash transfer done' },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/customers',
+      '/referrals/customers/parent-customer',
+      '/audit-log',
+    ]);
+  });
+
+  it('marks a referral reward cashout for tax review and refreshes referral detail views', async () => {
+    mockedAdminPost.mockResolvedValue({
+      id: 'reward-1',
+      status: 'TAX_REVIEW_REQUIRED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    const formData = new FormData();
+    formData.set('rewardId', 'reward-1');
+    formData.set('audience', 'partner');
+    formData.set('parentId', 'parent-partner');
+    formData.set('reason', 'tax details need review');
+
+    await expect(requireReferralRewardTaxReview(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/referrals/rewards/reward-1/tax-review',
+      { reason: 'tax details need review' },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/partners',
+      '/referrals/partners/parent-partner',
       '/audit-log',
     ]);
   });

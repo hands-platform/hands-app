@@ -71,10 +71,12 @@ describe('AdminController notification and push actions', () => {
     previewAdminPushCampaign: vi.fn(),
     createAdminPushCampaign: vi.fn(),
     customerSummary: vi.fn(),
+    approveReferralRewardCashout: vi.fn(),
     creditReferralReward: vi.fn(),
     holdReferralReward: vi.fn(),
     listCustomers: vi.fn(),
     releaseAvailableReferralRewards: vi.fn(),
+    requireReferralRewardTaxReview: vi.fn(),
     reverseReferralReward: vi.fn(),
     deleteCoupon: vi.fn(),
     couponSummary: vi.fn(),
@@ -1497,6 +1499,48 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/rewards/:id/credit',
     });
     expect(admin.creditReferralReward).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'ready' });
+  });
+
+  it('exposes referral reward cashout approval as a POST action', async () => {
+    admin.approveReferralRewardCashout.mockResolvedValue({
+      id: 'reward-1',
+      status: 'CASHOUT_APPROVED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    await expect(controller.approveReferralRewardCashout(user, 'reward-1', { reason: 'paid' })).resolves.toEqual({
+      id: 'reward-1',
+      status: 'CASHOUT_APPROVED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(routeMetadata('approveReferralRewardCashout')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/cashout-approve',
+    });
+    expect(admin.approveReferralRewardCashout).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'paid' });
+  });
+
+  it('exposes referral reward tax review requirement as a POST action', async () => {
+    admin.requireReferralRewardTaxReview.mockResolvedValue({
+      id: 'reward-1',
+      status: 'TAX_REVIEW_REQUIRED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    await expect(controller.requireReferralRewardTaxReview(user, 'reward-1', { reason: 'tax review' })).resolves.toEqual({
+      id: 'reward-1',
+      status: 'TAX_REVIEW_REQUIRED',
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(routeMetadata('requireReferralRewardTaxReview')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/tax-review',
+    });
+    expect(admin.requireReferralRewardTaxReview).toHaveBeenCalledWith('admin-1', 'reward-1', {
+      reason: 'tax review',
+    });
   });
 
   it('exposes referral reward reverse as a POST action', async () => {

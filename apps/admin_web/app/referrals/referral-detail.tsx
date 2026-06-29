@@ -23,7 +23,13 @@ import {
   referralRewardDecisionLabel,
 } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
-import { creditReferralReward, holdReferralReward, reverseReferralReward } from './actions';
+import {
+  approveReferralRewardCashout,
+  creditReferralReward,
+  holdReferralReward,
+  requireReferralRewardTaxReview,
+  reverseReferralReward,
+} from './actions';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 
 type ReferralParentDetailPageProps =
@@ -493,20 +499,25 @@ function ReferralRewardActions({
   readonly parentId: string;
   readonly reward: AdminReferralReward;
 }) {
-  if (reward.walletLedgerReference) {
+  const canApproveCashout = reward.status === 'CASHOUT_REQUESTED';
+  const canRequireTaxReview = reward.status === 'CASHOUT_REQUESTED' || reward.status === 'CASHOUT_APPROVED';
+
+  if (reward.walletLedgerReference && !canApproveCashout && !canRequireTaxReview) {
     return <span className="muted">Ledger posted</span>;
   }
 
   const canHold = reward.status === 'PENDING' || reward.status === 'AVAILABLE';
   const canCredit = reward.status === 'AVAILABLE';
   const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
-  if (!canHold && !canCredit && !canReverse) {
+  if (!canHold && !canCredit && !canReverse && !canApproveCashout && !canRequireTaxReview) {
     return <span className="muted">No action</span>;
   }
 
   const actions = referralRewardActionItems({
+    canApproveCashout,
     canCredit,
     canHold,
+    canRequireTaxReview,
     canReverse,
   });
   const hiddenInputs = referralRewardHiddenInputs({
@@ -555,15 +566,33 @@ function ReferralRewardActions({
 }
 
 function referralRewardActionItems({
+  canApproveCashout,
   canCredit,
   canHold,
+  canRequireTaxReview,
   canReverse,
 }: {
+  readonly canApproveCashout: boolean;
   readonly canCredit: boolean;
   readonly canHold: boolean;
+  readonly canRequireTaxReview: boolean;
   readonly canReverse: boolean;
 }): ReferralRewardActionForm[] {
   const actions: ReferralRewardActionForm[] = [];
+
+  if (canApproveCashout) {
+    actions.push({
+      action: approveReferralRewardCashout,
+      label: 'Approve cashout',
+    });
+  }
+
+  if (canRequireTaxReview) {
+    actions.push({
+      action: requireReferralRewardTaxReview,
+      label: 'Require tax review',
+    });
+  }
 
   if (canCredit) {
     actions.push({

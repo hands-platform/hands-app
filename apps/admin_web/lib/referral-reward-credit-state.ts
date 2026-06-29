@@ -37,7 +37,7 @@ export function isReferralRewardClosed(status: AdminReferralReward['status']) {
 }
 
 export function referralRewardCreditState(reward: AdminReferralReward): ReferralRewardCreditState {
-  if (reward.walletLedgerReference) {
+  if (reward.walletLedgerReference && !isReferralRewardCashoutLifecycleStatus(reward.status)) {
     return {
       helper: reward.walletLedgerReference,
       label: 'Credited',
@@ -148,6 +148,15 @@ export function referralRewardCreditState(reward: AdminReferralReward): Referral
   };
 }
 
+function isReferralRewardCashoutLifecycleStatus(status: AdminReferralReward['status']) {
+  return (
+    status === 'CASHOUT_REQUESTED' ||
+    status === 'CASHOUT_APPROVED' ||
+    status === 'PAID' ||
+    status === 'TAX_REVIEW_REQUIRED'
+  );
+}
+
 export function referralRewardDecisionLabel(action: string) {
   if (action === 'referral_reward.credit') {
     return 'Credit';
@@ -157,6 +166,12 @@ export function referralRewardDecisionLabel(action: string) {
   }
   if (action === 'referral_reward.reverse') {
     return 'Reverse';
+  }
+  if (action === 'referral_reward.cashout_approve') {
+    return 'Approve cashout';
+  }
+  if (action === 'referral_reward.tax_review_required') {
+    return 'Require tax review';
   }
   return action;
 }

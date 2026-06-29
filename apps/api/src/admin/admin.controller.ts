@@ -272,6 +272,24 @@ export class AdminController {
     return this.admin.creditReferralReward(user.id, rewardId, body);
   }
 
+  @Post('referrals/rewards/:id/cashout-approve')
+  approveReferralRewardCashout(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardDecisionDto,
+  ) {
+    return this.admin.approveReferralRewardCashout(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/tax-review')
+  requireReferralRewardTaxReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardDecisionDto,
+  ) {
+    return this.admin.requireReferralRewardTaxReview(user.id, rewardId, body);
+  }
+
   @Post('referrals/rewards/:id/reverse')
   reverseReferralReward(
     @CurrentUser() user: AuthenticatedUser,

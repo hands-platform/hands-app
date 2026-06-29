@@ -35,6 +35,8 @@ import { ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT } from './admin-booking-selects';
 import { AdminService } from './admin.service';
 
 const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
+const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralRewardStatus;
+const taxReviewRequiredReferralRewardStatus = 'TAX_REVIEW_REQUIRED' as ReferralRewardStatus;
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -1984,6 +1986,98 @@ describe('AdminService query orchestration', () => {
           reason: 'manual payout check',
           status: ReferralRewardStatus.REWARDED,
           walletCreditCreated: true,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        },
+      },
+    });
+  });
+
+  it('approves referral reward cashout requests without posting payout cash automatically', async () => {
+    const referrals = {
+      approveRewardCashoutRequest: vi.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: cashoutApprovedReferralRewardStatus,
+        walletLedgerReference: 'customer-wallet-ledger-1',
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.approveReferralRewardCashout('admin-1', 'reward-1', {
+        reason: ' manual bank transfer done ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(referrals.approveRewardCashoutRequest).toHaveBeenCalledWith('reward-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.cashout_approve',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          cashoutApproved: true,
+          currency: 'VND',
+          reason: 'manual bank transfer done',
+          status: cashoutApprovedReferralRewardStatus,
+          walletCreditCreated: false,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        },
+      },
+    });
+  });
+
+  it('marks referral reward cashout requests for tax review without changing wallet credit references', async () => {
+    const referrals = {
+      requireRewardTaxReview: vi.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: taxReviewRequiredReferralRewardStatus,
+        walletLedgerReference: 'customer-wallet-ledger-1',
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.requireReferralRewardTaxReview('admin-1', 'reward-1', {
+        reason: ' tax document mismatch ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: taxReviewRequiredReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+
+    expect(referrals.requireRewardTaxReview).toHaveBeenCalledWith('reward-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.tax_review_required',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          currency: 'VND',
+          reason: 'tax document mismatch',
+          status: taxReviewRequiredReferralRewardStatus,
+          taxReviewRequired: true,
+          walletCreditCreated: false,
           walletLedgerReference: 'customer-wallet-ledger-1',
         },
       },

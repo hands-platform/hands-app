@@ -15,7 +15,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { calculateCustomerReferralReward } from './referrals.accounting';
 
 const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
+const CASHOUT_APPROVED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_APPROVED');
+const CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_REQUESTED');
 const CREDITED_REFERRAL_REWARD_STATUS = referralRewardStatus('CREDITED');
+const TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS = referralRewardStatus('TAX_REVIEW_REQUIRED');
 
 const referralCodeSelect = {
   id: true,
@@ -413,6 +416,18 @@ export class ReferralsService {
     return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED);
   }
 
+  async approveRewardCashoutRequest(rewardId: string) {
+    return this.updateRewardLifecycleStatus(rewardId, CASHOUT_APPROVED_REFERRAL_REWARD_STATUS, {
+      allowedStatuses: [CASHOUT_REQUESTED_REFERRAL_REWARD_STATUS],
+    });
+  }
+
+  async requireRewardTaxReview(rewardId: string) {
+    return this.updateRewardLifecycleStatus(rewardId, TAX_REVIEW_REQUIRED_REFERRAL_REWARD_STATUS, {
+      blockedStatuses: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED],
+    });
+  }
+
   async creditRewardCandidate(rewardId: string) {
     return this.prisma.$transaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
@@ -768,6 +783,32 @@ export class ReferralsService {
   private async updateRewardCandidateStatus(rewardId: string, status: ReferralRewardStatus) {
     const reward = await this.referralRewardCandidateState(rewardId);
     this.assertRewardCandidateCanChangeStatus(reward, status);
+
+    return this.prisma.referralReward.update({
+      data: { status },
+      where: { id: rewardId },
+      select: referralRewardSelect,
+    });
+  }
+
+  private async updateRewardLifecycleStatus(
+    rewardId: string,
+    status: ReferralRewardStatus,
+    options: {
+      allowedStatuses?: readonly ReferralRewardStatus[];
+      blockedStatuses?: readonly ReferralRewardStatus[];
+    } = {},
+  ) {
+    const reward = await this.referralRewardCandidateState(rewardId);
+    const allowedStatuses = options.allowedStatuses ? new Set(options.allowedStatuses) : null;
+    const blockedStatuses = options.blockedStatuses ? new Set(options.blockedStatuses) : null;
+
+    if (allowedStatuses && !allowedStatuses.has(reward.status)) {
+      throw new BadRequestException('Referral reward is not in the required lifecycle state');
+    }
+    if (blockedStatuses?.has(reward.status)) {
+      throw new BadRequestException('Closed referral rewards cannot move back into review');
+    }
 
     return this.prisma.referralReward.update({
       data: { status },

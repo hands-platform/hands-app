@@ -14,6 +14,9 @@ function createService(prisma: unknown) {
 }
 
 const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
+const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralRewardStatus;
+const cashoutRequestedReferralRewardStatus = 'CASHOUT_REQUESTED' as ReferralRewardStatus;
+const taxReviewRequiredReferralRewardStatus = 'TAX_REVIEW_REQUIRED' as ReferralRewardStatus;
 
 describe('ReferralsService', () => {
   it('returns an existing customer referral code without creating a new one', async () => {
@@ -887,6 +890,74 @@ describe('ReferralsService', () => {
     });
     expect(prisma.referralReward.update).toHaveBeenCalledWith({
       data: { status: ReferralRewardStatus.REVERSED },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('approves customer referral cashout requests without posting payout cash automatically', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-1',
+          status: cashoutRequestedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 25000,
+          availableAt: now,
+          currency: 'VND',
+          sourceKey: 'referral:CUSTOMER:attr-1:booking-1',
+          status: cashoutApprovedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.approveRewardCashoutRequest('reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    expect(prisma.referralReward.update).toHaveBeenCalledWith({
+      data: { status: cashoutApprovedReferralRewardStatus },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('marks referral rewards for tax review without changing wallet ledger references', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'reward-1',
+          status: cashoutRequestedReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 25000,
+          availableAt: now,
+          currency: 'VND',
+          sourceKey: 'referral:CUSTOMER:attr-1:booking-1',
+          status: taxReviewRequiredReferralRewardStatus,
+          walletLedgerReference: 'customer-wallet-ledger-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.requireRewardTaxReview('reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: taxReviewRequiredReferralRewardStatus,
+      walletLedgerReference: 'customer-wallet-ledger-1',
+    });
+    expect(prisma.referralReward.update).toHaveBeenCalledWith({
+      data: { status: taxReviewRequiredReferralRewardStatus },
       where: { id: 'reward-1' },
       select: expect.any(Object),
     });

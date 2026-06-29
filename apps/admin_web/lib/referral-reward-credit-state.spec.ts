@@ -1,5 +1,5 @@
 import type { AdminReferralReward } from './admin-api';
-import { referralRewardCreditState } from './referral-reward-credit-state';
+import { referralRewardCreditState, referralRewardDecisionLabel } from './referral-reward-credit-state';
 
 const baseReward: AdminReferralReward = {
   id: 'reward-1',
@@ -96,5 +96,10 @@ describe('referralRewardCreditState', () => {
       label: 'Not payable',
       tone: 'danger',
     });
+  });
+
+  it('labels referral cashout and tax review decisions for operators', () => {
+    expect(referralRewardDecisionLabel('referral_reward.cashout_approve')).toBe('Approve cashout');
+    expect(referralRewardDecisionLabel('referral_reward.tax_review_required')).toBe('Require tax review');
   });
 });

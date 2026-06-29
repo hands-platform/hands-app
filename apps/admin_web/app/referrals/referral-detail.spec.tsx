@@ -289,6 +289,35 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');
   });
 
+  it('renders cashout approval and tax review actions for cashout-requested wallet rewards', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'CASHOUT_REQUESTED',
+              walletLedgerReference: 'customer-wallet-ledger-1',
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
+    expect(markup).toContain('Approve cashout');
+    expect(markup).toContain('Require tax review');
+    expect(markup).toContain('Cashout requested');
+    expect(markup).toContain('customer-wallet-ledger-1');
+    expect(markup).not.toContain('<td><span class="muted">Ledger posted</span></td>');
+  });
+
   it('summarizes reward rows into an operator review board', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,

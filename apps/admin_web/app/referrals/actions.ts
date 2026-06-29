@@ -38,6 +38,28 @@ export async function creditReferralReward(formData: FormData) {
   revalidateReferralRewardDecisionPaths(input);
 }
 
+export async function approveReferralRewardCashout(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+
+  await adminPost(
+    `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/cashout-approve`,
+    { reason: input.reason },
+    null,
+  );
+  revalidateReferralRewardDecisionPaths(input);
+}
+
+export async function requireReferralRewardTaxReview(formData: FormData) {
+  const input = referralRewardDecisionInput(formData);
+
+  await adminPost(
+    `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/tax-review`,
+    { reason: input.reason },
+    null,
+  );
+  revalidateReferralRewardDecisionPaths(input);
+}
+
 export async function reverseReferralReward(formData: FormData) {
   const input = referralRewardDecisionInput(formData);
 
