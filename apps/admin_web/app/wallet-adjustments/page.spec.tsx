@@ -20,6 +20,15 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminPost.mockReset();
   });
 
+  it('explains approval and attachment gates before operators create an adjustment', async () => {
+    const page = await WalletAdjustmentsPage({});
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Approval id is required for every creation');
+    expect(markup).toContain('Evidence is required from 10.000.000 VND or more');
+    expect(markup).toContain('Receivable write-off always needs evidence');
+  });
+
   it('renders the accounting preview returned by the Admin API', async () => {
     mockedAdminPost.mockResolvedValue({
       accountingEntries: [

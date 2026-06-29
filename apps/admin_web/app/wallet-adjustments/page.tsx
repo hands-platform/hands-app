@@ -151,6 +151,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           />
           <AdminFormControlButton>Preview accounting</AdminFormControlButton>
         </form>
+        <AdjustmentPolicyChecklist />
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -233,6 +234,31 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         </AdminFilterPanel>
       ) : null}
     </AdminPageTemplate>
+  );
+}
+
+function AdjustmentPolicyChecklist() {
+  return (
+    <div className="setup-stage-list admin-mt-16" aria-label="Manual wallet adjustment policy gates">
+      <PreviewFact
+        helper="Approval id is required for every creation"
+        icon={<ShieldCheck aria-hidden="true" size={18} />}
+        label="Approval gate"
+        value="Required"
+      />
+      <PreviewFact
+        helper="Evidence is required from 10.000.000 VND or more"
+        icon={<FileWarning aria-hidden="true" size={18} />}
+        label="High amount evidence"
+        value="10.000.000 VND"
+      />
+      <PreviewFact
+        helper="Receivable write-off always needs evidence"
+        icon={<FileWarning aria-hidden="true" size={18} />}
+        label="Tax-sensitive adjustment"
+        value="Evidence"
+      />
+    </div>
   );
 }
 
