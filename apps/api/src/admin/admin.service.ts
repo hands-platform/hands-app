@@ -6255,19 +6255,38 @@ export class AdminService {
     const baseWhere = notificationBoardWhere(options);
     const countNotifications = (where?: Prisma.NotificationWhereInput) =>
       this.prisma.notification.count(notificationCountArgs(notificationBoardAndWhere(baseWhere, where)));
-    const countDeliveries = (where: Prisma.NotificationDeliveryWhereInput) =>
-      this.prisma.notificationDelivery.count({
-        where: {
-          ...where,
-          ...(baseWhere ? { notification: baseWhere } : {}),
-        },
-      });
+    const deliverySummaryPromise = this.prisma.notificationDelivery
+      .groupBy({
+        by: ['provider', 'status'],
+        where: baseWhere ? { notification: baseWhere } : {},
+        _count: { _all: true },
+      })
+      .then((rows) =>
+        rows.reduce(
+          (summary, row) => {
+            const count = row._count._all;
+            if (row.status === 'SENT') {
+              summary.sent += count;
+            }
+            if (row.status === 'SKIPPED') {
+              summary.skipped += count;
+            }
+            if (row.provider === 'FCM') {
+              summary.fcmDeliveries += count;
+            }
+            if (row.provider === 'IN_APP_ONLY') {
+              summary.inAppDeliveries += count;
+            }
+            return summary;
+          },
+          { fcmDeliveries: 0, inAppDeliveries: 0, sent: 0, skipped: 0 },
+        ),
+      );
 
     const [
       totalCount,
       failed,
-      sent,
-      skipped,
+      deliverySummary,
       pending,
       disabledDevices,
       staleDevices,
@@ -6275,13 +6294,10 @@ export class AdminService {
       noShow,
       payoutSetup,
       partnerAlertCount,
-      fcmDeliveries,
-      inAppDeliveries,
     ] = await Promise.all([
       countNotifications(),
       countNotifications(notificationDeliveryStatusWhere('FAILED')),
-      countDeliveries({ status: 'SENT' }),
-      countDeliveries({ status: 'SKIPPED' }),
+      deliverySummaryPromise,
       countNotifications({ deliveries: { none: {} } }),
       countNotifications({ user: { pushDevices: { some: { enabled: false } } } }),
       countNotifications(notificationStaleDeliveryCandidateWhere()),
@@ -6289,23 +6305,21 @@ export class AdminService {
       countNotifications({ type: 'booking.no_show' }),
       countNotifications({ type: 'provider.payout_setup_required' }),
       countNotifications({ type: { in: [...ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES] } }),
-      countDeliveries({ provider: 'FCM' }),
-      countDeliveries({ provider: 'IN_APP_ONLY' }),
     ]);
 
     return {
       generatedAt: new Date().toISOString(),
       disabledDevices,
       failed,
-      fcmDeliveries,
-      inAppDeliveries,
+      fcmDeliveries: deliverySummary.fcmDeliveries,
+      inAppDeliveries: deliverySummary.inAppDeliveries,
       needsRetry,
       noShow,
       partnerAlertCount,
       payoutSetup,
       pending,
-      sent,
-      skipped,
+      sent: deliverySummary.sent,
+      skipped: deliverySummary.skipped,
       staleDevices,
       totalCount,
     };

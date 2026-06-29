@@ -5281,12 +5281,13 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce(33),
       },
       notificationDelivery: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(121)
-          .mockResolvedValueOnce(7)
-          .mockResolvedValueOnce(172)
-          .mockResolvedValueOnce(64),
+        count: vi.fn().mockResolvedValue(0),
+        groupBy: vi.fn().mockResolvedValue([
+          { provider: 'FCM', status: 'SENT', _count: { _all: 121 } },
+          { provider: 'FCM', status: 'FAILED', _count: { _all: 51 } },
+          { provider: 'IN_APP_ONLY', status: 'FAILED', _count: { _all: 64 } },
+          { provider: 'SMS', status: 'SKIPPED', _count: { _all: 7 } },
+        ]),
       },
     };
     const service = createAdminService(prisma);
@@ -5351,8 +5352,9 @@ describe('AdminService query orchestration', () => {
       }),
     );
     expect(prisma.notification.count).toHaveBeenCalledTimes(9);
-    expect(prisma.notificationDelivery.count).toHaveBeenCalledWith(
+    expect(prisma.notificationDelivery.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
+        by: ['provider', 'status'],
         where: expect.objectContaining({
           notification: expect.objectContaining({
             createdAt: {
@@ -5360,17 +5362,10 @@ describe('AdminService query orchestration', () => {
               lt: new Date('2026-06-28T00:00:00.000Z'),
             },
           }),
-          provider: 'FCM',
         }),
       }),
     );
-    expect(prisma.notificationDelivery.count).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          provider: 'IN_APP_ONLY',
-        }),
-      }),
-    );
+    expect(prisma.notificationDelivery.count).not.toHaveBeenCalled();
   });
 
   it('rejects invalid notification board date windows', () => {
