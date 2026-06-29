@@ -119,6 +119,18 @@ describe('earnings policy', () => {
     ).toThrow('Deposit evidence is required for partner bank deposit');
   });
 
+  it('requires an admin actor before normalizing partner bank deposits', () => {
+    expect(() =>
+      normalizePartnerBankDepositInput({
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
+      }),
+    ).toThrow('Admin actor is required for partner bank deposit');
+  });
+
   it('applies cash booking deduction against prepaid wallet liability when enough balance exists', () => {
     expect(applyCashBookingDeductionToPartnerWallet(830000, 170000)).toEqual({
       currentWalletBalance: 830000,

@@ -868,6 +868,7 @@ describe('EarningsService payout batches', () => {
         bankTransactionId: 'BIDV-20260629-001',
         depositDate: '2026-06-29T09:30:00.000Z',
         attachmentUrl: 'https://storage.example/deposits/proof.jpg',
+        adminId: 'admin-user-1',
       }),
     ).resolves.toEqual(existingLedger);
 
@@ -906,6 +907,7 @@ describe('EarningsService payout batches', () => {
         bankTransactionId: 'BIDV-20260629-001',
         depositDate: '2026-06-29T09:30:00.000Z',
         attachmentUrl: 'https://storage.example/deposits/proof.jpg',
+        adminId: 'admin-user-1',
       }),
     ).rejects.toThrow('Partner bank deposit reference already exists with a different amount');
 

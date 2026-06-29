@@ -190,6 +190,9 @@ export function normalizePartnerBankDepositInput(input: PartnerBankDepositInput)
   if (!attachmentFileId && !attachmentUrl) {
     throw new BadRequestException('Deposit evidence is required for partner bank deposit');
   }
+  if (!adminId) {
+    throw new BadRequestException('Admin actor is required for partner bank deposit');
+  }
 
   return {
     providerProfileId,
