@@ -5957,6 +5957,37 @@ describe('AdminService query orchestration', () => {
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
 
+  it('rejects manual wallet adjustments for unknown owners before writing a ledger', async () => {
+    const tx = {
+      providerProfile: {
+        findUniqueOrThrow: vi.fn().mockRejectedValue(new Error('Record not found')),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'missing-provider',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 100000,
+        reason: 'Missing owner should not write ledger',
+        approvalId: 'approval-missing-owner',
+      }),
+    ).rejects.toThrow('Manual wallet adjustment owner was not found');
+
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
   it('rejects direct manual adjustments against a closed monthly period', async () => {
     const prisma = {
       customerProfile: {

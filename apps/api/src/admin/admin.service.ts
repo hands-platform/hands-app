@@ -1972,7 +1972,8 @@ export class AdminService {
       includePeriodMetrics: true,
       includeRealtimePoints: false,
     });
-    const { realtimePoints: _realtimePoints, ...summary } = overview;
+    const { realtimePoints, ...summary } = overview;
+    void realtimePoints;
 
     return summary;
   }
@@ -6448,10 +6449,12 @@ export class AdminService {
     currency: string,
   ) {
     if (ownerType === 'CUSTOMER') {
-      await db.customerProfile.findUniqueOrThrow({
-        where: { id: ownerId },
-        select: { id: true },
-      });
+      await assertManualWalletOwnerExists(
+        db.customerProfile.findUniqueOrThrow({
+          where: { id: ownerId },
+          select: { id: true },
+        }),
+      );
       const aggregate = await db.customerWalletLedgerEntry.aggregate({
         where: { customerProfileId: ownerId, currency },
         _sum: { amount: true },
@@ -6459,10 +6462,12 @@ export class AdminService {
       return integerValue(aggregate._sum.amount);
     }
 
-    await db.providerProfile.findUniqueOrThrow({
-      where: { id: ownerId },
-      select: { id: true },
-    });
+    await assertManualWalletOwnerExists(
+      db.providerProfile.findUniqueOrThrow({
+        where: { id: ownerId },
+        select: { id: true },
+      }),
+    );
     const aggregate = await db.providerWalletLedgerEntry.aggregate({
       where: { providerProfileId: ownerId, currency },
       _sum: { amount: true },
@@ -9169,6 +9174,14 @@ function normalizeManualWalletApprovalId(value: string | undefined, requireAppro
     throw new BadRequestException('Approval id is required for manual wallet adjustment');
   }
   return normalized ?? 'PREVIEW_ONLY';
+}
+
+async function assertManualWalletOwnerExists(ownerLookup: Promise<unknown>) {
+  try {
+    await ownerLookup;
+  } catch {
+    throw new BadRequestException('Manual wallet adjustment owner was not found');
+  }
 }
 
 function providerManualWalletAdjustmentLedgerType(preview: AdminManualWalletAdjustmentPreview) {
