@@ -23,6 +23,8 @@ import { maskToken } from './partner-list-profile';
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const MATCHING_BOOKING_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_BOOKING_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const WALLET_WITHDRAWAL_ADMIN_ACTION_STATUSES = new Set(['REQUESTED', 'APPROVED']);
+const WALLET_WITHDRAWAL_TERMINAL_STATUSES = new Set(['PAID', 'REJECTED', 'CANCELLED']);
 
 export type PartnerMasterRow = {
   avatarStatus: AdminAvatarStatus;
@@ -56,6 +58,10 @@ export type PartnerMasterRow = {
   walletBalance: number;
   pendingPayout: number;
   availablePayout: number;
+  walletWithdrawalAdminActionCount: number;
+  walletWithdrawalOpenCount: number;
+  walletWithdrawalLatestAmount: number | null;
+  walletWithdrawalLatestStatus: string;
   auditLogCount: number;
   latestAuditTitle: string;
   latestAuditDetail: string;
@@ -81,6 +87,7 @@ export function buildPartnerMasterRow(
   const lastSeenAt = partnerLastSessionAt(provider);
   const latestSessionFacts = partnerLatestSessionFacts(provider);
   const accountBlocked = Boolean(provider.blockedAt);
+  const walletWithdrawalFacts = partnerWalletWithdrawalFacts(provider);
   const closureCounts = bookingSummary
     ? {
         adminClosed: bookingSummary.adminClosedBookingCount,
@@ -130,6 +137,7 @@ export function buildPartnerMasterRow(
     walletBalance: partnerUnsettledWalletBalance(provider),
     pendingPayout: partnerPendingPayout(provider),
     availablePayout: partnerAvailablePayout(provider),
+    ...walletWithdrawalFacts,
     auditLogCount: provider.auditLogCount ?? provider.auditLogs?.length ?? 0,
     latestAuditTitle: marketplaceDisplayText(latestAuditLog?.action ?? 'No internal note'),
     latestAuditDetail: latestAuditLog
@@ -139,6 +147,22 @@ export function buildPartnerMasterRow(
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
     approvalIssues: providerReviewIssues(provider, opsPolicy),
     avatarStatus: partnerMasterAvatarStatus(provider, bookingRows),
+  };
+}
+
+function partnerWalletWithdrawalFacts(provider: AdminProvider) {
+  const requests = provider.walletWithdrawalRequests ?? [];
+  const openRequests = requests.filter((request) => !WALLET_WITHDRAWAL_TERMINAL_STATUSES.has(request.status));
+  const adminActionRequests = requests.filter((request) =>
+    WALLET_WITHDRAWAL_ADMIN_ACTION_STATUSES.has(request.status),
+  );
+  const latestRequest = requests[0] ?? null;
+
+  return {
+    walletWithdrawalAdminActionCount: adminActionRequests.length,
+    walletWithdrawalLatestAmount: latestRequest ? Number(latestRequest.amount) : null,
+    walletWithdrawalLatestStatus: latestRequest?.status ?? 'NONE',
+    walletWithdrawalOpenCount: openRequests.length,
   };
 }
 

@@ -765,6 +765,7 @@ export type AdminProvider = {
   };
   bookingSummary?: AdminProviderBookingSummary;
   earnings?: AdminEarning[];
+  walletWithdrawalRequests?: AdminProviderWalletWithdrawalRequest[];
   auditLogs?: AdminAuditLog[];
   auditLogCount?: number;
   user?: {

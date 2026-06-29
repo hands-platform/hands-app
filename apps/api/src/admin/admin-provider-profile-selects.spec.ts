@@ -9,11 +9,13 @@ import {
   adminBookingDetailProviderSelect,
   adminLocationSnapshotSummarySelect,
   adminProviderDetailSelect,
+  adminProviderDirectorySelect,
   adminProviderListBookingSelect,
   adminProviderListEarningSelect,
   adminProviderListParticipantSelect,
   adminProviderListSelect,
   adminProviderListUserSelect,
+  adminProviderListWalletWithdrawalRequestSelect,
   adminProviderOverviewSelect,
   adminProviderPayoutBatchSummarySelect,
 } from './admin-provider-profile-selects';
@@ -68,11 +70,21 @@ describe('admin provider profile selects', () => {
     expect(adminProviderListEarningSelect.booking).toMatchObject({
       select: { id: true, status: true, scheduledStartAt: true },
     });
+    expect(adminProviderListWalletWithdrawalRequestSelect).toMatchObject({
+      amount: true,
+      currency: true,
+      status: true,
+      transferRef: true,
+    });
     expect(adminProviderListSelect).toMatchObject({
       preferredBookings: { take: 15 },
       selectedBookings: { take: 15 },
       participants: { take: 15 },
       earnings: { take: 10 },
+      walletWithdrawalRequests: { take: 3 },
+    });
+    expect(adminProviderDirectorySelect).toMatchObject({
+      walletWithdrawalRequests: { take: 3 },
     });
   });
 

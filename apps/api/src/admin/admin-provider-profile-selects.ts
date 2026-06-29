@@ -49,6 +49,7 @@ export const ADMIN_PROVIDER_CONTROL_LIST_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 10;
+const ADMIN_PROVIDER_COMPACT_WITHDRAWAL_RELATION_LIMIT = 3;
 const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
 const ADMIN_PROVIDER_DETAIL_RELATION_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT = 20;
@@ -457,6 +458,22 @@ export const adminProviderListEarningSelect = {
   booking: { select: { id: true, status: true, scheduledStartAt: true } },
 } satisfies Prisma.ProviderEarningSelect;
 
+export const adminProviderListWalletWithdrawalRequestSelect = {
+  id: true,
+  providerProfileId: true,
+  bankAccountId: true,
+  amount: true,
+  currency: true,
+  status: true,
+  adminNote: true,
+  correctionReason: true,
+  transferRef: true,
+  reviewedAt: true,
+  paidAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderWalletWithdrawalRequestSelect;
+
 export const adminProviderListParticipantSelect = {
   id: true,
   providerProfileId: true,
@@ -549,6 +566,11 @@ export const adminProviderListSelect = {
     take: ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT,
     select: adminProviderListEarningSelect,
   },
+  walletWithdrawalRequests: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_WITHDRAWAL_RELATION_LIMIT,
+    select: adminProviderListWalletWithdrawalRequestSelect,
+  },
   sessions: {
     orderBy: { lastSeenAt: 'desc' },
     take: 3,
@@ -622,6 +644,11 @@ export const adminProviderDirectorySelect = {
   },
   services: {
     select: adminProviderListServiceSelect,
+  },
+  walletWithdrawalRequests: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_WITHDRAWAL_RELATION_LIMIT,
+    select: adminProviderListWalletWithdrawalRequestSelect,
   },
   sessions: {
     orderBy: { lastSeenAt: 'desc' },

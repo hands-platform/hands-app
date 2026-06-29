@@ -22,6 +22,8 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Access');
     expect(rendered).toContain('Work');
     expect(rendered).toContain('Wallet');
+    expect(rendered).toContain('Withdrawal action');
+    expect(rendered).toContain('650.000 VND');
     expect(rendered).not.toContain('Current state');
     expect(rendered).not.toContain('Joined / recent access');
     expect(rendered).not.toContain('Device / IP');
@@ -204,6 +206,10 @@ function buildRows(): PartnerMasterListSectionRow[] {
       reviewCount: 12,
       status: 'ONLINE_AVAILABLE',
       walletBalance: -120000,
+      walletWithdrawalAdminActionCount: 1,
+      walletWithdrawalLatestAmount: 650000,
+      walletWithdrawalLatestStatus: 'REQUESTED',
+      walletWithdrawalOpenCount: 1,
     },
   ];
 }

@@ -170,6 +170,10 @@ function masterRow(input: Partial<PartnerMasterRow> = {}): PartnerMasterRow {
     reviewCount: 5,
     status: 'ONLINE_AVAILABLE',
     walletBalance: -50000,
+    walletWithdrawalAdminActionCount: 0,
+    walletWithdrawalLatestAmount: null,
+    walletWithdrawalLatestStatus: 'NONE',
+    walletWithdrawalOpenCount: 0,
     ...input,
   };
 }

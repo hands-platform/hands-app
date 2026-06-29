@@ -238,8 +238,32 @@ function renderWalletCell(row: PartnerMasterListSectionRow) {
       <small>
         Pending {formatProviderMoney(row.pendingPayout)} / available {formatProviderMoney(row.availablePayout)}
       </small>
+      {renderWalletWithdrawalSignal(row)}
     </div>
   );
+}
+
+function renderWalletWithdrawalSignal(row: PartnerMasterListSectionRow) {
+  if (row.walletWithdrawalAdminActionCount > 0) {
+    return (
+      <small>
+        <span className="pill pill-warn">Withdrawal action</span>{' '}
+        {row.walletWithdrawalLatestAmount === null
+          ? row.walletWithdrawalLatestStatus
+          : formatProviderMoney(row.walletWithdrawalLatestAmount)}
+      </small>
+    );
+  }
+
+  if (row.walletWithdrawalOpenCount > 0) {
+    return (
+      <small>
+        <span className="pill pill-info">Withdrawal pending</span> {row.walletWithdrawalLatestStatus}
+      </small>
+    );
+  }
+
+  return null;
 }
 
 function renderRevenueCell(row: PartnerMasterListSectionRow) {

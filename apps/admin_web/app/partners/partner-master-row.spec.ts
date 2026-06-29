@@ -146,6 +146,10 @@ describe('partner master row', () => {
     expect(row.platformFee).toBe(12000);
     expect(row.pendingPayout).toBe(380000);
     expect(row.availablePayout).toBe(380000);
+    expect(row.walletWithdrawalAdminActionCount).toBe(0);
+    expect(row.walletWithdrawalOpenCount).toBe(0);
+    expect(row.walletWithdrawalLatestAmount).toBeNull();
+    expect(row.walletWithdrawalLatestStatus).toBe('NONE');
     expect(row.auditLogCount).toBe(7);
     expect(row.latestAuditTitle).toBe('partner.ops_note.add');
     expect(row.latestAuditDetail).toContain('manual review');
@@ -153,6 +157,40 @@ describe('partner master row', () => {
     expect(row.latestSessionIp).toBe('203.0.113.7');
     expect(row.accountBlocked).toBe(false);
     expect(row.accountNote).toBe('Normal account');
+  });
+
+  it('summarizes wallet withdrawal requests for the partner list wallet signal', () => {
+    const row = buildPartnerMasterRow(
+      partner({
+        walletWithdrawalRequests: [
+          {
+            id: 'withdrawal-requested',
+            providerProfileId: 'partner-1',
+            bankAccountId: 'bank-1',
+            amount: 650000,
+            currency: 'VND',
+            status: 'REQUESTED',
+            createdAt: '2026-06-20T01:00:00.000Z',
+          },
+          {
+            id: 'withdrawal-paid',
+            providerProfileId: 'partner-1',
+            bankAccountId: 'bank-1',
+            amount: 250000,
+            currency: 'VND',
+            status: 'PAID',
+            createdAt: '2026-06-18T01:00:00.000Z',
+          },
+        ],
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      { displayName: (item: AdminProvider) => item.displayName ?? item.id },
+    );
+
+    expect(row.walletWithdrawalAdminActionCount).toBe(1);
+    expect(row.walletWithdrawalOpenCount).toBe(1);
+    expect(row.walletWithdrawalLatestAmount).toBe(650000);
+    expect(row.walletWithdrawalLatestStatus).toBe('REQUESTED');
   });
 
   it('uses server booking summary counts when booking relation rows are capped', () => {
