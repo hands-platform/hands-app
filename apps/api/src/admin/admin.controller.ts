@@ -814,8 +814,12 @@ export class AdminController {
   }
 
   @Get('partner-withholding-tax')
-  partnerWithholdingTax(@Query('period') period?: string, @Query('take') take?: string) {
-    return this.admin.listPartnerWithholdingTax({ period, take });
+  partnerWithholdingTax(
+    @Query('period') period?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listPartnerWithholdingTax({ period, skip, take });
   }
 
   @Get('partner-withholding-tax/summary')

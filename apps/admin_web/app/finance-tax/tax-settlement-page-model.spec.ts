@@ -7,6 +7,7 @@ import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  partnerWithholdingTaxHref,
   buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildPaymentFeeMetrics,
   buildPaymentFeeSummaryCsvHref,
@@ -90,6 +91,7 @@ describe('tax settlement page model', () => {
     const filters = readPartnerWithholdingTaxFilters({ period: '2026-06', take: '75' });
 
     expect(filters).toEqual({
+      page: 1,
       period: '2026-06',
       take: 75,
     });
@@ -99,6 +101,31 @@ describe('tax settlement page model', () => {
     expect(buildPartnerWithholdingTaxSummaryApiHref(filters)).toBe(
       '/admin/partner-withholding-tax/summary?period=2026-06',
     );
+  });
+
+  it('keeps partner withholding tax rows server-paginated by monthly period', () => {
+    const filters = readPartnerWithholdingTaxFilters({ page: '3', period: '2026-06', take: '25' });
+
+    expect(filters).toEqual({
+      page: 3,
+      period: '2026-06',
+      take: 25,
+    });
+    expect(buildPartnerWithholdingTaxApiHref(filters)).toBe(
+      '/admin/partner-withholding-tax?period=2026-06&take=25&skip=50',
+    );
+    expect(partnerWithholdingTaxHref(filters)).toBe(
+      '/finance-tax/partner-withholding-tax?period=2026-06&page=3',
+    );
+    expect(buildTaxSettlementServerPagination(['partner-a'], filters, 51)).toEqual({
+      from: 51,
+      page: 3,
+      pageSize: 25,
+      rows: ['partner-a'],
+      to: 51,
+      totalPages: 3,
+      totalRows: 51,
+    });
   });
 
   it('loads monthly tax closing with a bounded monthly period list', () => {
@@ -149,7 +176,7 @@ describe('tax settlement page model', () => {
       ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid&take=50'],
       ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06'],
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
-      ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06'],
+      ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06&take=75'],
     ]);
   });
 

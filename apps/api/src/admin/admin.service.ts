@@ -372,6 +372,7 @@ type AdminManualWalletAdjustmentQuery = {
 };
 type AdminPartnerWithholdingTaxQuery = {
   readonly period?: string | null;
+  readonly skip?: number | string | null;
   readonly take?: number | string | null;
 };
 type AdminMonthlyTaxClosingQuery = {
@@ -5637,6 +5638,7 @@ export class AdminService {
   async listPartnerWithholdingTax(options: AdminPartnerWithholdingTaxQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = adminPartnerWithholdingTaxWhere(period);
+    const skip = boundedAdminListSkip(options.skip);
     const groups = await this.prisma.bookingSettlementSnapshot.groupBy({
       by: ['providerProfileId', 'monthlyPeriod', 'currency'],
       where,
@@ -5649,6 +5651,7 @@ export class AdminService {
         partnerWithholdingTotal: true,
       },
       orderBy: [{ monthlyPeriod: 'desc' }, { providerProfileId: 'asc' }],
+      ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
     });
 

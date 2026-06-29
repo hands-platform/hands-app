@@ -35,6 +35,7 @@ export type BookingSettlementFilters = {
 };
 
 export type PartnerWithholdingTaxFilters = {
+  readonly page: number;
   readonly period: string;
   readonly take: number;
 };
@@ -117,6 +118,7 @@ export function readPartnerWithholdingTaxFilters(
   params: Record<string, string | string[] | undefined>,
 ): PartnerWithholdingTaxFilters {
   return {
+    page: readTaxSettlementPage(readSearchParam(params.page)),
     period: normalizeTaxPeriod(readSearchParam(params.period)),
     take: boundedTake(readSearchParam(params.take)),
   };
@@ -172,10 +174,12 @@ export function buildCouponFinanceApiHref(filters: BookingSettlementFilters) {
 }
 
 export function buildPartnerWithholdingTaxApiHref(filters: PartnerWithholdingTaxFilters) {
-  return `/admin/partner-withholding-tax?${new URLSearchParams({
+  const params = new URLSearchParams({
     period: filters.period,
     take: String(filters.take),
-  }).toString()}`;
+  });
+  appendTaxSettlementSkip(params, filters);
+  return `/admin/partner-withholding-tax?${params.toString()}`;
 }
 
 export function buildPartnerWithholdingTaxSummaryApiHref(filters: PartnerWithholdingTaxFilters) {
@@ -235,7 +239,7 @@ export function couponFinanceHref(filters: BookingSettlementFilters) {
 
 export function buildTaxSettlementServerPagination<T>(
   rows: readonly T[],
-  filters: BookingSettlementFilters,
+  filters: { readonly page: number; readonly take: number },
   totalRows: number,
 ) {
   const safeTotalRows = Math.max(0, Math.trunc(totalRows));
@@ -255,7 +259,9 @@ export function buildTaxSettlementServerPagination<T>(
 }
 
 export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters) {
-  return `/finance-tax/partner-withholding-tax?${new URLSearchParams({ period: filters.period }).toString()}`;
+  const params = new URLSearchParams({ period: filters.period });
+  appendTaxSettlementUiPagination(params, filters);
+  return `/finance-tax/partner-withholding-tax?${params.toString()}`;
 }
 
 export function monthlyTaxClosingHref(filters: MonthlyTaxClosingFilters) {
@@ -384,7 +390,7 @@ export function buildTaxFinanceMetrics(
       label: 'Partner tax withheld',
       value: formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency || currency),
       helper: 'VAT plus PIT withheld for the selected monthly tax period.',
-      href: partnerWithholdingTaxHref({ period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+      href: partnerWithholdingTaxHref({ page: 1, period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
     },
     {
       label: 'Company VAT',
@@ -400,7 +406,7 @@ export function buildTaxFinanceMetrics(
       label: 'Partners with revenue',
       value: withholdingSummary.partnerCountWithRevenue,
       helper: 'Partners with taxable settlement rows in the selected period.',
-      href: partnerWithholdingTaxHref({ period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
+      href: partnerWithholdingTaxHref({ page: 1, period: withholdingSummary.period, take: TAX_SETTLEMENT_DEFAULT_TAKE }),
     },
   ];
 }
@@ -771,7 +777,7 @@ export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClo
   );
 }
 
-export function buildPartnerWithholdingTaxRowsCsvHref(rows: AdminPartnerWithholdingTaxRow[]) {
+export function buildPartnerWithholdingTaxRowsCsvHref(rows: readonly AdminPartnerWithholdingTaxRow[]) {
   return buildCsvDataHref(
     rows.map((row) => ({
       provider_profile_id: row.providerProfileId,
@@ -1110,14 +1116,14 @@ function readTaxSettlementPage(value: string) {
   return Math.min(parsed, 1000);
 }
 
-function appendTaxSettlementSkip(params: URLSearchParams, filters: BookingSettlementFilters) {
+function appendTaxSettlementSkip(params: URLSearchParams, filters: { readonly page: number; readonly take: number }) {
   const skip = (filters.page - 1) * filters.take;
   if (skip > 0) {
     params.set('skip', String(skip));
   }
 }
 
-function appendTaxSettlementUiPagination(params: URLSearchParams, filters: BookingSettlementFilters) {
+function appendTaxSettlementUiPagination(params: URLSearchParams, filters: { readonly page: number; readonly take: number }) {
   if (filters.take !== TAX_SETTLEMENT_DEFAULT_TAKE) {
     params.set('take', String(filters.take));
   }

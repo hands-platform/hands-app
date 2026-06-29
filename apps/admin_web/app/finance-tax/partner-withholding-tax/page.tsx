@@ -7,14 +7,17 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
   emptyPartnerWithholdingTaxSummary,
+  partnerWithholdingTaxHref,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
@@ -36,7 +39,9 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
     ),
     adminGet<AdminPartnerWithholdingTaxRow[]>(buildPartnerWithholdingTaxApiHref(filters), []),
   ]);
-  const csvHref = buildPartnerWithholdingTaxRowsCsvHref(rows);
+  const pagination = buildTaxSettlementServerPagination(rows, filters, summary.partnerCountWithRevenue);
+  const tableRows = pagination.rows;
+  const csvHref = buildPartnerWithholdingTaxRowsCsvHref(tableRows);
 
   return (
     <AdminPageTemplate
@@ -95,8 +100,8 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
     >
       <section className="card admin-mb-16">
         <AdminSectionHeader
-          description={`Period ${filters.period}. Showing ${rows.length} bounded Partner rows from the monthly group API.`}
-          status={<span className="pill pill-success">take {filters.take}</span>}
+          description={`Period ${filters.period}. Showing page ${pagination.page} of ${pagination.totalPages} from the monthly group API.`}
+          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
           title="Withholding tax period"
         />
         <form className="form-grid compact-form admin-mt-12" method="get">
@@ -127,9 +132,9 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           <AdminDataTable
             emptyMessage="No Partner withholding tax rows exist for this period."
             headers={['Partner', 'Period', 'Bookings', 'Gross revenue', 'Partner payout', 'VAT / PIT', 'Total withheld']}
-            rowCount={rows.length}
+            rowCount={tableRows.length}
           >
-            {rows.map((row) => (
+            {tableRows.map((row) => (
               <tr key={`${row.providerProfileId}-${row.period}`}>
                 <td>
                   <Link className="text-link" href={`/partners/${row.providerProfileId}?section=full`}>
@@ -152,6 +157,19 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="Partner withholding tax pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={pagination.totalPages}
+          />
+        </div>
       </section>
     </AdminPageTemplate>
   );

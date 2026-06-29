@@ -6507,7 +6507,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listPartnerWithholdingTax({ period: '2026-06', take: '25' })).resolves.toEqual([
+    await expect(service.listPartnerWithholdingTax({ period: '2026-06', skip: '50', take: '25' })).resolves.toEqual([
       {
         providerProfileId: 'provider-1',
         partnerName: 'Smoke Partner',
@@ -6527,6 +6527,7 @@ describe('AdminService query orchestration', () => {
       expect.objectContaining({
         by: ['providerProfileId', 'monthlyPeriod', 'currency'],
         orderBy: [{ monthlyPeriod: 'desc' }, { providerProfileId: 'asc' }],
+        skip: 50,
         take: 25,
         where: expect.objectContaining({
           monthlyPeriod: '2026-06',

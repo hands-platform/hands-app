@@ -659,7 +659,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes partner withholding tax monthly summaries', async () => {
     admin.listPartnerWithholdingTax.mockResolvedValue([{ providerProfileId: 'provider-1' }]);
 
-    await expect(controller.partnerWithholdingTax('2026-06', '25')).resolves.toEqual([
+    await expect(controller.partnerWithholdingTax('2026-06', '25', '50')).resolves.toEqual([
       { providerProfileId: 'provider-1' },
     ]);
 
@@ -669,6 +669,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listPartnerWithholdingTax).toHaveBeenCalledWith({
       period: '2026-06',
+      skip: '50',
       take: '25',
     });
   });
