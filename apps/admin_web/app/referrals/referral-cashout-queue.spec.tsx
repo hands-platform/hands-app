@@ -64,6 +64,7 @@ const row: AdminReferralCashoutQueueRow = {
       rejectionReason: 'Account holder name does not match KYC.',
       reviewedAt: createdAt,
       status: 'REJECTED',
+      updatedAt: createdAt,
     },
     helper: 'Account holder name does not match KYC.',
     label: 'Bank correction required',
@@ -113,10 +114,13 @@ describe('Referral cashout queue', () => {
     expect(markup).toContain('VCB');
     expect(markup).toContain('****1234');
     expect(markup).toContain('Account holder name does not match KYC.');
+    expect(markup).toContain('Updated 24 Jun 2026, 17:00');
     expect(markup).toContain('approved for bank transfer');
     expect(markup).toContain('Mark paid');
     expect(markup).toContain('Transfer reference');
     expect(markup).toContain('Require tax review');
+    expect(markup).toContain('Request bank correction');
+    expect(markup).toContain('type="hidden" name="bankAccountId" value="bank-1"');
     expect(markup).toContain('href="/referrals/cashouts?status=approved&amp;q=parent"');
     expect(markup).toContain('aria-label="Referral cashout queue pages"');
   });

@@ -208,6 +208,7 @@ export type AdminReferralCashoutPayoutProfile = {
     rejectionReason?: string | null;
     reviewedAt?: string | null;
     status: string;
+    updatedAt?: string | null;
   } | null;
   helper: string;
   label: string;

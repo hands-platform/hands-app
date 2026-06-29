@@ -8,6 +8,11 @@ type ReferralRewardReleaseResult = {
   readonly releasedCount: number;
 };
 
+type ReferralRewardDecisionRevalidationInput = Pick<
+  ReturnType<typeof referralRewardDecisionInput>,
+  'audience' | 'parentId'
+>;
+
 export async function releaseAvailableReferralRewards() {
   await adminPost<ReferralRewardReleaseResult>(
     '/admin/referrals/rewards/release-available',
@@ -75,6 +80,35 @@ export async function markReferralRewardCashoutPaid(formData: FormData) {
   revalidateReferralRewardDecisionPaths(input);
 }
 
+export async function requestReferralCashoutBankCorrection(formData: FormData) {
+  const bankAccountId = String(formData.get('bankAccountId') || '').trim();
+  if (!bankAccountId) {
+    throw new Error('Partner bank account id is required');
+  }
+
+  const input = {
+    audience: normalizeReferralAudience(String(formData.get('audience') || 'partner')),
+    parentId: String(formData.get('parentId') || '').trim(),
+    reason:
+      String(formData.get('reason') || '').trim() ||
+      '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+  };
+
+  await adminPost(
+    `/admin/partner-bank-accounts/${encodeURIComponent(bankAccountId)}/reject`,
+    { reason: input.reason },
+    null,
+  );
+  const basePath = input.audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
+  revalidatePath(basePath);
+  revalidatePath('/referrals/cashouts');
+  if (input.parentId) {
+    revalidatePath(`${basePath}/${encodeURIComponent(input.parentId)}`);
+    revalidatePath(`/partners/${encodeURIComponent(input.parentId)}`);
+  }
+  revalidatePath('/audit-log');
+}
+
 export async function reverseReferralReward(formData: FormData) {
   const input = referralRewardDecisionInput(formData);
 
@@ -139,7 +173,7 @@ function referralRewardDecisionInput(formData: FormData) {
   };
 }
 
-function revalidateReferralRewardDecisionPaths(input: ReturnType<typeof referralRewardDecisionInput>) {
+function revalidateReferralRewardDecisionPaths(input: ReferralRewardDecisionRevalidationInput) {
   const basePath = input.audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
   revalidatePath(basePath);
   revalidatePath('/referrals/cashouts');

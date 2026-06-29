@@ -26,6 +26,7 @@ import { referralRewardCreditState } from '../../lib/referral-reward-credit-stat
 import {
   approveReferralRewardCashout,
   markReferralRewardCashoutPaid,
+  requestReferralCashoutBankCorrection,
   requireReferralRewardTaxReview,
 } from './actions';
 
@@ -43,6 +44,12 @@ type ReferralCashoutQueuePageProps = {
   readonly filters: ReferralCashoutFilters;
   readonly rows: readonly AdminReferralCashoutQueueRow[];
   readonly summary: AdminReferralCashoutQueueSummary;
+};
+
+type ReferralCashoutAction = {
+  readonly action: (formData: FormData) => Promise<void>;
+  readonly formNoValidate?: boolean;
+  readonly label: string;
 };
 
 const referralCashoutPageSize = 10;
@@ -286,6 +293,7 @@ function ReferralCashoutPayoutProfileCell({ profile }: { readonly profile: Admin
             {account.accountNumberMasked ?? account.accountNumberLast4 ?? 'Masked account unavailable'}
           </div>
           <div className="muted">{account.accountHolderName}</div>
+          {account.updatedAt ? <div className="muted">Updated {formatDateTime(account.updatedAt)}</div> : null}
         </div>
       ) : null}
       <div className="muted">{profile.helper}</div>
@@ -300,10 +308,11 @@ function referralCashoutPayoutProfileTone(status: AdminReferralCashoutPayoutProf
 }
 
 function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
-  const actions = referralCashoutActionsForStatus(row.status);
+  const actions = referralCashoutActionsForRow(row);
   if (actions.length === 0) {
     return <span className="muted">Closed</span>;
   }
+  const bankAccountId = referralCashoutBankCorrectionAccountId(row);
 
   return (
     <details className="admin-action-dropdown referral-reward-action-dropdown">
@@ -316,6 +325,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
           <input name="audience" type="hidden" value={row.audience === 'PARTNER' ? 'partner' : 'customer'} />
           <input name="parentId" type="hidden" value={row.parent.id} />
           <input name="rewardId" type="hidden" value={row.id} />
+          {bankAccountId ? <input name="bankAccountId" type="hidden" value={bankAccountId} /> : null}
           <div className="referral-reward-action-reason">
             <span>Reason</span>
             <AdminFormInput
@@ -342,6 +352,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
               <button
                 className="admin-action-item admin-action-button"
                 formAction={item.action}
+                formNoValidate={item.formNoValidate}
                 key={item.label}
                 role="menuitem"
                 type="submit"
@@ -356,7 +367,19 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
   );
 }
 
-function referralCashoutActionsForStatus(status: AdminReferralRewardStatus) {
+function referralCashoutActionsForRow(row: AdminReferralCashoutQueueRow) {
+  const actions = referralCashoutActionsForStatus(row.status);
+  if (referralCashoutBankCorrectionAccountId(row)) {
+    actions.push({
+      action: requestReferralCashoutBankCorrection,
+      formNoValidate: true,
+      label: 'Request bank correction',
+    });
+  }
+  return actions;
+}
+
+function referralCashoutActionsForStatus(status: AdminReferralRewardStatus): ReferralCashoutAction[] {
   if (status === 'CASHOUT_REQUESTED') {
     return [
       { action: approveReferralRewardCashout, label: 'Approve cashout' },
@@ -370,6 +393,12 @@ function referralCashoutActionsForStatus(status: AdminReferralRewardStatus) {
     ];
   }
   return [];
+}
+
+function referralCashoutBankCorrectionAccountId(row: AdminReferralCashoutQueueRow) {
+  if (row.payoutProfile.type !== 'PROVIDER_BANK_ACCOUNT') return null;
+  if (row.payoutProfile.status !== 'CORRECTION_REQUIRED' && row.payoutProfile.status !== 'NEEDS_REVIEW') return null;
+  return row.payoutProfile.account?.id ?? null;
 }
 
 export function buildReferralCashoutFilters(

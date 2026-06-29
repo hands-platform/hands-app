@@ -9242,6 +9242,7 @@ function adminReferralCashoutBankAccountView(account: AdminReferralCashoutBankAc
     isPrimary: account.isPrimary,
     reviewedAt: account.reviewedAt,
     rejectionReason: account.rejectionReason,
+    updatedAt: account.updatedAt,
   };
 }
 

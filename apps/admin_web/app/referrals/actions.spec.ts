@@ -8,6 +8,7 @@ import {
   holdReferralReward,
   markReferralRewardCashoutPaid,
   releaseAvailableReferralRewards,
+  requestReferralCashoutBankCorrection,
   requireReferralRewardTaxReview,
   reverseReferralReward,
   updateReferralPolicy,
@@ -209,6 +210,34 @@ describe('referral server actions', () => {
       '/referrals/customers',
       '/referrals/cashouts',
       '/referrals/customers/parent-customer',
+      '/audit-log',
+    ]);
+  });
+
+  it('requests a partner bank correction for a referral cashout through the partner bank review API', async () => {
+    mockedAdminPost.mockResolvedValue({
+      id: 'bank-1',
+      status: 'REJECTED',
+      rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+    });
+    const formData = new FormData();
+    formData.set('audience', 'partner');
+    formData.set('bankAccountId', 'bank-1');
+    formData.set('parentId', 'parent-partner');
+    formData.set('reason', ' 입금 정보가 정확하지 않아 입금이 되지 않습니다. ');
+
+    await expect(requestReferralCashoutBankCorrection(formData)).resolves.toBeUndefined();
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/partner-bank-accounts/bank-1/reject',
+      { reason: '입금 정보가 정확하지 않아 입금이 되지 않습니다.' },
+      null,
+    );
+    expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
+      '/referrals/partners',
+      '/referrals/cashouts',
+      '/referrals/partners/parent-partner',
+      '/partners/parent-partner',
       '/audit-log',
     ]);
   });

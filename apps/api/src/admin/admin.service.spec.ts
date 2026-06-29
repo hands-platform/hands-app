@@ -2944,6 +2944,7 @@ describe('AdminService query orchestration', () => {
             rejectionReason: 'Account holder name does not match KYC.',
             reviewedAt,
             status: ProviderBankAccountStatus.REJECTED,
+            updatedAt: reviewedAt,
           },
           helper: 'Account holder name does not match KYC.',
           label: 'Bank correction required',
