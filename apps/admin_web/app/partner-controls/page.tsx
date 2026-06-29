@@ -25,6 +25,7 @@ import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
@@ -80,7 +81,7 @@ export default async function PartnerControlsPage({
 }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildFilters(params);
-  const loadPlan = buildPartnerControlPageLoadPlan();
+  const loadPlan = buildPartnerControlPageLoadPlan(params);
   const [providers, reports, sanctions, summaryResponse, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>(loadPlan.providersHref, []),
     adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []),
@@ -91,6 +92,8 @@ export default async function PartnerControlsPage({
   const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);
   const visibleSanctions = filterSanctions(sanctions, filters);
+  const reportTotalPages = partnerControlEstimatedTotalPages(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake);
+  const sanctionTotalPages = partnerControlEstimatedTotalPages(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake);
   const activeFilters = buildPartnerControlActiveFilters(filters);
   const providerOptions = providers.map((provider) => ({
     id: provider.id,
@@ -732,6 +735,17 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
+        <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+          <span>{partnerControlPagedListFooterLabel('report', visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}</span>
+          <AdminRoundedPagination
+            activePage={loadPlan.reportsPage}
+            ariaLabel="Partner reports pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => partnerControlListHref(params, 'reportPage', page)}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={reportTotalPages}
+          />
+        </div>
       </section>
 
       <section className="card">
@@ -811,6 +825,17 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
+        <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+          <span>{partnerControlPagedListFooterLabel('account control', visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}</span>
+          <AdminRoundedPagination
+            activePage={loadPlan.sanctionsPage}
+            ariaLabel="Partner account control pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => partnerControlListHref(params, 'sanctionPage', page)}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={sanctionTotalPages}
+          />
+        </div>
       </section>
       </AdminPageTemplate>
     </>
@@ -1763,6 +1788,52 @@ function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: 
     return `No ${subject} loaded yet.`;
   }
   return `No ${subject} match the active filters. Clear filters or switch investigation lane.`;
+}
+
+function partnerControlPagedListFooterLabel(
+  kind: 'report' | 'account control',
+  rowCount: number,
+  activePage: number,
+  pageSize: number,
+) {
+  const subject = kind === 'report' ? 'report(s)' : 'account control(s)';
+
+  if (rowCount <= 0) {
+    return `Showing 0 ${subject} on page ${activePage}`;
+  }
+
+  const from = (activePage - 1) * pageSize + 1;
+  const to = from + rowCount - 1;
+
+  return `Showing ${from} to ${to} ${subject}`;
+}
+
+function partnerControlEstimatedTotalPages(rowCount: number, activePage: number, pageSize: number) {
+  return Math.max(1, rowCount >= pageSize ? activePage + 1 : activePage);
+}
+
+function partnerControlListHref(
+  params: Record<string, string | string[] | undefined>,
+  pageParam: 'reportPage' | 'sanctionPage',
+  page: number,
+) {
+  const searchParams = new URLSearchParams();
+
+  for (const key of ['q', 'status', 'severity', 'sanction', 'reportPage', 'sanctionPage'] as const) {
+    const value = readParam(params[key]);
+    if (value) {
+      searchParams.set(key, value);
+    }
+  }
+
+  if (page > 1) {
+    searchParams.set(pageParam, String(page));
+  } else {
+    searchParams.delete(pageParam);
+  }
+
+  const query = searchParams.toString();
+  return query ? `/partner-controls?${query}` : '/partner-controls';
 }
 
 function readParam(value: string | string[] | undefined) {
