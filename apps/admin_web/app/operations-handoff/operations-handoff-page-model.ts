@@ -37,6 +37,7 @@ export type OperationsHandoffFilters = {
 
 export type OperationsHandoffDataHrefs = {
   readonly appSessionsHref: string;
+  readonly appSessionSummaryHref: string;
   readonly auditLogsHref: string;
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
@@ -104,6 +105,7 @@ export function buildOperationsHandoffDataHrefs(
     appSessionsHref: `/admin/app-sessions?${new URLSearchParams({
       take: String(limits.list),
     }).toString()}`,
+    appSessionSummaryHref: '/admin/app-sessions/summary',
     auditLogsHref: buildDateScopedHref(
       '/admin/audit-logs',
       { take: String(limits.audit) },

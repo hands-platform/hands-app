@@ -229,6 +229,8 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce(120)
           .mockResolvedValueOnce(11)
           .mockResolvedValueOnce(7)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(5)
           .mockResolvedValueOnce(3)
           .mockResolvedValueOnce(2),
@@ -246,6 +248,8 @@ describe('AdminService query orchestration', () => {
       expired: 2,
       liveCustomers: 11,
       livePartners: 7,
+      recentCustomers: 4,
+      recentPartners: 1,
       recent: 5,
       stale: 3,
       totalCount: 120,

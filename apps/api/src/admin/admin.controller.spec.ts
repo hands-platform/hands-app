@@ -500,6 +500,8 @@ describe('AdminController notification and push actions', () => {
       liveCustomers: 11,
       livePartners: 7,
       recent: 5,
+      recentCustomers: 4,
+      recentPartners: 1,
       stale: 3,
       totalCount: 120,
     });
@@ -510,6 +512,8 @@ describe('AdminController notification and push actions', () => {
       liveCustomers: 11,
       livePartners: 7,
       recent: 5,
+      recentCustomers: 4,
+      recentPartners: 1,
       stale: 3,
       totalCount: 120,
     });

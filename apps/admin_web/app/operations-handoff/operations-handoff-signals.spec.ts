@@ -56,6 +56,33 @@ describe('operations handoff signal models', () => {
     });
   });
 
+  it('uses server app session summary when present so handoff metrics are not sampled', () => {
+    expect(
+      buildPresence(
+        [session({ active: true, lastSeenAt: '2026-06-14T09:55:00.000Z', role: 'CUSTOMER' })],
+        {
+          appSessionSummary: {
+            expired: 3,
+            generatedAt: '2026-06-14T10:00:00.000Z',
+            liveCustomers: 120,
+            livePartners: 60,
+            recent: 42,
+            recentCustomers: 30,
+            recentPartners: 12,
+            stale: 9,
+            totalCount: 600,
+          },
+          nowMs: Date.parse('2026-06-14T10:00:00.000Z'),
+        },
+      ),
+    ).toEqual({
+      customerLive: 120,
+      customerRecent: 30,
+      partnerLive: 60,
+      partnerRecent: 12,
+    });
+  });
+
   it('sorts customer signals by latest work and summarizes payment/location facts', () => {
     const rows = buildCustomerSignals([
       customer({

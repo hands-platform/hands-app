@@ -1,5 +1,6 @@
 import type {
   AdminAppSession,
+  AdminAppSessionSummary,
   AdminBooking,
   AdminCashSettlementSummary,
   AdminCustomer,
@@ -10,6 +11,7 @@ import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy'
 import { formatMoney, formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 
 type SignalTimeOptions = {
+  readonly appSessionSummary?: AdminAppSessionSummary | null;
   readonly nowMs?: number;
 };
 
@@ -44,6 +46,15 @@ export function buildPresence(
   sessions: readonly AdminAppSession[],
   options: SignalTimeOptions = {},
 ) {
+  if (options.appSessionSummary) {
+    return {
+      customerLive: options.appSessionSummary.liveCustomers,
+      customerRecent: options.appSessionSummary.recentCustomers,
+      partnerLive: options.appSessionSummary.livePartners,
+      partnerRecent: options.appSessionSummary.recentPartners,
+    };
+  }
+
   const nowMs = options.nowMs ?? Date.now();
   const customerSessions = sessions.filter((session) => session.role === 'CUSTOMER');
   const partnerSessions = sessions.filter(

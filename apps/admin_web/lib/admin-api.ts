@@ -239,6 +239,8 @@ export type AdminAppSessionSummary = {
   liveCustomers: number;
   livePartners: number;
   recent: number;
+  recentCustomers: number;
+  recentPartners: number;
   stale: number;
   totalCount: number;
 };

@@ -1114,7 +1114,17 @@ export class AdminService {
   async appSessionSummary(options: AdminAppSessionListQuery = {}) {
     const where = adminAppSessionListWhere(options);
     const liveStateWhere = adminAppSessionStateWhere('live') ?? {};
-    const [totalCount, liveCustomers, livePartners, recent, stale, expired] = await Promise.all([
+    const recentStateWhere = adminAppSessionStateWhere('recent') ?? {};
+    const [
+      totalCount,
+      liveCustomers,
+      livePartners,
+      recentCustomers,
+      recentPartners,
+      recent,
+      stale,
+      expired,
+    ] = await Promise.all([
       this.prisma.appSession.count({ ...(where ? { where } : {}) }),
       this.prisma.appSession.count({
         where: withAdminAppSessionWhere(where, { role: Role.CUSTOMER }, liveStateWhere),
@@ -1123,7 +1133,13 @@ export class AdminService {
         where: withAdminAppSessionWhere(where, { role: Role.PROVIDER }, liveStateWhere),
       }),
       this.prisma.appSession.count({
-        where: withAdminAppSessionWhere(where, adminAppSessionStateWhere('recent') ?? {}),
+        where: withAdminAppSessionWhere(where, { role: Role.CUSTOMER }, recentStateWhere),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, { role: Role.PROVIDER }, recentStateWhere),
+      }),
+      this.prisma.appSession.count({
+        where: withAdminAppSessionWhere(where, recentStateWhere),
       }),
       this.prisma.appSession.count({
         where: withAdminAppSessionWhere(where, adminAppSessionStateWhere('stale') ?? {}),
@@ -1139,6 +1155,8 @@ export class AdminService {
       liveCustomers,
       livePartners,
       recent,
+      recentCustomers,
+      recentPartners,
       stale,
       totalCount,
     };

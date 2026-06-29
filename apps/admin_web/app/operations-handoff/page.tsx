@@ -1,5 +1,6 @@
 import {
   AdminAppSession,
+  AdminAppSessionSummary,
   AdminAuditLog,
   AdminBooking,
   AdminBookingDetail,
@@ -78,6 +79,7 @@ export default async function OperationsHandoffPage({
     notifications,
     notificationSummary,
     sessions,
+    appSessionSummary,
     auditLogs,
     cashSummary,
     chatArchive,
@@ -92,6 +94,7 @@ export default async function OperationsHandoffPage({
     adminGet<AdminNotification[]>(dataHrefs.notificationsHref, []),
     adminGet<AdminNotificationBoardSummary | null>(dataHrefs.notificationSummaryHref, null),
     adminGet<AdminAppSession[]>(dataHrefs.appSessionsHref, []),
+    adminGet<AdminAppSessionSummary | null>(dataHrefs.appSessionSummaryHref, null),
     adminGet<AdminAuditLog[]>(dataHrefs.auditLogsHref, []),
     adminGet<AdminCashSettlementSummary>(
       dataHrefs.cashSettlementSummaryHref,
@@ -128,7 +131,7 @@ export default async function OperationsHandoffPage({
     earnings: rangeEarnings,
     cashSummary,
   });
-  const presence = buildPresence(sessions);
+  const presence = buildPresence(sessions, { appSessionSummary });
   const customerSignals = buildCustomerSignals(customers);
   const partnerSignals = buildPartnerSignals(partners, cashSummary);
   const failedNotifications = notifications.filter((notification) =>

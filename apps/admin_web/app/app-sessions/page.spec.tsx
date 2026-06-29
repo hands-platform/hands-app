@@ -50,6 +50,8 @@ describe('AppSessionsPage', () => {
           liveCustomers: 17,
           livePartners: 9,
           recent: 7,
+          recentCustomers: 5,
+          recentPartners: 2,
           stale: 4,
           totalCount: 120,
         };
