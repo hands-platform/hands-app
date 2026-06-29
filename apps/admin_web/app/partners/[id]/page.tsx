@@ -162,6 +162,8 @@ import {
   type PartnerPayoutEarningRow,
   type PartnerPayoutOperationsView,
 } from './partner-detail-payout-operations-section';
+import { buildPartnerWalletSummary } from './partner-detail-wallet-model';
+import { PartnerDetailWalletSummarySection } from './partner-detail-wallet-summary-section';
 import {
   PartnerDetailBookingGateDecisionSection,
   type PartnerBookingGateDecisionView,
@@ -374,11 +376,14 @@ type ProviderDetail = AdminProvider & {
     walletLedgerEntries?: Array<{
       id: string;
       type: string;
+      sourceKey?: string;
       amount: number;
       currency?: string | null;
       reference?: string | null;
       notes?: string | null;
+      metadata?: unknown;
       createdAt?: string;
+      updatedAt?: string | null;
     }>;
   }>;
   payoutBatches?: Array<{
@@ -460,6 +465,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const cashFeeDebtTotal = cashFeeDebtAmount(provider);
   const partnerAuditLogs = provider.auditLogs ?? [];
   const partnerEarnings = provider.earnings ?? [];
+  const partnerWalletSummary = buildPartnerWalletSummary(provider);
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
@@ -1079,6 +1085,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             openRowCount={openCashDebtEarnings.length}
             rows={cashDebtOriginRows}
           />
+          <PartnerDetailWalletSummarySection summary={partnerWalletSummary} />
           <PartnerDetailPayoutOperationsSection
             cardClassForTone={cardClass}
             earningsRows={payoutEarningRows}

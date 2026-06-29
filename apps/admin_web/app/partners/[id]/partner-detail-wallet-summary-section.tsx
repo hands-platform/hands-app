@@ -1,0 +1,139 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
+import { formatCurrency, formatDate, walletLedgerLabel } from './partner-detail-format';
+import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
+
+type PartnerDetailWalletSummarySectionProps = {
+  readonly summary: PartnerWalletSummary;
+};
+
+const walletHeaders = ['Ledger row', 'Amount', 'Allocation summary', 'Evidence'];
+
+export function PartnerDetailWalletSummarySection({
+  summary,
+}: PartnerDetailWalletSummarySectionProps) {
+  return (
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Partner wallet balance, manual bank deposits, negative-wallet recovery, and cash-service deductions. This is a bounded detail-page evidence window; full ledger/audit remains owned by finance APIs."
+      id="partner-wallet-detail"
+      resultLabel={
+        summary.negativeWalletReceivable > 0
+          ? `${formatCurrency(summary.negativeWalletReceivable, summary.currency)} receivable`
+          : 'Wallet clear'
+      }
+      resultTone={resultTone(summary.reviewTone)}
+      title="Partner wallet detail"
+    >
+      <div className="service-trace-summary admin-mt-12 partner-wallet-summary-grid">
+        <div>
+          <span>Current balance</span>
+          <strong>{formatCurrency(summary.currentBalance, summary.currency)}</strong>
+          <small>Positive balance is HANDS liability/prepaid value held for the partner.</small>
+        </div>
+        <div>
+          <span>Available / liability</span>
+          <strong>{formatCurrency(summary.partnerWalletLiability, summary.currency)}</strong>
+          <small>Used for withdrawal review or future prepaid deduction, depending on policy.</small>
+        </div>
+        <div>
+          <span>Negative receivable</span>
+          <strong>{formatCurrency(summary.negativeWalletReceivable, summary.currency)}</strong>
+          <small>Finance follow-up amount still owed by the partner.</small>
+        </div>
+        <div>
+          <span>Bank deposits</span>
+          <strong>{formatCurrency(summary.manualBankDeposits, summary.currency)}</strong>
+          <small>Visible manually recorded partner bank deposits.</small>
+        </div>
+        <div>
+          <span>Negative wallet cleared</span>
+          <strong>{formatCurrency(summary.appliedToNegativeWallet, summary.currency)}</strong>
+          <small>Deposit allocation applied to existing negative wallet balance.</small>
+        </div>
+        <div>
+          <span>Cash-service deductions</span>
+          <strong>
+            {formatCurrency(
+              summary.cashPlatformFeeDeductions +
+                summary.cashCompanyVatDeductions +
+                summary.cashPartnerTaxDeductions,
+              summary.currency,
+            )}
+          </strong>
+          <small>
+            Fee {formatCurrency(summary.cashPlatformFeeDeductions, summary.currency)} / VAT{' '}
+            {formatCurrency(summary.cashCompanyVatDeductions, summary.currency)} / tax{' '}
+            {formatCurrency(summary.cashPartnerTaxDeductions, summary.currency)}
+          </small>
+        </div>
+      </div>
+
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            className={partnerDetailReviewTableClassName}
+            emptyMessage={<PartnerWalletEmptyState />}
+            headers={walletHeaders}
+            rowCount={summary.visibleLedgerRows.length}
+          >
+            {summary.visibleLedgerRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{walletLedgerLabel(row.type)}</strong>
+                  <p className="muted">{row.type}</p>
+                </td>
+                <td>
+                  <strong>{formatCurrency(row.amount, row.currency)}</strong>
+                  <p className="muted">{formatDate(row.createdAt)}</p>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {row.type === 'PARTNER_BANK_DEPOSIT_RECEIVED' ? (
+                      <>
+                        <span className="pill pill-success">
+                          Cleared {formatCurrency(summary.appliedToNegativeWallet, summary.currency)}
+                        </span>
+                        <span className="pill pill-info">
+                          Prepaid {formatCurrency(summary.recordedAsPrepaidBalance, summary.currency)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="pill pill-info">Cash-service wallet movement</span>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <p className="muted">{row.reference ? `Reference ${row.reference}` : 'No reference saved'}</p>
+                  {row.notes ? <p className="muted">{row.notes}</p> : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      </div>
+      <PartnerDetailVuexyTableFooter rowCount={summary.visibleLedgerRows.length} />
+    </AdminFilterPanel>
+  );
+}
+
+function PartnerWalletEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No recent partner wallet ledger row is loaded for this detail page.</p>
+    </div>
+  );
+}
+
+function resultTone(tone: PartnerWalletReviewTone): StatusBadgeTone {
+  if (tone === 'danger') return 'danger';
+  if (tone === 'warn') return 'warning';
+  return 'success';
+}

@@ -1207,7 +1207,9 @@ export type AdminProviderWalletLedgerEntry = {
   currency: string;
   reference?: string | null;
   notes?: string | null;
+  metadata?: unknown;
   createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AdminEarningSummary = {
