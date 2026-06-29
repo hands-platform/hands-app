@@ -66,6 +66,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
 type WalletAdjustmentNotice =
   | 'admin-auth'
   | 'approval-required'
+  | 'attachment-invalid'
   | 'attachment-required'
   | 'created'
   | 'failed'
@@ -132,7 +133,7 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
   const adjustmentType = readOptionalString(formData, 'adjustmentType');
   const amount = readOptionalString(formData, 'amount');
   const approvalId = readOptionalString(formData, 'approvalId');
-  const attachmentUrl = readOptionalString(formData, 'attachmentUrl');
+  const attachmentUrl = readSafeAttachmentUrlForRedirect(formData);
   const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
   const reason = readOptionalString(formData, 'reason');
 
@@ -164,7 +165,7 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   const reason = readRequiredString(formData, 'reason', 'Reason');
   const approvalId = readOptionalString(formData, 'approvalId');
   const monthlyPeriod = readOptionalString(formData, 'monthlyPeriod');
-  const attachmentUrl = readOptionalString(formData, 'attachmentUrl');
+  const attachmentUrl = readAttachmentUrl(formData);
 
   if (SETTLEMENT_ONLY_ADJUSTMENT_TYPES.has(adjustmentType)) {
     throw new WalletAdjustmentValidationError('settlement-required');
@@ -210,6 +211,31 @@ function readPositiveAmount(formData: FormData) {
     throw new Error('Amount must be greater than zero');
   }
   return value;
+}
+
+function readAttachmentUrl(formData: FormData) {
+  const value = readOptionalString(formData, 'attachmentUrl');
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('unsupported protocol');
+    }
+    return url.toString();
+  } catch {
+    throw new WalletAdjustmentValidationError('attachment-invalid');
+  }
+}
+
+function readSafeAttachmentUrlForRedirect(formData: FormData) {
+  try {
+    return readAttachmentUrl(formData);
+  } catch {
+    return '';
+  }
 }
 
 function readEnum<T extends string>(

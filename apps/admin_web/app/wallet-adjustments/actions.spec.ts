@@ -179,6 +179,27 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Write+off+approved+by+finance'));
   });
 
+  it('rejects unsafe attachment URLs before posting to the Admin API', async () => {
+    const formData = new FormData();
+    formData.set('ownerType', 'PARTNER');
+    formData.set('ownerId', 'provider-1');
+    formData.set('direction', 'CREDIT');
+    formData.set('adjustmentType', 'PARTNER_BONUS');
+    formData.set('amount', '10000000');
+    formData.set('approvalId', 'approval-2026-06');
+    formData.set('attachmentUrl', 'javascript:alert(1)');
+    formData.set('reason', 'Unsafe evidence URL');
+
+    await createManualWalletAdjustment(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-invalid'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=Unsafe+evidence+URL'));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('javascript'));
+  });
+
   it('blocks cash booking deduction from the manual wallet adjustment action', async () => {
     const formData = new FormData();
     formData.set('ownerType', 'PARTNER');

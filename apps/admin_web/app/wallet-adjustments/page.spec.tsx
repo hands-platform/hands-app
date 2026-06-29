@@ -43,6 +43,16 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('Wallet ledger and admin audit log were written through the Admin API.');
   });
 
+  it('renders a clear notice when attachment evidence URL is invalid', async () => {
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ adjustmentNotice: 'attachment-invalid' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Attachment URL is invalid');
+    expect(markup).toContain('Attachment evidence must be a valid http or https URL.');
+  });
+
   it('renders the accounting preview returned by the Admin API', async () => {
     mockedAdminPost.mockResolvedValue({
       accountingEntries: [

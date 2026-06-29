@@ -560,6 +560,15 @@ function walletAdjustmentNotice(notice: string) {
     };
   }
 
+  if (notice === 'attachment-invalid') {
+    return {
+      badge: 'Evidence',
+      detail: 'No wallet ledger was written. Attachment evidence must be a valid http or https URL.',
+      title: 'Attachment URL is invalid',
+      tone: 'danger' as const,
+    };
+  }
+
   if (notice === 'settlement-required') {
     return {
       badge: 'Settlement',
