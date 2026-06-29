@@ -57,6 +57,8 @@ describe('AdminController notification and push actions', () => {
     earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
     cashSettlementSummary: vi.fn(),
+    previewManualWalletAdjustment: vi.fn(),
+    createManualWalletAdjustment: vi.fn(),
     recordPartnerBankDeposit: vi.fn(),
     listProviderWalletWithdrawalRequests: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
@@ -184,6 +186,38 @@ describe('AdminController notification and push actions', () => {
       depositDate: '2026-06-29T09:30:00.000Z',
       attachmentFileId: 'file-deposit-proof-1',
     });
+  });
+
+  it('exposes manual wallet adjustment preview and creation as admin-only POST actions', async () => {
+    const payload = {
+      ownerType: 'PARTNER',
+      ownerId: 'provider-1',
+      direction: 'CREDIT',
+      adjustmentType: 'PARTNER_BONUS',
+      amount: 200000,
+      reason: 'Manual partner bonus',
+      approvalId: 'approval-1',
+    };
+    admin.previewManualWalletAdjustment.mockResolvedValue({ afterBalance: 200000 });
+    admin.createManualWalletAdjustment.mockResolvedValue({ ledger: { id: 'ledger-1' } });
+
+    await expect(controller.previewManualWalletAdjustment(user, payload)).resolves.toEqual({
+      afterBalance: 200000,
+    });
+    await expect(controller.createManualWalletAdjustment(user, payload)).resolves.toEqual({
+      ledger: { id: 'ledger-1' },
+    });
+
+    expect(routeMetadata('previewManualWalletAdjustment')).toEqual({
+      method: RequestMethod.POST,
+      path: 'wallet-adjustments/preview',
+    });
+    expect(routeMetadata('createManualWalletAdjustment')).toEqual({
+      method: RequestMethod.POST,
+      path: 'wallet-adjustments',
+    });
+    expect(admin.previewManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
+    expect(admin.createManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
   });
 
   it('exposes partner wallet withdrawal requests with provider filtering', async () => {

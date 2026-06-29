@@ -5818,6 +5818,172 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('previews customer manual promotion credits without creating revenue or bank movement', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 25000 } }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewManualWalletAdjustment('admin-user-1', {
+        ownerType: 'CUSTOMER',
+        ownerId: 'customer-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PROMOTION_CREDIT',
+        amount: 100000,
+        reason: ' Welcome credit ',
+      }),
+    ).resolves.toMatchObject({
+      ownerId: 'customer-1',
+      ownerType: 'CUSTOMER',
+      beforeBalance: 25000,
+      afterBalance: 125000,
+      bankCashAmount: 0,
+      companyOutputVat: 0,
+      platformRevenueAmount: 0,
+      affects: {
+        bankCash: false,
+        revenue: false,
+        taxPayable: false,
+      },
+    });
+
+    expect(prisma.customerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
+      where: { customerProfileId: 'customer-1', currency: 'VND' },
+      _sum: { amount: true },
+    });
+  });
+
+  it('creates partner manual bonus credits as wallet ledger plus admin audit without touching bank cash', async () => {
+    const tx = {
+      providerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'ledger-1',
+          providerProfileId: 'provider-1',
+          amount: 200000,
+          currency: 'VND',
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        reason: 'Excellent customer recovery',
+        approvalId: 'approval-1',
+      }),
+    ).resolves.toMatchObject({
+      ledger: { id: 'ledger-1', amount: 200000 },
+      preview: {
+        walletDelta: 200000,
+        bankCashAmount: 0,
+        companyOutputVat: 0,
+        platformRevenueAmount: 0,
+      },
+      auditLog: { id: 'audit-1' },
+    });
+
+    expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        providerProfileId: 'provider-1',
+        type: 'MANUAL_ADJUSTMENT_CREDIT',
+        sourceKey: 'manual-wallet-adjustment:PARTNER:provider-1:approval-1',
+        amount: 200000,
+        currency: 'VND',
+        reference: 'approval-1',
+        metadata: expect.objectContaining({
+          bankCashAmount: 0,
+          companyOutputVat: 0,
+          platformRevenueAmount: 0,
+        }),
+      }),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'wallet_ledger.manual_adjustment.create',
+        target: 'provider_wallet_ledger:ledger-1',
+      }),
+    });
+  });
+
+  it('rejects high-value manual adjustments without an attachment before writing a ledger', async () => {
+    const tx = {
+      providerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 10000000,
+        reason: 'High-value correction',
+        approvalId: 'approval-high',
+      }),
+    ).rejects.toThrow('Attachment is required for this manual wallet adjustment');
+
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects direct manual adjustments against a closed monthly period', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      monthlyTaxClosing: {
+        findFirst: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.previewManualWalletAdjustment('admin-user-1', {
+        ownerType: 'CUSTOMER',
+        ownerId: 'customer-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PROMOTION_CREDIT',
+        amount: 50000,
+        reason: 'Closed period correction',
+        monthlyPeriod: '2026-06',
+      }),
+    ).rejects.toThrow('Closed monthly periods require a reversal entry instead of direct edit');
+  });
+
   it('delegates partner wallet withdrawal request updates to the earnings service with audit', async () => {
     const prisma = {
       adminAuditLog: {

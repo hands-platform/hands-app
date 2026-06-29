@@ -822,6 +822,86 @@ export class RecordPartnerBankDepositDto {
   notes?: string | null;
 }
 
+const MANUAL_WALLET_ADJUSTMENT_OWNER_TYPES = ['CUSTOMER', 'PARTNER'] as const;
+const MANUAL_WALLET_ADJUSTMENT_DIRECTIONS = ['CREDIT', 'DEBIT'] as const;
+const MANUAL_WALLET_ADJUSTMENT_TYPES = [
+  'PROMOTION_CREDIT',
+  'CUSTOMER_COMPENSATION',
+  'PARTNER_BONUS',
+  'REFERRAL_CORRECTION',
+  'ERROR_CORRECTION',
+  'PENALTY',
+  'CASH_BOOKING_DEDUCTION',
+  'RECEIVABLE_WRITE_OFF',
+  'MANUAL_REVERSAL',
+] as const;
+
+class ManualWalletAdjustmentPayloadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsIn(MANUAL_WALLET_ADJUSTMENT_OWNER_TYPES)
+  ownerType!: (typeof MANUAL_WALLET_ADJUSTMENT_OWNER_TYPES)[number];
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  ownerId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsIn(MANUAL_WALLET_ADJUSTMENT_DIRECTIONS)
+  direction!: (typeof MANUAL_WALLET_ADJUSTMENT_DIRECTIONS)[number];
+
+  @Transform(({ value }) => trimString(value))
+  @IsIn(MANUAL_WALLET_ADJUSTMENT_TYPES)
+  adjustmentType!: (typeof MANUAL_WALLET_ADJUSTMENT_TYPES)[number];
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000_000)
+  amount!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  reason!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(7)
+  monthlyPeriod?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  attachmentUrl?: string | null;
+}
+
+export class PreviewManualWalletAdjustmentDto extends ManualWalletAdjustmentPayloadDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  approvalId?: string;
+}
+
+export class CreateManualWalletAdjustmentDto extends ManualWalletAdjustmentPayloadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  approvalId!: string;
+}
+
 export class UpdateProviderWalletWithdrawalRequestDto {
   @IsOptional()
   @IsEnum(ProviderWalletWithdrawalRequestStatus)

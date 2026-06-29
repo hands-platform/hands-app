@@ -16,6 +16,7 @@ import {
   BulkUpsertServicePayoutRulesDto,
   CreateAdminServiceDto,
   CreateCouponDto,
+  CreateManualWalletAdjustmentDto,
   CreatePartnerReportDto,
   CreatePartnerSanctionDto,
   CreatePayoutBatchDto,
@@ -25,6 +26,7 @@ import {
   ModerateReviewDto,
   OperationsHandoffNoteDto,
   PartnerOpsNoteDto,
+  PreviewManualWalletAdjustmentDto,
   ReferralRewardCashoutPaidDto,
   ReferralRewardDecisionDto,
   RecordPartnerBankDepositDto,
@@ -898,6 +900,22 @@ export class AdminController {
     @Body() body: RecordPartnerBankDepositDto,
   ) {
     return this.admin.recordPartnerBankDeposit(user.id, body);
+  }
+
+  @Post('wallet-adjustments/preview')
+  previewManualWalletAdjustment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: PreviewManualWalletAdjustmentDto,
+  ) {
+    return this.admin.previewManualWalletAdjustment(user.id, body);
+  }
+
+  @Post('wallet-adjustments')
+  createManualWalletAdjustment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateManualWalletAdjustmentDto,
+  ) {
+    return this.admin.createManualWalletAdjustment(user.id, body);
   }
 
   @Get('provider-wallet/withdrawal-requests')

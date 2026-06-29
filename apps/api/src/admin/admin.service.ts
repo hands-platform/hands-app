@@ -15,6 +15,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  CustomerWalletLedgerType,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderKycStatus,
@@ -28,6 +29,7 @@ import {
   ProviderSanctionType,
   ProviderStatus,
   ProviderTaxProfileStatus,
+  ProviderWalletLedgerType,
   ReviewStatus,
   ReferralAttributionStatus,
   Role,
@@ -52,6 +54,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_KYC_DOCUMENT_TYPES } from '../provider-onboarding/provider-onboarding.policy';
 import { RedisStateService } from '../redis/redis-state.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import {
+  buildManualWalletAdjustmentPreview,
+  type ManualWalletAdjustmentDirection,
+  type ManualWalletAdjustmentInput,
+  type ManualWalletAdjustmentOwnerType,
+  type ManualWalletAdjustmentPreview,
+  type ManualWalletAdjustmentType,
+} from '../wallet-adjustments/wallet-adjustments.accounting';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 import {
   minutesBetween,
@@ -188,6 +198,8 @@ import {
 } from './admin-marketing-analytics';
 import type {
   AdminPushCampaignDto,
+  CreateManualWalletAdjustmentDto,
+  PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
   UpdateNotificationTemplateDto,
 } from './admin.dto';
@@ -1070,6 +1082,22 @@ function normalizeOperationalPolicyKeys(value: string | string[] | null | undefi
     ),
   ];
 }
+
+type ManualWalletAdjustmentDb = Pick<
+  Prisma.TransactionClient,
+  | 'adminAuditLog'
+  | 'customerProfile'
+  | 'customerWalletLedgerEntry'
+  | 'monthlyTaxClosing'
+  | 'providerProfile'
+  | 'providerWalletLedgerEntry'
+>;
+
+type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
+  readonly currency: string;
+  readonly monthlyPeriod: string | null;
+  readonly ownerId: string;
+};
 
 @Injectable()
 export class AdminService {
@@ -6319,6 +6347,145 @@ export class AdminService {
     return ledger;
   }
 
+  previewManualWalletAdjustment(actorId: string, input: PreviewManualWalletAdjustmentDto) {
+    return this.buildManualWalletAdjustmentPreviewForAdmin(this.prisma, actorId, input, false);
+  }
+
+  createManualWalletAdjustment(actorId: string, input: CreateManualWalletAdjustmentDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const preview = await this.buildManualWalletAdjustmentPreviewForAdmin(tx, actorId, input, true);
+
+      if (preview.requiresAttachment && !normalizeNullable(input.attachmentUrl)) {
+        throw new BadRequestException('Attachment is required for this manual wallet adjustment');
+      }
+
+      const metadata = manualWalletAdjustmentMetadata(preview, input.attachmentUrl);
+      const ledger =
+        preview.ownerType === 'CUSTOMER'
+          ? await tx.customerWalletLedgerEntry.create({
+              data: {
+                customerProfileId: preview.ownerId,
+                type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+                sourceKey: manualWalletAdjustmentSourceKey(preview),
+                amount: preview.walletDelta,
+                currency: preview.currency,
+                reference: preview.approvalId,
+                notes: preview.reason,
+                metadata,
+              },
+            })
+          : await tx.providerWalletLedgerEntry.create({
+              data: {
+                providerProfileId: preview.ownerId,
+                type: providerManualWalletAdjustmentLedgerType(preview),
+                sourceKey: manualWalletAdjustmentSourceKey(preview),
+                amount: preview.walletDelta,
+                currency: preview.currency,
+                reference: preview.approvalId,
+                notes: preview.reason,
+                metadata,
+              },
+            });
+
+      const target =
+        preview.ownerType === 'CUSTOMER'
+          ? `customer_wallet_ledger:${ledger.id}`
+          : `provider_wallet_ledger:${ledger.id}`;
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'wallet_ledger.manual_adjustment.create',
+          target,
+          metadata,
+        },
+      });
+
+      return { preview, ledger, auditLog };
+    });
+  }
+
+  private async buildManualWalletAdjustmentPreviewForAdmin(
+    db: ManualWalletAdjustmentDb,
+    actorId: string,
+    input: PreviewManualWalletAdjustmentDto | CreateManualWalletAdjustmentDto,
+    requireApproval: boolean,
+  ): Promise<AdminManualWalletAdjustmentPreview> {
+    const ownerType = manualWalletAdjustmentOwnerType(input.ownerType);
+    const direction = manualWalletAdjustmentDirection(input.direction);
+    const adjustmentType = manualWalletAdjustmentType(input.adjustmentType);
+    const ownerId = normalizeManualWalletOwnerId(input.ownerId);
+    const currency = normalizeManualWalletCurrency(input.currency);
+    const monthlyPeriod = normalizeManualWalletMonthlyPeriod(input.monthlyPeriod);
+    const approvalId = normalizeManualWalletApprovalId(input.approvalId, requireApproval);
+    const [currentBalance, monthlyPeriodStatus] = await Promise.all([
+      this.manualWalletCurrentBalance(db, ownerType, ownerId, currency),
+      this.manualWalletMonthlyPeriodStatus(db, monthlyPeriod, currency),
+    ]);
+
+    try {
+      const preview = buildManualWalletAdjustmentPreview({
+        adminId: actorId,
+        adjustmentType,
+        amount: integerValue(input.amount),
+        approvalId,
+        attachmentUrl: normalizeNullable(input.attachmentUrl),
+        currentBalance,
+        direction,
+        monthlyPeriodStatus,
+        ownerType,
+        reason: normalizeAuditReason(input.reason),
+      });
+      return { ...preview, currency, monthlyPeriod, ownerId };
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Manual wallet adjustment is invalid');
+    }
+  }
+
+  private async manualWalletCurrentBalance(
+    db: ManualWalletAdjustmentDb,
+    ownerType: ManualWalletAdjustmentOwnerType,
+    ownerId: string,
+    currency: string,
+  ) {
+    if (ownerType === 'CUSTOMER') {
+      await db.customerProfile.findUniqueOrThrow({
+        where: { id: ownerId },
+        select: { id: true },
+      });
+      const aggregate = await db.customerWalletLedgerEntry.aggregate({
+        where: { customerProfileId: ownerId, currency },
+        _sum: { amount: true },
+      });
+      return integerValue(aggregate._sum.amount);
+    }
+
+    await db.providerProfile.findUniqueOrThrow({
+      where: { id: ownerId },
+      select: { id: true },
+    });
+    const aggregate = await db.providerWalletLedgerEntry.aggregate({
+      where: { providerProfileId: ownerId, currency },
+      _sum: { amount: true },
+    });
+    return integerValue(aggregate._sum.amount);
+  }
+
+  private async manualWalletMonthlyPeriodStatus(
+    db: ManualWalletAdjustmentDb,
+    monthlyPeriod: string | null,
+    currency: string,
+  ): Promise<ManualWalletAdjustmentInput['monthlyPeriodStatus']> {
+    if (!monthlyPeriod) {
+      return undefined;
+    }
+
+    const closing = await db.monthlyTaxClosing.findFirst({
+      where: { period: monthlyPeriod, currency },
+      select: { status: true },
+    });
+    return closing?.status as ManualWalletAdjustmentInput['monthlyPeriodStatus'];
+  }
+
   listProviderWalletWithdrawalRequests(options: AdminPaymentOperationsQuery = {}) {
     return this.earnings.listProviderWalletWithdrawalRequestsForAdmin(options);
   }
@@ -8934,6 +9101,124 @@ function isStoredVietnamCoordinate(latitude: number, longitude: number) {
 
 function integerValue(value: unknown) {
   return Math.trunc(numberValue(value));
+}
+
+const MANUAL_WALLET_ADJUSTMENT_TYPES = new Set<ManualWalletAdjustmentType>([
+  'PROMOTION_CREDIT',
+  'CUSTOMER_COMPENSATION',
+  'PARTNER_BONUS',
+  'REFERRAL_CORRECTION',
+  'ERROR_CORRECTION',
+  'PENALTY',
+  'CASH_BOOKING_DEDUCTION',
+  'RECEIVABLE_WRITE_OFF',
+  'MANUAL_REVERSAL',
+]);
+
+function manualWalletAdjustmentOwnerType(value: string): ManualWalletAdjustmentOwnerType {
+  if (value === 'CUSTOMER' || value === 'PARTNER') {
+    return value;
+  }
+  throw new BadRequestException('Manual wallet adjustment owner type is invalid');
+}
+
+function manualWalletAdjustmentDirection(value: string): ManualWalletAdjustmentDirection {
+  if (value === 'CREDIT' || value === 'DEBIT') {
+    return value;
+  }
+  throw new BadRequestException('Manual wallet adjustment direction is invalid');
+}
+
+function manualWalletAdjustmentType(value: string): ManualWalletAdjustmentType {
+  if (MANUAL_WALLET_ADJUSTMENT_TYPES.has(value as ManualWalletAdjustmentType)) {
+    return value as ManualWalletAdjustmentType;
+  }
+  throw new BadRequestException('Manual wallet adjustment type is invalid');
+}
+
+function normalizeManualWalletOwnerId(value: string) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    throw new BadRequestException('Wallet owner id is required');
+  }
+  return normalized;
+}
+
+function normalizeManualWalletCurrency(value?: string | null) {
+  const normalized = normalizeNullable(value) ?? 'VND';
+  if (normalized !== 'VND') {
+    throw new BadRequestException('Manual wallet adjustments currently support VND only');
+  }
+  return normalized;
+}
+
+function normalizeManualWalletMonthlyPeriod(value?: string | null) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return null;
+  }
+  if (!/^\d{4}-\d{2}$/.test(normalized)) {
+    throw new BadRequestException('Monthly period must use YYYY-MM');
+  }
+  return normalized;
+}
+
+function normalizeManualWalletApprovalId(value: string | undefined, requireApproval: boolean) {
+  const normalized = normalizeNullable(value);
+  if (requireApproval && !normalized) {
+    throw new BadRequestException('Approval id is required for manual wallet adjustment');
+  }
+  return normalized ?? 'PREVIEW_ONLY';
+}
+
+function providerManualWalletAdjustmentLedgerType(preview: AdminManualWalletAdjustmentPreview) {
+  if (preview.adjustmentType === 'MANUAL_REVERSAL') {
+    return ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL;
+  }
+  return preview.direction === 'CREDIT'
+    ? ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT
+    : ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT;
+}
+
+function manualWalletAdjustmentSourceKey(preview: AdminManualWalletAdjustmentPreview) {
+  return `manual-wallet-adjustment:${preview.ownerType}:${preview.ownerId}:${preview.approvalId}`;
+}
+
+function manualWalletAdjustmentMetadata(
+  preview: AdminManualWalletAdjustmentPreview,
+  attachmentUrl?: string | null,
+) {
+  return toJson({
+    manualWalletAdjustment: true,
+    ownerType: preview.ownerType,
+    ownerId: preview.ownerId,
+    direction: preview.direction,
+    adjustmentType: preview.adjustmentType,
+    amount: preview.amount,
+    currency: preview.currency,
+    approvalId: preview.approvalId,
+    reason: preview.reason,
+    monthlyPeriod: preview.monthlyPeriod,
+    attachmentUrl: normalizeNullable(attachmentUrl),
+    beforeBalance: preview.beforeBalance,
+    afterBalance: preview.afterBalance,
+    walletDelta: preview.walletDelta,
+    requiresApproval: preview.requiresApproval,
+    requiresAttachment: preview.requiresAttachment,
+    affects: preview.affects,
+    accountingEntries: preview.accountingEntries,
+    bankCashAmount: preview.bankCashAmount,
+    companyOutputVat: preview.companyOutputVat,
+    expenseAmount: preview.expenseAmount,
+    expenseContraAmount: preview.expenseContraAmount,
+    partnerReceivableDecrease: preview.partnerReceivableDecrease,
+    partnerReceivableIncrease: preview.partnerReceivableIncrease,
+    platformRevenueAmount: preview.platformRevenueAmount,
+    revenueAccount: preview.revenueAccount,
+    revenueAmount: preview.revenueAmount,
+    walletLiabilityDecrease: preview.walletLiabilityDecrease,
+    walletLiabilityIncrease: preview.walletLiabilityIncrease,
+  });
 }
 
 function uniqueStrings(values: Array<string | null | undefined>) {
