@@ -246,7 +246,13 @@ describe('AdminController notification and push actions', () => {
     admin.listProviderWalletWithdrawalRequests.mockResolvedValue([{ id: 'withdrawal-request-1' }]);
 
     await expect(
-      controller.providerWalletWithdrawalRequests('10', 'all', 'REQUESTED', 'provider-1'),
+      (controller.providerWalletWithdrawalRequests as (...args: string[]) => Promise<unknown>)(
+        '10',
+        'all',
+        'REQUESTED',
+        'provider-1',
+        '20',
+      ),
     ).resolves.toEqual([{ id: 'withdrawal-request-1' }]);
 
     expect(routeMetadata('providerWalletWithdrawalRequests')).toEqual({
@@ -256,6 +262,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listProviderWalletWithdrawalRequests).toHaveBeenCalledWith({
       providerProfileId: 'provider-1',
       range: 'all',
+      skip: '20',
       status: 'REQUESTED',
       take: '10',
     });
@@ -544,7 +551,9 @@ describe('AdminController notification and push actions', () => {
   it('exposes earnings as a bounded filtered finance list', async () => {
     admin.listEarnings.mockResolvedValue([{ id: 'earning-1' }]);
 
-    await expect(controller.earnings('75', '7d', 'ready')).resolves.toEqual([{ id: 'earning-1' }]);
+    await expect(
+      (controller.earnings as (...args: string[]) => Promise<unknown>)('75', '7d', 'ready', '150'),
+    ).resolves.toEqual([{ id: 'earning-1' }]);
 
     expect(routeMetadata('earnings')).toEqual({
       method: RequestMethod.GET,
@@ -553,6 +562,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listEarnings).toHaveBeenCalledWith({
       range: '7d',
       review: 'ready',
+      skip: '150',
       take: '75',
     });
   });
@@ -819,9 +829,14 @@ describe('AdminController notification and push actions', () => {
   it('exposes payout batches as a bounded filtered finance list', async () => {
     admin.listPayoutBatches.mockResolvedValue([{ id: 'payout-1' }]);
 
-    await expect(controller.payoutBatches('75', '30d', 'needs-review')).resolves.toEqual([
-      { id: 'payout-1' },
-    ]);
+    await expect(
+      (controller.payoutBatches as (...args: string[]) => Promise<unknown>)(
+        '75',
+        '30d',
+        'needs-review',
+        '150',
+      ),
+    ).resolves.toEqual([{ id: 'payout-1' }]);
 
     expect(routeMetadata('payoutBatches')).toEqual({
       method: RequestMethod.GET,
@@ -830,6 +845,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listPayoutBatches).toHaveBeenCalledWith({
       range: '30d',
       review: 'needs-review',
+      skip: '150',
       take: '75',
     });
   });

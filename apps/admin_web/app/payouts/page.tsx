@@ -54,7 +54,12 @@ import {
   type PayoutServiceEvidenceItem,
 } from './payout-service-evidence-section';
 import { PayoutStatusLanesSection, type PayoutStatusLane } from './payout-status-lanes-section';
-import { buildPayoutFilters, buildPayoutOperationsApiHrefs } from './payouts-page-model';
+import {
+  buildPayoutFilters,
+  buildPayoutOperationsApiHrefs,
+  buildPayoutServerPagination,
+  payoutHref,
+} from './payouts-page-model';
 
 type PayoutsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -75,6 +80,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const earnings = allEarnings;
   const summary = buildSummary(batches, payoutSummary);
   const payoutBatchRows = buildPayoutBatchTableRows(batches);
+  const payoutBatchPagination = buildPayoutServerPagination(payoutBatchRows, filters, summary.total);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
   const payoutStatusLanes = buildPayoutStatusLanes(payoutLanes);
@@ -311,7 +317,19 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
 
       <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} />
 
-      <PayoutBatchListSection rows={payoutBatchRows} updateTransferRefAction={updatePayoutTransferRef} />
+      <PayoutBatchListSection
+        pagination={payoutBatchPagination}
+        paginationHrefForPage={(page) =>
+          payoutHref({
+            page,
+            pageSize: filters.pageSize,
+            range: filters.range,
+            withdrawalStatus: filters.withdrawalStatus,
+          })
+        }
+        rows={payoutBatchPagination.rows}
+        updateTransferRefAction={updatePayoutTransferRef}
+      />
     </AdminPageTemplate>
   );
 }

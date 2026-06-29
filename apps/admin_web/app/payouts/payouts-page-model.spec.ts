@@ -6,6 +6,8 @@ describe('payouts page model', () => {
     const rangeFilters = buildPayoutFilters({ range: '30d' });
 
     expect(defaultFilters.range).toBe('today');
+    expect(defaultFilters.page).toBe(1);
+    expect(defaultFilters.pageSize).toBe(10);
     expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
       earningsHref: '/admin/earnings?range=30d&take=10',
@@ -32,6 +34,28 @@ describe('payouts page model', () => {
       payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=7d&take=10&status=BANK_TRANSFER_PENDING',
+    });
+  });
+
+  it('turns payout list page state into bounded API skip offsets', () => {
+    const filters = buildPayoutFilters({
+      page: '3',
+      pageSize: '25',
+      range: '30d',
+      withdrawalStatus: 'REVIEW_REQUIRED',
+    });
+
+    expect(filters).toMatchObject({
+      page: 3,
+      pageSize: 25,
+      range: '30d',
+      withdrawalStatus: 'REVIEW_REQUIRED',
+    });
+    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
+      earningsHref: '/admin/earnings?range=30d&take=25&skip=50',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=25&skip=50',
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&skip=50&status=REVIEW_REQUIRED',
     });
   });
 });

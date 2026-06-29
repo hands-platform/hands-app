@@ -36,6 +36,16 @@ describe('PayoutBatchListSection', () => {
           withholdingAmountLabel: '0 VND',
         },
       ],
+      pagination: {
+        from: 11,
+        page: 2,
+        pageSize: 10,
+        rows: [],
+        to: 20,
+        totalPages: 3,
+        totalRows: 25,
+      },
+      paginationHrefForPage: (page) => `/payouts?page=${page}`,
       updateTransferRefAction: async () => undefined,
     });
 
@@ -45,7 +55,9 @@ describe('PayoutBatchListSection', () => {
     expect(rendered).toContain('Partner settlement batches ordered');
     expect(rendered).toContain('Newest active first');
     expect(rendered).toContain('Partner One');
+    expect(rendered).toMatch(/Showing\s+11\s+to\s+20\s+of\s+25\s+entries/);
     expect(hrefsIn(section)).toContain('/earnings');
+    expect(hrefsIn(section)).toContain('/payouts?page=3');
   });
 });
 

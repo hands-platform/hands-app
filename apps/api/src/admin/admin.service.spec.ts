@@ -5804,6 +5804,7 @@ describe('AdminService query orchestration', () => {
       service.listEarnings({
         range: '7d',
         review: 'ready',
+        skip: '150',
         take: '75',
       }),
     ).resolves.toEqual([{ id: 'earning-1' }]);
@@ -5811,6 +5812,7 @@ describe('AdminService query orchestration', () => {
     expect(earnings.listForAdmin).toHaveBeenCalledWith({
       range: '7d',
       review: 'ready',
+      skip: '150',
       take: '75',
     });
   });
@@ -7100,6 +7102,7 @@ describe('AdminService query orchestration', () => {
       service.listPayoutBatches({
         range: '30d',
         review: 'needs-review',
+        skip: '150',
         take: '75',
       }),
     ).resolves.toEqual([{ id: 'payout-1' }]);
@@ -7107,6 +7110,7 @@ describe('AdminService query orchestration', () => {
     expect(earnings.listPayoutBatchesForAdmin).toHaveBeenCalledWith({
       range: '30d',
       review: 'needs-review',
+      skip: '150',
       take: '75',
     });
   });

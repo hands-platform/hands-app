@@ -722,10 +722,12 @@ export class EarningsService {
 
   listForAdmin(options: AdminFinanceListQuery = {}) {
     const where = adminEarningListWhere(options);
+    const skip = adminFinanceListSkip(options.skip);
 
     return this.prisma.providerEarning.findMany({
       ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminFinanceListTake(options.take),
       include: adminEarningListInclude,
     });
@@ -1035,10 +1037,12 @@ export class EarningsService {
 
   listPayoutBatchesForAdmin(options: AdminFinanceListQuery = {}) {
     const where = adminPayoutBatchListWhere(options);
+    const skip = adminFinanceListSkip(options.skip);
 
     return this.prisma.providerPayoutBatch.findMany({
       ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminFinanceListTake(options.take),
       include: adminPayoutBatchListInclude(),
     });
@@ -1223,9 +1227,12 @@ export class EarningsService {
   }
 
   listProviderWalletWithdrawalRequestsForAdmin(options: AdminWithdrawalRequestListQuery = {}) {
+    const skip = adminFinanceListSkip(options.skip);
+
     return this.prisma.providerWalletWithdrawalRequest.findMany({
       where: adminWithdrawalRequestListWhere(options),
       orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminFinanceListTake(options.take),
       include: {
         providerProfile: {

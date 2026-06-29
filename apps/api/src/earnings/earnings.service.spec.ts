@@ -93,6 +93,7 @@ describe('EarningsService payout batches', () => {
       service.listForAdmin({
         range: 'today',
         review: 'ready',
+        skip: '25',
         take: '500',
       }),
     ).resolves.toEqual([]);
@@ -105,6 +106,7 @@ describe('EarningsService payout batches', () => {
           payoutBatchId: null,
           status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
         }),
+        skip: 25,
         take: 100,
       }),
     );
@@ -193,6 +195,7 @@ describe('EarningsService payout batches', () => {
       service.listPayoutBatchesForAdmin({
         range: '7d',
         review: 'needs-review',
+        skip: '25',
         take: '500',
       }),
     ).resolves.toEqual([]);
@@ -203,6 +206,7 @@ describe('EarningsService payout batches', () => {
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
           status: { in: [PayoutBatchStatus.DRAFT, PayoutBatchStatus.FAILED] },
         }),
+        skip: 25,
         take: 100,
       }),
     );
@@ -1301,6 +1305,7 @@ describe('EarningsService payout batches', () => {
       service.listProviderWalletWithdrawalRequestsForAdmin({
         providerProfileId: ' provider-1 ',
         range: 'all',
+        skip: '25',
         status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
         take: '500',
       }),
@@ -1312,6 +1317,7 @@ describe('EarningsService payout batches', () => {
         status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
       },
       orderBy: { createdAt: 'desc' },
+      skip: 25,
       take: 100,
       include: expect.objectContaining({
         bankAccount: true,

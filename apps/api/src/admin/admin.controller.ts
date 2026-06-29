@@ -754,8 +754,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listEarnings({ range, review, take });
+    return this.admin.listEarnings({ range, review, skip, take });
   }
 
   @Get('cash-settlement-earnings')
@@ -967,8 +968,9 @@ export class AdminController {
     @Query('range') range?: string,
     @Query('status') status?: string,
     @Query('providerProfileId') providerProfileId?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listProviderWalletWithdrawalRequests({ providerProfileId, range, status, take });
+    return this.admin.listProviderWalletWithdrawalRequests({ providerProfileId, range, skip, status, take });
   }
 
   @Get('provider-wallet/withdrawal-requests/summary')
@@ -998,8 +1000,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listPayoutBatches({ range, review, take });
+    return this.admin.listPayoutBatches({ range, review, skip, take });
   }
 
   @Post('payout-batches')
