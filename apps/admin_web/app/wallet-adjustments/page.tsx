@@ -49,6 +49,7 @@ const adjustmentTypeOptions: Array<{ label: string; value: AdminManualWalletAdju
 export default async function WalletAdjustmentsPage({ searchParams }: WalletAdjustmentsPageProps) {
   const params = searchParams ? await searchParams : {};
   const formState = readWalletAdjustmentFormState(params);
+  const notice = walletAdjustmentNotice(readParam(params, 'adjustmentNotice'));
   const preview = formState.intent === 'preview' ? await fetchPreview(formState) : null;
   const currency = preview?.currency ?? 'VND';
 
@@ -79,6 +80,21 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       ]}
       title="Wallet Adjustments"
     >
+      {notice ? (
+        <section
+          className={`card admin-mb-16 admin-notice-card ${
+            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
+          }`}
+          role="status"
+        >
+          <div>
+            <h2>{notice.title}</h2>
+            <p className="muted">{notice.detail}</p>
+          </div>
+          <StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>
+        </section>
+      ) : null}
+
       <AdminFilterPanel
         description="Enter the customer or partner profile id, preview the accounting impact, then create only after approval evidence is ready."
         resultLabel={preview ? 'Preview ready' : 'Preview required'}
@@ -390,4 +406,35 @@ function formatAccountName(value: string) {
     .split('_')
     .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
     .join(' ');
+}
+
+function walletAdjustmentNotice(notice: string) {
+  if (notice === 'created') {
+    return {
+      badge: 'Saved',
+      detail: 'Wallet ledger and admin audit log were written through the Admin API.',
+      title: 'Manual adjustment created',
+      tone: 'success' as const,
+    };
+  }
+
+  if (notice === 'admin-auth') {
+    return {
+      badge: 'Auth',
+      detail: 'Admin API credentials are missing or expired. Refresh the admin session before trying again.',
+      title: 'Manual adjustment was not saved',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (notice === 'failed') {
+    return {
+      badge: 'Blocked',
+      detail: 'No wallet ledger was written. Check owner id, approval id, attachment, and closed-period rules.',
+      title: 'Manual adjustment was not saved',
+      tone: 'danger' as const,
+    };
+  }
+
+  return null;
 }

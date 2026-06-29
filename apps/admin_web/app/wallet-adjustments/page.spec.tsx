@@ -29,6 +29,16 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('Receivable write-off always needs evidence');
   });
 
+  it('renders wallet adjustment action notices from query params', async () => {
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ adjustmentNotice: 'created' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Manual adjustment created');
+    expect(markup).toContain('Wallet ledger and admin audit log were written through the Admin API.');
+  });
+
   it('renders the accounting preview returned by the Admin API', async () => {
     mockedAdminPost.mockResolvedValue({
       accountingEntries: [

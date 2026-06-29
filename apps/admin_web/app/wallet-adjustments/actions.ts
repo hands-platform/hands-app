@@ -1,13 +1,14 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import type {
   AdminManualWalletAdjustmentDirection,
   AdminManualWalletAdjustmentOwnerType,
   AdminManualWalletAdjustmentType,
 } from '../../lib/admin-api';
-import { adminPostOrThrow } from '../../lib/admin-api';
+import { adminPostOrThrow, isAdminApiAuthError } from '../../lib/admin-api';
 
 const ownerTypes = new Set<AdminManualWalletAdjustmentOwnerType>(['CUSTOMER', 'PARTNER']);
 const directions = new Set<AdminManualWalletAdjustmentDirection>(['CREDIT', 'DEBIT']);
@@ -26,7 +27,14 @@ const adjustmentTypes = new Set<AdminManualWalletAdjustmentType>([
 export async function createManualWalletAdjustment(formData: FormData) {
   const payload = readManualWalletAdjustmentPayload(formData, true);
 
-  await adminPostOrThrow('/admin/wallet-adjustments', payload);
+  try {
+    await adminPostOrThrow('/admin/wallet-adjustments', payload);
+  } catch (error) {
+    if (isAdminApiAuthError(error)) {
+      return redirect('/wallet-adjustments?adjustmentNotice=admin-auth');
+    }
+    return redirect('/wallet-adjustments?adjustmentNotice=failed');
+  }
 
   revalidatePath('/wallet-adjustments');
   revalidatePath('/cash-settlements');
@@ -35,6 +43,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
   revalidatePath('/partners');
   revalidatePath('/customers');
   revalidatePath('/audit-log');
+  redirect('/wallet-adjustments?adjustmentNotice=created');
 }
 
 function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: boolean) {
