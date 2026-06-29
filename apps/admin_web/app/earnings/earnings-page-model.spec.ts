@@ -207,6 +207,10 @@ describe('earnings page model', () => {
       providerName: 'Partner Mai',
       statusLabel: 'AVAILABLE',
     });
+    expect(ledgerRows.find((row) => row.id === 'cash-debt')).toMatchObject({
+      cashAccountingPreview: ['Dr Partner receivable 30.000 VND', 'Cr Platform fee net revenue 30.000 VND'],
+      statusHint: 'Cash fee debt blocks Partner wallet until settled',
+    });
     expect(serviceBridge[0]).toMatchObject({
       bookingCount: 2,
       label: 'Massage 60 / 60 min',

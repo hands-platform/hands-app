@@ -3,40 +3,48 @@ import { EarningsLedgerSection, type EarningsLedgerRow } from './earnings-ledger
 describe('EarningsLedgerSection', () => {
   it('renders recent earning ledger rows and available actions', () => {
     const section = EarningsLedgerSection({
-      pagination: pagination([
-        {
-          bookingHref: '/bookings/booking-1',
-          bookingPaymentMethod: 'CASH',
-          bookingShortId: 'booking-1',
-          cancellationDecisionLabel: 'Pending admin decision',
-          cancellationDecisionTone: 'pill-warn',
-          cancellationFeeLabel: 'Fee held',
-          cancellationFeeTone: 'pill-danger',
-          createdAtLabel: 'Updated just now',
-          feePolicyHint: 'Fee policy: manual',
-          grossAmountLabel: '1.000.000 VND',
-          id: 'earning-1',
-          netAmountLabel: '-80.000 VND',
-          netCompanyFeeHint: 'Net company fee ready',
-          payoutBatchHref: null,
-          payoutBatchLabel: null,
-          providerName: 'Partner One',
-          providerPhone: '+84900000000',
-          settlementMethodLabel: 'Partner deposit',
-          settlementRef: 'DEP-1',
-          signalClassName: 'signal signal-warn',
-          statusHint: 'Cash fee debt blocks Partner wallet until settled',
-          statusLabel: 'PENDING',
-          taxPolicyHint: 'Tax rule ready',
-          transferRef: 'MVP-partner-1',
-          platformFeeLabel: '100.000 VND platform fee',
-          providerProfileId: 'partner-1',
-          canCreatePayout: true,
-          canDirectlyPay: true,
-          withholdingAmountLabel: '20.000 VND tax withheld',
-          walletEntries: ['Wallet DEBIT: -80.000 VND'],
-        },
-      ], { totalRows: 12 }),
+      pagination: pagination(
+        [
+          {
+            bookingHref: '/bookings/booking-1',
+            bookingPaymentMethod: 'CASH',
+            bookingShortId: 'booking-1',
+            cashAccountingPreview: [
+              'Dr Partner receivable 80.000 VND',
+              'Cr Platform fee net revenue 60.000 VND',
+              'Cr Partner withholding tax payable 20.000 VND',
+            ],
+            cancellationDecisionLabel: 'Pending admin decision',
+            cancellationDecisionTone: 'pill-warn',
+            cancellationFeeLabel: 'Fee held',
+            cancellationFeeTone: 'pill-danger',
+            createdAtLabel: 'Updated just now',
+            feePolicyHint: 'Fee policy: manual',
+            grossAmountLabel: '1.000.000 VND',
+            id: 'earning-1',
+            netAmountLabel: '-80.000 VND',
+            netCompanyFeeHint: 'Net company fee ready',
+            payoutBatchHref: null,
+            payoutBatchLabel: null,
+            providerName: 'Partner One',
+            providerPhone: '+84900000000',
+            settlementMethodLabel: 'Partner deposit',
+            settlementRef: 'DEP-1',
+            signalClassName: 'signal signal-warn',
+            statusHint: 'Cash fee debt blocks Partner wallet until settled',
+            statusLabel: 'PENDING',
+            taxPolicyHint: 'Tax rule ready',
+            transferRef: 'MVP-partner-1',
+            platformFeeLabel: '100.000 VND platform fee',
+            providerProfileId: 'partner-1',
+            canCreatePayout: true,
+            canDirectlyPay: true,
+            withholdingAmountLabel: '20.000 VND tax withheld',
+            walletEntries: ['Wallet DEBIT: -80.000 VND'],
+          },
+        ],
+        { totalRows: 12 },
+      ),
     });
 
     const rendered = normalizeText(textContent(section));
@@ -47,6 +55,10 @@ describe('EarningsLedgerSection', () => {
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('Pending admin decision');
     expect(rendered).toContain('Fee held');
+    expect(rendered).toContain('Accounting preview');
+    expect(rendered).toContain('Dr Partner receivable 80.000 VND');
+    expect(rendered).toContain('Cr Platform fee net revenue 60.000 VND');
+    expect(rendered).toContain('Cr Partner withholding tax payable 20.000 VND');
     expect(rendered).toContain('Review fee settlement');
     expect(rendered).toContain('Review payout batch');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');

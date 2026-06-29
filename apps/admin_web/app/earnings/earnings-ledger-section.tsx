@@ -5,6 +5,7 @@ export type EarningsLedgerRow = {
   readonly bookingHref: string;
   readonly bookingPaymentMethod: string;
   readonly bookingShortId: string;
+  readonly cashAccountingPreview: readonly string[];
   readonly canCreatePayout: boolean;
   readonly canDirectlyPay: boolean;
   readonly cancellationDecisionLabel: string | null;
@@ -65,8 +66,8 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
         <div>
           <h2>Recent earnings ledger</h2>
           <p className="muted">
-            Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash
-            fee settlement correction.
+            Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash fee
+            settlement correction.
           </p>
         </div>
       </div>
@@ -93,20 +94,31 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     {entry}
                   </div>
                 ))}
+                {row.cashAccountingPreview.length ? (
+                  <div
+                    className="admin-mini-ledger"
+                    aria-label={`Cash accounting preview for earning ${row.id}`}
+                  >
+                    <span>Accounting preview</span>
+                    {row.cashAccountingPreview.map((line) => (
+                      <small key={`${row.id}-${line}`}>{line}</small>
+                    ))}
+                  </div>
+                ) : null}
               </td>
               <td>
                 <span className={row.signalClassName}>{row.statusLabel}</span>
                 {row.cancellationDecisionLabel ? (
                   <div className="participant-list admin-mt-6">
-                    <span className={`pill ${row.cancellationDecisionTone}`}>{row.cancellationDecisionLabel}</span>
+                    <span className={`pill ${row.cancellationDecisionTone}`}>
+                      {row.cancellationDecisionLabel}
+                    </span>
                     {row.cancellationFeeLabel ? (
                       <span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>
                     ) : null}
                   </div>
                 ) : null}
-                <div className="muted admin-mt-6">
-                  {row.statusHint}
-                </div>
+                <div className="muted admin-mt-6">{row.statusHint}</div>
               </td>
               <td>
                 {row.payoutBatchHref && row.payoutBatchLabel ? (

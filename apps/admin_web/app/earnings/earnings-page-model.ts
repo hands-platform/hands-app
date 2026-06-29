@@ -158,6 +158,15 @@ export function buildEarningsLedgerRows(earnings: readonly AdminEarning[]): Earn
       bookingHref: `/bookings/${earning.bookingId}`,
       bookingPaymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
       bookingShortId: shortRecordId(earning.bookingId),
+      cashAccountingPreview: isCashDebt(earning)
+        ? buildCashBookingAccountingPreview({
+            currency: earning.currency,
+            debtAmount: Math.abs(earning.netAmount),
+            platformFee: earning.platformFee,
+            taxAmount: earning.withholdingAmount ?? 0,
+            walletLedgerMetadata: earning.walletLedgerEntries?.map((entry) => entry.metadata),
+          })
+        : [],
       canCreatePayout: canCreatePayout(earning),
       canDirectlyPay: canDirectlyPay(earning),
       cancellationDecisionLabel: cancellationDisplay?.decisionLabel ?? null,
