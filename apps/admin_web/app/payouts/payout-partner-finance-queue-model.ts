@@ -36,17 +36,17 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
 
   if (rejectedBank) {
     rows.push({
-      actionLabel: 'Request corrected bank details',
+      actionLabel: 'Open partner bank correction',
       amountLabel,
       batchId: batch.id,
       detail:
         rejectedBank.rejectionReason ??
-        'Withdrawal bank details were rejected. Ask the Partner to correct them before payout release.',
+        'Partner must correct bank details in the Partner app before finance can release payout.',
       evidenceLabel: bankEvidenceLabel(rejectedBank),
       href: `/partners/${batch.providerProfileId}#bank`,
       id: `${batch.id}-bank-correction`,
       partnerLabel,
-      title: 'Bank correction required',
+      title: 'Partner correction pending',
       tone: 'danger',
     });
   } else if (pendingBank) {
@@ -54,13 +54,12 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
       actionLabel: 'Review bank details',
       amountLabel,
       batchId: batch.id,
-      detail:
-        'Partner withdrawal bank details are waiting for admin review before manual payout release.',
+      detail: 'Corrected bank details are waiting for admin review. Approve them before manual payout release.',
       evidenceLabel: bankEvidenceLabel(pendingBank),
       href: `/partners/${batch.providerProfileId}#bank`,
       id: `${batch.id}-bank-review`,
       partnerLabel,
-      title: 'Bank details pending',
+      title: 'Bank review needed',
       tone: 'warning',
     });
   } else if (!approvedBank && !isTerminal) {
@@ -126,16 +125,16 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
 
   if (!rows.length && approvedBank && !isTerminal) {
     rows.push({
-      actionLabel: 'Review transfer execution',
+      actionLabel: 'Review manual payout',
       amountLabel,
       batchId: batch.id,
       detail:
-        'Approved bank details and transfer reference are available. Finance can review execution before marking paid.',
+        'Approved bank details and transfer reference are available. Finance can complete the manual payout review.',
       evidenceLabel: 'Approved bank details',
       href: `#${batch.id}`,
       id: `${batch.id}-withdrawal-ready`,
       partnerLabel,
-      title: 'Withdrawal ready',
+      title: 'Ready for manual payout',
       tone: 'success',
     });
   }

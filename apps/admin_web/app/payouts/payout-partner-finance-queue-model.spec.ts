@@ -50,9 +50,10 @@ describe('buildPayoutPartnerFinanceQueueRows', () => {
       'batch-1-transfer-ref',
     ]);
     expect(rows[0]).toMatchObject({
-      actionLabel: 'Request corrected bank details',
+      actionLabel: 'Open partner bank correction',
       amountLabel: '750.000 VND',
       partnerLabel: 'Blocked Partner',
+      title: 'Partner correction pending',
       tone: 'danger',
     });
     expect(rows[0].detail).toContain('Bank proof does not match.');
@@ -60,6 +61,37 @@ describe('buildPayoutPartnerFinanceQueueRows', () => {
       actionLabel: 'Open cash settlements',
       evidenceLabel: 'Recent wallet movement -120.000 VND',
     });
+  });
+
+  it('uses bank review needed language when corrected bank details are waiting for admin review', () => {
+    const rows = buildPayoutPartnerFinanceQueueRows([
+      payoutBatch({
+        id: 'batch-review',
+        providerProfile: {
+          displayName: 'Review Partner',
+          bankAccounts: [
+            {
+              id: 'bank-review',
+              bankName: 'Techcombank',
+              accountHolderName: 'Review Partner',
+              status: 'PENDING_REVIEW',
+              isPrimary: true,
+            },
+          ],
+          sanctions: [],
+          walletLedgerEntries: [],
+        },
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      actionLabel: 'Review bank details',
+      evidenceLabel: 'Techcombank / Review Partner',
+      id: 'batch-review-bank-review',
+      title: 'Bank review needed',
+      tone: 'warning',
+    });
+    expect(rows[0].detail).toContain('Corrected bank details are waiting for admin review.');
   });
 
   it('shows withdrawal-ready rows when bank details are approved and no finance blocker is visible', () => {
@@ -87,9 +119,10 @@ describe('buildPayoutPartnerFinanceQueueRows', () => {
     expect(rows).toEqual([
       expect.objectContaining({
         id: 'batch-2-withdrawal-ready',
-        actionLabel: 'Review transfer execution',
+        actionLabel: 'Review manual payout',
         amountLabel: '750.000 VND',
         evidenceLabel: 'Approved bank details',
+        title: 'Ready for manual payout',
         tone: 'success',
       }),
     ]);
