@@ -23,7 +23,7 @@ import {
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
-import { referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
+import { isReferralRewardCredited, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { releaseAvailableReferralRewards, updateReferralPolicy } from './actions';
 import { referralParentDetailHref } from './referral-detail';
@@ -1389,7 +1389,7 @@ function referralParentMatchesReward(row: ReferralParentRow, reward: ReferralDas
     return numberOrZero(row.totals.availableRewardCount) > 0 || referralHasRewardStatus(row, 'AVAILABLE');
   }
   if (reward === 'credited') {
-    return numberOrZero(row.totals.rewardedRewardCount) > 0 || referralHasRewardStatus(row, 'REWARDED');
+    return numberOrZero(row.totals.rewardedRewardCount) > 0 || referralHasCreditedReward(row);
   }
   if (reward === 'pending') {
     return numberOrZero(row.totals.pendingRewardCount) > 0 || referralHasRewardStatus(row, 'PENDING');
@@ -1399,6 +1399,12 @@ function referralParentMatchesReward(row: ReferralParentRow, reward: ReferralDas
 
 function referralHasRewardStatus(row: ReferralParentRow, status: 'AVAILABLE' | 'HELD' | 'PENDING' | 'REWARDED') {
   return row.referrals.some((referral) => referral.rewards.some((reward) => reward.status === status));
+}
+
+function referralHasCreditedReward(row: ReferralParentRow) {
+  return row.referrals.some((referral) =>
+    referral.rewards.some((reward) => isReferralRewardCredited(reward)),
+  );
 }
 
 function referralStatusBucket(status: string): ReferralDashboardStatusFilter {

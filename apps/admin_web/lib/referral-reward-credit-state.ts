@@ -7,6 +7,35 @@ export type ReferralRewardCreditState = {
   readonly tone: StatusBadgeTone;
 };
 
+const creditedReferralRewardStatuses = new Set<AdminReferralReward['status']>([
+  'REWARDED',
+  'CREDITED',
+  'USED_FOR_SERVICE',
+  'OFFSET',
+  'PAID',
+]);
+
+const blockedReferralRewardStatuses = new Set<AdminReferralReward['status']>([
+  'CASHOUT_REQUESTED',
+  'HELD',
+  'LOCKED',
+  'TAX_REVIEW_REQUIRED',
+]);
+
+const closedReferralRewardStatuses = new Set<AdminReferralReward['status']>(['CANCELLED', 'REVERSED']);
+
+export function isReferralRewardCredited(reward: Pick<AdminReferralReward, 'status' | 'walletLedgerReference'>) {
+  return Boolean(reward.walletLedgerReference) || creditedReferralRewardStatuses.has(reward.status);
+}
+
+export function isReferralRewardBlocked(status: AdminReferralReward['status']) {
+  return blockedReferralRewardStatuses.has(status);
+}
+
+export function isReferralRewardClosed(status: AdminReferralReward['status']) {
+  return closedReferralRewardStatuses.has(status);
+}
+
 export function referralRewardCreditState(reward: AdminReferralReward): ReferralRewardCreditState {
   if (reward.walletLedgerReference) {
     return {

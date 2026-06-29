@@ -15,7 +15,13 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
-import { referralRewardCreditState, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
+import {
+  isReferralRewardBlocked,
+  isReferralRewardClosed,
+  isReferralRewardCredited,
+  referralRewardCreditState,
+  referralRewardDecisionLabel,
+} from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { creditReferralReward, holdReferralReward, reverseReferralReward } from './actions';
 import { ReferralStoreSetupStatus } from './referral-store-setup-status';
@@ -771,13 +777,13 @@ function referralRewardReviewSummaryFromRewards(rewards: readonly AdminReferralR
   };
 
   for (const reward of rewards) {
-    if (reward.walletLedgerReference || reward.status === 'REWARDED') {
+    if (isReferralRewardCredited(reward)) {
       addReferralRewardReviewAmount(mutableSummary.credited, reward.amount);
     } else if (reward.status === 'AVAILABLE') {
       addReferralRewardReviewAmount(mutableSummary.ready, reward.amount);
-    } else if (reward.status === 'HELD') {
+    } else if (isReferralRewardBlocked(reward.status)) {
       addReferralRewardReviewAmount(mutableSummary.held, reward.amount);
-    } else if (reward.status === 'REVERSED' || reward.status === 'CANCELLED') {
+    } else if (isReferralRewardClosed(reward.status)) {
       addReferralRewardReviewAmount(mutableSummary.closed, reward.amount);
     } else {
       addReferralRewardReviewAmount(mutableSummary.pending, reward.amount);
@@ -860,7 +866,25 @@ function referralStatusBucket(status: string) {
 
 function rewardStatusTone(status: string): StatusBadgeTone {
   if (status === 'AVAILABLE') return 'success';
-  if (status === 'HELD' || status === 'PENDING') return 'warning';
+  if (
+    status === 'CREDITED' ||
+    status === 'OFFSET' ||
+    status === 'PAID' ||
+    status === 'REWARDED' ||
+    status === 'USED_FOR_SERVICE'
+  ) {
+    return 'success';
+  }
+  if (
+    status === 'CASHOUT_APPROVED' ||
+    status === 'CASHOUT_REQUESTED' ||
+    status === 'HELD' ||
+    status === 'LOCKED' ||
+    status === 'PENDING' ||
+    status === 'TAX_REVIEW_REQUIRED'
+  ) {
+    return 'warning';
+  }
   if (status === 'REVERSED' || status === 'CANCELLED') return 'danger';
   return 'neutral';
 }

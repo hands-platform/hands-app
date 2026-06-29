@@ -412,6 +412,24 @@ describe('ReferralDashboard', () => {
 
     expect(filtered.map((row) => row.referrer.id)).toEqual(['parent-blocked']);
   });
+
+  it('treats credited lifecycle rewards as credited in client fallback filters', () => {
+    const creditedParent = referralParent({
+      code: 'CREDITEDREF',
+      id: 'parent-credited',
+      name: 'Credited Parent',
+      referralStatus: 'QUALIFIED',
+      rewardStatus: 'CREDITED',
+    });
+
+    const filtered = filterReferralParentRows('customer', [creditedParent], {
+      q: '',
+      reward: 'credited',
+      status: 'all',
+    });
+
+    expect(filtered.map((row) => row.referrer.id)).toEqual(['parent-credited']);
+  });
 });
 
 function referralParent({
@@ -425,7 +443,7 @@ function referralParent({
   readonly id: string;
   readonly name: string;
   readonly referralStatus: string;
-  readonly rewardStatus: 'AVAILABLE' | 'HELD';
+  readonly rewardStatus: 'AVAILABLE' | 'CREDITED' | 'HELD';
 }): AdminCustomerReferralParent {
   return {
     referrer: {

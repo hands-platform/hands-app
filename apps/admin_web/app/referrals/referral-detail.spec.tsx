@@ -342,4 +342,39 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Wallet decision');
     expect(markup).toContain('Use row actions for wallet credit, hold, or reversal.');
   });
+
+  it('treats credited lifecycle rewards as ledger-posted review rows even before legacy rewarded status is present', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'CREDITED',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+      totals: {
+        ...customerReferralParent.totals,
+        availableRewardAmount: 0,
+        availableRewardCount: 0,
+        rewardedRewardAmount: 25000,
+        rewardedRewardCount: 1,
+      },
+    };
+
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('Credited 1');
+    expect(markup).toContain('Ledger posted');
+    expect(markup).toContain('Referral reward has been credited to wallet liability.');
+    expect(markup).not.toContain('Pending 1');
+  });
 });
