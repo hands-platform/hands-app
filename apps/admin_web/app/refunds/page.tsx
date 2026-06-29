@@ -25,6 +25,7 @@ import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const REFUND_OPERATIONS_API_LIMIT = 10;
+const REFUND_OPERATIONS_API_MAX_LIMIT = 50;
 const EMPTY_REFUND_SUMMARY: AdminRefundSummary = {
   totalCount: 0,
   requestedCount: 0,
@@ -45,7 +46,8 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
   const commandBoard = buildRefundCommandBoard(refunds, summary);
   const decisionChecklist = buildRefundDecisionChecklist(summary);
-  const refundRows = buildRefundTableRows(refunds);
+  const pagination = buildRefundServerPagination(refunds, filters, summary.totalCount);
+  const refundRows = buildRefundTableRows(pagination.rows);
 
   return (
     <AdminPageTemplate
@@ -88,7 +90,10 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
         totalCount={summary.totalCount}
       />
       <RefundDecisionChecklistSection items={decisionChecklist} />
-      <RefundsTableSection emptyMessage={emptyRefundMessage(filters.review)} rows={refundRows} />
+      <RefundsTableSection
+        emptyMessage={emptyRefundMessage(filters.review)}
+        pagination={{ ...pagination, rows: refundRows }}
+      />
     </AdminPageTemplate>
   );
 }
@@ -286,6 +291,8 @@ function buildRefundFilters(params: Record<string, string | string[] | undefined
   const rangeParam = readSearchParam(params.range);
 
   return {
+    page: readRefundPage(params.page),
+    pageSize: readRefundPageSize(params.pageSize),
     review: readSearchParam(params.review),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
   };
@@ -294,10 +301,14 @@ function buildRefundFilters(params: Record<string, string | string[] | undefined
 function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilters>) {
   const params = new URLSearchParams({
     range: filters.range,
-    take: String(REFUND_OPERATIONS_API_LIMIT),
+    take: String(filters.pageSize),
   });
   if (filters.review) {
     params.set('review', filters.review);
+  }
+  const skip = (filters.page - 1) * filters.pageSize;
+  if (skip > 0) {
+    params.set('skip', String(skip));
   }
 
   return `/admin/refunds?${params.toString()}`;
@@ -348,6 +359,59 @@ function withRefundReview(href: string, review: string) {
   }
   const separator = href.includes('?') ? '&' : '?';
   return `${href}${separator}review=${review}`;
+}
+
+function refundHref(filters: ReturnType<typeof buildRefundFilters>, page?: number) {
+  const params = new URLSearchParams();
+  if (filters.range !== 'all') {
+    params.set('range', filters.range);
+  }
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+  if (filters.pageSize !== REFUND_OPERATIONS_API_LIMIT) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+  if (page && page > 1) {
+    params.set('page', String(page));
+  }
+  const query = params.toString();
+  return query ? `/refunds?${query}` : '/refunds';
+}
+
+function buildRefundServerPagination<T>(
+  rows: readonly T[],
+  filters: ReturnType<typeof buildRefundFilters>,
+  totalRows: number,
+) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    hrefForPage: (nextPage: number) => refundHref(filters, nextPage),
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
+function readRefundPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function readRefundPageSize(value: string | string[] | undefined) {
+  const pageSize = Number.parseInt(readSearchParam(value), 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+    return REFUND_OPERATIONS_API_LIMIT;
+  }
+  return Math.min(Math.trunc(pageSize), REFUND_OPERATIONS_API_MAX_LIMIT);
 }
 
 function refundFilterDescription(review: string) {

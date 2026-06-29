@@ -5446,10 +5446,12 @@ export class AdminService {
 
   listRefunds(options: AdminRefundOperationsQuery = {}) {
     const where = adminRefundOperationsWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
 
     return this.prisma.refund.findMany({
       ...(where ? { where } : {}),
       orderBy: { createdAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminRefundOperationsTake(options.take),
       select: adminRefundListSelect,
     });

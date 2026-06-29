@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type RefundActionExecutionRow = {
   readonly action: string;
@@ -29,10 +30,20 @@ export type RefundTableRow = {
 
 type RefundsTableSectionProps = {
   readonly emptyMessage: string;
-  readonly rows: readonly RefundTableRow[];
+  readonly pagination: {
+    readonly from: number;
+    readonly hrefForPage: (page: number) => string;
+    readonly page: number;
+    readonly rows: readonly RefundTableRow[];
+    readonly to: number;
+    readonly totalPages: number;
+    readonly totalRows: number;
+  };
 };
 
-export function RefundsTableSection({ emptyMessage, rows }: RefundsTableSectionProps) {
+export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSectionProps) {
+  const rows = pagination.rows;
+
   return (
     <div className="card refunds-table-card">
       <AdminTableScroll>
@@ -84,6 +95,19 @@ export function RefundsTableSection({ emptyMessage, rows }: RefundsTableSectionP
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <div className="vuexy-booking-table-footer">
+        <span>
+          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+        </span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel="Refund pagination"
+          className="vuexy-booking-pagination"
+          hrefForPage={pagination.hrefForPage}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </div>
   );
 }

@@ -5716,6 +5716,7 @@ describe('AdminService query orchestration', () => {
       service.listRefunds({
         range: 'today',
         review: 'needs-update',
+        skip: '20',
         take: '500',
       }),
     ).resolves.toEqual([]);
@@ -5729,6 +5730,7 @@ describe('AdminService query orchestration', () => {
           }),
           status: 'REQUESTED',
         }),
+        skip: 20,
         take: 100,
       }),
     );

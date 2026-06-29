@@ -541,7 +541,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes refunds as a bounded filtered operations list', async () => {
     admin.listRefunds.mockResolvedValue([{ id: 'refund-1' }]);
 
-    await expect(controller.refunds('50', '30d', 'needs-update')).resolves.toEqual([{ id: 'refund-1' }]);
+    await expect(controller.refunds('50', '30d', 'needs-update', '25')).resolves.toEqual([{ id: 'refund-1' }]);
 
     expect(routeMetadata('refunds')).toEqual({
       method: RequestMethod.GET,
@@ -550,6 +550,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listRefunds).toHaveBeenCalledWith({
       range: '30d',
       review: 'needs-update',
+      skip: '25',
       take: '50',
     });
   });

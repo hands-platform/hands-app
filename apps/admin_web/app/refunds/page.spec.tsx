@@ -82,6 +82,67 @@ describe('RefundsPage', () => {
     );
     expect(markup).toContain('Server Trusted Refund');
     expect(markup).toContain('42');
-    expect(markup).toContain('Showing 1 of 42');
+    expect(markup).toContain('Showing 1 to 1 of 42 entries');
+  });
+
+  it('requests the correct refund page from the server and renders rounded pagination', async () => {
+    const summary: AdminRefundSummary = {
+      totalCount: 42,
+      requestedCount: 17,
+      refundedBookingCount: 8,
+      needsUpdateCount: 6,
+      completedCount: 9,
+      openCount: 24,
+      outcomeLinkedCount: 12,
+    };
+    const serverRefund = {
+      amount: 150000,
+      booking: {
+        customerProfile: {
+          user: {
+            fullName: 'Paged Refund Customer',
+            phone: '+84900005555',
+          },
+        },
+        selectedProvider: {
+          displayName: 'Paged Refund Partner',
+        },
+        status: 'COMPLETED',
+      },
+      bookingId: 'paged-refund-booking',
+      createdAt: '2026-06-28T09:00:00.000Z',
+      id: 'paged-refund-row',
+      payment: {
+        currency: 'VND',
+        method: 'CARD',
+        status: 'CAPTURED',
+      },
+      paymentId: 'paged-payment-row',
+      status: 'COMPLETED',
+    } as AdminRefund;
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/refunds?range=today&take=10&review=requested&skip=20') {
+        return [serverRefund];
+      }
+      if (href === '/admin/refunds/summary?range=today&review=requested') {
+        return summary;
+      }
+      return fallback;
+    });
+
+    const page = await RefundsPage({
+      searchParams: Promise.resolve({ page: '3', range: 'today', review: 'requested' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/refunds?range=today&take=10&review=requested&skip=20',
+      [],
+    );
+    expect(markup).toContain('Paged Refund Customer');
+    expect(markup).toContain('Showing 21 to 21 of 42 entries');
+    expect(markup).toContain('aria-label="Refund pagination"');
+    expect(markup).toContain('/refunds?range=today&amp;review=requested&amp;page=4');
   });
 });

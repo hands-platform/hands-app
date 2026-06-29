@@ -4,12 +4,13 @@ describe('RefundsTableSection', () => {
   it('renders refund rows with links and action execution evidence', () => {
     const section = RefundsTableSection({
       emptyMessage: 'No refunds loaded.',
-      rows: [buildRow()],
+      pagination: pagination([buildRow()], { totalRows: 12 }),
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizeText(textContent(section));
 
     expect(rendered).toContain('ref-1');
+    expect(rendered).toContain('Showing 1 to 1 of 12 entries');
     expect(rendered).toContain('Customer refund requested');
     expect(rendered).toContain('Refund action execution map');
     expect(rendered).toContain('Match payment ledger');
@@ -19,12 +20,31 @@ describe('RefundsTableSection', () => {
   it('renders empty state when no refunds exist', () => {
     const section = RefundsTableSection({
       emptyMessage: 'No refunds currently match this queue.',
-      rows: [],
+      pagination: pagination([]),
     });
 
     expect(textContent(section)).toContain('No refunds currently match this queue.');
   });
 });
+
+function pagination(
+  rows: readonly RefundTableRow[],
+  input: { page?: number; pageSize?: number; totalRows?: number } = {},
+) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 10;
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
+    hrefForPage: (nextPage: number) => `/refunds?page=${nextPage}`,
+    page,
+    rows,
+    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
+    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
+    totalRows,
+  };
+}
 
 function buildRow(): RefundTableRow {
   return {
@@ -68,6 +88,10 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {
