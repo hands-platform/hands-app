@@ -1,5 +1,6 @@
 import {
   buildBookingSettlementSnapshotApiHref,
+  buildCouponFinanceSummaryApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
@@ -41,6 +42,9 @@ describe('tax settlement page model', () => {
     );
     expect(buildBookingSettlementSnapshotSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/summary?range=today&review=open',
+    );
+    expect(buildCouponFinanceSummaryApiHref(filters)).toBe(
+      '/admin/booking-settlement-snapshots/coupon-finance-summary?range=today&review=open',
     );
   });
 

@@ -1891,6 +1891,16 @@ export type AdminBookingSettlementSnapshotSummary = {
   paidTaxCount: number;
 };
 
+export type AdminCouponFinanceSummary = {
+  companyCouponExpense: number;
+  couponDiscountAmount: number;
+  couponReviewFlagCount: number;
+  couponSettlementCount: number;
+  currency: string;
+  partnerFundedCouponAmount: number;
+  platformFeeDiscountAmount: number;
+};
+
 export type AdminPartnerWithholdingTaxRow = {
   providerProfileId: string;
   partnerName: string;

@@ -6355,6 +6355,38 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('summarizes coupon finance from settlement snapshot metadata without loading booking rows', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          companyCouponExpense: 60_000n,
+          couponDiscountAmount: 60_000n,
+          couponReviewFlagCount: 0n,
+          couponSettlementCount: 1n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+        },
+      ]),
+      bookingSettlementSnapshot: {
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.couponFinanceSummary({ range: '7d', review: 'posted' })).resolves.toEqual({
+      companyCouponExpense: 60_000,
+      couponDiscountAmount: 60_000,
+      couponReviewFlagCount: 0,
+      couponSettlementCount: 1,
+      currency: 'VND',
+      partnerFundedCouponAmount: 0,
+      platformFeeDiscountAmount: 0,
+    });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.bookingSettlementSnapshot.findMany).not.toHaveBeenCalled();
+  });
+
   it('groups partner withholding tax by monthly period and provider', async () => {
     const prisma = {
       bookingSettlementSnapshot: {

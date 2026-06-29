@@ -787,6 +787,11 @@ export class AdminController {
     return this.admin.bookingSettlementSnapshotSummary({ range, review });
   }
 
+  @Get('booking-settlement-snapshots/coupon-finance-summary')
+  couponFinanceSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.couponFinanceSummary({ range, review });
+  }
+
   @Get('partner-withholding-tax')
   partnerWithholdingTax(@Query('period') period?: string, @Query('take') take?: string) {
     return this.admin.listPartnerWithholdingTax({ period, take });

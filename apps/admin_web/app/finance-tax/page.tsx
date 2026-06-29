@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import type {
   AdminBookingSettlementSnapshotSummary,
+  AdminCouponFinanceSummary,
   AdminPartnerWithholdingTaxSummary,
   AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
@@ -12,12 +13,14 @@ import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
   buildBookingSettlementSnapshotSummaryApiHref,
+  buildCouponFinanceSummaryApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
   buildFinancePayoutPriorityLinks,
   emptyBookingSettlementSummary,
+  emptyCouponFinanceSummary,
   emptyPartnerWithholdingTaxSummary,
   emptyProviderWalletWithdrawalRequestSummary,
   monthlyTaxClosingHref,
@@ -38,10 +41,14 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const settlementFilters = readBookingSettlementFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
-  const [settlementSummary, withholdingSummary, withdrawalRequestSummary] = await Promise.all([
+  const [settlementSummary, couponFinanceSummary, withholdingSummary, withdrawalRequestSummary] = await Promise.all([
     adminGet<AdminBookingSettlementSnapshotSummary>(
       buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
       emptyBookingSettlementSummary(),
+    ),
+    adminGet<AdminCouponFinanceSummary>(
+      buildCouponFinanceSummaryApiHref(settlementFilters),
+      emptyCouponFinanceSummary(),
     ),
     adminGet<AdminPartnerWithholdingTaxSummary>(
       buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
@@ -109,6 +116,56 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               </p>
             </div>
             <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
+          status={<span className="pill pill-info">Coupon summary API</span>}
+          title="Coupon finance summary"
+        />
+        <div className="setup-stage-list admin-mt-12">
+          <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
+            <span>COUPON</span>
+            <div>
+              <strong>Coupon settlement rows</strong>
+              <p className="muted">
+                Bookings with coupon metadata in the current finance range and queue.
+              </p>
+            </div>
+            <small>{couponFinanceSummary.couponSettlementCount} rows</small>
+          </Link>
+          <div className="setup-stage-item">
+            <span>DISC</span>
+            <div>
+              <strong>Customer discount</strong>
+              <p className="muted">
+                Discount applied to customer payment while settlement keeps the pre-coupon service amount.
+              </p>
+            </div>
+            <small>{formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>EXP</span>
+            <div>
+              <strong>Company coupon expense</strong>
+              <p className="muted">
+                Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.
+              </p>
+            </div>
+            <small>{formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>FLAG</span>
+            <div>
+              <strong>Coupon review flags</strong>
+              <p className="muted">
+                Rows where coupon metadata needs finance review before closing.
+              </p>
+            </div>
+            <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
           </div>
         </div>
       </section>

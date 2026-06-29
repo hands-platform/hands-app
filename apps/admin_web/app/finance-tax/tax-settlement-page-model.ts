@@ -1,6 +1,7 @@
 import type {
   AdminBookingSettlementSnapshot,
   AdminBookingSettlementSnapshotSummary,
+  AdminCouponFinanceSummary,
   AdminPaymentFeeSummary,
   AdminPlatformVatSummary,
   AdminMonthlyTaxClosing,
@@ -144,6 +145,14 @@ export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSet
     params.set('review', filters.review);
   }
   return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
+}
+
+export function buildCouponFinanceSummaryApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  return `/admin/booking-settlement-snapshots/coupon-finance-summary?${params.toString()}`;
 }
 
 export function buildPartnerWithholdingTaxApiHref(filters: PartnerWithholdingTaxFilters) {
@@ -357,6 +366,18 @@ export function emptyBookingSettlementSummary(): AdminBookingSettlementSnapshotS
     paymentProcessingFee: 0,
     openTaxCount: 0,
     paidTaxCount: 0,
+  };
+}
+
+export function emptyCouponFinanceSummary(): AdminCouponFinanceSummary {
+  return {
+    companyCouponExpense: 0,
+    couponDiscountAmount: 0,
+    couponReviewFlagCount: 0,
+    couponSettlementCount: 0,
+    currency: 'VND',
+    partnerFundedCouponAmount: 0,
+    platformFeeDiscountAmount: 0,
   };
 }
 

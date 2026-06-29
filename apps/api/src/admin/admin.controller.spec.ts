@@ -65,6 +65,7 @@ describe('AdminController notification and push actions', () => {
     providerWalletWithdrawalRequestSummary: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
+    couponFinanceSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
     partnerWithholdingTaxSummary: vi.fn(),
     listMonthlyTaxClosings: vi.fn(),
@@ -606,6 +607,31 @@ describe('AdminController notification and push actions', () => {
     expect(admin.bookingSettlementSnapshotSummary).toHaveBeenCalledWith({
       range: '30d',
       review: 'paid',
+    });
+  });
+
+  it('exposes coupon finance summary with booking settlement filters', async () => {
+    admin.couponFinanceSummary.mockResolvedValue({
+      companyCouponExpense: 60000,
+      couponDiscountAmount: 60000,
+      couponSettlementCount: 1,
+      currency: 'VND',
+    });
+
+    await expect(controller.couponFinanceSummary('7d', 'posted')).resolves.toEqual({
+      companyCouponExpense: 60000,
+      couponDiscountAmount: 60000,
+      couponSettlementCount: 1,
+      currency: 'VND',
+    });
+
+    expect(routeMetadata('couponFinanceSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-snapshots/coupon-finance-summary',
+    });
+    expect(admin.couponFinanceSummary).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'posted',
     });
   });
 

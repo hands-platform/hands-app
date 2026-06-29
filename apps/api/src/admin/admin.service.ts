@@ -5571,6 +5571,40 @@ export class AdminService {
     };
   }
 
+  async couponFinanceSummary(options: AdminPaymentOperationsQuery = {}) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        companyCouponExpense: bigint | number | null;
+        couponDiscountAmount: bigint | number | null;
+        couponReviewFlagCount: bigint | number | null;
+        couponSettlementCount: bigint | number | null;
+        partnerFundedCouponAmount: bigint | number | null;
+        platformFeeDiscountAmount: bigint | number | null;
+      }>
+    >(Prisma.sql`
+      SELECT
+        COUNT(*)::bigint AS "couponSettlementCount",
+        COALESCE(SUM(${adminJsonIntSql('couponDiscountAmount')}), 0)::bigint AS "couponDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('companyCouponExpense')}), 0)::bigint AS "companyCouponExpense",
+        COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "partnerFundedCouponAmount",
+        COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
+        COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
+      FROM "BookingSettlementSnapshot"
+      ${adminCouponFinanceSummarySqlWhere(options)}
+    `);
+    const row = rows[0];
+
+    return {
+      companyCouponExpense: numberValue(row?.companyCouponExpense),
+      couponDiscountAmount: numberValue(row?.couponDiscountAmount),
+      couponReviewFlagCount: numberValue(row?.couponReviewFlagCount),
+      couponSettlementCount: numberValue(row?.couponSettlementCount),
+      currency: 'VND',
+      partnerFundedCouponAmount: numberValue(row?.partnerFundedCouponAmount),
+      platformFeeDiscountAmount: numberValue(row?.platformFeeDiscountAmount),
+    };
+  }
+
   async listPartnerWithholdingTax(options: AdminPartnerWithholdingTaxQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = adminPartnerWithholdingTaxWhere(period);
@@ -11109,6 +11143,60 @@ function adminBookingSettlementSnapshotReviewWhere(
     default:
       return undefined;
   }
+}
+
+function adminCouponFinanceSummarySqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`("metadata" ? 'couponDiscountAmount' OR "metadata" ? 'couponCodeSnapshot' OR "metadata" ? 'couponId')`,
+  ];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  if (dateRange?.gte instanceof Date) {
+    conditions.push(Prisma.sql`"postedAt" >= ${dateRange.gte}`);
+  }
+  if (dateRange?.lte instanceof Date) {
+    conditions.push(Prisma.sql`"postedAt" <= ${dateRange.lte}`);
+  }
+
+  const reviewSql = adminCouponFinanceReviewSql(options.review);
+  if (reviewSql) {
+    conditions.push(reviewSql);
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
+}
+
+function adminCouponFinanceReviewSql(review: string | null | undefined): Prisma.Sql | null {
+  switch (normalizeNullable(review)) {
+    case 'needs-action':
+    case 'open':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.OPEN}`;
+    case 'declared':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.DECLARED}`;
+    case 'paid':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.PAID}`;
+    case 'closed':
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.CLOSED}`;
+    case 'posted':
+      return Prisma.sql`"settlementStatus" = ${BookingSettlementStatus.POSTED}`;
+    case 'reversed':
+      return Prisma.sql`("settlementStatus" = ${BookingSettlementStatus.REVERSED} OR "taxStatus" = ${BookingSettlementTaxStatus.REVERSED})`;
+    case 'cash':
+      return Prisma.sql`"paymentMethod" = ${PaymentMethod.CASH}`;
+    case 'non-cash':
+      return Prisma.sql`"paymentMethod" <> ${PaymentMethod.CASH}`;
+    default:
+      return null;
+  }
+}
+
+function adminJsonIntSql(key: string): Prisma.Sql {
+  return Prisma.sql`
+    CASE
+      WHEN "metadata" ? ${key} AND ("metadata"->>${key}) ~ '^-?[0-9]+$'
+      THEN ("metadata"->>${key})::bigint
+      ELSE 0
+    END
+  `;
 }
 
 function adminPartnerWithholdingTaxWhere(period: string): Prisma.BookingSettlementSnapshotWhereInput {
