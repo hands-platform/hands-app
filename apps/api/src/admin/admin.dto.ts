@@ -914,6 +914,22 @@ export class UpdateProviderWalletWithdrawalRequestDto {
   transferRef?: string | null;
 
   @IsOptional()
+  @IsDateString()
+  bankTransferDate?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  attachmentFileId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  attachmentUrl?: string | null;
+
+  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(500)

@@ -6227,6 +6227,8 @@ describe('AdminService query orchestration', () => {
       service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
         status: 'PAID',
         transferRef: 'BANK-OUT-001',
+        bankTransferDate: '2026-06-29T09:30:00.000Z',
+        attachmentUrl: 'https://storage.example/payouts/proof.jpg',
         adminNote: 'Manual bank transfer confirmed',
       }),
     ).resolves.toEqual(
@@ -6242,6 +6244,8 @@ describe('AdminService query orchestration', () => {
       {
         status: 'PAID',
         transferRef: 'BANK-OUT-001',
+        bankTransferDate: '2026-06-29T09:30:00.000Z',
+        attachmentUrl: 'https://storage.example/payouts/proof.jpg',
         adminNote: 'Manual bank transfer confirmed',
       },
       'admin-user-1',

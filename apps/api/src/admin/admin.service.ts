@@ -6602,6 +6602,9 @@ export class AdminService {
     input: {
       status?: string | null;
       transferRef?: string | null;
+      bankTransferDate?: string | Date | null;
+      attachmentFileId?: string | null;
+      attachmentUrl?: string | null;
       adminNote?: string | null;
       correctionReason?: string | null;
     },
@@ -6621,6 +6624,9 @@ export class AdminService {
         currency: request.currency,
         status: request.status,
         transferRef: request.transferRef,
+        bankTransferDate: input.bankTransferDate,
+        attachmentFileId: input.attachmentFileId,
+        attachmentUrl: input.attachmentUrl,
       },
     );
     return request;

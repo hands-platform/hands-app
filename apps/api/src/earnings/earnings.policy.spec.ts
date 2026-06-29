@@ -337,6 +337,46 @@ describe('earnings policy', () => {
     ).toThrow('Transfer reference is required before marking a withdrawal request paid');
   });
 
+  it('requires bank transfer date and evidence before marking withdrawal requests paid', () => {
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: 'BANK-OUT-001',
+        bankTransferDate: null,
+        attachmentUrl: 'https://storage.example/payouts/proof.jpg',
+      }),
+    ).toThrow('Bank transfer date is required before marking a withdrawal request paid');
+
+    expect(() =>
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: 'BANK-OUT-001',
+        bankTransferDate: '2026-06-29T09:30:00.000Z',
+      }),
+    ).toThrow('Bank transfer evidence is required before marking a withdrawal request paid');
+  });
+
+  it('normalizes bank payout evidence for paid withdrawal requests', () => {
+    expect(
+      normalizeProviderWalletWithdrawalRequestUpdateInput({
+        currentStatus: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        requestedStatus: ProviderWalletWithdrawalRequestStatus.PAID,
+        transferRef: ' BANK-OUT-001 ',
+        bankTransferDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: ' file-payout-proof-1 ',
+        adminNote: ' Completed by bank portal ',
+      }),
+    ).toMatchObject({
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      transferRef: 'BANK-OUT-001',
+      bankTransferDate: new Date('2026-06-29T09:30:00.000Z'),
+      attachmentFileId: 'file-payout-proof-1',
+      adminNote: 'Completed by bank portal',
+    });
+  });
+
   it('prevents paid withdrawal requests from moving back to unpaid states', () => {
     expect(() =>
       normalizeProviderWalletWithdrawalRequestUpdateInput({

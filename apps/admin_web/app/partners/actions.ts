@@ -158,12 +158,18 @@ export async function updatePartnerWalletWithdrawalRequest(formData: FormData) {
   const requestId = readRequiredFormString(formData, 'requestId');
   const status = readRequiredFormString(formData, 'status');
   const transferRef = readOptionalFormString(formData, 'transferRef');
+  const bankTransferDate = readOptionalFormString(formData, 'bankTransferDate');
+  const attachmentFileId = readOptionalFormString(formData, 'attachmentFileId');
+  const attachmentUrl = readOptionalFormString(formData, 'attachmentUrl');
   const adminNote = readOptionalFormString(formData, 'adminNote');
   const correctionReason = readOptionalFormString(formData, 'correctionReason');
 
   await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
     status,
     transferRef: transferRef || undefined,
+    bankTransferDate: bankTransferDate || undefined,
+    attachmentFileId: attachmentFileId || undefined,
+    attachmentUrl: attachmentUrl || undefined,
     adminNote: adminNote || undefined,
     correctionReason: correctionReason || undefined,
   });

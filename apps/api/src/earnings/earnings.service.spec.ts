@@ -22,6 +22,9 @@ type EarningsServiceWithWithdrawalRequests = EarningsService & {
     input: {
       status?: ProviderWalletWithdrawalRequestStatus | string | null;
       transferRef?: string | null;
+      bankTransferDate?: Date | string | null;
+      attachmentFileId?: string | null;
+      attachmentUrl?: string | null;
       adminNote?: string | null;
       correctionReason?: string | null;
     },
@@ -1145,6 +1148,7 @@ describe('EarningsService payout batches', () => {
       adminNote: null,
       correctionReason: null,
       paidAt: null,
+      metadata: { requestedFrom: 'partner-app' },
     };
     const updatedRequest = {
       ...existingRequest,
@@ -1177,6 +1181,8 @@ describe('EarningsService payout batches', () => {
         {
           status: ProviderWalletWithdrawalRequestStatus.PAID,
           transferRef: ' BANK-OUT-001 ',
+          bankTransferDate: '2026-06-29T09:30:00.000Z',
+          attachmentFileId: ' file-payout-proof-1 ',
           adminNote: ' Manual transfer completed ',
         },
         'admin-user-1',
@@ -1201,6 +1207,13 @@ describe('EarningsService payout batches', () => {
         metadata: {
           withdrawalRequestId: 'withdrawal-request-1',
           adminId: 'admin-user-1',
+          bankPayout: {
+            transferRef: 'BANK-OUT-001',
+            bankTransferDate: '2026-06-29T09:30:00.000Z',
+            attachmentFileId: 'file-payout-proof-1',
+            attachmentUrl: null,
+            completedByAdminId: 'admin-user-1',
+          },
         },
       }),
     });
@@ -1213,6 +1226,16 @@ describe('EarningsService payout batches', () => {
         reviewedByAdminId: 'admin-user-1',
         reviewedAt: expect.any(Date),
         paidAt: expect.any(Date),
+        metadata: {
+          requestedFrom: 'partner-app',
+          bankPayout: {
+            transferRef: 'BANK-OUT-001',
+            bankTransferDate: '2026-06-29T09:30:00.000Z',
+            attachmentFileId: 'file-payout-proof-1',
+            attachmentUrl: null,
+            completedByAdminId: 'admin-user-1',
+          },
+        },
       }),
       include: expect.objectContaining({
         bankAccount: true,
@@ -1259,6 +1282,8 @@ describe('EarningsService payout batches', () => {
         {
           status: ProviderWalletWithdrawalRequestStatus.PAID,
           transferRef: 'BANK-OUT-001',
+          bankTransferDate: '2026-06-29T09:30:00.000Z',
+          attachmentUrl: 'https://storage.example/payouts/proof.jpg',
         },
         'admin-user-1',
       ),

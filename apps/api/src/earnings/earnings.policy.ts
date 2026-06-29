@@ -61,6 +61,9 @@ export type ProviderWalletWithdrawalRequestUpdateInput = {
   status?: ProviderWalletWithdrawalRequestStatus | string | null;
   requestedStatus?: ProviderWalletWithdrawalRequestStatus | string | null;
   transferRef?: string | null;
+  bankTransferDate?: Date | string | null;
+  attachmentFileId?: string | null;
+  attachmentUrl?: string | null;
   adminNote?: string | null;
   correctionReason?: string | null;
 };
@@ -233,6 +236,9 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
     ? (requestedStatus as ProviderWalletWithdrawalRequestStatus)
     : undefined;
   const transferRef = cleanOptionalText(input.transferRef);
+  const bankTransferDate = normalizeOptionalDate(input.bankTransferDate, 'Bank transfer date');
+  const attachmentFileId = cleanOptionalText(input.attachmentFileId);
+  const attachmentUrl = cleanOptionalText(input.attachmentUrl);
   const adminNote = cleanOptionalText(input.adminNote);
   const correctionReason = cleanOptionalText(input.correctionReason);
 
@@ -249,6 +255,16 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
   if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !transferRef) {
     throw new BadRequestException('Transfer reference is required before marking a withdrawal request paid');
   }
+  if (nextStatus === ProviderWalletWithdrawalRequestStatus.PAID && !bankTransferDate) {
+    throw new BadRequestException('Bank transfer date is required before marking a withdrawal request paid');
+  }
+  if (
+    nextStatus === ProviderWalletWithdrawalRequestStatus.PAID &&
+    !attachmentFileId &&
+    !attachmentUrl
+  ) {
+    throw new BadRequestException('Bank transfer evidence is required before marking a withdrawal request paid');
+  }
   if (
     nextStatus === ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION &&
     !correctionReason
@@ -259,6 +275,9 @@ export function normalizeProviderWalletWithdrawalRequestUpdateInput(
   return {
     status: nextStatus,
     transferRef,
+    bankTransferDate,
+    attachmentFileId,
+    attachmentUrl,
     adminNote,
     correctionReason,
   };
@@ -417,6 +436,30 @@ function normalizeDepositDate(value: Date | string | null | undefined) {
   const date = new Date(clean);
   if (Number.isNaN(date.getTime())) {
     throw new BadRequestException('Deposit date must be valid');
+  }
+  return date;
+}
+
+function normalizeOptionalDate(
+  value: Date | string | null | undefined,
+  label: string,
+): Date | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      throw new BadRequestException(`${label} must be valid`);
+    }
+    return value;
+  }
+  const clean = cleanOptionalText(value);
+  if (!clean) {
+    return undefined;
+  }
+  const date = new Date(clean);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`${label} must be valid`);
   }
   return date;
 }

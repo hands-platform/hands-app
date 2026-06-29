@@ -1194,6 +1194,15 @@ export class EarningsService {
       existing.status !== ProviderWalletWithdrawalRequestStatus.PAID;
     const nextTransferRef = update.transferRef ?? existing.transferRef;
     const nextAdminNote = update.adminNote ?? existing.adminNote;
+    const bankPayoutMetadata = shouldMarkPaid
+      ? {
+          transferRef: nextTransferRef,
+          bankTransferDate: update.bankTransferDate?.toISOString(),
+          attachmentFileId: update.attachmentFileId,
+          attachmentUrl: update.attachmentUrl,
+          completedByAdminId: adminId,
+        }
+      : undefined;
 
     return this.prisma.$transaction(async (tx) => {
       if (shouldMarkPaid) {
@@ -1223,6 +1232,7 @@ export class EarningsService {
             metadata: {
               withdrawalRequestId: existing.id,
               adminId,
+              bankPayout: bankPayoutMetadata,
             },
           },
           create: {
@@ -1236,6 +1246,7 @@ export class EarningsService {
             metadata: {
               withdrawalRequestId: existing.id,
               adminId,
+              bankPayout: bankPayoutMetadata,
             },
           },
         });
@@ -1251,6 +1262,14 @@ export class EarningsService {
           reviewedByAdminId: adminId,
           reviewedAt: new Date(),
           ...(shouldMarkPaid ? { paidAt: new Date() } : {}),
+          ...(shouldMarkPaid
+            ? {
+                metadata: {
+                  ...jsonObjectOrEmpty(existing.metadata),
+                  bankPayout: bankPayoutMetadata,
+                },
+              }
+            : {}),
         },
         include: {
           providerProfile: {
@@ -2002,6 +2021,13 @@ function servicePayoutVatRateBps(ruleSnapshot: Prisma.InputJsonValue) {
 
 function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
   return value as ProviderWalletLedgerType;
+}
+
+function jsonObjectOrEmpty(value: Prisma.JsonValue | null | undefined): Prisma.InputJsonObject {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Prisma.InputJsonObject;
+  }
+  return {};
 }
 
 function partnerBankDepositSourceKey(providerProfileId: string, bankTransactionId: string) {

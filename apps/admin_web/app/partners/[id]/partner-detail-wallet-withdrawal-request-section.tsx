@@ -131,6 +131,21 @@ function WithdrawalRequestActions({
             required
             type="text"
           />
+          <input
+            aria-label={`Bank transfer date for withdrawal ${request.id}`}
+            className="form-control"
+            name="bankTransferDate"
+            required
+            type="datetime-local"
+          />
+          <input
+            aria-label={`Bank transfer evidence URL for withdrawal ${request.id}`}
+            className="form-control"
+            name="attachmentUrl"
+            placeholder="Evidence URL"
+            required
+            type="url"
+          />
           <button className="btn btn-sm btn-success" type="submit">
             Mark paid
           </button>

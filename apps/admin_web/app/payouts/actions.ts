@@ -42,12 +42,18 @@ export async function updateProviderWalletWithdrawalRequest(formData: FormData) 
   }
 
   const transferRef = String(formData.get('transferRef') ?? '').trim();
+  const bankTransferDate = String(formData.get('bankTransferDate') ?? '').trim();
+  const attachmentFileId = String(formData.get('attachmentFileId') ?? '').trim();
+  const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
   const adminNote = String(formData.get('adminNote') ?? '').trim();
   const correctionReason = String(formData.get('correctionReason') ?? '').trim();
 
   await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
     status,
     transferRef: transferRef || undefined,
+    bankTransferDate: bankTransferDate || undefined,
+    attachmentFileId: attachmentFileId || undefined,
+    attachmentUrl: attachmentUrl || undefined,
     adminNote: adminNote || undefined,
     correctionReason: correctionReason || undefined,
   });
