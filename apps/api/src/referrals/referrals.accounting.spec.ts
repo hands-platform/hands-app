@@ -1,7 +1,9 @@
 import {
   buildReferralManualReviewFlags,
   calculateCustomerReferralReward,
+  calculateCustomerReferralServicePaymentSplit,
   calculateReferralTaxWithholding,
+  calculateReferralWalletLiabilityClosing,
   calculatePartnerReferralWalletOffsetPlan,
 } from './referrals.accounting';
 
@@ -37,6 +39,40 @@ describe('referral accounting policy', () => {
       offsetPlatformFee: 128_000,
       remainingWallet: 130_000,
       totalOffset: 170_000,
+    });
+  });
+
+  it('keeps GMV intact when customer referral wallet credit pays for service', () => {
+    expect(
+      calculateCustomerReferralServicePaymentSplit({
+        grossBookingValue: 500_000,
+        requestedReferralWalletUse: 35_556,
+      }),
+    ).toEqual({
+      customerCashPaid: 464_444,
+      grossBookingValue: 500_000,
+      referralWalletUsed: 35_556,
+    });
+  });
+
+  it('reconciles monthly referral wallet liability from credited, used, offset, cashout, and reversed flows', () => {
+    expect(
+      calculateReferralWalletLiabilityClosing({
+        cashoutPaid: 30_000,
+        netCredited: 400_000,
+        offsetAmount: 170_000,
+        openingLiability: 250_000,
+        reversedAmount: 20_000,
+        usedForService: 80_000,
+      }),
+    ).toEqual({
+      cashoutPaid: 30_000,
+      closingLiability: 350_000,
+      netCredited: 400_000,
+      offsetAmount: 170_000,
+      openingLiability: 250_000,
+      reversedAmount: 20_000,
+      usedForService: 80_000,
     });
   });
 

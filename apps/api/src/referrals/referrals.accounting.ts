@@ -13,6 +13,20 @@ export type PartnerReferralWalletOffsetPlanInput = {
   readonly referralWalletAmount: number;
 };
 
+export type CustomerReferralServicePaymentSplitInput = {
+  readonly grossBookingValue: number;
+  readonly requestedReferralWalletUse: number;
+};
+
+export type ReferralWalletLiabilityClosingInput = {
+  readonly cashoutPaid: number;
+  readonly netCredited: number;
+  readonly offsetAmount: number;
+  readonly openingLiability: number;
+  readonly reversedAmount: number;
+  readonly usedForService: number;
+};
+
 export type ReferralAccountingAudience = 'CUSTOMER' | 'PARTNER';
 
 export type ReferralTaxPolicy =
@@ -88,6 +102,49 @@ export function calculateReferralTaxWithholding({ grossRewardAmount, taxPolicy }
     taxPolicySnapshot: taxPolicy,
     totalWithheldAmount,
     vatWithheldAmount,
+  };
+}
+
+export function calculateCustomerReferralServicePaymentSplit({
+  grossBookingValue,
+  requestedReferralWalletUse,
+}: CustomerReferralServicePaymentSplitInput) {
+  const gross = nonNegativeWholeVnd(grossBookingValue, 'Gross booking value');
+  const referralWalletUsed = consumeWallet(
+    nonNegativeWholeVnd(requestedReferralWalletUse, 'Requested referral wallet use'),
+    gross,
+  );
+
+  return {
+    customerCashPaid: gross - referralWalletUsed,
+    grossBookingValue: gross,
+    referralWalletUsed,
+  };
+}
+
+export function calculateReferralWalletLiabilityClosing({
+  cashoutPaid,
+  netCredited,
+  offsetAmount,
+  openingLiability,
+  reversedAmount,
+  usedForService,
+}: ReferralWalletLiabilityClosingInput) {
+  const opening = nonNegativeWholeVnd(openingLiability, 'Opening wallet liability');
+  const credited = nonNegativeWholeVnd(netCredited, 'Net credited wallet amount');
+  const serviceUsed = nonNegativeWholeVnd(usedForService, 'Used for service amount');
+  const offset = nonNegativeWholeVnd(offsetAmount, 'Offset amount');
+  const cashout = nonNegativeWholeVnd(cashoutPaid, 'Cashout paid amount');
+  const reversed = nonNegativeWholeVnd(reversedAmount, 'Reversed amount');
+
+  return {
+    cashoutPaid: cashout,
+    closingLiability: opening + credited - serviceUsed - offset - cashout - reversed,
+    netCredited: credited,
+    offsetAmount: offset,
+    openingLiability: opening,
+    reversedAmount: reversed,
+    usedForService: serviceUsed,
   };
 }
 
