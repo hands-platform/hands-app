@@ -937,6 +937,14 @@ export class AdminController {
     return this.admin.listProviderWalletWithdrawalRequests({ providerProfileId, range, status, take });
   }
 
+  @Get('provider-wallet/withdrawal-requests/summary')
+  providerWalletWithdrawalRequestSummary(
+    @Query('range') range?: string,
+    @Query('providerProfileId') providerProfileId?: string,
+  ) {
+    return this.admin.providerWalletWithdrawalRequestSummary({ providerProfileId, range });
+  }
+
   @Patch('provider-wallet/withdrawal-requests/:id')
   updateProviderWalletWithdrawalRequest(
     @CurrentUser() user: AuthenticatedUser,

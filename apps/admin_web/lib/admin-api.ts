@@ -1544,6 +1544,14 @@ export type AdminProviderWalletWithdrawalRequest = {
   } | null;
 };
 
+export type AdminProviderWalletWithdrawalRequestSummary = {
+  total: number;
+  requested: number;
+  reviewRequired: number;
+  bankTransferPending: number;
+  lockReleased: number;
+};
+
 export type AdminProviderTaxLog = {
   id: string;
   grossAmount: number;

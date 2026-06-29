@@ -13,6 +13,10 @@ import {
 import { EarningsService } from './earnings.service';
 
 type EarningsServiceWithWithdrawalRequests = EarningsService & {
+  providerWalletWithdrawalRequestSummaryForAdmin: (options: {
+    range?: string | null;
+    providerProfileId?: string | null;
+  }) => Promise<unknown>;
   createProviderWalletWithdrawalRequestForProviderUser: (
     userId: string,
     input: { amount: number; bankAccountId?: string | null; requestNote?: string | null },
@@ -1103,6 +1107,58 @@ describe('EarningsService payout batches', () => {
       include: expect.objectContaining({
         bankAccount: true,
       }),
+    });
+  });
+
+  it('summarizes admin partner wallet withdrawal requests with count queries only', async () => {
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(1),
+        findMany: vi.fn(),
+      },
+    };
+    const service = new EarningsService(prisma as never) as EarningsServiceWithWithdrawalRequests;
+
+    await expect(
+      service.providerWalletWithdrawalRequestSummaryForAdmin({
+        providerProfileId: ' provider-1 ',
+        range: 'all',
+      }),
+    ).resolves.toEqual({
+      total: 6,
+      requested: 2,
+      reviewRequired: 1,
+      bankTransferPending: 3,
+      lockReleased: 1,
+    });
+
+    expect(prisma.providerWalletWithdrawalRequest.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerWalletWithdrawalRequest.count).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+    });
+    expect(prisma.providerWalletWithdrawalRequest.count).toHaveBeenCalledWith({
+      where: {
+        AND: [{ providerProfileId: 'provider-1' }, { status: ProviderWalletWithdrawalRequestStatus.REQUESTED }],
+      },
+    });
+    expect(prisma.providerWalletWithdrawalRequest.count).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { providerProfileId: 'provider-1' },
+          {
+            metadata: {
+              equals: true,
+              path: ['lastStatusChange', 'lockedAmountReleased'],
+            },
+          },
+        ],
+      },
     });
   });
 

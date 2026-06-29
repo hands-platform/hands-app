@@ -62,6 +62,7 @@ describe('AdminController notification and push actions', () => {
     listManualWalletAdjustments: vi.fn(),
     recordPartnerBankDeposit: vi.fn(),
     listProviderWalletWithdrawalRequests: vi.fn(),
+    providerWalletWithdrawalRequestSummary: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
@@ -255,6 +256,23 @@ describe('AdminController notification and push actions', () => {
       range: 'all',
       status: 'REQUESTED',
       take: '10',
+    });
+  });
+
+  it('exposes partner wallet withdrawal request summary with provider filtering', async () => {
+    admin.providerWalletWithdrawalRequestSummary.mockResolvedValue({ total: 4 });
+
+    await expect(
+      controller.providerWalletWithdrawalRequestSummary('7d', 'provider-1'),
+    ).resolves.toEqual({ total: 4 });
+
+    expect(routeMetadata('providerWalletWithdrawalRequestSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'provider-wallet/withdrawal-requests/summary',
+    });
+    expect(admin.providerWalletWithdrawalRequestSummary).toHaveBeenCalledWith({
+      providerProfileId: 'provider-1',
+      range: '7d',
     });
   });
 

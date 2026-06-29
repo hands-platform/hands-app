@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type {
   AdminBookingSettlementSnapshotSummary,
   AdminPartnerWithholdingTaxSummary,
+  AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
@@ -12,11 +13,13 @@ import {
   bookingSettlementAuditHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
   buildFinancePayoutPriorityLinks,
   emptyBookingSettlementSummary,
   emptyPartnerWithholdingTaxSummary,
+  emptyProviderWalletWithdrawalRequestSummary,
   monthlyTaxClosingHref,
   paymentFeeHref,
   partnerWithholdingTaxHref,
@@ -35,7 +38,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const settlementFilters = readBookingSettlementFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
-  const [settlementSummary, withholdingSummary] = await Promise.all([
+  const [settlementSummary, withholdingSummary, withdrawalRequestSummary] = await Promise.all([
     adminGet<AdminBookingSettlementSnapshotSummary>(
       buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
       emptyBookingSettlementSummary(),
@@ -43,6 +46,10 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
     adminGet<AdminPartnerWithholdingTaxSummary>(
       buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
       emptyPartnerWithholdingTaxSummary(withholdingFilters.period),
+    ),
+    adminGet<AdminProviderWalletWithdrawalRequestSummary>(
+      buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
+      emptyProviderWalletWithdrawalRequestSummary(),
     ),
   ]);
 
@@ -113,14 +120,14 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           title="Payout and wallet priority desk"
         />
         <div className="setup-stage-list admin-mt-12">
-          {buildFinancePayoutPriorityLinks(settlementFilters).map((link) => (
+          {buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => (
             <Link className="setup-stage-item" href={link.href} key={link.key}>
               <span>{link.signal}</span>
               <div>
                 <strong>{link.label}</strong>
                 <p className="muted">{link.helper}</p>
               </div>
-              <small>Open queue</small>
+              <small>{typeof link.count === 'number' ? `${link.count} open` : 'Open queue'}</small>
             </Link>
           ))}
         </div>

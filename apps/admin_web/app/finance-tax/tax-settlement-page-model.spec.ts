@@ -5,6 +5,7 @@ import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
+  buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildPaymentFeeMetrics,
   buildPaymentFeeSummaryCsvHref,
   buildPaymentFeeSummaryApiHref,
@@ -78,6 +79,14 @@ describe('tax settlement page model', () => {
 
     expect(buildPlatformVatSummaryApiHref(filters)).toBe('/admin/platform-vat/summary?period=2026-06');
     expect(buildPaymentFeeSummaryApiHref(filters)).toBe('/admin/payment-fees/summary?period=2026-06');
+  });
+
+  it('builds provider wallet withdrawal summary API hrefs from the booking range filter', () => {
+    const filters = readBookingSettlementFilters({ range: '7d', review: 'open' });
+
+    expect(buildProviderWalletWithdrawalRequestSummaryApiHref(filters)).toBe(
+      '/admin/provider-wallet/withdrawal-requests/summary?range=7d',
+    );
   });
 
   it('builds tax finance workflow links while preserving active filters and excluding the current page', () => {

@@ -6596,6 +6596,10 @@ export class AdminService {
     return this.earnings.listProviderWalletWithdrawalRequestsForAdmin(options);
   }
 
+  providerWalletWithdrawalRequestSummary(options: Pick<AdminPaymentOperationsQuery, 'range' | 'providerProfileId'> = {}) {
+    return this.earnings.providerWalletWithdrawalRequestSummaryForAdmin(options);
+  }
+
   async updateProviderWalletWithdrawalRequest(
     actorId: string,
     requestId: string,

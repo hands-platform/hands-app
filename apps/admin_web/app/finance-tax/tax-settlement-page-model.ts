@@ -8,6 +8,7 @@ import type {
   AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxRow,
   AdminPartnerWithholdingTaxSummary,
+  AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -63,6 +64,7 @@ export type TaxFinanceWorkflowLink = {
 
 export type FinancePayoutPriorityLink = {
   readonly key: string;
+  readonly count: number | null;
   readonly label: string;
   readonly helper: string;
   readonly href: string;
@@ -157,6 +159,12 @@ export function buildPartnerWithholdingTaxSummaryApiHref(filters: PartnerWithhol
   }).toString()}`;
 }
 
+export function buildProviderWalletWithdrawalRequestSummaryApiHref(filters: BookingSettlementFilters) {
+  return `/admin/provider-wallet/withdrawal-requests/summary?${new URLSearchParams({
+    range: filters.range,
+  }).toString()}`;
+}
+
 export function buildMonthlyTaxClosingApiHref(filters: MonthlyTaxClosingFilters) {
   return `/admin/monthly-tax-closings?${new URLSearchParams({
     period: filters.period,
@@ -243,11 +251,13 @@ export function buildTaxFinanceWorkflowLinks({
 
 export function buildFinancePayoutPriorityLinks(
   settlementFilters: BookingSettlementFilters,
+  withdrawalSummary: AdminProviderWalletWithdrawalRequestSummary | null = null,
 ): FinancePayoutPriorityLink[] {
   const range = settlementFilters.range;
   return [
     {
       key: 'withdrawal-requested',
+      count: withdrawalSummary?.requested ?? null,
       label: 'Withdrawal requested',
       helper: 'Partner withdrawal requests waiting for first finance review.',
       href: payoutWithdrawalStatusHref(range, 'REQUESTED'),
@@ -255,6 +265,7 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'review-required',
+      count: withdrawalSummary?.reviewRequired ?? null,
       label: 'Review required',
       helper: 'Withdrawal requests blocked by an explicit review flag before bank payout.',
       href: payoutWithdrawalStatusHref(range, 'REVIEW_REQUIRED'),
@@ -262,6 +273,7 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'bank-transfer-pending',
+      count: withdrawalSummary?.bankTransferPending ?? null,
       label: 'Bank transfer pending',
       helper: 'Approved requests already moved into the manual bank transfer lane.',
       href: payoutWithdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
@@ -269,6 +281,7 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'cash-debt-gate',
+      count: null,
       label: 'Cash debt gate',
       helper: 'Partner cash booking fee debt that can block final acceptance, service start, or payout release.',
       href: `/cash-settlements?${new URLSearchParams({ range }).toString()}`,
@@ -358,6 +371,16 @@ export function emptyPartnerWithholdingTaxSummary(period = normalizeTaxPeriod(''
     partnerVatWithheldTotal: 0,
     partnerPitWithheldTotal: 0,
     totalPartnerTaxWithheld: 0,
+  };
+}
+
+export function emptyProviderWalletWithdrawalRequestSummary(): AdminProviderWalletWithdrawalRequestSummary {
+  return {
+    total: 0,
+    requested: 0,
+    reviewRequired: 0,
+    bankTransferPending: 0,
+    lockReleased: 0,
   };
 }
 

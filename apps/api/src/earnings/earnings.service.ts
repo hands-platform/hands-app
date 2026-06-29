@@ -147,6 +147,19 @@ function adminWithdrawalRequestListWhere(
   return Object.keys(where).length > 0 ? where : undefined;
 }
 
+function mergeWithdrawalRequestWhere(
+  base: Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined,
+  next: Prisma.ProviderWalletWithdrawalRequestWhereInput,
+): Prisma.ProviderWalletWithdrawalRequestWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function withdrawalRequestCountArgs(
+  where: Prisma.ProviderWalletWithdrawalRequestWhereInput | undefined,
+): Prisma.ProviderWalletWithdrawalRequestCountArgs {
+  return where ? { where } : {};
+}
+
 function cleanQueryText(value: string | null | undefined) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -1129,6 +1142,50 @@ export class EarningsService {
         bankAccount: true,
       },
     });
+  }
+
+  async providerWalletWithdrawalRequestSummaryForAdmin(
+    options: Omit<AdminWithdrawalRequestListQuery, 'status' | 'take'> = {},
+  ) {
+    const where = adminWithdrawalRequestListWhere({ ...options, status: null });
+    const [total, requested, reviewRequired, bankTransferPending, lockReleased] = await Promise.all([
+      this.prisma.providerWalletWithdrawalRequest.count(withdrawalRequestCountArgs(where)),
+      this.prisma.providerWalletWithdrawalRequest.count(
+        withdrawalRequestCountArgs(
+          mergeWithdrawalRequestWhere(where, { status: ProviderWalletWithdrawalRequestStatus.REQUESTED }),
+        ),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.count(
+        withdrawalRequestCountArgs(
+          mergeWithdrawalRequestWhere(where, { status: ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED }),
+        ),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.count(
+        withdrawalRequestCountArgs(
+          mergeWithdrawalRequestWhere(where, {
+            status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+          }),
+        ),
+      ),
+      this.prisma.providerWalletWithdrawalRequest.count(
+        withdrawalRequestCountArgs(
+          mergeWithdrawalRequestWhere(where, {
+            metadata: {
+              equals: true,
+              path: ['lastStatusChange', 'lockedAmountReleased'],
+            },
+          }),
+        ),
+      ),
+    ]);
+
+    return {
+      total,
+      requested,
+      reviewRequired,
+      bankTransferPending,
+      lockReleased,
+    };
   }
 
   async createProviderWalletWithdrawalRequestForProviderUser(
