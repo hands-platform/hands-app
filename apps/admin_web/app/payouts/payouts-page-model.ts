@@ -31,5 +31,6 @@ export function buildPayoutOperationsApiHrefs(filters: ReturnType<typeof buildPa
     }).toString()}`,
     payoutBatchSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
+    providerWalletWithdrawalRequestsHref: `/admin/provider-wallet/withdrawal-requests?${params.toString()}`,
   };
 }

@@ -40,6 +40,7 @@ export type AdminProviderWalletLedgerType =
   | 'CASH_BOOKING_PARTNER_TAX_DEDUCTED'
   | 'CASH_FEE_DEBT_SETTLED'
   | 'PAYOUT_PAID'
+  | 'PARTNER_WALLET_WITHDRAWAL_PAID'
   | 'REFUND_REVERSAL'
   | 'REFERRAL_REWARD'
   | 'ADMIN_ADJUSTMENT'
@@ -1322,6 +1323,46 @@ export type AdminPayoutBatchSummary = {
   totalNetAmount: number;
   withholdingAmount: number;
   currency: string;
+};
+
+export type AdminProviderWalletWithdrawalRequestStatus =
+  | 'REQUESTED'
+  | 'NEEDS_BANK_CORRECTION'
+  | 'APPROVED'
+  | 'PAID'
+  | 'REJECTED'
+  | 'CANCELLED';
+
+export type AdminProviderWalletWithdrawalRequest = {
+  id: string;
+  providerProfileId: string;
+  bankAccountId: string;
+  amount: number;
+  currency: string;
+  status: AdminProviderWalletWithdrawalRequestStatus;
+  requestNote?: string | null;
+  adminNote?: string | null;
+  correctionReason?: string | null;
+  transferRef?: string | null;
+  reviewedByAdminId?: string | null;
+  reviewedAt?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  providerProfile?: {
+    id?: string;
+    displayName?: string | null;
+    user?: { id?: string; phone?: string | null; fullName?: string | null };
+  } | null;
+  bankAccount?: {
+    id: string;
+    bankName: string;
+    accountHolderName: string;
+    accountNumberMasked?: string | null;
+    accountNumberLast4?: string | null;
+    status: string;
+    isPrimary?: boolean;
+  } | null;
 };
 
 export type AdminProviderTaxLog = {

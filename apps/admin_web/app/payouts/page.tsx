@@ -5,6 +5,7 @@ import {
   AdminOperationalPolicySetting,
   AdminPayoutBatch,
   AdminPayoutBatchSummary,
+  AdminProviderWalletWithdrawalRequest,
   adminGet,
 } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
@@ -19,7 +20,13 @@ import {
   humanizePolicyValue,
   operationalPolicyHref,
 } from '../../lib/operations-policy';
-import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
+import {
+  markPayoutFailed,
+  markPayoutPaid,
+  markPayoutProcessing,
+  updatePayoutTransferRef,
+  updateProviderWalletWithdrawalRequest,
+} from './actions';
 import {
   type PayoutConfirmationAction,
   buildPayoutActionConfirmation,
@@ -31,6 +38,7 @@ import type { PayoutBatchTableRow } from './payout-batch-table';
 import { PayoutCommandQueueSection, type PayoutCommandSignal } from './payout-command-queue-section';
 import { buildPayoutPartnerFinanceQueueRows } from './payout-partner-finance-queue-model';
 import { PayoutPartnerFinanceQueueSection } from './payout-partner-finance-queue-section';
+import { PayoutWalletWithdrawalRequestSection } from './payout-wallet-withdrawal-request-section';
 import {
   PayoutMoneyFlowSection,
   type PayoutMoneyFlowCard,
@@ -56,11 +64,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
-  const [allBatches, payoutSummary, allEarnings, policySettings] = await Promise.all([
+  const [allBatches, payoutSummary, allEarnings, policySettings, walletWithdrawalRequests] = await Promise.all([
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, []),
+    adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, []),
   ]);
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
@@ -286,6 +295,11 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
 
       <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
+
+      <PayoutWalletWithdrawalRequestSection
+        requests={walletWithdrawalRequests}
+        updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
+      />
 
       <PayoutServiceEvidenceSection
         batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}

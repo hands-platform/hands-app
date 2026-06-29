@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { adminPatch } from '../../lib/admin-api';
+import { adminPatch, adminPatchOrThrow } from '../../lib/admin-api';
 
 export async function updatePayoutTransferRef(formData: FormData) {
   const payoutBatchId = String(formData.get('payoutBatchId') ?? '');
@@ -32,6 +32,32 @@ export async function markPayoutPaid(formData: FormData) {
 
 export async function markPayoutFailed(formData: FormData) {
   await updatePayoutStatus(formData, 'FAILED');
+}
+
+export async function updateProviderWalletWithdrawalRequest(formData: FormData) {
+  const requestId = String(formData.get('requestId') ?? '').trim();
+  const status = String(formData.get('status') ?? '').trim();
+  if (!requestId || !status) {
+    return;
+  }
+
+  const transferRef = String(formData.get('transferRef') ?? '').trim();
+  const adminNote = String(formData.get('adminNote') ?? '').trim();
+  const correctionReason = String(formData.get('correctionReason') ?? '').trim();
+
+  await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
+    status,
+    transferRef: transferRef || undefined,
+    adminNote: adminNote || undefined,
+    correctionReason: correctionReason || undefined,
+  });
+
+  revalidatePath('/payouts');
+  revalidatePath('/cash-settlements');
+  revalidatePath('/earnings');
+  revalidatePath('/partners');
+  revalidatePath('/partner-controls');
+  revalidatePath('/audit-log');
 }
 
 async function updatePayoutStatus(formData: FormData, status: 'PROCESSING' | 'PAID' | 'FAILED') {
