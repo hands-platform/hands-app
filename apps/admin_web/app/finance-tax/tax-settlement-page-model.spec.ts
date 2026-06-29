@@ -22,6 +22,7 @@ import {
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
+  monthlyTaxClosingHref,
   monthlyTaxClosingNextStatusOptions,
   bookingSettlementAuditHref,
   buildTaxSettlementServerPagination,
@@ -132,6 +133,7 @@ describe('tax settlement page model', () => {
     const filters = readMonthlyTaxClosingFilters({ period: '2026-06', take: '50' });
 
     expect(filters).toEqual({
+      page: 1,
       period: '2026-06',
       take: 50,
     });
@@ -141,6 +143,18 @@ describe('tax settlement page model', () => {
     expect(buildMonthlyTaxClosingSummaryApiHref(filters)).toBe(
       '/admin/monthly-tax-closings/summary?period=2026-06',
     );
+  });
+
+  it('keeps stored monthly tax closing rows server-paginated by period', () => {
+    const filters = readMonthlyTaxClosingFilters({ page: '2', period: '2026-06', take: '25' });
+
+    expect(filters).toEqual({
+      page: 2,
+      period: '2026-06',
+      take: 25,
+    });
+    expect(buildMonthlyTaxClosingApiHref(filters)).toBe('/admin/monthly-tax-closings?period=2026-06&take=25&skip=25');
+    expect(monthlyTaxClosingHref(filters)).toBe('/finance-tax/monthly-tax-closing?period=2026-06&page=2');
   });
 
   it('builds platform VAT and payment fee summary API hrefs from the same monthly period filter', () => {
@@ -174,7 +188,7 @@ describe('tax settlement page model', () => {
       ['Tax overview', '/finance-tax'],
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
       ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid&take=50'],
-      ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06'],
+      ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06&take=75'],
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
       ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06&take=75'],
     ]);

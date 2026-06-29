@@ -828,8 +828,12 @@ export class AdminController {
   }
 
   @Get('monthly-tax-closings')
-  monthlyTaxClosings(@Query('period') period?: string, @Query('take') take?: string) {
-    return this.admin.listMonthlyTaxClosings({ period, take });
+  monthlyTaxClosings(
+    @Query('period') period?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listMonthlyTaxClosings({ period, skip, take });
   }
 
   @Get('monthly-tax-closings/summary')

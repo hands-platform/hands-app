@@ -695,7 +695,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes monthly tax closings as a bounded finance list', async () => {
     admin.listMonthlyTaxClosings.mockResolvedValue([{ period: '2026-06' }]);
 
-    await expect(controller.monthlyTaxClosings('2026-06', '25')).resolves.toEqual([{ period: '2026-06' }]);
+    await expect(controller.monthlyTaxClosings('2026-06', '25', '25')).resolves.toEqual([{ period: '2026-06' }]);
 
     expect(routeMetadata('monthlyTaxClosings')).toEqual({
       method: RequestMethod.GET,
@@ -703,6 +703,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listMonthlyTaxClosings).toHaveBeenCalledWith({
       period: '2026-06',
+      skip: '25',
       take: '25',
     });
   });

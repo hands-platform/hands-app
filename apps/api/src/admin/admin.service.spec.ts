@@ -6582,13 +6582,14 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listMonthlyTaxClosings({ period: '2026-06', take: '25' })).resolves.toEqual([
+    await expect(service.listMonthlyTaxClosings({ period: '2026-06', skip: '25', take: '25' })).resolves.toEqual([
       { period: '2026-06' },
     ]);
 
     expect(prisma.monthlyTaxClosing.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { period: 'desc' },
+        skip: 25,
         take: 25,
         where: { period: '2026-06' },
       }),

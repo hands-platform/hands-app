@@ -5,6 +5,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -14,8 +15,10 @@ import {
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
+  buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
   emptyMonthlyTaxClosingSummary,
+  monthlyTaxClosingHref,
   monthlyTaxClosingNextStatusOptions,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
@@ -39,12 +42,12 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
     ),
     adminGet<AdminMonthlyTaxClosing[]>(buildMonthlyTaxClosingApiHref(filters), []),
   ]);
-  const returnTo = `/finance-tax/monthly-tax-closing?${new URLSearchParams({
-    period: filters.period,
-    take: String(filters.take),
-  }).toString()}`;
+  const storedClosingTotal = summary.id || closings.length ? 1 : 0;
+  const pagination = buildTaxSettlementServerPagination(closings, filters, storedClosingTotal);
+  const tableRows = pagination.rows;
+  const returnTo = monthlyTaxClosingHref(filters);
   const summaryCsvHref = buildMonthlyTaxClosingSummaryCsvHref(summary);
-  const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(closings);
+  const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(tableRows);
   const accountingJournalCsvHref = buildMonthlyTaxClosingAccountingJournalCsvHref(summary);
   const nextStatusOptions = monthlyTaxClosingNextStatusOptions(summary.status);
 
@@ -209,9 +212,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           <AdminDataTable
             emptyMessage="No stored monthly tax closing row exists for this period yet."
             headers={['Period', 'Status', 'Settlements', 'Platform VAT', 'Partner tax', 'Payment fees', 'Closeout']}
-            rowCount={closings.length}
+            rowCount={tableRows.length}
           >
-            {closings.map((closing) => (
+            {tableRows.map((closing) => (
               <tr key={closing.id}>
                 <td>
                   <strong>{closing.period}</strong>
@@ -241,6 +244,19 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="Monthly tax closing pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={pagination.totalPages}
+          />
+        </div>
       </section>
     </AdminPageTemplate>
   );

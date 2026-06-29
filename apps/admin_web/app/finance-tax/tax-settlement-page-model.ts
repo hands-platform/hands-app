@@ -41,6 +41,7 @@ export type PartnerWithholdingTaxFilters = {
 };
 
 export type MonthlyTaxClosingFilters = {
+  readonly page: number;
   readonly period: string;
   readonly take: number;
 };
@@ -128,6 +129,7 @@ export function readMonthlyTaxClosingFilters(
   params: Record<string, string | string[] | undefined>,
 ): MonthlyTaxClosingFilters {
   return {
+    page: readTaxSettlementPage(readSearchParam(params.page)),
     period: normalizeTaxPeriod(readSearchParam(params.period)),
     take: boundedTake(readSearchParam(params.take)),
   };
@@ -195,10 +197,12 @@ export function buildProviderWalletWithdrawalRequestSummaryApiHref(filters: Book
 }
 
 export function buildMonthlyTaxClosingApiHref(filters: MonthlyTaxClosingFilters) {
-  return `/admin/monthly-tax-closings?${new URLSearchParams({
+  const params = new URLSearchParams({
     period: filters.period,
     take: String(filters.take),
-  }).toString()}`;
+  });
+  appendTaxSettlementSkip(params, filters);
+  return `/admin/monthly-tax-closings?${params.toString()}`;
 }
 
 export function buildMonthlyTaxClosingSummaryApiHref(filters: MonthlyTaxClosingFilters) {
@@ -265,7 +269,9 @@ export function partnerWithholdingTaxHref(filters: PartnerWithholdingTaxFilters)
 }
 
 export function monthlyTaxClosingHref(filters: MonthlyTaxClosingFilters) {
-  return `/finance-tax/monthly-tax-closing?${new URLSearchParams({ period: filters.period }).toString()}`;
+  const params = new URLSearchParams({ period: filters.period });
+  appendTaxSettlementUiPagination(params, filters);
+  return `/finance-tax/monthly-tax-closing?${params.toString()}`;
 }
 
 export function platformVatHref(filters: MonthlyTaxClosingFilters) {
@@ -919,7 +925,7 @@ export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMon
   );
 }
 
-export function buildMonthlyTaxClosingRowsCsvHref(rows: AdminMonthlyTaxClosing[]) {
+export function buildMonthlyTaxClosingRowsCsvHref(rows: readonly AdminMonthlyTaxClosing[]) {
   return buildCsvDataHref(
     rows.map((row) => ({
       id: row.id,

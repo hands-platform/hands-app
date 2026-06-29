@@ -377,6 +377,7 @@ type AdminPartnerWithholdingTaxQuery = {
 };
 type AdminMonthlyTaxClosingQuery = {
   readonly period?: string | null;
+  readonly skip?: number | string | null;
   readonly take?: number | string | null;
 };
 type AdminMonthlyTaxClosingStatusInput = {
@@ -5724,10 +5725,12 @@ export class AdminService {
   listMonthlyTaxClosings(options: AdminMonthlyTaxClosingQuery = {}) {
     const period = normalizeNullable(options.period);
     const where = period ? { period: adminPartnerWithholdingTaxPeriod(period) } : undefined;
+    const skip = boundedAdminListSkip(options.skip);
 
     return this.prisma.monthlyTaxClosing.findMany({
       ...(where ? { where } : {}),
       orderBy: { period: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: adminMonthlyTaxClosingListSelect,
     });
