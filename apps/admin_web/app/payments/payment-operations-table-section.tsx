@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type PaymentActionExecutionRow = {
   readonly action: string;
@@ -37,10 +38,20 @@ export type PaymentOperationsTableRow = {
 
 type PaymentOperationsTableSectionProps = {
   readonly emptyMessage: string;
-  readonly rows: readonly PaymentOperationsTableRow[];
+  readonly pagination: {
+    readonly from: number;
+    readonly hrefForPage: (page: number) => string;
+    readonly page: number;
+    readonly rows: readonly PaymentOperationsTableRow[];
+    readonly to: number;
+    readonly totalPages: number;
+    readonly totalRows: number;
+  };
 };
 
-export function PaymentOperationsTableSection({ emptyMessage, rows }: PaymentOperationsTableSectionProps) {
+export function PaymentOperationsTableSection({ emptyMessage, pagination }: PaymentOperationsTableSectionProps) {
+  const rows = pagination.rows;
+
   return (
     <div className="card">
       <AdminDataTable
@@ -111,6 +122,19 @@ export function PaymentOperationsTableSection({ emptyMessage, rows }: PaymentOpe
           </tr>
         ))}
       </AdminDataTable>
+      <div className="vuexy-booking-table-footer">
+        <span>
+          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+        </span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel="Payment pagination"
+          className="vuexy-booking-pagination"
+          hrefForPage={pagination.hrefForPage}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </div>
   );
 }

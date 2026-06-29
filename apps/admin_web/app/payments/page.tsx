@@ -12,6 +12,7 @@ import {
   buildPaymentFilters,
   buildPaymentOperationsApiHref,
   buildPaymentPageModel,
+  buildPaymentServerPagination,
   buildPaymentSummaryApiHref,
 } from './payment-page-model';
 import { buildPaymentOperationsTableRows, paymentConfirmationAction } from './payment-page-presenters';
@@ -37,6 +38,8 @@ export default async function PaymentsPage({ searchParams }: { readonly searchPa
     readPaymentConfirmationAction(readSingleParam(params.confirm)),
     readSingleParam(params.paymentId),
   );
+  const paymentRows = buildPaymentOperationsTableRows(model.payments);
+  const paymentPagination = buildPaymentServerPagination(paymentRows, model.filters, model.totalCount);
 
   return (
     <AdminPageTemplate
@@ -120,7 +123,7 @@ export default async function PaymentsPage({ searchParams }: { readonly searchPa
       <PaymentCallbackAttemptLedgerSection rows={model.callbackAttemptRows} />
       <PaymentOperationsTableSection
         emptyMessage={emptyPaymentMessage(model.filters.review)}
-        rows={buildPaymentOperationsTableRows(model.payments)}
+        pagination={paymentPagination}
       />
     </AdminPageTemplate>
   );

@@ -706,8 +706,9 @@ export class AdminController {
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('skip') skip?: string,
   ) {
-    return this.admin.listPayments({ range, review, take });
+    return this.admin.listPayments({ range, review, skip, take });
   }
 
   @Get('payments/summary')

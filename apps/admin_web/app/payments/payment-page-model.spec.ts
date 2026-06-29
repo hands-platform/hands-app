@@ -80,12 +80,12 @@ describe('payment page model', () => {
   it('builds bounded API hrefs from the selected payment filters', () => {
     const model = buildPaymentPageModel({
       callbackAttempts: [],
-      params: { range: '7d', review: 'callback-review' },
+      params: { page: '3', range: '7d', review: 'callback-review' },
       payments: [],
     });
 
     expect(buildPaymentOperationsApiHref(model.filters)).toBe(
-      '/admin/payments?take=10&range=7d&review=callback-review',
+      '/admin/payments?take=10&range=7d&review=callback-review&skip=20',
     );
     expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
       '/admin/payment-callback-attempts?take=10&range=7d&review=callback-review',

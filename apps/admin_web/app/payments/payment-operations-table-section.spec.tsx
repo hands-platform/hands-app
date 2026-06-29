@@ -4,12 +4,13 @@ describe('PaymentOperationsTableSection', () => {
   it('renders payment rows with operation evidence and action links', () => {
     const section = PaymentOperationsTableSection({
       emptyMessage: 'No payments loaded.',
-      rows: [buildRow()],
+      pagination: pagination([buildRow()], { totalRows: 12 }),
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizeText(textContent(section));
 
     expect(rendered).toContain('payment-1');
+    expect(rendered).toContain('Showing 1 to 1 of 12 entries');
     expect(rendered).toContain('AUTHORIZED');
     expect(rendered).toContain('Capture after service');
     expect(rendered).toContain('Payment action execution map');
@@ -20,12 +21,31 @@ describe('PaymentOperationsTableSection', () => {
   it('renders the empty state when there are no payment rows', () => {
     const section = PaymentOperationsTableSection({
       emptyMessage: 'No payments currently match this queue.',
-      rows: [],
+      pagination: pagination([]),
     });
 
     expect(textContent(section)).toContain('No payments currently match this queue.');
   });
 });
+
+function pagination(
+  rows: readonly PaymentOperationsTableRow[],
+  input: { page?: number; pageSize?: number; totalRows?: number } = {},
+) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 10;
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: rows.length === 0 ? 0 : (page - 1) * pageSize + 1,
+    hrefForPage: (nextPage: number) => `/payments?page=${nextPage}`,
+    page,
+    rows,
+    to: rows.length === 0 ? 0 : (page - 1) * pageSize + rows.length,
+    totalPages: Math.max(1, Math.ceil(totalRows / pageSize)),
+    totalRows,
+  };
+}
 
 function buildRow(): PaymentOperationsTableRow {
   return {
@@ -83,6 +103,10 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {

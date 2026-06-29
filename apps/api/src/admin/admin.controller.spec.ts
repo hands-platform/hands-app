@@ -489,7 +489,7 @@ describe('AdminController notification and push actions', () => {
   it('exposes payments as a bounded filtered operations list', async () => {
     admin.listPayments.mockResolvedValue([{ id: 'payment-1' }]);
 
-    await expect(controller.payments('25', 'today', 'cash-debt')).resolves.toEqual([{ id: 'payment-1' }]);
+    await expect(controller.payments('25', 'today', 'cash-debt', '10')).resolves.toEqual([{ id: 'payment-1' }]);
 
     expect(routeMetadata('payments')).toEqual({
       method: RequestMethod.GET,
@@ -498,6 +498,7 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listPayments).toHaveBeenCalledWith({
       range: 'today',
       review: 'cash-debt',
+      skip: '10',
       take: '25',
     });
   });

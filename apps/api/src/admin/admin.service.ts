@@ -5297,10 +5297,12 @@ export class AdminService {
 
   listPayments(options: AdminPaymentOperationsQuery = {}) {
     const where = adminPaymentOperationsWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
 
     return this.prisma.payment.findMany({
       ...(where ? { where } : {}),
       orderBy: { id: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: {
         ...adminPaymentSummarySelect,

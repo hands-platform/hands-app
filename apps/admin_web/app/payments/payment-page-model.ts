@@ -23,6 +23,8 @@ import {
 } from './payment-page-rules';
 
 export type PaymentFilters = {
+  readonly page: number;
+  readonly pageSize: number;
   readonly range: AdminDateRange;
   readonly review: string;
 };
@@ -54,6 +56,7 @@ export type PaymentPageModel = {
 };
 
 const PAYMENT_OPERATIONS_API_LIMIT = 10;
+const PAYMENT_OPERATIONS_API_MAX_LIMIT = 50;
 
 export function buildPaymentPageModel({
   callbackAttempts,
@@ -144,13 +147,15 @@ export function buildPaymentFilters(params: Record<string, string | string[] | u
   const rangeParam = readSearchParam(params.range);
 
   return {
+    page: readPaymentPage(params.page),
+    pageSize: readPaymentPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     review: readSearchParam(params.review),
   };
 }
 
 export function buildPaymentOperationsApiHref(filters: PaymentFilters): string {
-  return buildPaymentApiHref('/admin/payments', filters);
+  return buildPaymentApiHref('/admin/payments', filters, { includePaging: true });
 }
 
 export function buildPaymentCallbackAttemptsApiHref(filters: PaymentFilters): string {
@@ -261,11 +266,74 @@ function paymentMetricsFromSummary(summary: AdminPaymentSummary): PaymentMetrics
   };
 }
 
-function buildPaymentApiHref(path: string, filters: PaymentFilters): string {
-  const params = new URLSearchParams({ take: String(PAYMENT_OPERATIONS_API_LIMIT), range: filters.range });
+export function buildPaymentPageHref(filters: PaymentFilters, page?: number): string {
+  const params = new URLSearchParams();
+  if (filters.range !== 'all') {
+    params.set('range', filters.range);
+  }
   if (filters.review) {
     params.set('review', filters.review);
   }
+  if (filters.pageSize !== PAYMENT_OPERATIONS_API_LIMIT) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+  if (page && page > 1) {
+    params.set('page', String(page));
+  }
+  const query = params.toString();
+  return query ? `/payments?${query}` : '/payments';
+}
+
+export function buildPaymentServerPagination<T>(
+  rows: readonly T[],
+  filters: PaymentFilters,
+  totalRows: number,
+) {
+  const safeTotalRows = Math.max(0, Math.trunc(totalRows));
+  const totalPages = Math.max(1, Math.ceil(safeTotalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+
+  return {
+    from: rows.length === 0 ? 0 : start + 1,
+    hrefForPage: (nextPage: number) => buildPaymentPageHref(filters, nextPage),
+    page,
+    pageSize: filters.pageSize,
+    rows,
+    to: rows.length === 0 ? 0 : Math.min(start + rows.length, safeTotalRows),
+    totalPages,
+    totalRows: safeTotalRows,
+  };
+}
+
+function buildPaymentApiHref(
+  path: string,
+  filters: PaymentFilters,
+  options: { readonly includePaging?: boolean } = {},
+): string {
+  const params = new URLSearchParams({ take: String(filters.pageSize), range: filters.range });
+  if (filters.review) {
+    params.set('review', filters.review);
+  }
+  if (options.includePaging) {
+    const skip = (filters.page - 1) * filters.pageSize;
+    if (skip > 0) {
+      params.set('skip', String(skip));
+    }
+  }
 
   return `${path}?${params.toString()}`;
+}
+
+function readPaymentPage(value: string | string[] | undefined) {
+  const page = Number.parseInt(readSearchParam(value), 10);
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function readPaymentPageSize(value: string | string[] | undefined) {
+  const pageSize = Number.parseInt(readSearchParam(value), 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+    return PAYMENT_OPERATIONS_API_LIMIT;
+  }
+  return Math.min(Math.trunc(pageSize), PAYMENT_OPERATIONS_API_MAX_LIMIT);
 }

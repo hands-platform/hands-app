@@ -5593,6 +5593,7 @@ describe('AdminService query orchestration', () => {
       service.listPayments({
         range: 'today',
         review: 'capture',
+        skip: '20',
         take: '999',
       }),
     ).resolves.toEqual([]);
@@ -5605,6 +5606,7 @@ describe('AdminService query orchestration', () => {
           }),
           status: PaymentStatus.AUTHORIZED,
         }),
+        skip: 20,
         take: 100,
       }),
     );
