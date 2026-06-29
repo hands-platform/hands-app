@@ -68,6 +68,41 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
       ]),
     );
   });
+
+  it('shows bank correction requests as partner-pending instead of finance-approvable', () => {
+    const section = PartnerDetailWalletWithdrawalRequestSection({
+      requests: [
+        {
+          amount: 420000,
+          bankAccount: {
+            accountHolderName: 'Linh Nguyen',
+            accountNumberLast4: '7788',
+            bankName: 'Techcombank',
+            id: 'bank-1',
+            isPrimary: true,
+            status: 'REJECTED',
+          },
+          bankAccountId: 'bank-1',
+          correctionReason: 'Bank account name does not match KYC name.',
+          createdAt: '2026-06-27T09:00:00.000Z',
+          currency: 'VND',
+          id: 'withdrawal-request-needs-bank-correction',
+          providerProfileId: 'provider-1',
+          status: 'NEEDS_BANK_CORRECTION',
+        },
+      ] satisfies AdminProviderWalletWithdrawalRequest[],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Waiting for partner bank correction');
+    expect(rendered).toContain('Partner must update bank details in the Partner app before finance can approve this withdrawal.');
+    expect(rendered).toContain('Bank account name does not match KYC name.');
+    expect(rendered).not.toContain('Approve');
+    expect(rendered).not.toContain('Request correction');
+    expect(rendered).not.toContain('Reject');
+  });
 });
 
 function textContent(value: unknown): string {
