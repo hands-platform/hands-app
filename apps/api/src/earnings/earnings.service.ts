@@ -71,6 +71,11 @@ type AdminWithdrawalRequestListQuery = AdminFinanceListQuery & {
 
 const ADMIN_FINANCE_LIST_DEFAULT_LIMIT = 50;
 const ADMIN_FINANCE_LIST_MAX_LIMIT = 100;
+const ACTIVE_WITHDRAWAL_REQUEST_STATUSES = [
+  ProviderWalletWithdrawalRequestStatus.REQUESTED,
+  ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+  ProviderWalletWithdrawalRequestStatus.APPROVED,
+] as const;
 
 function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
   return {
@@ -1144,6 +1149,11 @@ export class EarningsService {
       if (request.amount > currentWalletBalance) {
         throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
       }
+      const pendingWithdrawalAmount = await this.providerPendingWithdrawalAmount(tx, provider.id);
+      const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount;
+      if (request.amount > availableWalletBalance) {
+        throw new BadRequestException('Withdrawal amount exceeds available partner wallet balance');
+      }
 
       return tx.providerWalletWithdrawalRequest.create({
         data: {
@@ -1155,6 +1165,8 @@ export class EarningsService {
           requestNote: request.requestNote,
           metadata: {
             currentWalletBalance,
+            pendingWithdrawalAmount,
+            availableWalletBalance,
             source: 'PARTNER_APP_WALLET_WITHDRAWAL_REQUEST',
           },
         },
@@ -1191,6 +1203,15 @@ export class EarningsService {
         );
         if (existing.amount > currentWalletBalance) {
           throw new BadRequestException('Withdrawal amount exceeds partner wallet balance');
+        }
+        const pendingWithdrawalAmount = await this.providerPendingWithdrawalAmount(
+          tx,
+          existing.providerProfileId,
+          existing.id,
+        );
+        const availableWalletBalance = currentWalletBalance - pendingWithdrawalAmount;
+        if (existing.amount > availableWalletBalance) {
+          throw new BadRequestException('Withdrawal amount exceeds available partner wallet balance');
         }
         await tx.providerWalletLedgerEntry.upsert({
           where: { sourceKey: partnerWalletWithdrawalPaidSourceKey(existing.id) },
@@ -1755,6 +1776,22 @@ export class EarningsService {
       _sum: { amount: true },
     });
     return wallet._sum.amount ?? 0;
+  }
+
+  private async providerPendingWithdrawalAmount(
+    client: TxClient,
+    providerProfileId: string,
+    excludeRequestId?: string,
+  ) {
+    const pending = await client.providerWalletWithdrawalRequest.aggregate({
+      where: {
+        providerProfileId,
+        status: { in: [...ACTIVE_WITHDRAWAL_REQUEST_STATUSES] },
+        ...(excludeRequestId ? { id: { not: excludeRequestId } } : {}),
+      },
+      _sum: { amount: true },
+    });
+    return pending._sum.amount ?? 0;
   }
 
   private async calculateWithholding(
