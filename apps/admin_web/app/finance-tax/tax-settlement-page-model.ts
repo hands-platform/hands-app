@@ -4,6 +4,7 @@ import type {
   AdminPaymentFeeSummary,
   AdminPlatformVatSummary,
   AdminMonthlyTaxClosing,
+  AdminMonthlyTaxClosingStatus,
   AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxRow,
   AdminPartnerWithholdingTaxSummary,
@@ -38,6 +39,12 @@ export type PartnerWithholdingTaxFilters = {
 export type MonthlyTaxClosingFilters = {
   readonly period: string;
   readonly take: number;
+};
+
+export type MonthlyTaxClosingStatusOption = {
+  readonly value: AdminMonthlyTaxClosingStatus;
+  readonly label: string;
+  readonly helper: string;
 };
 
 export type TaxFinanceWorkflowPage =
@@ -383,6 +390,47 @@ export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSum
       helper: 'Platform fee gross minus company output VAT and net revenue.',
     },
   ];
+}
+
+export function monthlyTaxClosingNextStatusOptions(
+  status: AdminMonthlyTaxClosingStatus,
+): MonthlyTaxClosingStatusOption[] {
+  switch (status) {
+    case 'DRAFT':
+      return [
+        {
+          value: 'REVIEWED',
+          label: 'Reviewed',
+          helper: 'Snapshot the monthly totals after finance review.',
+        },
+      ];
+    case 'REVIEWED':
+      return [
+        {
+          value: 'DECLARED',
+          label: 'Declared',
+          helper: 'Mark the period as submitted to the tax portal.',
+        },
+      ];
+    case 'DECLARED':
+      return [
+        {
+          value: 'PAID',
+          label: 'Paid',
+          helper: 'Record that withholding tax and company VAT payment were completed.',
+        },
+      ];
+    case 'PAID':
+      return [
+        {
+          value: 'CLOSED',
+          label: 'Closed',
+          helper: 'Lock this monthly period after payment evidence is checked.',
+        },
+      ];
+    default:
+      return [];
+  }
 }
 
 export function buildPlatformVatMetrics(summary: AdminPlatformVatSummary) {

@@ -17,6 +17,7 @@ import {
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
+  monthlyTaxClosingNextStatusOptions,
   buildTaxFinanceMetrics,
   buildMonthlyTaxClosingMetrics,
   readBookingSettlementFilters,
@@ -178,6 +179,15 @@ describe('tax settlement page model', () => {
       ['Formula delta', '0 VND'],
       ['Net revenue delta', '0 VND'],
     ]);
+  });
+
+  it('limits monthly tax closing status actions to the next safe status', () => {
+    expect(monthlyTaxClosingNextStatusOptions('DRAFT').map((option) => option.value)).toEqual(['REVIEWED']);
+    expect(monthlyTaxClosingNextStatusOptions('REVIEWED').map((option) => option.value)).toEqual(['DECLARED']);
+    expect(monthlyTaxClosingNextStatusOptions('DECLARED').map((option) => option.value)).toEqual(['PAID']);
+    expect(monthlyTaxClosingNextStatusOptions('PAID').map((option) => option.value)).toEqual(['CLOSED']);
+    expect(monthlyTaxClosingNextStatusOptions('CLOSED')).toEqual([]);
+    expect(monthlyTaxClosingNextStatusOptions('REVERSED')).toEqual([]);
   });
 
   it('exports monthly tax closing summary and stored rows with visible totals', () => {

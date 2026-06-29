@@ -16,6 +16,7 @@ import {
   buildMonthlyTaxClosingSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyMonthlyTaxClosingSummary,
+  monthlyTaxClosingNextStatusOptions,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
@@ -45,6 +46,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
   const summaryCsvHref = buildMonthlyTaxClosingSummaryCsvHref(summary);
   const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(closings);
   const accountingJournalCsvHref = buildMonthlyTaxClosingAccountingJournalCsvHref(summary);
+  const nextStatusOptions = monthlyTaxClosingNextStatusOptions(summary.status);
 
   return (
     <AdminPageTemplate
@@ -115,28 +117,36 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           status={<span className={`pill ${closingStatusPill(summary.status)}`}>{summary.status}</span>}
           title="Monthly closing action"
         />
-        <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
-          <input name="period" type="hidden" value={filters.period} />
-          <input name="returnTo" type="hidden" value={returnTo} />
-          <label>
-            Next status
-            <select name="status" defaultValue={summary.status === 'DRAFT' ? 'REVIEWED' : summary.status}>
-              <option value="REVIEWED">Reviewed</option>
-              <option value="DECLARED">Declared</option>
-              <option value="PAID">Paid</option>
-              <option value="CLOSED">Closed</option>
-            </select>
-          </label>
-          <label>
-            Operator notes
-            <input
-              name="notes"
-              placeholder="Tax portal reference, declaration note, or closeout memo"
-              defaultValue={summary.notes ?? ''}
-            />
-          </label>
-          <button type="submit">Save closing status</button>
-        </form>
+        {nextStatusOptions.length ? (
+          <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
+            <input name="period" type="hidden" value={filters.period} />
+            <input name="returnTo" type="hidden" value={returnTo} />
+            <label>
+              Next status
+              <select name="status" defaultValue={nextStatusOptions[0]?.value}>
+                {nextStatusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Operator notes
+              <input
+                name="notes"
+                placeholder="Tax portal reference, declaration note, or closeout memo"
+                defaultValue={summary.notes ?? ''}
+              />
+            </label>
+            <button type="submit">Save closing status</button>
+            <p className="muted">{nextStatusOptions[0]?.helper}</p>
+          </form>
+        ) : (
+          <p className="muted admin-mt-12">
+            No direct status action is available. Closed or reversed periods require reversal entries, not direct edits.
+          </p>
+        )}
       </section>
 
       <section className="card admin-mb-16">
