@@ -437,7 +437,7 @@ export class ReferralsService {
               referralRewardId: reward.id,
               reference: reward.sourceKey,
               sourceKey: ledgerSourceKey,
-              type: CustomerWalletLedgerType.REFERRAL_REWARD,
+              type: customerWalletLedgerType('CUSTOMER_REFERRAL_EARNED'),
             },
             select: { id: true },
           })
@@ -452,7 +452,7 @@ export class ReferralsService {
               providerProfileId: reward.walletOwnerProviderProfileId as string,
               reference: reward.sourceKey,
               sourceKey: ledgerSourceKey,
-              type: ProviderWalletLedgerType.REFERRAL_REWARD,
+              type: providerWalletLedgerType('PARTNER_REFERRAL_EARNED'),
             },
             select: { id: true },
           });
@@ -927,6 +927,14 @@ function referralPlatformFeeVatRateBps(policy: ReferralPolicyRecord) {
   const configuredVatRateBps = referralMetadataWholeBps(policy.metadata, 'platformFeeVatRateBps');
 
   return configuredVatRateBps ?? DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS;
+}
+
+function customerWalletLedgerType(value: string): CustomerWalletLedgerType {
+  return value as CustomerWalletLedgerType;
+}
+
+function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
+  return value as ProviderWalletLedgerType;
 }
 
 function referralMetadataWholeBps(metadata: Prisma.JsonValue | null, key: string) {
