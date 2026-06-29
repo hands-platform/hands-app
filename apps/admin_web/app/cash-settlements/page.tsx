@@ -8,7 +8,11 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
-import { buildAdminLiveOperationsPolicy } from '../../lib/operations-policy';
+import {
+  buildAdminLiveOperationsPolicy,
+  LEGACY_OPERATIONAL_POLICY_KEYS,
+  OPERATIONAL_POLICY_KEYS,
+} from '../../lib/operations-policy';
 import { settleCashFeeDebt } from './actions';
 import { buildCashSettlementConfirmation } from './cash-settlement-action-confirmation';
 import {
@@ -47,13 +51,25 @@ type CashSettlementsPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const CASH_SETTLEMENT_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.cashSettlementClearance,
+  OPERATIONAL_POLICY_KEYS.walletNegativeGate,
+  OPERATIONAL_POLICY_KEYS.payoutBatchCycle,
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+] as const;
+
+const CASH_SETTLEMENT_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
+  keys: CASH_SETTLEMENT_POLICY_KEYS.join(','),
+}).toString()}`;
+
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildCashSettlementFilters(params);
   const [earnings, apiSummary, policySettings] = await Promise.all([
     adminGet<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
     adminGet<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminOperationalPolicySetting[]>(CASH_SETTLEMENT_POLICY_HREF, []),
   ]);
   const filteredEarnings = earnings;
   const allRowsInRange = buildCashSettlementRows(filteredEarnings);

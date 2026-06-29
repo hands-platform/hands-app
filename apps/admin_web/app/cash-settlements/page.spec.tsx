@@ -63,7 +63,10 @@ describe('CashSettlementsPage', () => {
       if (href === '/admin/cash-settlement-summary?range=today') {
         return null as AdminCashSettlementSummary | null;
       }
-      if (href === '/admin/operational-policy') {
+      if (
+        href ===
+        '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters'
+      ) {
         return [] as AdminOperationalPolicySetting[];
       }
       return fallback;
@@ -76,5 +79,6 @@ describe('CashSettlementsPage', () => {
 
     expect(markup).toContain('Server Trusted Cash Partner');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
+    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
 });
