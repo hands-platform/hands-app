@@ -477,6 +477,7 @@ const adminBookingMarketplaceProviderSelect = {
 const adminReferralRewardSelect = {
   id: true,
   amount: true,
+  calculationSnapshot: true,
   currency: true,
   status: true,
   qualifyingBookingId: true,

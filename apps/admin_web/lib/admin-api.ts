@@ -146,6 +146,7 @@ export type AdminReferralReward = {
   id: string;
   amount: number;
   availableAt?: string | null;
+  calculationSnapshot?: Record<string, unknown> | null;
   createdAt: string;
   currency: string;
   latestDecision?: AdminReferralRewardLatestDecision | null;

@@ -1924,6 +1924,11 @@ describe('AdminService query orchestration', () => {
                   {
                     id: 'reward-available',
                     amount: 25_000,
+                    calculationSnapshot: {
+                      platformFeeNetRevenue: 118_519,
+                      rewardRateSnapshotBps: 3_000,
+                      taxPolicySnapshot: 'CUSTOMER_SERVICE_CREDIT_ONLY',
+                    },
                     currency: 'VND',
                     status: ReferralRewardStatus.AVAILABLE,
                     qualifyingBookingId: 'booking-1',
@@ -1944,6 +1949,11 @@ describe('AdminService query orchestration', () => {
                   {
                     id: 'reward-rewarded',
                     amount: 15_000,
+                    calculationSnapshot: {
+                      platformFeeNetRevenue: 118_519,
+                      rewardRateSnapshotBps: 3_000,
+                      taxPolicySnapshot: 'CUSTOMER_SERVICE_CREDIT_ONLY',
+                    },
                     currency: 'VND',
                     status: ReferralRewardStatus.REWARDED,
                     qualifyingBookingId: 'booking-3',
@@ -1993,6 +2003,11 @@ describe('AdminService query orchestration', () => {
             referredCustomer: expect.objectContaining({ id: 'referred-customer' }),
             rewards: expect.arrayContaining([
               expect.objectContaining({
+                calculationSnapshot: expect.objectContaining({
+                  platformFeeNetRevenue: 118_519,
+                  rewardRateSnapshotBps: 3_000,
+                  taxPolicySnapshot: 'CUSTOMER_SERVICE_CREDIT_ONLY',
+                }),
                 id: 'reward-rewarded',
                 latestDecision: {
                   action: 'referral_reward.credit',
@@ -2020,6 +2035,17 @@ describe('AdminService query orchestration', () => {
     expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         skip: 50,
+        select: expect.objectContaining({
+          referralsMade: expect.objectContaining({
+            select: expect.objectContaining({
+              rewards: expect.objectContaining({
+                select: expect.objectContaining({
+                  calculationSnapshot: true,
+                }),
+              }),
+            }),
+          }),
+        }),
         take: 25,
         where: {
           AND: expect.arrayContaining([
