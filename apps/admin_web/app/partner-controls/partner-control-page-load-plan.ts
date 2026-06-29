@@ -5,6 +5,7 @@ export type PartnerControlPageLoadPlan = {
   readonly providersHref: string;
   readonly reportsHref: string;
   readonly sanctionsHref: string;
+  readonly summaryHref: string;
 };
 
 export function buildPartnerControlPageLoadPlan(): PartnerControlPageLoadPlan {
@@ -17,5 +18,6 @@ export function buildPartnerControlPageLoadPlan(): PartnerControlPageLoadPlan {
     }).toString()}`,
     reportsHref: `/admin/provider-reports?${new URLSearchParams({ take: listTake }).toString()}`,
     sanctionsHref: `/admin/provider-sanctions?${new URLSearchParams({ take: listTake }).toString()}`,
+    summaryHref: '/admin/partner-controls/summary',
   };
 }

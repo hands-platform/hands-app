@@ -35,6 +35,10 @@ import {
 } from './partner-control-desk-action-confirmation';
 import { buildPartnerControlPageLoadPlan } from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
+import {
+  buildPartnerControlSummaryFromServer,
+  type PartnerControlSummaryResponse,
+} from './partner-control-summary';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type PartnerControlPolicy = {
@@ -77,10 +81,11 @@ export default async function PartnerControlsPage({
   const params = searchParams ? await searchParams : {};
   const filters = buildFilters(params);
   const loadPlan = buildPartnerControlPageLoadPlan();
-  const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
+  const [providers, reports, sanctions, summaryResponse, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>(loadPlan.providersHref, []),
     adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []),
     adminGet<AdminProviderSanction[]>(loadPlan.sanctionsHref, []),
+    adminGet<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null),
     adminGet<AdminOperationalPolicySetting[]>(loadPlan.operationalPolicyHref, []),
   ]);
   const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
@@ -91,7 +96,9 @@ export default async function PartnerControlsPage({
     id: provider.id,
     label: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
   }));
-  const summary = buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
+  const summary =
+    buildPartnerControlSummaryFromServer(summaryResponse) ??
+    buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
   const pageMetrics = buildPartnerControlPageMetrics(summary);
   const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
   const commandCenter = buildPartnerControlCommandCenter({

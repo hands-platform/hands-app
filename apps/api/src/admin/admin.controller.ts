@@ -348,6 +348,11 @@ export class AdminController {
     return this.admin.listPartnerControlProviders({ take });
   }
 
+  @Get('partner-controls/summary')
+  partnerControlSummary() {
+    return this.admin.partnerControlSummary();
+  }
+
   @Get('partners/list-providers')
   partnerDirectoryProviders(
     @Query('take') take?: string,

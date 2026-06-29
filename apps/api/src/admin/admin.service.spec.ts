@@ -6,7 +6,13 @@ import {
   EarningStatus,
   ParticipantStatus,
   PaymentStatus,
+  ProviderBankAccountStatus,
+  ProviderKycStatus,
+  ProviderReportSeverity,
+  ProviderReportStatus,
+  ProviderSanctionStatus,
   ProviderStatus,
+  ProviderTaxProfileStatus,
   ProviderWalletLedgerType,
   ReferralAttributionStatus,
   ReferralAudience,
@@ -4073,6 +4079,124 @@ describe('AdminService query orchestration', () => {
     expect(select.sanctions.take).toBe(5);
     expect(select.devices.take).toBe(5);
     expect(select.sessions.take).toBe(3);
+  });
+
+  it('summarizes partner controls with aggregate queries before loading provider rows', async () => {
+    const prisma = {
+      providerReport: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(7),
+      },
+      providerSanction: {
+        count: vi.fn().mockResolvedValue(3),
+      },
+      providerProfile: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5),
+        findMany: vi.fn(),
+      },
+      providerEarning: {
+        groupBy: vi.fn().mockResolvedValue([
+          { providerProfileId: 'provider-negative', _sum: { netAmount: -70000 } },
+          { providerProfileId: 'provider-positive', _sum: { netAmount: 20000 } },
+        ]),
+      },
+      providerDevice: {
+        groupBy: vi.fn().mockResolvedValue([
+          { deviceId: 'device-shared', _count: { providerProfileId: 2 } },
+          { deviceId: 'device-single', _count: { providerProfileId: 1 } },
+        ]),
+        findMany: vi.fn().mockResolvedValue([
+          { providerProfileId: 'provider-1' },
+          { providerProfileId: 'provider-2' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.partnerControlSummary()).resolves.toEqual({
+      activeControls: 3,
+      blockedAccounts: 2,
+      locationGaps: 4,
+      onboardingGaps: 5,
+      openReports: 6,
+      sharedDevices: 2,
+      urgentMajorReports: 7,
+      walletDebt: 1,
+    });
+
+    expect(prisma.providerProfile.findMany).not.toHaveBeenCalled();
+    expect(prisma.providerReport.count).toHaveBeenCalledWith({
+      where: { status: { in: [ProviderReportStatus.OPEN, ProviderReportStatus.INVESTIGATING] } },
+    });
+    expect(prisma.providerReport.count).toHaveBeenCalledWith({
+      where: { severity: { in: [ProviderReportSeverity.CRITICAL, ProviderReportSeverity.HIGH] } },
+    });
+    expect(prisma.providerSanction.count).toHaveBeenCalledWith({
+      where: { status: ProviderSanctionStatus.ACTIVE },
+    });
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith({
+      where: { blockedAt: { not: null } },
+    });
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { currentLat: null },
+            { currentLng: null },
+            { currentLocationUpdatedAt: null },
+            { currentLocationUpdatedAt: { lt: expect.any(Date) } },
+          ]),
+          status: {
+            in: [
+              ProviderStatus.ONLINE_AVAILABLE,
+              ProviderStatus.ONLINE_BUSY,
+              ProviderStatus.ONLINE_AVAILABLE_SOON,
+            ],
+          },
+        }),
+      }),
+    );
+    expect(prisma.providerProfile.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { kyc: { is: null } },
+            { kyc: { is: { status: { not: ProviderKycStatus.APPROVED } } } },
+            { bankAccounts: { none: { status: ProviderBankAccountStatus.APPROVED } } },
+            { taxProfile: { is: null } },
+            { taxProfile: { is: { status: { not: ProviderTaxProfileStatus.APPROVED } } } },
+          ]),
+        }),
+      }),
+    );
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { netAmount: true },
+        by: ['providerProfileId'],
+        where: {
+          payoutBatchId: null,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        },
+      }),
+    );
+    expect(prisma.providerDevice.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _count: { providerProfileId: true },
+        by: ['deviceId'],
+        where: { blockedAt: null, enabled: true },
+      }),
+    );
+    expect(prisma.providerDevice.findMany).toHaveBeenCalledWith({
+      distinct: ['providerProfileId'],
+      select: { providerProfileId: true },
+      where: { blockedAt: null, deviceId: { in: ['device-shared'] }, enabled: true },
+    });
   });
 
   it('bounds and filters customer directory queries before loading row details', async () => {

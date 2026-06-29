@@ -40,6 +40,7 @@ describe('AdminController notification and push actions', () => {
     partnerCustomerReviewSummary: vi.fn(),
     listNotificationTemplates: vi.fn(),
     listPartnerControlProviders: vi.fn(),
+    partnerControlSummary: vi.fn(),
     listPartnerDirectoryProviders: vi.fn(),
     partnerDirectorySummary: vi.fn(),
     listAdminPushCampaigns: vi.fn(),
@@ -1299,6 +1300,36 @@ describe('AdminController notification and push actions', () => {
       path: 'partner-controls/providers',
     });
     expect(admin.listPartnerControlProviders).toHaveBeenCalledWith({ take: '25' });
+  });
+
+  it('exposes partner control summary separately from lightweight provider rows', async () => {
+    admin.partnerControlSummary.mockResolvedValue({
+      activeControls: 3,
+      blockedAccounts: 2,
+      locationGaps: 4,
+      onboardingGaps: 5,
+      openReports: 6,
+      sharedDevices: 1,
+      urgentMajorReports: 7,
+      walletDebt: 8,
+    });
+
+    await expect(controller.partnerControlSummary()).resolves.toEqual({
+      activeControls: 3,
+      blockedAccounts: 2,
+      locationGaps: 4,
+      onboardingGaps: 5,
+      openReports: 6,
+      sharedDevices: 1,
+      urgentMajorReports: 7,
+      walletDebt: 8,
+    });
+
+    expect(routeMetadata('partnerControlSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partner-controls/summary',
+    });
+    expect(admin.partnerControlSummary).toHaveBeenCalledWith();
   });
 
   it('exposes partner directory providers as a lightweight GET list', async () => {

@@ -7,6 +7,7 @@ describe('partner control page load plan', () => {
       providersHref: '/admin/partner-controls/providers?take=10',
       reportsHref: '/admin/provider-reports?take=10',
       sanctionsHref: '/admin/provider-sanctions?take=10',
+      summaryHref: '/admin/partner-controls/summary',
     });
   });
 });

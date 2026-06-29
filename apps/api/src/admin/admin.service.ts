@@ -200,6 +200,7 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_PARTNER_CONTROL_LOCATION_FRESHNESS_MINUTES = 90;
 const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 50;
 const ADMIN_REFERRAL_PARENT_LIST_LIMIT = 100;
 const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
@@ -3548,6 +3549,94 @@ export class AdminService {
         earnings: [{ netAmount: activitySummary.walletBalance }],
       };
     });
+  }
+
+  async partnerControlSummary() {
+    const staleLocationBefore = new Date(
+      Date.now() - ADMIN_PARTNER_CONTROL_LOCATION_FRESHNESS_MINUTES * 60_000,
+    );
+    const [
+      openReports,
+      urgentMajorReports,
+      activeControls,
+      blockedAccounts,
+      locationGaps,
+      onboardingGaps,
+      walletRows,
+      sharedDeviceRows,
+    ] = await Promise.all([
+      this.prisma.providerReport.count({
+        where: { status: { in: [ProviderReportStatus.OPEN, ProviderReportStatus.INVESTIGATING] } },
+      }),
+      this.prisma.providerReport.count({
+        where: { severity: { in: [ProviderReportSeverity.CRITICAL, ProviderReportSeverity.HIGH] } },
+      }),
+      this.prisma.providerSanction.count({ where: { status: ProviderSanctionStatus.ACTIVE } }),
+      this.prisma.providerProfile.count({ where: { blockedAt: { not: null } } }),
+      this.prisma.providerProfile.count({
+        where: {
+          OR: [
+            { currentLat: null },
+            { currentLng: null },
+            { currentLocationUpdatedAt: null },
+            { currentLocationUpdatedAt: { lt: staleLocationBefore } },
+          ],
+          status: {
+            in: [
+              ProviderStatus.ONLINE_AVAILABLE,
+              ProviderStatus.ONLINE_BUSY,
+              ProviderStatus.ONLINE_AVAILABLE_SOON,
+            ],
+          },
+        },
+      }),
+      this.prisma.providerProfile.count({
+        where: {
+          OR: [
+            { kyc: { is: null } },
+            { kyc: { is: { status: { not: ProviderKycStatus.APPROVED } } } },
+            { bankAccounts: { none: { status: ProviderBankAccountStatus.APPROVED } } },
+            { taxProfile: { is: null } },
+            { taxProfile: { is: { status: { not: ProviderTaxProfileStatus.APPROVED } } } },
+          ],
+        },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          payoutBatchId: null,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerDevice.groupBy({
+        by: ['deviceId'],
+        where: { blockedAt: null, enabled: true },
+        _count: { providerProfileId: true },
+      }),
+    ]);
+    const sharedDeviceIds = sharedDeviceRows
+      .filter((row) => numberValue(row._count.providerProfileId) > 1)
+      .map((row) => row.deviceId)
+      .filter((deviceId): deviceId is string => Boolean(deviceId));
+    const sharedDeviceProviders = sharedDeviceIds.length
+      ? await this.prisma.providerDevice.findMany({
+          distinct: ['providerProfileId'],
+          select: { providerProfileId: true },
+          where: { blockedAt: null, deviceId: { in: sharedDeviceIds }, enabled: true },
+        })
+      : [];
+
+    return {
+      activeControls,
+      blockedAccounts,
+      locationGaps,
+      onboardingGaps,
+      openReports,
+      sharedDevices: sharedDeviceProviders.length,
+      urgentMajorReports,
+      walletDebt: walletRows.filter((row) => numberValue(row._sum.netAmount) < 0).length,
+    };
   }
 
   async listPartnerControlProviders(options: AdminPartnerControlProviderListOptions = {}) {
