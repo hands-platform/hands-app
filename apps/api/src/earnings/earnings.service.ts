@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
+  PartnerTaxLineKind,
   BookingStatus,
   EarningStatus,
   PaymentMethod,
@@ -17,6 +18,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
+import { SettlementsService } from '../settlements/settlements.service';
 import {
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
@@ -325,7 +327,10 @@ function addLocalDays(timestamp: number, days: number) {
 export class EarningsService {
   constructor(
     private readonly prisma: PrismaService,
+    @Optional()
     private readonly notifications?: NotificationsService,
+    @Optional()
+    private readonly settlements?: SettlementsService,
   ) {}
 
   async createForCompletedBooking(bookingId: string, providerProfileId: string) {
@@ -407,9 +412,44 @@ export class EarningsService {
         },
       });
 
-      await this.upsertPlatformFeeLog(tx, earning, platformFee);
-      await this.upsertTaxLog(tx, earning, tax);
-      await this.upsertEarningWalletLedger(tx, earning, booking.payment?.method);
+      const platformFeeLog = await this.upsertPlatformFeeLog(tx, earning, platformFee);
+      const taxLog = await this.upsertTaxLog(tx, earning, tax);
+      const walletLedger = await this.upsertEarningWalletLedger(tx, earning, booking.payment?.method);
+      const partnerPayoutAmount = Math.max(0, grossAmount - platformFee.platformFeeAmount);
+      const paymentProcessingFee = 0;
+      const platformFeeGross = Math.max(
+        0,
+        grossAmount - partnerPayoutAmount - tax.withholdingAmount - paymentProcessingFee,
+      );
+
+      await this.settlements?.upsertBookingSettlementSnapshot(
+        {
+          bookingId,
+          customerProfileId: booking.customerProfileId,
+          providerProfileId,
+          paymentId: booking.payment?.id ?? null,
+          providerEarningId: earning.id,
+          paymentMethod: booking.payment?.method ?? PaymentMethod.MANUAL,
+          currency,
+          customerPaymentAmount: grossAmount,
+          partnerPayoutAmount,
+          platformFeeGross,
+          partnerVatRateBps: tax.partnerVatRateBps,
+          partnerPitRateBps: tax.partnerPitRateBps,
+          platformVatRateBps: platformFee.vatRateBps,
+          paymentFeeRateBps: 0,
+          paymentFeeFixedAmount: paymentProcessingFee,
+          taxPolicyVersionId: tax.policyVersionId ?? null,
+          platformFeePolicyVersionId: platformFee.policyVersionId ?? null,
+          taxRuleSnapshot: tax.ruleSnapshot,
+          platformFeeRuleSnapshot: platformFee.ruleSnapshot,
+          providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
+          providerPlatformFeeLogId: platformFeeLog?.id ?? null,
+          providerWalletLedgerEntryIds: walletLedger?.id ? [walletLedger.id] : [],
+          occurredAt: booking.updatedAt ?? new Date(),
+        },
+        tx,
+      );
       return earning;
     });
   }
@@ -1162,6 +1202,7 @@ export class EarningsService {
       platformFeeAmount,
       currency: input.currency,
       policyVersionId: policy.id,
+      vatRateBps: policy.vatRateBps,
       ruleSnapshot: {
         policyName: policy.name,
         ruleId: rule.id,
@@ -1196,12 +1237,19 @@ export class EarningsService {
         })),
       },
     });
-    return calculateServicePayoutFeeFromRules({
+    const servicePayoutFee = calculateServicePayoutFeeFromRules({
       grossAmount: input.grossAmount,
       currency: input.currency,
       services: input.services,
       payoutRules,
     });
+    if (!servicePayoutFee) {
+      return null;
+    }
+    return {
+      ...servicePayoutFee,
+      vatRateBps: servicePayoutVatRateBps(servicePayoutFee.ruleSnapshot),
+    };
   }
 
   private async requireProviderProfile(userId: string) {
@@ -1309,6 +1357,10 @@ export class EarningsService {
       return {
         taxableAmount,
         withholdingAmount: 0,
+        partnerVatRateBps: 0,
+        partnerPitRateBps: 0,
+        partnerVatAmount: 0,
+        partnerPitAmount: 0,
         currency: input.currency,
         policyVersionId: policy?.id,
         taxProfileId: taxProfile?.id,
@@ -1318,29 +1370,34 @@ export class EarningsService {
       };
     }
 
-    const rule = selectTaxRule(policy.rules, {
-      grossAmount: input.grossAmount,
-      serviceTypes: input.serviceTypes,
-    });
-    const rateBps = rule?.rateBps ?? 0;
-    const fixedAmount = rule?.fixedAmount ?? 0;
-    const withholdingAmount = calculateCappedBpsAmount(taxableAmount, rateBps, fixedAmount);
+    const partnerVatLine = calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_VAT);
+    const partnerPitLine = calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_PIT);
+    const splitWithholdingAmount = partnerVatLine.amount + partnerPitLine.amount;
+    const combinedLine =
+      splitWithholdingAmount > 0
+        ? null
+        : calculatePartnerTaxLine(policy.rules, input, PartnerTaxLineKind.PARTNER_WITHHOLDING_COMBINED);
+    const withholdingAmount = splitWithholdingAmount > 0 ? splitWithholdingAmount : combinedLine?.amount ?? 0;
 
     return {
       taxableAmount,
       withholdingAmount,
+      partnerVatRateBps: partnerVatLine.rateBps,
+      partnerPitRateBps: partnerPitLine.rateBps || combinedLine?.rateBps || 0,
+      partnerVatAmount: partnerVatLine.amount,
+      partnerPitAmount: partnerPitLine.amount || combinedLine?.amount || 0,
       currency: input.currency,
       policyVersionId: policy.id,
       taxProfileId: taxProfile.id,
       ruleSnapshot: {
         policyName: policy.name,
-        ruleId: rule?.id ?? null,
-        scope: rule?.scope ?? 'NONE',
-        serviceType: rule?.serviceType ?? null,
-        minGrossAmount: rule?.minGrossAmount ?? null,
-        maxGrossAmount: rule?.maxGrossAmount ?? null,
-        rateBps,
-        fixedAmount,
+        lines:
+          splitWithholdingAmount > 0
+            ? [
+                partnerTaxLineSnapshot(PartnerTaxLineKind.PARTNER_VAT, partnerVatLine),
+                partnerTaxLineSnapshot(PartnerTaxLineKind.PARTNER_PIT, partnerPitLine),
+              ]
+            : [partnerTaxLineSnapshot(PartnerTaxLineKind.PARTNER_WITHHOLDING_COMBINED, combinedLine)],
       },
     };
   }
@@ -1468,9 +1525,52 @@ function activePayoutHoldWhere(providerProfileId?: string): Prisma.ProviderSanct
   };
 }
 
-function selectTaxRule(rules: TaxRuleRecord[], input: { grossAmount: number; serviceTypes: string[] }) {
+function servicePayoutVatRateBps(ruleSnapshot: Prisma.InputJsonValue) {
+  if (!ruleSnapshot || typeof ruleSnapshot !== 'object' || Array.isArray(ruleSnapshot)) {
+    return 0;
+  }
+  const lines = (ruleSnapshot as { lines?: Array<{ vatBps?: number }> }).lines;
+  const firstLine = Array.isArray(lines) ? lines.find((line) => typeof line.vatBps === 'number') : null;
+  return firstLine?.vatBps ?? 0;
+}
+
+function calculatePartnerTaxLine(
+  rules: TaxRuleRecord[],
+  input: { grossAmount: number; serviceTypes: string[] },
+  taxKind: PartnerTaxLineKind,
+) {
+  const rule = selectTaxRule(rules, input, taxKind);
+  const rateBps = rule?.rateBps ?? 0;
+  const fixedAmount = rule?.fixedAmount ?? 0;
+  const amount = rule ? calculateCappedBpsAmount(input.grossAmount, rateBps, fixedAmount) : 0;
+  return { amount, fixedAmount, rateBps, rule };
+}
+
+function partnerTaxLineSnapshot(
+  taxKind: PartnerTaxLineKind,
+  line: ReturnType<typeof calculatePartnerTaxLine> | null,
+) {
+  return {
+    taxKind,
+    amount: line?.amount ?? 0,
+    ruleId: line?.rule?.id ?? null,
+    scope: line?.rule?.scope ?? 'NONE',
+    serviceType: line?.rule?.serviceType ?? null,
+    minGrossAmount: line?.rule?.minGrossAmount ?? null,
+    maxGrossAmount: line?.rule?.maxGrossAmount ?? null,
+    rateBps: line?.rateBps ?? 0,
+    fixedAmount: line?.fixedAmount ?? 0,
+  };
+}
+
+function selectTaxRule(
+  rules: TaxRuleRecord[],
+  input: { grossAmount: number; serviceTypes: string[] },
+  taxKind?: PartnerTaxLineKind,
+) {
   const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
-  const prioritized = [...rules].sort(
+  const candidates = taxKind ? rules.filter((rule) => rule.taxKind === taxKind) : rules;
+  const prioritized = [...candidates].sort(
     (left, right) =>
       taxRulePriority(right, serviceTypes, input.grossAmount) -
       taxRulePriority(left, serviceTypes, input.grossAmount),

@@ -37,12 +37,16 @@ export type UpsertBookingSettlementSnapshotInput = {
   occurredAt: Date;
   timeZone?: string | null;
 };
+type SettlementPrismaClient = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class SettlementsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  upsertBookingSettlementSnapshot(input: UpsertBookingSettlementSnapshotInput) {
+  upsertBookingSettlementSnapshot(
+    input: UpsertBookingSettlementSnapshotInput,
+    client: SettlementPrismaClient = this.prisma,
+  ) {
     const paymentFeeRateBps = input.paymentFeeRateBps ?? 0;
     const paymentFeeFixedAmount = input.paymentFeeFixedAmount ?? 0;
     const amounts = calculateBookingSettlementAmounts({
@@ -97,7 +101,7 @@ export class SettlementsService {
       postedAt: input.occurredAt,
     };
 
-    return this.prisma.bookingSettlementSnapshot.upsert({
+    return client.bookingSettlementSnapshot.upsert({
       where: { bookingId: input.bookingId },
       update: data,
       create: {

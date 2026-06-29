@@ -1,4 +1,13 @@
-import { BookingStatus, EarningStatus, PayoutBatchStatus, ProviderWalletLedgerType, Role } from '@prisma/client';
+import {
+  BookingStatus,
+  EarningStatus,
+  PartnerTaxLineKind,
+  PaymentMethod,
+  PayoutBatchStatus,
+  ProviderTaxProfileStatus,
+  ProviderWalletLedgerType,
+  Role,
+} from '@prisma/client';
 import { EarningsService } from './earnings.service';
 
 describe('EarningsService payout batches', () => {
@@ -346,6 +355,143 @@ describe('EarningsService payout batches', () => {
           },
         }),
       }),
+    );
+  });
+
+  it('posts a split VAT/PIT settlement snapshot inside the completed booking transaction', async () => {
+    const occurredAt = new Date('2026-06-13T03:02:00.000Z');
+    const booking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'provider-1',
+      status: BookingStatus.COMPLETED,
+      updatedAt: occurredAt,
+      payment: {
+        id: 'payment-1',
+        amount: 600_000,
+        currency: 'VND',
+        method: PaymentMethod.CARD,
+      },
+      review: null,
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 600_000,
+          quantity: 1,
+          service: { id: 'service-1', name: 'Massage' },
+        },
+      ],
+    };
+    const earning = {
+      id: 'earning-1',
+      bookingId: 'booking-1',
+      providerProfileId: 'provider-1',
+      grossAmount: 600_000,
+      platformFee: 170_000,
+      withholdingAmount: 42_000,
+      netAmount: 388_000,
+      currency: 'VND',
+    };
+    const tx = {
+      platformFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'platform-policy-1',
+          name: 'Default platform fee',
+          vatRateBps: 800,
+          rules: [
+            {
+              id: 'platform-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              rateBps: 0,
+              fixedAmount: 170_000,
+            },
+          ],
+        }),
+      },
+      servicePayoutRule: { findMany: vi.fn().mockResolvedValue([]) },
+      taxPolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'tax-policy-1',
+          name: 'Default partner tax',
+          rules: [
+            {
+              id: 'tax-vat-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_VAT,
+              rateBps: 500,
+              fixedAmount: 0,
+            },
+            {
+              id: 'tax-pit-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_PIT,
+              rateBps: 200,
+              fixedAmount: 0,
+            },
+          ],
+        }),
+      },
+      providerTaxProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'tax-profile-1',
+          status: ProviderTaxProfileStatus.APPROVED,
+        }),
+      },
+      providerEarning: {
+        upsert: vi.fn().mockResolvedValue(earning),
+      },
+      providerPlatformFeeLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
+      },
+      providerTaxLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'wallet-ledger-1' }),
+      },
+    };
+    const prisma = {
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const settlements = {
+      upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+    };
+    const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+    await expect(service.createForCompletedBooking('booking-1', 'provider-1')).resolves.toEqual(earning);
+
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentId: 'payment-1',
+        providerEarningId: 'earning-1',
+        paymentMethod: PaymentMethod.CARD,
+        customerPaymentAmount: 600_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        providerTaxLogIds: ['tax-log-1'],
+        providerPlatformFeeLogId: 'platform-log-1',
+        providerWalletLedgerEntryIds: ['wallet-ledger-1'],
+        occurredAt,
+      }),
+      tx,
     );
   });
 
