@@ -1897,13 +1897,18 @@ export type AdminBookingSettlementSnapshotSummary = {
 };
 
 export type AdminCouponFinanceSummary = {
+  bookingServiceAmount: number;
   companyCouponExpense: number;
   couponDiscountAmount: number;
   couponReviewFlagCount: number;
   couponSettlementCount: number;
   currency: string;
+  customerPaidAmount: number;
   partnerFundedCouponAmount: number;
   platformFeeDiscountAmount: number;
+  reversedCompanyCouponExpense: number;
+  reversedCouponDiscountAmount: number;
+  settlementBaseAmount: number;
 };
 
 export type AdminPartnerWithholdingTaxRow = {

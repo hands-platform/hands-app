@@ -52,6 +52,7 @@ export function buildCouponSettlementContext(input: {
     metadata: compactJsonObject({
       bookingServiceAmount: settlementBaseAmount,
       customerPaidAmount: input.customerPaymentAmount,
+      settlementBaseAmount,
       couponId,
       couponCodeSnapshot: couponCode,
       couponTypeSnapshot: stringValue(rawMeta?.couponTypeSnapshot),

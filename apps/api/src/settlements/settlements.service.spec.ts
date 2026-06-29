@@ -116,6 +116,7 @@ describe('SettlementsService', () => {
           couponDiscountAmount: 60_000,
           companyCouponExpense: 60_000,
           couponFundingSourceSnapshot: 'COMPANY',
+          settlementBaseAmount: 600_000,
         }),
       }),
       create: expect.objectContaining({

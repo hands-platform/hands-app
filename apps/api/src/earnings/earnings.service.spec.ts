@@ -782,6 +782,7 @@ describe('EarningsService payout batches', () => {
           partnerFundedCouponAmount: 0,
           couponFundingSourceSnapshot: 'COMPANY',
           settlementBasePolicySnapshot: 'PRE_COUPON_SERVICE_AMOUNT',
+          settlementBaseAmount: 600_000,
         }),
       }),
       tx,

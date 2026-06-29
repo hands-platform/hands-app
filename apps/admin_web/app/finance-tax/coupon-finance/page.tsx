@@ -81,6 +81,16 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           value: formatMoney(summary.couponDiscountAmount, summary.currency),
         },
         {
+          helper: 'Customer-paid amount after coupon discount. This is clearing, not company revenue.',
+          label: 'Customer paid',
+          value: formatMoney(summary.customerPaidAmount, summary.currency),
+        },
+        {
+          helper: 'Pre-coupon service base used for Partner tax, payout, and platform fee unless policy says otherwise.',
+          label: 'Settlement base',
+          value: formatMoney(summary.settlementBaseAmount || summary.bookingServiceAmount, summary.currency),
+        },
+        {
           helper: 'Company-funded coupon amount. This is marketing expense, not reduced platform revenue.',
           label: 'Company coupon expense',
           value: formatMoney(summary.companyCouponExpense, summary.currency),
@@ -104,6 +114,11 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           helper: 'Coupon rows that require finance review before closing.',
           label: 'Pending review',
           value: summary.couponReviewFlagCount,
+        },
+        {
+          helper: 'Coupon discount already reversed through refund or settlement reversal metadata.',
+          label: 'Reversed coupon',
+          value: formatMoney(summary.reversedCouponDiscountAmount, summary.currency),
         },
       ]}
       title="Coupon Finance"

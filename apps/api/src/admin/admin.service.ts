@@ -5610,20 +5610,30 @@ export class AdminService {
   async couponFinanceSummary(options: AdminPaymentOperationsQuery = {}) {
     const rows = await this.prisma.$queryRaw<
       Array<{
+        bookingServiceAmount: bigint | number | null;
         companyCouponExpense: bigint | number | null;
         couponDiscountAmount: bigint | number | null;
         couponReviewFlagCount: bigint | number | null;
         couponSettlementCount: bigint | number | null;
+        customerPaidAmount: bigint | number | null;
         partnerFundedCouponAmount: bigint | number | null;
         platformFeeDiscountAmount: bigint | number | null;
+        reversedCompanyCouponExpense: bigint | number | null;
+        reversedCouponDiscountAmount: bigint | number | null;
+        settlementBaseAmount: bigint | number | null;
       }>
     >(Prisma.sql`
       SELECT
         COUNT(*)::bigint AS "couponSettlementCount",
+        COALESCE(SUM(${adminJsonIntSql('bookingServiceAmount')}), 0)::bigint AS "bookingServiceAmount",
+        COALESCE(SUM(${adminJsonIntSql('customerPaidAmount')}), 0)::bigint AS "customerPaidAmount",
+        COALESCE(SUM(${adminJsonIntSql('settlementBaseAmount')}), 0)::bigint AS "settlementBaseAmount",
         COALESCE(SUM(${adminJsonIntSql('couponDiscountAmount')}), 0)::bigint AS "couponDiscountAmount",
         COALESCE(SUM(${adminJsonIntSql('companyCouponExpense')}), 0)::bigint AS "companyCouponExpense",
         COALESCE(SUM(${adminJsonIntSql('partnerFundedCouponAmount')}), 0)::bigint AS "partnerFundedCouponAmount",
         COALESCE(SUM(${adminJsonIntSql('platformFeeDiscountAmount')}), 0)::bigint AS "platformFeeDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCouponDiscountAmount')}), 0)::bigint AS "reversedCouponDiscountAmount",
+        COALESCE(SUM(${adminJsonIntSql('reversedCompanyCouponExpense')}), 0)::bigint AS "reversedCompanyCouponExpense",
         COUNT(*) FILTER (WHERE "metadata" ? 'couponReviewFlag')::bigint AS "couponReviewFlagCount"
       FROM "BookingSettlementSnapshot"
       ${adminCouponFinanceSqlWhere(options)}
@@ -5631,13 +5641,18 @@ export class AdminService {
     const row = rows[0];
 
     return {
+      bookingServiceAmount: numberValue(row?.bookingServiceAmount),
       companyCouponExpense: numberValue(row?.companyCouponExpense),
       couponDiscountAmount: numberValue(row?.couponDiscountAmount),
       couponReviewFlagCount: numberValue(row?.couponReviewFlagCount),
       couponSettlementCount: numberValue(row?.couponSettlementCount),
       currency: 'VND',
+      customerPaidAmount: numberValue(row?.customerPaidAmount),
       partnerFundedCouponAmount: numberValue(row?.partnerFundedCouponAmount),
       platformFeeDiscountAmount: numberValue(row?.platformFeeDiscountAmount),
+      reversedCompanyCouponExpense: numberValue(row?.reversedCompanyCouponExpense),
+      reversedCouponDiscountAmount: numberValue(row?.reversedCouponDiscountAmount),
+      settlementBaseAmount: numberValue(row?.settlementBaseAmount),
     };
   }
 

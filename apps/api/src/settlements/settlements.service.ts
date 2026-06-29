@@ -78,6 +78,7 @@ export class SettlementsService {
     });
     const sourceKey = bookingSettlementSourceKey(input.bookingId);
     const monthlyPeriod = settlementMonthlyPeriod(input.occurredAt, input.timeZone ?? undefined);
+    const metadata = settlementSnapshotMetadata(input.metadata, amounts.partnerTaxableRevenue);
     const data = {
       sourceKey,
       customerProfileId: input.customerProfileId,
@@ -113,7 +114,7 @@ export class SettlementsService {
       providerPlatformFeeLogId: input.providerPlatformFeeLogId ?? null,
       providerWalletLedgerEntryIds: input.providerWalletLedgerEntryIds ?? undefined,
       customerWalletLedgerEntryIds: input.customerWalletLedgerEntryIds ?? undefined,
-      metadata: input.metadata ?? undefined,
+      metadata,
       monthlyPeriod,
       postedAt: input.occurredAt,
     };
@@ -257,6 +258,21 @@ function closedSettlementReversalMetadata(
     ...metadata,
     originalSettlementSnapshotId,
     reversalEntryType: 'CLOSED_MONTHLY_PERIOD_REFUND',
+  } satisfies Prisma.InputJsonObject;
+}
+
+function settlementSnapshotMetadata(
+  metadata: Prisma.InputJsonObject | null | undefined,
+  settlementBaseAmount: number,
+) {
+  if (!metadata) {
+    return undefined;
+  }
+
+  const record = metadata as Record<string, unknown>;
+  return {
+    ...metadata,
+    settlementBaseAmount: numberValue(record.settlementBaseAmount) || settlementBaseAmount,
   } satisfies Prisma.InputJsonObject;
 }
 

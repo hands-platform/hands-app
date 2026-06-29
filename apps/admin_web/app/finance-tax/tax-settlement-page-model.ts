@@ -435,13 +435,18 @@ export function emptyBookingSettlementSummary(): AdminBookingSettlementSnapshotS
 
 export function emptyCouponFinanceSummary(): AdminCouponFinanceSummary {
   return {
+    bookingServiceAmount: 0,
     companyCouponExpense: 0,
     couponDiscountAmount: 0,
     couponReviewFlagCount: 0,
     couponSettlementCount: 0,
     currency: 'VND',
+    customerPaidAmount: 0,
     partnerFundedCouponAmount: 0,
     platformFeeDiscountAmount: 0,
+    reversedCompanyCouponExpense: 0,
+    reversedCouponDiscountAmount: 0,
+    settlementBaseAmount: 0,
   };
 }
 

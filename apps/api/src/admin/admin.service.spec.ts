@@ -6455,12 +6455,17 @@ describe('AdminService query orchestration', () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([
         {
+          bookingServiceAmount: 600_000n,
           companyCouponExpense: 60_000n,
           couponDiscountAmount: 60_000n,
           couponReviewFlagCount: 0n,
           couponSettlementCount: 1n,
+          customerPaidAmount: 540_000n,
           partnerFundedCouponAmount: 0n,
           platformFeeDiscountAmount: 0n,
+          reversedCompanyCouponExpense: 0n,
+          reversedCouponDiscountAmount: 0n,
+          settlementBaseAmount: 600_000n,
         },
       ]),
       bookingSettlementSnapshot: {
@@ -6470,13 +6475,18 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(service.couponFinanceSummary({ range: '7d', review: 'posted' })).resolves.toEqual({
+      bookingServiceAmount: 600_000,
       companyCouponExpense: 60_000,
       couponDiscountAmount: 60_000,
       couponReviewFlagCount: 0,
       couponSettlementCount: 1,
       currency: 'VND',
+      customerPaidAmount: 540_000,
       partnerFundedCouponAmount: 0,
       platformFeeDiscountAmount: 0,
+      reversedCompanyCouponExpense: 0,
+      reversedCouponDiscountAmount: 0,
+      settlementBaseAmount: 600_000,
     });
 
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);

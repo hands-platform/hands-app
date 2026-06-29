@@ -148,6 +148,31 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <small>{formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}</small>
           </div>
           <div className="setup-stage-item">
+            <span>PAID</span>
+            <div>
+              <strong>Customer paid amount</strong>
+              <p className="muted">
+                Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.
+              </p>
+            </div>
+            <small>{formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>BASE</span>
+            <div>
+              <strong>Settlement base</strong>
+              <p className="muted">
+                Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.
+              </p>
+            </div>
+            <small>
+              {formatMoney(
+                couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount,
+                couponFinanceSummary.currency,
+              )}
+            </small>
+          </div>
+          <div className="setup-stage-item">
             <span>EXP</span>
             <div>
               <strong>Company coupon expense</strong>
@@ -166,6 +191,16 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               </p>
             </div>
             <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>REV</span>
+            <div>
+              <strong>Reversed coupon amount</strong>
+              <p className="muted">
+                Refund or reversal metadata for coupon discount and company coupon expense recovery.
+              </p>
+            </div>
+            <small>{formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}</small>
           </div>
         </div>
       </section>
