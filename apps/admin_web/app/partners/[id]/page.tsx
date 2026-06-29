@@ -162,6 +162,8 @@ import {
   type PartnerPayoutEarningRow,
   type PartnerPayoutOperationsView,
 } from './partner-detail-payout-operations-section';
+import { buildPartnerFinanceFollowUpRows } from './partner-detail-finance-follow-up-model';
+import { PartnerDetailFinanceFollowUpSection } from './partner-detail-finance-follow-up-section';
 import { buildPartnerWalletSummary } from './partner-detail-wallet-model';
 import { PartnerDetailWalletSummarySection } from './partner-detail-wallet-summary-section';
 import {
@@ -466,6 +468,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerAuditLogs = provider.auditLogs ?? [];
   const partnerEarnings = provider.earnings ?? [];
   const partnerWalletSummary = buildPartnerWalletSummary(provider);
+  const partnerFinanceFollowUpRows = buildPartnerFinanceFollowUpRows({
+    bankAccounts: provider.bankAccounts,
+    walletSummary: partnerWalletSummary,
+  });
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
@@ -1078,6 +1084,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           label="Finance-only evidence"
           status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}
         >
+          <PartnerDetailFinanceFollowUpSection rows={partnerFinanceFollowUpRows} />
           <PartnerDetailCashDebtOriginSection
             hasCashFeeDebt={hasCashFeeDebt}
             hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
