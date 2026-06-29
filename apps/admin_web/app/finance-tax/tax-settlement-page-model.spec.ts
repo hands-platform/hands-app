@@ -4,6 +4,8 @@ import {
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildMonthlyTaxClosingApiHref,
+  buildMonthlyTaxClosingRowsCsvHref,
+  buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
   buildTaxFinanceMetrics,
   buildMonthlyTaxClosingMetrics,
@@ -138,5 +140,63 @@ describe('tax settlement page model', () => {
       ['Formula delta', '0 VND'],
       ['Net revenue delta', '0 VND'],
     ]);
+  });
+
+  it('exports monthly tax closing summary and stored rows with visible totals', () => {
+    const summaryCsv = decodeURIComponent(
+      buildMonthlyTaxClosingSummaryCsvHref({
+        id: null,
+        period: '2026-06',
+        currency: 'VND',
+        status: 'DRAFT',
+        settlementCount: 2,
+        customerPaymentAmountTotal: 1200000,
+        partnerPayoutTotal: 860000,
+        platformFeeGrossTotal: 256000,
+        platformFeeNetRevenueTotal: 237038,
+        companyOutputVatTotal: 18962,
+        partnerVatWithheldTotal: 60000,
+        partnerPitWithheldTotal: 24000,
+        partnerWithholdingTotal: 84000,
+        paymentProcessingFeeTotal: 0,
+        cashDebtTotal: 170000,
+        nonCashPartnerPayoutTotal: 430000,
+        partnerCountWithRevenue: 1,
+        openTaxCount: 1,
+        paidTaxCount: 1,
+        reconciliationDelta: 0,
+        netRevenueDelta: 0,
+      }),
+    );
+    const rowsCsv = decodeURIComponent(
+      buildMonthlyTaxClosingRowsCsvHref([
+        {
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: 'DECLARED',
+          settlementCount: 2,
+          platformFeeGrossTotal: 256000,
+          platformFeeNetRevenueTotal: 237038,
+          companyOutputVatTotal: 18962,
+          partnerVatWithheldTotal: 60000,
+          partnerPitWithheldTotal: 24000,
+          partnerWithholdingTotal: 84000,
+          paymentProcessingFeeTotal: 0,
+          cashDebtTotal: 170000,
+          nonCashPartnerPayoutTotal: 430000,
+          createdAt: '2026-06-30T00:00:00.000Z',
+          updatedAt: '2026-06-30T00:00:00.000Z',
+        },
+      ]),
+    );
+
+    expect(summaryCsv).toContain('"customer_payment_amount_total"');
+    expect(summaryCsv).toContain('"1200000"');
+    expect(summaryCsv).toContain('"partner_withholding_total"');
+    expect(summaryCsv).toContain('"84000"');
+    expect(rowsCsv).toContain('"closing-1"');
+    expect(rowsCsv).toContain('"company_output_vat_total"');
+    expect(rowsCsv).toContain('"18962"');
   });
 });

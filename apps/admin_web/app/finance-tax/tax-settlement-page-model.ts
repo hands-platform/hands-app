@@ -1,9 +1,11 @@
 import type {
   AdminBookingSettlementSnapshotSummary,
+  AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxSummary,
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
+import { buildCsvDataHref } from '../../lib/csv-export';
 import { formatMoney } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 
@@ -309,6 +311,106 @@ export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSum
     },
   ];
 }
+
+export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClosingSummary) {
+  return buildCsvDataHref(
+    [
+      {
+        period: summary.period,
+        currency: summary.currency,
+        status: summary.status,
+        settlement_count: summary.settlementCount,
+        customer_payment_amount_total: summary.customerPaymentAmountTotal,
+        partner_payout_total: summary.partnerPayoutTotal,
+        platform_fee_gross_total: summary.platformFeeGrossTotal,
+        platform_fee_net_revenue_total: summary.platformFeeNetRevenueTotal,
+        company_output_vat_total: summary.companyOutputVatTotal,
+        partner_vat_withheld_total: summary.partnerVatWithheldTotal,
+        partner_pit_withheld_total: summary.partnerPitWithheldTotal,
+        partner_withholding_total: summary.partnerWithholdingTotal,
+        payment_processing_fee_total: summary.paymentProcessingFeeTotal,
+        cash_debt_total: summary.cashDebtTotal,
+        non_cash_partner_payout_total: summary.nonCashPartnerPayoutTotal,
+        partner_count_with_revenue: summary.partnerCountWithRevenue,
+        open_tax_count: summary.openTaxCount,
+        paid_tax_count: summary.paidTaxCount,
+        reconciliation_delta: summary.reconciliationDelta,
+        net_revenue_delta: summary.netRevenueDelta,
+      },
+    ],
+    MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS,
+  );
+}
+
+export function buildMonthlyTaxClosingRowsCsvHref(rows: AdminMonthlyTaxClosing[]) {
+  return buildCsvDataHref(
+    rows.map((row) => ({
+      id: row.id,
+      period: row.period,
+      currency: row.currency,
+      status: row.status,
+      settlement_count: row.settlementCount,
+      platform_fee_gross_total: row.platformFeeGrossTotal,
+      platform_fee_net_revenue_total: row.platformFeeNetRevenueTotal,
+      company_output_vat_total: row.companyOutputVatTotal,
+      partner_vat_withheld_total: row.partnerVatWithheldTotal,
+      partner_pit_withheld_total: row.partnerPitWithheldTotal,
+      partner_withholding_total: row.partnerWithholdingTotal,
+      payment_processing_fee_total: row.paymentProcessingFeeTotal,
+      cash_debt_total: row.cashDebtTotal,
+      non_cash_partner_payout_total: row.nonCashPartnerPayoutTotal,
+      declared_at: row.declaredAt ?? '',
+      paid_at: row.paidAt ?? '',
+      closed_at: row.closedAt ?? '',
+      notes: row.notes ?? '',
+    })),
+    MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS,
+  );
+}
+
+const MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS = [
+  'period',
+  'currency',
+  'status',
+  'settlement_count',
+  'customer_payment_amount_total',
+  'partner_payout_total',
+  'platform_fee_gross_total',
+  'platform_fee_net_revenue_total',
+  'company_output_vat_total',
+  'partner_vat_withheld_total',
+  'partner_pit_withheld_total',
+  'partner_withholding_total',
+  'payment_processing_fee_total',
+  'cash_debt_total',
+  'non_cash_partner_payout_total',
+  'partner_count_with_revenue',
+  'open_tax_count',
+  'paid_tax_count',
+  'reconciliation_delta',
+  'net_revenue_delta',
+];
+
+const MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS = [
+  'id',
+  'period',
+  'currency',
+  'status',
+  'settlement_count',
+  'platform_fee_gross_total',
+  'platform_fee_net_revenue_total',
+  'company_output_vat_total',
+  'partner_vat_withheld_total',
+  'partner_pit_withheld_total',
+  'partner_withholding_total',
+  'payment_processing_fee_total',
+  'cash_debt_total',
+  'non_cash_partner_payout_total',
+  'declared_at',
+  'paid_at',
+  'closed_at',
+  'notes',
+];
 
 export function reviewLabel(review: BookingSettlementReview) {
   return BOOKING_SETTLEMENT_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'Needs action';

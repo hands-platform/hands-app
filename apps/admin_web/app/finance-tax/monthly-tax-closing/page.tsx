@@ -11,6 +11,8 @@ import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import {
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxClosingRowsCsvHref,
+  buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
   emptyMonthlyTaxClosingSummary,
   readMonthlyTaxClosingFilters,
@@ -35,6 +37,8 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
     period: filters.period,
     take: String(filters.take),
   }).toString()}`;
+  const summaryCsvHref = buildMonthlyTaxClosingSummaryCsvHref(summary);
+  const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(closings);
 
   return (
     <AdminPageTemplate
@@ -46,6 +50,20 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           <Link className="pill pill-info" href="/finance-tax/booking-settlement-audit">
             Booking settlement audit
           </Link>
+          <a
+            className="pill pill-info"
+            download={`hands-monthly-tax-closing-${filters.period}-summary.csv`}
+            href={summaryCsvHref}
+          >
+            Export summary CSV
+          </a>
+          <a
+            className="pill pill-info"
+            download={`hands-monthly-tax-closing-${filters.period}-rows.csv`}
+            href={closingRowsCsvHref}
+          >
+            Export rows CSV
+          </a>
         </>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
