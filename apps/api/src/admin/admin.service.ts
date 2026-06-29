@@ -5692,7 +5692,7 @@ export class AdminService {
   async partnerWithholdingTaxSummary(options: AdminPartnerWithholdingTaxQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = adminPartnerWithholdingTaxWhere(period);
-    const [totals, providerGroups] = await Promise.all([
+    const [totals, providerCountRows] = await Promise.all([
       this.prisma.bookingSettlementSnapshot.aggregate({
         where,
         _count: { _all: true },
@@ -5704,16 +5704,18 @@ export class AdminService {
           partnerWithholdingTotal: true,
         },
       }),
-      this.prisma.bookingSettlementSnapshot.groupBy({
-        by: ['providerProfileId'],
-        where,
-      }),
+      this.prisma.$queryRaw<Array<{ partnerCountWithRevenue: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(DISTINCT "providerProfileId")::bigint AS "partnerCountWithRevenue"
+        FROM "BookingSettlementSnapshot"
+        ${adminPartnerWithholdingTaxSqlWhere(period)}
+      `),
     ]);
+    const providerCount = providerCountRows[0];
 
     return {
       period,
       currency: 'VND',
-      partnerCountWithRevenue: providerGroups.length,
+      partnerCountWithRevenue: numberValue(providerCount?.partnerCountWithRevenue),
       taxableBookingCount: totals._count._all,
       grossServiceRevenue: totals._sum.customerPaymentAmount ?? 0,
       partnerPayoutTotal: totals._sum.partnerPayoutAmount ?? 0,
@@ -5740,7 +5742,7 @@ export class AdminService {
   async monthlyTaxClosingSummary(options: AdminMonthlyTaxClosingQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = { monthlyPeriod: period };
-    const [closing, totals, cashTotals, nonCashTotals, providerGroups, openTaxCount, paidTaxCount, couponTotals] =
+    const [closing, totals, cashTotals, nonCashTotals, providerCountRows, openTaxCount, paidTaxCount, couponTotals] =
       await Promise.all([
         this.prisma.monthlyTaxClosing.findUnique({
           where: { period_currency: { period, currency: 'VND' } },
@@ -5773,10 +5775,11 @@ export class AdminService {
             partnerPayoutAmount: true,
           },
         }),
-        this.prisma.bookingSettlementSnapshot.groupBy({
-          by: ['providerProfileId'],
-          where,
-        }),
+        this.prisma.$queryRaw<Array<{ partnerCountWithRevenue: bigint | number | null }>>(Prisma.sql`
+          SELECT COUNT(DISTINCT "providerProfileId")::bigint AS "partnerCountWithRevenue"
+          FROM "BookingSettlementSnapshot"
+          ${adminPartnerWithholdingTaxSqlWhere(period)}
+        `),
         this.prisma.bookingSettlementSnapshot.count({
           where: { ...where, taxStatus: BookingSettlementTaxStatus.OPEN },
         }),
@@ -5813,6 +5816,7 @@ export class AdminService {
     const platformFeeGrossTotal = totals._sum.platformFeeGross ?? 0;
     const companyOutputVatTotal = totals._sum.companyOutputVat ?? 0;
     const platformFeeNetRevenueTotal = totals._sum.platformFeeNetRevenue ?? 0;
+    const providerCount = providerCountRows[0];
     const couponSummary = couponTotals[0];
 
     return {
@@ -5839,7 +5843,7 @@ export class AdminService {
       cashDebtTotal:
         (cashTotals._sum.platformFeeGross ?? 0) + (cashTotals._sum.partnerWithholdingTotal ?? 0),
       nonCashPartnerPayoutTotal: nonCashTotals._sum.partnerPayoutAmount ?? 0,
-      partnerCountWithRevenue: providerGroups.length,
+      partnerCountWithRevenue: numberValue(providerCount?.partnerCountWithRevenue),
       openTaxCount,
       paidTaxCount,
       reconciliationDelta:
@@ -11316,6 +11320,13 @@ function adminPartnerWithholdingTaxWhere(period: string): Prisma.BookingSettleme
     monthlyPeriod: period,
     OR: [{ customerPaymentAmount: { gt: 0 } }, { partnerWithholdingTotal: { gt: 0 } }],
   };
+}
+
+function adminPartnerWithholdingTaxSqlWhere(period: string): Prisma.Sql {
+  return Prisma.sql`
+    WHERE "monthlyPeriod" = ${period}
+      AND ("customerPaymentAmount" > 0 OR "partnerWithholdingTotal" > 0)
+  `;
 }
 
 function adminPartnerWithholdingTaxPeriod(value: string | null | undefined) {

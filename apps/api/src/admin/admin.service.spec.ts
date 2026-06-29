@@ -6568,6 +6568,7 @@ describe('AdminService query orchestration', () => {
 
   it('summarizes partner withholding tax monthly totals from settlement snapshots', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ partnerCountWithRevenue: 1n }]),
       bookingSettlementSnapshot: {
         aggregate: vi.fn().mockResolvedValue({
           _count: { _all: 2 },
@@ -6579,7 +6580,7 @@ describe('AdminService query orchestration', () => {
             partnerWithholdingTotal: 84000,
           },
         }),
-        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+        groupBy: vi.fn(),
       },
     };
     const service = createAdminService(prisma);
@@ -6601,6 +6602,8 @@ describe('AdminService query orchestration', () => {
         where: expect.objectContaining({ monthlyPeriod: '2026-06' }),
       }),
     );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.bookingSettlementSnapshot.groupBy).not.toHaveBeenCalled();
   });
 
   it('lists monthly tax closings with bounded period filters', async () => {
@@ -6627,16 +6630,19 @@ describe('AdminService query orchestration', () => {
 
   it('summarizes monthly tax closing preview from settlement snapshots and existing closing status', async () => {
     const prisma = {
-      $queryRaw: vi.fn().mockResolvedValue([
-        {
-          companyCouponExpense: 60_000n,
-          couponDiscountAmount: 60_000n,
-          couponReviewFlagCount: 1n,
-          couponSettlementCount: 1n,
-          partnerFundedCouponAmount: 0n,
-          platformFeeDiscountAmount: 0n,
-        },
-      ]),
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ partnerCountWithRevenue: 1n }])
+        .mockResolvedValueOnce([
+          {
+            companyCouponExpense: 60_000n,
+            couponDiscountAmount: 60_000n,
+            couponReviewFlagCount: 1n,
+            couponSettlementCount: 1n,
+            partnerFundedCouponAmount: 0n,
+            platformFeeDiscountAmount: 0n,
+          },
+        ]),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'closing-1',
@@ -6678,7 +6684,7 @@ describe('AdminService query orchestration', () => {
             },
           }),
         count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
-        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+        groupBy: vi.fn(),
       },
     };
     const service = createAdminService(prisma);
@@ -6726,7 +6732,8 @@ describe('AdminService query orchestration', () => {
     expect(prisma.monthlyTaxClosing.findUnique).toHaveBeenCalledWith({
       where: { period_currency: { period: '2026-06', currency: 'VND' } },
     });
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.bookingSettlementSnapshot.groupBy).not.toHaveBeenCalled();
   });
 
   it('updates monthly tax closing status by snapshotting summary totals and writing audit metadata', async () => {
