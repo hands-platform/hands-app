@@ -7,6 +7,7 @@ import {
   calculatePlatformFeeBreakdown,
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
+  normalizePartnerBankDepositInput,
   normalizeCashFeeDebtSettlementInput,
   normalizePayoutBatchUpdateStatus,
 } from './earnings.policy';
@@ -63,6 +64,52 @@ describe('earnings policy', () => {
       amountCreditedToWalletLiability: 830000,
       resultingWalletBalance: 830000,
     });
+  });
+
+  it('normalizes partner bank deposit inputs for admin approval', () => {
+    expect(
+      normalizePartnerBankDepositInput({
+        providerProfileId: '  provider-1  ',
+        amount: 1000000.4,
+        bankTransactionId: '  BIDV-20260629-001  ',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        bankAccount: '  BIDV 123456789  ',
+        attachmentFileId: '  file-deposit-proof-1  ',
+        notes: '  Confirmed against bank statement  ',
+        adminId: '  admin-user-1  ',
+      }),
+    ).toEqual({
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      bankTransactionId: 'BIDV-20260629-001',
+      depositDate: new Date('2026-06-29T09:30:00.000Z'),
+      bankAccount: 'BIDV 123456789',
+      attachmentFileId: 'file-deposit-proof-1',
+      attachmentUrl: undefined,
+      notes: 'Confirmed against bank statement',
+      adminId: 'admin-user-1',
+    });
+  });
+
+  it('requires partner bank deposit transaction reference and evidence', () => {
+    expect(() =>
+      normalizePartnerBankDepositInput({
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: '',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
+      }),
+    ).toThrow('Bank transaction id is required for partner bank deposit');
+
+    expect(() =>
+      normalizePartnerBankDepositInput({
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+      }),
+    ).toThrow('Deposit evidence is required for partner bank deposit');
   });
 
   it('applies cash booking deduction against prepaid wallet liability when enough balance exists', () => {

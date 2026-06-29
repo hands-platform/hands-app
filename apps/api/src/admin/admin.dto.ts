@@ -765,6 +765,53 @@ export class MarkEarningPaidDto {
   settlementMethod?: string | null;
 }
 
+export class RecordPartnerBankDepositDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  providerProfileId!: string;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  amount!: number;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  bankTransactionId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsDateString()
+  depositDate!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  bankAccount?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  attachmentFileId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  attachmentUrl?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  notes?: string | null;
+}
+
 export class CreatePayoutBatchDto {
   @Transform(({ value }) => trimString(value))
   @IsString()

@@ -5089,6 +5089,57 @@ describe('AdminService query orchestration', () => {
     expect(earnings.adminSummary).toHaveBeenCalledWith({ range: 'today' });
   });
 
+  it('delegates partner bank deposit approvals to the earnings service with actor id', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const earnings = {
+      recordPartnerBankDeposit: vi.fn().mockResolvedValue({
+        id: 'wallet-deposit-1',
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        currency: 'VND',
+        reference: 'BIDV-20260629-001',
+        sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
+      }),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.recordPartnerBankDeposit('admin-user-1', {
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'wallet-deposit-1',
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+      }),
+    );
+
+    expect(earnings.recordPartnerBankDeposit).toHaveBeenCalledWith({
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      bankTransactionId: 'BIDV-20260629-001',
+      depositDate: '2026-06-29T09:30:00.000Z',
+      attachmentFileId: 'file-deposit-proof-1',
+      adminId: 'admin-user-1',
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'provider_wallet.bank_deposit_received',
+        target: 'provider_wallet_ledger:wallet-deposit-1',
+      }),
+    });
+  });
+
   it('lists booking settlement snapshots with bounded range and review filters', async () => {
     const prisma = {
       bookingSettlementSnapshot: {

@@ -55,6 +55,7 @@ describe('AdminController notification and push actions', () => {
     earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
     cashSettlementSummary: vi.fn(),
+    recordPartnerBankDeposit: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
@@ -150,6 +151,32 @@ describe('AdminController notification and push actions', () => {
       skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes partner bank deposit approval as a POST action and delegates with actor id', async () => {
+    admin.recordPartnerBankDeposit.mockResolvedValue({ id: 'wallet-deposit-1' });
+
+    await expect(
+      controller.recordPartnerBankDeposit(user, {
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
+      }),
+    ).resolves.toEqual({ id: 'wallet-deposit-1' });
+
+    expect(routeMetadata('recordPartnerBankDeposit')).toEqual({
+      method: RequestMethod.POST,
+      path: 'provider-wallet/deposits',
+    });
+    expect(admin.recordPartnerBankDeposit).toHaveBeenCalledWith('admin-1', {
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      bankTransactionId: 'BIDV-20260629-001',
+      depositDate: '2026-06-29T09:30:00.000Z',
+      attachmentFileId: 'file-deposit-proof-1',
     });
   });
 

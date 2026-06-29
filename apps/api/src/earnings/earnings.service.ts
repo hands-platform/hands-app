@@ -20,11 +20,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
+  allocatePartnerBankDeposit,
   calculateCashBookingPartnerDue,
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
+  normalizePartnerBankDepositInput,
   normalizeCashFeeDebtSettlementInput,
   normalizePayoutBatchUpdateStatus,
+  type PartnerBankDepositInput,
 } from './earnings.policy';
 import {
   PROVIDER_WALLET_BLOCK_CODE,
@@ -685,6 +688,61 @@ export class EarningsService {
         notes: settlementNotes,
       });
       return updated;
+    });
+  }
+
+  async recordPartnerBankDeposit(input: PartnerBankDepositInput) {
+    const deposit = normalizePartnerBankDepositInput(input);
+    const sourceKey = partnerBankDepositSourceKey(
+      deposit.providerProfileId,
+      deposit.bankTransactionId,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const provider = await tx.providerProfile.findUnique({
+        where: { id: deposit.providerProfileId },
+        select: { id: true },
+      });
+      if (!provider) {
+        throw new NotFoundException('Partner profile not found');
+      }
+
+      const existing = await tx.providerWalletLedgerEntry.findUnique({ where: { sourceKey } });
+      if (existing) {
+        return existing;
+      }
+
+      const currentWalletBalance = await this.providerWalletLedgerBalance(
+        tx,
+        deposit.providerProfileId,
+      );
+      const allocation = allocatePartnerBankDeposit(currentWalletBalance, deposit.amount);
+      const metadata: Prisma.InputJsonObject = {
+        source: 'ADMIN_PARTNER_BANK_DEPOSIT',
+        accountingTreatment: 'NEGATIVE_WALLET_FIRST_THEN_PREPAID_PARTNER_WALLET_LIABILITY',
+        isPlatformRevenue: false,
+        isTaxableRevenue: false,
+        bankAccount: deposit.bankAccount,
+        bankTransactionId: deposit.bankTransactionId,
+        depositDate: deposit.depositDate.toISOString(),
+        attachmentFileId: deposit.attachmentFileId,
+        attachmentUrl: deposit.attachmentUrl,
+        adminId: deposit.adminId,
+        allocation,
+      };
+
+      return tx.providerWalletLedgerEntry.create({
+        data: {
+          providerProfileId: deposit.providerProfileId,
+          type: ProviderWalletLedgerType.PARTNER_BANK_DEPOSIT_RECEIVED,
+          sourceKey,
+          amount: deposit.amount,
+          currency: 'VND',
+          reference: deposit.bankTransactionId,
+          notes: deposit.notes,
+          metadata,
+        },
+      });
     });
   }
 
@@ -1439,6 +1497,14 @@ export class EarningsService {
     }
   }
 
+  private async providerWalletLedgerBalance(client: TxClient, providerProfileId: string) {
+    const wallet = await client.providerWalletLedgerEntry.aggregate({
+      where: { providerProfileId },
+      _sum: { amount: true },
+    });
+    return wallet._sum.amount ?? 0;
+  }
+
   private async calculateWithholding(
     tx: TxClient,
     input: {
@@ -1647,6 +1713,10 @@ function servicePayoutVatRateBps(ruleSnapshot: Prisma.InputJsonValue) {
 
 function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
   return value as ProviderWalletLedgerType;
+}
+
+function partnerBankDepositSourceKey(providerProfileId: string, bankTransactionId: string) {
+  return `partner-bank-deposit:${providerProfileId}:${bankTransactionId}`;
 }
 
 function calculatePartnerTaxLine(

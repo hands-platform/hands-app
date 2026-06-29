@@ -186,7 +186,11 @@ import {
   normalizeMarketingSourceFilter,
   withMarketingRates,
 } from './admin-marketing-analytics';
-import type { AdminPushCampaignDto, UpdateNotificationTemplateDto } from './admin.dto';
+import type {
+  AdminPushCampaignDto,
+  RecordPartnerBankDepositDto,
+  UpdateNotificationTemplateDto,
+} from './admin.dto';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 50;
 const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
@@ -6142,6 +6146,26 @@ export class AdminService {
       },
     );
     return earning;
+  }
+
+  async recordPartnerBankDeposit(actorId: string, input: RecordPartnerBankDepositDto) {
+    const ledger = await this.earnings.recordPartnerBankDeposit({
+      ...input,
+      adminId: actorId,
+    });
+    await this.writeAudit(
+      actorId,
+      'provider_wallet.bank_deposit_received',
+      `provider_wallet_ledger:${ledger.id}`,
+      {
+        providerProfileId: ledger.providerProfileId,
+        amount: ledger.amount,
+        currency: ledger.currency,
+        reference: ledger.reference,
+        sourceKey: ledger.sourceKey,
+      },
+    );
+    return ledger;
   }
 
   listPayoutBatches(options: AdminPaymentOperationsQuery = {}) {

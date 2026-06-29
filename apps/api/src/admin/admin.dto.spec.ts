@@ -132,8 +132,36 @@ describe('admin request DTO validation', () => {
 
   it('uses concrete DTOs for payout administration payloads', () => {
     expect((bodyMetatype('markEarningPaid', 2) as { name?: string })?.name).toBe('MarkEarningPaidDto');
+    expect((bodyMetatype('recordPartnerBankDeposit', 1) as { name?: string })?.name).toBe(
+      'RecordPartnerBankDepositDto',
+    );
     expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe('CreatePayoutBatchDto');
     expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe('UpdatePayoutBatchDto');
+  });
+
+  it('normalizes partner bank deposit approval payloads and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        providerProfileId: ' provider-1 ',
+        amount: '1000000',
+        bankTransactionId: ' BIDV-20260629-001 ',
+        depositDate: ' 2026-06-29T09:30:00.000Z ',
+        bankAccount: ' BIDV 123456789 ',
+        attachmentFileId: ' file-deposit-proof-1 ',
+        notes: ' bank statement confirmed ',
+        walletBalance: -170000,
+      },
+      { type: 'body', metatype: bodyMetatype('recordPartnerBankDeposit', 1) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('providerProfileId', 'provider-1');
+    expect(transformed).toHaveProperty('amount', 1000000);
+    expect(transformed).toHaveProperty('bankTransactionId', 'BIDV-20260629-001');
+    expect(transformed).toHaveProperty('depositDate', '2026-06-29T09:30:00.000Z');
+    expect(transformed).toHaveProperty('attachmentFileId', 'file-deposit-proof-1');
+    expect(transformed).not.toHaveProperty('walletBalance');
   });
 
   it('rejects blank payout batch partner ids before settlement logic runs', async () => {

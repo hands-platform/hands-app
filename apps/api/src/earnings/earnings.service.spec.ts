@@ -739,6 +739,113 @@ describe('EarningsService payout batches', () => {
     expect(notifications.create).not.toHaveBeenCalled();
   });
 
+  it('records partner bank deposits with negative-wallet-first allocation metadata', async () => {
+    const depositDate = new Date('2026-06-29T09:30:00.000Z');
+    const createdLedger = {
+      id: 'wallet-deposit-1',
+      providerProfileId: 'provider-1',
+      type: ProviderWalletLedgerType.PARTNER_BANK_DEPOSIT_RECEIVED,
+      amount: 1000000,
+      currency: 'VND',
+    };
+    const tx = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -170000 } }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(createdLedger),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.recordPartnerBankDeposit({
+        providerProfileId: ' provider-1 ',
+        amount: 1000000,
+        bankTransactionId: ' BIDV-20260629-001 ',
+        depositDate,
+        bankAccount: 'BIDV 123456789',
+        attachmentFileId: 'file-deposit-proof-1',
+        notes: 'Bank statement confirmed',
+        adminId: 'admin-user-1',
+      }),
+    ).resolves.toEqual(createdLedger);
+
+    expect(tx.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+      _sum: { amount: true },
+    });
+    expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        providerProfileId: 'provider-1',
+        type: ProviderWalletLedgerType.PARTNER_BANK_DEPOSIT_RECEIVED,
+        sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
+        amount: 1000000,
+        currency: 'VND',
+        reference: 'BIDV-20260629-001',
+        notes: 'Bank statement confirmed',
+        metadata: expect.objectContaining({
+          bankAccount: 'BIDV 123456789',
+          attachmentFileId: 'file-deposit-proof-1',
+          adminId: 'admin-user-1',
+          allocation: {
+            depositAmount: 1000000,
+            currentWalletBalance: -170000,
+            currentNegativeWalletAmount: 170000,
+            amountAppliedToNegativeWallet: 170000,
+            amountCreditedToWalletLiability: 830000,
+            resultingWalletBalance: 830000,
+          },
+        }),
+      }),
+    });
+  });
+
+  it('does not duplicate partner bank deposits with the same bank transaction id', async () => {
+    const existingLedger = {
+      id: 'wallet-deposit-existing',
+      providerProfileId: 'provider-1',
+      sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
+      amount: 1000000,
+    };
+    const tx = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(existingLedger),
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.recordPartnerBankDeposit({
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentUrl: 'https://storage.example/deposits/proof.jpg',
+      }),
+    ).resolves.toEqual(existingLedger);
+
+    expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
   it('marks payout batch earnings, withholding, and wallet ledger paid together', async () => {
     const paidAt = new Date('2026-06-11T09:00:00.000Z');
     const earning = {

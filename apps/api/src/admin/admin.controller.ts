@@ -26,6 +26,7 @@ import {
   OperationsHandoffNoteDto,
   PartnerOpsNoteDto,
   ReferralRewardDecisionDto,
+  RecordPartnerBankDepositDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
   UpdateMonthlyTaxClosingStatusDto,
@@ -840,6 +841,14 @@ export class AdminController {
     @Body() body: MarkEarningPaidDto,
   ) {
     return this.admin.markEarningPaid(user.id, id, body);
+  }
+
+  @Post('provider-wallet/deposits')
+  recordPartnerBankDeposit(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: RecordPartnerBankDepositDto,
+  ) {
+    return this.admin.recordPartnerBankDeposit(user.id, body);
   }
 
   @Get('payout-batches/summary')

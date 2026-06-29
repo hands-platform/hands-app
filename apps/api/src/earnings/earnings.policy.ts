@@ -33,6 +33,18 @@ export type CashFeeDebtSettlementInput = {
   settlementMethod?: string | null;
 };
 
+export type PartnerBankDepositInput = {
+  providerProfileId?: string | null;
+  amount: number;
+  bankTransactionId?: string | null;
+  depositDate?: Date | string | null;
+  bankAccount?: string | null;
+  attachmentFileId?: string | null;
+  attachmentUrl?: string | null;
+  notes?: string | null;
+  adminId?: string | null;
+};
+
 export type PayoutBatchUpdateStatusInput = {
   currentStatus: PayoutBatchStatus | string;
   requestedStatus?: PayoutBatchStatus | string | null;
@@ -135,6 +147,40 @@ export function normalizeCashFeeDebtSettlementInput(input: CashFeeDebtSettlement
     settlementRef,
     settlementNotes,
     settlementMethod,
+  };
+}
+
+export function normalizePartnerBankDepositInput(input: PartnerBankDepositInput) {
+  const providerProfileId = cleanOptionalText(input.providerProfileId);
+  const amount = positiveWholeVnd(input.amount, 'Deposit amount');
+  const bankTransactionId = cleanOptionalText(input.bankTransactionId);
+  const bankAccount = cleanOptionalText(input.bankAccount) ?? undefined;
+  const attachmentFileId = cleanOptionalText(input.attachmentFileId) ?? undefined;
+  const attachmentUrl = cleanOptionalText(input.attachmentUrl) ?? undefined;
+  const notes = cleanOptionalText(input.notes) ?? undefined;
+  const adminId = cleanOptionalText(input.adminId) ?? undefined;
+  const depositDate = normalizeDepositDate(input.depositDate);
+
+  if (!providerProfileId) {
+    throw new BadRequestException('Partner profile is required for partner bank deposit');
+  }
+  if (!bankTransactionId) {
+    throw new BadRequestException('Bank transaction id is required for partner bank deposit');
+  }
+  if (!attachmentFileId && !attachmentUrl) {
+    throw new BadRequestException('Deposit evidence is required for partner bank deposit');
+  }
+
+  return {
+    providerProfileId,
+    amount,
+    bankTransactionId,
+    depositDate,
+    bankAccount,
+    attachmentFileId,
+    attachmentUrl,
+    notes,
+    adminId,
   };
 }
 
@@ -261,12 +307,38 @@ function nonNegativeWholeVnd(value: number, label: string) {
   return amount;
 }
 
+function positiveWholeVnd(value: number, label: string) {
+  const amount = nonNegativeWholeVnd(value, label);
+  if (amount <= 0) {
+    throw new BadRequestException(`${label} must be greater than zero`);
+  }
+  return amount;
+}
+
 function cleanOptionalText(value: string | null | undefined): string | null {
   if (typeof value !== 'string') {
     return null;
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function normalizeDepositDate(value: Date | string | null | undefined) {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      throw new BadRequestException('Deposit date must be valid');
+    }
+    return value;
+  }
+  const clean = cleanOptionalText(value);
+  if (!clean) {
+    throw new BadRequestException('Deposit date is required for partner bank deposit');
+  }
+  const date = new Date(clean);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('Deposit date must be valid');
+  }
+  return date;
 }
 
 function normalizeCashFeeSettlementMethod(
