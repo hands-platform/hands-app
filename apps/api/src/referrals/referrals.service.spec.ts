@@ -864,6 +864,100 @@ describe('ReferralsService', () => {
     expect(prisma.referralReward.update).not.toHaveBeenCalled();
   });
 
+  it('reverses credited referral rewards with wallet and journal reversal entries', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-credited-1',
+      amount: 25_000,
+      calculationSnapshot: { taxPolicySnapshot: 'CUSTOMER_SERVICE_CREDIT_ONLY' },
+      currency: 'VND',
+      qualifyingBookingId: 'booking-1',
+      sourceKey: 'referral:CUSTOMER:attribution-1:booking-1',
+      status: creditedReferralRewardStatus,
+      walletLedgerReference: 'customer-earned-ledger-1',
+      walletOwnerCustomerProfileId: 'customer-profile-1',
+      walletOwnerProviderProfileId: null,
+    };
+    const ledger = { id: 'customer-reversal-ledger-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'referral-reversal-journal-1' }),
+      },
+      referralReward: {
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          availableAt: now,
+          status: ReferralRewardStatus.REVERSED,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(service.reverseRewardCandidate('reward-credited-1')).resolves.toMatchObject({
+      id: 'reward-credited-1',
+      status: ReferralRewardStatus.REVERSED,
+      walletLedgerReference: 'customer-reversal-ledger-1',
+    });
+    expect(tx.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-reversal:reward-credited-1' },
+        create: expect.objectContaining({
+          amount: -25_000,
+          bookingId: 'booking-1',
+          currency: 'VND',
+          customerProfileId: 'customer-profile-1',
+          referralRewardId: 'reward-credited-1',
+          reference: 'referral:CUSTOMER:attribution-1:booking-1',
+          sourceKey: 'referral:wallet-reversal:reward-credited-1',
+          type: 'CUSTOMER_REFERRAL_REVERSED',
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:referral-wallet-reversal:reward-credited-1' },
+      update: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceId: 'reward-credited-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+      create: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceKey: 'accounting-journal:referral-wallet-reversal:reward-credited-1',
+        sourceId: 'reward-credited-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+    });
+    expect(tx.referralReward.update).toHaveBeenCalledWith({
+      data: {
+        status: ReferralRewardStatus.REVERSED,
+        walletLedgerReference: 'customer-reversal-ledger-1',
+      },
+      where: { id: 'reward-credited-1' },
+      select: expect.any(Object),
+    });
+  });
+
   it('reverses held or available reward candidates without wallet ledger writes', async () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {

@@ -419,6 +419,16 @@ export class ReferralsService {
   }
 
   async reverseRewardCandidate(rewardId: string) {
+    const reward = await this.prisma.referralReward.findUnique({
+      where: { id: rewardId },
+      select: referralRewardCreditCandidateSelect,
+    });
+    if (!reward) {
+      throw new NotFoundException('Referral reward was not found');
+    }
+    if (isCreditedReferralRewardStatus(reward.status)) {
+      return this.reverseCreditedRewardCandidate(reward);
+    }
     return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED);
   }
 
@@ -561,6 +571,72 @@ export class ReferralsService {
       return tx.referralReward.update({
         data: {
           status: PAID_REFERRAL_REWARD_STATUS,
+          walletLedgerReference: ledger.id,
+        },
+        where: { id: reward.id },
+        select: referralRewardSelect,
+      });
+    });
+  }
+
+  private async reverseCreditedRewardCandidate(reward: ReferralRewardCreditCandidate) {
+    if (!reward.walletLedgerReference) {
+      throw new BadRequestException('Credited referral reward reversal requires an existing wallet ledger reference');
+    }
+    if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
+      throw new BadRequestException('Referral reward does not have a wallet owner');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const ledgerSourceKey = referralWalletReversalSourceKey(reward.id);
+      const ledger = reward.walletOwnerCustomerProfileId
+        ? await tx.customerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {
+              amount: -reward.amount,
+              currency: reward.currency,
+              metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
+              reference: reward.sourceKey,
+            },
+            create: {
+              amount: -reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              customerProfileId: reward.walletOwnerCustomerProfileId,
+              metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
+              referralRewardId: reward.id,
+              reference: reward.sourceKey,
+              sourceKey: ledgerSourceKey,
+              type: customerWalletLedgerType('CUSTOMER_REFERRAL_REVERSED'),
+            },
+            select: { id: true },
+          })
+        : await tx.providerWalletLedgerEntry.upsert({
+            where: { sourceKey: ledgerSourceKey },
+            update: {
+              amount: -reward.amount,
+              currency: reward.currency,
+              metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
+              reference: reward.sourceKey,
+            },
+            create: {
+              amount: -reward.amount,
+              bookingId: reward.qualifyingBookingId,
+              currency: reward.currency,
+              metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
+              providerProfileId: reward.walletOwnerProviderProfileId as string,
+              reference: reward.sourceKey,
+              sourceKey: ledgerSourceKey,
+              type: providerWalletLedgerType('PARTNER_REFERRAL_REVERSED'),
+            },
+            select: { id: true },
+          });
+
+      await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-reversal');
+
+      return tx.referralReward.update({
+        data: {
+          status: ReferralRewardStatus.REVERSED,
           walletLedgerReference: ledger.id,
         },
         where: { id: reward.id },
@@ -1115,6 +1191,10 @@ function referralWalletCashoutSourceKey(rewardId: string) {
   return `referral:wallet-cashout:${rewardId}`;
 }
 
+function referralWalletReversalSourceKey(rewardId: string) {
+  return `referral:wallet-reversal:${rewardId}`;
+}
+
 function referralWalletCreditMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
   return {
     bookingId: reward.qualifyingBookingId,
@@ -1134,11 +1214,21 @@ function referralWalletCashoutMetadata(reward: ReferralRewardCreditCandidate, wa
   };
 }
 
+function referralWalletReversalMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+  return {
+    bookingId: reward.qualifyingBookingId,
+    referralRewardId: reward.id,
+    rewardSourceKey: reward.sourceKey,
+    reversedWalletCreditLedgerReference: reward.walletLedgerReference,
+    walletOwner,
+  };
+}
+
 async function upsertReferralRewardJournal(
   tx: Prisma.TransactionClient,
   reward: ReferralRewardCreditCandidate,
   ledgerId: string,
-  action: 'wallet-credit' | 'wallet-cashout',
+  action: 'wallet-credit' | 'wallet-cashout' | 'wallet-reversal',
 ) {
   const owner = referralRewardWalletOwner(reward);
   const taxPolicy = referralRewardTaxPolicySnapshot(reward);
@@ -1161,9 +1251,9 @@ async function upsertReferralRewardJournal(
     pitWithheldAmount: withholding.pitWithheldAmount,
     walletOwner: owner.type,
   } satisfies Prisma.InputJsonObject;
-  const entries =
-    action === 'wallet-credit'
-      ? [
+  const entries = (() => {
+    if (action === 'wallet-credit') {
+      return [
           referralJournalEntry({
             account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
             amount: reward.amount,
@@ -1184,8 +1274,10 @@ async function upsertReferralRewardJournal(
             sourceId: reward.id,
             sourceType,
           }),
-        ]
-      : [
+        ];
+    }
+    if (action === 'wallet-cashout') {
+      return [
           referralJournalEntry({
             account: `${owner.type}_WALLET_LIABILITY`,
             amount: reward.amount,
@@ -1207,6 +1299,30 @@ async function upsertReferralRewardJournal(
             sourceType,
           }),
         ];
+    }
+    return [
+      referralJournalEntry({
+        account: `${owner.type}_WALLET_LIABILITY`,
+        amount: reward.amount,
+        currency: reward.currency,
+        memo: `Referral reversal ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
+        metadata,
+        side: 'DEBIT',
+        sourceId: reward.id,
+        sourceType,
+      }),
+      referralJournalEntry({
+        account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
+        amount: reward.amount,
+        currency: reward.currency,
+        memo: `Referral reversal ${reward.id} reverses prior reward expense.`,
+        metadata,
+        side: 'CREDIT',
+        sourceId: reward.id,
+        sourceType,
+      }),
+    ];
+  })();
   const totalDebit = entries
     .filter((entry) => entry.side === 'DEBIT')
     .reduce((total, entry) => total + entry.amount, 0);
