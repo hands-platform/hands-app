@@ -1,5 +1,10 @@
 import type { AdminCoupon, AdminCouponSummary, AdminCouponUsagePage } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -109,31 +114,40 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
           </div>
         ) : null}
         <form className="coupon-create-form" action={createCoupon}>
-          <label className="calendar-field calendar-field-wide">
-            <span>Coupon codes</span>
-            <textarea name="codes" required rows={1} />
-          </label>
-          <label className="calendar-field">
-            <span>Discount %</span>
-            <input max="100" min="1" name="percent" placeholder="10" required type="number" />
-          </label>
-          <label className="calendar-field coupon-date-field">
+          <AdminFormTextarea
+            className="calendar-field calendar-field-wide"
+            label="Coupon codes"
+            name="codes"
+            required
+            rows={1}
+          />
+          <AdminFormInput
+            className="calendar-field"
+            label="Discount %"
+            max="100"
+            min="1"
+            name="percent"
+            placeholder="10"
+            required
+            type="number"
+          />
+          <div className="calendar-field coupon-date-field">
             <span>Starts</span>
             <span className="coupon-date-input-shell">
-              <input name="startsAt" type="datetime-local" />
+              <AdminFormInput label="Starts" name="startsAt" type="datetime-local" />
               <CalendarDays aria-hidden="true" size={17} />
             </span>
-          </label>
-          <label className="calendar-field coupon-date-field">
+          </div>
+          <div className="calendar-field coupon-date-field">
             <span>Ends</span>
             <span className="coupon-date-input-shell">
-              <input name="endsAt" type="datetime-local" />
+              <AdminFormInput label="Ends" name="endsAt" type="datetime-local" />
               <CalendarDays aria-hidden="true" size={17} />
             </span>
-          </label>
-          <button className="button" type="submit">
+          </div>
+          <AdminFormControlButton className="button" type="submit">
             Create coupons
-          </button>
+          </AdminFormControlButton>
         </form>
       </section>
       <CouponsTableSection

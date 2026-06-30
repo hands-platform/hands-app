@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
@@ -50,5 +51,17 @@ describe('CouponsPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(hrefs).toContain('/admin/coupons?take=10&skip=20');
+  });
+
+  it('keeps the coupon creation form on shared AdminForm atoms', async () => {
+    const page = await CouponsPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Create coupons');
+    expect(markup).toContain('admin-form-textarea');
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-control-button');
   });
 });

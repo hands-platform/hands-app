@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CalendarDays, Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { CouponWindowState } from './coupon-page-model';
@@ -150,31 +151,38 @@ function CouponManagementCard({
         <summary>Edit coupon</summary>
         <form action={updateAction} className="coupon-edit-form">
           <input name="couponId" type="hidden" value={row.id} />
-          <label>
-            <span>Discount %</span>
-            <input defaultValue={row.percentValue} max="100" min="1" name="percent" type="number" />
-          </label>
-          <label>
+          <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
+          <div>
             <span>Starts</span>
             <span className="coupon-date-input-shell">
-              <input defaultValue={row.startsAtInputValue} name="startsAt" type="datetime-local" />
+              <AdminFormInput
+                defaultValue={row.startsAtInputValue}
+                label="Starts"
+                name="startsAt"
+                type="datetime-local"
+              />
               <CalendarDays aria-hidden="true" size={17} />
             </span>
-          </label>
-          <label>
+          </div>
+          <div>
             <span>Ends</span>
             <span className="coupon-date-input-shell">
-              <input defaultValue={row.endsAtInputValue} name="endsAt" type="datetime-local" />
+              <AdminFormInput
+                defaultValue={row.endsAtInputValue}
+                label="Ends"
+                name="endsAt"
+                type="datetime-local"
+              />
               <CalendarDays aria-hidden="true" size={17} />
             </span>
-          </label>
+          </div>
           <label className="coupon-active-field">
             <span>Active</span>
             <input defaultChecked={row.active} name="active" type="checkbox" />
           </label>
-          <button className="button" type="submit">
+          <AdminFormControlButton className="button" type="submit">
             Save
-          </button>
+          </AdminFormControlButton>
         </form>
       </details>
 
