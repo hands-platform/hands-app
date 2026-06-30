@@ -2,6 +2,7 @@ import {
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementReversalApiHref,
   buildBookingSettlementReversalSummaryApiHref,
+  buildBookingSettlementReversalTraceLinks,
   buildCouponFinanceApiHref,
   buildCouponFinanceSummaryApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
@@ -223,6 +224,44 @@ describe('tax settlement page model', () => {
     expect(buildBookingSettlementReversalSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-reversals/summary?range=30d&review=non-cash',
     );
+  });
+
+  it('builds settlement reversal trace links to journal and clearing evidence', () => {
+    const links = buildBookingSettlementReversalTraceLinks({
+      accountingJournalBatches: [
+        {
+          id: 'journal-batch-1',
+          sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-1',
+          status: 'POSTED',
+        },
+      ],
+      originalSettlementSnapshotId: 'settlement-1',
+      paymentClearingEntries: [
+        {
+          id: 'clearing-1',
+          sourceKey: 'booking-payment-clearing:booking-1:refund-reversal',
+          status: 'REVERSED',
+        },
+      ],
+    } as never);
+
+    expect(links).toEqual([
+      {
+        href: '/finance-tax/booking-settlement-audit?range=all',
+        label: 'Original settlement',
+        value: 'settleme',
+      },
+      {
+        href: '/finance-tax/general-ledger/journal-batch-1',
+        label: 'Reversal journal',
+        value: 'journal-',
+      },
+      {
+        href: '/finance-tax/payment-clearing/clearing-1',
+        label: 'Payment clearing',
+        value: 'clearing',
+      },
+    ]);
   });
 
   it('builds payout priority shortcuts without adding list payload to tax overview', () => {

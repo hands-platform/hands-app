@@ -6476,6 +6476,16 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementReversalEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { occurredAt: 'desc' },
+        select: expect.objectContaining({
+          accountingJournalBatches: expect.objectContaining({
+            select: expect.objectContaining({ id: true, sourceKey: true, status: true }),
+            take: 1,
+          }),
+          paymentClearingEntries: expect.objectContaining({
+            select: expect.objectContaining({ id: true, sourceKey: true, status: true }),
+            take: 1,
+          }),
+        }),
         skip: 25,
         take: 50,
         where: expect.objectContaining({

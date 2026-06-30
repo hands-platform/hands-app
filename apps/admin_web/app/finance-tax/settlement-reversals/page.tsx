@@ -16,6 +16,7 @@ import {
   bookingSettlementReversalHref,
   buildBookingSettlementReversalApiHref,
   buildBookingSettlementReversalSummaryApiHref,
+  buildBookingSettlementReversalTraceLinks,
   buildTaxFinanceWorkflowLinks,
   buildTaxSettlementServerPagination,
   emptyBookingSettlementReversalSummary,
@@ -125,6 +126,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
               'Payment',
               'Reversal amounts',
               'Tax and fee',
+              'Evidence',
               'Status',
             ]}
             rowCount={pagination.rows.length}
@@ -168,6 +170,15 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   <strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>
                   <div className="muted">VAT {formatMoney(reversal.companyOutputVat, reversal.currency)}</div>
                   <div className="muted">Processing {formatMoney(reversal.paymentProcessingFee, reversal.currency)}</div>
+                </td>
+                <td>
+                  <div className="admin-table-substack">
+                    {buildBookingSettlementReversalTraceLinks(reversal).map((link) => (
+                      <Link className="text-link" href={link.href} key={`${reversal.id}:${link.label}`}>
+                        {link.label} <span className="muted">{link.value}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </td>
                 <td>
                   <span className={`pill ${statusPill(reversal.taxStatus)}`}>{reversal.taxStatus}</span>

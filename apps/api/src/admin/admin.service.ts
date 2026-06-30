@@ -494,6 +494,29 @@ const adminBookingSettlementReversalEntryListSelect = {
   metadata: true,
   createdAt: true,
   updatedAt: true,
+  accountingJournalBatches: {
+    orderBy: { postedAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      sourceKey: true,
+      status: true,
+      postedAt: true,
+    },
+  },
+  paymentClearingEntries: {
+    orderBy: { occurredAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      sourceKey: true,
+      status: true,
+      type: true,
+      amount: true,
+      currency: true,
+      occurredAt: true,
+    },
+  },
   originalSettlementSnapshot: {
     select: {
       id: true,

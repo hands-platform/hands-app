@@ -1958,6 +1958,21 @@ export type AdminBookingSettlementReversalEntry = {
   metadata?: unknown;
   createdAt: string;
   updatedAt: string;
+  accountingJournalBatches?: Array<{
+    id: string;
+    sourceKey: string;
+    status: AdminAccountingJournalBatchStatus;
+    postedAt: string;
+  }>;
+  paymentClearingEntries?: Array<{
+    id: string;
+    sourceKey: string;
+    status: AdminBookingPaymentClearingStatus;
+    type: AdminBookingPaymentClearingEntryType;
+    amount: number;
+    currency: string;
+    occurredAt: string;
+  }>;
   originalSettlementSnapshot?: {
     id: string;
     monthlyPeriod: string;

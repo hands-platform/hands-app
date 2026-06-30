@@ -1,6 +1,7 @@
 import type {
   AdminAccountingJournalBatchSummary,
   AdminBankReconciliationSummary,
+  AdminBookingSettlementReversalEntry,
   AdminBookingSettlementSnapshot,
   AdminBookingSettlementReversalSummary,
   AdminBookingSettlementSnapshotSummary,
@@ -17,7 +18,7 @@ import type {
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
-import { formatMoney } from '../../lib/admin-format';
+import { formatMoney, shortId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 
 export type BookingSettlementReview =
@@ -94,6 +95,12 @@ export type TaxFinanceWorkflowLink = {
   readonly key: TaxFinanceWorkflowPage;
   readonly label: string;
   readonly href: string;
+};
+
+export type BookingSettlementReversalTraceLink = {
+  readonly href: string;
+  readonly label: string;
+  readonly value: string;
 };
 
 export type FinancePayoutPriorityLink = {
@@ -412,6 +419,46 @@ export function bookingSettlementReversalHref(filters: BookingSettlementFilters)
   }
   appendTaxSettlementUiPagination(params, filters);
   return `/finance-tax/settlement-reversals?${params.toString()}`;
+}
+
+export function buildBookingSettlementReversalTraceLinks(
+  reversal: Pick<
+    AdminBookingSettlementReversalEntry,
+    'accountingJournalBatches' | 'originalSettlementSnapshotId' | 'paymentClearingEntries'
+  >,
+): BookingSettlementReversalTraceLink[] {
+  const journal = reversal.accountingJournalBatches?.[0] ?? null;
+  const clearing = reversal.paymentClearingEntries?.[0] ?? null;
+  const links: BookingSettlementReversalTraceLink[] = [
+    {
+      href: bookingSettlementAuditHref({
+        page: 1,
+        range: 'all',
+        review: 'all',
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
+      label: 'Original settlement',
+      value: shortId(reversal.originalSettlementSnapshotId),
+    },
+  ];
+
+  if (journal) {
+    links.push({
+      href: generalLedgerDetailHref(journal.id),
+      label: 'Reversal journal',
+      value: shortId(journal.id),
+    });
+  }
+
+  if (clearing) {
+    links.push({
+      href: paymentClearingDetailHref(clearing.id),
+      label: 'Payment clearing',
+      value: shortId(clearing.id),
+    });
+  }
+
+  return links;
 }
 
 export function generalLedgerHref(filters: FinanceAccountingFilters) {
