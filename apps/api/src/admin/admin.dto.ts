@@ -1003,6 +1003,12 @@ export class CreateCompanyBankTransactionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
+  approvalAdminId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
   bankAccountId!: string;
 
   @IsEnum(CompanyBankTransactionType)

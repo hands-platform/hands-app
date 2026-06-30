@@ -194,10 +194,7 @@ describe('AdminService query orchestration', () => {
         orderBy: { createdAt: 'desc' },
         take: 10,
         where: expect.objectContaining({
-          OR: expect.arrayContaining([
-            { target: 'customer:customer-1' },
-            { target: 'user:user-1' },
-          ]),
+          OR: expect.arrayContaining([{ target: 'customer:customer-1' }, { target: 'user:user-1' }]),
         }),
       }),
     );
@@ -562,11 +559,7 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce(4),
       },
       chatMessage: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(120)
-          .mockResolvedValueOnce(70)
-          .mockResolvedValueOnce(50),
+        count: vi.fn().mockResolvedValueOnce(120).mockResolvedValueOnce(70).mockResolvedValueOnce(50),
         findFirst: vi.fn().mockResolvedValue({ createdAt: new Date('2026-06-27T03:00:00.000Z') }),
       },
     };
@@ -981,7 +974,13 @@ describe('AdminService query orchestration', () => {
   it('returns coupon status summary without hydrating booking usage rows', async () => {
     const prisma = {
       coupon: {
-        count: vi.fn().mockResolvedValueOnce(10).mockResolvedValueOnce(4).mockResolvedValueOnce(2).mockResolvedValueOnce(3).mockResolvedValueOnce(1),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(10)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(1),
       },
     };
     const service = createAdminService(prisma);
@@ -1547,7 +1546,9 @@ describe('AdminService query orchestration', () => {
       }),
     );
     expect(prisma.marketingSpendDaily.findMany).not.toHaveBeenCalled();
-    expect(prisma.customerSelectedLocation.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
+    expect(prisma.customerSelectedLocation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100 }),
+    );
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(3);
     expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100, 100]);
   });
@@ -2435,7 +2436,14 @@ describe('AdminService query orchestration', () => {
               OR: expect.arrayContaining([
                 { id: { contains: 'Parent', mode: 'insensitive' } },
                 { user: { fullName: { contains: 'Parent', mode: 'insensitive' } } },
-                { referralCodes: { some: { audience: ReferralAudience.CUSTOMER, code: { contains: 'Parent', mode: 'insensitive' } } } },
+                {
+                  referralCodes: {
+                    some: {
+                      audience: ReferralAudience.CUSTOMER,
+                      code: { contains: 'Parent', mode: 'insensitive' },
+                    },
+                  },
+                },
               ]),
             },
             {
@@ -2846,7 +2854,8 @@ describe('AdminService query orchestration', () => {
         },
         payoutProfile: {
           account: null,
-          helper: 'Customer referral rewards credit to the customer wallet; bank cashout details are not collected in MVP.',
+          helper:
+            'Customer referral rewards credit to the customer wallet; bank cashout details are not collected in MVP.',
           label: 'Customer wallet reward',
           status: 'WALLET_ONLY',
           type: 'CUSTOMER_WALLET',
@@ -4274,10 +4283,7 @@ describe('AdminService query orchestration', () => {
     [
       'bank',
       {
-        AND: [
-          { bankAccounts: { some: {} } },
-          { bankAccounts: { none: { status: 'APPROVED' } } },
-        ],
+        AND: [{ bankAccounts: { some: {} } }, { bankAccounts: { none: { status: 'APPROVED' } } }],
       },
     ],
   ])('supports %s partner directory filtering before loading row details', async (review, expectedWhere) => {
@@ -4520,9 +4526,42 @@ describe('AdminService query orchestration', () => {
       'active-booking',
       {
         OR: [
-          { preferredBookings: { some: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } },
-          { selectedBookings: { some: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } },
-          { participants: { some: { booking: { status: { in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'] } } } } },
+          {
+            preferredBookings: {
+              some: {
+                status: {
+                  in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'],
+                },
+              },
+            },
+          },
+          {
+            selectedBookings: {
+              some: {
+                status: {
+                  in: ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'],
+                },
+              },
+            },
+          },
+          {
+            participants: {
+              some: {
+                booking: {
+                  status: {
+                    in: [
+                      'CREATED',
+                      'OPEN_MATCHING',
+                      'MATCHED',
+                      'PROVIDER_ON_THE_WAY',
+                      'ARRIVED',
+                      'IN_SERVICE',
+                    ],
+                  },
+                },
+              },
+            },
+          },
         ],
       },
     ],
@@ -4543,9 +4582,32 @@ describe('AdminService query orchestration', () => {
       'chat-missing',
       {
         OR: [
-          { preferredBookings: { some: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } },
-          { selectedBookings: { some: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } },
-          { participants: { some: { booking: { status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] }, chatRoom: { is: null } } } } },
+          {
+            preferredBookings: {
+              some: {
+                status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] },
+                chatRoom: { is: null },
+              },
+            },
+          },
+          {
+            selectedBookings: {
+              some: {
+                status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] },
+                chatRoom: { is: null },
+              },
+            },
+          },
+          {
+            participants: {
+              some: {
+                booking: {
+                  status: { in: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'] },
+                  chatRoom: { is: null },
+                },
+              },
+            },
+          },
         ],
       },
     ],
@@ -4992,20 +5054,13 @@ describe('AdminService query orchestration', () => {
   it('summarizes partner controls with aggregate queries before loading provider rows', async () => {
     const prisma = {
       providerReport: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(6)
-          .mockResolvedValueOnce(7),
+        count: vi.fn().mockResolvedValueOnce(6).mockResolvedValueOnce(7),
       },
       providerSanction: {
         count: vi.fn().mockResolvedValue(3),
       },
       providerProfile: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(2)
-          .mockResolvedValueOnce(4)
-          .mockResolvedValueOnce(5),
+        count: vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(4).mockResolvedValueOnce(5),
         findMany: vi.fn(),
       },
       providerEarning: {
@@ -5019,10 +5074,9 @@ describe('AdminService query orchestration', () => {
           { deviceId: 'device-shared', _count: { providerProfileId: 2 } },
           { deviceId: 'device-single', _count: { providerProfileId: 1 } },
         ]),
-        findMany: vi.fn().mockResolvedValue([
-          { providerProfileId: 'provider-1' },
-          { providerProfileId: 'provider-2' },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ providerProfileId: 'provider-1' }, { providerProfileId: 'provider-2' }]),
       },
     };
     const service = createAdminService(prisma);
@@ -6243,10 +6297,14 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.manualWalletAdjustmentSummary({ ownerType: 'PARTNER', ownerId: 'provider-1' })).resolves.toEqual({
+    await expect(
+      service.manualWalletAdjustmentSummary({ ownerType: 'PARTNER', ownerId: 'provider-1' }),
+    ).resolves.toEqual({
       total: 8,
     });
-    await expect(service.manualWalletAdjustmentSummary({ ownerType: 'CUSTOMER', ownerId: 'customer-1' })).resolves.toEqual({
+    await expect(
+      service.manualWalletAdjustmentSummary({ ownerType: 'CUSTOMER', ownerId: 'customer-1' }),
+    ).resolves.toEqual({
       total: 4,
     });
     await expect(service.manualWalletAdjustmentSummary()).resolves.toEqual({
@@ -6649,7 +6707,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.bookingSettlementSnapshotSummary({ range: '30d', review: 'posted' })).resolves.toEqual({
+    await expect(
+      service.bookingSettlementSnapshotSummary({ range: '30d', review: 'posted' }),
+    ).resolves.toEqual({
       count: 1,
       currency: 'VND',
       customerPaymentAmount: 600000,
@@ -6745,7 +6805,9 @@ describe('AdminService query orchestration', () => {
       bookingSettlementReversalSummary: AdminService['bookingSettlementSnapshotSummary'];
     };
 
-    await expect(service.bookingSettlementReversalSummary({ range: '30d', review: 'non-cash' })).resolves.toEqual({
+    await expect(
+      service.bookingSettlementReversalSummary({ range: '30d', review: 'non-cash' }),
+    ).resolves.toEqual({
       count: 1,
       currency: 'VND',
       customerPaymentAmount: -600000,
@@ -7081,6 +7143,9 @@ describe('AdminService query orchestration', () => {
 
   it('creates manual company bank transactions with audit evidence for reconciliation', async () => {
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       companyBankAccount: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-account-1',
@@ -7105,6 +7170,7 @@ describe('AdminService query orchestration', () => {
         occurredAt: '2026-06-30T05:00:00.000Z',
         valueDate: '2026-06-30T00:00:00.000Z',
         transferRef: 'VCB-900',
+        approvalAdminId: 'finance-admin-2',
         counterpartyName: 'Demo Customer',
         description: 'Manual import from bank statement',
       }),
@@ -7117,6 +7183,11 @@ describe('AdminService query orchestration', () => {
         counterpartyName: 'Demo Customer',
         currency: 'VND',
         description: 'Manual import from bank statement',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          importedByAdminId: 'admin-user-1',
+          manualImport: true,
+        }),
         occurredAt: new Date('2026-06-30T05:00:00.000Z'),
         sourceKey: 'manual-bank-transaction:bank-account-1:INFLOW:VCB-900',
         transferRef: 'VCB-900',
@@ -7129,9 +7200,83 @@ describe('AdminService query orchestration', () => {
       data: expect.objectContaining({
         actorId: 'admin-user-1',
         action: 'company_bank_transaction.manual_create',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+        }),
         target: 'company_bank_transaction:bank-tx-1',
       }),
     });
+  });
+
+  it('rejects manual company bank transactions without separate finance approval', async () => {
+    const prisma = {
+      companyBankAccount: {
+        findUnique: vi.fn(),
+      },
+      companyBankTransaction: {
+        create: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      bankAccountId: 'bank-account-1',
+      type: 'INFLOW',
+      amount: 900000,
+      occurredAt: '2026-06-30T05:00:00.000Z',
+      transferRef: 'VCB-900',
+    };
+
+    await expect(service.createCompanyBankTransaction('admin-user-1', input)).rejects.toThrow(
+      'Company bank transaction manual create requires approval from a different admin',
+    );
+    await expect(
+      service.createCompanyBankTransaction('admin-user-1', {
+        ...input,
+        approvalAdminId: 'admin-user-1',
+      }),
+    ).rejects.toThrow('Company bank transaction manual create requires approval from a different admin');
+    expect(prisma.companyBankAccount.findUnique).not.toHaveBeenCalled();
+    expect(prisma.companyBankTransaction.create).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects manual company bank transactions approved by a non-admin approver', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      companyBankAccount: {
+        findUnique: vi.fn(),
+      },
+      companyBankTransaction: {
+        create: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createCompanyBankTransaction('admin-user-1', {
+        bankAccountId: 'bank-account-1',
+        type: 'INFLOW',
+        amount: 900000,
+        occurredAt: '2026-06-30T05:00:00.000Z',
+        transferRef: 'VCB-900',
+        approvalAdminId: 'support-user-2',
+      }),
+    ).rejects.toThrow('Company bank transaction manual create requires approval from an admin approver');
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.ADMIN } },
+      select: { id: true },
+    });
+    expect(prisma.companyBankAccount.findUnique).not.toHaveBeenCalled();
+    expect(prisma.companyBankTransaction.create).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('creates a manual bank reconciliation match and closes matching clearing evidence in one transaction', async () => {
@@ -7527,7 +7672,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listPartnerWithholdingTax({ period: '2026-06', skip: '50', take: '25' })).resolves.toEqual([
+    await expect(
+      service.listPartnerWithholdingTax({ period: '2026-06', skip: '50', take: '25' }),
+    ).resolves.toEqual([
       {
         providerProfileId: 'provider-1',
         partnerName: 'Smoke Partner',
@@ -7605,9 +7752,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listMonthlyTaxClosings({ period: '2026-06', skip: '25', take: '25' })).resolves.toEqual([
-      { period: '2026-06' },
-    ]);
+    await expect(
+      service.listMonthlyTaxClosings({ period: '2026-06', skip: '25', take: '25' }),
+    ).resolves.toEqual([{ period: '2026-06' }]);
 
     expect(prisma.monthlyTaxClosing.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -7965,7 +8112,9 @@ describe('AdminService query orchestration', () => {
         remittanceTransferRef: 'VCB-TAX-202606',
         remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
       } as never),
-    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a different admin');
+    ).rejects.toThrow(
+      'Partner withholding remittance paid closeout requires approval from a different admin',
+    );
 
     await expect(
       service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
@@ -7974,7 +8123,9 @@ describe('AdminService query orchestration', () => {
         remittanceTransferRef: 'VCB-TAX-202606',
         remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
       } as never),
-    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a different admin');
+    ).rejects.toThrow(
+      'Partner withholding remittance paid closeout requires approval from a different admin',
+    );
 
     await expect(
       service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
@@ -8390,7 +8541,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService({}, { earnings });
 
-    await expect(service.cashSettlementSummary({ q: 'booking-1', queue: 'payment-check', range: '7d' })).resolves.toEqual({
+    await expect(
+      service.cashSettlementSummary({ q: 'booking-1', queue: 'payment-check', range: '7d' }),
+    ).resolves.toEqual({
       rowCount: 1,
       totalDebtAmount: 300000,
     });
@@ -9621,9 +9774,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(
-      service.listReviews({ providerProfileId: 'provider-1', take: '50' }),
-    ).resolves.toEqual([{ id: 'review-1' }]);
+    await expect(service.listReviews({ providerProfileId: 'provider-1', take: '50' })).resolves.toEqual([
+      { id: 'review-1' },
+    ]);
     await expect(
       service.listPartnerCustomerReviews({ providerProfileId: 'provider-1', take: '50' }),
     ).resolves.toEqual([{ id: 'evaluation-1' }]);

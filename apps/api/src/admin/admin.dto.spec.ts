@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  CompanyBankTransactionType,
   MonthlyTaxClosingStatus,
   PayoutBatchStatus,
   ProviderReportSeverity,
@@ -163,12 +164,15 @@ describe('admin request DTO validation', () => {
     );
     expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe('CreatePayoutBatchDto');
     expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe('UpdatePayoutBatchDto');
-    expect((bodyMetatype('createBankReconciliationMatch' as keyof AdminController, 2) as { name?: string })?.name).toBe(
-      'CreateBankReconciliationMatchDto',
-    );
-    expect((bodyMetatype('reverseBankReconciliationMatch' as keyof AdminController, 3) as { name?: string })?.name).toBe(
-      'ReverseBankReconciliationMatchDto',
-    );
+    expect(
+      (bodyMetatype('createBankReconciliationMatch' as keyof AdminController, 2) as { name?: string })?.name,
+    ).toBe('CreateBankReconciliationMatchDto');
+    expect(
+      (bodyMetatype('reverseBankReconciliationMatch' as keyof AdminController, 3) as { name?: string })?.name,
+    ).toBe('ReverseBankReconciliationMatchDto');
+    expect(
+      (bodyMetatype('createCompanyBankTransaction' as keyof AdminController, 1) as { name?: string })?.name,
+    ).toBe('CreateCompanyBankTransactionDto');
   });
 
   it('normalizes monthly tax closing remittance approval payloads', async () => {
@@ -219,6 +223,40 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('currency', 'VND');
     expect(transformed).toHaveProperty('notes', 'matched against VCB transfer');
     expect(transformed).not.toHaveProperty('bankBalance');
+  });
+
+  it('normalizes manual company bank transaction approval payloads and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        approvalAdminId: ' finance-admin-2 ',
+        bankAccountId: ' bank-account-1 ',
+        type: CompanyBankTransactionType.INFLOW,
+        amount: '900000',
+        currency: ' VND ',
+        occurredAt: '2026-06-30T05:00:00.000Z',
+        valueDate: '2026-06-30T00:00:00.000Z',
+        sourceKey: ' manual-import-1 ',
+        transferRef: ' VCB-900 ',
+        counterpartyName: ' Demo Customer ',
+        description: ' Manual import from bank statement ',
+        importedByAdminId: 'do-not-accept',
+      },
+      {
+        type: 'body',
+        metatype: bodyMetatype('createCompanyBankTransaction' as keyof AdminController, 1) as never,
+        data: '',
+      },
+    );
+
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
+    expect(transformed).toHaveProperty('bankAccountId', 'bank-account-1');
+    expect(transformed).toHaveProperty('amount', 900000);
+    expect(transformed).toHaveProperty('currency', 'VND');
+    expect(transformed).toHaveProperty('sourceKey', 'manual-import-1');
+    expect(transformed).toHaveProperty('transferRef', 'VCB-900');
+    expect(transformed).not.toHaveProperty('importedByAdminId');
   });
 
   it('normalizes bank reconciliation match reversal reasons and strips settlement fields', async () => {

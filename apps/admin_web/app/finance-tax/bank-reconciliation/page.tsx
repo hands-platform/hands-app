@@ -67,10 +67,26 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       }
       description="Company bank transaction lookup for manual reconciliation against payments, withdrawals, payout batches, and accounting evidence."
       metrics={[
-        { helper: 'Bank transactions matching the current filters.', label: 'Transactions', value: summary.count },
-        { helper: 'Transactions that still need matching.', label: 'Unmatched', value: summary.unmatchedCount },
-        { helper: 'Transactions already matched to accounting evidence.', label: 'Matched', value: summary.matchedCount },
-        { helper: 'Total amount in the selected bank transaction scope.', label: 'Amount', value: formatMoney(summary.amount, summary.currency) },
+        {
+          helper: 'Bank transactions matching the current filters.',
+          label: 'Transactions',
+          value: summary.count,
+        },
+        {
+          helper: 'Transactions that still need matching.',
+          label: 'Unmatched',
+          value: summary.unmatchedCount,
+        },
+        {
+          helper: 'Transactions already matched to accounting evidence.',
+          label: 'Matched',
+          value: summary.matchedCount,
+        },
+        {
+          helper: 'Total amount in the selected bank transaction scope.',
+          label: 'Amount',
+          value: formatMoney(summary.amount, summary.currency),
+        },
       ]}
       title="Bank Reconciliation"
     >
@@ -121,7 +137,15 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           title="Manual bank transaction import"
         />
         <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
-          <input name="redirectTo" type="hidden" value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })} />
+          <input
+            name="redirectTo"
+            type="hidden"
+            value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
+          />
+          <label>
+            Approving admin ID
+            <input className="form-input" name="approvalAdminId" required />
+          </label>
           <label>
             Bank account ID
             <input className="form-input" name="bankAccountId" required />
@@ -173,7 +197,15 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No bank transactions match the current filters."
-            headers={['Transaction', 'Bank account', 'Counterparty', 'Amount', 'Value date', 'Match', 'Status']}
+            headers={[
+              'Transaction',
+              'Bank account',
+              'Counterparty',
+              'Amount',
+              'Value date',
+              'Match',
+              'Status',
+            ]}
             rowCount={pagination.rows.length}
           >
             {pagination.rows.map((transaction) => (
@@ -188,7 +220,11 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 <td>
                   <strong>{transaction.bankAccount?.name ?? 'Unknown account'}</strong>
                   <div className="muted">{transaction.bankAccount?.bankName ?? '-'}</div>
-                  <div className="muted">{transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '-'}</div>
+                  <div className="muted">
+                    {transaction.bankAccount?.accountNumberMasked ??
+                      transaction.bankAccount?.accountNumberLast4 ??
+                      '-'}
+                  </div>
                 </td>
                 <td>
                   <strong>{transaction.counterpartyName ?? '-'}</strong>
@@ -196,11 +232,15 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 </td>
                 <td>
                   <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
-                  <div className="muted">{transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}</div>
+                  <div className="muted">
+                    {transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}
+                  </div>
                 </td>
                 <td>
                   <strong>{formatDateTime(transaction.occurredAt)}</strong>
-                  {transaction.valueDate ? <div className="muted">Value {formatDateTime(transaction.valueDate)}</div> : null}
+                  {transaction.valueDate ? (
+                    <div className="muted">Value {formatDateTime(transaction.valueDate)}</div>
+                  ) : null}
                 </td>
                 <td>
                   <strong>{transaction._count?.reconciliationMatches ?? 0} match</strong>
@@ -239,6 +279,7 @@ async function createCompanyBankTransactionAction(formData: FormData) {
   const valueDate = String(formData.get('valueDate') ?? '').trim();
   await adminPostOrThrow('/admin/bank-reconciliation/transactions', {
     amount: Number(formData.get('amount')),
+    approvalAdminId: String(formData.get('approvalAdminId') ?? '').trim(),
     bankAccountId: String(formData.get('bankAccountId') ?? '').trim(),
     counterpartyName: String(formData.get('counterpartyName') ?? '').trim() || null,
     description: String(formData.get('description') ?? '').trim() || null,
