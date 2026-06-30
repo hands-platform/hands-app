@@ -35,6 +35,60 @@ describe('ProvidersService nearby discovery', () => {
     expect(Object.keys((partners[0].user ?? {}) as Record<string, unknown>)).not.toContain('phone');
   });
 
+  it('bounds public nearby discovery by default and does not select private contact fields', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([nearbyProviderFixture()]),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      {} as never,
+      {
+        get: vi.fn(),
+      } as never,
+    );
+
+    await service.findNearby(10.7769, 106.7009);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 20,
+        include: expect.objectContaining({
+          user: expect.objectContaining({
+            select: expect.not.objectContaining({
+              phone: true,
+              email: true,
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('clamps public nearby discovery limit to the public maximum', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([nearbyProviderFixture()]),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      {} as never,
+      {
+        get: vi.fn(),
+      } as never,
+    );
+
+    await service.findNearby(10.7769, 106.7009, { take: '999' });
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 50,
+      }),
+    );
+  });
+
   it('requests only published review ratings in public nearby discovery', async () => {
     const prisma = {
       providerProfile: {
@@ -84,6 +138,7 @@ describe('ProvidersService nearby discovery', () => {
           user: {
             fullName: 'Linh Wellness',
             phone: '0900000000',
+            email: 'linh@example.com',
             fileAssets: [
               {
                 id: 'file-1',
@@ -134,6 +189,9 @@ describe('ProvidersService nearby discovery', () => {
 
     const detail = await service.getDetail('partner-hcm');
     const serialized = JSON.stringify(detail);
+    const detailQuery = prisma.providerProfile.findFirstOrThrow.mock.calls[0][0] as {
+      include: Record<string, unknown>;
+    };
 
     expect(prisma.providerProfile.findFirstOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -146,11 +204,16 @@ describe('ProvidersService nearby discovery', () => {
     );
 
     expect(serialized).not.toContain('0900000000');
+    expect(serialized).not.toContain('linh@example.com');
     expect(serialized).not.toContain('private/storage/key');
     expect(serialized).not.toContain('booking-1');
     expect(serialized).not.toContain('customer-1');
     expect(serialized).not.toContain('internal moderation note');
     expect(serialized).not.toContain('Held review should not appear.');
+    expect(detailQuery.include).not.toHaveProperty('bankAccounts');
+    expect(detailQuery.include).not.toHaveProperty('documents');
+    expect(detailQuery.include).not.toHaveProperty('kyc');
+    expect(detailQuery.include).not.toHaveProperty('taxProfile');
     expect(detail.reviews).toEqual([
       {
         rating: 5,

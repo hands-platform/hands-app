@@ -39,6 +39,9 @@ jobs:
       - name: Test API
         run: npm run api:test
 
+      - name: Test Admin Web security
+        run: npm run test --workspace @massage-vn/admin-web -- app/api/admin/session/login/route.spec.ts app/api/admin/session/logout/route.spec.ts app/api/admin/session/me/route.spec.ts app/api/admin/realtime-token/route.spec.ts lib/admin-web-middleware.spec.ts
+
       - name: Typecheck API
         run: npm run typecheck --workspace @massage-vn/api
 

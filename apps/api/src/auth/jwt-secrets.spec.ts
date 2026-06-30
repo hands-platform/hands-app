@@ -1,4 +1,5 @@
 import {
+  adminRealtimeTokenSecretFromConfig,
   jwtAccessSecretFromConfig,
   jwtAccessSecretFromEnv,
   jwtRefreshSecretFromConfig,
@@ -42,6 +43,18 @@ describe('JWT secret resolution', () => {
       ),
     ).toBe('dev-access-secret');
     expect(jwtRefreshSecretFromConfig(configReader({ NODE_ENV: 'test' }))).toBe('dev-refresh-secret');
+  });
+
+  it('does not allow the admin realtime socket secret to reuse the JWT access secret', () => {
+    expect(() =>
+      adminRealtimeTokenSecretFromConfig(
+        configReader({
+          ADMIN_REALTIME_TOKEN_SECRET: 'shared-secret',
+          JWT_ACCESS_SECRET: 'shared-secret',
+          NODE_ENV: 'production',
+        }),
+      ),
+    ).toThrow('ADMIN_REALTIME_TOKEN_SECRET must be separate from JWT_ACCESS_SECRET.');
   });
 });
 

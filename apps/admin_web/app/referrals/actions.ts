@@ -95,7 +95,7 @@ export async function requestReferralCashoutBankCorrection(formData: FormData) {
     parentId: String(formData.get('parentId') || '').trim(),
     reason:
       String(formData.get('reason') || '').trim() ||
-      '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+      'The payout bank details are inaccurate, so the deposit cannot be completed.',
   };
 
   await adminPost(

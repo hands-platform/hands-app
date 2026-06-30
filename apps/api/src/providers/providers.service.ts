@@ -39,6 +39,13 @@ const ACTIVE_PROVIDER_LOCATION_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.IN_SERVICE,
 ]);
 
+type PublicProviderDiscoveryOptions = {
+  take?: number | string | null;
+};
+
+const DEFAULT_PUBLIC_PROVIDER_DISCOVERY_LIMIT = 20;
+const MAX_PUBLIC_PROVIDER_DISCOVERY_LIMIT = 50;
+
 @Injectable()
 export class ProvidersService {
   constructor(
@@ -47,8 +54,13 @@ export class ProvidersService {
     private readonly config: ConfigService,
   ) {}
 
-  async findNearby(lat: number, lng: number) {
+  async findNearby(lat: number, lng: number, options: PublicProviderDiscoveryOptions = {}) {
     const origin = normalizeBrowseCoordinate(lat, lng);
+    const take = normalizeBoundedTake(
+      options.take,
+      DEFAULT_PUBLIC_PROVIDER_DISCOVERY_LIMIT,
+      MAX_PUBLIC_PROVIDER_DISCOVERY_LIMIT,
+    );
 
     const staleAfterMinutes = Number(this.config.get<string>('PROVIDER_STALE_AFTER_MINUTES') ?? 30);
     const hideAfterHours = Number(this.config.get<string>('PROVIDER_HIDE_AFTER_HOURS') ?? 24);
@@ -84,7 +96,6 @@ export class ProvidersService {
         user: {
           select: {
             fullName: true,
-            phone: true,
             fileAssets: {
               where: {
                 purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
@@ -123,7 +134,7 @@ export class ProvidersService {
           orderBy: { createdAt: 'desc' },
         },
       },
-      take: 100,
+      take,
     });
 
     return providers
@@ -594,6 +605,14 @@ function assertVietnamCoordinate(lat: number, lng: number, message: string) {
   if (!isVietnamServiceAreaCoordinate(lat, lng)) {
     throw new BadRequestException(message);
   }
+}
+
+function normalizeBoundedTake(value: number | string | null | undefined, fallback: number, max: number) {
+  const numericValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+  if (!Number.isFinite(numericValue) || numericValue === undefined || numericValue === null || numericValue <= 0) {
+    return fallback;
+  }
+  return Math.min(Math.trunc(numericValue), max);
 }
 
 function normalizeBrowseCoordinate(lat: number, lng: number) {

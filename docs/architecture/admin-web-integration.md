@@ -30,6 +30,14 @@ Preferred production configuration:
 ```powershell
 $env:ADMIN_API_BASE_URL='https://api.example.com/api'
 $env:ADMIN_ACCESS_TOKEN='<short-lived-admin-token>'
+$env:ADMIN_REALTIME_TOKEN_SECRET='<separate-socket-token-secret>'
+$env:ADMIN_WEB_LOGIN_EMAIL='admin@example.com'
+$env:ADMIN_WEB_LOGIN_PASSWORD_HASH='<scrypt-base64url-password-hash>'
+$env:ADMIN_WEB_LOGIN_PASSWORD_SALT='<password-salt>'
+$env:ADMIN_WEB_SESSION_COOKIE_SECRET='<admin-web-session-cookie-secret>'
+$env:ADMIN_WEB_SESSION_TTL_SECONDS='28800'
+$env:ADMIN_WEB_ALLOW_DEV_LOGIN='false'
+$env:ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN='false'
 ```
 
 Local MVP configuration:
@@ -37,12 +45,75 @@ Local MVP configuration:
 ```powershell
 $env:ADMIN_API_BASE_URL='http://localhost:3000/api'
 $env:ADMIN_ACCESS_TOKEN='<short-lived-admin-token>'
+$env:ADMIN_REALTIME_TOKEN_SECRET='<local-socket-token-secret>'
+$env:ADMIN_WEB_LOGIN_EMAIL='admin@example.com'
+$env:ADMIN_WEB_LOGIN_PASSWORD='<dev-only-password>'
+$env:ADMIN_WEB_ALLOW_DEV_LOGIN='true'
+$env:ADMIN_WEB_SESSION_COOKIE_SECRET='<local-session-cookie-secret>'
+$env:ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN='true'
 ```
 
 `ADMIN_ACCESS_TOKEN` is required for Admin Web API access. Admin Web must not obtain an admin token through
 `POST /api/auth/verify-otp`; that endpoint is reserved for CUSTOMER and PROVIDER mobile auth.
 If the token is missing or expired, admin server actions should show an explicit admin session/configuration error
 instead of silently rendering empty data or generic duplicate-write failures.
+
+Admin Web page access is guarded by a signed `hands_admin_session` cookie. Login is handled by
+`POST /api/admin/session/login`; logout clears that cookie through `POST /api/admin/session/logout`; and
+`GET /api/admin/session/me` returns only the authenticated admin role/sub when the session is valid. The cookie is
+`HttpOnly`, path-scoped to `/`, `SameSite=Lax`, and `Secure` in production. The session payload contains only admin
+identity metadata (`sub`, `role`, `iat`, `exp`, `jti`, `sessionVersion`) and an HMAC signature; it must never contain
+`ADMIN_ACCESS_TOKEN`, passwords, password hashes, or secrets.
+
+Production login must use `ADMIN_WEB_LOGIN_PASSWORD_HASH`, `ADMIN_WEB_LOGIN_PASSWORD_SALT`, and
+`ADMIN_WEB_SESSION_COOKIE_SECRET`. If those values are missing, login fails closed. Raw
+`ADMIN_WEB_LOGIN_PASSWORD` is accepted only when `NODE_ENV !== "production"` and
+`ADMIN_WEB_ALLOW_DEV_LOGIN=true`.
+
+Production also fails closed when `ADMIN_WEB_ALLOW_DEV_LOGIN=true` is present, even if a valid password hash is
+configured. This flag is for uncommitted local development only. Shared templates, staging, and production must keep it
+`false`.
+
+Admin Web realtime Socket.IO connections must not expose `ADMIN_ACCESS_TOKEN` to the browser. The local
+`/api/admin/realtime-token` route mints a short-lived `typ=admin-realtime`, `aud=hands-socket`,
+`scope=admin:realtime` token signed with `ADMIN_REALTIME_TOKEN_SECRET`. That token is accepted only by Socket.IO
+auth and is not valid for REST Admin API calls.
+
+`ADMIN_REALTIME_TOKEN_SECRET` must be configured in production and must be separate from both `ADMIN_ACCESS_TOKEN` and
+`JWT_ACCESS_SECRET`. Reusing either secret blocks token minting. `ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN=true` is also a
+production fail-closed misconfiguration; it is allowed only for explicitly opted-in local development.
+
+`/api/admin/realtime-token` must also be protected before minting that short-lived token. It accepts a signed
+`hands_admin_session` cookie when `ADMIN_WEB_SESSION_COOKIE_SECRET` is configured. Until the full Admin login UI
+exists, production must fail closed without that cookie/session protection. Local development can keep the booking
+monitor realtime loop working by setting `ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN=true`; that fallback is ignored in
+production and never logs token or secret values. Origin/Referer checks are not considered authentication.
+
+Session cookies use the `hands_admin_session` name, are `HttpOnly`, `SameSite=Lax`, `Path=/`, and have a maximum TTL of
+8 hours. Production cookies are `Secure`. Login, logout, session, and realtime-token responses use
+`Cache-Control: no-store` and `Pragma: no-cache`. Logout clears the cookie with `Max-Age=0`. Expired, tampered, or
+non-ADMIN session payloads are rejected.
+
+Middleware protects Admin pages and browser-facing Admin routes. `/login`, `/api/admin/session/*`,
+`/api/admin/realtime-token`, public referral links under `/r/*`, and static/Next assets are the only intentional
+exceptions. Unauthenticated page requests redirect to `/login`; unauthenticated browser-facing Admin API requests
+return `401`.
+
+## Admin Web Deployment Checklist
+
+Before deploying Admin Web:
+
+- Set `ADMIN_WEB_LOGIN_EMAIL`, `ADMIN_WEB_LOGIN_PASSWORD_HASH`, `ADMIN_WEB_LOGIN_PASSWORD_SALT`, and
+  `ADMIN_WEB_SESSION_COOKIE_SECRET`.
+- Set `ADMIN_REALTIME_TOKEN_SECRET` to a dedicated value that is not `ADMIN_ACCESS_TOKEN` and not `JWT_ACCESS_SECRET`.
+- Keep `ADMIN_WEB_ALLOW_DEV_LOGIN=false` and `ADMIN_WEB_ALLOW_DEV_REALTIME_TOKEN=false`.
+- Do not configure `ADMIN_WEB_LOGIN_PASSWORD` in production.
+- Keep `ADMIN_ACCESS_TOKEN` server-side only; it is for Admin Web REST helper calls to NestJS and must never be returned
+  to the browser, stored in cookies, localStorage, sessionStorage, or React client state.
+- Run the Admin Web security tests:
+  `npm.cmd run test --workspace @massage-vn/admin-web -- app/api/admin/session/login/route.spec.ts app/api/admin/session/logout/route.spec.ts app/api/admin/session/me/route.spec.ts app/api/admin/realtime-token/route.spec.ts lib/admin-web-middleware.spec.ts`.
+- `just safe-check` includes Admin Web tests through `verify:admin:fast`; CI also runs the focused Admin Web security
+  test command.
 
 ## Build Behavior
 

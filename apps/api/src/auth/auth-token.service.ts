@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from './auth.types';
-import { jwtAccessSecretFromConfig } from './jwt-secrets';
+import { adminRealtimeTokenSecretFromConfig, jwtAccessSecretFromConfig } from './jwt-secrets';
 
 type NestJwtPayload = {
   activeRole?: Role;
@@ -24,6 +24,20 @@ type SupabaseJwtPayload = {
   };
   user_metadata?: Record<string, unknown>;
 };
+
+type AdminRealtimeJwtPayload = {
+  sub?: string;
+  typ?: string;
+  aud?: string | string[];
+  scope?: string;
+  role?: Role;
+  jti?: string;
+  exp?: number;
+};
+
+const ADMIN_REALTIME_TOKEN_TYPE = 'admin-realtime';
+const ADMIN_REALTIME_TOKEN_AUDIENCE = 'hands-socket';
+const ADMIN_REALTIME_TOKEN_SCOPE = 'admin:realtime';
 
 @Injectable()
 export class AuthTokenService {
@@ -58,6 +72,15 @@ export class AuthTokenService {
     return supabaseUser;
   }
 
+  async authenticateSocketToken(token: string): Promise<AuthenticatedUser> {
+    const adminRealtimeUser = this.tryVerifyAdminRealtimeJwt(token);
+    if (adminRealtimeUser) {
+      return adminRealtimeUser;
+    }
+
+    return this.authenticateBearerToken(token);
+  }
+
   private tryVerifyNestJwt(token: string): AuthenticatedUser | null {
     try {
       const payload = this.jwt.verify<NestJwtPayload>(token, {
@@ -77,6 +100,38 @@ export class AuthTokenService {
     } catch {
       return null;
     }
+  }
+
+  private tryVerifyAdminRealtimeJwt(token: string): AuthenticatedUser | null {
+    let payload: AdminRealtimeJwtPayload;
+    try {
+      payload = this.jwt.verify<AdminRealtimeJwtPayload>(token, {
+        secret: adminRealtimeTokenSecretFromConfig(this.config),
+      });
+    } catch {
+      return null;
+    }
+
+    if (
+      !payload.sub ||
+      payload.typ !== ADMIN_REALTIME_TOKEN_TYPE ||
+      payload.scope !== ADMIN_REALTIME_TOKEN_SCOPE ||
+      payload.role !== Role.ADMIN
+    ) {
+      return null;
+    }
+
+    const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (!audiences.includes(ADMIN_REALTIME_TOKEN_AUDIENCE)) {
+      return null;
+    }
+
+    return {
+      id: payload.sub,
+      activeRole: Role.ADMIN,
+      roles: [Role.ADMIN],
+      authProvider: 'admin-realtime',
+    };
   }
 
   private async tryVerifySupabaseJwt(

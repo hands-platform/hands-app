@@ -74,5 +74,7 @@ describe('admin shell navigation', () => {
     expect(html).toContain('workspace-page-title');
     expect(html).toContain('Vietnam Operations');
     expect(html).toContain('Live Workspace');
+    expect(html).toContain('action="/api/admin/session/logout"');
+    expect(html).toContain('Sign out');
   });
 });

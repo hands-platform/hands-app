@@ -1,23 +1,36 @@
 import { NextResponse } from 'next/server';
-import { adminRealtimeSocketBaseUrl, getAdminAccessToken } from '../../../../lib/admin-api';
+import { adminRealtimeSocketBaseUrl } from '../../../../lib/admin-api';
+import { createAdminRealtimeToken } from '../../../../lib/admin-realtime-token';
+import { requireAdminWebAccess } from '../../../../lib/admin-session';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET() {
+const NO_STORE_HEADERS = {
+  'cache-control': 'no-store',
+  pragma: 'no-cache',
+};
+
+export async function GET(request: Request) {
+  const access = requireAdminWebAccess(request);
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.error }, { headers: NO_STORE_HEADERS, status: access.status });
+  }
+
   try {
-    const token = await getAdminAccessToken();
+    const realtimeToken = createAdminRealtimeToken();
     return NextResponse.json(
       {
         socketBaseUrl: adminRealtimeSocketBaseUrl(),
-        token,
+        token: realtimeToken.token,
+        expiresAt: realtimeToken.expiresAt,
       },
-      { headers: { 'cache-control': 'no-store' } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch {
     return NextResponse.json(
       { error: 'REALTIME_TOKEN_UNAVAILABLE' },
-      { headers: { 'cache-control': 'no-store' }, status: 503 },
+      { headers: NO_STORE_HEADERS, status: 503 },
     );
   }
 }

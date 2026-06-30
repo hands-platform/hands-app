@@ -19,8 +19,8 @@ export class ProvidersController {
   constructor(private readonly providers: ProvidersService) {}
 
   @Get(['customer/partners/nearby', 'customer/providers/nearby'])
-  nearby(@Query('lat') lat?: string, @Query('lng') lng?: string) {
-    return this.providers.findNearby(Number(lat), Number(lng));
+  nearby(@Query('lat') lat?: string, @Query('lng') lng?: string, @Query('take') take?: string) {
+    return this.providers.findNearby(Number(lat), Number(lng), { take });
   }
 
   @Get(['customer/partners/:id', 'customer/providers/:id'])

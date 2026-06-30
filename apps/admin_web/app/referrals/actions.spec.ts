@@ -220,19 +220,19 @@ describe('referral server actions', () => {
     mockedAdminPost.mockResolvedValue({
       id: 'bank-1',
       status: 'REJECTED',
-      rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다.',
+      rejectionReason: 'The payout bank details are inaccurate, so the deposit cannot be completed.',
     });
     const formData = new FormData();
     formData.set('audience', 'partner');
     formData.set('bankAccountId', 'bank-1');
     formData.set('parentId', 'parent-partner');
-    formData.set('reason', ' 입금 정보가 정확하지 않아 입금이 되지 않습니다. ');
+    formData.set('reason', ' The payout bank details are inaccurate, so the deposit cannot be completed. ');
 
     await expect(requestReferralCashoutBankCorrection(formData)).resolves.toBeUndefined();
 
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/partner-bank-accounts/bank-1/reject',
-      { reason: '입금 정보가 정확하지 않아 입금이 되지 않습니다.' },
+      { reason: 'The payout bank details are inaccurate, so the deposit cannot be completed.' },
       null,
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([

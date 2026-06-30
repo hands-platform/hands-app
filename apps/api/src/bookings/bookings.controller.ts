@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { BookingStatus, ParticipantStatus, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -63,8 +63,12 @@ export class BookingsController {
   @Get(['partner/bookings/open', 'provider/bookings/open'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  getOpenBookings(@CurrentUser() user: AuthenticatedUser) {
-    return this.bookings.getOpenBookings(user.id);
+  getOpenBookings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('take') take?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.bookings.getOpenBookings(user.id, { cursor, take });
   }
 
   @Get(['partner/bookings', 'provider/bookings'])

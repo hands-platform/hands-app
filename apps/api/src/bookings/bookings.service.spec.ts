@@ -1564,6 +1564,91 @@ describe('BookingsService marketplace participation', () => {
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
   });
 
+  it('bounds partner open request reads with a default limit while preserving the list response', async () => {
+    const openBooking = {
+      ...openMarketplaceBooking(),
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: approvedPartner({ id: 'first-pick-partner' }),
+      selectedProvider: null,
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([openBooking]),
+      },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const bookings = await service.getOpenBookings('partner-user-1');
+
+    expect(bookings).toEqual([
+      expect.objectContaining({
+        id: 'booking-1',
+        status: BookingStatus.OPEN_MATCHING,
+      }),
+    ]);
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+    );
+  });
+
+  it('clamps partner open request take and applies cursor paging without changing response shape', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.getOpenBookings('partner-user-1', { cursor: 'booking-cursor-1', take: '500' }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cursor: { id: 'booking-cursor-1' },
+        skip: 1,
+        take: 50,
+      }),
+    );
+  });
+
   it('hides new open requests while the partner has unfinished selected work', async () => {
     const prisma = {
       providerProfile: {

@@ -1,8 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
-  CustomerWalletLedgerType,
-  ProviderWalletLedgerType,
   ReferralAudience,
   ReferralRewardMode,
   ReferralRewardStatus,

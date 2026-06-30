@@ -1670,7 +1670,7 @@ function normalizeTaxPeriod(value: string) {
   }
 
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Bangkok',
+    timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
     month: '2-digit',
   }).formatToParts(new Date());

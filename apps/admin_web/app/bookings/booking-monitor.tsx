@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Socket } from 'socket.io-client';
-import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import type { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
@@ -243,6 +243,7 @@ export function BookingMonitor({
 
     let socket: Socket | null = null;
     let refreshTimer: number | null = null;
+    let reconnectTimer: number | null = null;
     let closed = false;
     const realtimeStateTimer = window.setTimeout(() => {
       setRealtimeState('connecting');
@@ -286,7 +287,17 @@ export function BookingMonitor({
           setRealtimeState('live');
           scheduleRealtimeRefresh();
         });
-        socket.on('connect_error', () => setRealtimeState('error'));
+        socket.on('connect_error', () => {
+          if (closed || reconnectTimer !== null) {
+            return;
+          }
+          setRealtimeState('error');
+          socket?.disconnect();
+          reconnectTimer = window.setTimeout(() => {
+            reconnectTimer = null;
+            void connectRealtime();
+          }, 1000);
+        });
         socket.on('disconnect', () => {
           if (!closed) {
             setRealtimeState('connecting');
@@ -311,6 +322,9 @@ export function BookingMonitor({
       window.clearTimeout(realtimeStateTimer);
       if (refreshTimer !== null) {
         window.clearTimeout(refreshTimer);
+      }
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer);
       }
       socket?.disconnect();
     };

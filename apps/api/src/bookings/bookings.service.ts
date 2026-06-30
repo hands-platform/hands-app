@@ -149,6 +149,11 @@ type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
   include: typeof openBookingForClientInclude;
 }>;
 
+type OpenBookingListOptions = {
+  cursor?: string | null;
+  take?: number | string | null;
+};
+
 type FirstPickRejectedBookingResponse = Prisma.BookingGetPayload<{
   include: typeof firstPickRejectedBookingInclude;
 }>;
@@ -162,6 +167,9 @@ type BackupProviderNotificationInput = {
   backupProviderInvitationLimit: number;
   matchingPayload: unknown;
 };
+
+const DEFAULT_PARTNER_OPEN_BOOKINGS_LIMIT = 20;
+const MAX_PARTNER_OPEN_BOOKINGS_LIMIT = 50;
 
 const matchedBookingForClientInclude = {
   participants: true,
@@ -1148,16 +1156,23 @@ export class BookingsService {
     return typeof setting?.value === 'string' ? setting.value : fallback;
   }
 
-  async getOpenBookings(providerUserId?: string) {
+  async getOpenBookings(providerUserId?: string, options: OpenBookingListOptions = {}) {
     const provider = providerUserId ? await this.requireProvider(providerUserId) : null;
     if (provider && providerHasActiveSelectedBooking(provider)) {
       return [];
     }
 
+    const cursor = normalizePaginationCursor(options.cursor);
     const bookings = await this.prisma.booking.findMany({
       where: openBookingWhereForProvider(provider?.id),
       include: clientBookingListInclude,
       orderBy: { createdAt: 'desc' },
+      take: normalizeBoundedTake(
+        options.take,
+        DEFAULT_PARTNER_OPEN_BOOKINGS_LIMIT,
+        MAX_PARTNER_OPEN_BOOKINGS_LIMIT,
+      ),
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
     if (!provider) {
@@ -2357,6 +2372,19 @@ export class BookingsService {
     });
     return booking.customerProfile.userId;
   }
+}
+
+function normalizeBoundedTake(value: number | string | null | undefined, fallback: number, max: number) {
+  const numericValue = typeof value === 'string' ? Number.parseInt(value, 10) : value;
+  if (!Number.isFinite(numericValue) || numericValue === undefined || numericValue === null || numericValue <= 0) {
+    return fallback;
+  }
+  return Math.min(Math.trunc(numericValue), max);
+}
+
+function normalizePaginationCursor(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized || undefined;
 }
 
 function cleanProviderCancellationNote(value: string | null | undefined) {

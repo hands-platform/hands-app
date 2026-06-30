@@ -19,7 +19,7 @@ export class SocketAuthService {
       throw new UnauthorizedException('Socket bearer token is required');
     }
 
-    const user = await this.authTokens.authenticateBearerToken(token);
+    const user = await this.authTokens.authenticateSocketToken(token);
     (client as AuthenticatedSocket).data.user = user;
     return user;
   }
