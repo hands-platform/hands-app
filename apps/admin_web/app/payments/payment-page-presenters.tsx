@@ -1,4 +1,5 @@
 import type { AdminPayment } from '../../lib/admin-api';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 import type { PaymentConfirmationAction } from './payment-action-confirmation';
@@ -194,19 +195,21 @@ function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment })
     <form action={settleCashDebt} className="inline-form admin-mt-8">
       <input name="earningId" type="hidden" value={earning.id} />
       <input name="settlementMethod" type="hidden" value="PARTNER_DEPOSIT" />
-      <input
-        aria-label="Cash debt settlement reference"
+      <AdminFormInput
         defaultValue={settlementRef}
+        label="Cash debt settlement reference"
         name="settlementRef"
         placeholder={settlementRef}
       />
-      <input
-        aria-label="Cash debt settlement notes"
+      <AdminFormInput
         defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
+        label="Cash debt settlement notes"
         name="settlementNotes"
         placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
       />
-      <button type="submit">Settle cash debt</button>
+      <AdminFormControlButton className="button button-primary" type="submit">
+        Settle cash debt
+      </AdminFormControlButton>
     </form>
   );
 }

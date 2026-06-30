@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
+import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { MetricCard } from '../../../components/metric-card';
 import {
   compactValue,
@@ -334,19 +335,21 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
     <form action={settleCashDebt} className="inline-form admin-mt-16">
       <input type="hidden" name="earningId" value={earning.id} />
       <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-      <input
+      <AdminFormInput
+        label="Cash fee settlement reference"
         name="settlementRef"
         defaultValue={settlementRef}
         placeholder={settlementRef}
-        aria-label="Cash fee settlement reference"
       />
-      <input
+      <AdminFormInput
+        label="Cash fee settlement notes"
         name="settlementNotes"
         defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
         placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
-        aria-label="Cash fee settlement notes"
       />
-      <button type="submit">Settle cash fee debt</button>
+      <AdminFormControlButton className="button button-primary" type="submit">
+        Settle cash fee debt
+      </AdminFormControlButton>
     </form>
   );
 }
