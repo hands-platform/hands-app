@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
@@ -122,16 +123,15 @@ function WithdrawalRequestActions({
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="APPROVED" />
-          <input
-            aria-label={`Approval note for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Approval note for withdrawal ${request.id}`}
             name="adminNote"
             placeholder={request.status === 'REQUESTED' ? 'Approval note' : 'Review resolution note'}
             type="text"
           />
-          <button className="btn btn-sm btn-primary" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-primary" type="submit">
             {request.status === 'REQUESTED' ? 'Approve' : 'Clear review'}
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -140,16 +140,15 @@ function WithdrawalRequestActions({
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
-          <input
-            aria-label={`Bank pending note for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank pending note for withdrawal ${request.id}`}
             name="adminNote"
             placeholder="Bank payout run note"
             type="text"
           />
-          <button className="btn btn-sm btn-info" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-info" type="submit">
             Bank pending
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -162,32 +161,29 @@ function WithdrawalRequestActions({
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="PAID" />
-          <input
-            aria-label={`Transfer reference for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Transfer reference for withdrawal ${request.id}`}
             name="transferRef"
             placeholder="Bank transfer ref"
             required
             type="text"
           />
-          <input
-            aria-label={`Bank transfer date for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank transfer date for withdrawal ${request.id}`}
             name="bankTransferDate"
             required
             type="datetime-local"
           />
-          <input
-            aria-label={`Bank transfer evidence URL for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank transfer evidence URL for withdrawal ${request.id}`}
             name="attachmentUrl"
             placeholder="Evidence URL"
             required
             type="url"
           />
-          <button className="btn btn-sm btn-success" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-success" type="submit">
             Mark paid
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -196,17 +192,16 @@ function WithdrawalRequestActions({
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="NEEDS_BANK_CORRECTION" />
-          <input
-            aria-label={`Bank correction reason for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank correction reason for withdrawal ${request.id}`}
             name="correctionReason"
             placeholder="Bank correction reason"
             required
             type="text"
           />
-          <button className="btn btn-sm btn-outline" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-outline" type="submit">
             Request correction
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -219,16 +214,15 @@ function WithdrawalRequestActions({
           <input name="providerId" type="hidden" value={request.providerProfileId} />
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="REJECTED" />
-          <input
-            aria-label={`Reject note for withdrawal ${request.id}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Reject note for withdrawal ${request.id}`}
             name="adminNote"
             placeholder="Reject note"
             type="text"
           />
-          <button className="btn btn-sm btn-danger" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-danger" type="submit">
             Reject
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
     </div>
