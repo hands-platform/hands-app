@@ -7,8 +7,10 @@ import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-d
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
+  bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
   generalLedgerHref,
+  paymentClearingDetailHref,
 } from '../../tax-settlement-page-model';
 
 type GeneralLedgerDetailPageProps = {
@@ -100,7 +102,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                   <div className="muted">{shortId(entry.sourceId ?? batch.sourceId)}</div>
                 </td>
                 <td>
-                  <strong>{entry.bankReconciliationMatches?.length ?? 0} match</strong>
+                  <BankMatchEvidence matches={entry.bankReconciliationMatches ?? []} />
                 </td>
               </tr>
             ))}
@@ -108,6 +110,36 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         </AdminTableScroll>
       </section>
     </AdminPageTemplate>
+  );
+}
+
+function BankMatchEvidence({
+  matches,
+}: {
+  readonly matches: NonNullable<AdminAccountingJournalBatchDetail['entries'][number]['bankReconciliationMatches']>;
+}) {
+  if (matches.length === 0) {
+    return <span className="muted">No bank match</span>;
+  }
+
+  return (
+    <div className="stack">
+      {matches.map((match) => (
+        <div key={match.id}>
+          <Link className="text-link" href={bankReconciliationDetailHref(match.bankTransactionId)}>
+            Bank {shortId(match.bankTransactionId)}
+          </Link>
+          <div className="muted">
+            {formatMoney(match.amount, match.currency)} · {match.status}
+          </div>
+          {match.paymentClearingEntryId ? (
+            <Link className="text-link" href={paymentClearingDetailHref(match.paymentClearingEntryId)}>
+              Clearing {shortId(match.paymentClearingEntryId)}
+            </Link>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 

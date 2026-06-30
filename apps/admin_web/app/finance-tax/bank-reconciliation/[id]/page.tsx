@@ -15,6 +15,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-form
 import {
   bankReconciliationHref,
   buildBankReconciliationDetailApiHref,
+  generalLedgerDetailHref,
 } from '../../tax-settlement-page-model';
 
 type BankReconciliationDetailPageProps = {
@@ -167,7 +168,9 @@ export default async function BankReconciliationDetailPage({
                 <td>
                   {match.accountingJournalEntry ? (
                     <>
-                      <strong>{match.accountingJournalEntry.accountCode}</strong>
+                      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+                        {match.accountingJournalEntry.accountCode}
+                      </Link>
                       <div className="muted">{match.accountingJournalEntry.accountName}</div>
                     </>
                   ) : (

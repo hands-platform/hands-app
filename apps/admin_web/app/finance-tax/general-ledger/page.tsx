@@ -133,7 +133,16 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                   )}
                   <div className="muted">{batch.booking?.status ?? 'No booking'}</div>
                 </td>
-                <td>{personCell(batch.customerProfile?.user, 'Unknown customer')}</td>
+                <td>
+                  {batch.customerProfileId ? (
+                    <Link className="text-link" href={`/customers/${batch.customerProfileId}`}>
+                      {personName(batch.customerProfile?.user, 'Unknown customer')}
+                    </Link>
+                  ) : (
+                    <strong>{personName(batch.customerProfile?.user, 'Unknown customer')}</strong>
+                  )}
+                  <div className="muted">{batch.customerProfile?.user?.phone ?? '-'}</div>
+                </td>
                 <td>
                   {batch.providerProfileId ? (
                     <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
@@ -175,15 +184,6 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         </div>
       </section>
     </AdminPageTemplate>
-  );
-}
-
-function personCell(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return (
-    <>
-      <strong>{personName(user, fallback)}</strong>
-      <div className="muted">{user?.phone ?? '-'}</div>
-    </>
   );
 }
 
