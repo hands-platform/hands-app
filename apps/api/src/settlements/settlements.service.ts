@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  MonthlyTaxClosingStatus,
   PaymentFeePayer,
   PaymentFeeTreatment,
   PaymentMethod,
@@ -60,6 +61,8 @@ export class SettlementsService {
     input: UpsertBookingSettlementSnapshotInput,
     client: SettlementPrismaClient = this.prisma,
   ) {
+    await this.ensureSnapshotIsEditable(input.bookingId, client);
+
     const paymentFeeRateBps = input.paymentFeeRateBps ?? 0;
     const paymentFeeFixedAmount = input.paymentFeeFixedAmount ?? 0;
     const amounts = calculateBookingSettlementAmounts({
@@ -129,6 +132,37 @@ export class SettlementsService {
     await this.upsertBookingSettlementAccountingRecords(input, amounts, snapshot, client);
 
     return snapshot;
+  }
+
+  private async ensureSnapshotIsEditable(bookingId: string, client: SettlementPrismaClient) {
+    const bookingSettlementSnapshot = client.bookingSettlementSnapshot as unknown as {
+      findUnique?: (args: {
+        where: { bookingId: string };
+        select: {
+          monthlyClosingId: true;
+          monthlyClosing: { select: { status: true } };
+        };
+      }) => Promise<{
+        monthlyClosingId: string | null;
+        monthlyClosing: { status: MonthlyTaxClosingStatus } | null;
+      } | null>;
+    };
+    if (!bookingSettlementSnapshot.findUnique) {
+      return;
+    }
+
+    const existing = await bookingSettlementSnapshot.findUnique({
+      where: { bookingId },
+      select: {
+        monthlyClosingId: true,
+        monthlyClosing: { select: { status: true } },
+      },
+    });
+    if (existing?.monthlyClosing?.status === MonthlyTaxClosingStatus.CLOSED) {
+      throw new BadRequestException(
+        'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
+      );
+    }
   }
 
   async reverseBookingSettlementSnapshotForRefund(
