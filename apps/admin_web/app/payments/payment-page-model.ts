@@ -57,6 +57,7 @@ export type PaymentPageModel = {
 
 const PAYMENT_OPERATIONS_API_LIMIT = 10;
 const PAYMENT_OPERATIONS_API_MAX_LIMIT = 50;
+const DEFAULT_PAYMENT_REVIEW = 'needs-action';
 
 export function buildPaymentPageModel({
   callbackAttempts,
@@ -145,12 +146,13 @@ export function buildPaymentCallbackAttemptLedgerRows(
 
 export function buildPaymentFilters(params: Record<string, string | string[] | undefined>): PaymentFilters {
   const rangeParam = readSearchParam(params.range);
+  const reviewParam = readSearchParam(params.review);
 
   return {
     page: readPaymentPage(params.page),
     pageSize: readPaymentPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-    review: readSearchParam(params.review),
+    review: reviewParam || DEFAULT_PAYMENT_REVIEW,
   };
 }
 
@@ -159,12 +161,14 @@ export function buildPaymentOperationsApiHref(filters: PaymentFilters): string {
 }
 
 export function buildPaymentCallbackAttemptsApiHref(filters: PaymentFilters): string {
-  return buildPaymentApiHref('/admin/payment-callback-attempts', filters);
+  return buildPaymentApiHref('/admin/payment-callback-attempts', filters, {
+    review: paymentCallbackAttemptApiReview(filters.review),
+  });
 }
 
 export function buildPaymentSummaryApiHref(filters: PaymentFilters): string {
   const params = new URLSearchParams({ range: filters.range });
-  if (filters.review) {
+  if (shouldIncludePaymentApiReview(filters.review)) {
     params.set('review', filters.review);
   }
 
@@ -226,6 +230,9 @@ function callbackAttemptMatchesReview(attempt: AdminPaymentCallbackAttempt, revi
     return true;
   }
   if (review === 'callback-review') {
+    return paymentCallbackAttemptNeedsReview(attempt);
+  }
+  if (review === 'needs-action') {
     return paymentCallbackAttemptNeedsReview(attempt);
   }
   if (review === 'callback-verified') {
@@ -309,11 +316,12 @@ export function buildPaymentServerPagination<T>(
 function buildPaymentApiHref(
   path: string,
   filters: PaymentFilters,
-  options: { readonly includePaging?: boolean } = {},
+  options: { readonly includePaging?: boolean; readonly review?: string | null } = {},
 ): string {
   const params = new URLSearchParams({ take: String(filters.pageSize), range: filters.range });
-  if (filters.review) {
-    params.set('review', filters.review);
+  const review = options.review === undefined ? filters.review : options.review;
+  if (shouldIncludePaymentApiReview(review)) {
+    params.set('review', review);
   }
   if (options.includePaging) {
     const skip = (filters.page - 1) * filters.pageSize;
@@ -323,6 +331,20 @@ function buildPaymentApiHref(
   }
 
   return `${path}?${params.toString()}`;
+}
+
+function shouldIncludePaymentApiReview(review: string | null | undefined): review is string {
+  return Boolean(review && review !== 'all');
+}
+
+function paymentCallbackAttemptApiReview(review: string): string | null {
+  if (review === 'needs-action' || review === 'callback-review') {
+    return 'callback-review';
+  }
+  if (review === 'callback-verified') {
+    return 'callback-verified';
+  }
+  return null;
 }
 
 function readPaymentPage(value: string | string[] | undefined) {

@@ -26,7 +26,7 @@ describe('RefundFilterBoardSection', () => {
     expect(rendered).toContain('Showing 3 of 9');
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('Open refunds');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds', '/refunds?range=30d', '/refunds?review=requested&range=30d']));
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?range=all&review=all', '/refunds?range=30d', '/refunds?review=requested&range=30d']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'pill pill-info']));
   });
 
@@ -60,7 +60,7 @@ function buildRangeLinks(): RefundRangeLink[] {
 
 function buildFilterLinks(): RefundFilterLink[] {
   return [
-    { href: '/refunds', label: 'All refunds', review: '' },
+    { href: '/refunds?review=all', label: 'All refunds', review: 'all' },
     { href: '/refunds?review=open&range=30d', label: 'Open refunds', review: 'open' },
     { href: '/refunds?review=requested&range=30d', label: 'Requested', review: 'requested' },
   ];

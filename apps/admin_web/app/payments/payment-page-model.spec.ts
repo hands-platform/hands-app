@@ -13,7 +13,7 @@ describe('payment page model', () => {
   it('sorts and summarizes visible payment operations without changing payment status', () => {
     const model = buildPaymentPageModel({
       callbackAttempts: [callbackAttempt({ id: 'callback-review', outcome: 'CONFLICT', signatureVerified: false })],
-      params: { range: 'all' },
+      params: { range: 'all', review: 'all' },
       payments: [
         payment({ id: 'captured', status: 'CAPTURED' }),
         payment({ booking: { earning: cashDebtEarning(), status: 'COMPLETED' }, id: 'cash-debt', method: 'CASH', status: 'PENDING' }),
@@ -66,7 +66,7 @@ describe('payment page model', () => {
     ).toEqual(['callback-review-payment']);
   });
 
-  it('defaults the operations board to today when no range is selected', () => {
+  it('defaults the operations board to today and the needs action queue', () => {
     const model = buildPaymentPageModel({
       callbackAttempts: [],
       params: {},
@@ -74,7 +74,34 @@ describe('payment page model', () => {
     });
 
     expect(model.filters.range).toBe('today');
+    expect(model.filters.review).toBe('needs-action');
     expect(model.dateRangeLabel).toBe('Today (Vietnam)');
+    expect(model.activeFilter?.label).toBe('Needs action');
+    expect(buildPaymentOperationsApiHref(model.filters)).toBe(
+      '/admin/payments?take=10&range=today&review=needs-action',
+    );
+    expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
+      '/admin/payment-callback-attempts?take=10&range=today&review=callback-review',
+    );
+    expect(buildPaymentSummaryApiHref(model.filters)).toBe(
+      '/admin/payments/summary?range=today&review=needs-action',
+    );
+  });
+
+  it('keeps all payments as an explicit broad queue without server review filters', () => {
+    const model = buildPaymentPageModel({
+      callbackAttempts: [],
+      params: { range: 'all', review: 'all' },
+      payments: [],
+    });
+
+    expect(model.filters).toMatchObject({ range: 'all', review: 'all' });
+    expect(model.activeFilter?.label).toBe('All payments');
+    expect(buildPaymentOperationsApiHref(model.filters)).toBe('/admin/payments?take=10&range=all');
+    expect(buildPaymentCallbackAttemptsApiHref(model.filters)).toBe(
+      '/admin/payment-callback-attempts?take=10&range=all',
+    );
+    expect(buildPaymentSummaryApiHref(model.filters)).toBe('/admin/payments/summary?range=all');
   });
 
   it('builds bounded API hrefs from the selected payment filters', () => {

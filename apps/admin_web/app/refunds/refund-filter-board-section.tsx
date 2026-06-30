@@ -69,7 +69,7 @@ export function RefundFilterBoardSection({
       </div>
       <div className="participant-list">
         {isFiltered ? (
-          <Link className="pill pill-success" href="/refunds">
+          <Link className="pill pill-success" href="/refunds?range=all&review=all">
             Clear filters
           </Link>
         ) : null}

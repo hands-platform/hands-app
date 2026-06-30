@@ -21,6 +21,36 @@ describe('RefundsPage', () => {
     mockedAdminGet.mockReset();
   });
 
+  it('defaults the refund board to today and open refunds on the server', async () => {
+    const summary: AdminRefundSummary = {
+      totalCount: 0,
+      requestedCount: 0,
+      refundedBookingCount: 0,
+      needsUpdateCount: 0,
+      completedCount: 0,
+      openCount: 0,
+      outcomeLinkedCount: 0,
+    };
+
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/refunds?range=today&take=10&review=open') {
+        return [];
+      }
+      if (href === '/admin/refunds/summary?range=today&review=open') {
+        return summary;
+      }
+      return fallback;
+    });
+
+    await RefundsPage({ searchParams: Promise.resolve({}) });
+
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds?range=today&take=10&review=open', []);
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/refunds/summary?range=today&review=open',
+      expect.objectContaining({ totalCount: 0 }),
+    );
+  });
+
   it('renders bounded server refund rows without applying a second local filter', async () => {
     const summary: AdminRefundSummary = {
       totalCount: 42,

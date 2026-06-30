@@ -27,7 +27,7 @@ describe('PaymentFilterBoardSection', () => {
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('Last 7 days');
     expect(rendered).toContain('Capture review');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments', '/payments?range=7d', '/payments?review=capture&range=7d']));
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments?range=all&review=all', '/payments?range=7d', '/payments?review=capture&range=7d']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'pill pill-info']));
   });
 
@@ -61,7 +61,7 @@ function buildRangeLinks(): PaymentRangeLink[] {
 
 function buildFilterLinks(): PaymentFilterLink[] {
   return [
-    { href: '/payments', label: 'All payments', review: '' },
+    { href: '/payments?review=all', label: 'All payments', review: 'all' },
     { href: '/payments?review=capture&range=7d', label: 'Capture review', review: 'capture' },
   ];
 }

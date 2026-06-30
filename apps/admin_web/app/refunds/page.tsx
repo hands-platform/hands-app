@@ -26,6 +26,7 @@ import { RefundsTableSection, type RefundActionExecutionRow, type RefundTableRow
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const REFUND_OPERATIONS_API_LIMIT = 10;
 const REFUND_OPERATIONS_API_MAX_LIMIT = 50;
+const DEFAULT_REFUND_REVIEW = 'open';
 const EMPTY_REFUND_SUMMARY: AdminRefundSummary = {
   totalCount: 0,
   requestedCount: 0,
@@ -289,11 +290,12 @@ function refundActionExecutionMap(refund: AdminRefund): RefundActionExecutionRow
 
 function buildRefundFilters(params: Record<string, string | string[] | undefined>) {
   const rangeParam = readSearchParam(params.range);
+  const reviewParam = readSearchParam(params.review);
 
   return {
     page: readRefundPage(params.page),
     pageSize: readRefundPageSize(params.pageSize),
-    review: readSearchParam(params.review),
+    review: reviewParam || DEFAULT_REFUND_REVIEW,
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
   };
 }
@@ -303,7 +305,7 @@ function buildRefundOperationsApiHref(filters: ReturnType<typeof buildRefundFilt
     range: filters.range,
     take: String(filters.pageSize),
   });
-  if (filters.review) {
+  if (shouldIncludeRefundApiReview(filters.review)) {
     params.set('review', filters.review);
   }
   const skip = (filters.page - 1) * filters.pageSize;
@@ -318,7 +320,7 @@ function buildRefundSummaryApiHref(filters: ReturnType<typeof buildRefundFilters
   const params = new URLSearchParams({
     range: filters.range,
   });
-  if (filters.review) {
+  if (shouldIncludeRefundApiReview(filters.review)) {
     params.set('review', filters.review);
   }
 
@@ -327,7 +329,7 @@ function buildRefundSummaryApiHref(filters: ReturnType<typeof buildRefundFilters
 
 function refundFilterLinks(): RefundFilterLink[] {
   return [
-    { label: 'All refunds', href: '/refunds', review: '' },
+    { label: 'All refunds', href: '/refunds?review=all', review: 'all' },
     { label: 'Open refunds', href: '/refunds?review=open', review: 'open' },
     { label: 'Requested', href: '/refunds?review=requested', review: 'requested' },
     { label: 'Needs update', href: '/refunds?review=needs-update', review: 'needs-update' },
@@ -359,6 +361,10 @@ function withRefundReview(href: string, review: string) {
   }
   const separator = href.includes('?') ? '&' : '?';
   return `${href}${separator}review=${review}`;
+}
+
+function shouldIncludeRefundApiReview(review: string | null | undefined) {
+  return Boolean(review && review !== 'all');
 }
 
 function refundHref(filters: ReturnType<typeof buildRefundFilters>, page?: number) {

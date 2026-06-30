@@ -74,7 +74,7 @@ export function PaymentFilterBoardSection({
       </div>
       <div className="participant-list">
         {isFiltered ? (
-          <Link className="pill pill-success" href="/payments">
+          <Link className="pill pill-success" href="/payments?range=all&review=all">
             Clear filters
           </Link>
         ) : null}

@@ -3,7 +3,7 @@ import type { PaymentFilterLink, PaymentRangeLink } from './payment-filter-board
 
 export function paymentFilterLinks(): PaymentFilterLink[] {
   return [
-    { href: '/payments', label: 'All payments', review: '' },
+    { href: '/payments?review=all', label: 'All payments', review: 'all' },
     { href: '/payments?review=capture', label: 'Capture review', review: 'capture' },
     { href: '/payments?review=missing-ref', label: 'Missing refs', review: 'missing-ref' },
     { href: '/payments?review=authorized', label: 'Authorized holds', review: 'authorized' },
