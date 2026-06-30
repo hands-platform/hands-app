@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { adminGet } from '../../lib/admin-api';
 import MarketingAnalyticsPage from './page';
@@ -44,5 +45,17 @@ describe('MarketingAnalyticsPage', () => {
     expect(hrefs).toContain('/admin/marketing/dimensions/region?range=7d&take=10&skip=10');
     expect(hrefs).toContain('/admin/marketing/dimensions/campaign?range=7d&take=10&skip=0');
     expect(hrefs).toContain('/admin/marketing/dimensions/platform?range=7d&take=10&skip=0');
+  });
+
+  it('uses shared admin form atoms for campaign and manual spend controls', async () => {
+    const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-select');
+    expect(markup).toContain('admin-form-control-button');
+    expect(markup).not.toContain('<label><span>Date</span><input');
+    expect(markup).not.toContain('<label><span>Source</span><select');
+    expect(markup).not.toContain('<label><span>Campaign ID</span><input');
   });
 });

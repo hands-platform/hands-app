@@ -16,6 +16,11 @@ import {
 import type { ReactNode } from 'react';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
+import {
   AdminMarketingDimensionKey,
   AdminMarketingDimensionPage,
   AdminMarketingDimensionRow,
@@ -300,18 +305,19 @@ export default async function MarketingAnalyticsPage({
           {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
           {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
           {filters.regionCode ? <input type="hidden" name="regionCode" value={filters.regionCode} /> : null}
-          <label>
+          <div className="calendar-field">
             <span>Campaign ID</span>
-            <input
-              type="search"
-              name="campaignId"
+            <AdminFormInput
               defaultValue={filters.campaignId ?? ''}
+              label="Campaign ID"
+              name="campaignId"
               placeholder="ref-smoke, campaign id..."
+              type="search"
             />
-          </label>
-          <button className="booking-date-apply-button" type="submit">
+          </div>
+          <AdminFormControlButton className="booking-date-apply-button" type="submit">
             Apply campaign
-          </button>
+          </AdminFormControlButton>
         </form>
       </section>
 
@@ -410,67 +416,81 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
         <span className="pill pill-warning">Manual input</span>
       </div>
       <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
-        <label>
+        <div className="calendar-field">
           <span>Date</span>
-          <input type="date" name="spendDate" defaultValue={defaultSpendDate} required />
-        </label>
-        <label>
+          <AdminFormInput
+            defaultValue={defaultSpendDate}
+            label="Date"
+            name="spendDate"
+            required
+            type="date"
+          />
+        </div>
+        <div className="calendar-field">
           <span>Source</span>
-          <select name="source" defaultValue={filters.source ?? 'google'} required>
-            {marketingAnalyticsSourceOptions
+          <AdminFormSelect
+            defaultValue={filters.source ?? 'google'}
+            label="Source"
+            name="source"
+            options={marketingAnalyticsSourceOptions
               .filter((option) => option.value !== 'all' && option.value !== 'unknown')
-              .map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
+              .map((option) => ({ label: option.label, value: option.value }))}
+          />
+        </div>
+        <div className="calendar-field">
           <span>Platform</span>
-          <select name="platform" defaultValue={filters.platform ?? 'android'}>
-            {marketingAnalyticsPlatformOptions
+          <AdminFormSelect
+            defaultValue={filters.platform ?? 'android'}
+            label="Platform"
+            name="platform"
+            options={marketingAnalyticsPlatformOptions
               .filter((option) => option.value !== 'all')
-              .map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
+              .map((option) => ({ label: option.label, value: option.value }))}
+          />
+        </div>
+        <div className="calendar-field">
           <span>Region</span>
-          <select name="regionCode" defaultValue={filters.regionCode ?? 'all'}>
-            {marketingAnalyticsRegionOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
+          <AdminFormSelect
+            defaultValue={filters.regionCode ?? 'all'}
+            label="Region"
+            name="regionCode"
+            options={marketingAnalyticsRegionOptions.map((option) => ({
+              label: option.label,
+              value: option.value,
+            }))}
+          />
+        </div>
+        <div className="calendar-field">
           <span>Campaign ID</span>
-          <input name="campaignId" defaultValue={filters.campaignId ?? ''} placeholder="launch-hcm" />
-        </label>
-        <label>
+          <AdminFormInput
+            defaultValue={filters.campaignId ?? ''}
+            label="Campaign ID"
+            name="campaignId"
+            placeholder="launch-hcm"
+          />
+        </div>
+        <div className="calendar-field">
           <span>Campaign name</span>
-          <input name="campaignName" placeholder="Launch HCMC" />
-        </label>
-        <label>
+          <AdminFormInput label="Campaign name" name="campaignName" placeholder="Launch HCMC" />
+        </div>
+        <div className="calendar-field">
           <span>Spend amount</span>
-          <input inputMode="numeric" name="spendAmount" placeholder="600000" required />
-        </label>
-        <label>
+          <AdminFormInput label="Spend amount" name="spendAmount" placeholder="600000" required />
+        </div>
+        <div className="calendar-field">
           <span>Currency</span>
-          <input name="currency" defaultValue="VND" />
-        </label>
-        <label className="marketing-spend-notes">
+          <AdminFormInput defaultValue="VND" label="Currency" name="currency" />
+        </div>
+        <div className="calendar-field marketing-spend-notes">
           <span>Notes</span>
-          <input name="notes" placeholder="Manual import note" />
-        </label>
-        <button className="booking-date-apply-button marketing-spend-submit" type="submit">
+          <AdminFormInput label="Notes" name="notes" placeholder="Manual import note" />
+        </div>
+        <AdminFormControlButton
+          className="booking-date-apply-button marketing-spend-submit"
+          type="submit"
+        >
           Save spend
-        </button>
+        </AdminFormControlButton>
       </form>
     </section>
   );
