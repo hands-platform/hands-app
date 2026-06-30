@@ -6665,6 +6665,20 @@ export class AdminService {
         },
         select: adminMonthlyTaxClosingListSelect,
       });
+      const settlementTaxStatus = monthlyTaxClosingSettlementTaxStatus(status);
+      if (settlementTaxStatus) {
+        await tx.bookingSettlementSnapshot.updateMany({
+          where: {
+            monthlyPeriod: period,
+            currency: summary.currency,
+            settlementStatus: BookingSettlementStatus.POSTED,
+          },
+          data: {
+            monthlyClosingId: closing.id,
+            taxStatus: settlementTaxStatus,
+          },
+        });
+      }
 
       await tx.adminAuditLog.create({
         data: {
@@ -12343,6 +12357,21 @@ function monthlyTaxClosingStatusMutationData(
       return { closedAt: at, closedById: actorId };
     default:
       return {};
+  }
+}
+
+function monthlyTaxClosingSettlementTaxStatus(
+  status: MonthlyTaxClosingStatus,
+): BookingSettlementTaxStatus | null {
+  switch (status) {
+    case MonthlyTaxClosingStatus.DECLARED:
+      return BookingSettlementTaxStatus.DECLARED;
+    case MonthlyTaxClosingStatus.PAID:
+      return BookingSettlementTaxStatus.PAID;
+    case MonthlyTaxClosingStatus.CLOSED:
+      return BookingSettlementTaxStatus.CLOSED;
+    default:
+      return null;
   }
 }
 

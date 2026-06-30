@@ -7266,6 +7266,9 @@ describe('AdminService query orchestration', () => {
       monthlyTaxClosing: {
         upsert: vi.fn().mockResolvedValue(updatedClosing),
       },
+      bookingSettlementSnapshot: {
+        updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+      },
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
@@ -7354,6 +7357,17 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
+    expect(tx.bookingSettlementSnapshot.updateMany).toHaveBeenCalledWith({
+      where: {
+        monthlyPeriod: '2026-06',
+        currency: 'VND',
+        settlementStatus: BookingSettlementStatus.POSTED,
+      },
+      data: {
+        monthlyClosingId: 'closing-1',
+        taxStatus: BookingSettlementTaxStatus.DECLARED,
+      },
+    });
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: {
         actorId: 'admin-1',
