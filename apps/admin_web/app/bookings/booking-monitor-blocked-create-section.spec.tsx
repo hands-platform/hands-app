@@ -1,6 +1,8 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { buttonsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 describe('BookingMonitorBlockedCreateSection', () => {
   it('renders gate triage and visible audit evidence', () => {
@@ -88,5 +90,17 @@ describe('BookingMonitorBlockedCreateSection', () => {
     expect(normalizedText(section)).toContain(
       'No blocked booking create attempts match this create gate filter.',
     );
+  });
+
+  it('uses shared form atoms for the create gate filter controls', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFormSelect');
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<select');
+    expect(source).not.toContain('<button className="button button-secondary" type="button"');
   });
 });

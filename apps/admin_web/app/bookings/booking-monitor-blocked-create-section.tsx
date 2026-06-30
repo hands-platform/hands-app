@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Filter, ScrollText, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlButton, AdminFormSelect } from '../../components/admin-form-controls';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass } from './booking-command-display';
@@ -48,6 +49,10 @@ export function BookingMonitorBlockedCreateSection({
   visibleBookingCreateRejections,
 }: BookingMonitorBlockedCreateSectionProps) {
   const visibleEvidenceRows = visibleBookingCreateRejections.slice(0, 30);
+  const gateFilterOptions = bookingGateFilterOptions.map((option) => ({
+    label: `${option.label} (${bookingGateCount([...orderedBookingCreateRejections], option.value)})`,
+    value: option.value,
+  }));
 
   return (
     <section className="card admin-mt-16">
@@ -65,24 +70,22 @@ export function BookingMonitorBlockedCreateSection({
         </Link>
       </div>
       <div className="filter-grid admin-mt-14">
-        <label>
-          Create gate filter
-          <select
-            value={gateFilter}
-            onChange={(event) => onGateFilterChange(event.target.value as BookingGateFilter)}
-          >
-            {bookingGateFilterOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label} ({bookingGateCount([...orderedBookingCreateRejections], option.value)})
-              </option>
-            ))}
-          </select>
-        </label>
+        <AdminFormSelect
+          label="Create gate filter"
+          name="gateFilter"
+          onChange={(event) => onGateFilterChange(event.target.value as BookingGateFilter)}
+          options={gateFilterOptions}
+          value={gateFilter}
+        />
         <div className="actions admin-align-end">
-          <button className="button button-secondary" type="button" onClick={() => onGateFilterChange('all')}>
+          <AdminFormControlButton
+            className="button button-secondary"
+            onClick={() => onGateFilterChange('all')}
+            type="button"
+          >
             <X aria-hidden="true" size={16} />
             Clear create gate
-          </button>
+          </AdminFormControlButton>
         </div>
       </div>
       <AdminTableScroll>
@@ -111,14 +114,14 @@ export function BookingMonitorBlockedCreateSection({
               </td>
               <td>
                 <div className="actions">
-                  <button
+                  <AdminFormControlButton
                     className="button button-primary"
                     type="button"
                     onClick={() => onGateFilterChange(item.filter)}
                   >
                     <Filter aria-hidden="true" size={16} />
                     Show this gate
-                  </button>
+                  </AdminFormControlButton>
                   <Link className="button button-secondary" href={item.auditHref}>
                     <ScrollText aria-hidden="true" size={16} />
                     Audit evidence
