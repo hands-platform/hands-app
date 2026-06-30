@@ -142,7 +142,11 @@ export function buildOperationsHandoffDataHrefs(
           }).toString()}`
         : null,
     paymentsHref: buildRangeScopedHref('/admin/payments', { take: String(limits.finance) }, range),
-    payoutBatchesHref: buildRangeScopedHref('/admin/payout-batches', { take: String(limits.finance) }, range),
+    payoutBatchesHref: buildRangeScopedHref(
+      '/admin/payout-batches',
+      { review: 'needs-review', take: String(limits.finance) },
+      range,
+    ),
     refundsHref: buildRangeScopedHref('/admin/refunds', { take: String(limits.finance) }, range),
   };
 }

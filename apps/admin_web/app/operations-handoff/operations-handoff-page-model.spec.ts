@@ -70,6 +70,7 @@ describe('operations handoff page model', () => {
     expect(refundsUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
+    expect(payoutBatchesUrl.searchParams.get('review')).toBe('needs-review');
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
     expect(auditUrl.searchParams.get('take')).toBe('5');
     expect(Number.isFinite(Date.parse(auditUrl.searchParams.get('from') ?? ''))).toBe(true);
@@ -116,6 +117,7 @@ describe('operations handoff page model', () => {
     expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
     expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
+    expect(payoutBatchesUrl.searchParams.get('review')).toBe('needs-review');
   });
 
   it('prefers notification summary failed counts over bounded notification samples', () => {
