@@ -2410,6 +2410,32 @@ describe('AdminService query orchestration', () => {
     expect(referrals.payRewardCashout).not.toHaveBeenCalled();
   });
 
+  it('rejects referral reward cashout paid closeout without a transfer reference at the API boundary', async () => {
+    const referrals = {
+      payRewardCashout: vi.fn(),
+    };
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        approvalAdminId: 'finance-admin-2',
+        reason: 'cashout transfer completed',
+        transferRef: '   ',
+      }),
+    ).rejects.toThrow('Referral cashout paid closeout requires a transfer reference');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'finance-admin-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(referrals.payRewardCashout).not.toHaveBeenCalled();
+  });
+
   it('creates referral reward candidates after completed booking closeout', async () => {
     const prisma = {
       adminAuditLog: {

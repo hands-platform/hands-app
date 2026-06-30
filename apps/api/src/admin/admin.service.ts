@@ -2252,6 +2252,9 @@ export class AdminService {
       'Referral reward cashout paid closeout',
     );
     const reason = normalizeAuditReason(input.reason);
+    if (!normalizeNullable(input.transferRef)) {
+      throw new BadRequestException('Referral cashout paid closeout requires a transfer reference');
+    }
     const transferRef = normalizeAuditReason(input.transferRef);
     const reward = await this.referrals.payRewardCashout(rewardId, {
       notes: reason,
