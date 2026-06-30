@@ -3,6 +3,12 @@
 import type { ChangeEvent } from 'react';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import { CALENDAR_CATEGORIES, type CalendarCategory, type CalendarEventDraft } from './calendar-model';
 
 type CalendarEventDrawerProps = {
@@ -87,80 +93,100 @@ export function CalendarEventDrawer({
 
         <div className="calendar-drawer-body">
           <div className="calendar-form-grid">
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>Title</span>
-              <input onChange={updateField('title')} placeholder="Add event title" value={draft.title} />
-            </label>
+              <AdminFormInput
+                label="Title"
+                onChange={updateField('title')}
+                placeholder="Add event title"
+                name="title"
+                value={draft.title}
+              />
+            </div>
 
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>Category</span>
-              <select onChange={updateField('category')} value={draft.category}>
-                {CALENDAR_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <AdminFormSelect
+                label="Category"
+                name="category"
+                onChange={updateField('category')}
+                options={CALENDAR_CATEGORIES.map((category) => ({ label: category, value: category }))}
+                value={draft.category}
+              />
+            </div>
 
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>Start</span>
-              <input
+              <AdminFormInput
+                label="Start"
+                name="start"
                 onChange={updateField('start')}
                 type={draft.allDay ? 'date' : 'datetime-local'}
                 value={toInputDateValue(draft.start, draft.allDay)}
               />
-            </label>
+            </div>
 
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>End</span>
-              <input
+              <AdminFormInput
+                label="End"
+                name="end"
                 onChange={updateField('end')}
                 type={draft.allDay ? 'date' : 'datetime-local'}
                 value={toInputDateValue(draft.end, draft.allDay)}
               />
-            </label>
+            </div>
 
             <label className="calendar-field calendar-field-toggle">
               <span>All day</span>
               <input checked={draft.allDay} onChange={updateField('allDay')} type="checkbox" />
             </label>
 
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>Location</span>
-              <input
+              <AdminFormInput
+                label="Location"
+                name="location"
                 onChange={updateField('location')}
                 placeholder="Workspace, queue, or district"
                 value={draft.location}
               />
-            </label>
+            </div>
 
-            <label className="calendar-field">
+            <div className="calendar-field">
               <span>Link</span>
-              <input onChange={updateField('url')} placeholder="https://..." value={draft.url} />
-            </label>
+              <AdminFormInput
+                label="Link"
+                name="url"
+                onChange={updateField('url')}
+                placeholder="https://..."
+                value={draft.url}
+              />
+            </div>
 
-            <label className="calendar-field calendar-field-wide">
+            <div className="calendar-field calendar-field-wide">
               <span>Notes</span>
-              <textarea
+              <AdminFormTextarea
+                label="Notes"
+                name="description"
                 onChange={updateField('description')}
                 placeholder="Operational details, owner, or follow-up note"
                 rows={5}
                 value={draft.description}
               />
-            </label>
+            </div>
           </div>
         </div>
 
         <div className="calendar-drawer-footer">
-          <button className="button button-primary" onClick={onSubmit} type="button">
+          <AdminFormControlButton className="button button-primary" onClick={onSubmit} type="button">
             <Save aria-hidden="true" size={16} />
             {mode === 'create' ? 'Add Event' : 'Update Event'}
-          </button>
-          <button className="button button-secondary" onClick={onReset} type="button">
+          </AdminFormControlButton>
+          <AdminFormControlButton className="button button-secondary" onClick={onReset} type="button">
             <RotateCcw aria-hidden="true" size={16} />
             Reset
-          </button>
+          </AdminFormControlButton>
         </div>
       </aside>
     </>
