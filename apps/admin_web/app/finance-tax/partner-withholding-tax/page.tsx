@@ -6,6 +6,11 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatMoney } from '../../../lib/admin-format';
@@ -105,21 +110,16 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           title="Withholding tax period"
         />
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <label>
-            Month
-            <input name="period" type="month" defaultValue={filters.period} />
-          </label>
-          <label>
-            Rows
-            <select name="take" defaultValue={filters.take}>
-              {[25, 50, 75, 100].map((take) => (
-                <option key={take} value={take}>
-                  {take}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit">Apply period</button>
+          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormSelect
+            defaultValue={String(filters.take)}
+            label="Rows"
+            name="take"
+            options={[25, 50, 75, 100].map((take) => ({ label: String(take), value: String(take) }))}
+          />
+          <AdminFormControlButton className="btn btn-primary" type="submit">
+            Apply period
+          </AdminFormControlButton>
         </form>
       </section>
 
