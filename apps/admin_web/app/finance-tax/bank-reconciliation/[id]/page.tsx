@@ -86,20 +86,13 @@ export default async function BankReconciliationDetailPage({
         </div>
       </section>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
-          status={
-            reverseNotice === '1' ? (
-              <span className="pill pill-success">Match reversed</span>
-            ) : matchNotice === '1' ? (
-              <span className="pill pill-success">Match saved</span>
-            ) : matchError || reverseError ? (
-              <span className="pill pill-danger">Match failed</span>
-            ) : null
-          }
-          title="Manual reconciliation match"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
+        resultLabel={manualMatchResultLabel({ matchError, matchNotice, reverseError, reverseNotice })}
+        resultTone={manualMatchResultTone({ matchError, matchNotice, reverseError, reverseNotice })}
+        title="Manual reconciliation match"
+      >
         {matchError ? (
           <p className="muted admin-mt-8">
             No match was saved. Check the source id, amount, currency, approval admin, and current transaction state before trying again.
@@ -154,7 +147,7 @@ export default async function BankReconciliationDetailPage({
           />
           <AdminFormControlButton>Create match</AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
@@ -345,6 +338,49 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
       ) : null}
     </div>
   );
+}
+
+function manualMatchResultLabel({
+  matchError,
+  matchNotice,
+  reverseError,
+  reverseNotice,
+}: {
+  readonly matchError: string;
+  readonly matchNotice: string;
+  readonly reverseError: string;
+  readonly reverseNotice: string;
+}) {
+  if (reverseNotice === '1') {
+    return 'Match reversed';
+  }
+  if (matchNotice === '1') {
+    return 'Match saved';
+  }
+  if (matchError || reverseError) {
+    return 'Match failed';
+  }
+  return 'Manual review';
+}
+
+function manualMatchResultTone({
+  matchError,
+  matchNotice,
+  reverseError,
+  reverseNotice,
+}: {
+  readonly matchError: string;
+  readonly matchNotice: string;
+  readonly reverseError: string;
+  readonly reverseNotice: string;
+}): 'danger' | 'info' | 'success' {
+  if (reverseNotice === '1' || matchNotice === '1') {
+    return 'success';
+  }
+  if (matchError || reverseError) {
+    return 'danger';
+  }
+  return 'info';
 }
 
 function statusPill(status: string) {

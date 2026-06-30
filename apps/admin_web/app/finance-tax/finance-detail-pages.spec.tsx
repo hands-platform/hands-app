@@ -221,6 +221,7 @@ describe('finance detail pages', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/bank-reconciliation/bank-transaction-1', null);
     expect(markup).toContain('Bank Reconciliation Detail');
     expect(markup).toContain('Manual reconciliation match');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('Create match');
