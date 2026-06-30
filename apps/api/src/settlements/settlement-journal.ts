@@ -45,6 +45,15 @@ export function buildBookingSettlementJournal(input: BookingSettlementJournalInp
       memo: `Cash booking ${input.bookingId} creates partner receivable for platform fee and withholding.`,
       side: 'DEBIT',
     });
+  } else if (input.paymentMethod === 'CUSTOMER_WALLET') {
+    addEntry(entries, {
+      accountCode: 'customer_wallet_liability',
+      accountName: 'Customer wallet liability',
+      amount: input.customerPaymentAmount,
+      currency,
+      memo: `Customer wallet debit for booking ${input.bookingId}; no external payment clearing.`,
+      side: 'DEBIT',
+    });
   } else {
     addEntry(entries, {
       accountCode: 'booking_payment_clearing',

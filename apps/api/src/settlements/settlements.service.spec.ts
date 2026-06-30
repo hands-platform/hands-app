@@ -368,6 +368,93 @@ describe('SettlementsService', () => {
     });
   });
 
+  it('posts customer wallet payments to the customer wallet ledger instead of payment clearing', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-wallet-1',
+          bookingId: 'booking-wallet-1',
+          customerProfileId: 'customer-1',
+          providerProfileId: 'provider-1',
+          paymentId: 'payment-wallet-1',
+          currency: 'VND',
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
+      },
+      customerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'customer-wallet-ledger-1' }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.upsertBookingSettlementSnapshot({
+      bookingId: 'booking-wallet-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'provider-1',
+      paymentId: 'payment-wallet-1',
+      paymentMethod: 'CUSTOMER_WALLET',
+      currency: 'VND',
+      customerPaymentAmount: 600_000,
+      partnerPayoutAmount: 472_000,
+      platformFeeGross: 128_000,
+      partnerVatRateBps: 500,
+      partnerPitRateBps: 200,
+      platformVatRateBps: 800,
+      occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+    });
+
+    expect(prisma.customerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'customer-wallet-payment:booking-wallet-1:settlement' },
+      update: expect.objectContaining({
+        amount: -600_000,
+        bookingId: 'booking-wallet-1',
+        customerProfileId: 'customer-1',
+      }),
+      create: expect.objectContaining({
+        amount: -600_000,
+        bookingId: 'booking-wallet-1',
+        customerProfileId: 'customer-1',
+        sourceKey: 'customer-wallet-payment:booking-wallet-1:settlement',
+        type: 'CUSTOMER_WALLET_PAYMENT',
+      }),
+    });
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                accountCode: 'customer_wallet_liability',
+                amount: 600_000,
+                side: 'DEBIT',
+              }),
+            ]),
+          },
+          totalCredit: 600_000,
+          totalDebit: 600_000,
+        }),
+      }),
+    );
+    expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          customerWalletLedgerEntryIds: ['customer-wallet-ledger-1'],
+        }),
+        update: expect.objectContaining({
+          customerWalletLedgerEntryIds: ['customer-wallet-ledger-1'],
+        }),
+      }),
+    );
+  });
+
   it('reverses an open coupon settlement snapshot for refund without changing historical amounts', async () => {
     const existing = {
       id: 'settlement-coupon-1',

@@ -81,6 +81,12 @@ export class SettlementsService {
     const sourceKey = bookingSettlementSourceKey(input.bookingId);
     const monthlyPeriod = settlementMonthlyPeriod(input.occurredAt, input.timeZone ?? undefined);
     const metadata = settlementSnapshotMetadata(input.metadata, amounts.partnerTaxableRevenue);
+    const customerWalletLedgerEntryIds = await this.customerWalletLedgerEntryIdsForSettlement(
+      input,
+      amounts.customerWalletDebitAmount,
+      monthlyPeriod,
+      client,
+    );
     const data = {
       sourceKey,
       customerProfileId: input.customerProfileId,
@@ -115,7 +121,7 @@ export class SettlementsService {
       providerTaxLogIds: input.providerTaxLogIds ?? undefined,
       providerPlatformFeeLogId: input.providerPlatformFeeLogId ?? null,
       providerWalletLedgerEntryIds: input.providerWalletLedgerEntryIds ?? undefined,
-      customerWalletLedgerEntryIds: input.customerWalletLedgerEntryIds ?? undefined,
+      customerWalletLedgerEntryIds,
       metadata,
       monthlyPeriod,
       postedAt: input.occurredAt,
@@ -487,7 +493,7 @@ export class SettlementsService {
       },
     });
 
-    if (input.paymentMethod === 'CASH') {
+    if (input.paymentMethod === 'CASH' || input.paymentMethod === PaymentMethod.CUSTOMER_WALLET) {
       return;
     }
 
@@ -526,6 +532,59 @@ export class SettlementsService {
       },
     });
   }
+
+  private async customerWalletLedgerEntryIdsForSettlement(
+    input: UpsertBookingSettlementSnapshotInput,
+    customerWalletDebitAmount: number,
+    monthlyPeriod: string,
+    client: SettlementPrismaClient,
+  ) {
+    const existingIds = input.customerWalletLedgerEntryIds ?? [];
+    if (input.paymentMethod !== PaymentMethod.CUSTOMER_WALLET || customerWalletDebitAmount <= 0) {
+      return existingIds.length > 0 ? existingIds : undefined;
+    }
+
+    const ledger = await client.customerWalletLedgerEntry.upsert({
+      where: { sourceKey: customerWalletPaymentSourceKey(input.bookingId) },
+      update: {
+        amount: -customerWalletDebitAmount,
+        bookingId: input.bookingId,
+        currency: input.currency ?? 'VND',
+        customerProfileId: input.customerProfileId,
+        metadata: {
+          bookingId: input.bookingId,
+          customerPaymentAmount: input.customerPaymentAmount,
+          monthlyPeriod,
+          paymentId: input.paymentId ?? null,
+          paymentMethod: PaymentMethod.CUSTOMER_WALLET,
+          providerProfileId: input.providerProfileId,
+        } satisfies Prisma.InputJsonObject,
+        notes: 'Customer wallet payment debited for completed booking settlement.',
+        reference: input.paymentId ?? input.bookingId,
+        type: customerWalletLedgerType('CUSTOMER_WALLET_PAYMENT'),
+      },
+      create: {
+        amount: -customerWalletDebitAmount,
+        bookingId: input.bookingId,
+        currency: input.currency ?? 'VND',
+        customerProfileId: input.customerProfileId,
+        metadata: {
+          bookingId: input.bookingId,
+          customerPaymentAmount: input.customerPaymentAmount,
+          monthlyPeriod,
+          paymentId: input.paymentId ?? null,
+          paymentMethod: PaymentMethod.CUSTOMER_WALLET,
+          providerProfileId: input.providerProfileId,
+        } satisfies Prisma.InputJsonObject,
+        notes: 'Customer wallet payment debited for completed booking settlement.',
+        reference: input.paymentId ?? input.bookingId,
+        sourceKey: customerWalletPaymentSourceKey(input.bookingId),
+        type: customerWalletLedgerType('CUSTOMER_WALLET_PAYMENT'),
+      },
+    });
+
+    return [...new Set([...existingIds, ledger.id])];
+  }
 }
 
 export function bookingSettlementSourceKey(bookingId: string) {
@@ -546,6 +605,10 @@ export function bookingPaymentClearingSourceKey(bookingId: string) {
 
 export function bookingPaymentClearingRefundReversalSourceKey(bookingId: string) {
   return `booking-payment-clearing:${bookingId}:refund-reversal`;
+}
+
+export function customerWalletPaymentSourceKey(bookingId: string) {
+  return `customer-wallet-payment:${bookingId}:settlement`;
 }
 
 export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
@@ -579,6 +642,10 @@ function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occ
     reversalAffectsPartnerTaxPayable: true,
     reversalAffectsPlatformFeeRevenue: true,
   } satisfies Prisma.InputJsonObject;
+}
+
+function customerWalletLedgerType(value: string): Prisma.CustomerWalletLedgerEntryCreateInput['type'] {
+  return value as Prisma.CustomerWalletLedgerEntryCreateInput['type'];
 }
 
 function closedSettlementReversalMetadata(
