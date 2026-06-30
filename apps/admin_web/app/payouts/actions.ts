@@ -80,15 +80,18 @@ async function updatePayoutStatus(formData: FormData, status: 'PROCESSING' | 'PA
   if (status === 'PAID' && !approvalAdminId) {
     throw new Error('Payout batch paid closeout requires approval from a different admin');
   }
+  const transferRef = String(formData.get('transferRef') ?? '').trim();
+  if (status === 'PAID' && !transferRef) {
+    throw new Error('Payout batch paid closeout requires a transfer reference');
+  }
 
-  await adminPatch(
+  await adminPatchOrThrow(
     `/admin/payout-batches/${payoutBatchId}`,
     {
       status,
       approvalAdminId: approvalAdminId || undefined,
-      transferRef: String(formData.get('transferRef') ?? '') || undefined,
+      transferRef: transferRef || undefined,
     },
-    null,
   );
   revalidatePath('/payouts');
   revalidatePath('/earnings');

@@ -8011,6 +8011,9 @@ export class AdminService {
     if (input.status === PayoutBatchStatus.PAID && approvalAdminId) {
       await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Payout batch paid closeout');
     }
+    if (input.status === PayoutBatchStatus.PAID && !normalizeNullable(input.transferRef)) {
+      throw new BadRequestException('Payout batch paid closeout requires a transfer reference');
+    }
     const batch = await this.earnings.updatePayoutBatch(payoutBatchId, earningsInput);
     await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${batch.id}`, {
       ...(approvalAdminId ? { approvalAdminId } : {}),

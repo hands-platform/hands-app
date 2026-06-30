@@ -6900,6 +6900,32 @@ describe('AdminService query orchestration', () => {
     expect(earnings.updatePayoutBatch).not.toHaveBeenCalled();
   });
 
+  it('rejects payout batch paid closeout without a transfer reference at the API boundary', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
+    };
+    const earnings = {
+      updatePayoutBatch: vi.fn(),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.updatePayoutBatch('admin-user-1', 'payout-batch-1', {
+        approvalAdminId: 'finance-admin-2',
+        status: PayoutBatchStatus.PAID,
+        transferRef: '   ',
+      } as never),
+    ).rejects.toThrow('Payout batch paid closeout requires a transfer reference');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'finance-admin-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(earnings.updatePayoutBatch).not.toHaveBeenCalled();
+  });
+
   it('audits the separate approver when marking payout batches as paid', async () => {
     const prisma = {
       adminAuditLog: {
