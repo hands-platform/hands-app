@@ -7377,6 +7377,7 @@ describe('AdminService query orchestration', () => {
           fromStatus: MonthlyTaxClosingStatus.REVIEWED,
           toStatus: MonthlyTaxClosingStatus.DECLARED,
           settlementCount: 2,
+          linkedSettlementSnapshotCount: 2,
           partnerWithholdingTotal: 84000,
           companyOutputVatTotal: 18962,
         }),

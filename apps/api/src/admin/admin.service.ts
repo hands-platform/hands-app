@@ -6666,8 +6666,9 @@ export class AdminService {
         select: adminMonthlyTaxClosingListSelect,
       });
       const settlementTaxStatus = monthlyTaxClosingSettlementTaxStatus(status);
+      let linkedSettlementSnapshotCount = 0;
       if (settlementTaxStatus) {
-        await tx.bookingSettlementSnapshot.updateMany({
+        const linkedSettlementSnapshots = await tx.bookingSettlementSnapshot.updateMany({
           where: {
             monthlyPeriod: period,
             currency: summary.currency,
@@ -6678,6 +6679,7 @@ export class AdminService {
             taxStatus: settlementTaxStatus,
           },
         });
+        linkedSettlementSnapshotCount = linkedSettlementSnapshots.count;
       }
 
       await tx.adminAuditLog.create({
@@ -6690,6 +6692,7 @@ export class AdminService {
             toStatus: status,
             period,
             currency: summary.currency,
+            linkedSettlementSnapshotCount,
             settlementCount: summary.settlementCount,
             customerPaymentAmountTotal: summary.customerPaymentAmountTotal,
             partnerPayoutTotal: summary.partnerPayoutTotal,
