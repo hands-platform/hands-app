@@ -6086,7 +6086,8 @@ export class AdminService {
         throw new BadRequestException('Match currency must equal bank transaction currency');
       }
 
-      const sourceAmount = await this.validateBankReconciliationSource(tx, source, currency);
+      const sourceSnapshot = await this.validateBankReconciliationSource(tx, source, currency);
+      const sourceAmount = sourceSnapshot.amount;
       if (Math.abs(input.amount) > Math.abs(sourceAmount)) {
         throw new BadRequestException('Match amount exceeds source amount');
       }
@@ -6157,11 +6158,19 @@ export class AdminService {
           metadata: {
             amount: input.amount,
             bankTransactionId,
+            bankStatusBefore: bankTransaction.status,
+            bankStatusAfter: updatedBankTransaction.status,
             currency,
             matchId: match.id,
             notes: normalizeNullable(input.notes),
             [source.field]: source.id,
             sourceType: source.type,
+            ...(source.type === 'payment-clearing'
+              ? {
+                  paymentClearingStatusBefore: sourceSnapshot.status,
+                  paymentClearingStatusAfter: updatedPaymentClearingEntry?.status ?? null,
+                }
+              : {}),
           },
         },
       });
@@ -6248,9 +6257,12 @@ export class AdminService {
           metadata: {
             amount: match.amount,
             bankTransactionId,
+            bankStatusBefore: match.bankTransaction.status,
+            bankStatusAfter: updatedBankTransaction.status,
             currency: match.currency,
             matchId,
             paymentClearingEntryId: match.paymentClearingEntryId,
+            paymentClearingStatusAfter: updatedPaymentClearingEntry?.status ?? null,
             reason,
           },
         },
@@ -6281,7 +6293,7 @@ export class AdminService {
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal accounting journal entry currency');
       }
-      return row.amount;
+      return { amount: row.amount };
     }
     if (source.type === 'payment-clearing') {
       const row = await tx.bookingPaymentClearingEntry.findUnique({
@@ -6297,7 +6309,7 @@ export class AdminService {
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal payment clearing currency');
       }
-      return row.amount;
+      return { amount: row.amount, status: row.status };
     }
     if (source.type === 'withdrawal') {
       const row = await tx.providerWalletWithdrawalRequest.findUnique({
@@ -6310,7 +6322,7 @@ export class AdminService {
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal withdrawal currency');
       }
-      return row.amount;
+      return { amount: row.amount };
     }
 
     const row = await tx.providerPayoutBatch.findUnique({
@@ -6323,7 +6335,7 @@ export class AdminService {
     if (row.currency !== currency) {
       throw new BadRequestException('Match currency must equal payout batch currency');
     }
-    return row.totalNetAmount;
+    return { amount: row.totalNetAmount };
   }
 
   private async updatePaymentClearingReconciliationStatus(

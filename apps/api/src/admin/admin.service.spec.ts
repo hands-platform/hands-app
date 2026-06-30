@@ -6839,7 +6839,11 @@ describe('AdminService query orchestration', () => {
         metadata: expect.objectContaining({
           paymentClearingEntryId: 'clearing-1',
           amount: 900000,
+          bankStatusBefore: BankReconciliationStatus.UNMATCHED,
+          bankStatusAfter: BankReconciliationStatus.MATCHED,
           currency: 'VND',
+          paymentClearingStatusBefore: BookingPaymentClearingStatus.OPEN,
+          paymentClearingStatusAfter: BookingPaymentClearingStatus.CLEARED,
         }),
       }),
     });
@@ -7025,7 +7029,10 @@ describe('AdminService query orchestration', () => {
         target: 'bank_reconciliation_match:match-1',
         metadata: expect.objectContaining({
           bankTransactionId: 'bank-tx-1',
+          bankStatusBefore: BankReconciliationStatus.MATCHED,
+          bankStatusAfter: BankReconciliationStatus.PARTIALLY_MATCHED,
           paymentClearingEntryId: 'clearing-1',
+          paymentClearingStatusAfter: BookingPaymentClearingStatus.PARTIALLY_CLEARED,
           reason: 'Wrong payment clearing source',
         }),
       }),
