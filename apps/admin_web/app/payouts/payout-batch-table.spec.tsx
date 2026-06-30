@@ -84,6 +84,9 @@ describe('PayoutBatchTable', () => {
     expect(rendered).toContain('700.000 VND');
     expect(hrefsIn(table)).toContain('/payouts?confirm=paid&payoutBatchId=batch-123456');
     expect(hrefsIn(table)).toContain('/partners/partner-1');
+    expect(classNamesIn(table)).toEqual(
+      expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+    );
   });
 
   it('renders settled payout rows with metadata save controls but no status action', () => {
@@ -225,6 +228,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

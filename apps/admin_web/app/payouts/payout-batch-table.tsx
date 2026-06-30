@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -183,14 +184,16 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             </div>
             <form className="actions" action={updateTransferRefAction}>
               <input type="hidden" name="payoutBatchId" value={row.id} />
-              <input
-                aria-label="Transfer reference"
+              <AdminFormInput
                 defaultValue={row.transferRef}
+                label="Transfer reference"
                 name="transferRef"
                 placeholder="Bank ref"
               />
-              <input aria-label="Transfer notes" defaultValue={row.notes} name="notes" placeholder="Notes" />
-              <button type="submit">Save</button>
+              <AdminFormInput defaultValue={row.notes} label="Transfer notes" name="notes" placeholder="Notes" />
+              <AdminFormControlButton className="btn btn-primary" type="submit">
+                Save
+              </AdminFormControlButton>
             </form>
             <div className="actions admin-mt-8">
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
