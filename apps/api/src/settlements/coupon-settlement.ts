@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 export type CouponSettlementContext = {
@@ -37,11 +38,16 @@ export function buildCouponSettlementContext(input: {
     };
   }
 
-  const fundingSource = stringValue(rawMeta?.couponFundingSourceSnapshot) ?? 'COMPANY';
+  const fundingSource = couponFundingSource(rawMeta?.couponFundingSourceSnapshot);
+  if (fundingSource !== 'COMPANY') {
+    throw new BadRequestException(
+      'Only company-funded coupons can be settled until coupon funding-specific journals are implemented.',
+    );
+  }
   const accountingTreatment = stringValue(rawMeta?.couponAccountingTreatmentSnapshot) ?? 'MARKETING_EXPENSE';
-  const companyCouponExpense = fundingSource === 'COMPANY' ? discountAmount : 0;
-  const partnerFundedCouponAmount = fundingSource === 'PARTNER' ? discountAmount : 0;
-  const platformFeeDiscountAmount = fundingSource === 'PLATFORM_FEE' ? discountAmount : 0;
+  const companyCouponExpense = discountAmount;
+  const partnerFundedCouponAmount = 0;
+  const platformFeeDiscountAmount = 0;
   const reviewFlag = discountAmount > 0 && !couponId && !couponCode ? 'MISSING_COUPON_REFERENCE' : undefined;
 
   return {
@@ -96,6 +102,14 @@ function nonNegativeNumber(value: unknown) {
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function couponFundingSource(value: unknown) {
+  const fundingSource = stringValue(value)?.toUpperCase() ?? 'COMPANY';
+  if (fundingSource === 'COMPANY' || fundingSource === 'PARTNER' || fundingSource === 'PLATFORM_FEE') {
+    return fundingSource;
+  }
+  throw new BadRequestException(`Unsupported coupon funding source: ${fundingSource}`);
 }
 
 function compactJsonObject(input: Record<string, string | number | boolean | null | undefined>) {
