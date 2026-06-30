@@ -97,7 +97,7 @@ export default async function NotificationsPage({
           clearHref={buildNotificationListHref({
             booking: '',
             range: model.filters.range,
-            review: '',
+            review: 'all',
           })}
           filteredCount={model.notifications.length}
           links={notificationFilterLinks.map((link) => ({

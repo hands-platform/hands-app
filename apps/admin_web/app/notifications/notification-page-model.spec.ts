@@ -786,7 +786,7 @@ describe('notification page model', () => {
     const model = buildNotificationPageModel({
       notifications,
       operationalPolicies: [],
-      params: { page: '2' },
+      params: { page: '2', review: 'all' },
     });
 
     expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(25);
@@ -818,7 +818,7 @@ describe('notification page model', () => {
         totalCount: 2400,
       },
       operationalPolicies: [],
-      params: { page: '2' },
+      params: { page: '2', review: 'all' },
     });
 
     expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(2400);
@@ -1234,6 +1234,11 @@ describe('notification page model', () => {
       range: 'today',
       review: 'failed',
     });
+    expect(buildNotificationFilters({})).toEqual({
+      booking: '',
+      range: 'today',
+      review: 'needs-retry',
+    });
     expect(
       buildNotificationListHref({ booking: 'booking-1', range: 'today', review: 'failed' }, { page: 2 }),
     ).toBe('/notifications?review=failed&booking=booking-1&page=2');
@@ -1243,7 +1248,7 @@ describe('notification page model', () => {
     expect(buildNotificationListHref({ booking: '', range: '7d', review: 'failed' })).toBe(
       '/notifications?range=7d&review=failed',
     );
-    expect(buildNotificationListHref({ booking: '', review: '' })).toBe('/notifications');
+    expect(buildNotificationListHref({ booking: '', review: 'all' })).toBe('/notifications?review=all');
     expect(notificationDateRangeLinks.map((item) => item.range)).toEqual([
       'today',
       'yesterday',
@@ -1252,9 +1257,26 @@ describe('notification page model', () => {
       'all',
     ]);
     expect(notificationDateRangeLabel('30d')).toBe('Last 30 days');
-    expect(buildNotificationApiHref({ range: 'all' })).toBe('/admin/notifications?take=20');
-    expect(buildNotificationApiHref({ page: '3', range: 'all' })).toBe('/admin/notifications?take=20&skip=40');
-    expect(buildNotificationSummaryApiHref({ range: 'all' })).toBe('/admin/notifications/summary');
+    expect(buildNotificationApiHref({ range: 'all', review: 'all' })).toBe('/admin/notifications?take=20');
+    expect(buildNotificationApiHref({ page: '3', range: 'all', review: 'all' })).toBe(
+      '/admin/notifications?take=20&skip=40',
+    );
+    expect(buildNotificationSummaryApiHref({ range: 'all', review: 'all' })).toBe(
+      '/admin/notifications/summary',
+    );
+    const defaultApiHref = buildNotificationApiHref({});
+    const defaultApiUrl = new URL(defaultApiHref, 'http://admin.local');
+    expect(defaultApiUrl.pathname).toBe('/admin/notifications');
+    expect(defaultApiUrl.searchParams.get('take')).toBe('20');
+    expect(defaultApiUrl.searchParams.get('review')).toBe('needs-retry');
+    expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('to') ?? ''))).toBe(true);
+    const defaultSummaryHref = buildNotificationSummaryApiHref({});
+    const defaultSummaryUrl = new URL(defaultSummaryHref, 'http://admin.local');
+    expect(defaultSummaryUrl.pathname).toBe('/admin/notifications/summary');
+    expect(defaultSummaryUrl.searchParams.get('review')).toBe('needs-retry');
+    expect(Number.isFinite(Date.parse(defaultSummaryUrl.searchParams.get('from') ?? ''))).toBe(true);
+    expect(Number.isFinite(Date.parse(defaultSummaryUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(buildNotificationPolicyApiHref()).toBe(
       '/admin/operational-policy?keys=notification.partner_alert_channel',
     );
@@ -1279,18 +1301,11 @@ describe('notification page model', () => {
     expect(filteredSummaryUrl.pathname).toBe('/admin/notifications/summary');
     expect(filteredSummaryUrl.searchParams.get('review')).toBe('failed');
     expect(filteredSummaryUrl.searchParams.get('booking')).toBe('booking-1');
-    const todayApiHref = buildNotificationApiHref({});
-    const todayApiUrl = new URL(todayApiHref, 'http://admin.local');
-    expect(todayApiUrl.pathname).toBe('/admin/notifications');
-    expect(todayApiUrl.searchParams.get('take')).toBe('20');
-    expect(todayApiUrl.searchParams.get('skip')).toBeNull();
-    expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('from') ?? ''))).toBe(true);
-    expect(Number.isFinite(Date.parse(todayApiUrl.searchParams.get('to') ?? ''))).toBe(true);
-    const todaySummaryHref = buildNotificationSummaryApiHref({});
-    const todaySummaryUrl = new URL(todaySummaryHref, 'http://admin.local');
-    expect(todaySummaryUrl.pathname).toBe('/admin/notifications/summary');
-    expect(Number.isFinite(Date.parse(todaySummaryUrl.searchParams.get('from') ?? ''))).toBe(true);
-    expect(Number.isFinite(Date.parse(todaySummaryUrl.searchParams.get('to') ?? ''))).toBe(true);
+    expect(notificationFilterLinks.find((item) => item.review === 'all')).toEqual({
+      href: '/notifications?review=all',
+      label: 'All notifications',
+      review: 'all',
+    });
     expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
       href: '/notifications?review=partner-alerts',
       label: 'Partner alerts',

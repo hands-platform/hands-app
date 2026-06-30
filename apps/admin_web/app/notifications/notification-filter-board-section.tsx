@@ -49,7 +49,7 @@ export function NotificationFilterBoardSection({
   rangeLinks,
   totalCount,
 }: NotificationFilterBoardSectionProps) {
-  const isFiltered = Boolean(activeReview || activeBookingLabel);
+  const isFiltered = Boolean((activeReview && activeReview !== 'all') || activeBookingLabel);
 
   return (
     <AdminFilterPanel

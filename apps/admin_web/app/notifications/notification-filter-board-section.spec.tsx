@@ -24,7 +24,7 @@ describe('NotificationFilterBoardSection', () => {
       },
       activeRange: '7d',
       activeRangeLabel: 'Last 7 days',
-      clearHref: '/notifications?range=7d',
+      clearHref: '/notifications?range=7d&review=all',
       filteredCount: 2,
       links: buildLinks('7d'),
       rangeLinks: buildRangeLinks(),
@@ -63,12 +63,12 @@ describe('NotificationFilterBoardSection', () => {
     const section = NotificationFilterBoardSection({
       activeBookingLabel: null,
       activeFilterDescription: null,
-      activeFilterLabel: null,
-      activeReview: '',
+      activeFilterLabel: 'All notifications',
+      activeReview: 'all',
       activeReviewRunbook: null,
       activeRange: 'today',
       activeRangeLabel: 'Today',
-      clearHref: '/notifications',
+      clearHref: '/notifications?review=all',
       filteredCount: 10,
       links: buildLinks(),
       rangeLinks: buildRangeLinks(),
@@ -87,10 +87,13 @@ describe('NotificationFilterBoardSection', () => {
 });
 
 function buildLinks(range?: '7d'): NotificationFilterLink[] {
-  const rangePrefix = range ? '?range=7d' : '';
   const reviewPrefix = range ? '?range=7d&review=' : '?review=';
   return [
-    { href: `/notifications${rangePrefix}`, label: 'All notifications', review: '' },
+    {
+      href: `/notifications${range ? '?range=7d&review=all' : '?review=all'}`,
+      label: 'All notifications',
+      review: 'all',
+    },
     { href: `/notifications${reviewPrefix}failed`, label: 'Failed sends', review: 'failed' },
   ];
 }

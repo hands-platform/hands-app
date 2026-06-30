@@ -91,6 +91,7 @@ const NOTIFICATION_TABLE_PAGE_SIZE = 20;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
 const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_NOTIFICATION_REVIEW = 'needs-retry';
 
 export const notificationDateRangeLinks = [
   { label: 'Today', range: 'today' },
@@ -186,7 +187,7 @@ export type NotificationFcmSmokeReadiness = {
 };
 
 export const notificationFilterLinks = [
-  { label: 'All notifications', href: '/notifications', review: '' },
+  { label: 'All notifications', href: '/notifications?review=all', review: 'all' },
   { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
   {
     label: 'Disabled devices',
@@ -218,8 +219,9 @@ export const notificationFilterLinks = [
 ] as const;
 
 export function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
+  const review = readSearchParam(params.review);
   return {
-    review: readSearchParam(params.review),
+    review: review || DEFAULT_NOTIFICATION_REVIEW,
     booking: readSearchParam(params.booking),
     range: normalizeNotificationDateRange(readSearchParam(params.range)),
   };
@@ -254,7 +256,7 @@ export function buildNotificationApiHref(params: Record<string, string | string[
   if (skip > 0) {
     query.set('skip', String(skip));
   }
-  if (filters.review) {
+  if (shouldIncludeNotificationApiReview(filters.review)) {
     query.set('review', filters.review);
   }
   if (filters.booking) {
@@ -273,7 +275,7 @@ export function buildNotificationApiHref(params: Record<string, string | string[
 export function buildNotificationSummaryApiHref(params: Record<string, string | string[] | undefined>) {
   const filters = buildNotificationFilters(params);
   const query = new URLSearchParams();
-  if (filters.review) {
+  if (shouldIncludeNotificationApiReview(filters.review)) {
     query.set('review', filters.review);
   }
   if (filters.booking) {
@@ -1227,10 +1229,14 @@ function formatMeters(value: unknown) {
 }
 
 function notificationMatchesReview(notification: AdminNotification, review: string) {
-  if (!review) {
+  if (!review || review === 'all') {
     return true;
   }
   return notificationReviewMatchers[review]?.(notification) ?? true;
+}
+
+function shouldIncludeNotificationApiReview(review: string) {
+  return Boolean(review && review !== 'all');
 }
 
 function notificationBookingId(notification: AdminNotification) {
