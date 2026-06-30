@@ -324,6 +324,54 @@ describe('PaymentsService refunds', () => {
       }),
     );
   });
+
+  it('keeps refund-after-payout receivable evidence in admin audit metadata', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const earnings = {
+      cancelForRefund: vi.fn().mockResolvedValue({
+        skipped: false,
+        reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+        earning: { id: 'earning-paid-1' },
+        receivableAmount: 430000,
+      }),
+    };
+    const settlements = {
+      reverseBookingSettlementSnapshotForRefund: vi.fn().mockResolvedValue({
+        id: 'settlement-paid-payout-1',
+        settlementStatus: 'REVERSED',
+      }),
+    };
+    const existingPayment = payment({ status: PaymentStatus.CAPTURED });
+    const refundedPayment = {
+      ...existingPayment,
+      refunds: [{ id: 'refund-1', amount: existingPayment.amount }],
+      status: PaymentStatus.REFUNDED,
+    };
+    const { prisma, service } = createService({
+      admin,
+      earnings,
+      existingPayment,
+      settlements,
+      updatedPayment: refundedPayment,
+    });
+    prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
+
+    await service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' });
+
+    expect(admin.writeAudit).toHaveBeenCalledWith(
+      'admin-1',
+      'payment.refund',
+      'payment:payment-1',
+      expect.objectContaining({
+        earningCancellation: {
+          skipped: false,
+          earningId: 'earning-paid-1',
+          reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+          receivableAmount: 430000,
+        },
+      }),
+    );
+  });
 });
 
 function createService({
