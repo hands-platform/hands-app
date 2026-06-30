@@ -6,7 +6,8 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -80,12 +81,13 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
       ]}
       title="Settlement Reversals"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reversalReviewLabel(filters.review)}.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="Settlement reversal filters"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reversalReviewLabel(filters.review)}.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="Settlement reversal filters"
+      >
         <div className="participant-list admin-mt-12">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
@@ -108,15 +110,18 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="The original settlement remains immutable; this list shows the reversal row and its accounting impact."
-          title="Settlement reversal rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="The original settlement remains immutable; this list shows the reversal row and its accounting impact."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Settlement reversal rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No settlement reversal rows match the current filters."
             headers={[
               'Booking',
@@ -202,7 +207,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

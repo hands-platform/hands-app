@@ -6,7 +6,8 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -123,14 +124,15 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
       ]}
       title="Coupon Finance"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(
-            filters.range,
-          )}. Queue: ${reviewLabel(filters.review)}.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="Coupon finance filters"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(
+          filters.range,
+        )}. Queue: ${reviewLabel(filters.review)}.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="Coupon finance filters"
+      >
         <div className="participant-list admin-mt-12">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
@@ -153,15 +155,18 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Coupon policy values are historical settlement snapshots. Changing coupon settings later must not rewrite these rows."
-          title="Coupon settlement rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Coupon policy values are historical settlement snapshots. Changing coupon settings later must not rewrite these rows."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Coupon settlement rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No coupon settlement rows match the current filters."
             headers={[
               'Booking',
@@ -242,7 +247,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

@@ -6,7 +6,8 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -96,12 +97,13 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
       ]}
       title="Booking Settlement Audit"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="Settlement audit filters"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="Settlement audit filters"
+      >
         <div className="participant-list admin-mt-12">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
@@ -124,15 +126,18 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Open the booking detail only when evidence is needed; the list stays intentionally compact."
-          title="Booking settlement snapshot rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Open the booking detail only when evidence is needed; the list stays intentionally compact."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Booking settlement snapshot rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No settlement snapshots match the current filters."
             headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon', 'Partner tax', 'HANDS fee', 'Status']}
             rowCount={tableRows.length}
@@ -206,7 +211,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

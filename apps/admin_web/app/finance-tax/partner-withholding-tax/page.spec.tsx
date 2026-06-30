@@ -27,6 +27,9 @@ describe('PartnerWithholdingTaxPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Withholding tax period');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');

@@ -11,7 +11,8 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -103,12 +104,13 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
       ]}
       title="Partner Withholding Tax"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Period ${filters.period}. Showing page ${pagination.page} of ${pagination.totalPages} from the monthly group API.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="Withholding tax period"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Period ${filters.period}. Showing page ${pagination.page} of ${pagination.totalPages} from the monthly group API.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="Withholding tax period"
+      >
         <form className="form-grid compact-form admin-mt-12" method="get">
           <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
           <AdminFormSelect
@@ -121,15 +123,18 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             Apply period
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Use this list for monthly tax declaration preparation. Booking-level evidence stays in Booking Settlement Audit."
-          title="Partner monthly withholding rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Use this list for monthly tax declaration preparation. Booking-level evidence stays in Booking Settlement Audit."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Partner monthly withholding rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No Partner withholding tax rows exist for this period."
             headers={['Partner', 'Period', 'Bookings', 'Gross revenue', 'Partner payout', 'VAT / PIT', 'Total withheld']}
             rowCount={tableRows.length}
@@ -170,7 +175,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }
