@@ -4,6 +4,12 @@ import { redirect } from 'next/navigation';
 import type { AdminBankReconciliationSummary, AdminCompanyBankTransaction } from '../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -40,6 +46,8 @@ const DATE_RANGE_LINKS = [
 export default async function BankReconciliationPage({ searchParams }: BankReconciliationPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = readFinanceAccountingFilters(params, 'unmatched');
+  const importNotice = readParam(params, 'bankImported');
+  const importError = readParam(params, 'bankImportError');
   const settlementFilters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
@@ -134,57 +142,48 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       <section className="card admin-mb-16">
         <AdminSectionHeader
           description="Create one bank statement row from manual evidence. Imported rows start unmatched and can be reconciled from the transaction detail page."
+          status={
+            importNotice === '1' ? (
+              <span className="pill pill-success">Bank transaction imported</span>
+            ) : importError ? (
+              <span className="pill pill-danger">Import failed</span>
+            ) : null
+          }
           title="Manual bank transaction import"
         />
+        {importError ? (
+          <p className="muted admin-mt-8">
+            Bank transaction import failed. Check approval admin, bank account, type, amount, and occurred date before
+            trying again.
+          </p>
+        ) : null}
         <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
           <input
             name="redirectTo"
             type="hidden"
             value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
           />
-          <label>
-            Approving admin ID
-            <input className="form-input" name="approvalAdminId" required />
-          </label>
-          <label>
-            Bank account ID
-            <input className="form-input" name="bankAccountId" required />
-          </label>
-          <label>
-            Type
-            <select className="form-input" name="type" required defaultValue="INFLOW">
-              <option value="INFLOW">Inflow</option>
-              <option value="OUTFLOW">Outflow</option>
-            </select>
-          </label>
-          <label>
-            Amount
-            <input className="form-input" inputMode="numeric" min={1} name="amount" required type="number" />
-          </label>
-          <label>
-            Occurred at
-            <input className="form-input" name="occurredAt" required type="datetime-local" />
-          </label>
-          <label>
-            Value date
-            <input className="form-input" name="valueDate" type="date" />
-          </label>
-          <label>
-            Transfer reference
-            <input className="form-input" name="transferRef" />
-          </label>
-          <label>
-            Counterparty
-            <input className="form-input" name="counterpartyName" />
-          </label>
-          <label className="form-grid-wide">
-            Description
-            <textarea className="form-input" name="description" rows={2} />
-          </label>
+          <AdminFormInput label="Approving admin ID" name="approvalAdminId" required />
+          <AdminFormInput label="Bank account ID" name="bankAccountId" required />
+          <AdminFormSelect
+            defaultValue="INFLOW"
+            label="Type"
+            name="type"
+            options={[
+              { label: 'Inflow', value: 'INFLOW' },
+              { label: 'Outflow', value: 'OUTFLOW' },
+            ]}
+          />
+          <AdminFormInput label="Amount" min={1} name="amount" required step={1} type="number" />
+          <AdminFormInput label="Occurred at" name="occurredAt" required type="datetime-local" />
+          <AdminFormInput label="Value date" name="valueDate" type="date" />
+          <AdminFormInput label="Transfer reference" name="transferRef" />
+          <AdminFormInput label="Counterparty" name="counterpartyName" />
+          <AdminFormTextarea className="admin-grid-span-2" label="Description" name="description" rows={2} />
           <div className="form-actions form-grid-wide">
-            <button className="btn btn-primary" type="submit">
+            <AdminFormControlButton className="button button-primary">
               Import bank transaction
-            </button>
+            </AdminFormControlButton>
           </div>
         </form>
       </section>
@@ -277,18 +276,39 @@ async function createCompanyBankTransactionAction(formData: FormData) {
   const redirectTo = String(formData.get('redirectTo') ?? '/finance-tax/bank-reconciliation');
   const occurredAt = formDateTimeToIso(formData.get('occurredAt'));
   const valueDate = String(formData.get('valueDate') ?? '').trim();
-  await adminPostOrThrow('/admin/bank-reconciliation/transactions', {
-    amount: Number(formData.get('amount')),
-    approvalAdminId: String(formData.get('approvalAdminId') ?? '').trim(),
-    bankAccountId: String(formData.get('bankAccountId') ?? '').trim(),
-    counterpartyName: String(formData.get('counterpartyName') ?? '').trim() || null,
-    description: String(formData.get('description') ?? '').trim() || null,
-    occurredAt,
-    transferRef: String(formData.get('transferRef') ?? '').trim() || null,
-    type: String(formData.get('type') ?? 'INFLOW').trim(),
-    valueDate: valueDate ? `${valueDate}T00:00:00.000Z` : null,
-  });
-  redirect(redirectTo);
+  const amount = Number(formData.get('amount'));
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
+  const bankAccountId = String(formData.get('bankAccountId') ?? '').trim();
+  const type = String(formData.get('type') ?? 'INFLOW').trim();
+
+  if (
+    !approvalAdminId ||
+    !bankAccountId ||
+    !isBankTransactionType(type) ||
+    !Number.isFinite(amount) ||
+    amount <= 0 ||
+    !occurredAt
+  ) {
+    redirect(appendQueryParam(redirectTo, 'bankImportError', 'invalid'));
+  }
+
+  try {
+    await adminPostOrThrow('/admin/bank-reconciliation/transactions', {
+      amount,
+      approvalAdminId,
+      bankAccountId,
+      counterpartyName: String(formData.get('counterpartyName') ?? '').trim() || null,
+      description: String(formData.get('description') ?? '').trim() || null,
+      occurredAt,
+      transferRef: String(formData.get('transferRef') ?? '').trim() || null,
+      type,
+      valueDate: valueDate ? `${valueDate}T00:00:00.000Z` : null,
+    });
+  } catch {
+    redirect(appendQueryParam(redirectTo, 'bankImportError', 'failed'));
+  }
+
+  redirect(appendQueryParam(redirectTo, 'bankImported', '1'));
 }
 
 function formDateTimeToIso(value: FormDataEntryValue | null) {
@@ -296,7 +316,8 @@ function formDateTimeToIso(value: FormDataEntryValue | null) {
   if (!input) {
     return '';
   }
-  return new Date(input).toISOString();
+  const date = new Date(input);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
 }
 
 function statusPill(status: string) {
@@ -310,4 +331,19 @@ function statusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function isBankTransactionType(value: string) {
+  return value === 'INFLOW' || value === 'OUTFLOW';
+}
+
+function appendQueryParam(href: string, key: string, value: string) {
+  const url = new URL(href, 'http://localhost');
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}`;
+}
+
+function readParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
