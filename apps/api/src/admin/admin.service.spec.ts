@@ -8730,6 +8730,47 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
   });
 
+  it('rejects partner withholding remittance paid closeout approved by an admin without finance approver authority', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.DECLARED,
+          declaredAt: new Date('2026-06-30T10:00:00.000Z'),
+          paidAt: null,
+          closedAt: null,
+          notes: null,
+        }),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn(),
+        count: vi.fn(),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+        approvalAdminId: 'support-user-2',
+        remittanceTransferRef: 'VCB-TAX-202606',
+        remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
+      } as never),
+    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
+  });
+
   it('stores partner withholding remittance evidence when closing status moves to paid', async () => {
     const existingClosing = {
       id: 'closing-1',
