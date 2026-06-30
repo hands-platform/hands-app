@@ -1060,6 +1060,185 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  for (const scenario of [
+    {
+      expectedPlatformFeeGross: 114_500,
+      fixedAmount: 1_500,
+      paymentMethod: PaymentMethod.MOMO,
+      policyName: 'Momo processing fee',
+      rateBps: 200,
+      ruleId: 'payment-fee-rule-momo',
+    },
+    {
+      expectedPlatformFeeGross: 118_800,
+      fixedAmount: 2_000,
+      paymentMethod: PaymentMethod.VNPAY,
+      policyName: 'VNPAY processing fee',
+      rateBps: 120,
+      ruleId: 'payment-fee-rule-vnpay',
+    },
+  ]) {
+    it(`applies active ${scenario.paymentMethod} payment fee policy to completed booking settlement snapshots`, async () => {
+      const occurredAt = new Date('2026-06-13T03:02:00.000Z');
+      const booking = {
+        id: `booking-payment-fee-${scenario.paymentMethod.toLowerCase()}`,
+        customerProfileId: 'customer-1',
+        selectedProviderId: 'provider-1',
+        status: BookingStatus.COMPLETED,
+        updatedAt: occurredAt,
+        payment: {
+          id: `payment-payment-fee-${scenario.paymentMethod.toLowerCase()}`,
+          amount: 600_000,
+          currency: 'VND',
+          method: scenario.paymentMethod,
+        },
+        review: null,
+        services: [
+          {
+            serviceId: 'service-1',
+            price: 600_000,
+            quantity: 1,
+            service: { id: 'service-1', name: 'Massage' },
+          },
+        ],
+      };
+      const earning = {
+        id: `earning-payment-fee-${scenario.paymentMethod.toLowerCase()}`,
+        bookingId: booking.id,
+        providerProfileId: 'provider-1',
+        grossAmount: 600_000,
+        platformFee: 170_000,
+        withholdingAmount: 42_000,
+        netAmount: 388_000,
+        currency: 'VND',
+      };
+      const tx = {
+        paymentFeePolicyVersion: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: `payment-fee-policy-${scenario.paymentMethod.toLowerCase()}`,
+            name: scenario.policyName,
+            rules: [
+              {
+                id: scenario.ruleId,
+                feeType: 'RATE_PLUS_FIXED',
+                method: scenario.paymentMethod,
+                rateBps: scenario.rateBps,
+                fixedAmount: scenario.fixedAmount,
+                payer: PaymentFeePayer.HANDS,
+                treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+              },
+            ],
+          }),
+        },
+        platformFeePolicyVersion: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'platform-policy-1',
+            name: 'Default platform fee',
+            vatRateBps: 800,
+            rules: [
+              {
+                id: 'platform-rule-1',
+                scope: 'DEFAULT',
+                serviceType: null,
+                minGrossAmount: null,
+                maxGrossAmount: null,
+                rateBps: 0,
+                fixedAmount: 170_000,
+              },
+            ],
+          }),
+        },
+        servicePayoutRule: { findMany: vi.fn().mockResolvedValue([]) },
+        taxPolicyVersion: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'tax-policy-1',
+            name: 'Default partner tax',
+            rules: [
+              {
+                id: 'tax-vat-rule-1',
+                scope: 'DEFAULT',
+                serviceType: null,
+                minGrossAmount: null,
+                maxGrossAmount: null,
+                taxKind: PartnerTaxLineKind.PARTNER_VAT,
+                rateBps: 500,
+                fixedAmount: 0,
+              },
+              {
+                id: 'tax-pit-rule-1',
+                scope: 'DEFAULT',
+                serviceType: null,
+                minGrossAmount: null,
+                maxGrossAmount: null,
+                taxKind: PartnerTaxLineKind.PARTNER_PIT,
+                rateBps: 200,
+                fixedAmount: 0,
+              },
+            ],
+          }),
+        },
+        providerTaxProfile: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'tax-profile-1',
+            status: ProviderTaxProfileStatus.APPROVED,
+          }),
+        },
+        providerEarning: {
+          upsert: vi.fn().mockResolvedValue(earning),
+        },
+        providerPlatformFeeLog: {
+          findFirst: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
+        },
+        providerTaxLog: {
+          findFirst: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
+        },
+        providerWalletLedgerEntry: {
+          upsert: vi.fn().mockResolvedValue({ id: 'wallet-ledger-1' }),
+        },
+      };
+      const prisma = {
+        booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
+        $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+      };
+      const settlements = {
+        upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+      };
+      const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+      await expect(service.createForCompletedBooking(booking.id, 'provider-1')).resolves.toEqual(earning);
+
+      expect(tx.paymentFeePolicyVersion.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            rules: expect.objectContaining({
+              where: { active: true, method: scenario.paymentMethod },
+            }),
+          }),
+        }),
+      );
+      expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingId: booking.id,
+          paymentFeeFixedAmount: scenario.fixedAmount,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: `payment-fee-policy-${scenario.paymentMethod.toLowerCase()}`,
+          paymentFeeRateBps: scenario.rateBps,
+          paymentFeeRuleSnapshot: expect.objectContaining({
+            method: scenario.paymentMethod,
+            policyName: scenario.policyName,
+            ruleId: scenario.ruleId,
+          }),
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          paymentMethod: scenario.paymentMethod,
+          platformFeeGross: scenario.expectedPlatformFeeGross,
+        }),
+        tx,
+      );
+    });
+  }
+
   it('settles company-funded coupon bookings from pre-coupon service amount while storing the paid amount', async () => {
     const occurredAt = new Date('2026-06-13T03:02:00.000Z');
     const booking = {
