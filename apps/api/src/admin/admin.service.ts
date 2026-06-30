@@ -206,6 +206,7 @@ import type {
   CreateManualWalletAdjustmentDto,
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
+  ReverseBankReconciliationMatchDto,
   UpdateNotificationTemplateDto,
 } from './admin.dto';
 
@@ -6144,6 +6145,96 @@ export class AdminService {
     });
   }
 
+  async reverseBankReconciliationMatch(
+    actorId: string,
+    bankTransactionId: string,
+    matchId: string,
+    input: ReverseBankReconciliationMatchDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const match = await tx.bankReconciliationMatch.findUnique({
+        where: { id: matchId },
+        select: {
+          id: true,
+          bankTransactionId: true,
+          paymentClearingEntryId: true,
+          status: true,
+          amount: true,
+          currency: true,
+          bankTransaction: {
+            select: {
+              amount: true,
+              currency: true,
+              status: true,
+            },
+          },
+        },
+      });
+      if (!match) {
+        throw new NotFoundException('Bank reconciliation match not found');
+      }
+      if (match.bankTransactionId !== bankTransactionId) {
+        throw new BadRequestException('Bank reconciliation match does not belong to this bank transaction');
+      }
+      if (match.status === BankReconciliationStatus.REVERSED) {
+        throw new BadRequestException('Bank reconciliation match is already reversed');
+      }
+
+      const reason = normalizeNullable(input.reason);
+      const reversedMatch = await tx.bankReconciliationMatch.update({
+        where: { id: matchId },
+        data: {
+          status: BankReconciliationStatus.REVERSED,
+          ...(reason ? { notes: reason } : {}),
+        },
+      });
+
+      const bankMatched = await tx.bankReconciliationMatch.aggregate({
+        where: {
+          bankTransactionId,
+          status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+        },
+        _sum: { amount: true },
+      });
+      const bankStatus = bankReconciliationStatusForAmount(
+        bankMatched._sum.amount ?? 0,
+        match.bankTransaction.amount,
+      );
+      const updatedBankTransaction = await tx.companyBankTransaction.update({
+        where: { id: bankTransactionId },
+        data: { status: bankStatus },
+        select: adminCompanyBankTransactionListSelect,
+      });
+
+      const updatedPaymentClearingEntry = match.paymentClearingEntryId
+        ? await this.updatePaymentClearingReconciliationStatus(tx, match.paymentClearingEntryId)
+        : null;
+
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'bank_reconciliation.match.reverse',
+          target: `bank_reconciliation_match:${matchId}`,
+          metadata: {
+            amount: match.amount,
+            bankTransactionId,
+            currency: match.currency,
+            matchId,
+            paymentClearingEntryId: match.paymentClearingEntryId,
+            reason,
+          },
+        },
+      });
+
+      return {
+        auditLog,
+        bankTransaction: updatedBankTransaction,
+        match: reversedMatch,
+        paymentClearingEntry: updatedPaymentClearingEntry,
+      };
+    });
+  }
+
   private async validateBankReconciliationSource(
     tx: Prisma.TransactionClient,
     source: AdminBankReconciliationMatchSource,
@@ -6230,7 +6321,7 @@ export class AdminService {
       where: { id: paymentClearingEntryId },
       data: {
         status,
-        ...(status === BookingPaymentClearingStatus.CLEARED ? { clearedAt: new Date() } : {}),
+        clearedAt: status === BookingPaymentClearingStatus.CLEARED ? new Date() : null,
       },
       select: adminBookingPaymentClearingEntryListSelect,
     });

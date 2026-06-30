@@ -31,6 +31,7 @@ import {
   ReferralRewardCashoutPaidDto,
   ReferralRewardDecisionDto,
   RecordPartnerBankDepositDto,
+  ReverseBankReconciliationMatchDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
   UpdateMonthlyTaxClosingStatusDto,
@@ -931,6 +932,16 @@ export class AdminController {
     @Body() body: CreateBankReconciliationMatchDto,
   ) {
     return this.admin.createBankReconciliationMatch(user.id, id, body);
+  }
+
+  @Post('bank-reconciliation/:id/matches/:matchId/reverse')
+  reverseBankReconciliationMatch(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Param('matchId') matchId: string,
+    @Body() body: ReverseBankReconciliationMatchDto,
+  ) {
+    return this.admin.reverseBankReconciliationMatch(user.id, id, matchId, body);
   }
 
   @Get('services')

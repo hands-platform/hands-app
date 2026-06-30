@@ -40,6 +40,8 @@ export default async function BankReconciliationDetailPage({
   const noticeParams = searchParams ? await searchParams : {};
   const matchNotice = readParam(noticeParams, 'matched');
   const matchError = readParam(noticeParams, 'matchError');
+  const reverseNotice = readParam(noticeParams, 'matchReversed');
+  const reverseError = readParam(noticeParams, 'reverseError');
 
   const transaction = await adminGet<AdminBankReconciliationTransactionDetail | null>(
     buildBankReconciliationDetailApiHref(id),
@@ -85,9 +87,11 @@ export default async function BankReconciliationDetailPage({
         <AdminSectionHeader
           description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
           status={
-            matchNotice === '1' ? (
+            reverseNotice === '1' ? (
+              <span className="pill pill-success">Match reversed</span>
+            ) : matchNotice === '1' ? (
               <span className="pill pill-success">Match saved</span>
-            ) : matchError ? (
+            ) : matchError || reverseError ? (
               <span className="pill pill-danger">Match failed</span>
             ) : null
           }
@@ -96,6 +100,11 @@ export default async function BankReconciliationDetailPage({
         {matchError ? (
           <p className="muted admin-mt-8">
             No match was saved. Check the source id, amount, currency, and current transaction state before trying again.
+          </p>
+        ) : null}
+        {reverseError ? (
+          <p className="muted admin-mt-8">
+            No match was reversed. Check whether the match already belongs to this bank row and is not already reversed.
           </p>
         ) : null}
         <form action={createBankReconciliationMatchAction} className="form-grid compact-form admin-mt-16">
@@ -146,7 +155,7 @@ export default async function BankReconciliationDetailPage({
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No reconciliation matches are linked to this bank transaction."
-            headers={['Matched source', 'Accounting entry', 'Payment clearing', 'Withdrawal / payout', 'Amount', 'Status']}
+            headers={['Matched source', 'Accounting entry', 'Payment clearing', 'Withdrawal / payout', 'Amount', 'Status', 'Action']}
             rowCount={matches.length}
           >
             {matches.map((match) => (
@@ -185,6 +194,24 @@ export default async function BankReconciliationDetailPage({
                 </td>
                 <td>
                   <span className={`pill ${statusPill(match.status)}`}>{match.status}</span>
+                </td>
+                <td>
+                  {match.status === 'REVERSED' ? (
+                    <span className="muted">Reversed</span>
+                  ) : (
+                    <form action={reverseBankReconciliationMatchAction} className="admin-inline-form">
+                      <input name="bankTransactionId" type="hidden" value={transaction.id} />
+                      <input name="matchId" type="hidden" value={match.id} />
+                      <input
+                        name="reason"
+                        type="hidden"
+                        value="Operator reversed incorrect reconciliation match from Admin detail."
+                      />
+                      <AdminFormControlButton className="button button-secondary admin-inline-action">
+                        Reverse
+                      </AdminFormControlButton>
+                    </form>
+                  )}
                 </td>
               </tr>
             ))}
@@ -225,6 +252,34 @@ async function createBankReconciliationMatchAction(formData: FormData) {
   }
 
   redirect(`${returnHref}?matched=1`);
+}
+
+async function reverseBankReconciliationMatchAction(formData: FormData) {
+  'use server';
+
+  const bankTransactionId = readFormString(formData, 'bankTransactionId');
+  const matchId = readFormString(formData, 'matchId');
+  const reason = readFormString(formData, 'reason');
+  const returnHref = bankTransactionId
+    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
+    : '/finance-tax/bank-reconciliation';
+
+  if (!bankTransactionId || !matchId) {
+    redirect(`${returnHref}?reverseError=invalid`);
+  }
+
+  try {
+    await adminPostOrThrow(
+      `/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches/${encodeURIComponent(
+        matchId,
+      )}/reverse`,
+      { ...(reason ? { reason } : {}) },
+    );
+  } catch {
+    redirect(`${returnHref}?reverseError=failed`);
+  }
+
+  redirect(`${returnHref}?matchReversed=1`);
 }
 
 function InfoCard({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {

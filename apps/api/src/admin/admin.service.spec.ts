@@ -6837,6 +6837,96 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('reverses a bank reconciliation match and recalculates linked statuses in one transaction', async () => {
+    const tx = {
+      bankReconciliationMatch: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'match-1',
+          bankTransactionId: 'bank-tx-1',
+          paymentClearingEntryId: 'clearing-1',
+          status: BankReconciliationStatus.MATCHED,
+          amount: 500000,
+          currency: 'VND',
+          bankTransaction: {
+            amount: 900000,
+            currency: 'VND',
+            status: BankReconciliationStatus.MATCHED,
+          },
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'match-1',
+          status: BankReconciliationStatus.REVERSED,
+        }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 400000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 400000 } }),
+      },
+      companyBankTransaction: {
+        update: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          status: BankReconciliationStatus.PARTIALLY_MATCHED,
+        }),
+      },
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          amount: 900000,
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'clearing-1',
+          status: BookingPaymentClearingStatus.PARTIALLY_CLEARED,
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-reverse-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.reverseBankReconciliationMatch('admin-user-1', 'bank-tx-1', 'match-1', {
+        reason: 'Wrong payment clearing source',
+      }),
+    ).resolves.toMatchObject({
+      match: { id: 'match-1', status: BankReconciliationStatus.REVERSED },
+      bankTransaction: { id: 'bank-tx-1', status: BankReconciliationStatus.PARTIALLY_MATCHED },
+      paymentClearingEntry: { id: 'clearing-1', status: BookingPaymentClearingStatus.PARTIALLY_CLEARED },
+    });
+
+    expect(tx.bankReconciliationMatch.update).toHaveBeenCalledWith({
+      where: { id: 'match-1' },
+      data: expect.objectContaining({
+        status: BankReconciliationStatus.REVERSED,
+        notes: 'Wrong payment clearing source',
+      }),
+    });
+    expect(tx.companyBankTransaction.update).toHaveBeenCalledWith({
+      where: { id: 'bank-tx-1' },
+      data: { status: BankReconciliationStatus.PARTIALLY_MATCHED },
+      select: expect.any(Object),
+    });
+    expect(tx.bookingPaymentClearingEntry.update).toHaveBeenCalledWith({
+      where: { id: 'clearing-1' },
+      data: { status: BookingPaymentClearingStatus.PARTIALLY_CLEARED, clearedAt: null },
+      select: expect.any(Object),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'bank_reconciliation.match.reverse',
+        target: 'bank_reconciliation_match:match-1',
+        metadata: expect.objectContaining({
+          bankTransactionId: 'bank-tx-1',
+          paymentClearingEntryId: 'clearing-1',
+          reason: 'Wrong payment clearing source',
+        }),
+      }),
+    });
+  });
+
   it('rejects manual bank reconciliation matches with more than one source record', async () => {
     const service = createAdminService({});
 

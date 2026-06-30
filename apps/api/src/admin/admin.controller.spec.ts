@@ -85,6 +85,7 @@ describe('AdminController notification and push actions', () => {
     bankReconciliationSummary: vi.fn(),
     bankReconciliationTransactionDetail: vi.fn(),
     createBankReconciliationMatch: vi.fn(),
+    reverseBankReconciliationMatch: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -999,6 +1000,30 @@ describe('AdminController notification and push actions', () => {
       path: 'bank-reconciliation/:id/matches',
     });
     expect(admin.createBankReconciliationMatch).toHaveBeenCalledWith('admin-1', 'bank-tx-1', payload);
+  });
+
+  it('exposes manual bank reconciliation match reversal by transaction and match id', async () => {
+    const user = { id: 'admin-1' } as never;
+    const payload = { reason: 'Wrong payment clearing source' };
+    admin.reverseBankReconciliationMatch.mockResolvedValue({ id: 'match-1', status: 'REVERSED' });
+
+    await expect(
+      controller.reverseBankReconciliationMatch(user, 'bank-tx-1', 'match-1', payload as never),
+    ).resolves.toEqual({
+      id: 'match-1',
+      status: 'REVERSED',
+    });
+
+    expect(routeMetadata('reverseBankReconciliationMatch' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'bank-reconciliation/:id/matches/:matchId/reverse',
+    });
+    expect(admin.reverseBankReconciliationMatch).toHaveBeenCalledWith(
+      'admin-1',
+      'bank-tx-1',
+      'match-1',
+      payload,
+    );
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

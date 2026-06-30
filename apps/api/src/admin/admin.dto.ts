@@ -986,6 +986,14 @@ export class CreateBankReconciliationMatchDto {
   notes?: string | null;
 }
 
+export class ReverseBankReconciliationMatchDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string | null;
+}
+
 export class CreatePayoutBatchDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
