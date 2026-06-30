@@ -231,7 +231,7 @@ describe('PaymentsService refunds', () => {
     expect(admin.writeAudit).not.toHaveBeenCalled();
   });
 
-  it('rejects admin refunds approved by a non-admin approver before finance writes', async () => {
+  it('rejects admin refunds approved by an admin without finance approver authority before finance writes', async () => {
     const admin = { writeAudit: vi.fn() };
     const earnings = {
       cancelForRefund: vi.fn(),
@@ -251,10 +251,10 @@ describe('PaymentsService refunds', () => {
 
     await expect(
       service.refund('admin-1', 'payment-1', { approvalAdminId: 'support-user-2' }),
-    ).rejects.toThrow('Payment refund requires approval from an admin approver');
+    ).rejects.toThrow('Payment refund requires approval from a finance approver');
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'support-user-2', roles: { has: Role.ADMIN } },
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
       select: { id: true },
     });
     expect(prisma.payment.update).not.toHaveBeenCalled();

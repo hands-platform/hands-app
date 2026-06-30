@@ -357,7 +357,7 @@ async function main() {
     create: {
       phone: '+84900000099',
       fullName: 'Demo Admin',
-      roles: [Role.ADMIN],
+      roles: [Role.ADMIN, Role.FINANCE_APPROVER],
     },
   });
 

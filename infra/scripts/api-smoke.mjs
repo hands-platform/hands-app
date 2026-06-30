@@ -37,14 +37,14 @@ async function createSmokeAdminAuth() {
           where: { id: existing.id },
           data: {
             fullName: existing.fullName ?? 'HANDS Smoke Admin',
-            roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN])) },
+            roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER])) },
           },
         })
       : await prisma.user.create({
           data: {
             phone,
             fullName: 'HANDS Smoke Admin',
-            roles: [Role.ADMIN],
+            roles: [Role.ADMIN, Role.FINANCE_APPROVER],
           },
         });
 

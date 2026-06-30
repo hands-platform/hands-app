@@ -6141,7 +6141,7 @@ describe('AdminService query orchestration', () => {
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
-  it('rejects manual wallet adjustments approved by a non-admin approver before writing a ledger', async () => {
+  it('rejects manual wallet adjustments approved by an admin without finance approver authority before writing a ledger', async () => {
     const tx = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
@@ -6173,10 +6173,10 @@ describe('AdminService query orchestration', () => {
         approvalId: 'approval-1',
         approvalAdminId: 'support-user-2',
       }),
-    ).rejects.toThrow('Manual wallet adjustment requires approval from an admin approver');
+    ).rejects.toThrow('Manual wallet adjustment requires approval from a finance approver');
 
     expect(tx.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'support-user-2', roles: { has: Role.ADMIN } },
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
       select: { id: true },
     });
     expect(tx.providerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
@@ -7244,7 +7244,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
-  it('rejects manual company bank transactions approved by a non-admin approver', async () => {
+  it('rejects manual company bank transactions approved by an admin without finance approver authority', async () => {
     const prisma = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
@@ -7270,9 +7270,9 @@ describe('AdminService query orchestration', () => {
         transferRef: 'VCB-900',
         approvalAdminId: 'support-user-2',
       }),
-    ).rejects.toThrow('Company bank transaction manual create requires approval from an admin approver');
+    ).rejects.toThrow('Company bank transaction manual create requires approval from a finance approver');
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'support-user-2', roles: { has: Role.ADMIN } },
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
       select: { id: true },
     });
     expect(prisma.companyBankAccount.findUnique).not.toHaveBeenCalled();

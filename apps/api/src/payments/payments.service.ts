@@ -439,11 +439,11 @@ async function assertPaymentRefundApprovalAdmin(db: PaymentApprovalLookupDb, app
   }
 
   const approver = await userDelegate.findFirst({
-    where: { id: approvalAdminId, roles: { has: Role.ADMIN } },
+    where: { id: approvalAdminId, roles: { has: Role.FINANCE_APPROVER } },
     select: { id: true },
   });
   if (!approver) {
-    throw new BadRequestException('Payment refund requires approval from an admin approver');
+    throw new BadRequestException('Payment refund requires approval from a finance approver');
   }
 }
 

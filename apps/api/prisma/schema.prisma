@@ -11,6 +11,7 @@ enum Role {
   CUSTOMER
   PROVIDER
   ADMIN
+  FINANCE_APPROVER
 }
 
 enum BookingStatus {
