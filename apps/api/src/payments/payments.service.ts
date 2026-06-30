@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentMethod, Prisma } from '@prisma/client';
+import { PaymentMethod, Prisma, Role } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
@@ -237,6 +237,7 @@ export class PaymentsService {
 
   async refund(actorId: string, paymentId: string, input: { approvalAdminId?: string | null } = {}) {
     const approvalAdminId = normalizePaymentRefundApprovalAdminId(input.approvalAdminId, actorId);
+    await assertPaymentRefundApprovalAdmin(this.prisma, approvalAdminId);
     const existing = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     const occurredAt = new Date();
     let settlementReversal: Prisma.InputJsonObject = { skipped: true, reason: 'NOT_ATTEMPTED' };
@@ -421,12 +422,29 @@ export class PaymentsService {
   }
 }
 
+type PaymentApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
+
 function normalizePaymentRefundApprovalAdminId(value: string | null | undefined, actorId: string) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   if (!normalized || normalized === actorId) {
     throw new BadRequestException('Payment refund requires approval from a different admin');
   }
   return normalized;
+}
+
+async function assertPaymentRefundApprovalAdmin(db: PaymentApprovalLookupDb, approvalAdminId: string) {
+  const userDelegate = db.user;
+  if (!userDelegate?.findFirst) {
+    return;
+  }
+
+  const approver = await userDelegate.findFirst({
+    where: { id: approvalAdminId, roles: { has: Role.ADMIN } },
+    select: { id: true },
+  });
+  if (!approver) {
+    throw new BadRequestException('Payment refund requires approval from an admin approver');
+  }
 }
 
 function paymentSettlementReversalAudit(result: unknown): Prisma.InputJsonObject {
