@@ -2,6 +2,7 @@ import { Edit3, Plus, Save, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import {
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormInput,
   AdminFormTextarea,
@@ -335,14 +336,12 @@ function DurationInputRow({
           type="number"
         />
       </div>
-      <label className="service-menu-enabled-toggle">
-        <input
-          aria-label={`${duration} min option enabled`}
-          defaultChecked={service?.active ?? Boolean(service)}
-          name={`active${duration}`}
-          type="checkbox"
-        />
-      </label>
+      <AdminFormCheckbox
+        className="service-menu-enabled-toggle"
+        defaultChecked={service?.active ?? Boolean(service)}
+        label={`${duration} min option enabled`}
+        name={`active${duration}`}
+      />
     </fieldset>
   );
 }

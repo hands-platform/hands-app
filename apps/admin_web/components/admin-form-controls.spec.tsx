@@ -1,4 +1,5 @@
 import {
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
@@ -97,6 +98,26 @@ describe('Admin form controls', () => {
       rows: 3,
     });
     expect(textContent(textarea)).toContain('Partner operation note');
+  });
+
+  it('renders checkbox controls with the same field contract', () => {
+    const checkbox = AdminFormCheckbox({
+      children: 'Enabled',
+      className: 'service-enabled-toggle',
+      defaultChecked: true,
+      label: '60 min option enabled',
+      name: 'active60',
+      value: 'true',
+    });
+
+    expect(checkbox.props.className).toBe('admin-form-checkbox service-enabled-toggle');
+    expect(textContent(checkbox)).toContain('Enabled');
+    expect(checkbox.props.children[0].props).toMatchObject({
+      defaultChecked: true,
+      name: 'active60',
+      type: 'checkbox',
+      value: 'true',
+    });
   });
 
   it('renders link and button controls without owning behavior', () => {

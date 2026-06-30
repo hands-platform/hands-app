@@ -70,6 +70,16 @@ type AdminFormTextareaProps = {
   | 'value'
 >;
 
+type AdminFormCheckboxProps = {
+  readonly children?: ReactNode;
+  readonly className?: string;
+  readonly label: string;
+  readonly name?: string;
+} & Pick<
+  InputHTMLAttributes<HTMLInputElement>,
+  'checked' | 'defaultChecked' | 'disabled' | 'onChange' | 'value'
+>;
+
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -223,6 +233,34 @@ export function AdminFormTextarea({
         rows={rows}
         value={value}
       />
+    </label>
+  );
+}
+
+export function AdminFormCheckbox({
+  checked,
+  children,
+  className,
+  defaultChecked,
+  disabled,
+  label,
+  name,
+  onChange,
+  value,
+}: AdminFormCheckboxProps) {
+  return (
+    <label className={joinClassNames('admin-form-checkbox', className)}>
+      <input
+        aria-label={children ? undefined : label}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        name={name}
+        onChange={onChange}
+        type="checkbox"
+        value={value}
+      />
+      {children ?? <span className="sr-only">{label}</span>}
     </label>
   );
 }

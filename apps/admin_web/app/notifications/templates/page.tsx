@@ -2,6 +2,7 @@ import type { AdminNotificationTemplate } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormInput,
   AdminFormTextarea,
@@ -122,15 +123,15 @@ export default async function NotificationTemplatesPage({
                       <input name="enabled" type="hidden" value="false" />
                       <div className="notification-template-copy-form-header">
                         <h4>{locale.label}</h4>
-                        <label className="notification-template-enabled-toggle">
-                          <input
-                            defaultChecked={template.enabled}
-                            name="enabled"
-                            type="checkbox"
-                            value="true"
-                          />
+                        <AdminFormCheckbox
+                          className="notification-template-enabled-toggle"
+                          defaultChecked={template.enabled}
+                          label={`${locale.label} notification template enabled`}
+                          name="enabled"
+                          value="true"
+                        >
                           <span>Enabled</span>
-                        </label>
+                        </AdminFormCheckbox>
                       </div>
                       <AdminFormInput
                         defaultValue={translation?.title ?? ''}
