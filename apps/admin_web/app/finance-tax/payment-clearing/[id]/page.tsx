@@ -7,6 +7,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-d
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
   buildBookingPaymentClearingDetailApiHref,
   buildFinanceSettlementTraceLinks,
@@ -58,7 +59,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           title="Clearing overview"
         />
         <div className="detail-grid admin-mt-16">
-          <InfoCard
+          <FinanceDetailInfoItem
             label="Booking"
             value={
               <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
@@ -66,8 +67,8 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               </Link>
             }
           />
-          <InfoCard label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
-          <InfoCard
+          <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
+          <FinanceDetailInfoItem
             label="Settlement trace"
             value={
               settlementTraceLinks.length > 0 ? (
@@ -83,7 +84,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               )
             }
           />
-          <InfoCard label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
+          <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
         </div>
       </section>
 
@@ -140,15 +141,6 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
-  );
-}
-
-function InfoCard({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {
-  return (
-    <div className="card">
-      <p className="muted">{label}</p>
-      <strong>{value}</strong>
-    </div>
   );
 }
 

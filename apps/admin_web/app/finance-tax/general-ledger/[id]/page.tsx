@@ -7,6 +7,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-d
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
   bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
@@ -57,8 +58,8 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           title="Journal batch overview"
         />
         <div className="detail-grid admin-mt-16">
-          <InfoCard label="Source key" value={batch.sourceKey} />
-          <InfoCard
+          <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
+          <FinanceDetailInfoItem
             label="Booking"
             value={
               batch.bookingId ? (
@@ -70,9 +71,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
               )
             }
           />
-          <InfoCard label="Payment" value={batch.payment ? `${batch.payment.method} · ${batch.payment.status}` : '-'} />
-          <InfoCard label="Entries" value={`${batch.entries.length} journal rows`} />
-          <InfoCard
+          <FinanceDetailInfoItem label="Payment" value={batch.payment ? `${batch.payment.method} · ${batch.payment.status}` : '-'} />
+          <FinanceDetailInfoItem label="Entries" value={`${batch.entries.length} journal rows`} />
+          <FinanceDetailInfoItem
             label="Settlement trace"
             value={
               settlementTraceLinks.length > 0 ? (
@@ -161,15 +162,6 @@ function BankMatchEvidence({
           ) : null}
         </div>
       ))}
-    </div>
-  );
-}
-
-function InfoCard({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {
-  return (
-    <div className="card">
-      <p className="muted">{label}</p>
-      <strong>{value}</strong>
     </div>
   );
 }

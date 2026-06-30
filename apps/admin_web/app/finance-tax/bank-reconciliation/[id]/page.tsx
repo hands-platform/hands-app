@@ -13,6 +13,7 @@ import {
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
   bankReconciliationHref,
   buildBankReconciliationDetailApiHref,
@@ -78,10 +79,10 @@ export default async function BankReconciliationDetailPage({
           title="Bank transaction overview"
         />
         <div className="detail-grid admin-mt-16">
-          <InfoCard label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
-          <InfoCard label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
-          <InfoCard label="Counterparty" value={transaction.counterpartyName ?? '-'} />
-          <InfoCard label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
+          <FinanceDetailInfoItem label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
+          <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
+          <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
+          <FinanceDetailInfoItem label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
         </div>
       </section>
 
@@ -315,15 +316,6 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
   }
 
   redirect(`${returnHref}?matchReversed=1`);
-}
-
-function InfoCard({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {
-  return (
-    <div className="card">
-      <p className="muted">{label}</p>
-      <strong>{value}</strong>
-    </div>
-  );
 }
 
 function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) {

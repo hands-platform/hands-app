@@ -81,6 +81,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('Bank reconciliation matches');
+    expect(markup).toContain('finance-detail-info-item');
+    expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });
@@ -147,6 +149,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
+    expect(markup).toContain('finance-detail-info-item');
+    expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });
@@ -220,6 +224,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('Create match');
+    expect(markup).toContain('finance-detail-info-item');
+    expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });

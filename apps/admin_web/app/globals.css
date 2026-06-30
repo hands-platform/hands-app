@@ -8535,6 +8535,25 @@ a.action-button-card:hover {
   gap: 16px;
 }
 
+.finance-detail-info-item {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft);
+}
+
+.finance-detail-info-item > p {
+  margin: 0 0 6px;
+}
+
+.finance-detail-info-item > strong {
+  display: block;
+  min-width: 0;
+  color: var(--admin-text);
+  overflow-wrap: anywhere;
+}
+
 .booking-detail-page {
   display: grid;
   gap: 16px;
