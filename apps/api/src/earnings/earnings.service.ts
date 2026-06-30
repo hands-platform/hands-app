@@ -1543,7 +1543,50 @@ export class EarningsService {
       return { skipped: true, reason: 'NO_EARNING' };
     }
     if (earning.status === EarningStatus.PAID) {
-      return { skipped: true, reason: 'ALREADY_PAID', earningId: earning.id };
+      const receivableAmount = Math.max(0, earning.netAmount);
+      if (receivableAmount === 0) {
+        return { skipped: true, reason: 'ALREADY_PAID', earningId: earning.id };
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.providerWalletLedgerEntry.upsert({
+          where: { sourceKey: `earning:${earning.id}:paid-refund-receivable` },
+          update: {
+            amount: -receivableAmount,
+            currency: earning.currency,
+            notes: 'Paid earning converted to partner receivable by refund workflow',
+            metadata: {
+              previousNetAmount: earning.netAmount,
+              previousStatus: earning.status,
+              refundAfterPayout: true,
+              partnerReceivableAmount: receivableAmount,
+            },
+          },
+          create: {
+            providerProfileId: earning.providerProfileId,
+            bookingId: earning.bookingId,
+            earningId: earning.id,
+            type: ProviderWalletLedgerType.REFUND_REVERSAL,
+            sourceKey: `earning:${earning.id}:paid-refund-receivable`,
+            amount: -receivableAmount,
+            currency: earning.currency,
+            notes: 'Paid earning converted to partner receivable by refund workflow',
+            metadata: {
+              previousNetAmount: earning.netAmount,
+              previousStatus: earning.status,
+              refundAfterPayout: true,
+              partnerReceivableAmount: receivableAmount,
+            },
+          },
+        });
+      });
+
+      return {
+        skipped: false,
+        reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+        earning,
+        receivableAmount,
+      };
     }
 
     const cancelled = await this.prisma.$transaction(async (tx) => {

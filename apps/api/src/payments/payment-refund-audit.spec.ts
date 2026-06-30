@@ -25,4 +25,20 @@ describe('payment refund audit helpers', () => {
       }),
     ).toEqual({ skipped: false, earningId: 'unknown' });
   });
+
+  it('records refund-after-payout receivable evidence', () => {
+    expect(
+      paymentRefundEarningCancellationAudit({
+        skipped: false,
+        reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+        earning: { id: 'earning-paid-1' },
+        receivableAmount: 430000,
+      }),
+    ).toEqual({
+      skipped: false,
+      earningId: 'earning-paid-1',
+      reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+      receivableAmount: 430000,
+    });
+  });
 });

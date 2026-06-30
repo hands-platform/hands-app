@@ -632,6 +632,73 @@ describe('EarningsService payout batches', () => {
     expect(tx.providerPayoutBatch.create).not.toHaveBeenCalled();
   });
 
+  it('creates partner receivable ledger when refund happens after payout was paid', async () => {
+    const earning = {
+      id: 'earning-paid-1',
+      bookingId: 'booking-paid-refund-1',
+      providerProfileId: 'provider-1',
+      netAmount: 430_000,
+      currency: 'VND',
+      status: EarningStatus.PAID,
+    };
+    const tx = {
+      providerEarning: {
+        update: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'refund-receivable-ledger-1' }),
+      },
+    };
+    const prisma = {
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cancelForRefund('booking-paid-refund-1')).resolves.toMatchObject({
+      skipped: false,
+      reason: 'PAID_REFUND_RECEIVABLE_CREATED',
+      earning,
+      receivableAmount: 430_000,
+    });
+
+    expect(tx.providerEarning.update).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'earning:earning-paid-1:paid-refund-receivable' },
+      update: {
+        amount: -430_000,
+        currency: 'VND',
+        notes: 'Paid earning converted to partner receivable by refund workflow',
+        metadata: {
+          previousNetAmount: 430_000,
+          previousStatus: EarningStatus.PAID,
+          refundAfterPayout: true,
+          partnerReceivableAmount: 430_000,
+        },
+      },
+      create: {
+        providerProfileId: 'provider-1',
+        bookingId: 'booking-paid-refund-1',
+        earningId: 'earning-paid-1',
+        type: ProviderWalletLedgerType.REFUND_REVERSAL,
+        sourceKey: 'earning:earning-paid-1:paid-refund-receivable',
+        amount: -430_000,
+        currency: 'VND',
+        notes: 'Paid earning converted to partner receivable by refund workflow',
+        metadata: {
+          previousNetAmount: 430_000,
+          previousStatus: EarningStatus.PAID,
+          refundAfterPayout: true,
+          partnerReceivableAmount: 430_000,
+        },
+      },
+    });
+  });
+
   it('posts a split VAT/PIT settlement snapshot inside the completed booking transaction', async () => {
     const occurredAt = new Date('2026-06-13T03:02:00.000Z');
     const booking = {
