@@ -265,6 +265,14 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new 
   keys: BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS.join(','),
 }).toString()}`;
 
+export function shouldLoadBookingDetailMarketplaceProviders(
+  booking: Pick<AdminBookingDetail, 'status'> | null,
+): boolean {
+  if (!booking) return false;
+
+  return !TERMINAL_BOOKING_STATUSES.has(booking.status);
+}
+
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
@@ -892,18 +900,20 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
 
 async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
   const encodedId = encodeURIComponent(id);
-  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
+  const [booking, operationalPolicies, rawNotifications] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${encodedId}`, null),
     adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
     adminGet<AdminNotification[]>(
       `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
       [],
     ),
-    adminGet<AdminProvider[]>(
-      `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
-      [],
-    ),
   ]);
+  const providers = shouldLoadBookingDetailMarketplaceProviders(booking)
+    ? await adminGet<AdminProvider[]>(
+        `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
+        [],
+      )
+    : [];
 
   return {
     booking,
