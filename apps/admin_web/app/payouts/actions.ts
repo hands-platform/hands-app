@@ -51,6 +51,9 @@ export async function updateProviderWalletWithdrawalRequest(formData: FormData) 
   if (status === 'PAID' && !approvalAdminId) {
     throw new Error('Provider wallet withdrawal paid closeout requires approval from a different admin');
   }
+  if (status === 'PAID' && !transferRef) {
+    throw new Error('Provider wallet withdrawal paid closeout requires a transfer reference');
+  }
 
   await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
     status,
