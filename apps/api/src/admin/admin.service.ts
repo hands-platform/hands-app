@@ -6090,6 +6090,17 @@ export class AdminService {
       if (Math.abs(input.amount) > Math.abs(sourceAmount)) {
         throw new BadRequestException('Match amount exceeds source amount');
       }
+      const currentSourceMatched = await tx.bankReconciliationMatch.aggregate({
+        where: {
+          [source.field]: source.id,
+          status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+        } as Prisma.BankReconciliationMatchWhereInput,
+        _sum: { amount: true },
+      });
+      const nextSourceMatchedAmount = Math.abs(currentSourceMatched._sum.amount ?? 0) + Math.abs(input.amount);
+      if (nextSourceMatchedAmount > Math.abs(sourceAmount)) {
+        throw new BadRequestException('Match amount exceeds remaining reconciliation source amount');
+      }
       const currentBankMatched = await tx.bankReconciliationMatch.aggregate({
         where: {
           bankTransactionId,
