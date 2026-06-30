@@ -6430,6 +6430,117 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('creates customer manual promotion credits as wallet ledger plus journal without creating revenue', async () => {
+    const tx = {
+      customerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'customer-ledger-1',
+          customerProfileId: 'customer-1',
+          amount: 100000,
+          currency: 'VND',
+        }),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'CUSTOMER',
+        ownerId: 'customer-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PROMOTION_CREDIT',
+        amount: 100000,
+        reason: 'Launch coupon correction',
+        approvalId: 'approval-customer-1',
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).resolves.toMatchObject({
+      ledger: { id: 'customer-ledger-1', amount: 100000 },
+      preview: {
+        walletDelta: 100000,
+        bankCashAmount: 0,
+        companyOutputVat: 0,
+        platformRevenueAmount: 0,
+        walletLiabilityIncrease: 100000,
+      },
+      auditLog: { id: 'audit-1' },
+    });
+
+    expect(tx.customerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        customerProfileId: 'customer-1',
+        type: 'ADMIN_ADJUSTMENT',
+        sourceKey: 'manual-wallet-adjustment:CUSTOMER:customer-1:approval-customer-1',
+        amount: 100000,
+        currency: 'VND',
+        reference: 'approval-customer-1',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          bankCashAmount: 0,
+          companyOutputVat: 0,
+          platformRevenueAmount: 0,
+          walletLiabilityIncrease: 100000,
+        }),
+      }),
+    });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: {
+        sourceKey: 'accounting-journal:manual-wallet-adjustment:CUSTOMER:customer-1:approval-customer-1',
+      },
+      update: expect.objectContaining({
+        customerProfileId: 'customer-1',
+        sourceId: 'customer-ledger-1',
+        sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+        totalCredit: 100000,
+        totalDebit: 100000,
+      }),
+      create: expect.objectContaining({
+        currency: 'VND',
+        customerProfileId: 'customer-1',
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              accountCode: 'customer_promotion_expense',
+              amount: 100000,
+              side: 'DEBIT',
+            }),
+            expect.objectContaining({
+              accountCode: 'customer_wallet_liability',
+              amount: 100000,
+              side: 'CREDIT',
+            }),
+          ]),
+        },
+        providerProfileId: null,
+        sourceId: 'customer-ledger-1',
+        sourceKey: 'accounting-journal:manual-wallet-adjustment:CUSTOMER:customer-1:approval-customer-1',
+        sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+        totalCredit: 100000,
+        totalDebit: 100000,
+      }),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'wallet_ledger.manual_adjustment.create',
+        target: 'customer_wallet_ledger:customer-ledger-1',
+      }),
+    });
+  });
+
   it('rejects manual wallet adjustments approved by the same admin before writing a ledger', async () => {
     const tx = {
       providerProfile: {
