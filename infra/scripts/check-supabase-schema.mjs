@@ -78,6 +78,10 @@ const forbiddenSchemaFragments = [
   { label: 'tip amount column', pattern: /\btip_amount_vnd\b/i },
   { label: 'partner numeric rating column', pattern: /\brating\s+numeric\b/i },
   { label: 'feedback score column', pattern: /\brating\s+integer\b/i },
+  {
+    label: 'authenticated table write grant',
+    pattern: /grant\s+select\s*,\s*insert\s*,\s*update\s*,\s*delete\s+on\s+table[\s\S]*?to\s+authenticated\s*;/i,
+  },
 ];
 
 rejectPatterns(forbiddenSchemaFragments, 'Supabase core schema still contains forbidden MVP field');
@@ -104,6 +108,14 @@ requireSchemaFragments([
   {
     label: 'push devices user role enabled index',
     pattern: /push_devices_user_role_enabled_idx/i,
+  },
+  {
+    label: 'authenticated PostgREST write grant revoke',
+    pattern: /revoke\s+insert\s*,\s*update\s*,\s*delete\s+on\s+all\s+tables\s+in\s+schema\s+public\s+from\s+anon\s*,\s*authenticated/i,
+  },
+  {
+    label: 'authenticated read-only table grant',
+    pattern: /grant\s+select\s+on\s+table[\s\S]*?to\s+authenticated\s*;/i,
   },
 ]);
 

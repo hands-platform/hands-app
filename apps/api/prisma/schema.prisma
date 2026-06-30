@@ -633,6 +633,9 @@ model ProviderProfile {
   referralsMade            ReferralAttribution[]             @relation("ProviderReferralReferrer")
   referralsReceived        ReferralAttribution[]             @relation("ProviderReferralReferred")
   referralRewards          ReferralReward[]                  @relation("ProviderReferralWalletOwner")
+
+  @@index([status, currentLocationUpdatedAt])
+  @@index([blockedAt, deletedAt])
 }
 
 model ProviderKyc {
@@ -945,6 +948,10 @@ model Booking {
   paymentClearingEntries      BookingPaymentClearingEntry[]
   referralRewards             ReferralReward[]
 
+  @@index([customerProfileId, createdAt])
+  @@index([preferredProviderId, createdAt])
+  @@index([selectedProviderId, createdAt])
+  @@index([status, createdAt])
   @@index([status, closedAt])
   @@index([closedByRole, closedAt])
 }
@@ -1123,6 +1130,9 @@ model BookingService {
   price     Int
   booking   Booking        @relation(fields: [bookingId], references: [id])
   service   MassageService @relation(fields: [serviceId], references: [id])
+
+  @@index([bookingId])
+  @@index([serviceId])
 }
 
 model BookingParticipant {
@@ -1138,6 +1148,8 @@ model BookingParticipant {
   providerProfile      ProviderProfile   @relation(fields: [providerProfileId], references: [id])
 
   @@unique([bookingId, providerProfileId])
+  @@index([providerProfileId, joinedAt])
+  @@index([status, joinedAt])
 }
 
 model ChatRoom {
@@ -1157,6 +1169,9 @@ model ChatMessage {
   createdAt   DateTime @default(now())
   chatRoom    ChatRoom @relation(fields: [chatRoomId], references: [id])
   sender      User     @relation(fields: [senderId], references: [id])
+
+  @@index([chatRoomId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 model Payment {
@@ -1261,6 +1276,9 @@ model ProviderEarning {
   walletLedgerEntries ProviderWalletLedgerEntry[]
   settlementSnapshot  BookingSettlementSnapshot?
 
+  @@index([providerProfileId, createdAt])
+  @@index([status, createdAt])
+  @@index([payoutBatchId])
   @@index([settlementMethod, paidAt])
 }
 
@@ -1851,6 +1869,9 @@ model Notification {
   createdAt  DateTime               @default(now())
   user       User                   @relation(fields: [userId], references: [id])
   deliveries NotificationDelivery[]
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt, createdAt])
 }
 
 model PushDevice {
@@ -1886,6 +1907,11 @@ model NotificationDelivery {
   attemptedAt    DateTime     @default(now())
   notification   Notification @relation(fields: [notificationId], references: [id])
   pushDevice     PushDevice   @relation(fields: [pushDeviceId], references: [id])
+
+  @@index([notificationId, attemptedAt])
+  @@index([pushDeviceId, attemptedAt])
+  @@index([provider, status, attemptedAt])
+  @@index([status, attemptedAt])
 }
 
 model NotificationTemplate {
@@ -1990,6 +2016,9 @@ model LocationSnapshot {
   recordedAt        DateTime        @default(now())
   booking           Booking?        @relation(fields: [bookingId], references: [id])
   providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+
+  @@index([providerProfileId, recordedAt])
+  @@index([bookingId, recordedAt])
 }
 
 model Coupon {
@@ -2000,6 +2029,8 @@ model Coupon {
   active      Boolean   @default(true)
   startsAt    DateTime?
   endsAt      DateTime?
+
+  @@index([active, startsAt, endsAt])
 }
 
 model Refund {

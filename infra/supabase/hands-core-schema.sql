@@ -440,34 +440,50 @@ create table if not exists public.admin_settings (
 
 create index if not exists providers_user_idx on public.providers(user_id);
 create index if not exists providers_status_idx on public.providers(status);
+create index if not exists providers_status_updated_idx on public.providers(status, updated_at desc);
 create index if not exists provider_verifications_status_idx on public.provider_verifications(status);
 create index if not exists provider_locations_location_idx on public.provider_locations using gist(location);
 create index if not exists provider_locations_updated_idx on public.provider_locations(updated_at desc);
 create index if not exists customer_selected_locations_customer_idx
   on public.customer_selected_locations(customer_id, created_at desc);
 create index if not exists bookings_customer_idx on public.bookings(customer_id, created_at desc);
+create index if not exists bookings_preferred_provider_idx on public.bookings(preferred_provider_id, created_at desc);
 create index if not exists bookings_selected_provider_idx on public.bookings(selected_provider_id, created_at desc);
 create index if not exists bookings_status_idx on public.bookings(status, created_at desc);
 create index if not exists booking_address_snapshots_booking_idx
   on public.booking_address_snapshots(booking_id);
 create index if not exists booking_address_snapshots_location_idx
   on public.booking_address_snapshots using gist(location);
+create index if not exists booking_services_booking_idx on public.booking_services(booking_id);
+create index if not exists booking_services_service_idx on public.booking_services(service_id);
 create index if not exists booking_participants_provider_idx
   on public.booking_participants(provider_id, created_at desc);
+create index if not exists booking_participants_status_idx
+  on public.booking_participants(status, created_at desc);
 create index if not exists messages_room_idx on public.messages(chat_room_id, created_at desc);
+create index if not exists messages_sender_idx on public.messages(sender_id, created_at desc);
 create index if not exists provider_earnings_provider_idx on public.provider_earnings(provider_id, created_at desc);
 create index if not exists provider_earnings_status_idx on public.provider_earnings(status, created_at desc);
 create index if not exists provider_payout_batches_provider_idx on public.provider_payout_batches(provider_id, created_at desc);
 create index if not exists notifications_user_idx on public.notifications(user_id, created_at desc);
+create index if not exists notifications_user_read_idx on public.notifications(user_id, read_at, created_at desc);
 create index if not exists push_devices_user_idx on public.push_devices(user_id, created_at desc);
 create index if not exists push_devices_user_role_enabled_idx on public.push_devices(user_id, role, enabled);
 create index if not exists notification_deliveries_notification_idx
   on public.notification_deliveries(notification_id, attempted_at desc);
+create index if not exists notification_deliveries_push_device_idx
+  on public.notification_deliveries(push_device_id, attempted_at desc);
+create index if not exists notification_deliveries_provider_status_idx
+  on public.notification_deliveries(provider, status, attempted_at desc);
+create index if not exists notification_deliveries_status_idx
+  on public.notification_deliveries(status, attempted_at desc);
 create index if not exists files_owner_idx on public.files(owner_id, created_at desc);
 create index if not exists files_owner_purpose_idx on public.files(owner_id, purpose, created_at desc);
 create index if not exists files_visibility_purpose_idx on public.files(visibility, purpose, created_at desc);
 create index if not exists files_review_status_purpose_idx on public.files(review_status, purpose, created_at desc);
 create index if not exists location_snapshots_provider_idx on public.location_snapshots(provider_id, recorded_at desc);
+create index if not exists location_snapshots_booking_idx on public.location_snapshots(booking_id, recorded_at desc);
+create index if not exists coupons_active_window_idx on public.coupons(active, starts_at, ends_at);
 create index if not exists refunds_booking_idx on public.refunds(booking_id, created_at desc);
 create index if not exists admin_audit_logs_created_idx on public.admin_audit_logs(created_at desc);
 
@@ -1216,19 +1232,30 @@ create policy "provider devices owner or admin"
   with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
 
 -- PostgREST role grants.
--- RLS policies above still decide row-level access; these grants only allow
--- Supabase API roles to reach the tables/functions protected by those policies.
+-- RLS policies above still decide row-level access. HANDS business writes are
+-- owned by the NestJS API, so browser/mobile Supabase roles are read-oriented.
 grant usage on schema public to anon, authenticated, service_role;
 
-grant execute on all functions in schema public to anon, authenticated, service_role;
+revoke execute on all functions in schema public from public, anon, authenticated;
+grant execute on function public.is_admin() to authenticated, service_role;
+grant execute on function public.nearby_providers(double precision, double precision, integer)
+to anon, authenticated, service_role;
 
 grant all privileges on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
-grant select, insert, update, delete on table
+revoke insert, update, delete on all tables in schema public from anon, authenticated;
+revoke usage, select on all sequences in schema public from anon, authenticated;
+
+grant select on table
   public.profiles,
   public.providers,
   public.provider_verifications,
+  public.provider_profiles,
+  public.provider_kyc,
+  public.provider_documents,
+  public.provider_bank_accounts,
+  public.provider_tax_profiles,
   public.services,
   public.provider_services,
   public.provider_locations,
@@ -1242,7 +1269,16 @@ grant select, insert, update, delete on table
   public.payments,
   public.reviews,
   public.provider_payout_batches,
+  public.provider_payouts,
   public.provider_earnings,
+  public.tax_policy_versions,
+  public.tax_rules,
+  public.provider_tax_logs,
+  public.withholding_logs,
+  public.provider_agreements,
+  public.provider_verification_logs,
+  public.provider_sessions,
+  public.provider_devices,
   public.notifications,
   public.push_devices,
   public.notification_deliveries,

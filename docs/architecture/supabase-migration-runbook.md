@@ -117,6 +117,11 @@ Supabase SQL files are staging setup drafts for Supabase Auth/PostgREST/Storage
 readiness and must be kept in sync with Prisma enums and core tables before
 being applied to a Supabase project.
 
+PostgREST grants in this setup are intentionally read-oriented for `anon` and
+`authenticated` roles. Critical booking, payment, settlement, wallet, tax,
+admin, and audit writes must continue to go through the NestJS API using
+server-side credentials.
+
 Run [hands-core-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/hands-core-schema.sql) in the Supabase SQL editor after creating the project.
 
 For a staging project, generate a single ordered SQL bundle first:
