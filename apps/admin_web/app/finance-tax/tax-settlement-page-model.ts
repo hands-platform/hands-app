@@ -891,6 +891,55 @@ export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSum
   ];
 }
 
+export function buildMonthlyTaxClosingRiskLinks(
+  summary: AdminMonthlyTaxClosingSummary,
+  settlementFilters: BookingSettlementFilters,
+  closingFilters: MonthlyTaxClosingFilters,
+): FinancePayoutPriorityLink[] {
+  const deltaCount =
+    (summary.reconciliationDelta !== 0 ? 1 : 0) + (summary.netRevenueDelta !== 0 ? 1 : 0);
+  const deltaAmount = Math.abs(summary.reconciliationDelta) + Math.abs(summary.netRevenueDelta);
+
+  return [
+    {
+      key: 'open-tax-rows',
+      amountLabel: null,
+      count: summary.openTaxCount,
+      label: 'Open tax rows',
+      helper: 'Settlement rows still waiting for declaration, payment, or tax closeout review.',
+      href: bookingSettlementAuditHref({ ...settlementFilters, page: 1, review: 'open' }),
+      signal: 'Tax review',
+    },
+    {
+      key: 'coupon-review-flags',
+      amountLabel: null,
+      count: summary.couponReviewFlagCount,
+      label: 'Coupon review flags',
+      helper: 'Coupon settlement rows that should be checked before the monthly period is closed.',
+      href: couponFinanceHref({ ...settlementFilters, page: 1, review: 'open' }),
+      signal: 'Coupon review',
+    },
+    {
+      key: 'cash-debt-gate',
+      amountLabel: formatMoney(summary.cashDebtTotal, summary.currency),
+      count: null,
+      label: 'Cash debt gate',
+      helper: 'Partner cash booking debt that can block payout and monthly settlement closeout.',
+      href: `/cash-settlements?${new URLSearchParams({ range: settlementFilters.range }).toString()}`,
+      signal: 'Cash debt',
+    },
+    {
+      key: 'reconciliation-deltas',
+      amountLabel: formatMoney(deltaAmount, summary.currency),
+      count: deltaCount,
+      label: 'Reconciliation deltas',
+      helper: 'Formula and net revenue deltas must be 0 before declaration or final closeout.',
+      href: monthlyTaxClosingHref({ ...closingFilters, page: 1 }),
+      signal: 'Formula check',
+    },
+  ];
+}
+
 export function monthlyTaxClosingNextStatusOptions(
   status: AdminMonthlyTaxClosingStatus,
 ): MonthlyTaxClosingStatusOption[] {

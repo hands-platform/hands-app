@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import type {
   AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingSummary,
@@ -12,6 +14,7 @@ import {
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingAccountingJournalCsvHref,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxClosingRiskLinks,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
@@ -150,6 +153,28 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             No direct status action is available. Closed or reversed periods require reversal entries, not direct edits.
           </p>
         )}
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Resolve these queues before declaration, payment, or final closeout. This section uses the monthly summary only."
+          status={<span className="pill pill-warn">Closeout gates</span>}
+          title="Closeout risk queue"
+        />
+        <div className="setup-stage-list admin-mt-12">
+          {buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters).map((link) => (
+            <Link className="setup-stage-item" href={link.href} key={link.key}>
+              <span>{link.signal}</span>
+              <div>
+                <strong>{link.label}</strong>
+                <p className="muted">{link.helper}</p>
+              </div>
+              <small>
+                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
+              </small>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="card admin-mb-16">

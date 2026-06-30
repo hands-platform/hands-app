@@ -30,6 +30,7 @@ import {
   couponFinanceHref,
   buildTaxFinanceMetrics,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxClosingRiskLinks,
   emptyMonthlyTaxClosingSummary,
   readBookingSettlementFilters,
   readFinanceAccountingFilters,
@@ -364,6 +365,28 @@ describe('tax settlement page model', () => {
       ['Coupon expense', '60.000 VND'],
       ['Formula delta', '0 VND'],
       ['Net revenue delta', '0 VND'],
+    ]);
+  });
+
+  it('builds monthly closing risk links from the summary without loading row lists', () => {
+    const settlementFilters = readBookingSettlementFilters({ range: '30d', review: 'open' });
+    const closingFilters = readMonthlyTaxClosingFilters({ period: '2026-06' });
+    const summary = {
+      ...emptyMonthlyTaxClosingSummary('2026-06'),
+      cashDebtTotal: 170_000,
+      couponReviewFlagCount: 2,
+      openTaxCount: 3,
+      reconciliationDelta: 50_000,
+      netRevenueDelta: 10_000,
+    };
+
+    const links = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, closingFilters);
+
+    expect(links.map((link) => [link.label, link.href, link.count, link.amountLabel, link.signal])).toEqual([
+      ['Open tax rows', '/finance-tax/booking-settlement-audit?range=30d&review=open', 3, null, 'Tax review'],
+      ['Coupon review flags', '/finance-tax/coupon-finance?range=30d&review=open', 2, null, 'Coupon review'],
+      ['Cash debt gate', '/cash-settlements?range=30d', null, '170.000 VND', 'Cash debt'],
+      ['Reconciliation deltas', '/finance-tax/monthly-tax-closing?period=2026-06', 2, '60.000 VND', 'Formula check'],
     ]);
   });
 
