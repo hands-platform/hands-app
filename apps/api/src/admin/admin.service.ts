@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AccountingJournalBatchStatus,
+  AccountingJournalSourceType,
   BankReconciliationStatus,
   BookingPaymentClearingStatus,
   BookingSettlementStatus,
@@ -6976,6 +6977,14 @@ export class AdminService {
         });
         linkedSettlementSnapshotCount = linkedSettlementSnapshots.count;
       }
+      await upsertWithholdingRemittanceJournal(tx, {
+        actorId,
+        closingId: closing.id,
+        currency: summary.currency,
+        period,
+        remittanceMetadata: remittance?.metadata ?? null,
+        total: summary.partnerWithholdingTotal,
+      });
 
       await tx.adminAuditLog.create({
         data: {
@@ -12962,6 +12971,79 @@ function assertMonthlyTaxClosingReconciliationIsBalanced(
       'Monthly close requires reconciliation delta to be zero before status can advance.',
     );
   }
+}
+
+async function upsertWithholdingRemittanceJournal(
+  tx: Pick<Prisma.TransactionClient, 'accountingJournalBatch'>,
+  input: {
+    readonly actorId: string;
+    readonly closingId: string;
+    readonly currency: string;
+    readonly period: string;
+    readonly remittanceMetadata: Prisma.InputJsonObject | null;
+    readonly total: number;
+  },
+) {
+  if (!input.remittanceMetadata || input.total <= 0) {
+    return;
+  }
+
+  const sourceKey = `accounting-journal:withholding-remittance:${input.period}:${input.currency}`;
+  const entries = [
+    {
+      accountCode: 'partner_vat_pit_payable',
+      accountName: 'Partner VAT/PIT payable',
+      amount: input.total,
+      currency: input.currency,
+      memo: `Withholding remittance paid for ${input.period}`,
+      side: 'DEBIT' as const,
+      sourceId: input.closingId,
+      sourceType: AccountingJournalSourceType.WITHHOLDING_REMITTANCE,
+    },
+    {
+      accountCode: 'company_bank_cash',
+      accountName: 'Company bank cash',
+      amount: input.total,
+      currency: input.currency,
+      memo: `Manual withholding remittance transfer for ${input.period}`,
+      side: 'CREDIT' as const,
+      sourceId: input.closingId,
+      sourceType: AccountingJournalSourceType.WITHHOLDING_REMITTANCE,
+    },
+  ];
+  const batchData = {
+    createdById: input.actorId,
+    currency: input.currency,
+    entries: {
+      create: entries,
+    },
+    metadata: toJson({
+      monthlyTaxClosingId: input.closingId,
+      partnerWithholdingRemittance: true,
+      remittance: input.remittanceMetadata,
+    }),
+    monthlyPeriod: input.period,
+    sourceId: input.closingId,
+    sourceType: AccountingJournalSourceType.WITHHOLDING_REMITTANCE,
+    status: AccountingJournalBatchStatus.POSTED,
+    totalCredit: input.total,
+    totalDebit: input.total,
+  };
+
+  await tx.accountingJournalBatch.upsert({
+    where: { sourceKey },
+    update: {
+      ...batchData,
+      entries: {
+        create: entries,
+        deleteMany: {},
+      },
+    },
+    create: {
+      ...batchData,
+      sourceKey,
+    },
+  });
 }
 
 function monthlyTaxClosingRemittanceMetadata(

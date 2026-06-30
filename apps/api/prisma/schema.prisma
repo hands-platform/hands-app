@@ -305,6 +305,7 @@ enum AccountingJournalSourceType {
   REFUND
   PAYMENT_CALLBACK
   BANK_RECONCILIATION_ADJUSTMENT
+  WITHHOLDING_REMITTANCE
 }
 
 enum AccountingJournalBatchStatus {

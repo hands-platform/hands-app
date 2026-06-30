@@ -1,5 +1,6 @@
 import {
   AccountingJournalBatchStatus,
+  AccountingJournalSourceType,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   BankReconciliationStatus,
@@ -8179,6 +8180,9 @@ describe('AdminService query orchestration', () => {
       bookingSettlementSnapshot: {
         updateMany: vi.fn().mockResolvedValue({ count: 2 }),
       },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'withholding-remittance-journal-1' }),
+      },
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
@@ -8272,6 +8276,42 @@ describe('AdminService query orchestration', () => {
         taxStatus: BookingSettlementTaxStatus.PAID,
       },
     });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:withholding-remittance:2026-06:VND' },
+      update: expect.objectContaining({
+        currency: 'VND',
+        monthlyPeriod: '2026-06',
+        sourceId: 'closing-1',
+        sourceType: AccountingJournalSourceType.WITHHOLDING_REMITTANCE,
+        status: AccountingJournalBatchStatus.POSTED,
+        totalCredit: 84000,
+        totalDebit: 84000,
+      }),
+      create: expect.objectContaining({
+        currency: 'VND',
+        monthlyPeriod: '2026-06',
+        sourceKey: 'accounting-journal:withholding-remittance:2026-06:VND',
+        sourceId: 'closing-1',
+        sourceType: AccountingJournalSourceType.WITHHOLDING_REMITTANCE,
+        status: AccountingJournalBatchStatus.POSTED,
+        totalCredit: 84000,
+        totalDebit: 84000,
+      }),
+    });
+    expect(tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].create.entries.create).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_vat_pit_payable',
+          amount: 84000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'company_bank_cash',
+          amount: 84000,
+          side: 'CREDIT',
+        }),
+      ]),
+    );
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: 'monthly_tax_closing.status_update',
