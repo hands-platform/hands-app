@@ -45,12 +45,13 @@ export type PayoutServerPagination<T> = {
 export function buildPayoutFilters(params: Record<string, string | string[] | undefined>): PayoutFilters {
   const rangeParam = readSearchParam(params.range);
   const withdrawalStatusParam = readSearchParam(params.withdrawalStatus);
+  const withdrawalStatus = normalizePayoutWithdrawalStatus(withdrawalStatusParam);
 
   return {
     page: readPayoutPage(params.page),
     pageSize: readPayoutPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-    withdrawalStatus: normalizePayoutWithdrawalStatus(withdrawalStatusParam),
+    withdrawalStatus: withdrawalStatus ?? 'REVIEW_REQUIRED',
   };
 }
 

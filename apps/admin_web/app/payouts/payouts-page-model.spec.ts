@@ -8,6 +8,7 @@ describe('payouts page model', () => {
     expect(defaultFilters.range).toBe('today');
     expect(defaultFilters.page).toBe(1);
     expect(defaultFilters.pageSize).toBe(10);
+    expect(defaultFilters.withdrawalStatus).toBe('REVIEW_REQUIRED');
     expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
       earningsHref: '/admin/earnings?range=30d&take=10',
@@ -15,7 +16,8 @@ describe('payouts page model', () => {
         '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
       payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
-      providerWalletWithdrawalRequestsHref: '/admin/provider-wallet/withdrawal-requests?range=30d&take=10',
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&status=REVIEW_REQUIRED',
     });
   });
 
