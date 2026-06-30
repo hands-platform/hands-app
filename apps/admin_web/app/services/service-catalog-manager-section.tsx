@@ -1,6 +1,11 @@
 import { Edit3, Plus, Save, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
@@ -178,10 +183,10 @@ function NewServiceDialog() {
         <input name="vatBps" type="hidden" value="0" />
         <input name="otherCostAmount" type="hidden" value="0" />
         <div className="calendar-drawer-footer service-menu-dialog-footer">
-          <button className="button button-primary" type="submit">
+          <AdminFormControlButton className="button button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save service
-          </button>
+          </AdminFormControlButton>
           <a className="button button-secondary" href={servicesReturnHref()}>
             Cancel
           </a>
@@ -205,10 +210,10 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
           return <DurationInputRow duration={duration} key={duration} service={service} />;
         })}
         <div className="calendar-drawer-footer service-menu-dialog-footer">
-          <button className="button button-primary" type="submit">
+          <AdminFormControlButton className="button button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save changes
-          </button>
+          </AdminFormControlButton>
           <a className="button button-secondary" href={servicesReturnHref()}>
             Cancel
           </a>
@@ -262,26 +267,28 @@ function ServiceIdentityFields({ group }: { readonly group?: ServiceCatalogGroup
       {group ? <input name="serviceGroupKey" type="hidden" value={group.key} /> : null}
       <div className="service-menu-name-grid">
         {SERVICE_TRANSLATION_FIELDS.map((field) => (
-          <label className="calendar-field" key={field.key}>
+          <div className="calendar-field" key={field.key}>
             <span>{field.label}</span>
-            <input
+            <AdminFormInput
               defaultValue={translations[field.key] ?? (field.key === 'en' ? group?.label : '')}
+              label={field.label}
               name={field.name}
               placeholder={field.placeholder}
               required={field.key === 'en'}
             />
-          </label>
+          </div>
         ))}
       </div>
-      <label className="calendar-field calendar-field-wide">
+      <div className="calendar-field calendar-field-wide">
         <span>Description</span>
-        <textarea
+        <AdminFormTextarea
           defaultValue={firstService?.description ?? ''}
+          label="Description"
           name="description"
           placeholder="Short copy shown in mobile service selection"
           rows={3}
         />
-      </label>
+      </div>
     </>
   );
 }
@@ -304,30 +311,30 @@ function DurationInputRow({
       <div aria-hidden="true" className="service-menu-duration-option-cell">
         {duration} min option
       </div>
-      <label className="calendar-field">
+      <div className="calendar-field">
         <span>Base price</span>
-        <input
+        <AdminFormInput
           defaultValue={service?.basePrice ?? ''}
-          inputMode="numeric"
+          label={`${duration} min base price`}
           min="100000"
           name={`basePrice${duration}`}
           placeholder="500000"
           step="100000"
           type="number"
         />
-      </label>
-      <label className="calendar-field">
+      </div>
+      <div className="calendar-field">
         <span>Partner payout</span>
-        <input
+        <AdminFormInput
           defaultValue={payoutRule?.providerPayoutAmount ?? ''}
-          inputMode="numeric"
+          label={`${duration} min partner payout`}
           min="0"
           name={`providerPayoutAmount${duration}`}
           placeholder="350000"
           step="100000"
           type="number"
         />
-      </label>
+      </div>
       <label className="service-menu-enabled-toggle">
         <input
           aria-label={`${duration} min option enabled`}
