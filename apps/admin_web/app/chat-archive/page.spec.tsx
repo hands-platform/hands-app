@@ -48,7 +48,7 @@ describe('ChatArchivePage', () => {
       return fallback;
     });
 
-    const page = await ChatArchivePage({ searchParams: Promise.resolve({}) });
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('1 room(s), 1234 message(s)');
@@ -71,11 +71,36 @@ describe('ChatArchivePage', () => {
       return fallback;
     });
 
-    const page = await ChatArchivePage({ searchParams: Promise.resolve({ sender: 'partner' }) });
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all', sender: 'partner' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('1 room(s), 42 message(s)');
     expect(markup).toContain('1 shown / 42 total');
+  });
+
+  it('keeps audit filters on shared AdminForm atoms', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/chat-archive')) {
+        return [chatArchiveBooking()];
+      }
+
+      if (href.startsWith('/admin/bookings')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-select');
+    expect(markup).toContain('admin-form-date');
+    expect(markup).toContain('admin-form-control-button');
+    expect(markup).toContain('admin-form-control-link');
+    expect(markup).not.toContain('<label>Search<input');
+    expect(markup).not.toContain('<label>Booking status<select');
   });
 });
 

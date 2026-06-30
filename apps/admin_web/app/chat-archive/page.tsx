@@ -16,6 +16,13 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormDate,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { MetricCard } from '../../components/metric-card';
@@ -159,65 +166,79 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
 
       <section className="card admin-mb-16">
         <form className="form-grid" action="/chat-archive">
-          <label>
-            Search
-            <input
-              name="q"
+          <div className="calendar-field">
+            <span>Search</span>
+            <AdminFormInput
               defaultValue={filters.q}
+              label="Search"
+              name="q"
               placeholder="Booking, room, customer, Partner, message"
             />
-          </label>
-          <label>
-            Booking status
-            <select name="status" defaultValue={filters.status}>
-              <option value="">All</option>
-              <option value="active">Active or matching</option>
-              <option value="completed">Completed</option>
-              <option value="closed">Cancelled / expired / refunded</option>
-              <option value="no-message">Room without messages</option>
-              <option value="missing-room">Matched without room</option>
-            </select>
-          </label>
-          <label>
-            Sender
-            <select name="sender" defaultValue={filters.sender}>
-              <option value="">All</option>
-              <option value="customer">Customer messages</option>
-              <option value="partner">Partner messages</option>
-              <option value="admin">Admin/system messages</option>
-            </select>
-          </label>
-          <label>
-            Preset
-            <select name="range" defaultValue={dateFilters.range}>
-              {detailDateRangeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            From
-            <input type="date" name="from" defaultValue={dateFilters.from} />
-          </label>
-          <label>
-            To
-            <input type="date" name="to" defaultValue={dateFilters.to} />
-          </label>
+          </div>
+          <div className="calendar-field">
+            <span>Booking status</span>
+            <AdminFormSelect
+              defaultValue={filters.status}
+              label="Booking status"
+              name="status"
+              options={[
+                { label: 'All', value: '' },
+                { label: 'Active or matching', value: 'active' },
+                { label: 'Completed', value: 'completed' },
+                { label: 'Cancelled / expired / refunded', value: 'closed' },
+                { label: 'Room without messages', value: 'no-message' },
+                { label: 'Matched without room', value: 'missing-room' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Sender</span>
+            <AdminFormSelect
+              defaultValue={filters.sender}
+              label="Sender"
+              name="sender"
+              options={[
+                { label: 'All', value: '' },
+                { label: 'Customer messages', value: 'customer' },
+                { label: 'Partner messages', value: 'partner' },
+                { label: 'Admin/system messages', value: 'admin' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Preset</span>
+            <AdminFormSelect
+              defaultValue={dateFilters.range}
+              label="Preset"
+              name="range"
+              options={detailDateRangeOptions}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>From</span>
+            <AdminFormDate defaultValue={dateFilters.from} label="From" name="from" />
+          </div>
+          <div className="calendar-field">
+            <span>To</span>
+            <AdminFormDate defaultValue={dateFilters.to} label="To" name="to" />
+          </div>
           <div className="actions full-span">
-            <button className="button button-primary" type="submit">
+            <AdminFormControlButton className="button button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
-            </button>
-            <Link className="button button-secondary" href="/chat-archive">
+            </AdminFormControlButton>
+            <AdminFormControlLink className="button button-secondary" href="/chat-archive">
               <X aria-hidden="true" size={16} />
               Clear
-            </Link>
-            <a className="button button-secondary" download="hands-chat-archive.csv" href={messageCsvHref}>
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              className="button button-secondary"
+              download="hands-chat-archive.csv"
+              href={messageCsvHref}
+            >
               <Download aria-hidden="true" size={16} />
               Export evidence CSV
-            </a>
+            </AdminFormControlLink>
             <span className="muted">
               {rooms.length} room(s), {summary.messageCount} message(s)
             </span>
