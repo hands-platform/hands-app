@@ -11,7 +11,7 @@ import {
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
-import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import {
   bankReconciliationHref,
   buildBankReconciliationDetailApiHref,
@@ -156,7 +156,16 @@ export default async function BankReconciliationDetailPage({
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No reconciliation matches are linked to this bank transaction."
-            headers={['Matched source', 'Accounting entry', 'Payment clearing', 'Withdrawal / payout', 'Amount', 'Status', 'Action']}
+            headers={[
+              'Matched source',
+              'Accounting entry',
+              'Payment clearing',
+              'Withdrawal / payout',
+              'Amount',
+              'Status',
+              'Audit trail',
+              'Action',
+            ]}
             rowCount={matches.length}
           >
             {matches.map((match) => (
@@ -197,6 +206,9 @@ export default async function BankReconciliationDetailPage({
                 </td>
                 <td>
                   <span className={`pill ${statusPill(match.status)}`}>{match.status}</span>
+                </td>
+                <td>
+                  <ReconciliationAuditTrail metadata={match.metadata} />
                 </td>
                 <td>
                   {match.status === 'REVERSED' ? (
@@ -294,6 +306,35 @@ function InfoCard({ label, value }: { readonly label: string; readonly value: Re
   );
 }
 
+function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) {
+  const record = readPlainRecord(metadata);
+  const bankBefore = readRecordString(record, 'bankStatusBefore');
+  const bankAfter = readRecordString(record, 'bankStatusAfter');
+  const clearingBefore = readRecordString(record, 'paymentClearingStatusBefore');
+  const clearingAfter = readRecordString(record, 'paymentClearingStatusAfter');
+
+  if (!bankBefore && !bankAfter && !clearingBefore && !clearingAfter) {
+    return <span className="muted">-</span>;
+  }
+
+  return (
+    <div className="admin-table-substack">
+      {bankBefore || bankAfter ? (
+        <span>
+          Bank: {bankBefore ?? '-'}{' -> '}
+          {bankAfter ?? '-'}
+        </span>
+      ) : null}
+      {clearingBefore || clearingAfter ? (
+        <span className="muted">
+          Clearing: {clearingBefore ?? '-'}{' -> '}
+          {clearingAfter ?? '-'}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function statusPill(status: string) {
   if (status === 'MATCHED' || status === 'CLEARED') {
     return 'pill-success';
@@ -305,6 +346,11 @@ function statusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function readRecordString(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === 'string' && value.trim() ? value : null;
 }
 
 function bankReconciliationSourceField(sourceType: string) {

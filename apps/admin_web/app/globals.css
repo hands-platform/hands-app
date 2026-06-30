@@ -742,6 +742,12 @@ a {
   width: max-content;
 }
 
+.admin-table-substack {
+  display: grid;
+  gap: 3px;
+  min-width: 150px;
+}
+
 .payout-wallet-withdrawal-summary-grid {
   display: grid;
   gap: 12px;
