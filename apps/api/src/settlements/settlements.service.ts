@@ -3,10 +3,12 @@ import {
   AccountingJournalEntrySide,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  EarningStatus,
   MonthlyTaxClosingStatus,
   PaymentFeePayer,
   PaymentFeeTreatment,
   PaymentMethod,
+  PayoutBatchStatus,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -185,6 +187,21 @@ export class SettlementsService {
     client: SettlementPrismaClient = this.prisma,
   ) {
     const existing = await client.bookingSettlementSnapshot.findUnique({
+      include: {
+        providerEarning: {
+          select: {
+            id: true,
+            payoutBatch: {
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+            payoutBatchId: true,
+            status: true,
+          },
+        },
+      },
       where: { bookingId: input.bookingId },
     });
     if (!existing) {
@@ -289,27 +306,50 @@ export class SettlementsService {
     });
     const sourceKey = accountingJournalReversalSourceKey(snapshot.id);
     const sourceId = reversalEntryId ?? snapshot.id;
-    const journalEntries = journal.entries.map((entry) => ({
-      accountCode: entry.accountCode,
-      accountName: entry.accountName,
-      amount: entry.amount,
-      currency: entry.currency,
-      memo: `Refund reversal: ${entry.memo}`,
-      metadata: {
-        bookingId: snapshot.bookingId,
-        originalSettlementSnapshotId: snapshot.id,
-        ...paymentFeeEvidence,
-        settlementReversalEntryId: reversalEntryId ?? null,
-      } satisfies Prisma.InputJsonObject,
-      side: reverseJournalSide(entry.side),
-      sourceId,
-      sourceType: 'BOOKING_SETTLEMENT_REVERSAL' as const,
-    }));
+    const refundAfterPartnerPayout = settlementSnapshotHasPaidPartnerPayout(snapshot);
+    let partnerRefundReceivableAmount = 0;
+    const journalEntries = journal.entries.map((entry) => {
+      const side = reverseJournalSide(entry.side);
+      const movesPaidPayoutToReceivable =
+        refundAfterPartnerPayout &&
+        entry.accountCode === 'partner_wallet_liability' &&
+        side === AccountingJournalEntrySide.DEBIT;
+      if (movesPaidPayoutToReceivable) {
+        partnerRefundReceivableAmount += entry.amount;
+      }
+
+      return {
+        accountCode: movesPaidPayoutToReceivable
+          ? 'partner_receivable_negative_wallet'
+          : entry.accountCode,
+        accountName: movesPaidPayoutToReceivable
+          ? 'Partner receivable / negative wallet'
+          : entry.accountName,
+        amount: entry.amount,
+        currency: entry.currency,
+        memo: movesPaidPayoutToReceivable
+          ? `Refund after partner payout: ${entry.memo}`
+          : `Refund reversal: ${entry.memo}`,
+        metadata: {
+          bookingId: snapshot.bookingId,
+          originalSettlementSnapshotId: snapshot.id,
+          partnerRefundReceivableAmount: movesPaidPayoutToReceivable ? entry.amount : 0,
+          refundAfterPartnerPayout,
+          ...paymentFeeEvidence,
+          settlementReversalEntryId: reversalEntryId ?? null,
+        } satisfies Prisma.InputJsonObject,
+        side,
+        sourceId,
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL' as const,
+      };
+    });
     const journalMetadata = {
       bookingId: snapshot.bookingId,
       originalSettlementSnapshotId: snapshot.id,
+      partnerRefundReceivableAmount,
       ...paymentFeeEvidence,
       reason: input.reason?.trim() || 'Payment refund',
+      refundAfterPartnerPayout,
       settlementReversalEntryId: reversalEntryId ?? null,
     } satisfies Prisma.InputJsonObject;
 
@@ -719,6 +759,20 @@ type SettlementSnapshotForReversal = NonNullable<
 type BookingSettlementSnapshotRecord = Awaited<
   ReturnType<SettlementPrismaClient['bookingSettlementSnapshot']['upsert']>
 >;
+
+type SettlementSnapshotWithPartnerPayoutState = SettlementSnapshotForReversal & {
+  providerEarning?: {
+    payoutBatch?: {
+      status?: PayoutBatchStatus | string | null;
+    } | null;
+    status?: EarningStatus | string | null;
+  } | null;
+};
+
+function settlementSnapshotHasPaidPartnerPayout(snapshot: SettlementSnapshotForReversal) {
+  const providerEarning = (snapshot as SettlementSnapshotWithPartnerPayoutState).providerEarning;
+  return providerEarning?.status === EarningStatus.PAID || providerEarning?.payoutBatch?.status === PayoutBatchStatus.PAID;
+}
 
 function reverseJournalSide(side: 'DEBIT' | 'CREDIT') {
   return side === 'DEBIT' ? AccountingJournalEntrySide.CREDIT : AccountingJournalEntrySide.DEBIT;

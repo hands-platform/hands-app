@@ -1,9 +1,11 @@
 import {
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  EarningStatus,
   MonthlyTaxClosingStatus,
   PaymentFeePayer,
   PaymentFeeTreatment,
+  PayoutBatchStatus,
 } from '@prisma/client';
 import { settlementMonthlyPeriod, SettlementsService } from './settlements.service';
 
@@ -570,6 +572,100 @@ describe('SettlementsService', () => {
         type: 'REFUND_REVERSAL',
       }),
     });
+  });
+
+  it('moves refund after paid partner payout to partner receivable instead of wallet liability', async () => {
+    const existing = {
+      id: 'settlement-paid-payout-1',
+      bookingId: 'booking-paid-payout-1',
+      companyOutputVat: 9_481,
+      customerPaymentAmount: 600_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
+      metadata: {
+        bookingServiceAmount: 600_000,
+        couponReversalStatus: 'NONE',
+      },
+      monthlyClosingId: null,
+      monthlyPeriod: '2026-06',
+      partnerPitAmount: 12_000,
+      partnerPayoutAmount: 472_000,
+      partnerTaxableRevenue: 600_000,
+      partnerVatAmount: 30_000,
+      partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-1',
+      paymentMethod: 'CARD',
+      paymentProcessingFee: 0,
+      platformFeeGross: 128_000,
+      platformFeeNetRevenue: 118_519,
+      providerEarning: {
+        id: 'earning-paid-1',
+        payoutBatch: {
+          id: 'payout-batch-paid-1',
+          status: PayoutBatchStatus.PAID,
+        },
+        payoutBatchId: 'payout-batch-paid-1',
+        status: EarningStatus.PAID,
+      },
+      providerEarningId: 'earning-paid-1',
+      providerProfileId: 'provider-1',
+      settlementStatus: BookingSettlementStatus.POSTED,
+      taxStatus: BookingSettlementTaxStatus.OPEN,
+    };
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-reversal-1' }),
+      },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(existing),
+        update: vi
+          .fn()
+          .mockResolvedValue({ ...existing, settlementStatus: BookingSettlementStatus.REVERSED }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.reverseBookingSettlementSnapshotForRefund({
+      actorId: 'admin-1',
+      bookingId: 'booking-paid-payout-1',
+      occurredAt: new Date('2026-06-14T03:02:00.000Z'),
+      reason: 'Refund after payout',
+    });
+
+    const createEntries = prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.create?.entries?.create ?? [];
+    expect(createEntries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_receivable_negative_wallet',
+          amount: 430_000,
+          side: 'DEBIT',
+        }),
+      ]),
+    );
+    expect(createEntries).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_wallet_liability',
+          amount: 430_000,
+          side: 'DEBIT',
+        }),
+      ]),
+    );
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          metadata: expect.objectContaining({
+            refundAfterPartnerPayout: true,
+            partnerRefundReceivableAmount: 430_000,
+          }),
+          totalCredit: 600_000,
+          totalDebit: 600_000,
+        }),
+      }),
+    );
   });
 
   it('creates a reversal entry instead of editing a closed monthly settlement snapshot', async () => {
