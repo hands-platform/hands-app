@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsPartnerPayoutQueueGroup = {
@@ -64,7 +65,9 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={group.providerProfileId} />
                     <input type="hidden" name="transferRef" value={group.transferRef} />
-                    <button type="submit">Review payout batch</button>
+                    <AdminFormControlButton className="btn btn-primary" type="submit">
+                      Review payout batch
+                    </AdminFormControlButton>
                   </form>
                 ) : (
                   <span className="muted">No batch action</span>

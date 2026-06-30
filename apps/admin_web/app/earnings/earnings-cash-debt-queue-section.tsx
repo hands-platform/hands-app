@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsCashDebtTotals = {
@@ -108,14 +109,16 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                   <input type="hidden" name="confirm" value="mark-paid" />
                   <input type="hidden" name="earningId" value={item.earningId} />
                   <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-                  <input
-                    aria-label="Settlement reference"
+                  <AdminFormInput
                     defaultValue={item.settlementReference}
+                    label="Settlement reference"
                     name="settlementRef"
                     placeholder="Deposit ref or offset memo"
                   />
                   <input type="hidden" name="settlementNotes" value={item.settlementNotes} />
-                  <button type="submit">Review fee settlement</button>
+                  <AdminFormControlButton className="btn btn-primary" type="submit">
+                    Review fee settlement
+                  </AdminFormControlButton>
                 </form>
               </div>
             </div>

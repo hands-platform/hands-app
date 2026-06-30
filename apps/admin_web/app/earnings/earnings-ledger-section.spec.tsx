@@ -61,6 +61,9 @@ describe('EarningsLedgerSection', () => {
     expect(rendered).toContain('Cr Partner withholding tax payable 20.000 VND');
     expect(rendered).toContain('Review fee settlement');
     expect(rendered).toContain('Review payout batch');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+    );
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
   });
 
@@ -124,6 +127,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

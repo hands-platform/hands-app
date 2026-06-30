@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type EarningsLedgerRow = {
@@ -146,12 +147,14 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     <input type="hidden" name="confirm" value="mark-paid" />
                     <input type="hidden" name="earningId" value={row.id} />
                     <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-                    <input
-                      aria-label="Settlement reference"
+                    <AdminFormInput
+                      label="Settlement reference"
                       name="settlementRef"
                       placeholder="Deposit ref or offset memo"
                     />
-                    <button type="submit">Review fee settlement</button>
+                    <AdminFormControlButton className="btn btn-primary" type="submit">
+                      Review fee settlement
+                    </AdminFormControlButton>
                   </form>
                 ) : null}
                 {row.canCreatePayout ? (
@@ -159,7 +162,9 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
                     <input type="hidden" name="transferRef" value={row.transferRef} />
-                    <button type="submit">Review payout batch</button>
+                    <AdminFormControlButton className="btn btn-primary" type="submit">
+                      Review payout batch
+                    </AdminFormControlButton>
                   </form>
                 ) : null}
                 {!row.canDirectlyPay && !row.canCreatePayout ? (
