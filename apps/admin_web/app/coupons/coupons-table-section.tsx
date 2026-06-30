@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CalendarDays, Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { CouponWindowState } from './coupon-page-model';
@@ -176,10 +176,14 @@ function CouponManagementCard({
               <CalendarDays aria-hidden="true" size={17} />
             </span>
           </div>
-          <label className="coupon-active-field">
+          <AdminFormCheckbox
+            className="coupon-active-field"
+            defaultChecked={row.active}
+            label={`${row.code} active`}
+            name="active"
+          >
             <span>Active</span>
-            <input defaultChecked={row.active} name="active" type="checkbox" />
-          </label>
+          </AdminFormCheckbox>
           <AdminFormControlButton className="button" type="submit">
             Save
           </AdminFormControlButton>

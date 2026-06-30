@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import {
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormInput,
   AdminFormSelect,
@@ -365,10 +366,13 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                           type="number"
                         />
                       </div>
-                      <label>
-                        Active
-                        <input name="active" type="checkbox" defaultChecked={rule.active} />
-                      </label>
+                      <AdminFormCheckbox
+                        defaultChecked={rule.active}
+                        label={`Tax rule ${rule.id} active`}
+                        name="active"
+                      >
+                        <span>Active</span>
+                      </AdminFormCheckbox>
                       <AdminFormControlButton className="button button-primary" type="submit">
                         Update rule
                       </AdminFormControlButton>

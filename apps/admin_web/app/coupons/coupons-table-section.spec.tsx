@@ -29,9 +29,10 @@ describe('CouponsTableSection', () => {
     expect(elementTypesIn(section)).not.toContain('article');
     expect(classNamesIn(section)).toContain('coupon-management-section');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-input', 'admin-form-control-button']),
+      expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button']),
     );
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
+    expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });
 
   it('renders empty state when no coupons exist', () => {

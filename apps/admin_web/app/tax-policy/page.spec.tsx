@@ -61,10 +61,12 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('Update policy');
     expect(markup).toContain('Update rule');
     expect(markup).toContain('Add rule');
+    expect(markup).toContain('admin-form-checkbox');
     expect(markup).not.toContain('<label>Status<select');
     expect(markup).not.toContain('<label>Scope<select');
     expect(markup).not.toContain('<label>Service type<input');
     expect(markup).not.toContain('<label>Rate bps<input');
+    expect(markup).not.toContain('<input name="active" type="checkbox"');
   });
 });
 
