@@ -7708,70 +7708,80 @@ export class AdminService {
       ADMIN_MANUAL_WALLET_ADJUSTMENT_MAX_LIMIT,
     );
     const skip = boundedAdminListSkip(options.skip);
-    const fetchLimit = skip + take;
     const ownerType = normalizeManualWalletAdjustmentOwnerTypeFilter(options.ownerType);
     const ownerId = normalizeNullable(options.ownerId);
+
+    if (!ownerType) {
+      const orderedRows = await this.prisma.$queryRaw<ManualWalletAdjustmentLedgerIdRow[]>(Prisma.sql`
+        SELECT "id", 'CUSTOMER' AS "ownerType", "createdAt"
+        FROM "CustomerWalletLedgerEntry"
+        WHERE "type" = ${CustomerWalletLedgerType.ADMIN_ADJUSTMENT}::"CustomerWalletLedgerType"
+          AND "sourceKey" LIKE 'manual-wallet-adjustment:%'
+          ${ownerId ? Prisma.sql`AND "customerProfileId" = ${ownerId}` : Prisma.empty}
+        UNION ALL
+        SELECT "id", 'PARTNER' AS "ownerType", "createdAt"
+        FROM "ProviderWalletLedgerEntry"
+        WHERE "type" IN (${Prisma.join(MANUAL_WALLET_ADJUSTMENT_PROVIDER_SQL_TYPES)})
+          AND "sourceKey" LIKE 'manual-wallet-adjustment:%'
+          ${ownerId ? Prisma.sql`AND "providerProfileId" = ${ownerId}` : Prisma.empty}
+        ORDER BY "createdAt" DESC, "id" DESC
+        LIMIT ${take}
+        OFFSET ${skip}
+      `);
+      const customerIds = orderedRows
+        .filter((row) => row.ownerType === 'CUSTOMER')
+        .map((row) => row.id);
+      const providerIds = orderedRows
+        .filter((row) => row.ownerType === 'PARTNER')
+        .map((row) => row.id);
+      const [customerRows, providerRows] = await Promise.all([
+        customerIds.length
+          ? this.prisma.customerWalletLedgerEntry.findMany({
+              where: {
+                ...manualWalletAdjustmentCustomerWhere(ownerId),
+                id: { in: customerIds },
+              },
+              select: manualWalletAdjustmentCustomerListSelect,
+            })
+          : [],
+        providerIds.length
+          ? this.prisma.providerWalletLedgerEntry.findMany({
+              where: {
+                ...manualWalletAdjustmentProviderWhere(ownerId),
+                id: { in: providerIds },
+              },
+              select: manualWalletAdjustmentProviderListSelect,
+            })
+          : [],
+      ]);
+      const rowsByKey = new Map([
+        ...customerRows.map((row) => [`CUSTOMER:${row.id}`, manualWalletAdjustmentCustomerRow(row)] as const),
+        ...providerRows.map((row) => [`PARTNER:${row.id}`, manualWalletAdjustmentProviderRow(row)] as const),
+      ]);
+
+      return orderedRows
+        .map((row) => rowsByKey.get(`${row.ownerType}:${row.id}`))
+        .filter((row): row is NonNullable<typeof row> => Boolean(row));
+    }
+
     const [customerRows, providerRows] = await Promise.all([
       ownerType === 'PARTNER'
         ? []
         : this.prisma.customerWalletLedgerEntry.findMany({
             where: manualWalletAdjustmentCustomerWhere(ownerId),
             orderBy: { createdAt: 'desc' },
-            take: fetchLimit,
-            select: {
-              id: true,
-              customerProfileId: true,
-              type: true,
-              sourceKey: true,
-              amount: true,
-              currency: true,
-              reference: true,
-              notes: true,
-              metadata: true,
-              createdAt: true,
-              updatedAt: true,
-              customerProfile: {
-                select: {
-                  user: {
-                    select: {
-                      fullName: true,
-                      phone: true,
-                    },
-                  },
-                },
-              },
-            },
+            ...(skip > 0 ? { skip } : {}),
+            take,
+            select: manualWalletAdjustmentCustomerListSelect,
           }),
       ownerType === 'CUSTOMER'
         ? []
         : this.prisma.providerWalletLedgerEntry.findMany({
             where: manualWalletAdjustmentProviderWhere(ownerId),
             orderBy: { createdAt: 'desc' },
-            take: fetchLimit,
-            select: {
-              id: true,
-              providerProfileId: true,
-              type: true,
-              sourceKey: true,
-              amount: true,
-              currency: true,
-              reference: true,
-              notes: true,
-              metadata: true,
-              createdAt: true,
-              updatedAt: true,
-              providerProfile: {
-                select: {
-                  displayName: true,
-                  user: {
-                    select: {
-                      fullName: true,
-                      phone: true,
-                    },
-                  },
-                },
-              },
-            },
+            ...(skip > 0 ? { skip } : {}),
+            take,
+            select: manualWalletAdjustmentProviderListSelect,
           }),
     ]);
 
@@ -7780,7 +7790,7 @@ export class AdminService {
       ...providerRows.map((row) => manualWalletAdjustmentProviderRow(row)),
     ]
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
-      .slice(skip, skip + take);
+      .slice(0, take);
   }
 
   async manualWalletAdjustmentSummary(options: AdminManualWalletAdjustmentQuery = {}) {
@@ -10844,6 +10854,72 @@ function manualWalletAdjustmentMetadata(
   });
 }
 
+type ManualWalletAdjustmentLedgerIdRow = {
+  createdAt: Date;
+  id: string;
+  ownerType: ManualWalletAdjustmentOwnerType;
+};
+
+const MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES: ProviderWalletLedgerType[] = [
+  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
+  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
+  ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
+];
+
+const MANUAL_WALLET_ADJUSTMENT_PROVIDER_SQL_TYPES =
+  MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES.map(
+    (type) => Prisma.sql`${type}::"ProviderWalletLedgerType"`,
+  );
+
+const manualWalletAdjustmentCustomerListSelect = {
+  id: true,
+  customerProfileId: true,
+  type: true,
+  sourceKey: true,
+  amount: true,
+  currency: true,
+  reference: true,
+  notes: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  customerProfile: {
+    select: {
+      user: {
+        select: {
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.CustomerWalletLedgerEntrySelect;
+
+const manualWalletAdjustmentProviderListSelect = {
+  id: true,
+  providerProfileId: true,
+  type: true,
+  sourceKey: true,
+  amount: true,
+  currency: true,
+  reference: true,
+  notes: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  providerProfile: {
+    select: {
+      displayName: true,
+      user: {
+        select: {
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProviderWalletLedgerEntrySelect;
+
 function normalizeManualWalletAdjustmentOwnerTypeFilter(value?: string | null) {
   const normalized = normalizeNullable(value);
   if (!normalized) {
@@ -10866,13 +10942,7 @@ function manualWalletAdjustmentProviderWhere(
   ownerId: string | null,
 ): Prisma.ProviderWalletLedgerEntryWhereInput {
   return {
-    type: {
-      in: [
-        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
-        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
-        ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
-      ],
-    },
+    type: { in: MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES },
     sourceKey: { startsWith: 'manual-wallet-adjustment:' },
     ...(ownerId ? { providerProfileId: ownerId } : {}),
   };

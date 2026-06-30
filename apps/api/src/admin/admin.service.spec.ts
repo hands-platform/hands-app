@@ -6622,6 +6622,10 @@ describe('AdminService query orchestration', () => {
 
   it('lists recent manual wallet adjustments across customer and partner ledgers without loading all rows', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { id: 'provider-ledger-1', ownerType: 'PARTNER', createdAt: new Date('2026-06-29T09:00:00.000Z') },
+        { id: 'customer-ledger-1', ownerType: 'CUSTOMER', createdAt: new Date('2026-06-28T10:00:00.000Z') },
+      ]),
       customerWalletLedgerEntry: {
         findMany: vi.fn().mockResolvedValue([
           {
@@ -6682,7 +6686,17 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listManualWalletAdjustments({ skip: '1', take: '1' })).resolves.toEqual([
+    await expect(service.listManualWalletAdjustments({ skip: '25', take: '25' })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-ledger-1',
+        ownerLabel: 'Smoke Partner',
+        ownerType: 'PARTNER',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        beforeBalance: 0,
+        afterBalance: 200000,
+      }),
       expect.objectContaining({
         id: 'customer-ledger-1',
         ownerLabel: 'Demo Customer',
@@ -6695,20 +6709,21 @@ describe('AdminService query orchestration', () => {
       }),
     ]);
 
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     expect(prisma.customerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 2,
-        orderBy: { createdAt: 'desc' },
         where: expect.objectContaining({
+          id: { in: ['customer-ledger-1'] },
           type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
         }),
       }),
     );
+    expect(prisma.customerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('take');
+    expect(prisma.customerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('skip');
     expect(prisma.providerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 2,
-        orderBy: { createdAt: 'desc' },
         where: expect.objectContaining({
+          id: { in: ['provider-ledger-1'] },
           type: {
             in: [
               ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
@@ -6719,6 +6734,8 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+    expect(prisma.providerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('take');
+    expect(prisma.providerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('skip');
   });
 
   it('summarizes manual wallet adjustment history with count queries only', async () => {
