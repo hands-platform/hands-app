@@ -207,7 +207,10 @@ export class SettlementsService {
     input: ReverseBookingSettlementSnapshotInput,
     client: SettlementPrismaClient,
   ) {
-    const metadata = settlementRefundReversalMetadata(snapshot.metadata, input.occurredAt);
+    const metadata = {
+      ...settlementRefundReversalMetadata(snapshot.metadata, input.occurredAt),
+      ...settlementPaymentFeeEvidenceFromSnapshot(snapshot),
+    } satisfies Prisma.InputJsonObject;
     const reversalEntry = await client.bookingSettlementReversalEntry.upsert({
       where: { originalSettlementSnapshotId: snapshot.id },
       update: {
@@ -257,6 +260,7 @@ export class SettlementsService {
     reversalEntryId?: string | null,
   ) {
     const metadata = jsonRecord(snapshot.metadata);
+    const paymentFeeEvidence = settlementPaymentFeeEvidenceFromSnapshot(snapshot);
     const journal = buildBookingSettlementJournal({
       bookingId: snapshot.bookingId,
       companyOutputVat: snapshot.companyOutputVat,
@@ -280,6 +284,7 @@ export class SettlementsService {
       metadata: {
         bookingId: snapshot.bookingId,
         originalSettlementSnapshotId: snapshot.id,
+        ...paymentFeeEvidence,
         settlementReversalEntryId: reversalEntryId ?? null,
       } satisfies Prisma.InputJsonObject,
       side: reverseJournalSide(entry.side),
@@ -289,6 +294,7 @@ export class SettlementsService {
     const journalMetadata = {
       bookingId: snapshot.bookingId,
       originalSettlementSnapshotId: snapshot.id,
+      ...paymentFeeEvidence,
       reason: input.reason?.trim() || 'Payment refund',
       settlementReversalEntryId: reversalEntryId ?? null,
     } satisfies Prisma.InputJsonObject;
@@ -352,6 +358,7 @@ export class SettlementsService {
           bookingId: snapshot.bookingId,
           journalBatchSourceKey: sourceKey,
           originalSettlementSnapshotId: snapshot.id,
+          ...paymentFeeEvidence,
           settlementReversalEntryId: reversalEntryId ?? null,
         } satisfies Prisma.InputJsonObject,
         occurredAt: input.occurredAt,
@@ -368,6 +375,7 @@ export class SettlementsService {
           bookingId: snapshot.bookingId,
           journalBatchSourceKey: sourceKey,
           originalSettlementSnapshotId: snapshot.id,
+          ...paymentFeeEvidence,
           settlementReversalEntryId: reversalEntryId ?? null,
         } satisfies Prisma.InputJsonObject,
         occurredAt: input.occurredAt,
@@ -602,6 +610,24 @@ function settlementPaymentFeeEvidence(
     paymentFeeRateBps: input.paymentFeeRateBps ?? 0,
     paymentFeeTreatment: input.paymentFeeTreatment ?? PaymentFeeTreatment.OPERATING_EXPENSE,
     paymentProcessingFee: amounts.paymentProcessingFee,
+  } satisfies Prisma.InputJsonObject;
+}
+
+function settlementPaymentFeeEvidenceFromSnapshot(snapshot: {
+  paymentFeeFixedAmount?: number | null;
+  paymentFeePayer?: PaymentFeePayer | null;
+  paymentFeePolicyVersionId?: string | null;
+  paymentFeeRateBps?: number | null;
+  paymentFeeTreatment?: PaymentFeeTreatment | null;
+  paymentProcessingFee?: number | null;
+}) {
+  return {
+    paymentFeeFixedAmount: snapshot.paymentFeeFixedAmount ?? 0,
+    paymentFeePayer: snapshot.paymentFeePayer ?? PaymentFeePayer.HANDS,
+    paymentFeePolicyVersionId: snapshot.paymentFeePolicyVersionId ?? null,
+    paymentFeeRateBps: snapshot.paymentFeeRateBps ?? 0,
+    paymentFeeTreatment: snapshot.paymentFeeTreatment ?? PaymentFeeTreatment.OPERATING_EXPENSE,
+    paymentProcessingFee: snapshot.paymentProcessingFee ?? 0,
   } satisfies Prisma.InputJsonObject;
 }
 
