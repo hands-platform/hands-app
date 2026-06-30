@@ -6090,6 +6090,17 @@ export class AdminService {
       if (Math.abs(input.amount) > Math.abs(sourceAmount)) {
         throw new BadRequestException('Match amount exceeds source amount');
       }
+      const currentBankMatched = await tx.bankReconciliationMatch.aggregate({
+        where: {
+          bankTransactionId,
+          status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+        },
+        _sum: { amount: true },
+      });
+      const nextMatchedAmount = Math.abs(currentBankMatched._sum.amount ?? 0) + Math.abs(input.amount);
+      if (nextMatchedAmount > Math.abs(bankTransaction.amount)) {
+        throw new BadRequestException('Match amount exceeds remaining bank transaction amount');
+      }
 
       const match = await tx.bankReconciliationMatch.create({
         data: {

@@ -6780,8 +6780,8 @@ describe('AdminService query orchestration', () => {
       bankReconciliationMatch: {
         aggregate: vi
           .fn()
-          .mockResolvedValueOnce({ _sum: { amount: 900000 } })
-          .mockResolvedValueOnce({ _sum: { amount: 900000 } }),
+          .mockResolvedValueOnce({ _sum: { amount: 0 } })
+          .mockResolvedValue({ _sum: { amount: 900000 } }),
         create: vi.fn().mockResolvedValue({
           id: 'match-1',
           bankTransactionId: 'bank-tx-1',
@@ -6842,6 +6842,53 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     });
+  });
+
+  it('rejects manual bank reconciliation matches that exceed the remaining bank transaction amount', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 900000,
+          currency: 'VND',
+          status: BankReconciliationStatus.PARTIALLY_MATCHED,
+        }),
+        update: vi.fn(),
+      },
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'clearing-1',
+          amount: 300000,
+          currency: 'VND',
+          status: BookingPaymentClearingStatus.OPEN,
+        }),
+        update: vi.fn(),
+      },
+      bankReconciliationMatch: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 800000 } }),
+        create: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        paymentClearingEntryId: 'clearing-1',
+        amount: 300000,
+        notes: 'Would overmatch the bank transaction',
+      }),
+    ).rejects.toThrow('Match amount exceeds remaining bank transaction amount');
+
+    expect(tx.bankReconciliationMatch.create).not.toHaveBeenCalled();
+    expect(tx.companyBankTransaction.update).not.toHaveBeenCalled();
+    expect(tx.bookingPaymentClearingEntry.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('reverses a bank reconciliation match and recalculates linked statuses in one transaction', async () => {
