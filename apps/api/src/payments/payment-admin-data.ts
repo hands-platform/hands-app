@@ -13,7 +13,7 @@ export function paymentRefundUpdateData(input: { bookingId: string; amount: numb
         bookingId: input.bookingId,
         amount: input.amount,
         reason: 'Admin manual refund',
-        status: 'REQUESTED',
+        status: 'COMPLETED',
       },
     },
   };

@@ -6,7 +6,7 @@ describe('payment admin update data helpers', () => {
     expect(paymentCaptureUpdateData()).toEqual({ status: PaymentStatus.CAPTURED });
   });
 
-  it('builds refund update data with booking closeout and refund request', () => {
+  it('builds refund update data with booking closeout and completed refund transaction', () => {
     expect(paymentRefundUpdateData({ bookingId: 'booking-1', amount: 300000 })).toEqual({
       status: PaymentStatus.REFUNDED,
       booking: { update: { status: BookingStatus.REFUNDED } },
@@ -15,7 +15,7 @@ describe('payment admin update data helpers', () => {
           bookingId: 'booking-1',
           amount: 300000,
           reason: 'Admin manual refund',
-          status: 'REQUESTED',
+          status: 'COMPLETED',
         },
       },
     });
