@@ -55,6 +55,7 @@ describe('FinanceApproversPage', () => {
     expect(markup).toContain('Support Admin');
     expect(markup).not.toContain('Customer User');
     expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('class="form-input"');
   });
 });

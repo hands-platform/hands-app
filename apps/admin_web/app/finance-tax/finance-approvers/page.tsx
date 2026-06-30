@@ -1,6 +1,6 @@
 import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
@@ -166,9 +166,12 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                         placeholder={enabled ? 'Rotation or access removal reason' : 'Finance approval owner reason'}
                         required
                       />
-                      <button className={`btn ${enabled ? 'btn-outline' : 'btn-primary'}`} type="submit">
+                      <AdminFormControlButton
+                        className={`btn ${enabled ? 'btn-outline' : 'btn-primary'}`}
+                        type="submit"
+                      >
                         {enabled ? 'Revoke approver' : 'Grant approver'}
-                      </button>
+                      </AdminFormControlButton>
                     </form>
                   </td>
                 </tr>
