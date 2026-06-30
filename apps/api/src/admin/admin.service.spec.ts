@@ -6399,6 +6399,20 @@ describe('AdminService query orchestration', () => {
       }),
       create: expect.objectContaining({
         currency: 'VND',
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              accountCode: 'partner_bonus_expense',
+              amount: 200000,
+              side: 'DEBIT',
+            }),
+            expect.objectContaining({
+              accountCode: 'partner_wallet_liability',
+              amount: 200000,
+              side: 'CREDIT',
+            }),
+          ]),
+        },
         providerProfileId: 'provider-1',
         sourceId: 'ledger-1',
         sourceKey: 'accounting-journal:manual-wallet-adjustment:PARTNER:provider-1:approval-1',
