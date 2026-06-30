@@ -38,6 +38,7 @@ describe('monthly tax closing actions', () => {
     expect(mockedAdminPatch).toHaveBeenCalledWith(
       '/admin/monthly-tax-closings/2026-06/status',
       {
+        approvalAdminId: null,
         notes: 'Submitted to tax portal',
         paidAt: null,
         remittanceChannel: null,
@@ -68,6 +69,7 @@ describe('monthly tax closing actions', () => {
     formData.set('period', '2026-06');
     formData.set('status', 'PAID');
     formData.set('paidAt', '2026-07-01T04:30');
+    formData.set('approvalAdminId', ' finance-admin-2 ');
     formData.set('remittanceTransferRef', ' VCB-TAX-202606 ');
     formData.set('remittanceChannel', ' VCB_MANUAL_TRANSFER ');
     formData.set('remittanceEvidenceUrl', ' https://evidence.example/remittance.pdf ');
@@ -77,6 +79,7 @@ describe('monthly tax closing actions', () => {
     expect(mockedAdminPatch).toHaveBeenCalledWith(
       '/admin/monthly-tax-closings/2026-06/status',
       expect.objectContaining({
+        approvalAdminId: 'finance-admin-2',
         paidAt: '2026-07-01T04:30',
         remittanceChannel: 'VCB_MANUAL_TRANSFER',
         remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',

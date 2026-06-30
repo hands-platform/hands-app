@@ -8,6 +8,7 @@ import { adminPatch } from '../../../lib/admin-api';
 export async function updateMonthlyTaxClosingStatus(formData: FormData) {
   const period = String(formData.get('period') || '').trim();
   const status = String(formData.get('status') || '').trim();
+  const approvalAdminId = String(formData.get('approvalAdminId') || '').trim();
   const notes = String(formData.get('notes') || '').trim();
   const paidAt = String(formData.get('paidAt') || '').trim();
   const remittanceChannel = String(formData.get('remittanceChannel') || '').trim();
@@ -25,6 +26,7 @@ export async function updateMonthlyTaxClosingStatus(formData: FormData) {
     `/admin/monthly-tax-closings/${encodeURIComponent(period)}/status`,
     {
       status,
+      approvalAdminId: approvalAdminId || null,
       notes: notes || null,
       paidAt: paidAt || null,
       remittanceChannel: remittanceChannel || null,

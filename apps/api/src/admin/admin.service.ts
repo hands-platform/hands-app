@@ -389,6 +389,7 @@ type AdminMonthlyTaxClosingQuery = {
 };
 type AdminMonthlyTaxClosingStatusInput = {
   readonly status?: MonthlyTaxClosingStatus | string | null;
+  readonly approvalAdminId?: string | null;
   readonly notes?: string | null;
   readonly paidAt?: string | null;
   readonly remittanceChannel?: string | null;
@@ -12646,11 +12647,20 @@ function monthlyTaxClosingRemittanceMetadata(
     return null;
   }
 
+  const approvedByAdminId = normalizeFinanceActionApprovalAdminId(
+    input.approvalAdminId,
+    actorId,
+    'Partner withholding remittance paid closeout',
+  );
   const transferRef = normalizeNullable(input.remittanceTransferRef);
   if (!transferRef) {
     throw new BadRequestException(
       'Partner withholding remittance transfer reference is required before marking paid.',
     );
+  }
+  const evidenceUrl = normalizeNullable(input.remittanceEvidenceUrl);
+  if (!evidenceUrl) {
+    throw new BadRequestException('Partner withholding remittance evidence URL is required before marking paid.');
   }
 
   const paidAtDate = monthlyTaxClosingPaidAtDate(input.paidAt);
@@ -12659,9 +12669,10 @@ function monthlyTaxClosingRemittanceMetadata(
     metadata: {
       transferRef,
       channel: normalizeNullable(input.remittanceChannel),
-      evidenceUrl: normalizeNullable(input.remittanceEvidenceUrl),
+      evidenceUrl,
       paidAt: paidAtDate.toISOString(),
       remittedByAdminId: actorId,
+      approvedByAdminId,
     },
   };
 }

@@ -154,6 +154,14 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               />
             </label>
             <label>
+              Approving admin ID
+              <input
+                name="approvalAdminId"
+                placeholder="Required when moving to PAID"
+                defaultValue={summary.remittanceMetadata?.approvedByAdminId ?? ''}
+              />
+            </label>
+            <label>
               Paid at
               <input
                 name="paidAt"

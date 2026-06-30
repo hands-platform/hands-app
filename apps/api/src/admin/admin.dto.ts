@@ -356,6 +356,12 @@ export class UpdateMonthlyTaxClosingStatusDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @MaxLength(128)
+  approvalAdminId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
   @MaxLength(1000)
   notes?: string | null;
 

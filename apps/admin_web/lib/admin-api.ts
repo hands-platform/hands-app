@@ -2339,6 +2339,7 @@ export type AdminMonthlyTaxClosingRemittanceMetadata = {
   evidenceUrl?: string | null;
   paidAt?: string | null;
   remittedByAdminId?: string | null;
+  approvedByAdminId?: string | null;
 };
 
 export type AdminMonthlyTaxClosingSummary = {

@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  MonthlyTaxClosingStatus,
   PayoutBatchStatus,
   ProviderReportSeverity,
   ReferralRewardMode,
@@ -157,6 +158,9 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('recordPartnerBankDeposit', 1) as { name?: string })?.name).toBe(
       'RecordPartnerBankDepositDto',
     );
+    expect((bodyMetatype('updateMonthlyTaxClosingStatus', 2) as { name?: string })?.name).toBe(
+      'UpdateMonthlyTaxClosingStatusDto',
+    );
     expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe('CreatePayoutBatchDto');
     expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe('UpdatePayoutBatchDto');
     expect((bodyMetatype('createBankReconciliationMatch' as keyof AdminController, 2) as { name?: string })?.name).toBe(
@@ -165,6 +169,31 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('reverseBankReconciliationMatch' as keyof AdminController, 3) as { name?: string })?.name).toBe(
       'ReverseBankReconciliationMatchDto',
     );
+  });
+
+  it('normalizes monthly tax closing remittance approval payloads', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        status: MonthlyTaxClosingStatus.PAID,
+        approvalAdminId: ' finance-admin-2 ',
+        remittanceTransferRef: ' VCB-TAX-202606 ',
+        remittanceChannel: ' VCB_MANUAL_TRANSFER ',
+        remittanceEvidenceUrl: ' https://evidence.example/remittance.pdf ',
+        paidAt: ' 2026-07-01T04:30 ',
+        ignoredField: 'strip-me',
+      },
+      { type: 'body', metatype: bodyMetatype('updateMonthlyTaxClosingStatus', 2) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('status', MonthlyTaxClosingStatus.PAID);
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
+    expect(transformed).toHaveProperty('remittanceTransferRef', 'VCB-TAX-202606');
+    expect(transformed).toHaveProperty('remittanceChannel', 'VCB_MANUAL_TRANSFER');
+    expect(transformed).toHaveProperty('remittanceEvidenceUrl', 'https://evidence.example/remittance.pdf');
+    expect(transformed).toHaveProperty('paidAt', '2026-07-01T04:30');
+    expect(transformed).not.toHaveProperty('ignoredField');
   });
 
   it('normalizes manual bank reconciliation match payloads and strips unsupported fields', async () => {

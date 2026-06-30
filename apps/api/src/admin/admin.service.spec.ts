@@ -7747,7 +7747,7 @@ describe('AdminService query orchestration', () => {
     });
   });
 
-  it('requires transfer evidence before marking partner withholding remittance paid', async () => {
+  it('requires separate approval and evidence before marking partner withholding remittance paid', async () => {
     const prisma = {
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue({
@@ -7772,7 +7772,34 @@ describe('AdminService query orchestration', () => {
     await expect(
       service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
         status: MonthlyTaxClosingStatus.PAID,
-      }),
+        remittanceTransferRef: 'VCB-TAX-202606',
+        remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
+      } as never),
+    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a different admin');
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+        approvalAdminId: 'admin-1',
+        remittanceTransferRef: 'VCB-TAX-202606',
+        remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
+      } as never),
+    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a different admin');
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+        approvalAdminId: 'finance-admin-2',
+        remittanceTransferRef: 'VCB-TAX-202606',
+      } as never),
+    ).rejects.toThrow('Partner withholding remittance evidence URL is required before marking paid.');
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+        approvalAdminId: 'finance-admin-2',
+        remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
+      } as never),
     ).rejects.toThrow('Partner withholding remittance transfer reference is required before marking paid.');
     expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
   });
@@ -7801,6 +7828,7 @@ describe('AdminService query orchestration', () => {
         evidenceUrl: 'https://evidence.example/remittance.pdf',
         paidAt: paidAt.toISOString(),
         remittedByAdminId: 'admin-1',
+        approvedByAdminId: 'finance-admin-2',
       },
     };
     const tx = {
@@ -7868,10 +7896,11 @@ describe('AdminService query orchestration', () => {
         status: MonthlyTaxClosingStatus.PAID,
         notes: ' Paid through tax portal ',
         paidAt: paidAt.toISOString(),
+        approvalAdminId: ' finance-admin-2 ',
         remittanceTransferRef: ' VCB-TAX-202606 ',
         remittanceChannel: ' VCB_MANUAL_TRANSFER ',
         remittanceEvidenceUrl: ' https://evidence.example/remittance.pdf ',
-      }),
+      } as never),
     ).resolves.toEqual(updatedClosing);
 
     expect(tx.monthlyTaxClosing.upsert).toHaveBeenCalledWith(
@@ -7886,6 +7915,7 @@ describe('AdminService query orchestration', () => {
             evidenceUrl: 'https://evidence.example/remittance.pdf',
             paidAt: paidAt.toISOString(),
             remittedByAdminId: 'admin-1',
+            approvedByAdminId: 'finance-admin-2',
           }),
         }),
       }),
@@ -7910,6 +7940,7 @@ describe('AdminService query orchestration', () => {
           remittance: expect.objectContaining({
             transferRef: 'VCB-TAX-202606',
             channel: 'VCB_MANUAL_TRANSFER',
+            approvedByAdminId: 'finance-admin-2',
           }),
         }),
       }),
