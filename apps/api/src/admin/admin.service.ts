@@ -463,6 +463,61 @@ const adminBookingSettlementSnapshotListSelect = {
     },
   },
 } satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminBookingSettlementReversalEntryListSelect = {
+  id: true,
+  sourceKey: true,
+  originalSettlementSnapshotId: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  paymentId: true,
+  providerEarningId: true,
+  paymentMethod: true,
+  currency: true,
+  customerPaymentAmount: true,
+  partnerPayoutAmount: true,
+  partnerTaxableRevenue: true,
+  partnerVatAmount: true,
+  partnerPitAmount: true,
+  partnerWithholdingTotal: true,
+  platformFeeGross: true,
+  platformFeeNetRevenue: true,
+  companyOutputVat: true,
+  paymentProcessingFee: true,
+  settlementStatus: true,
+  taxStatus: true,
+  monthlyPeriod: true,
+  originalMonthlyPeriod: true,
+  originalMonthlyClosingId: true,
+  occurredAt: true,
+  reason: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  originalSettlementSnapshot: {
+    select: {
+      id: true,
+      monthlyPeriod: true,
+      postedAt: true,
+      settlementStatus: true,
+      taxStatus: true,
+      booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
+      customerProfile: {
+        select: {
+          id: true,
+          user: { select: { id: true, fullName: true, phone: true } },
+        },
+      },
+      providerProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          user: { select: { id: true, fullName: true, phone: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.BookingSettlementReversalEntrySelect;
 const adminAccountingJournalBatchListSelect = {
   id: true,
   sourceKey: true,
@@ -5903,6 +5958,58 @@ export class AdminService {
       paymentProcessingFee: sums._sum.paymentProcessingFee ?? 0,
       openTaxCount,
       paidTaxCount,
+    };
+  }
+
+  listBookingSettlementReversals(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingSettlementReversalWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
+
+    return this.prisma.bookingSettlementReversalEntry.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { occurredAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
+      take: adminPaymentOperationsTake(options.take),
+      select: adminBookingSettlementReversalEntryListSelect,
+    });
+  }
+
+  async bookingSettlementReversalSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingSettlementReversalWhere(options);
+    const cashWhere = adminMergeBookingSettlementReversalWhere(where, { paymentMethod: PaymentMethod.CASH });
+    const nonCashWhere = adminMergeBookingSettlementReversalWhere(where, {
+      paymentMethod: { not: PaymentMethod.CASH },
+    });
+    const [count, sums, cashCount, nonCashCount] = await Promise.all([
+      this.prisma.bookingSettlementReversalEntry.count(adminBookingSettlementReversalCountArgs(where)),
+      this.prisma.bookingSettlementReversalEntry.aggregate({
+        ...(where ? { where } : {}),
+        _sum: {
+          customerPaymentAmount: true,
+          partnerPayoutAmount: true,
+          partnerWithholdingTotal: true,
+          platformFeeGross: true,
+          platformFeeNetRevenue: true,
+          companyOutputVat: true,
+          paymentProcessingFee: true,
+        },
+      }),
+      this.prisma.bookingSettlementReversalEntry.count(adminBookingSettlementReversalCountArgs(cashWhere)),
+      this.prisma.bookingSettlementReversalEntry.count(adminBookingSettlementReversalCountArgs(nonCashWhere)),
+    ]);
+
+    return {
+      count,
+      currency: 'VND',
+      customerPaymentAmount: sums._sum.customerPaymentAmount ?? 0,
+      partnerPayoutAmount: sums._sum.partnerPayoutAmount ?? 0,
+      partnerWithholdingTotal: sums._sum.partnerWithholdingTotal ?? 0,
+      platformFeeGross: sums._sum.platformFeeGross ?? 0,
+      platformFeeNetRevenue: sums._sum.platformFeeNetRevenue ?? 0,
+      companyOutputVat: sums._sum.companyOutputVat ?? 0,
+      paymentProcessingFee: sums._sum.paymentProcessingFee ?? 0,
+      cashCount,
+      nonCashCount,
     };
   }
 
@@ -12054,6 +12161,61 @@ function adminBookingSettlementSnapshotReviewWhere(
       return { paymentMethod: PaymentMethod.CASH };
     case 'non-cash':
       return { paymentMethod: { not: PaymentMethod.CASH } };
+    default:
+      return undefined;
+  }
+}
+
+function adminBookingSettlementReversalWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.BookingSettlementReversalEntryWhereInput | undefined {
+  const filters: Prisma.BookingSettlementReversalEntryWhereInput[] = [];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const reviewWhere = adminBookingSettlementReversalReviewWhere(options.review);
+
+  if (dateRange) {
+    filters.push({ occurredAt: dateRange });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminMergeBookingSettlementReversalWhere(
+  base: Prisma.BookingSettlementReversalEntryWhereInput | undefined,
+  next: Prisma.BookingSettlementReversalEntryWhereInput,
+): Prisma.BookingSettlementReversalEntryWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminBookingSettlementReversalCountArgs(
+  where: Prisma.BookingSettlementReversalEntryWhereInput | undefined,
+): Prisma.BookingSettlementReversalEntryCountArgs {
+  return where ? { where } : {};
+}
+
+function adminBookingSettlementReversalReviewWhere(
+  review: string | null | undefined,
+): Prisma.BookingSettlementReversalEntryWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'cash':
+      return { paymentMethod: PaymentMethod.CASH };
+    case 'non-cash':
+      return { paymentMethod: { not: PaymentMethod.CASH } };
+    case 'reversed':
+    case 'refund':
+    case 'closed-period':
+      return {
+        OR: [
+          { settlementStatus: BookingSettlementStatus.REVERSED },
+          { taxStatus: BookingSettlementTaxStatus.REVERSED },
+        ],
+      };
     default:
       return undefined;
   }

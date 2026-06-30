@@ -803,6 +803,21 @@ export class AdminController {
     return this.admin.bookingSettlementSnapshotSummary({ range, review });
   }
 
+  @Get('booking-settlement-reversals')
+  bookingSettlementReversals(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listBookingSettlementReversals({ range, review, skip, take });
+  }
+
+  @Get('booking-settlement-reversals/summary')
+  bookingSettlementReversalSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.bookingSettlementReversalSummary({ range, review });
+  }
+
   @Get('booking-settlement-snapshots/coupon-finance')
   couponFinanceSnapshots(
     @Query('take') take?: string,

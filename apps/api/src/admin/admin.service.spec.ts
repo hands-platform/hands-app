@@ -6454,6 +6454,92 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('lists booking settlement reversal entries with bounded occurred-at filters', async () => {
+    const prisma = {
+      bookingSettlementReversalEntry: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'reversal-1' }]),
+      },
+    };
+    const service = createAdminService(prisma) as AdminService & {
+      listBookingSettlementReversals: AdminService['listBookingSettlementSnapshots'];
+    };
+
+    await expect(
+      service.listBookingSettlementReversals({
+        range: '7d',
+        review: 'cash',
+        skip: '25',
+        take: '50',
+      }),
+    ).resolves.toEqual([{ id: 'reversal-1' }]);
+
+    expect(prisma.bookingSettlementReversalEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { occurredAt: 'desc' },
+        skip: 25,
+        take: 50,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { paymentMethod: PaymentMethod.CASH },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes booking settlement reversal entries from reversal aggregates only', async () => {
+    const prisma = {
+      bookingSettlementReversalEntry: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: {
+            customerPaymentAmount: -600000,
+            partnerPayoutAmount: -430000,
+            partnerWithholdingTotal: -42000,
+            platformFeeGross: -128000,
+            platformFeeNetRevenue: -118519,
+            companyOutputVat: -9481,
+            paymentProcessingFee: -10000,
+          },
+        }),
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(0).mockResolvedValueOnce(1),
+      },
+    };
+    const service = createAdminService(prisma) as AdminService & {
+      bookingSettlementReversalSummary: AdminService['bookingSettlementSnapshotSummary'];
+    };
+
+    await expect(service.bookingSettlementReversalSummary({ range: '30d', review: 'non-cash' })).resolves.toEqual({
+      count: 1,
+      currency: 'VND',
+      customerPaymentAmount: -600000,
+      partnerPayoutAmount: -430000,
+      partnerWithholdingTotal: -42000,
+      platformFeeGross: -128000,
+      platformFeeNetRevenue: -118519,
+      companyOutputVat: -9481,
+      paymentProcessingFee: -10000,
+      cashCount: 0,
+      nonCashCount: 1,
+    });
+
+    expect(prisma.bookingSettlementReversalEntry.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: expect.objectContaining({
+          partnerWithholdingTotal: true,
+          companyOutputVat: true,
+          paymentProcessingFee: true,
+        }),
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { paymentMethod: { not: PaymentMethod.CASH } },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('lists accounting journal batches with bounded posted-at filters and entry counts only', async () => {
     const prisma = {
       accountingJournalBatch: {

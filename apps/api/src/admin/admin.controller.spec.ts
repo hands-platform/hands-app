@@ -66,6 +66,8 @@ describe('AdminController notification and push actions', () => {
     providerWalletWithdrawalRequestSummary: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
+    listBookingSettlementReversals: vi.fn(),
+    bookingSettlementReversalSummary: vi.fn(),
     listCouponFinanceSnapshots: vi.fn(),
     couponFinanceSummary: vi.fn(),
     listPartnerWithholdingTax: vi.fn(),
@@ -656,6 +658,46 @@ describe('AdminController notification and push actions', () => {
     expect(admin.bookingSettlementSnapshotSummary).toHaveBeenCalledWith({
       range: '30d',
       review: 'paid',
+    });
+  });
+
+  it('exposes booking settlement reversal entries as a bounded filtered finance list', async () => {
+    admin.listBookingSettlementReversals.mockResolvedValue([{ id: 'reversal-1' }]);
+
+    await expect(controller.bookingSettlementReversals('25', '30d', 'non-cash', '50')).resolves.toEqual([
+      { id: 'reversal-1' },
+    ]);
+
+    expect(routeMetadata('bookingSettlementReversals')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-reversals',
+    });
+    expect(admin.listBookingSettlementReversals).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'non-cash',
+      skip: '50',
+      take: '25',
+    });
+  });
+
+  it('exposes booking settlement reversal summary with the same filters', async () => {
+    admin.bookingSettlementReversalSummary.mockResolvedValue({
+      count: 1,
+      platformFeeNetRevenue: -118519,
+    });
+
+    await expect(controller.bookingSettlementReversalSummary('30d', 'closed-period')).resolves.toEqual({
+      count: 1,
+      platformFeeNetRevenue: -118519,
+    });
+
+    expect(routeMetadata('bookingSettlementReversalSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-reversals/summary',
+    });
+    expect(admin.bookingSettlementReversalSummary).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'closed-period',
     });
   });
 
