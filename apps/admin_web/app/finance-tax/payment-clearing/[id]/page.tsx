@@ -8,6 +8,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/ad
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
   buildBookingPaymentClearingDetailApiHref,
+  generalLedgerDetailHref,
   paymentClearingHref,
 } from '../../tax-settlement-page-model';
 
@@ -76,7 +77,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No bank reconciliation matches are linked to this clearing row."
-            headers={['Bank transaction', 'Counterparty', 'Amount', 'Matched', 'Status']}
+            headers={['Bank transaction', 'Journal entry', 'Counterparty', 'Amount', 'Matched', 'Status']}
             rowCount={matches.length}
           >
             {matches.map((match) => (
@@ -90,6 +91,16 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                     <span className="muted">-</span>
                   )}
                   <div className="muted">{match.bankTransaction?.type ?? '-'}</div>
+                </td>
+                <td>
+                  {match.accountingJournalEntry ? (
+                    <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+                      {match.accountingJournalEntry.accountCode}
+                    </Link>
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                  <div className="muted">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>
                 </td>
                 <td>{match.bankTransaction?.counterpartyName ?? '-'}</td>
                 <td>

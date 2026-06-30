@@ -633,6 +633,14 @@ const adminBookingPaymentClearingEntryDetailSelect = {
       status: true,
       matchedAt: true,
       notes: true,
+      accountingJournalEntry: {
+        select: {
+          id: true,
+          batchId: true,
+          accountCode: true,
+          accountName: true,
+        },
+      },
       bankTransaction: {
         select: {
           id: true,

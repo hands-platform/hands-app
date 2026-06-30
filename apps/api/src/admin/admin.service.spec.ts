@@ -6644,6 +6644,13 @@ describe('AdminService query orchestration', () => {
           bankReconciliationMatches: expect.objectContaining({
             orderBy: { matchedAt: 'desc' },
             select: expect.objectContaining({
+              accountingJournalEntry: expect.objectContaining({
+                select: expect.objectContaining({
+                  batchId: true,
+                  accountCode: true,
+                  accountName: true,
+                }),
+              }),
               amount: true,
               bankTransaction: expect.any(Object),
               status: true,

@@ -2079,6 +2079,12 @@ export type AdminPaymentClearingBankReconciliationMatch = {
   status: AdminBankReconciliationStatus;
   matchedAt: string;
   notes?: string | null;
+  accountingJournalEntry?: {
+    id: string;
+    batchId: string;
+    accountCode: string;
+    accountName: string;
+  } | null;
   bankTransaction?: {
     id: string;
     sourceKey: string;
