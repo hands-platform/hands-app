@@ -5971,6 +5971,9 @@ describe('AdminService query orchestration', () => {
           currency: 'VND',
         }),
       },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
@@ -6016,6 +6019,25 @@ describe('AdminService query orchestration', () => {
           companyOutputVat: 0,
           platformRevenueAmount: 0,
         }),
+      }),
+    });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:manual-wallet-adjustment:PARTNER:provider-1:approval-1' },
+      update: expect.objectContaining({
+        providerProfileId: 'provider-1',
+        sourceId: 'ledger-1',
+        sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+        totalCredit: 200000,
+        totalDebit: 200000,
+      }),
+      create: expect.objectContaining({
+        currency: 'VND',
+        providerProfileId: 'provider-1',
+        sourceId: 'ledger-1',
+        sourceKey: 'accounting-journal:manual-wallet-adjustment:PARTNER:provider-1:approval-1',
+        sourceType: 'MANUAL_WALLET_ADJUSTMENT',
+        totalCredit: 200000,
+        totalDebit: 200000,
       }),
     });
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({

@@ -7455,6 +7455,8 @@ export class AdminService {
               },
             });
 
+      await upsertManualWalletAdjustmentJournal(tx, preview, ledger.id, actorId);
+
       const target =
         preview.ownerType === 'CUSTOMER'
           ? `customer_wallet_ledger:${ledger.id}`
@@ -10456,6 +10458,97 @@ function providerManualWalletAdjustmentLedgerType(preview: AdminManualWalletAdju
 
 function manualWalletAdjustmentSourceKey(preview: AdminManualWalletAdjustmentPreview) {
   return `manual-wallet-adjustment:${preview.ownerType}:${preview.ownerId}:${preview.approvalId}`;
+}
+
+async function upsertManualWalletAdjustmentJournal(
+  tx: Prisma.TransactionClient,
+  preview: AdminManualWalletAdjustmentPreview,
+  ledgerId: string,
+  actorId: string,
+) {
+  const sourceKey = `accounting-journal:${manualWalletAdjustmentSourceKey(preview)}`;
+  const sourceType = 'MANUAL_WALLET_ADJUSTMENT' as const;
+  const metadata = toJson({
+    manualWalletAdjustment: true,
+    ownerType: preview.ownerType,
+    ownerId: preview.ownerId,
+    adjustmentType: preview.adjustmentType,
+    direction: preview.direction,
+    approvalId: preview.approvalId,
+    approvalAdminId: preview.approvalAdminId,
+    ledgerId,
+    reason: preview.reason,
+  });
+  const journalEntries = preview.accountingEntries.flatMap((entry) => [
+    {
+      accountCode: manualWalletJournalAccountCode(entry.accountDebit),
+      accountName: manualWalletJournalAccountName(entry.accountDebit),
+      amount: entry.amount,
+      currency: preview.currency,
+      memo: preview.reason,
+      metadata,
+      side: 'DEBIT' as const,
+      sourceId: ledgerId,
+      sourceType,
+    },
+    {
+      accountCode: manualWalletJournalAccountCode(entry.accountCredit),
+      accountName: manualWalletJournalAccountName(entry.accountCredit),
+      amount: entry.amount,
+      currency: preview.currency,
+      memo: preview.reason,
+      metadata,
+      side: 'CREDIT' as const,
+      sourceId: ledgerId,
+      sourceType,
+    },
+  ]);
+  const totalDebit = preview.accountingEntries.reduce((total, entry) => total + entry.amount, 0);
+  const totalCredit = totalDebit;
+  const batchData = {
+    currency: preview.currency,
+    customerProfileId: preview.ownerType === 'CUSTOMER' ? preview.ownerId : null,
+    createdById: actorId,
+    entries: {
+      create: journalEntries,
+    },
+    metadata,
+    monthlyPeriod: preview.monthlyPeriod,
+    providerProfileId: preview.ownerType === 'PARTNER' ? preview.ownerId : null,
+    sourceId: ledgerId,
+    sourceType,
+    status: 'POSTED' as const,
+    totalCredit,
+    totalDebit,
+  };
+
+  await tx.accountingJournalBatch.upsert({
+    where: { sourceKey },
+    update: {
+      ...batchData,
+      entries: {
+        create: journalEntries,
+        deleteMany: {},
+      },
+    },
+    create: {
+      ...batchData,
+      sourceKey,
+    },
+  });
+}
+
+function manualWalletJournalAccountCode(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function manualWalletJournalAccountName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function manualWalletAdjustmentMetadata(
