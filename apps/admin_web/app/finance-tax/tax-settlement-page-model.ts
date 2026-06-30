@@ -105,6 +105,7 @@ export type FinancePayoutPriorityLink = {
 };
 
 export const TAX_SETTLEMENT_DEFAULT_TAKE = 25;
+export const FINANCE_ACCOUNTING_PAGE_SIZE_LINKS = [10, 25, 50, 100] as const;
 export const TAX_SETTLEMENT_MAX_TAKE = 100;
 
 const BOOKING_SETTLEMENT_REVIEW_VALUES: readonly BookingSettlementReview[] = [

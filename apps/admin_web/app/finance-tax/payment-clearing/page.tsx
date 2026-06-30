@@ -10,6 +10,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   PAYMENT_CLEARING_REVIEW_LINKS,
+  FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
   buildBookingPaymentClearingApiHref,
   buildBookingPaymentClearingSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
@@ -97,6 +98,17 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
               key={item.review}
             >
               {item.label}
+            </Link>
+          ))}
+        </div>
+        <div className="participant-list admin-mt-10">
+          {FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => (
+            <Link
+              className={`pill ${filters.take === take ? 'pill-success' : 'pill-neutral'}`}
+              href={paymentClearingHref({ ...filters, page: 1, take })}
+              key={take}
+            >
+              {take} rows
             </Link>
           ))}
         </div>
