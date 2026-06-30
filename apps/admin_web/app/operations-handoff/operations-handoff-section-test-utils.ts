@@ -66,6 +66,18 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
   ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});
   }
+  if (
+    typeof component === 'function' &&
+    [
+      'AdminFormControlButton',
+      'AdminFormControlLink',
+      'AdminFormInput',
+      'AdminFormSelect',
+      'AdminFormTextarea',
+    ].includes(component.name)
+  ) {
+    return (component as RenderableComponent)(readRecord(record?.props) ?? {});
+  }
   return null;
 }
 

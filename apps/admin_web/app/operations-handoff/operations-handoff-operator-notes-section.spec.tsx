@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffOperatorNotesSection } from './operations-handoff-operator-notes-section';
 
 describe('OperationsHandoffOperatorNotesSection', () => {
@@ -24,6 +24,15 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     expect(rendered).toContain('Partner document reviewed');
     expect(rendered).toContain('Ops Lead');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/audit-log', '/partners/partner-1']));
+  });
+
+  it('uses shared admin form controls for the note form', () => {
+    const section = OperationsHandoffOperatorNotesSection({ notes: [] });
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toContain('admin-form-select');
+    expect(classNames).toContain('admin-form-textarea');
+    expect(classNames).toContain('admin-form-control-button button button-primary');
   });
 
   it('renders the empty state when there are no notes', () => {
