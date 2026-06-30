@@ -16,6 +16,7 @@ import {
   buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
+  buildFinanceOperationsPriorityLinks,
   buildFinancePayoutPriorityLinks,
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingAccountingJournalCsvHref,
@@ -29,7 +30,9 @@ import {
   couponFinanceHref,
   buildTaxFinanceMetrics,
   buildMonthlyTaxClosingMetrics,
+  emptyMonthlyTaxClosingSummary,
   readBookingSettlementFilters,
+  readFinanceAccountingFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
 } from './tax-settlement-page-model';
@@ -220,6 +223,59 @@ describe('tax settlement page model', () => {
       ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED', '1.600.000 VND locked'],
       ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING', '900.000 VND'],
       ['Cash debt gate', '/cash-settlements?range=7d', null],
+    ]);
+  });
+
+  it('builds finance operations priority links from summary APIs only', () => {
+    const settlementFilters = readBookingSettlementFilters({ range: 'today', review: 'open' });
+    const accountingFilters = readFinanceAccountingFilters({ range: 'today', review: 'all' });
+    const monthlyFilters = readMonthlyTaxClosingFilters({ period: '2026-06' });
+
+    const links = buildFinanceOperationsPriorityLinks({
+      accountingFilters,
+      bankSummary: {
+        amount: 800_000,
+        count: 5,
+        currency: 'VND',
+        matchedCount: 2,
+        unmatchedCount: 3,
+      },
+      clearingSummary: {
+        amount: 1_200_000,
+        clearedCount: 4,
+        count: 6,
+        currency: 'VND',
+        openCount: 2,
+      },
+      monthlyClosingFilters: monthlyFilters,
+      monthlyClosingSummary: {
+        ...emptyMonthlyTaxClosingSummary('2026-06'),
+        cashDebtTotal: 170_000,
+        couponReviewFlagCount: 1,
+        openTaxCount: 2,
+        reconciliationDelta: 50_000,
+      },
+      settlementFilters,
+      settlementSummary: {
+        count: 9,
+        currency: 'VND',
+        customerPaymentAmount: 2_000_000,
+        partnerPayoutAmount: 1_300_000,
+        partnerWithholdingTotal: 120_000,
+        platformFeeGross: 420_000,
+        platformFeeNetRevenue: 381_818,
+        companyOutputVat: 38_182,
+        paymentProcessingFee: 20_000,
+        openTaxCount: 4,
+        paidTaxCount: 1,
+      },
+    });
+
+    expect(links.map((link) => [link.label, link.href, link.count, link.amountLabel, link.signal])).toEqual([
+      ['Today needs action', '/finance-tax/booking-settlement-audit?range=today&review=open', 4, null, 'Needs action'],
+      ['Payment clearing open', '/finance-tax/payment-clearing?range=today&review=open', 2, '1.200.000 VND', 'Unsettled'],
+      ['Bank unmatched', '/finance-tax/bank-reconciliation?range=today&review=unmatched', 3, '800.000 VND', 'Unmatched'],
+      ['Monthly close risk', '/finance-tax/monthly-tax-closing?period=2026-06', 3, '170.000 VND cash debt', 'Closeout risk'],
     ]);
   });
 

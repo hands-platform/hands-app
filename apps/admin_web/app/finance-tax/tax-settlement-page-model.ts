@@ -571,6 +571,79 @@ export function buildFinancePayoutPriorityLinks(
   ];
 }
 
+export function buildFinanceOperationsPriorityLinks({
+  accountingFilters,
+  bankSummary,
+  clearingSummary,
+  monthlyClosingFilters,
+  monthlyClosingSummary,
+  settlementFilters,
+  settlementSummary,
+}: {
+  readonly accountingFilters: FinanceAccountingFilters;
+  readonly bankSummary: AdminBankReconciliationSummary;
+  readonly clearingSummary: AdminBookingPaymentClearingSummary;
+  readonly monthlyClosingFilters: MonthlyTaxClosingFilters;
+  readonly monthlyClosingSummary: AdminMonthlyTaxClosingSummary;
+  readonly settlementFilters: BookingSettlementFilters;
+  readonly settlementSummary: AdminBookingSettlementSnapshotSummary;
+}): FinancePayoutPriorityLink[] {
+  const clearingFilters: FinanceAccountingFilters = {
+    ...accountingFilters,
+    page: 1,
+    review: 'open',
+  };
+  const bankFilters: FinanceAccountingFilters = {
+    ...accountingFilters,
+    page: 1,
+    review: 'unmatched',
+  };
+  const closeoutRiskCount = monthlyClosingSummary.openTaxCount + monthlyClosingSummary.couponReviewFlagCount;
+  const cashDebtLabel =
+    monthlyClosingSummary.cashDebtTotal > 0
+      ? `${formatMoney(monthlyClosingSummary.cashDebtTotal, monthlyClosingSummary.currency)} cash debt`
+      : null;
+
+  return [
+    {
+      key: 'today-needs-action',
+      amountLabel: null,
+      count: settlementSummary.openTaxCount,
+      label: 'Today needs action',
+      helper: 'Settlement snapshots waiting for declaration, payment, or closeout review in the active range.',
+      href: bookingSettlementAuditHref({ ...settlementFilters, page: 1, review: 'open' }),
+      signal: 'Needs action',
+    },
+    {
+      key: 'payment-clearing-open',
+      amountLabel: formatMoney(clearingSummary.amount, clearingSummary.currency),
+      count: clearingSummary.openCount,
+      label: 'Payment clearing open',
+      helper: 'Customer payment, settlement posting, refund, payment fee, or coupon clearing rows still open.',
+      href: paymentClearingHref(clearingFilters),
+      signal: 'Unsettled',
+    },
+    {
+      key: 'bank-unmatched',
+      amountLabel: formatMoney(bankSummary.amount, bankSummary.currency),
+      count: bankSummary.unmatchedCount,
+      label: 'Bank unmatched',
+      helper: 'Company bank transactions still missing explicit reconciliation evidence.',
+      href: bankReconciliationHref(bankFilters),
+      signal: 'Unmatched',
+    },
+    {
+      key: 'monthly-close-risk',
+      amountLabel: cashDebtLabel,
+      count: closeoutRiskCount,
+      label: 'Monthly close risk',
+      helper: 'Open tax rows and coupon review flags that should be reviewed before monthly closing.',
+      href: monthlyTaxClosingHref({ ...monthlyClosingFilters, page: 1 }),
+      signal: 'Closeout risk',
+    },
+  ];
+}
+
 export function buildTaxFinanceMetrics(
   settlementSummary: AdminBookingSettlementSnapshotSummary,
   withholdingSummary: AdminPartnerWithholdingTaxSummary,

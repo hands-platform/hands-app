@@ -1,8 +1,11 @@
 import Link from 'next/link';
 
 import type {
+  AdminBankReconciliationSummary,
+  AdminBookingPaymentClearingSummary,
   AdminBookingSettlementSnapshotSummary,
   AdminCouponFinanceSummary,
+  AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxSummary,
   AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
@@ -12,16 +15,23 @@ import { formatMoney } from '../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
+  buildBankReconciliationSummaryApiHref,
+  buildBookingPaymentClearingSummaryApiHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildCouponFinanceSummaryApiHref,
+  buildMonthlyTaxClosingSummaryApiHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
+  buildFinanceOperationsPriorityLinks,
   buildFinancePayoutPriorityLinks,
   bankReconciliationHref,
+  emptyBankReconciliationSummary,
+  emptyBookingPaymentClearingSummary,
   emptyBookingSettlementSummary,
   emptyCouponFinanceSummary,
+  emptyMonthlyTaxClosingSummary,
   emptyPartnerWithholdingTaxSummary,
   emptyProviderWalletWithdrawalRequestSummary,
   generalLedgerHref,
@@ -46,7 +56,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const accountingFilters = readFinanceAccountingFilters(params, 'all');
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
-  const [settlementSummary, couponFinanceSummary, withholdingSummary, withdrawalRequestSummary] =
+  const [
+    settlementSummary,
+    couponFinanceSummary,
+    withholdingSummary,
+    withdrawalRequestSummary,
+    clearingSummary,
+    bankSummary,
+    monthlyClosingSummary,
+  ] =
     await Promise.all([
       adminGet<AdminBookingSettlementSnapshotSummary>(
         buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
@@ -63,6 +81,18 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
       adminGet<AdminProviderWalletWithdrawalRequestSummary>(
         buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
         emptyProviderWalletWithdrawalRequestSummary(),
+      ),
+      adminGet<AdminBookingPaymentClearingSummary>(
+        buildBookingPaymentClearingSummaryApiHref(accountingFilters),
+        emptyBookingPaymentClearingSummary(),
+      ),
+      adminGet<AdminBankReconciliationSummary>(
+        buildBankReconciliationSummaryApiHref(accountingFilters),
+        emptyBankReconciliationSummary(),
+      ),
+      adminGet<AdminMonthlyTaxClosingSummary>(
+        buildMonthlyTaxClosingSummaryApiHref(monthlyClosingFilters),
+        emptyMonthlyTaxClosingSummary(monthlyClosingFilters.period),
       ),
     ]);
 
@@ -125,6 +155,36 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             </div>
             <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
           </div>
+        </div>
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Summary-only command desk for today's finance work. Open bounded lists only when a row-level review is needed."
+          status={<span className="pill pill-warn">Needs action first</span>}
+          title="Finance operations priority desk"
+        />
+        <div className="setup-stage-list admin-mt-12">
+          {buildFinanceOperationsPriorityLinks({
+            accountingFilters,
+            bankSummary,
+            clearingSummary,
+            monthlyClosingFilters,
+            monthlyClosingSummary,
+            settlementFilters,
+            settlementSummary,
+          }).map((link) => (
+            <Link className="setup-stage-item" href={link.href} key={link.key}>
+              <span>{link.signal}</span>
+              <div>
+                <strong>{link.label}</strong>
+                <p className="muted">{link.helper}</p>
+              </div>
+              <small>
+                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
+              </small>
+            </Link>
+          ))}
         </div>
       </section>
 
