@@ -18,6 +18,10 @@ describe('admin payment selects', () => {
   });
 
   it('keeps refund and callback list rows connected to user/provider context', () => {
+    expect(adminRefundSummarySelect).toMatchObject({
+      currency: true,
+      metadata: true,
+    });
     expect(adminRefundListSelect.booking.select).toMatchObject({
       customerProfile: { select: { id: true, user: expect.any(Object) } },
       selectedProvider: expect.any(Object),

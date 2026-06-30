@@ -297,6 +297,16 @@ describe('PaymentsService refunds', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           booking: { update: { status: 'REFUNDED' } },
+          refunds: {
+            create: expect.objectContaining({
+              currency: 'VND',
+              metadata: expect.objectContaining({
+                actorId: 'admin-1',
+                approvalAdminId: 'finance-admin-2',
+                occurredAt: expect.any(String),
+              }),
+            }),
+          },
           status: PaymentStatus.REFUNDED,
         }),
         include: { refunds: true },

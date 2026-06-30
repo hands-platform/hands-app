@@ -7,8 +7,10 @@ export const adminRefundSummarySelect = {
   bookingId: true,
   paymentId: true,
   amount: true,
+  currency: true,
   reason: true,
   status: true,
+  metadata: true,
   createdAt: true,
 } satisfies Prisma.RefundSelect;
 

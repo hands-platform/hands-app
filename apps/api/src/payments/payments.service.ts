@@ -248,7 +248,14 @@ export class PaymentsService {
     const payment = await this.prisma.$transaction(async (tx) => {
       const refunded = await tx.payment.update({
         where: { id: paymentId },
-        data: paymentRefundUpdateData({ bookingId: existing.bookingId, amount: existing.amount }),
+        data: paymentRefundUpdateData({
+          actorId,
+          amount: existing.amount,
+          approvalAdminId,
+          bookingId: existing.bookingId,
+          currency: existing.currency,
+          occurredAt,
+        }),
         include: { refunds: true },
       });
       settlementReversal = paymentSettlementReversalAudit(
