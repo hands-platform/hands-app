@@ -382,11 +382,11 @@ describe('BookingsService booking creation', () => {
       providerProfile: {
         findMany: vi.fn().mockResolvedValue([cleanPartner, negativeWalletPartner]),
       },
-      providerEarning: {
+      providerWalletLedgerEntry: {
         groupBy: vi.fn().mockResolvedValue([
           {
             providerProfileId: 'negative-wallet-partner',
-            _sum: { netAmount: -120000 },
+            _sum: { amount: -120000 },
           },
         ]),
       },
@@ -428,14 +428,12 @@ describe('BookingsService booking creation', () => {
       .map(([input]) => input)
       .filter((input) => input.type === 'booking.backup_available');
 
-    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith({
+    expect(prisma.providerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
       by: ['providerProfileId'],
       where: {
         providerProfileId: { in: ['clean-partner', 'negative-wallet-partner'] },
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
       },
-      _sum: { netAmount: true },
+      _sum: { amount: true },
     });
     expect(matching.openBooking).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -482,7 +480,7 @@ describe('BookingsService final partner selection', () => {
         }),
       },
       adminAuditLog: { create: vi.fn() },
-      providerEarning: {
+      providerWalletLedgerEntry: {
         aggregate: vi.fn(),
       },
     };
@@ -565,8 +563,8 @@ describe('BookingsService final partner selection', () => {
           status: ParticipantStatus.JOINED,
         }),
       },
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       adminAuditLog: { create: adminAuditLogCreate },
     };
@@ -599,13 +597,11 @@ describe('BookingsService final partner selection', () => {
       }),
     );
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
+    expect(prisma.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
       where: {
         providerProfileId: 'marketplace-partner',
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
       },
-      _sum: { netAmount: true },
+      _sum: { amount: true },
     });
     expect(transaction).toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
@@ -685,8 +681,8 @@ describe('BookingsService final partner selection', () => {
           status: ParticipantStatus.JOINED,
         }),
       },
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       adminAuditLog: { create: vi.fn() },
     };
@@ -748,7 +744,7 @@ describe('BookingsService final partner selection', () => {
           status: ParticipantStatus.JOINED,
         }),
       },
-      providerEarning: {
+      providerWalletLedgerEntry: {
         aggregate: vi.fn(),
       },
     };
@@ -769,7 +765,7 @@ describe('BookingsService final partner selection', () => {
       service.selectProvider('booking-1', 'customer-user-1', 'first-pick-partner'),
     ).rejects.toThrow('Partner must participate or accept before customer selection');
 
-    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
   });
@@ -804,8 +800,8 @@ describe('BookingsService final partner selection', () => {
           status: ParticipantStatus.JOINED,
         }),
       },
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -70000 } }),
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -70000 } }),
       },
       adminAuditLog: { create: vi.fn() },
     };
@@ -836,7 +832,7 @@ describe('BookingsService final partner selection', () => {
       }),
     });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.aggregate).toHaveBeenCalled();
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
     expect(matchingGateway.emitBookingMatched).not.toHaveBeenCalled();
@@ -857,8 +853,8 @@ describe('BookingsService provider service lifecycle', () => {
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
       },
       booking: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
@@ -884,7 +880,7 @@ describe('BookingsService provider service lifecycle', () => {
       service.updateProviderBookingStatus('booking-1', 'partner-user-1', BookingStatus.IN_SERVICE),
     ).resolves.toBe(startedBooking);
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(prisma.providerWalletLedgerEntry.aggregate).toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -1767,8 +1763,8 @@ describe('BookingsService partner response wallet gates', () => {
         findUnique: vi.fn().mockResolvedValue({ id: 'participant-1' }),
         update: bookingParticipantUpdate,
       },
-      providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -90000 } }),
       },
     };
     const service = new BookingsService(
@@ -1791,13 +1787,11 @@ describe('BookingsService partner response wallet gates', () => {
       }),
     });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
+    expect(prisma.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
       where: {
         providerProfileId: 'partner-1',
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
       },
-      _sum: { netAmount: true },
+      _sum: { amount: true },
     });
     expect(bookingParticipantUpdate).not.toHaveBeenCalled();
   });
@@ -1947,7 +1941,7 @@ describe('BookingsService partner response wallet gates', () => {
         findUnique: vi.fn().mockResolvedValue(firstPickPartner),
         findMany: vi.fn().mockResolvedValue([nearbyBackupPartner]),
       },
-      providerEarning: {
+      providerWalletLedgerEntry: {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       booking: {

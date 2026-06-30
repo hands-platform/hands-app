@@ -4,7 +4,6 @@ import {
   BookingOpsTaskType,
   BookingMatchSource as PrismaBookingMatchSource,
   BookingStatus,
-  EarningStatus,
   ParticipantStatus,
   PaymentMethod,
   Prisma,
@@ -1780,17 +1779,15 @@ export class BookingsService {
       return providers;
     }
 
-    const walletRows = await this.prisma.providerEarning.groupBy({
+    const walletRows = await this.prisma.providerWalletLedgerEntry.groupBy({
       by: ['providerProfileId'],
       where: {
         providerProfileId: { in: providers.map((provider) => provider.id) },
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
       },
-      _sum: { netAmount: true },
+      _sum: { amount: true },
     });
     const blockedProviderIds = new Set(
-      walletRows.filter((row) => (row._sum.netAmount ?? 0) < 0).map((row) => row.providerProfileId),
+      walletRows.filter((row) => (row._sum.amount ?? 0) < 0).map((row) => row.providerProfileId),
     );
 
     return providers.filter((provider) => !blockedProviderIds.has(provider.id));
@@ -1887,15 +1884,11 @@ export class BookingsService {
   }
 
   private async ensureProviderWalletCanJoinMarketplace(providerProfileId: string) {
-    const wallet = await this.prisma.providerEarning.aggregate({
-      where: {
-        providerProfileId,
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-      },
-      _sum: { netAmount: true },
+    const wallet = await this.prisma.providerWalletLedgerEntry.aggregate({
+      where: { providerProfileId },
+      _sum: { amount: true },
     });
-    const walletBalance = wallet._sum.netAmount ?? 0;
+    const walletBalance = wallet._sum.amount ?? 0;
     if (walletBalance < 0) {
       throwProviderWalletBlocked({ providerProfileId, walletBalance });
     }
