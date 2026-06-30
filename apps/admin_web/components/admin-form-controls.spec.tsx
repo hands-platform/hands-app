@@ -19,6 +19,7 @@ describe('Admin form controls', () => {
         { label: 'All bookings', value: '' },
         { label: 'Completed work', value: 'completed' },
       ],
+      required: true,
     });
     const search = AdminFormSearch({
       className: 'customer-search',
@@ -29,6 +30,7 @@ describe('Admin form controls', () => {
     });
 
     expect(select.props.className).toBe('admin-form-select customer-select');
+    expect(select.props.children[1].props.required).toBe(true);
     expect(search.props.className).toBe('admin-form-search customer-search');
     expect(textContent(select)).toContain('Completed reservations');
     expect(textContent(select)).toContain('Completed work');

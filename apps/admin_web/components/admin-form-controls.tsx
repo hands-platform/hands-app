@@ -19,7 +19,7 @@ type AdminFormSelectProps = {
   readonly label: string;
   readonly name: string;
   readonly options: readonly AdminFormSelectOption[];
-} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'onChange' | 'value'>;
+} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'onChange' | 'required' | 'value'>;
 
 type AdminFormSearchProps = {
   readonly className?: string;
@@ -89,12 +89,13 @@ export function AdminFormSelect({
   name,
   onChange,
   options,
+  required,
   value,
 }: AdminFormSelectProps) {
   return (
     <label className={joinClassNames('admin-form-select', className)}>
       <span className="sr-only">{label}</span>
-      <select defaultValue={defaultValue} name={name} onChange={onChange} value={value}>
+      <select defaultValue={defaultValue} name={name} onChange={onChange} required={required} value={value}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

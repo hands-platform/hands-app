@@ -23,6 +23,13 @@ import { readSearchParam } from '../../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormInput,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -454,49 +461,69 @@ export default async function PartnerControlsPage({
           </span>
         </div>
         <form className="form-grid" action="/partner-controls">
-          <label>
-            Search
-            <input name="q" defaultValue={filters.q} placeholder="Partner, phone, category, reason" />
-          </label>
-          <label>
-            Report status
-            <select name="status" defaultValue={filters.status}>
-              <option value="">All</option>
-              <option value="OPEN">Open</option>
-              <option value="INVESTIGATING">Investigating</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="DISMISSED">Dismissed</option>
-            </select>
-          </label>
-          <label>
-            Report level
-            <select name="severity" defaultValue={filters.severity}>
-              <option value="">All</option>
-              <option value="HIGH_PLUS">Urgent + major reports</option>
-              <option value="CRITICAL">Urgent</option>
-              <option value="HIGH">Major</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-          </label>
-          <label>
-            Account control
-            <select name="sanction" defaultValue={filters.sanction}>
-              <option value="">All</option>
-              <option value="ACTIVE">Active</option>
-              <option value="LIFTED">Lifted</option>
-              <option value="EXPIRED">Expired</option>
-            </select>
-          </label>
+          <div className="calendar-field">
+            <span>Search</span>
+            <AdminFormInput
+              defaultValue={filters.q}
+              label="Search"
+              name="q"
+              placeholder="Partner, phone, category, reason"
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Report status</span>
+            <AdminFormSelect
+              defaultValue={filters.status}
+              label="Report status"
+              name="status"
+              options={[
+                { label: 'All', value: '' },
+                { label: 'Open', value: 'OPEN' },
+                { label: 'Investigating', value: 'INVESTIGATING' },
+                { label: 'Resolved', value: 'RESOLVED' },
+                { label: 'Dismissed', value: 'DISMISSED' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Report level</span>
+            <AdminFormSelect
+              defaultValue={filters.severity}
+              label="Report level"
+              name="severity"
+              options={[
+                { label: 'All', value: '' },
+                { label: 'Urgent + major reports', value: 'HIGH_PLUS' },
+                { label: 'Urgent', value: 'CRITICAL' },
+                { label: 'Major', value: 'HIGH' },
+                { label: 'Medium', value: 'MEDIUM' },
+                { label: 'Low', value: 'LOW' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Account control</span>
+            <AdminFormSelect
+              defaultValue={filters.sanction}
+              label="Account control"
+              name="sanction"
+              options={[
+                { label: 'All', value: '' },
+                { label: 'Active', value: 'ACTIVE' },
+                { label: 'Lifted', value: 'LIFTED' },
+                { label: 'Expired', value: 'EXPIRED' },
+              ]}
+            />
+          </div>
           <div className="actions full-span">
-            <button className="button button-primary" type="submit">
+            <AdminFormControlButton className="button button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
-            </button>
-            <Link className="button button-secondary" href="/partner-controls">
+            </AdminFormControlButton>
+            <AdminFormControlLink className="button button-secondary" href="/partner-controls">
               <X aria-hidden="true" size={16} />
               Clear filters
-            </Link>
+            </AdminFormControlLink>
           </div>
           {activeFilters.length > 0 ? (
             <div className="participant-list full-span">
@@ -587,56 +614,80 @@ export default async function PartnerControlsPage({
           </div>
         </div>
         <form className="form-grid" action={createProviderReport}>
-          <label>
-            Partner
-            <select name="providerProfileId" required>
-              <option value="">Choose partner</option>
-              {providerOptions.map((provider) => (
-                <option value={provider.id} key={provider.id}>
-                  {provider.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Category
-            <input name="category" placeholder="safety, payout, behavior, identity" required />
-          </label>
-          <label>
-            Report level
-            <select name="severity" defaultValue="MEDIUM">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">Major</option>
-              <option value="CRITICAL">Urgent</option>
-            </select>
-          </label>
-          <label>
-            Source
-            <select name="source" defaultValue="ADMIN">
-              <option value="ADMIN">Admin</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="PROVIDER">Partner</option>
-              <option value="SYSTEM">System</option>
-            </select>
-          </label>
-          <label>
-            Booking ID
-            <input name="bookingId" placeholder="Optional booking id" />
-          </label>
-          <label className="full-span">
-            Summary
-            <input name="summary" placeholder="Short operator-readable report summary" required />
-          </label>
-          <label className="full-span">
-            Details
-            <textarea
+          <div className="calendar-field">
+            <span>Partner</span>
+            <AdminFormSelect
+              label="Partner"
+              name="providerProfileId"
+              options={[
+                { label: 'Choose partner', value: '' },
+                ...providerOptions.map((provider) => ({ label: provider.label, value: provider.id })),
+              ]}
+              required
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Category</span>
+            <AdminFormInput
+              label="Category"
+              name="category"
+              placeholder="safety, payout, behavior, identity"
+              required
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Report level</span>
+            <AdminFormSelect
+              defaultValue="MEDIUM"
+              label="Report level"
+              name="severity"
+              options={[
+                { label: 'Low', value: 'LOW' },
+                { label: 'Medium', value: 'MEDIUM' },
+                { label: 'Major', value: 'HIGH' },
+                { label: 'Urgent', value: 'CRITICAL' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Source</span>
+            <AdminFormSelect
+              defaultValue="ADMIN"
+              label="Source"
+              name="source"
+              options={[
+                { label: 'Admin', value: 'ADMIN' },
+                { label: 'Customer', value: 'CUSTOMER' },
+                { label: 'Partner', value: 'PROVIDER' },
+                { label: 'System', value: 'SYSTEM' },
+              ]}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Booking ID</span>
+            <AdminFormInput label="Booking ID" name="bookingId" placeholder="Optional booking id" />
+          </div>
+          <div className="calendar-field full-span">
+            <span>Summary</span>
+            <AdminFormInput
+              label="Summary"
+              name="summary"
+              placeholder="Short operator-readable report summary"
+              required
+            />
+          </div>
+          <div className="calendar-field full-span">
+            <span>Details</span>
+            <AdminFormTextarea
+              label="Details"
               name="details"
               placeholder="Evidence, timeline, customer/partner statements, next step"
             />
-          </label>
+          </div>
           <div className="actions full-span">
-            <button type="submit">Create report</button>
+            <AdminFormControlButton className="button button-primary" type="submit">
+              Create report
+            </AdminFormControlButton>
           </div>
         </form>
       </section>
@@ -693,43 +744,64 @@ export default async function PartnerControlsPage({
                   <form className="actions" action={createProviderSanction}>
                     <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
                     <input type="hidden" name="reportId" value={report.id} />
-                    <select
+                    <AdminFormSelect
+                      label="Account control type"
                       name="type"
                       defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}
-                    >
-                      <option value="WARNING">Warning</option>
-                      <option value="PAYOUT_HOLD">Payout hold</option>
-                      <option value="ACCOUNT_BLOCK">Account block</option>
-                      <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
-                    </select>
-                    <input
+                      options={[
+                        { label: 'Warning', value: 'WARNING' },
+                        { label: 'Payout hold', value: 'PAYOUT_HOLD' },
+                        { label: 'Account block', value: 'ACCOUNT_BLOCK' },
+                        { label: 'Profile review hold', value: 'TRUST_BADGE_REMOVAL' },
+                      ]}
+                    />
+                    <AdminFormInput
+                      label="Account control reason"
                       name="reason"
                       placeholder="Account control reason"
                       required
                       minLength={12}
                       maxLength={500}
                     />
-                    <button type="submit">Apply</button>
+                    <AdminFormControlButton className="button button-primary" type="submit">
+                      Apply
+                    </AdminFormControlButton>
                   </form>
                 </td>
                 <td>
                   <form className="actions" action={updateProviderReport}>
                     <input type="hidden" name="reportId" value={report.id} />
                     <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
-                    <select name="status" defaultValue={report.status}>
-                      <option value="OPEN">Open</option>
-                      <option value="INVESTIGATING">Investigating</option>
-                      <option value="RESOLVED">Resolved</option>
-                      <option value="DISMISSED">Dismissed</option>
-                    </select>
-                    <select name="severity" defaultValue={report.severity}>
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">Major</option>
-                      <option value="CRITICAL">Urgent</option>
-                    </select>
-                    <input name="resolutionNote" placeholder="Resolution or follow-up note" />
-                    <button type="submit">Update</button>
+                    <AdminFormSelect
+                      defaultValue={report.status}
+                      label="Report status"
+                      name="status"
+                      options={[
+                        { label: 'Open', value: 'OPEN' },
+                        { label: 'Investigating', value: 'INVESTIGATING' },
+                        { label: 'Resolved', value: 'RESOLVED' },
+                        { label: 'Dismissed', value: 'DISMISSED' },
+                      ]}
+                    />
+                    <AdminFormSelect
+                      defaultValue={report.severity}
+                      label="Report level"
+                      name="severity"
+                      options={[
+                        { label: 'Low', value: 'LOW' },
+                        { label: 'Medium', value: 'MEDIUM' },
+                        { label: 'Major', value: 'HIGH' },
+                        { label: 'Urgent', value: 'CRITICAL' },
+                      ]}
+                    />
+                    <AdminFormInput
+                      label="Resolution or follow-up note"
+                      name="resolutionNote"
+                      placeholder="Resolution or follow-up note"
+                    />
+                    <AdminFormControlButton className="button button-primary" type="submit">
+                      Update
+                    </AdminFormControlButton>
                   </form>
                 </td>
               </tr>

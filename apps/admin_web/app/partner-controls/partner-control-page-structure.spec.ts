@@ -12,4 +12,18 @@ describe('partner control page structure', () => {
     expect(pageSource).toContain('partnerControlEstimatedTotalPages(visibleReports.length');
     expect(pageSource).toContain('partnerControlEstimatedTotalPages(visibleSanctions.length');
   });
+
+  it('uses shared admin form controls for filter and report action forms', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/partner-controls/page.tsx'), 'utf8');
+
+    expect(pageSource).toContain('AdminFormInput');
+    expect(pageSource).toContain('AdminFormSelect');
+    expect(pageSource).toContain('AdminFormTextarea');
+    expect(pageSource).toContain('AdminFormControlButton');
+    expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).not.toContain('<label>\n            Search\n            <input');
+    expect(pageSource).not.toContain('<label>\n            Partner\n            <select');
+    expect(pageSource).not.toContain('<textarea\n              name="details"');
+    expect(pageSource).not.toContain('<button className="button button-primary" type="submit">');
+  });
 });
