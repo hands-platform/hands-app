@@ -958,6 +958,99 @@ describe('ReferralsService', () => {
     });
   });
 
+  it('reverses withheld referral rewards by restoring wallet and withholding payable balances', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-withheld-reversal-1',
+      amount: 100_000,
+      calculationSnapshot: { taxPolicySnapshot: 'INDIVIDUAL_COMMISSION_PIT_10' },
+      currency: 'VND',
+      qualifyingBookingId: 'booking-withheld-reversal-1',
+      sourceKey: 'referral:PARTNER:attribution-withheld-reversal:booking-withheld-reversal-1',
+      status: creditedReferralRewardStatus,
+      walletLedgerReference: 'provider-earned-ledger-withheld-1',
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const ledger = { id: 'provider-reversal-ledger-withheld-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'referral-withheld-reversal-journal-1' }),
+      },
+      referralReward: {
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          availableAt: now,
+          status: ReferralRewardStatus.REVERSED,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(service.reverseRewardCandidate('reward-withheld-reversal-1')).resolves.toMatchObject({
+      id: 'reward-withheld-reversal-1',
+      status: ReferralRewardStatus.REVERSED,
+      walletLedgerReference: 'provider-reversal-ledger-withheld-1',
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-reversal:reward-withheld-reversal-1' },
+        create: expect.objectContaining({
+          amount: -90_000,
+          metadata: expect.objectContaining({
+            netReversalAmount: 90_000,
+            pitWithheldAmount: 10_000,
+            totalWithheldAmount: 10_000,
+          }),
+        }),
+        select: { id: true },
+      }),
+    );
+    const journalUpsert = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0];
+    expect(journalUpsert).toEqual(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          totalCredit: 100_000,
+          totalDebit: 100_000,
+        }),
+      }),
+    );
+    expect(journalUpsert.create.entries.create).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_wallet_liability',
+          amount: 90_000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'referral_pit_withholding_payable',
+          amount: 10_000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'partner_referral_reward_expense',
+          amount: 100_000,
+          side: 'CREDIT',
+        }),
+      ]),
+    );
+  });
+
   it('reverses held or available reward candidates without wallet ledger writes', async () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
@@ -1223,6 +1316,97 @@ describe('ReferralsService', () => {
     });
   });
 
+  it('credits Partner referral rewards net of withholding and records withholding payable', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-withholding-1',
+      amount: 100_000,
+      availableAt: now,
+      calculationSnapshot: { taxPolicySnapshot: 'INDIVIDUAL_COMMISSION_PIT_10' },
+      currency: 'VND',
+      qualifyingBookingId: 'booking-withholding-1',
+      sourceKey: 'referral:PARTNER:attribution-withholding:booking-withholding-1',
+      status: ReferralRewardStatus.AVAILABLE,
+      walletLedgerReference: null,
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const ledger = { id: 'provider-wallet-ledger-withholding-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-withholding-journal-1' }),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          status: creditedReferralRewardStatus,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(service.creditRewardCandidate('reward-withholding-1')).resolves.toMatchObject({
+      id: 'reward-withholding-1',
+      status: creditedReferralRewardStatus,
+      walletLedgerReference: 'provider-wallet-ledger-withholding-1',
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-credit:reward-withholding-1' },
+        create: expect.objectContaining({
+          amount: 90_000,
+          metadata: expect.objectContaining({
+            netWalletAmount: 90_000,
+            pitWithheldAmount: 10_000,
+            totalWithheldAmount: 10_000,
+          }),
+        }),
+        select: { id: true },
+      }),
+    );
+    const journalUpsert = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0];
+    expect(journalUpsert).toEqual(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          totalCredit: 100_000,
+          totalDebit: 100_000,
+        }),
+      }),
+    );
+    expect(journalUpsert.create.entries.create).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_referral_reward_expense',
+          amount: 100_000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'partner_wallet_liability',
+          amount: 90_000,
+          side: 'CREDIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'referral_pit_withholding_payable',
+          amount: 10_000,
+          side: 'CREDIT',
+        }),
+      ]),
+    );
+  });
+
   it('marks an approved customer referral cashout as paid with a customer cashout ledger entry', async () => {
     const now = new Date('2026-06-24T10:00:00.000Z');
     const reward = {
@@ -1406,6 +1590,106 @@ describe('ReferralsService', () => {
     });
   });
 
+  it('pays withheld Partner referral cashouts using the net wallet amount only', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const reward = {
+      id: 'reward-withheld-cashout-1',
+      amount: 100_000,
+      availableAt: now,
+      calculationSnapshot: { taxPolicySnapshot: 'INDIVIDUAL_COMMISSION_PIT_10' },
+      currency: 'VND',
+      qualifyingBookingId: 'booking-withheld-cashout-1',
+      sourceKey: 'referral:PARTNER:attribution-withheld-cashout:booking-withheld-cashout-1',
+      status: cashoutApprovedReferralRewardStatus,
+      walletLedgerReference: 'provider-earned-ledger-withheld-cashout-1',
+      walletOwnerCustomerProfileId: null,
+      walletOwnerProviderProfileId: 'provider-profile-1',
+    };
+    const ledger = { id: 'provider-cashout-ledger-withheld-1' };
+    const tx = {
+      customerWalletLedgerEntry: {
+        upsert: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-withheld-cashout-journal-1' }),
+      },
+      referralReward: {
+        findUnique: vi.fn().mockResolvedValue(reward),
+        update: vi.fn().mockResolvedValue({
+          ...reward,
+          status: paidReferralRewardStatus,
+          walletLedgerReference: ledger.id,
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.payRewardCashout('reward-withheld-cashout-1', {
+        notes: 'Partner referral cashout paid net of PIT.',
+        reference: 'BIDV-REF-WHT-001',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-withheld-cashout-1',
+      status: paidReferralRewardStatus,
+      walletLedgerReference: 'provider-cashout-ledger-withheld-1',
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sourceKey: 'referral:wallet-cashout:reward-withheld-cashout-1' },
+        update: expect.objectContaining({
+          amount: -90_000,
+          metadata: expect.objectContaining({
+            netCashoutAmount: 90_000,
+            pitWithheldAmount: 10_000,
+            totalWithheldAmount: 10_000,
+          }),
+          reference: 'BIDV-REF-WHT-001',
+        }),
+        create: expect.objectContaining({
+          amount: -90_000,
+          metadata: expect.objectContaining({
+            netCashoutAmount: 90_000,
+            pitWithheldAmount: 10_000,
+            totalWithheldAmount: 10_000,
+          }),
+        }),
+        select: { id: true },
+      }),
+    );
+    const journalUpsert = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0];
+    expect(journalUpsert).toEqual(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          totalCredit: 90_000,
+          totalDebit: 90_000,
+        }),
+      }),
+    );
+    expect(journalUpsert.create.entries.create).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: 'partner_wallet_liability',
+          amount: 90_000,
+          side: 'DEBIT',
+        }),
+        expect.objectContaining({
+          accountCode: 'referral_cashout_bank_clearing',
+          amount: 90_000,
+          side: 'CREDIT',
+        }),
+      ]),
+    );
+  });
+
   it('creates a pending Partner referral reward only on the referred Partner first completed booking', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
@@ -1428,31 +1712,25 @@ describe('ReferralsService', () => {
         count: vi.fn().mockResolvedValue(0),
       },
       referralAttribution: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({
-            id: 'partner-attribution-1',
-            audience: ReferralAudience.PARTNER,
-            referrerProviderProfileId: 'referrer-partner-1',
-            referredProviderProfileId: 'referred-partner-1',
-          }),
+        findFirst: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({
+          id: 'partner-attribution-1',
+          audience: ReferralAudience.PARTNER,
+          referrerProviderProfileId: 'referrer-partner-1',
+          referredProviderProfileId: 'referred-partner-1',
+        }),
       },
       referralPolicy: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({
-            audience: ReferralAudience.PARTNER,
-            enabled: true,
-            rewardMode: ReferralRewardMode.FIXED_AMOUNT,
-            commissionPercentBps: null,
-            fixedRewardAmount: 100_000,
-            perRewardCapAmount: 80_000,
-            maxRewardedReferrals: 10,
-            holdPeriodDays: 7,
-            currency: 'VND',
-          }),
+        findUnique: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce({
+          audience: ReferralAudience.PARTNER,
+          enabled: true,
+          rewardMode: ReferralRewardMode.FIXED_AMOUNT,
+          commissionPercentBps: null,
+          fixedRewardAmount: 100_000,
+          perRewardCapAmount: 80_000,
+          maxRewardedReferrals: 10,
+          holdPeriodDays: 7,
+          currency: 'VND',
+        }),
       },
       referralReward: {
         count: vi.fn().mockResolvedValue(0),
@@ -1503,7 +1781,9 @@ describe('ReferralsService', () => {
     };
     const service = createService(prisma);
 
-    await expect(service.createRewardsForCompletedBooking('booking-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.createRewardsForCompletedBooking('booking-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('rejects referral code lookup when the role profile is missing', async () => {

@@ -67,7 +67,9 @@ const referralAttributionSelect = {
   },
 } satisfies Prisma.ReferralAttributionSelect;
 
-type ReferralAttributionRecord = Prisma.ReferralAttributionGetPayload<{ select: typeof referralAttributionSelect }>;
+type ReferralAttributionRecord = Prisma.ReferralAttributionGetPayload<{
+  select: typeof referralAttributionSelect;
+}>;
 
 const completedBookingReferralSelect = {
   id: true,
@@ -85,7 +87,9 @@ const completedBookingReferralSelect = {
   },
 } satisfies Prisma.BookingSelect;
 
-type CompletedBookingReferralRecord = Prisma.BookingGetPayload<{ select: typeof completedBookingReferralSelect }>;
+type CompletedBookingReferralRecord = Prisma.BookingGetPayload<{
+  select: typeof completedBookingReferralSelect;
+}>;
 type CompletedBookingReferralWithEarning = CompletedBookingReferralRecord & {
   earning: NonNullable<CompletedBookingReferralRecord['earning']>;
   selectedProviderId: string;
@@ -456,12 +460,13 @@ export class ReferralsService {
       this.assertRewardCandidateCanBeCredited(reward);
 
       const ledgerSourceKey = referralWalletCreditSourceKey(reward.id);
+      const walletCreditAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
         ? await tx.customerWalletLedgerEntry.upsert({
             where: { sourceKey: ledgerSourceKey },
             update: {},
             create: {
-              amount: reward.amount,
+              amount: walletCreditAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               customerProfileId: reward.walletOwnerCustomerProfileId,
@@ -477,7 +482,7 @@ export class ReferralsService {
             where: { sourceKey: ledgerSourceKey },
             update: {},
             create: {
-              amount: reward.amount,
+              amount: walletCreditAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               metadata: referralWalletCreditMetadata(reward, 'PARTNER'),
@@ -502,10 +507,7 @@ export class ReferralsService {
     });
   }
 
-  async payRewardCashout(
-    rewardId: string,
-    input: { notes?: string | null; reference?: string | null } = {},
-  ) {
+  async payRewardCashout(rewardId: string, input: { notes?: string | null; reference?: string | null } = {}) {
     return this.prisma.$transaction(async (tx) => {
       const reward = await tx.referralReward.findUnique({
         where: { id: rewardId },
@@ -519,18 +521,19 @@ export class ReferralsService {
       const ledgerSourceKey = referralWalletCashoutSourceKey(reward.id);
       const reference = normalizeOptionalText(input.reference ?? undefined);
       const notes = normalizeOptionalText(input.notes ?? undefined);
+      const walletCashoutAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
         ? await tx.customerWalletLedgerEntry.upsert({
             where: { sourceKey: ledgerSourceKey },
             update: {
-              amount: -reward.amount,
+              amount: -walletCashoutAmount,
               currency: reward.currency,
               metadata: referralWalletCashoutMetadata(reward, 'CUSTOMER'),
               notes,
               reference,
             },
             create: {
-              amount: -reward.amount,
+              amount: -walletCashoutAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               customerProfileId: reward.walletOwnerCustomerProfileId,
@@ -546,14 +549,14 @@ export class ReferralsService {
         : await tx.providerWalletLedgerEntry.upsert({
             where: { sourceKey: ledgerSourceKey },
             update: {
-              amount: -reward.amount,
+              amount: -walletCashoutAmount,
               currency: reward.currency,
               metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
               notes,
               reference,
             },
             create: {
-              amount: -reward.amount,
+              amount: -walletCashoutAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               metadata: referralWalletCashoutMetadata(reward, 'PARTNER'),
@@ -581,7 +584,9 @@ export class ReferralsService {
 
   private async reverseCreditedRewardCandidate(reward: ReferralRewardCreditCandidate) {
     if (!reward.walletLedgerReference) {
-      throw new BadRequestException('Credited referral reward reversal requires an existing wallet ledger reference');
+      throw new BadRequestException(
+        'Credited referral reward reversal requires an existing wallet ledger reference',
+      );
     }
     if (!reward.walletOwnerCustomerProfileId && !reward.walletOwnerProviderProfileId) {
       throw new BadRequestException('Referral reward does not have a wallet owner');
@@ -589,17 +594,18 @@ export class ReferralsService {
 
     return this.prisma.$transaction(async (tx) => {
       const ledgerSourceKey = referralWalletReversalSourceKey(reward.id);
+      const walletReversalAmount = referralRewardNetWalletAmount(reward);
       const ledger = reward.walletOwnerCustomerProfileId
         ? await tx.customerWalletLedgerEntry.upsert({
             where: { sourceKey: ledgerSourceKey },
             update: {
-              amount: -reward.amount,
+              amount: -walletReversalAmount,
               currency: reward.currency,
               metadata: referralWalletReversalMetadata(reward, 'CUSTOMER'),
               reference: reward.sourceKey,
             },
             create: {
-              amount: -reward.amount,
+              amount: -walletReversalAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               customerProfileId: reward.walletOwnerCustomerProfileId,
@@ -614,13 +620,13 @@ export class ReferralsService {
         : await tx.providerWalletLedgerEntry.upsert({
             where: { sourceKey: ledgerSourceKey },
             update: {
-              amount: -reward.amount,
+              amount: -walletReversalAmount,
               currency: reward.currency,
               metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
               reference: reward.sourceKey,
             },
             create: {
-              amount: -reward.amount,
+              amount: -walletReversalAmount,
               bookingId: reward.qualifyingBookingId,
               currency: reward.currency,
               metadata: referralWalletReversalMetadata(reward, 'PARTNER'),
@@ -906,7 +912,10 @@ export class ReferralsService {
       return existing;
     }
 
-    const platformFeeBreakdown = referralPlatformFeeBreakdown(input.booking.earning.platformFee, input.policy);
+    const platformFeeBreakdown = referralPlatformFeeBreakdown(
+      input.booking.earning.platformFee,
+      input.policy,
+    );
 
     return this.prisma.referralReward.create({
       data: {
@@ -990,7 +999,10 @@ export class ReferralsService {
     return reward;
   }
 
-  private assertRewardCandidateCanChangeStatus(reward: ReferralRewardCandidateState, nextStatus: ReferralRewardStatus) {
+  private assertRewardCandidateCanChangeStatus(
+    reward: ReferralRewardCandidateState,
+    nextStatus: ReferralRewardStatus,
+  ) {
     if (reward.walletLedgerReference) {
       throw new BadRequestException('Credited referral rewards require a wallet reversal flow');
     }
@@ -1195,33 +1207,74 @@ function referralWalletReversalSourceKey(rewardId: string) {
   return `referral:wallet-reversal:${rewardId}`;
 }
 
-function referralWalletCreditMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+function referralWalletCreditMetadata(
+  reward: ReferralRewardCreditCandidate,
+  walletOwner: 'CUSTOMER' | 'PARTNER',
+) {
+  const withholding = referralRewardWithholding(reward);
   return {
     bookingId: reward.qualifyingBookingId,
+    grossRewardAmount: withholding.grossRewardAmount,
+    netWalletAmount: withholding.netWalletAmount,
+    pitWithheldAmount: withholding.pitWithheldAmount,
     referralRewardId: reward.id,
     rewardSourceKey: reward.sourceKey,
+    taxPolicySnapshot: withholding.taxPolicySnapshot,
+    totalWithheldAmount: withholding.totalWithheldAmount,
+    vatWithheldAmount: withholding.vatWithheldAmount,
     walletOwner,
   };
 }
 
-function referralWalletCashoutMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+function referralWalletCashoutMetadata(
+  reward: ReferralRewardCreditCandidate,
+  walletOwner: 'CUSTOMER' | 'PARTNER',
+) {
+  const withholding = referralRewardWithholding(reward);
   return {
     bookingId: reward.qualifyingBookingId,
+    grossRewardAmount: withholding.grossRewardAmount,
+    netCashoutAmount: withholding.netWalletAmount,
+    pitWithheldAmount: withholding.pitWithheldAmount,
     referralRewardId: reward.id,
     rewardSourceKey: reward.sourceKey,
+    taxPolicySnapshot: withholding.taxPolicySnapshot,
+    totalWithheldAmount: withholding.totalWithheldAmount,
+    vatWithheldAmount: withholding.vatWithheldAmount,
     walletCreditLedgerReference: reward.walletLedgerReference,
     walletOwner,
   };
 }
 
-function referralWalletReversalMetadata(reward: ReferralRewardCreditCandidate, walletOwner: 'CUSTOMER' | 'PARTNER') {
+function referralWalletReversalMetadata(
+  reward: ReferralRewardCreditCandidate,
+  walletOwner: 'CUSTOMER' | 'PARTNER',
+) {
+  const withholding = referralRewardWithholding(reward);
   return {
     bookingId: reward.qualifyingBookingId,
+    grossRewardAmount: withholding.grossRewardAmount,
+    netReversalAmount: withholding.netWalletAmount,
+    pitWithheldAmount: withholding.pitWithheldAmount,
     referralRewardId: reward.id,
     rewardSourceKey: reward.sourceKey,
     reversedWalletCreditLedgerReference: reward.walletLedgerReference,
+    taxPolicySnapshot: withholding.taxPolicySnapshot,
+    totalWithheldAmount: withholding.totalWithheldAmount,
+    vatWithheldAmount: withholding.vatWithheldAmount,
     walletOwner,
   };
+}
+
+function referralRewardWithholding(reward: ReferralRewardCreditCandidate) {
+  return calculateReferralTaxWithholding({
+    grossRewardAmount: reward.amount,
+    taxPolicy: referralRewardTaxPolicySnapshot(reward),
+  });
+}
+
+function referralRewardNetWalletAmount(reward: ReferralRewardCreditCandidate) {
+  return referralRewardWithholding(reward).netWalletAmount;
 }
 
 async function upsertReferralRewardJournal(
@@ -1231,11 +1284,7 @@ async function upsertReferralRewardJournal(
   action: 'wallet-credit' | 'wallet-cashout' | 'wallet-reversal',
 ) {
   const owner = referralRewardWalletOwner(reward);
-  const taxPolicy = referralRewardTaxPolicySnapshot(reward);
-  const withholding = calculateReferralTaxWithholding({
-    grossRewardAmount: reward.amount,
-    taxPolicy,
-  });
+  const withholding = referralRewardWithholding(reward);
   const sourceKey = `accounting-journal:referral-${action}:${reward.id}`;
   const sourceType = 'REFERRAL_REWARD' as const;
   const metadata = {
@@ -1254,63 +1303,83 @@ async function upsertReferralRewardJournal(
   const entries = (() => {
     if (action === 'wallet-credit') {
       return [
-          referralJournalEntry({
-            account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
-            amount: reward.amount,
-            currency: reward.currency,
-            memo: `Referral reward ${reward.id} credited to ${owner.type.toLowerCase()} wallet.`,
-            metadata,
-            side: 'DEBIT',
-            sourceId: reward.id,
-            sourceType,
-          }),
-          referralJournalEntry({
+        referralJournalEntry({
+          account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
+          amount: reward.amount,
+          currency: reward.currency,
+          memo: `Referral reward ${reward.id} credited to ${owner.type.toLowerCase()} wallet.`,
+          metadata,
+          side: 'DEBIT',
+          sourceId: reward.id,
+          sourceType,
+        }),
+        ...positiveReferralJournalEntries([
+          {
             account: `${owner.type}_WALLET_LIABILITY`,
-            amount: reward.amount,
+            amount: withholding.netWalletAmount,
             currency: reward.currency,
             memo: `Referral reward ${reward.id} increases ${owner.type.toLowerCase()} wallet liability.`,
             metadata,
             side: 'CREDIT',
             sourceId: reward.id,
             sourceType,
+          },
+          ...referralWithholdingPayableEntries({
+            currency: reward.currency,
+            metadata,
+            rewardId: reward.id,
+            side: 'CREDIT',
+            sourceType,
+            withholding,
           }),
-        ];
+        ]),
+      ];
     }
     if (action === 'wallet-cashout') {
-      return [
-          referralJournalEntry({
-            account: `${owner.type}_WALLET_LIABILITY`,
-            amount: reward.amount,
-            currency: reward.currency,
-            memo: `Referral cashout ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
-            metadata,
-            side: 'DEBIT',
-            sourceId: reward.id,
-            sourceType,
-          }),
-          referralJournalEntry({
-            account: 'REFERRAL_CASHOUT_BANK_CLEARING',
-            amount: reward.amount,
-            currency: reward.currency,
-            memo: `Referral cashout ${reward.id} awaits bank reconciliation evidence.`,
-            metadata,
-            side: 'CREDIT',
-            sourceId: reward.id,
-            sourceType,
-          }),
-        ];
+      return positiveReferralJournalEntries([
+        {
+          account: `${owner.type}_WALLET_LIABILITY`,
+          amount: withholding.netWalletAmount,
+          currency: reward.currency,
+          memo: `Referral cashout ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
+          metadata,
+          side: 'DEBIT',
+          sourceId: reward.id,
+          sourceType,
+        },
+        {
+          account: 'REFERRAL_CASHOUT_BANK_CLEARING',
+          amount: withholding.netWalletAmount,
+          currency: reward.currency,
+          memo: `Referral cashout ${reward.id} awaits bank reconciliation evidence.`,
+          metadata,
+          side: 'CREDIT',
+          sourceId: reward.id,
+          sourceType,
+        },
+      ]);
     }
     return [
-      referralJournalEntry({
-        account: `${owner.type}_WALLET_LIABILITY`,
-        amount: reward.amount,
-        currency: reward.currency,
-        memo: `Referral reversal ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
-        metadata,
-        side: 'DEBIT',
-        sourceId: reward.id,
-        sourceType,
-      }),
+      ...positiveReferralJournalEntries([
+        {
+          account: `${owner.type}_WALLET_LIABILITY`,
+          amount: withholding.netWalletAmount,
+          currency: reward.currency,
+          memo: `Referral reversal ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
+          metadata,
+          side: 'DEBIT',
+          sourceId: reward.id,
+          sourceType,
+        },
+        ...referralWithholdingPayableEntries({
+          currency: reward.currency,
+          metadata,
+          rewardId: reward.id,
+          side: 'DEBIT',
+          sourceType,
+          withholding,
+        }),
+      ]),
       referralJournalEntry({
         account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
         amount: reward.amount,
@@ -1359,6 +1428,53 @@ async function upsertReferralRewardJournal(
       sourceKey,
     },
   });
+}
+
+function referralWithholdingPayableEntries(input: {
+  currency: string;
+  metadata: Prisma.InputJsonObject;
+  rewardId: string;
+  side: 'DEBIT' | 'CREDIT';
+  sourceType: 'REFERRAL_REWARD';
+  withholding: ReturnType<typeof calculateReferralTaxWithholding>;
+}) {
+  return [
+    {
+      account: 'REFERRAL_VAT_WITHHOLDING_PAYABLE',
+      amount: input.withholding.vatWithheldAmount,
+      currency: input.currency,
+      memo: `Referral reward ${input.rewardId} VAT withholding payable.`,
+      metadata: input.metadata,
+      side: input.side,
+      sourceId: input.rewardId,
+      sourceType: input.sourceType,
+    },
+    {
+      account: 'REFERRAL_PIT_WITHHOLDING_PAYABLE',
+      amount: input.withholding.pitWithheldAmount,
+      currency: input.currency,
+      memo: `Referral reward ${input.rewardId} PIT withholding payable.`,
+      metadata: input.metadata,
+      side: input.side,
+      sourceId: input.rewardId,
+      sourceType: input.sourceType,
+    },
+  ];
+}
+
+function positiveReferralJournalEntries(
+  entries: Array<{
+    account: string;
+    amount: number;
+    currency: string;
+    memo: string;
+    metadata: Prisma.InputJsonObject;
+    side: 'DEBIT' | 'CREDIT';
+    sourceId: string;
+    sourceType: 'REFERRAL_REWARD';
+  }>,
+) {
+  return entries.filter((entry) => entry.amount > 0).map(referralJournalEntry);
 }
 
 function referralRewardWalletOwner(reward: ReferralRewardCreditCandidate) {
