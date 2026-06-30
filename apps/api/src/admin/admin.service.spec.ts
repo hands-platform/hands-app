@@ -6522,6 +6522,40 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('loads accounting journal batch detail with entry evidence only when requested', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'journal-batch-1',
+          entries: [{ id: 'journal-entry-1', accountCode: '4110' }],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.accountingJournalBatchDetail('journal-batch-1')).resolves.toEqual({
+      id: 'journal-batch-1',
+      entries: [{ id: 'journal-entry-1', accountCode: '4110' }],
+    });
+
+    expect(prisma.accountingJournalBatch.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'journal-batch-1' },
+        select: expect.objectContaining({
+          entries: expect.objectContaining({
+            orderBy: { createdAt: 'asc' },
+            select: expect.objectContaining({
+              accountCode: true,
+              accountName: true,
+              amount: true,
+              side: true,
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
   it('lists booking payment clearing entries with bounded occurrence filters', async () => {
     const prisma = {
       bookingPaymentClearingEntry: {
@@ -6587,6 +6621,39 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('loads booking payment clearing detail with reconciliation matches only when requested', async () => {
+    const prisma = {
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'clearing-1',
+          bankReconciliationMatches: [{ id: 'match-1', amount: 900000 }],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bookingPaymentClearingEntryDetail('clearing-1')).resolves.toEqual({
+      id: 'clearing-1',
+      bankReconciliationMatches: [{ id: 'match-1', amount: 900000 }],
+    });
+
+    expect(prisma.bookingPaymentClearingEntry.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'clearing-1' },
+        select: expect.objectContaining({
+          bankReconciliationMatches: expect.objectContaining({
+            orderBy: { matchedAt: 'desc' },
+            select: expect.objectContaining({
+              amount: true,
+              bankTransaction: expect.any(Object),
+              status: true,
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
   it('lists bank reconciliation transactions with bounded occurrence filters and match counts only', async () => {
     const prisma = {
       companyBankTransaction: {
@@ -6645,6 +6712,40 @@ describe('AdminService query orchestration', () => {
       expect.objectContaining({
         _sum: { amount: true },
         where: { status: BankReconciliationStatus.MATCHED },
+      }),
+    );
+  });
+
+  it('loads bank reconciliation transaction detail with matched accounting evidence only when requested', async () => {
+    const prisma = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          reconciliationMatches: [{ id: 'match-1', amount: 900000 }],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bankReconciliationTransactionDetail('bank-tx-1')).resolves.toEqual({
+      id: 'bank-tx-1',
+      reconciliationMatches: [{ id: 'match-1', amount: 900000 }],
+    });
+
+    expect(prisma.companyBankTransaction.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bank-tx-1' },
+        select: expect.objectContaining({
+          reconciliationMatches: expect.objectContaining({
+            orderBy: { matchedAt: 'desc' },
+            select: expect.objectContaining({
+              accountingJournalEntry: expect.any(Object),
+              amount: true,
+              paymentClearingEntry: expect.any(Object),
+              status: true,
+            }),
+          }),
+        }),
       }),
     );
   });

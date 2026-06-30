@@ -16,6 +16,7 @@ import {
   buildTaxSettlementServerPagination,
   emptyAccountingJournalBatchSummary,
   financeAccountingReviewLabel,
+  generalLedgerDetailHref,
   generalLedgerHref,
   readBookingSettlementFilters,
   readFinanceAccountingFilters,
@@ -116,7 +117,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
             {pagination.rows.map((batch) => (
               <tr key={batch.id}>
                 <td>
-                  <strong>{batch.sourceType}</strong>
+                  <Link className="text-link" href={generalLedgerDetailHref(batch.id)}>
+                    <strong>{batch.sourceType}</strong>
+                  </Link>
                   <div className="muted">{shortId(batch.sourceId)}</div>
                   <div className="muted">{batch._count?.entries ?? 0} entries</div>
                 </td>

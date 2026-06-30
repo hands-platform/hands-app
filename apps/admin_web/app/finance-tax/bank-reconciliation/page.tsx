@@ -10,6 +10,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BANK_RECONCILIATION_REVIEW_LINKS,
+  bankReconciliationDetailHref,
   bankReconciliationHref,
   buildBankReconciliationApiHref,
   buildBankReconciliationSummaryApiHref,
@@ -115,7 +116,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             {pagination.rows.map((transaction) => (
               <tr key={transaction.id}>
                 <td>
-                  <strong>{transaction.transferRef ?? shortId(transaction.sourceKey)}</strong>
+                  <Link className="text-link" href={bankReconciliationDetailHref(transaction.id)}>
+                    <strong>{transaction.transferRef ?? shortId(transaction.sourceKey)}</strong>
+                  </Link>
                   <div className="muted">{transaction.type}</div>
                   <div className="muted">{shortId(transaction.id)}</div>
                 </td>

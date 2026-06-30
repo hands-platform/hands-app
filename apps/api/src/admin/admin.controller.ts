@@ -878,6 +878,11 @@ export class AdminController {
     return this.admin.accountingJournalBatchSummary({ range, review });
   }
 
+  @Get('accounting-journal-batches/:id')
+  accountingJournalBatchDetail(@Param('id') id: string) {
+    return this.admin.accountingJournalBatchDetail(id);
+  }
+
   @Get('booking-payment-clearing')
   bookingPaymentClearingEntries(
     @Query('take') take?: string,
@@ -893,6 +898,11 @@ export class AdminController {
     return this.admin.bookingPaymentClearingSummary({ range, review });
   }
 
+  @Get('booking-payment-clearing/:id')
+  bookingPaymentClearingEntryDetail(@Param('id') id: string) {
+    return this.admin.bookingPaymentClearingEntryDetail(id);
+  }
+
   @Get('bank-reconciliation')
   bankReconciliationTransactions(
     @Query('take') take?: string,
@@ -906,6 +916,11 @@ export class AdminController {
   @Get('bank-reconciliation/summary')
   bankReconciliationSummary(@Query('range') range?: string, @Query('review') review?: string) {
     return this.admin.bankReconciliationSummary({ range, review });
+  }
+
+  @Get('bank-reconciliation/:id')
+  bankReconciliationTransactionDetail(@Param('id') id: string) {
+    return this.admin.bankReconciliationTransactionDetail(id);
   }
 
   @Get('services')

@@ -1961,6 +1961,73 @@ export type AdminAccountingJournalBatch = {
   } | null;
 };
 
+export type AdminAccountingJournalEntry = {
+  id: string;
+  side: 'DEBIT' | 'CREDIT';
+  accountCode: string;
+  accountName: string;
+  amount: number;
+  currency: string;
+  memo?: string | null;
+  sourceType?: AdminAccountingJournalSourceType | null;
+  sourceId?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+  bankReconciliationMatches?: Array<{
+    id: string;
+    sourceKey: string;
+    bankTransactionId: string;
+    paymentClearingEntryId?: string | null;
+    amount: number;
+    currency: string;
+    status: AdminBankReconciliationStatus;
+    matchedAt: string;
+  }>;
+};
+
+export type AdminAccountingJournalBatchDetail = AdminAccountingJournalBatch & {
+  payment?: {
+    id: string;
+    method: AdminPaymentMethod;
+    status: AdminPaymentStatus;
+    amount: number;
+    currency: string;
+    createdAt?: string;
+  } | null;
+  settlementSnapshot?: Pick<
+    AdminBookingSettlementSnapshot,
+    | 'id'
+    | 'paymentMethod'
+    | 'customerPaymentAmount'
+    | 'partnerPayoutAmount'
+    | 'platformFeeNetRevenue'
+    | 'companyOutputVat'
+    | 'partnerWithholdingTotal'
+    | 'paymentProcessingFee'
+    | 'settlementStatus'
+    | 'taxStatus'
+    | 'monthlyPeriod'
+    | 'postedAt'
+    | 'closedAt'
+  > | null;
+  settlementReversalEntry?: {
+    id: string;
+    paymentMethod: AdminPaymentMethod;
+    customerPaymentAmount: number;
+    partnerPayoutAmount: number;
+    platformFeeNetRevenue: number;
+    companyOutputVat: number;
+    partnerWithholdingTotal: number;
+    paymentProcessingFee: number;
+    settlementStatus: AdminBookingSettlementStatus;
+    taxStatus: AdminBookingSettlementTaxStatus;
+    monthlyPeriod: string;
+    occurredAt: string;
+    reason?: string | null;
+  } | null;
+  entries: AdminAccountingJournalEntry[];
+};
+
 export type AdminAccountingJournalBatchSummary = {
   count: number;
   currency: string;
@@ -1993,6 +2060,36 @@ export type AdminBookingPaymentClearingEntry = {
     status: AdminPaymentStatus;
     amount: number;
     currency: string;
+  } | null;
+};
+
+export type AdminBookingPaymentClearingEntryDetail = AdminBookingPaymentClearingEntry & {
+  settlementSnapshot?: AdminAccountingJournalBatchDetail['settlementSnapshot'];
+  settlementReversalEntry?: AdminAccountingJournalBatchDetail['settlementReversalEntry'];
+  bankReconciliationMatches?: AdminPaymentClearingBankReconciliationMatch[];
+};
+
+export type AdminPaymentClearingBankReconciliationMatch = {
+  id: string;
+  sourceKey: string;
+  accountingJournalEntryId?: string | null;
+  bankTransactionId: string;
+  amount: number;
+  currency: string;
+  status: AdminBankReconciliationStatus;
+  matchedAt: string;
+  notes?: string | null;
+  bankTransaction?: {
+    id: string;
+    sourceKey: string;
+    type: AdminCompanyBankTransactionType;
+    amount: number;
+    currency: string;
+    occurredAt: string;
+    valueDate?: string | null;
+    transferRef?: string | null;
+    counterpartyName?: string | null;
+    status: AdminBankReconciliationStatus;
   } | null;
 };
 
@@ -2030,6 +2127,50 @@ export type AdminCompanyBankTransaction = {
     currency: string;
     status: string;
   } | null;
+};
+
+export type AdminBankReconciliationMatch = {
+  id: string;
+  sourceKey: string;
+  accountingJournalEntryId?: string | null;
+  paymentClearingEntryId?: string | null;
+  withdrawalRequestId?: string | null;
+  payoutBatchId?: string | null;
+  amount: number;
+  currency: string;
+  status: AdminBankReconciliationStatus;
+  matchedAt: string;
+  notes?: string | null;
+  metadata?: unknown;
+  accountingJournalEntry?: Omit<AdminAccountingJournalEntry, 'bankReconciliationMatches' | 'createdAt'> & {
+    batchId: string;
+  } | null;
+  paymentClearingEntry?: Pick<
+    AdminBookingPaymentClearingEntry,
+    'id' | 'sourceKey' | 'type' | 'status' | 'bookingId' | 'amount' | 'currency' | 'occurredAt' | 'clearedAt'
+  > | null;
+  withdrawalRequest?: {
+    id: string;
+    providerProfileId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    createdAt: string;
+    transferRef?: string | null;
+  } | null;
+  payoutBatch?: {
+    id: string;
+    status: string;
+    totalNetAmount: number;
+    currency: string;
+    createdAt: string;
+    paidAt?: string | null;
+    transferRef?: string | null;
+  } | null;
+};
+
+export type AdminBankReconciliationTransactionDetail = AdminCompanyBankTransaction & {
+  reconciliationMatches?: AdminBankReconciliationMatch[];
 };
 
 export type AdminBankReconciliationSummary = {

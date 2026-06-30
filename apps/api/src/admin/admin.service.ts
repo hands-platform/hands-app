@@ -498,6 +498,72 @@ const adminAccountingJournalBatchListSelect = {
     },
   },
 } satisfies Prisma.AccountingJournalBatchSelect;
+const adminAccountingJournalBatchDetailSelect = {
+  ...adminAccountingJournalBatchListSelect,
+  payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
+  settlementSnapshot: {
+    select: {
+      id: true,
+      paymentMethod: true,
+      customerPaymentAmount: true,
+      partnerPayoutAmount: true,
+      platformFeeNetRevenue: true,
+      companyOutputVat: true,
+      partnerWithholdingTotal: true,
+      paymentProcessingFee: true,
+      settlementStatus: true,
+      taxStatus: true,
+      monthlyPeriod: true,
+      postedAt: true,
+      closedAt: true,
+    },
+  },
+  settlementReversalEntry: {
+    select: {
+      id: true,
+      paymentMethod: true,
+      customerPaymentAmount: true,
+      partnerPayoutAmount: true,
+      platformFeeNetRevenue: true,
+      companyOutputVat: true,
+      partnerWithholdingTotal: true,
+      paymentProcessingFee: true,
+      settlementStatus: true,
+      taxStatus: true,
+      monthlyPeriod: true,
+      occurredAt: true,
+      reason: true,
+    },
+  },
+  entries: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      side: true,
+      accountCode: true,
+      accountName: true,
+      amount: true,
+      currency: true,
+      memo: true,
+      sourceType: true,
+      sourceId: true,
+      metadata: true,
+      createdAt: true,
+      bankReconciliationMatches: {
+        select: {
+          id: true,
+          sourceKey: true,
+          bankTransactionId: true,
+          paymentClearingEntryId: true,
+          amount: true,
+          currency: true,
+          status: true,
+          matchedAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.AccountingJournalBatchSelect;
 const adminBookingPaymentClearingEntryListSelect = {
   id: true,
   sourceKey: true,
@@ -516,6 +582,71 @@ const adminBookingPaymentClearingEntryListSelect = {
   updatedAt: true,
   booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
   payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
+} satisfies Prisma.BookingPaymentClearingEntrySelect;
+const adminBookingPaymentClearingEntryDetailSelect = {
+  ...adminBookingPaymentClearingEntryListSelect,
+  settlementSnapshot: {
+    select: {
+      id: true,
+      paymentMethod: true,
+      customerPaymentAmount: true,
+      partnerPayoutAmount: true,
+      platformFeeNetRevenue: true,
+      companyOutputVat: true,
+      partnerWithholdingTotal: true,
+      paymentProcessingFee: true,
+      settlementStatus: true,
+      taxStatus: true,
+      monthlyPeriod: true,
+      postedAt: true,
+      closedAt: true,
+    },
+  },
+  settlementReversalEntry: {
+    select: {
+      id: true,
+      paymentMethod: true,
+      customerPaymentAmount: true,
+      partnerPayoutAmount: true,
+      platformFeeNetRevenue: true,
+      companyOutputVat: true,
+      partnerWithholdingTotal: true,
+      paymentProcessingFee: true,
+      settlementStatus: true,
+      taxStatus: true,
+      monthlyPeriod: true,
+      occurredAt: true,
+      reason: true,
+    },
+  },
+  bankReconciliationMatches: {
+    orderBy: { matchedAt: 'desc' },
+    select: {
+      id: true,
+      sourceKey: true,
+      accountingJournalEntryId: true,
+      bankTransactionId: true,
+      amount: true,
+      currency: true,
+      status: true,
+      matchedAt: true,
+      notes: true,
+      bankTransaction: {
+        select: {
+          id: true,
+          sourceKey: true,
+          type: true,
+          amount: true,
+          currency: true,
+          occurredAt: true,
+          valueDate: true,
+          transferRef: true,
+          counterpartyName: true,
+          status: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.BookingPaymentClearingEntrySelect;
 const adminCompanyBankTransactionListSelect = {
   id: true,
@@ -543,6 +674,75 @@ const adminCompanyBankTransactionListSelect = {
       accountNumberLast4: true,
       currency: true,
       status: true,
+    },
+  },
+} satisfies Prisma.CompanyBankTransactionSelect;
+const adminCompanyBankTransactionDetailSelect = {
+  ...adminCompanyBankTransactionListSelect,
+  reconciliationMatches: {
+    orderBy: { matchedAt: 'desc' },
+    select: {
+      id: true,
+      sourceKey: true,
+      accountingJournalEntryId: true,
+      paymentClearingEntryId: true,
+      withdrawalRequestId: true,
+      payoutBatchId: true,
+      amount: true,
+      currency: true,
+      status: true,
+      matchedAt: true,
+      notes: true,
+      metadata: true,
+      accountingJournalEntry: {
+        select: {
+          id: true,
+          batchId: true,
+          side: true,
+          accountCode: true,
+          accountName: true,
+          amount: true,
+          currency: true,
+          memo: true,
+          sourceType: true,
+          sourceId: true,
+        },
+      },
+      paymentClearingEntry: {
+        select: {
+          id: true,
+          sourceKey: true,
+          type: true,
+          status: true,
+          bookingId: true,
+          amount: true,
+          currency: true,
+          occurredAt: true,
+          clearedAt: true,
+        },
+      },
+      withdrawalRequest: {
+        select: {
+          id: true,
+          providerProfileId: true,
+          amount: true,
+          currency: true,
+          status: true,
+          createdAt: true,
+          transferRef: true,
+        },
+      },
+      payoutBatch: {
+        select: {
+          id: true,
+          status: true,
+          totalNetAmount: true,
+          currency: true,
+          createdAt: true,
+          paidAt: true,
+          transferRef: true,
+        },
+      },
     },
   },
 } satisfies Prisma.CompanyBankTransactionSelect;
@@ -5737,6 +5937,17 @@ export class AdminService {
     };
   }
 
+  async accountingJournalBatchDetail(id: string) {
+    const batch = await this.prisma.accountingJournalBatch.findUnique({
+      where: { id },
+      select: adminAccountingJournalBatchDetailSelect,
+    });
+    if (!batch) {
+      throw new NotFoundException('Accounting journal batch not found');
+    }
+    return batch;
+  }
+
   listBookingPaymentClearingEntries(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBookingPaymentClearingWhere(options);
     const skip = boundedAdminListSkip(options.skip);
@@ -5777,6 +5988,17 @@ export class AdminService {
     };
   }
 
+  async bookingPaymentClearingEntryDetail(id: string) {
+    const entry = await this.prisma.bookingPaymentClearingEntry.findUnique({
+      where: { id },
+      select: adminBookingPaymentClearingEntryDetailSelect,
+    });
+    if (!entry) {
+      throw new NotFoundException('Booking payment clearing entry not found');
+    }
+    return entry;
+  }
+
   listBankReconciliationTransactions(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBankReconciliationWhere(options);
     const skip = boundedAdminListSkip(options.skip);
@@ -5815,6 +6037,17 @@ export class AdminService {
       matchedCount,
       unmatchedCount,
     };
+  }
+
+  async bankReconciliationTransactionDetail(id: string) {
+    const transaction = await this.prisma.companyBankTransaction.findUnique({
+      where: { id },
+      select: adminCompanyBankTransactionDetailSelect,
+    });
+    if (!transaction) {
+      throw new NotFoundException('Bank reconciliation transaction not found');
+    }
+    return transaction;
   }
 
   async couponFinanceSummary(options: AdminPaymentOperationsQuery = {}) {

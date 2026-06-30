@@ -250,6 +250,10 @@ export function buildAccountingJournalBatchSummaryApiHref(filters: FinanceAccoun
   return buildFinanceAccountingSummaryApiHref('/admin/accounting-journal-batches/summary', filters);
 }
 
+export function buildAccountingJournalBatchDetailApiHref(id: string) {
+  return `/admin/accounting-journal-batches/${encodeURIComponent(id)}`;
+}
+
 export function buildBookingPaymentClearingApiHref(filters: FinanceAccountingFilters) {
   return buildFinanceAccountingApiHref('/admin/booking-payment-clearing', filters);
 }
@@ -258,12 +262,20 @@ export function buildBookingPaymentClearingSummaryApiHref(filters: FinanceAccoun
   return buildFinanceAccountingSummaryApiHref('/admin/booking-payment-clearing/summary', filters);
 }
 
+export function buildBookingPaymentClearingDetailApiHref(id: string) {
+  return `/admin/booking-payment-clearing/${encodeURIComponent(id)}`;
+}
+
 export function buildBankReconciliationApiHref(filters: FinanceAccountingFilters) {
   return buildFinanceAccountingApiHref('/admin/bank-reconciliation', filters);
 }
 
 export function buildBankReconciliationSummaryApiHref(filters: FinanceAccountingFilters) {
   return buildFinanceAccountingSummaryApiHref('/admin/bank-reconciliation/summary', filters);
+}
+
+export function buildBankReconciliationDetailApiHref(id: string) {
+  return `/admin/bank-reconciliation/${encodeURIComponent(id)}`;
 }
 
 function buildFinanceAccountingApiHref(basePath: string, filters: FinanceAccountingFilters) {
@@ -364,12 +376,24 @@ export function generalLedgerHref(filters: FinanceAccountingFilters) {
   return financeAccountingHref('/finance-tax/general-ledger', filters);
 }
 
+export function generalLedgerDetailHref(id: string) {
+  return `/finance-tax/general-ledger/${encodeURIComponent(id)}`;
+}
+
 export function paymentClearingHref(filters: FinanceAccountingFilters) {
   return financeAccountingHref('/finance-tax/payment-clearing', filters);
 }
 
+export function paymentClearingDetailHref(id: string) {
+  return `/finance-tax/payment-clearing/${encodeURIComponent(id)}`;
+}
+
 export function bankReconciliationHref(filters: FinanceAccountingFilters) {
   return financeAccountingHref('/finance-tax/bank-reconciliation', filters);
+}
+
+export function bankReconciliationDetailHref(id: string) {
+  return `/finance-tax/bank-reconciliation/${encodeURIComponent(id)}`;
 }
 
 function financeAccountingHref(pathname: string, filters: FinanceAccountingFilters) {

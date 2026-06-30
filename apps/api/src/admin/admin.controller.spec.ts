@@ -77,10 +77,13 @@ describe('AdminController notification and push actions', () => {
     paymentFeeSummary: vi.fn(),
     listAccountingJournalBatches: vi.fn(),
     accountingJournalBatchSummary: vi.fn(),
+    accountingJournalBatchDetail: vi.fn(),
     listBookingPaymentClearingEntries: vi.fn(),
     bookingPaymentClearingSummary: vi.fn(),
+    bookingPaymentClearingEntryDetail: vi.fn(),
     listBankReconciliationTransactions: vi.fn(),
     bankReconciliationSummary: vi.fn(),
+    bankReconciliationTransactionDetail: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -857,6 +860,21 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
+  it('exposes accounting journal batch detail by id', async () => {
+    admin.accountingJournalBatchDetail.mockResolvedValue({ id: 'journal-batch-1', entries: [] });
+
+    await expect(controller.accountingJournalBatchDetail('journal-batch-1')).resolves.toEqual({
+      id: 'journal-batch-1',
+      entries: [],
+    });
+
+    expect(routeMetadata('accountingJournalBatchDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: 'accounting-journal-batches/:id',
+    });
+    expect(admin.accountingJournalBatchDetail).toHaveBeenCalledWith('journal-batch-1');
+  });
+
   it('exposes booking payment clearing entries as a bounded finance list', async () => {
     admin.listBookingPaymentClearingEntries.mockResolvedValue([{ id: 'clearing-1' }]);
 
@@ -895,6 +913,21 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
+  it('exposes booking payment clearing entry detail by id', async () => {
+    admin.bookingPaymentClearingEntryDetail.mockResolvedValue({ id: 'clearing-1', bankReconciliationMatches: [] });
+
+    await expect(controller.bookingPaymentClearingEntryDetail('clearing-1')).resolves.toEqual({
+      id: 'clearing-1',
+      bankReconciliationMatches: [],
+    });
+
+    expect(routeMetadata('bookingPaymentClearingEntryDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-payment-clearing/:id',
+    });
+    expect(admin.bookingPaymentClearingEntryDetail).toHaveBeenCalledWith('clearing-1');
+  });
+
   it('exposes bank reconciliation transactions as a bounded finance list', async () => {
     admin.listBankReconciliationTransactions.mockResolvedValue([{ id: 'bank-tx-1' }]);
 
@@ -930,6 +963,21 @@ describe('AdminController notification and push actions', () => {
       range: 'all',
       review: 'matched',
     });
+  });
+
+  it('exposes bank reconciliation transaction detail by id', async () => {
+    admin.bankReconciliationTransactionDetail.mockResolvedValue({ id: 'bank-tx-1', reconciliationMatches: [] });
+
+    await expect(controller.bankReconciliationTransactionDetail('bank-tx-1')).resolves.toEqual({
+      id: 'bank-tx-1',
+      reconciliationMatches: [],
+    });
+
+    expect(routeMetadata('bankReconciliationTransactionDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bank-reconciliation/:id',
+    });
+    expect(admin.bankReconciliationTransactionDetail).toHaveBeenCalledWith('bank-tx-1');
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

@@ -16,6 +16,7 @@ import {
   buildTaxSettlementServerPagination,
   emptyBookingPaymentClearingSummary,
   financeAccountingReviewLabel,
+  paymentClearingDetailHref,
   paymentClearingHref,
   readBookingSettlementFilters,
   readFinanceAccountingFilters,
@@ -126,7 +127,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                   {entry.paymentId ? <div className="muted">{shortId(entry.paymentId)}</div> : null}
                 </td>
                 <td>
-                  <strong>{entry.type}</strong>
+                  <Link className="text-link" href={paymentClearingDetailHref(entry.id)}>
+                    <strong>{entry.type}</strong>
+                  </Link>
                   <div className="muted">{shortId(entry.sourceKey)}</div>
                 </td>
                 <td>
