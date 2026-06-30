@@ -1485,6 +1485,7 @@ type ManualWalletAdjustmentDb = Pick<
 >;
 
 type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
+  readonly approvalAdminId: string | null;
   readonly currency: string;
   readonly monthlyPeriod: string | null;
   readonly ownerId: string;
@@ -7564,6 +7565,7 @@ export class AdminService {
     const currency = normalizeManualWalletCurrency(input.currency);
     const monthlyPeriod = normalizeManualWalletMonthlyPeriod(input.monthlyPeriod);
     const approvalId = normalizeManualWalletApprovalId(input.approvalId, requireApproval);
+    const approvalAdminId = normalizeManualWalletApprovalAdminId(input.approvalAdminId, actorId, requireApproval);
     const attachmentUrl = normalizeManualWalletAttachmentUrl(input.attachmentUrl);
     const [currentBalance, monthlyPeriodStatus] = await Promise.all([
       this.manualWalletCurrentBalance(db, ownerType, ownerId, currency),
@@ -7583,7 +7585,7 @@ export class AdminService {
         ownerType,
         reason: normalizeAuditReason(input.reason),
       });
-      return { ...preview, currency, monthlyPeriod, ownerId };
+      return { ...preview, approvalAdminId, currency, monthlyPeriod, ownerId };
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : 'Manual wallet adjustment is invalid');
     }
@@ -10347,6 +10349,21 @@ function normalizeManualWalletApprovalId(value: string | undefined, requireAppro
   return normalized ?? 'PREVIEW_ONLY';
 }
 
+function normalizeManualWalletApprovalAdminId(
+  value: string | undefined,
+  actorId: string,
+  requireApproval: boolean,
+) {
+  const normalized = normalizeNullable(value);
+  if (requireApproval && !normalized) {
+    throw new BadRequestException('Approving admin id is required for manual wallet adjustment');
+  }
+  if (normalized && normalized === actorId) {
+    throw new BadRequestException('Manual wallet adjustment requires approval from a different admin');
+  }
+  return normalized;
+}
+
 function normalizeManualWalletAttachmentUrl(value?: string | null) {
   const normalized = normalizeNullable(value);
   if (!normalized) {
@@ -10398,6 +10415,7 @@ function manualWalletAdjustmentMetadata(
     amount: preview.amount,
     currency: preview.currency,
     approvalId: preview.approvalId,
+    approvalAdminId: preview.approvalAdminId,
     reason: preview.reason,
     monthlyPeriod: preview.monthlyPeriod,
     attachmentUrl: normalizeNullable(attachmentUrl),
@@ -10555,6 +10573,7 @@ function manualWalletAdjustmentLedgerRow(input: {
     affects: objectFromRecord(input.metadata, 'affects'),
     afterBalance: numberFromRecord(input.metadata, 'afterBalance'),
     amount: input.amount,
+    approvalAdminId: stringFromRecord(input.metadata, 'approvalAdminId'),
     approvalId: stringFromRecord(input.metadata, 'approvalId') ?? input.reference,
     attachmentUrl: stringFromRecord(input.metadata, 'attachmentUrl'),
     beforeBalance: numberFromRecord(input.metadata, 'beforeBalance'),

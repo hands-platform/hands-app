@@ -5962,6 +5962,7 @@ describe('AdminService query orchestration', () => {
         amount: 200000,
         reason: 'Excellent customer recovery',
         approvalId: 'approval-1',
+        approvalAdminId: 'finance-admin-2',
       }),
     ).resolves.toMatchObject({
       ledger: { id: 'ledger-1', amount: 200000 },
@@ -5983,6 +5984,7 @@ describe('AdminService query orchestration', () => {
         currency: 'VND',
         reference: 'approval-1',
         metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
           bankCashAmount: 0,
           companyOutputVat: 0,
           platformRevenueAmount: 0,
@@ -5996,6 +5998,42 @@ describe('AdminService query orchestration', () => {
         target: 'provider_wallet_ledger:ledger-1',
       }),
     });
+  });
+
+  it('rejects manual wallet adjustments approved by the same admin before writing a ledger', async () => {
+    const tx = {
+      providerProfile: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        reason: 'Same admin cannot self-approve',
+        approvalId: 'approval-1',
+        approvalAdminId: 'admin-user-1',
+      }),
+    ).rejects.toThrow('Manual wallet adjustment requires approval from a different admin');
+
+    expect(tx.providerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('lists recent manual wallet adjustments across customer and partner ledgers without loading all rows', async () => {
@@ -6168,6 +6206,7 @@ describe('AdminService query orchestration', () => {
         amount: 10000000,
         reason: 'High-value correction',
         approvalId: 'approval-high',
+        approvalAdminId: 'finance-admin-2',
       }),
     ).rejects.toThrow('Attachment is required for this manual wallet adjustment');
 
@@ -6206,6 +6245,7 @@ describe('AdminService query orchestration', () => {
         amount: 10000000,
         reason: 'High-value correction with invalid evidence URL',
         approvalId: 'approval-high',
+        approvalAdminId: 'finance-admin-2',
         attachmentUrl: 'javascript:alert(1)',
       }),
     ).rejects.toThrow('Attachment URL must use http or https');
@@ -6237,6 +6277,7 @@ describe('AdminService query orchestration', () => {
         amount: 100000,
         reason: 'Missing owner should not write ledger',
         approvalId: 'approval-missing-owner',
+        approvalAdminId: 'finance-admin-2',
       }),
     ).rejects.toThrow('Manual wallet adjustment owner was not found');
 

@@ -892,6 +892,12 @@ export class PreviewManualWalletAdjustmentDto extends ManualWalletAdjustmentPayl
   @IsString()
   @MaxLength(128)
   approvalId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  approvalAdminId?: string;
 }
 
 export class CreateManualWalletAdjustmentDto extends ManualWalletAdjustmentPayloadDto {
@@ -900,6 +906,12 @@ export class CreateManualWalletAdjustmentDto extends ManualWalletAdjustmentPaylo
   @IsNotEmpty()
   @MaxLength(128)
   approvalId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  approvalAdminId!: string;
 }
 
 export class UpdateProviderWalletWithdrawalRequestDto {

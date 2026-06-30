@@ -65,6 +65,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
 
 type WalletAdjustmentNotice =
   | 'admin-auth'
+  | 'approval-admin-required'
   | 'approval-required'
   | 'attachment-invalid'
   | 'attachment-required'
@@ -76,6 +77,7 @@ type WalletAdjustmentNotice =
 type WalletAdjustmentRedirectContext = {
   readonly adjustmentType?: AdminManualWalletAdjustmentType;
   readonly amount?: number | string;
+  readonly approvalAdminId?: string;
   readonly approvalId?: string;
   readonly attachmentUrl?: string;
   readonly direction?: AdminManualWalletAdjustmentDirection;
@@ -112,6 +114,10 @@ function walletAdjustmentNoticeRedirect(notice: WalletAdjustmentNotice, context:
     params.set('approvalId', context.approvalId);
   }
 
+  if (context.approvalAdminId) {
+    params.set('approvalAdminId', context.approvalAdminId);
+  }
+
   if (context.reason) {
     params.set('reason', context.reason);
   }
@@ -134,6 +140,7 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
   const adjustmentType = readOptionalString(formData, 'adjustmentType');
   const amount = readOptionalString(formData, 'amount');
   const approvalId = readOptionalString(formData, 'approvalId');
+  const approvalAdminId = readOptionalString(formData, 'approvalAdminId');
   const attachmentUrl = readSafeAttachmentUrlForRedirect(formData);
   const monthlyPeriod = readSafeMonthlyPeriodForRedirect(formData);
   const reason = readOptionalString(formData, 'reason');
@@ -143,6 +150,7 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
       ? { adjustmentType: adjustmentType as AdminManualWalletAdjustmentType }
       : {}),
     ...(amount ? { amount } : {}),
+    ...(approvalAdminId ? { approvalAdminId } : {}),
     ...(approvalId ? { approvalId } : {}),
     ...(attachmentUrl ? { attachmentUrl } : {}),
     ...(directions.has(direction as AdminManualWalletAdjustmentDirection)
@@ -165,6 +173,7 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   const amount = readPositiveAmount(formData);
   const reason = readRequiredString(formData, 'reason', 'Reason');
   const approvalId = readOptionalString(formData, 'approvalId');
+  const approvalAdminId = readOptionalString(formData, 'approvalAdminId');
   const monthlyPeriod = readMonthlyPeriod(formData);
   const attachmentUrl = readAttachmentUrl(formData);
 
@@ -176,6 +185,10 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
     throw new WalletAdjustmentValidationError('approval-required');
   }
 
+  if (requireApproval && !approvalAdminId) {
+    throw new WalletAdjustmentValidationError('approval-admin-required');
+  }
+
   if (requiresAttachmentEvidence(adjustmentType, amount) && !attachmentUrl) {
     throw new WalletAdjustmentValidationError('attachment-required');
   }
@@ -183,6 +196,7 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   return {
     adjustmentType,
     amount,
+    ...(approvalAdminId ? { approvalAdminId } : {}),
     ...(approvalId ? { approvalId } : {}),
     ...(attachmentUrl ? { attachmentUrl } : {}),
     direction,

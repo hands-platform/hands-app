@@ -167,6 +167,12 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             placeholder="Required before create"
           />
           <AdminFormInput
+            defaultValue={formState.approvalAdminId}
+            label="Approving admin id"
+            name="approvalAdminId"
+            placeholder="Different admin user id"
+          />
+          <AdminFormInput
             defaultValue={formState.attachmentUrl}
             label="Attachment URL"
             name="attachmentUrl"
@@ -227,6 +233,9 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 </td>
                 <td>
                   <strong>{row.approvalId ?? 'Missing approval'}</strong>
+                  <p className="muted">
+                    {row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}
+                  </p>
                   <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
                 </td>
                 <td>
@@ -340,7 +349,7 @@ function AdjustmentPolicyChecklist() {
   return (
     <div className="setup-stage-list admin-mt-16" aria-label="Manual wallet adjustment policy gates">
       <PreviewFact
-        helper="Approval id is required for every creation"
+        helper="Approval id and a different approving admin id are required for every creation"
         icon={<ShieldCheck aria-hidden="true" size={18} />}
         label="Approval gate"
         value="Required"
@@ -393,6 +402,7 @@ function CreateAdjustmentForm({
 }) {
   const missingRequiredAttachment = preview.requiresAttachment && !formState.attachmentUrl;
   const missingApproval = !formState.approvalId;
+  const missingApprovalAdmin = !formState.approvalAdminId;
   const bookingSettlementOnly = preview.adjustmentType === 'CASH_BOOKING_DEDUCTION';
   const blockedAccountingImpact =
     bookingSettlementOnly ||
@@ -409,8 +419,9 @@ function CreateAdjustmentForm({
       {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
       {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
       {missingApproval ? <StatusBadge tone="warning">Approval id required</StatusBadge> : null}
+      {missingApprovalAdmin ? <StatusBadge tone="warning">Approving admin id required</StatusBadge> : null}
       <AdminFormControlButton
-        disabled={missingApproval || missingRequiredAttachment || blockedAccountingImpact}
+        disabled={missingApproval || missingApprovalAdmin || missingRequiredAttachment || blockedAccountingImpact}
       >
         Create manual adjustment
       </AdminFormControlButton>
@@ -427,6 +438,7 @@ function HiddenAdjustmentInputs({ formState }: { readonly formState: WalletAdjus
         ['direction', formState.direction],
         ['adjustmentType', formState.adjustmentType],
         ['amount', formState.amount],
+        ['approvalAdminId', formState.approvalAdminId],
         ['approvalId', formState.approvalId],
         ['reason', formState.reason],
         ['monthlyPeriod', formState.monthlyPeriod],
@@ -448,6 +460,7 @@ async function fetchPreview(formState: WalletAdjustmentFormState) {
     {
       adjustmentType: formState.adjustmentType,
       amount: Number(formState.amount),
+      ...(formState.approvalAdminId ? { approvalAdminId: formState.approvalAdminId } : {}),
       ...(formState.approvalId ? { approvalId: formState.approvalId } : {}),
       ...(formState.attachmentUrl ? { attachmentUrl: formState.attachmentUrl } : {}),
       direction: formState.direction,
@@ -512,6 +525,7 @@ type WalletAdjustmentHistoryFilters = {
 type WalletAdjustmentFormState = {
   readonly adjustmentType: AdminManualWalletAdjustmentType;
   readonly amount: string;
+  readonly approvalAdminId: string;
   readonly approvalId: string;
   readonly attachmentUrl: string;
   readonly direction: AdminManualWalletAdjustmentDirection;
@@ -526,6 +540,7 @@ function readWalletAdjustmentFormState(params: Record<string, string | string[] 
   return {
     adjustmentType: readParam(params, 'adjustmentType', 'PARTNER_BONUS') as AdminManualWalletAdjustmentType,
     amount: readParam(params, 'amount'),
+    approvalAdminId: readParam(params, 'approvalAdminId'),
     approvalId: readParam(params, 'approvalId'),
     attachmentUrl: readParam(params, 'attachmentUrl'),
     direction: readParam(params, 'direction', 'CREDIT') as AdminManualWalletAdjustmentDirection,
@@ -670,6 +685,15 @@ function walletAdjustmentNotice(notice: string) {
       badge: 'Approval',
       detail: 'No wallet ledger was written. Every manual wallet adjustment needs an approval id.',
       title: 'Approval id is required',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (notice === 'approval-admin-required') {
+    return {
+      badge: 'Approval',
+      detail: 'No wallet ledger was written. A different approving admin id is required.',
+      title: 'Approving admin id is required',
       tone: 'danger' as const,
     };
   }

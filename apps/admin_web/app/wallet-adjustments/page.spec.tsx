@@ -28,7 +28,8 @@ describe('WalletAdjustmentsPage', () => {
     const page = await WalletAdjustmentsPage({});
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Approval id is required for every creation');
+    expect(markup).toContain('Approval id and a different approving admin id are required for every creation');
+    expect(markup).toContain('Approving admin id');
     expect(markup).toContain('Evidence is required from 10.000.000 VND or more');
     expect(markup).toContain('Receivable write-off always needs evidence');
   });
@@ -83,6 +84,7 @@ describe('WalletAdjustmentsPage', () => {
         walletLiability: true,
       },
       amount: 200000,
+      approvalAdminId: 'finance-admin-2',
       approvalId: 'approval-1',
       bankCashAmount: 0,
       beforeBalance: 0,
@@ -105,6 +107,7 @@ describe('WalletAdjustmentsPage', () => {
       searchParams: Promise.resolve({
         adjustmentType: 'PARTNER_BONUS',
         amount: '200000',
+        approvalAdminId: 'finance-admin-2',
         approvalId: 'approval-1',
         direction: 'CREDIT',
         intent: 'preview',
@@ -153,6 +156,7 @@ describe('WalletAdjustmentsPage', () => {
         walletLiability: true,
       },
       amount: 10000000,
+      approvalAdminId: 'finance-admin-2',
       approvalId: 'approval-1',
       bankCashAmount: 0,
       beforeBalance: 0,
@@ -175,6 +179,7 @@ describe('WalletAdjustmentsPage', () => {
       searchParams: Promise.resolve({
         adjustmentType: 'PARTNER_BONUS',
         amount: '10000000',
+        approvalAdminId: 'finance-admin-2',
         approvalId: 'approval-1',
         direction: 'CREDIT',
         intent: 'preview',
@@ -209,6 +214,7 @@ describe('WalletAdjustmentsPage', () => {
         walletLiability: true,
       },
       amount: 200000,
+      approvalAdminId: 'finance-admin-2',
       approvalId: 'approval-1',
       bankCashAmount: 0,
       beforeBalance: 500000,
@@ -231,6 +237,7 @@ describe('WalletAdjustmentsPage', () => {
       searchParams: Promise.resolve({
         adjustmentType: 'CASH_BOOKING_DEDUCTION',
         amount: '200000',
+        approvalAdminId: 'finance-admin-2',
         approvalId: 'approval-1',
         direction: 'DEBIT',
         intent: 'preview',

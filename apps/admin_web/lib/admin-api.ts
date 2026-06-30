@@ -1331,6 +1331,7 @@ export type AdminManualWalletAdjustmentPreview = {
   };
   afterBalance: number;
   amount: number;
+  approvalAdminId?: string | null;
   approvalId?: string;
   attachmentUrl?: string | null;
   bankCashAmount: number;
@@ -1372,6 +1373,7 @@ export type AdminManualWalletAdjustmentRow = {
   affects?: Record<string, unknown>;
   afterBalance?: number | null;
   amount: number;
+  approvalAdminId?: string | null;
   approvalId?: string | null;
   attachmentUrl?: string | null;
   beforeBalance?: number | null;

@@ -40,6 +40,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '200000');
     formData.set('approvalId', ' approval-2026-06 ');
+    formData.set('approvalAdminId', ' finance-admin-2 ');
     formData.set('reason', ' Completed launch bonus ');
     formData.set('monthlyPeriod', '2026-06');
     formData.set('attachmentUrl', ' https://example.test/evidence.pdf ');
@@ -49,6 +50,7 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/wallet-adjustments', {
       adjustmentType: 'PARTNER_BONUS',
       amount: 200000,
+      approvalAdminId: 'finance-admin-2',
       approvalId: 'approval-2026-06',
       attachmentUrl: 'https://example.test/evidence.pdf',
       direction: 'CREDIT',
@@ -76,6 +78,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '200000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'Rejected by API');
 
     await createManualWalletAdjustment(formData);
@@ -94,6 +97,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '200000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'Auth failure');
 
     await createManualWalletAdjustment(formData);
@@ -111,6 +115,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '0');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'No amount');
 
     await createManualWalletAdjustment(formData);
@@ -150,6 +155,7 @@ describe('manual wallet adjustment server actions', () => {
     highAmount.set('adjustmentType', 'PARTNER_BONUS');
     highAmount.set('amount', '10000000');
     highAmount.set('approvalId', 'approval-2026-06');
+    highAmount.set('approvalAdminId', 'finance-admin-2');
     highAmount.set('reason', 'High amount adjustment');
 
     await createManualWalletAdjustment(highAmount);
@@ -169,6 +175,7 @@ describe('manual wallet adjustment server actions', () => {
     writeOff.set('adjustmentType', 'RECEIVABLE_WRITE_OFF');
     writeOff.set('amount', '100000');
     writeOff.set('approvalId', 'approval-2026-06');
+    writeOff.set('approvalAdminId', 'finance-admin-2');
     writeOff.set('reason', 'Write off approved by finance');
 
     await createManualWalletAdjustment(writeOff);
@@ -187,6 +194,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '10000000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('attachmentUrl', 'javascript:alert(1)');
     formData.set('reason', 'Unsafe evidence URL');
 
@@ -208,6 +216,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '200000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('monthlyPeriod', '2026/06');
     formData.set('reason', 'Malformed monthly period');
 
@@ -229,6 +238,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'PARTNER_BONUS');
     formData.set('amount', '200000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('monthlyPeriod', '2026-13');
     formData.set('reason', 'Impossible monthly period');
 
@@ -250,6 +260,7 @@ describe('manual wallet adjustment server actions', () => {
     formData.set('adjustmentType', 'CASH_BOOKING_DEDUCTION');
     formData.set('amount', '200000');
     formData.set('approvalId', 'approval-2026-06');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'Cash booking settlement should use settlement flow');
 
     await createManualWalletAdjustment(formData);
