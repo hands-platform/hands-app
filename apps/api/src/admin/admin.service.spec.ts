@@ -6085,6 +6085,49 @@ describe('AdminService query orchestration', () => {
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
+  it('rejects manual wallet adjustments approved by a non-admin approver before writing a ledger', async () => {
+    const tx = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerProfile: {
+        findUniqueOrThrow: vi.fn(),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn(),
+        create: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustment('admin-user-1', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        reason: 'Approver must be finance admin',
+        approvalId: 'approval-1',
+        approvalAdminId: 'support-user-2',
+      }),
+    ).rejects.toThrow('Manual wallet adjustment requires approval from an admin approver');
+
+    expect(tx.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.ADMIN } },
+      select: { id: true },
+    });
+    expect(tx.providerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
   it('lists recent manual wallet adjustments across customer and partner ledgers without loading all rows', async () => {
     const prisma = {
       customerWalletLedgerEntry: {

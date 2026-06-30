@@ -1488,7 +1488,10 @@ type ManualWalletAdjustmentDb = Pick<
   | 'monthlyTaxClosing'
   | 'providerProfile'
   | 'providerWalletLedgerEntry'
+  | 'user'
 >;
+
+type FinanceApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
 
 type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
   readonly approvalAdminId: string | null;
@@ -2176,6 +2179,7 @@ export class AdminService {
       actorId,
       'Referral reward cashout paid closeout',
     );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Referral reward cashout paid closeout');
     const reason = normalizeAuditReason(input.reason);
     const transferRef = normalizeAuditReason(input.transferRef);
     const reward = await this.referrals.payRewardCashout(rewardId, {
@@ -6802,6 +6806,13 @@ export class AdminService {
     }
     assertMonthlyTaxClosingStatusTransition(existing?.status ?? MonthlyTaxClosingStatus.DRAFT, status);
     const remittance = monthlyTaxClosingRemittanceMetadata(status, input, actorId);
+    if (remittance?.approvedByAdminId) {
+      await assertFinanceActionApprovalAdmin(
+        this.prisma,
+        remittance.approvedByAdminId,
+        'Partner withholding remittance paid closeout',
+      );
+    }
 
     const summary = await this.monthlyTaxClosingSummary({ period });
     const now = new Date();
@@ -7591,6 +7602,9 @@ export class AdminService {
     const approvalId = normalizeManualWalletApprovalId(input.approvalId, requireApproval);
     const approvalAdminId = normalizeManualWalletApprovalAdminId(input.approvalAdminId, actorId, requireApproval);
     const attachmentUrl = normalizeManualWalletAttachmentUrl(input.attachmentUrl);
+    if (approvalAdminId) {
+      await assertFinanceActionApprovalAdmin(db, approvalAdminId, 'Manual wallet adjustment');
+    }
     const [currentBalance, monthlyPeriodStatus] = await Promise.all([
       this.manualWalletCurrentBalance(db, ownerType, ownerId, currency),
       this.manualWalletMonthlyPeriodStatus(db, monthlyPeriod, currency),
@@ -7695,6 +7709,9 @@ export class AdminService {
             'Provider wallet withdrawal paid closeout',
           )
         : normalizeNullable(rawApprovalAdminId);
+    if (input.status === 'PAID' && approvalAdminId) {
+      await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Provider wallet withdrawal paid closeout');
+    }
     const request = await this.earnings.updateProviderWalletWithdrawalRequestForAdmin(
       requestId,
       earningsInput,
@@ -7765,6 +7782,9 @@ export class AdminService {
       input.status === PayoutBatchStatus.PAID
         ? normalizeFinanceActionApprovalAdminId(rawApprovalAdminId, actorId, 'Payout batch paid closeout')
         : normalizeNullable(rawApprovalAdminId);
+    if (input.status === PayoutBatchStatus.PAID && approvalAdminId) {
+      await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Payout batch paid closeout');
+    }
     const batch = await this.earnings.updatePayoutBatch(payoutBatchId, earningsInput);
     await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${batch.id}`, {
       ...(approvalAdminId ? { approvalAdminId } : {}),
@@ -10422,6 +10442,25 @@ function normalizeFinanceActionApprovalAdminId(
   return normalized;
 }
 
+async function assertFinanceActionApprovalAdmin(
+  db: FinanceApprovalLookupDb,
+  approvalAdminId: string,
+  actionLabel: string,
+) {
+  const userDelegate = db.user;
+  if (!userDelegate?.findFirst) {
+    return;
+  }
+
+  const approver = await userDelegate.findFirst({
+    where: { id: approvalAdminId, roles: { has: Role.ADMIN } },
+    select: { id: true },
+  });
+  if (!approver) {
+    throw new BadRequestException(`${actionLabel} requires approval from an admin approver`);
+  }
+}
+
 function normalizeManualWalletAttachmentUrl(value?: string | null) {
   const normalized = normalizeNullable(value);
   if (!normalized) {
@@ -12758,6 +12797,7 @@ function monthlyTaxClosingRemittanceMetadata(
 
   const paidAtDate = monthlyTaxClosingPaidAtDate(input.paidAt);
   return {
+    approvedByAdminId,
     paidAtDate,
     metadata: {
       transferRef,
