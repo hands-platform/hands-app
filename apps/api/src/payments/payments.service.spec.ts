@@ -277,7 +277,10 @@ describe('PaymentsService refunds', () => {
       occurredAt: expect.any(Date),
       reason: 'Admin manual refund',
     }, expect.objectContaining({ payment: expect.any(Object) }));
-    expect(earnings.cancelForRefund).toHaveBeenCalledWith('booking-1');
+    expect(earnings.cancelForRefund).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ payment: expect.any(Object) }),
+    );
     expect(admin.writeAudit).toHaveBeenCalledWith(
       'admin-1',
       'payment.refund',

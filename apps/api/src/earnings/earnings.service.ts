@@ -1537,8 +1537,9 @@ export class EarningsService {
     });
   }
 
-  async cancelForRefund(bookingId: string) {
-    const earning = await this.prisma.providerEarning.findUnique({ where: { bookingId } });
+  async cancelForRefund(bookingId: string, transactionClient?: TxClient) {
+    const client = transactionClient ?? this.prisma;
+    const earning = await client.providerEarning.findUnique({ where: { bookingId } });
     if (!earning) {
       return { skipped: true, reason: 'NO_EARNING' };
     }
@@ -1548,7 +1549,7 @@ export class EarningsService {
         return { skipped: true, reason: 'ALREADY_PAID', earningId: earning.id };
       }
 
-      await this.prisma.$transaction(async (tx) => {
+      const createReceivableLedger = async (tx: TxClient | PrismaService) => {
         await tx.providerWalletLedgerEntry.upsert({
           where: { sourceKey: `earning:${earning.id}:paid-refund-receivable` },
           update: {
@@ -1579,7 +1580,12 @@ export class EarningsService {
             },
           },
         });
-      });
+      };
+      if (transactionClient) {
+        await createReceivableLedger(transactionClient);
+      } else {
+        await this.prisma.$transaction(async (tx) => createReceivableLedger(tx));
+      }
 
       return {
         skipped: false,
@@ -1589,7 +1595,7 @@ export class EarningsService {
       };
     }
 
-    const cancelled = await this.prisma.$transaction(async (tx) => {
+    const cancelUnpaidEarning = async (tx: TxClient | PrismaService) => {
       const updated = await tx.providerEarning.update({
         where: { bookingId },
         data: {
@@ -1618,7 +1624,10 @@ export class EarningsService {
         },
       });
       return updated;
-    });
+    };
+    const cancelled = transactionClient
+      ? await cancelUnpaidEarning(transactionClient)
+      : await this.prisma.$transaction(async (tx) => cancelUnpaidEarning(tx));
 
     return { skipped: false, earning: cancelled };
   }

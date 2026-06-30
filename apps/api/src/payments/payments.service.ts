@@ -240,6 +240,10 @@ export class PaymentsService {
     const existing = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     const occurredAt = new Date();
     let settlementReversal: Prisma.InputJsonObject = { skipped: true, reason: 'NOT_ATTEMPTED' };
+    let earningCancellation: Awaited<ReturnType<EarningsService['cancelForRefund']>> = {
+      skipped: true,
+      reason: 'NOT_ATTEMPTED',
+    };
     const payment = await this.prisma.$transaction(async (tx) => {
       const refunded = await tx.payment.update({
         where: { id: paymentId },
@@ -257,9 +261,9 @@ export class PaymentsService {
           tx,
         ),
       );
+      earningCancellation = await this.earnings.cancelForRefund(existing.bookingId, tx);
       return refunded;
     });
-    const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
       ...paymentRefundAuditMetadata(payment, paymentRefundEarningCancellationAudit(earningCancellation)),
