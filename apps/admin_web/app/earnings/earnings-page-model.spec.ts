@@ -24,9 +24,9 @@ describe('earnings page model', () => {
     expect(defaultFilters.range).toBe('today');
     expect(buildEarningFilters({ range: 'all' }).range).toBe('all');
     expect(buildEarningOperationsApiHrefs(rangeFilters)).toEqual({
-      earningsHref: '/admin/earnings?range=7d&take=25&skip=50',
+      earningsHref: '/admin/earnings?range=7d&take=25&review=ready&skip=50',
       earningsSummaryHref: '/admin/earnings/summary?range=7d',
-      payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
+      payoutBatchesHref: '/admin/payout-batches?range=7d&take=10&review=needs-review',
     });
     expect(buildEarningServerPagination(['row-a'], rangeFilters, 52)).toEqual({
       from: 51,
@@ -38,6 +38,21 @@ describe('earnings page model', () => {
       totalPages: 3,
       totalRows: 52,
     });
+  });
+
+  it('passes supported batch state filters to the earnings API instead of filtering only locally', () => {
+    expect(
+      buildEarningOperationsApiHrefs(buildEarningFilters({ batchState: 'cash-debt' })).earningsHref,
+    ).toBe('/admin/earnings?range=today&take=10&review=cash-debt');
+    expect(
+      buildEarningOperationsApiHrefs(buildEarningFilters({ batchState: 'batched' })).earningsHref,
+    ).toBe('/admin/earnings?range=today&take=10&review=batched');
+    expect(
+      buildEarningOperationsApiHrefs(buildEarningFilters({ batchState: 'paid' })).earningsHref,
+    ).toBe('/admin/earnings?range=today&take=10&review=paid');
+    expect(
+      buildEarningOperationsApiHrefs(buildEarningFilters({ batchState: 'closeout-review' })).earningsHref,
+    ).toBe('/admin/earnings?range=today&take=10');
   });
 
   it('summarizes, prioritizes, and filters earning rows without changing statuses', () => {

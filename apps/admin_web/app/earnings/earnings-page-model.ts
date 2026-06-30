@@ -230,6 +230,10 @@ export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildE
     range: filters.range,
     take: String(filters.pageSize),
   });
+  const earningReview = earningBatchStateApiReview(filters.batchState);
+  if (earningReview) {
+    earningParams.set('review', earningReview);
+  }
   const skip = (filters.page - 1) * filters.pageSize;
   if (skip > 0) {
     earningParams.set('skip', String(skip));
@@ -238,12 +242,20 @@ export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildE
     range: filters.range,
     take: String(EARNING_OPERATIONS_API_LIMIT),
   });
+  payoutBatchParams.set('review', 'needs-review');
 
   return {
     earningsHref: `/admin/earnings?${earningParams.toString()}`,
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
     payoutBatchesHref: `/admin/payout-batches?${payoutBatchParams.toString()}`,
   };
+}
+
+function earningBatchStateApiReview(state: EarningBatchState) {
+  if (state === 'ready' || state === 'cash-debt' || state === 'batched' || state === 'paid') {
+    return state;
+  }
+  return null;
 }
 
 export function buildEarningServerPagination<T>(
