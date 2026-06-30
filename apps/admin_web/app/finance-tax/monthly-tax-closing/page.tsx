@@ -11,7 +11,8 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -97,12 +98,13 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
       metrics={buildMonthlyTaxClosingMetrics(summary)}
       title="Monthly Tax Closing"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Period ${summary.period}. The preview is calculated from immutable settlement snapshots; stored closing rows only add status and closeout timestamps.`}
-          status={<span className={`pill ${closingStatusPill(summary.status)}`}>{summary.status}</span>}
-          title="Monthly closing period"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Period ${summary.period}. The preview is calculated from immutable settlement snapshots; stored closing rows only add status and closeout timestamps.`}
+        resultLabel={summary.status}
+        resultTone={closingStatusTone(summary.status)}
+        title="Monthly closing period"
+      >
         <form className="form-grid compact-form admin-mt-12" method="get">
           <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
           <AdminFormSelect
@@ -115,14 +117,15 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             Apply period
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Save the reviewed monthly totals into the closing row before declaration, payment, or final closeout. Closed periods require reversal entries, not direct edits."
-          status={<span className={`pill ${closingStatusPill(summary.status)}`}>{summary.status}</span>}
-          title="Monthly closing action"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Save the reviewed monthly totals into the closing row before declaration, payment, or final closeout. Closed periods require reversal entries, not direct edits."
+        resultLabel={summary.status}
+        resultTone={closingStatusTone(summary.status)}
+        title="Monthly closing action"
+      >
         {nextStatusOptions.length ? (
           <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
             <input name="period" type="hidden" value={filters.period} />
@@ -179,14 +182,15 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             No direct status action is available. Closed or reversed periods require reversal entries, not direct edits.
           </p>
         )}
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Resolve these queues before declaration, payment, or final closeout. This section uses the monthly summary only."
-          status={<span className="pill pill-warn">Closeout gates</span>}
-          title="Closeout risk queue"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Resolve these queues before declaration, payment, or final closeout. This section uses the monthly summary only."
+        resultLabel="Closeout gates"
+        resultTone="warning"
+        title="Closeout risk queue"
+      >
         <div className="setup-stage-list admin-mt-12">
           {buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters).map((link) => (
             <Link className="setup-stage-item" href={link.href} key={link.key}>
@@ -201,13 +205,13 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Both formulas should show 0 VND delta before an operator declares or closes the period."
-          title="Monthly reconciliation"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Both formulas should show 0 VND delta before an operator declares or closes the period."
+        title="Monthly reconciliation"
+      >
         <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
             <span>1</span>
@@ -252,15 +256,18 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             <small>{formatMoney(summary.partnerWithholdingTotal, summary.currency)}</small>
           </div>
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement snapshots."
-          title="Stored monthly closing rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement snapshots."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Stored monthly closing rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No stored monthly tax closing row exists for this period yet."
             headers={['Period', 'Status', 'Settlements', 'Platform VAT', 'Partner tax', 'Payment fees', 'Closeout']}
             rowCount={tableRows.length}
@@ -308,7 +315,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }
@@ -324,6 +331,19 @@ function closingStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function closingStatusTone(status: string) {
+  if (status === 'PAID' || status === 'CLOSED') {
+    return 'success';
+  }
+  if (status === 'DECLARED' || status === 'REVIEWED') {
+    return 'info';
+  }
+  if (status === 'REVERSED') {
+    return 'danger';
+  }
+  return 'warning';
 }
 
 function datetimeLocalValue(value?: string | null) {

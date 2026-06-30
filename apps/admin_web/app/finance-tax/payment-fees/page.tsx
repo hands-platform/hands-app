@@ -1,8 +1,9 @@
 import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -51,19 +52,20 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
       metrics={buildPaymentFeeMetrics(summary)}
       title="Payment Fees"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Period ${summary.period}. Fee totals are grouped from immutable settlement snapshots; no booking list is loaded here.`}
-          status={<span className="pill pill-info">{summary.currency}</span>}
-          title="Payment fee period"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Period ${summary.period}. Fee totals are grouped from immutable settlement snapshots; no booking list is loaded here.`}
+        resultLabel={summary.currency}
+        resultTone="info"
+        title="Payment fee period"
+      >
         <form className="form-grid compact-form admin-mt-12" method="get">
           <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
           <AdminFormControlButton className="btn btn-primary" type="submit">
             Apply period
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
 
       <PaymentFeeBreakdownTable
         emptyMessage="No payment method fee rows exist for this period."
@@ -104,13 +106,16 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
   readonly title: string;
 }) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <AdminSectionHeader
-        description="Amounts are aggregate totals only; open booking detail when settlement evidence is needed."
-        title={title}
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Amounts are aggregate totals only; open booking detail when settlement evidence is needed."
+      resultLabel={`${rows.length} row(s)`}
+      resultTone="info"
+      title={title}
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className="vuexy-booking-table"
           emptyMessage={emptyMessage}
           headers={[label, 'Settlements', 'Customer paid', 'Payment fees']}
           rowCount={rows.length}
@@ -129,6 +134,6 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+    </AdminFilterPanel>
   );
 }

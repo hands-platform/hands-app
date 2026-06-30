@@ -1,8 +1,9 @@
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -51,27 +52,31 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
       metrics={buildPlatformVatMetrics(summary)}
       title="Platform VAT"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Period ${summary.period}. Showing VAT rate buckets from immutable booking settlement snapshots.`}
-          status={<span className="pill pill-info">{summary.currency}</span>}
-          title="Platform VAT period"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Period ${summary.period}. Showing VAT rate buckets from immutable booking settlement snapshots.`}
+        resultLabel={summary.currency}
+        resultTone="info"
+        title="Platform VAT period"
+      >
         <form className="form-grid compact-form admin-mt-12" method="get">
           <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
           <AdminFormControlButton className="btn btn-primary" type="submit">
             Apply period
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Use this breakdown for company VAT review. The net revenue formula delta should be 0 VND before monthly closeout."
-          title="VAT rate breakdown"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Use this breakdown for company VAT review. The net revenue formula delta should be 0 VND before monthly closeout."
+        resultLabel={`${summary.rateBreakdown.length} row(s)`}
+        resultTone="info"
+        title="VAT rate breakdown"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No platform VAT rows exist for this period."
             headers={['VAT bucket', 'Rate', 'Settlements', 'Platform fee gross', 'Company VAT', 'Net revenue']}
             rowCount={summary.rateBreakdown.length}
@@ -92,7 +97,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

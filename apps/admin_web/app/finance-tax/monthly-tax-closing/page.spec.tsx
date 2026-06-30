@@ -28,9 +28,15 @@ describe('MonthlyTaxClosingPage', () => {
 
     expect(markup).toContain('Monthly closing period');
     expect(markup).toContain('Monthly closing action');
+    expect(markup).toContain('Closeout risk queue');
+    expect(markup).toContain('Monthly reconciliation');
+    expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(4);
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
   });
 });

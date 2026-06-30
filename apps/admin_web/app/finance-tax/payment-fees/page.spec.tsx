@@ -27,8 +27,13 @@ describe('PaymentFeesPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Payment fee period');
+    expect(markup).toContain('Fees by payment method');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
   });
 });
