@@ -775,6 +775,13 @@ export class ReferralRewardCashoutPaidDto extends ReferralRewardDecisionDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MaxLength(128)
+  approvalAdminId!: string;
+
+  @IsDefined()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(120)
   transferRef!: string;
 }
@@ -940,6 +947,12 @@ export class CreateManualWalletAdjustmentDto extends ManualWalletAdjustmentPaylo
 
 export class UpdateProviderWalletWithdrawalRequestDto {
   @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  approvalAdminId?: string | null;
+
+  @IsOptional()
   @IsEnum(ProviderWalletWithdrawalRequestStatus)
   status?: ProviderWalletWithdrawalRequestStatus;
 
@@ -1051,6 +1064,12 @@ export class CreatePayoutBatchDto {
 }
 
 export class UpdatePayoutBatchDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  approvalAdminId?: string | null;
+
   @IsOptional()
   @IsEnum(PayoutBatchStatus)
   status?: PayoutBatchStatus;

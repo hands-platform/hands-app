@@ -20,6 +20,7 @@ export function BookingPaymentAction({
   readout,
   evidenceHint,
   ruleHint,
+  requiresApproval = false,
 }: {
   action: (...args: [FormData]) => Promise<void>;
   bookingId: string;
@@ -29,6 +30,7 @@ export function BookingPaymentAction({
   readout?: BookingPaymentActionReadout;
   evidenceHint?: string;
   ruleHint?: string;
+  requiresApproval?: boolean;
 }) {
   return (
     <form action={action} className={`action-button-card ${readout?.className ?? ''}`}>
@@ -43,6 +45,14 @@ export function BookingPaymentAction({
           {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}
         </p>
       </div>
+      {requiresApproval ? (
+        <AdminFormInput
+          label="Approving admin id"
+          name="approvalAdminId"
+          placeholder="Different admin user id"
+          required
+        />
+      ) : null}
       <AdminFormControlButton disabled={disabled} type="submit">
         {label}
       </AdminFormControlButton>

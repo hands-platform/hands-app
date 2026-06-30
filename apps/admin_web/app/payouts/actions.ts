@@ -47,9 +47,14 @@ export async function updateProviderWalletWithdrawalRequest(formData: FormData) 
   const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
   const adminNote = String(formData.get('adminNote') ?? '').trim();
   const correctionReason = String(formData.get('correctionReason') ?? '').trim();
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
+  if (status === 'PAID' && !approvalAdminId) {
+    throw new Error('Provider wallet withdrawal paid closeout requires approval from a different admin');
+  }
 
   await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
     status,
+    approvalAdminId: approvalAdminId || undefined,
     transferRef: transferRef || undefined,
     bankTransferDate: bankTransferDate || undefined,
     attachmentFileId: attachmentFileId || undefined,
@@ -71,11 +76,16 @@ async function updatePayoutStatus(formData: FormData, status: 'PROCESSING' | 'PA
   if (!payoutBatchId) {
     return;
   }
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
+  if (status === 'PAID' && !approvalAdminId) {
+    throw new Error('Payout batch paid closeout requires approval from a different admin');
+  }
 
   await adminPatch(
     `/admin/payout-batches/${payoutBatchId}`,
     {
       status,
+      approvalAdminId: approvalAdminId || undefined,
       transferRef: String(formData.get('transferRef') ?? '') || undefined,
     },
     null,

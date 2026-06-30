@@ -193,6 +193,7 @@ describe('referral server actions', () => {
     formData.set('rewardId', 'reward-1');
     formData.set('audience', 'customer');
     formData.set('parentId', 'parent-customer');
+    formData.set('approvalAdminId', 'finance-admin-2');
     formData.set('reason', 'manual bank transfer complete');
     formData.set('transferRef', 'VCB-REF-001');
 
@@ -201,6 +202,7 @@ describe('referral server actions', () => {
     expect(mockedAdminPost).toHaveBeenCalledWith(
       '/admin/referrals/rewards/reward-1/cashout-paid',
       {
+        approvalAdminId: 'finance-admin-2',
         reason: 'manual bank transfer complete',
         transferRef: 'VCB-REF-001',
       },

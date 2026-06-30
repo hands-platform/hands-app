@@ -135,6 +135,18 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
               disabled={confirmation.disabled}
               hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
               id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
+              textInputs={
+                confirmation.action === 'refund'
+                  ? [
+                      {
+                        label: 'Approving admin id',
+                        name: 'approvalAdminId',
+                        placeholder: 'Different admin user id',
+                        required: true,
+                      },
+                    ]
+                  : []
+              }
               title={confirmation.title}
               tone={confirmation.tone}
             />

@@ -550,16 +550,28 @@ function ReferralRewardActions({
             />
           </div>
           {canMarkCashoutPaid ? (
-            <div className="referral-reward-action-reason">
-              <span>Transfer reference</span>
-              <AdminFormInput
-                className="referral-reward-action-reason-input"
-                label="Transfer reference"
-                name="transferRef"
-                placeholder="Bank transfer reference"
-                required
-              />
-            </div>
+            <>
+              <div className="referral-reward-action-reason">
+                <span>Approving admin</span>
+                <AdminFormInput
+                  className="referral-reward-action-reason-input"
+                  label="Approving admin id"
+                  name="approvalAdminId"
+                  placeholder="Different admin user id"
+                  required
+                />
+              </div>
+              <div className="referral-reward-action-reason">
+                <span>Transfer reference</span>
+                <AdminFormInput
+                  className="referral-reward-action-reason-input"
+                  label="Transfer reference"
+                  name="transferRef"
+                  placeholder="Bank transfer reference"
+                  required
+                />
+              </div>
+            </>
           ) : null}
           <div className="referral-reward-action-button-list">
             {actions.map((item) => (

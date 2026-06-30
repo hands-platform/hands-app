@@ -270,6 +270,7 @@ export function BookingOpsCommandCenter({
               readout={actionGateByAction.get('Release or refund')}
               evidenceHint={`Refund action state: ${booking.payment.status}.`}
               ruleHint="Refund follows the action evidence gate above."
+              requiresApproval
             />
             {cashDebtNeedsSettlement && booking.earning?.id && (
               <BookingCashDebtSettlementForm booking={booking} />

@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { RefundPaymentDto } from './payments.dto';
 import { PaymentsService } from './payments.service';
 
 @Controller()
@@ -14,8 +15,12 @@ export class PaymentsController {
   @Post('admin/payments/:id/refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  refund(@CurrentUser() user: AuthenticatedUser, @Param('id') paymentId: string) {
-    return this.payments.refund(user.id, paymentId);
+  refund(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') paymentId: string,
+    @Body() body: RefundPaymentDto,
+  ) {
+    return this.payments.refund(user.id, paymentId, body);
   }
 
   @Post('admin/payments/:id/sync')

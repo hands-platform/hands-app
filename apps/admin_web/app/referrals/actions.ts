@@ -67,6 +67,10 @@ export async function requireReferralRewardTaxReview(formData: FormData) {
 
 export async function markReferralRewardCashoutPaid(formData: FormData) {
   const input = referralRewardDecisionInput(formData);
+  const approvalAdminId = String(formData.get('approvalAdminId') || '').trim();
+  if (!approvalAdminId) {
+    throw new Error('Referral reward cashout paid closeout requires approval from a different admin');
+  }
   const transferRef = String(formData.get('transferRef') || '').trim();
   if (!transferRef) {
     throw new Error('Referral cashout paid closeout requires a transfer reference');
@@ -74,7 +78,7 @@ export async function markReferralRewardCashoutPaid(formData: FormData) {
 
   await adminPost(
     `/admin/referrals/rewards/${encodeURIComponent(input.rewardId)}/cashout-paid`,
-    { reason: input.reason, transferRef },
+    { approvalAdminId, reason: input.reason, transferRef },
     null,
   );
   revalidateReferralRewardDecisionPaths(input);

@@ -5,7 +5,12 @@ import { adminPost } from '../../lib/admin-api';
 
 export async function refundPayment(formData: FormData) {
   const paymentId = String(formData.get('paymentId'));
-  await adminPost(`/admin/payments/${paymentId}/refund`, {}, null);
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
+  if (!approvalAdminId) {
+    throw new Error('Payment refund requires approval from a different admin');
+  }
+
+  await adminPost(`/admin/payments/${paymentId}/refund`, { approvalAdminId }, null);
   revalidatePaymentOperationPaths();
 }
 

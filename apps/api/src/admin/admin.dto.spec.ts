@@ -138,6 +138,7 @@ describe('admin request DTO validation', () => {
 
     const transformed = await pipe.transform(
       {
+        approvalAdminId: ' finance-admin-2 ',
         reason: '  bank transfer completed  ',
         transferRef: ' VCB-REF-001 ',
         walletCreditCreated: true,
@@ -145,6 +146,7 @@ describe('admin request DTO validation', () => {
       { type: 'body', metatype: bodyMetatype('markReferralRewardCashoutPaid', 2) as never, data: '' },
     );
 
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
     expect(transformed).toHaveProperty('reason', 'bank transfer completed');
     expect(transformed).toHaveProperty('transferRef', 'VCB-REF-001');
     expect(transformed).not.toHaveProperty('walletCreditCreated');
@@ -250,6 +252,7 @@ describe('admin request DTO validation', () => {
 
     const transformed = await pipe.transform(
       {
+        approvalAdminId: ' finance-admin-2 ',
         status: PayoutBatchStatus.PAID,
         transferRef: '  bank-001  ',
         notes: null,
@@ -258,6 +261,7 @@ describe('admin request DTO validation', () => {
       { type: 'body', metatype: bodyMetatype('updatePayoutBatch', 2) as never, data: '' },
     );
 
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
     expect(transformed).toHaveProperty('status', PayoutBatchStatus.PAID);
     expect(transformed).toHaveProperty('transferRef', 'bank-001');
     expect(transformed).toHaveProperty('notes', null);

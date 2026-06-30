@@ -130,7 +130,16 @@ async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' |
     return;
   }
 
-  await adminPost(`/admin/payments/${paymentId}/${action}`, {}, null);
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
+  if (action === 'refund' && !approvalAdminId) {
+    throw new Error('Payment refund requires approval from a different admin');
+  }
+
+  await adminPost(
+    `/admin/payments/${paymentId}/${action}`,
+    action === 'refund' ? { approvalAdminId } : {},
+    null,
+  );
   revalidateBookingAction(bookingId, BOOKING_PAYMENT_IMPACT_PATHS);
 }
 

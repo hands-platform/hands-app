@@ -11,6 +11,7 @@ import {
   EarningStatus,
   MonthlyTaxClosingStatus,
   ParticipantStatus,
+  PayoutBatchStatus,
   PaymentStatus,
   PaymentFeePayer,
   PaymentFeeTreatment,
@@ -2169,6 +2170,7 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        approvalAdminId: 'finance-admin-2',
         reason: ' customer cashout transfer completed ',
         transferRef: ' VCB-REF-001 ',
       }),
@@ -2189,6 +2191,7 @@ describe('AdminService query orchestration', () => {
         target: 'referral_reward:reward-1',
         metadata: {
           amount: 25000,
+          approvalAdminId: 'finance-admin-2',
           cashoutPaid: true,
           currency: 'VND',
           reason: 'customer cashout transfer completed',
@@ -2199,6 +2202,30 @@ describe('AdminService query orchestration', () => {
         },
       },
     });
+  });
+
+  it('rejects referral reward cashout paid closeout without separate approval', async () => {
+    const referrals = {
+      payRewardCashout: vi.fn(),
+    };
+    const service = createAdminService({}, { referrals });
+
+    await expect(
+      service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        reason: 'missing approval',
+        transferRef: 'VCB-REF-001',
+      }),
+    ).rejects.toThrow('Referral reward cashout paid closeout requires approval from a different admin');
+
+    await expect(
+      service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        approvalAdminId: 'admin-1',
+        reason: 'same admin',
+        transferRef: 'VCB-REF-001',
+      } as never),
+    ).rejects.toThrow('Referral reward cashout paid closeout requires approval from a different admin');
+
+    expect(referrals.payRewardCashout).not.toHaveBeenCalled();
   });
 
   it('creates referral reward candidates after completed booking closeout', async () => {
@@ -6371,6 +6398,7 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
+        approvalAdminId: 'finance-admin-2',
         status: 'PAID',
         transferRef: 'BANK-OUT-001',
         bankTransferDate: '2026-06-29T09:30:00.000Z',
@@ -6402,6 +6430,7 @@ describe('AdminService query orchestration', () => {
         action: 'provider_wallet.withdrawal_request.update',
         target: 'provider_wallet_withdrawal_request:withdrawal-request-1',
         metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
           status: 'PAID',
           previousStatus: 'BANK_TRANSFER_PENDING',
           withdrawalStatusChange: expect.objectContaining({
@@ -6409,6 +6438,96 @@ describe('AdminService query orchestration', () => {
             nextStatus: 'PAID',
           }),
         }),
+      }),
+    });
+  });
+
+  it('rejects paid provider wallet withdrawal request closeout without separate approval', async () => {
+    const earnings = {
+      updateProviderWalletWithdrawalRequestForAdmin: vi.fn(),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+      }),
+    ).rejects.toThrow('Provider wallet withdrawal paid closeout requires approval from a different admin');
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
+        approvalAdminId: 'admin-user-1',
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+      } as never),
+    ).rejects.toThrow('Provider wallet withdrawal paid closeout requires approval from a different admin');
+
+    expect(earnings.updateProviderWalletWithdrawalRequestForAdmin).not.toHaveBeenCalled();
+  });
+
+  it('requires separate approval before marking payout batches as paid', async () => {
+    const earnings = {
+      updatePayoutBatch: vi.fn(),
+    };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.updatePayoutBatch('admin-user-1', 'payout-batch-1', {
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'BANK-PAYOUT-001',
+      }),
+    ).rejects.toThrow('Payout batch paid closeout requires approval from a different admin');
+
+    await expect(
+      service.updatePayoutBatch('admin-user-1', 'payout-batch-1', {
+        approvalAdminId: 'admin-user-1',
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'BANK-PAYOUT-001',
+      } as never),
+    ).rejects.toThrow('Payout batch paid closeout requires approval from a different admin');
+
+    expect(earnings.updatePayoutBatch).not.toHaveBeenCalled();
+  });
+
+  it('audits the separate approver when marking payout batches as paid', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const earnings = {
+      updatePayoutBatch: vi.fn().mockResolvedValue({
+        id: 'payout-batch-1',
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'BANK-PAYOUT-001',
+        earnings: [{ id: 'earning-1' }, { id: 'earning-2' }],
+      }),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.updatePayoutBatch('admin-user-1', 'payout-batch-1', {
+        approvalAdminId: 'finance-admin-2',
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'BANK-PAYOUT-001',
+      } as never),
+    ).resolves.toEqual(expect.objectContaining({ id: 'payout-batch-1', status: PayoutBatchStatus.PAID }));
+
+    expect(earnings.updatePayoutBatch).toHaveBeenCalledWith('payout-batch-1', {
+      status: PayoutBatchStatus.PAID,
+      transferRef: 'BANK-PAYOUT-001',
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'payout_batch.update',
+        actorId: 'admin-user-1',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          earningCount: 2,
+          status: PayoutBatchStatus.PAID,
+        }),
+        target: 'payout_batch:payout-batch-1',
       }),
     });
   });

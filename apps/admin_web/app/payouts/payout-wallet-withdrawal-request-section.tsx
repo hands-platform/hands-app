@@ -284,6 +284,14 @@ function WithdrawalRequestActions({
             required
             type="url"
           />
+          <input
+            aria-label={`Approving admin id for ${partnerLabel(request)}`}
+            className="form-control"
+            name="approvalAdminId"
+            placeholder="Approving admin id"
+            required
+            type="text"
+          />
           <button className="btn btn-sm btn-success" type="submit">
             Mark paid
           </button>

@@ -149,6 +149,18 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             { name: 'transferRef', value: confirmation.transferRef },
           ]}
           id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
+          textInputs={
+            confirmation.action === 'paid'
+              ? [
+                  {
+                    label: 'Approving admin id',
+                    name: 'approvalAdminId',
+                    placeholder: 'Different admin user id',
+                    required: true,
+                  },
+                ]
+              : []
+          }
           title={confirmation.title}
           tone={confirmation.tone}
         />

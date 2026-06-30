@@ -44,7 +44,9 @@ describe('PaymentsController', () => {
   it('keeps admin payment commands role protected', async () => {
     payments.refund.mockResolvedValue({ id: 'payment-1' });
 
-    await expect(controller.refund(admin, 'payment-1')).resolves.toEqual({ id: 'payment-1' });
+    await expect(controller.refund(admin, 'payment-1', { approvalAdminId: 'finance-admin-2' })).resolves.toEqual({
+      id: 'payment-1',
+    });
 
     expect(routeMetadata('refund')).toEqual({
       method: RequestMethod.POST,
@@ -52,7 +54,9 @@ describe('PaymentsController', () => {
     });
     expect(guardNames('refund')).toEqual([JwtAuthGuard.name, RolesGuard.name]);
     expect(rolesMetadata('refund')).toEqual([Role.ADMIN]);
-    expect(payments.refund).toHaveBeenCalledWith('admin-1', 'payment-1');
+    expect(payments.refund).toHaveBeenCalledWith('admin-1', 'payment-1', {
+      approvalAdminId: 'finance-admin-2',
+    });
   });
 });
 

@@ -2168,8 +2168,13 @@ export class AdminService {
   async markReferralRewardCashoutPaid(
     actorId: string,
     rewardId: string,
-    input: { reason?: string; transferRef: string },
+    input: { approvalAdminId?: string | null; reason?: string; transferRef: string },
   ) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Referral reward cashout paid closeout',
+    );
     const reason = normalizeAuditReason(input.reason);
     const transferRef = normalizeAuditReason(input.transferRef);
     const reward = await this.referrals.payRewardCashout(rewardId, {
@@ -2179,6 +2184,7 @@ export class AdminService {
 
     await this.writeAudit(actorId, 'referral_reward.cashout_paid', `referral_reward:${rewardId}`, {
       amount: reward.amount,
+      approvalAdminId,
       cashoutPaid: true,
       currency: reward.currency,
       reason,
@@ -7667,6 +7673,7 @@ export class AdminService {
     actorId: string,
     requestId: string,
     input: {
+      approvalAdminId?: string | null;
       status?: string | null;
       transferRef?: string | null;
       bankTransferDate?: string | Date | null;
@@ -7676,9 +7683,18 @@ export class AdminService {
       correctionReason?: string | null;
     },
   ) {
+    const { approvalAdminId: rawApprovalAdminId, ...earningsInput } = input;
+    const approvalAdminId =
+      input.status === 'PAID'
+        ? normalizeFinanceActionApprovalAdminId(
+            rawApprovalAdminId,
+            actorId,
+            'Provider wallet withdrawal paid closeout',
+          )
+        : normalizeNullable(rawApprovalAdminId);
     const request = await this.earnings.updateProviderWalletWithdrawalRequestForAdmin(
       requestId,
-      input,
+      earningsInput,
       actorId,
     );
     const withdrawalStatusChange = providerWalletWithdrawalStatusChangeForAudit(
@@ -7694,6 +7710,7 @@ export class AdminService {
       `provider_wallet_withdrawal_request:${request.id}`,
       {
         providerProfileId: request.providerProfileId,
+        ...(approvalAdminId ? { approvalAdminId } : {}),
         amount: request.amount,
         currency: request.currency,
         status: request.status,
@@ -7733,10 +7750,21 @@ export class AdminService {
   async updatePayoutBatch(
     actorId: string,
     payoutBatchId: string,
-    input: { status?: PayoutBatchStatus; transferRef?: string | null; notes?: string | null },
+    input: {
+      approvalAdminId?: string | null;
+      status?: PayoutBatchStatus;
+      transferRef?: string | null;
+      notes?: string | null;
+    },
   ) {
-    const batch = await this.earnings.updatePayoutBatch(payoutBatchId, input);
+    const { approvalAdminId: rawApprovalAdminId, ...earningsInput } = input;
+    const approvalAdminId =
+      input.status === PayoutBatchStatus.PAID
+        ? normalizeFinanceActionApprovalAdminId(rawApprovalAdminId, actorId, 'Payout batch paid closeout')
+        : normalizeNullable(rawApprovalAdminId);
+    const batch = await this.earnings.updatePayoutBatch(payoutBatchId, earningsInput);
     await this.writeAudit(actorId, 'payout_batch.update', `payout_batch:${batch.id}`, {
+      ...(approvalAdminId ? { approvalAdminId } : {}),
       status: batch.status,
       transferRef: batch.transferRef,
       earningCount: batch.earnings.length,
@@ -10375,6 +10403,18 @@ function normalizeManualWalletApprovalAdminId(
   }
   if (normalized && normalized === actorId) {
     throw new BadRequestException('Manual wallet adjustment requires approval from a different admin');
+  }
+  return normalized;
+}
+
+function normalizeFinanceActionApprovalAdminId(
+  value: string | null | undefined,
+  actorId: string,
+  actionLabel: string,
+) {
+  const normalized = normalizeNullable(value);
+  if (!normalized || normalized === actorId) {
+    throw new BadRequestException(`${actionLabel} requires approval from a different admin`);
   }
   return normalized;
 }

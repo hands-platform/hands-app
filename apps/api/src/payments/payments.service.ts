@@ -235,7 +235,8 @@ export class PaymentsService {
     return payment;
   }
 
-  async refund(actorId: string, paymentId: string) {
+  async refund(actorId: string, paymentId: string, input: { approvalAdminId?: string | null } = {}) {
+    const approvalAdminId = normalizePaymentRefundApprovalAdminId(input.approvalAdminId, actorId);
     const existing = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     const occurredAt = new Date();
     let settlementReversal: Prisma.InputJsonObject = { skipped: true, reason: 'NOT_ATTEMPTED' };
@@ -262,6 +263,7 @@ export class PaymentsService {
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
       ...paymentRefundAuditMetadata(payment, paymentRefundEarningCancellationAudit(earningCancellation)),
+      approvalAdminId,
       settlementReversal,
     });
     await this.notifyPaymentUpdated(payment.id);
@@ -413,6 +415,14 @@ export class PaymentsService {
       // Callback verification decisions must not become unavailable because audit storage failed.
     }
   }
+}
+
+function normalizePaymentRefundApprovalAdminId(value: string | null | undefined, actorId: string) {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  if (!normalized || normalized === actorId) {
+    throw new BadRequestException('Payment refund requires approval from a different admin');
+  }
+  return normalized;
 }
 
 function paymentSettlementReversalAudit(result: unknown): Prisma.InputJsonObject {

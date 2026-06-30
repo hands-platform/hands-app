@@ -201,6 +201,36 @@ describe('PaymentsService callbacks', () => {
 });
 
 describe('PaymentsService refunds', () => {
+  it('rejects admin refunds without approval from a different admin', async () => {
+    const admin = { writeAudit: vi.fn() };
+    const earnings = {
+      cancelForRefund: vi.fn(),
+    };
+    const settlements = {
+      reverseBookingSettlementSnapshotForRefund: vi.fn(),
+    };
+    const existingPayment = payment({ status: PaymentStatus.CAPTURED });
+    const { prisma, service } = createService({
+      admin,
+      earnings,
+      existingPayment,
+      settlements,
+    });
+    prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
+
+    await expect(service.refund('admin-1', 'payment-1')).rejects.toThrow(
+      'Payment refund requires approval from a different admin',
+    );
+    await expect(service.refund('admin-1', 'payment-1', { approvalAdminId: 'admin-1' })).rejects.toThrow(
+      'Payment refund requires approval from a different admin',
+    );
+
+    expect(prisma.payment.update).not.toHaveBeenCalled();
+    expect(settlements.reverseBookingSettlementSnapshotForRefund).not.toHaveBeenCalled();
+    expect(earnings.cancelForRefund).not.toHaveBeenCalled();
+    expect(admin.writeAudit).not.toHaveBeenCalled();
+  });
+
   it('reverses booking settlement snapshot when an admin refund is posted', async () => {
     const admin = { writeAudit: vi.fn() };
     const earnings = {
@@ -227,7 +257,9 @@ describe('PaymentsService refunds', () => {
     });
     prisma.payment.findUniqueOrThrow.mockResolvedValue(existingPayment);
 
-    await expect(service.refund('admin-1', 'payment-1')).resolves.toEqual(refundedPayment);
+    await expect(
+      service.refund('admin-1', 'payment-1', { approvalAdminId: 'finance-admin-2' }),
+    ).resolves.toEqual(refundedPayment);
 
     expect(prisma.payment.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -251,6 +283,7 @@ describe('PaymentsService refunds', () => {
       'payment.refund',
       'payment:payment-1',
       expect.objectContaining({
+        approvalAdminId: 'finance-admin-2',
         earningCancellation: { skipped: false, earningId: 'earning-1' },
         settlementReversal: expect.objectContaining({ settlementStatus: 'REVERSED' }),
       }),

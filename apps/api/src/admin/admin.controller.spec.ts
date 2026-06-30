@@ -2015,6 +2015,7 @@ describe('AdminController notification and push actions', () => {
 
     await expect(
       controller.markReferralRewardCashoutPaid(user, 'reward-1', {
+        approvalAdminId: 'finance-admin-2',
         reason: 'paid manually',
         transferRef: 'VCB-REF-001',
       }),
@@ -2029,6 +2030,7 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/rewards/:id/cashout-paid',
     });
     expect(admin.markReferralRewardCashoutPaid).toHaveBeenCalledWith('admin-1', 'reward-1', {
+      approvalAdminId: 'finance-admin-2',
       reason: 'paid manually',
       transferRef: 'VCB-REF-001',
     });
