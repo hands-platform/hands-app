@@ -60,7 +60,15 @@ end $$;
 
 do $$
 begin
-  create type public.payment_method as enum ('MOMO', 'VNPAY', 'CASH');
+  create type public.payment_method as enum (
+    'MOMO',
+    'VNPAY',
+    'CASH',
+    'CARD',
+    'BANK_TRANSFER',
+    'CUSTOMER_WALLET',
+    'MANUAL'
+  );
 exception
   when duplicate_object then null;
 end $$;

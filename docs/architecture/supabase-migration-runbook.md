@@ -112,6 +112,11 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 
 ## SQL
 
+Prisma is the DB source of truth for the active NestJS API runtime. The
+Supabase SQL files are staging setup drafts for Supabase Auth/PostgREST/Storage
+readiness and must be kept in sync with Prisma enums and core tables before
+being applied to a Supabase project.
+
 Run [hands-core-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/hands-core-schema.sql) in the Supabase SQL editor after creating the project.
 
 For a staging project, generate a single ordered SQL bundle first:

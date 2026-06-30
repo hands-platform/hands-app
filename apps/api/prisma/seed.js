@@ -17,7 +17,20 @@ const {
 
 const prisma = new PrismaClient();
 
+function assertSeedAllowed() {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_PRISMA_SEED !== 'true'
+  ) {
+    throw new Error(
+      'Refusing to run Prisma seed in production without ALLOW_PRISMA_SEED=true.',
+    );
+  }
+}
+
 async function main() {
+  assertSeedAllowed();
+
   const appVersionPolicies = [
     { appType: 'CUSTOMER', platform: 'ANDROID' },
     { appType: 'CUSTOMER', platform: 'IOS' },
