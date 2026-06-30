@@ -6988,6 +6988,7 @@ export class AdminService {
 
     const summary = await this.monthlyTaxClosingSummary({ period });
     assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
+    await assertMonthlyTaxClosingPostedJournalsAreBalanced(this.prisma, period, status);
     const now = new Date();
     const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
     const remittanceData = remittance
@@ -13052,6 +13053,34 @@ function assertMonthlyTaxClosingReconciliationIsBalanced(
   if (summary.reconciliationDelta !== 0) {
     throw new BadRequestException(
       'Monthly close requires reconciliation delta to be zero before status can advance.',
+    );
+  }
+}
+
+async function assertMonthlyTaxClosingPostedJournalsAreBalanced(
+  prisma: Pick<PrismaService, 'accountingJournalBatch'> | Pick<Prisma.TransactionClient, 'accountingJournalBatch'>,
+  period: string,
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (nextStatus === MonthlyTaxClosingStatus.DRAFT) {
+    return;
+  }
+
+  const imbalancedJournal = await prisma.accountingJournalBatch.findFirst({
+    where: {
+      monthlyPeriod: period,
+      status: AccountingJournalBatchStatus.POSTED,
+      metadata: {
+        path: ['reconciliationDelta'],
+        not: 0,
+      },
+    },
+    select: { id: true, sourceKey: true },
+  });
+
+  if (imbalancedJournal) {
+    throw new BadRequestException(
+      'Monthly close requires posted journal reconciliation deltas to be cleared before status can advance.',
     );
   }
 }

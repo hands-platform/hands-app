@@ -8178,6 +8178,9 @@ describe('AdminService query orchestration', () => {
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue(existingClosing),
       },
+      accountingJournalBatch: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       bookingSettlementSnapshot: {
         aggregate: vi
           .fn()
@@ -8344,6 +8347,95 @@ describe('AdminService query orchestration', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('blocks monthly tax closeout status changes while posted journal reconciliation deltas remain open', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          companyCouponExpense: 0n,
+          couponDiscountAmount: 0n,
+          couponReviewFlagCount: 0n,
+          couponSettlementCount: 0n,
+          partnerCountWithRevenue: 1n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+        },
+      ]),
+      $transaction: vi.fn(),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.REVIEWED,
+          declaredAt: null,
+          paidAt: null,
+          closedAt: null,
+          notes: 'Ready',
+        }),
+      },
+      accountingJournalBatch: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'journal-imbalanced-1',
+          sourceKey: 'accounting-journal:booking-settlement:booking-1',
+        }),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({
+            _count: { _all: 2 },
+            _sum: {
+              customerPaymentAmount: 1200000,
+              partnerPayoutAmount: 860000,
+              platformFeeGross: 256000,
+              platformFeeNetRevenue: 237038,
+              companyOutputVat: 18962,
+              partnerVatAmount: 60000,
+              partnerPitAmount: 24000,
+              partnerWithholdingTotal: 84000,
+              paymentProcessingFee: 0,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              platformFeeGross: 128000,
+              partnerWithholdingTotal: 42000,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              partnerPayoutAmount: 430000,
+            },
+          }),
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
+        groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.DECLARED,
+        notes: 'Attempt close with journal delta',
+      }),
+    ).rejects.toThrow(
+      'Monthly close requires posted journal reconciliation deltas to be cleared before status can advance.',
+    );
+
+    expect(prisma.accountingJournalBatch.findFirst).toHaveBeenCalledWith({
+      where: {
+        monthlyPeriod: '2026-06',
+        status: AccountingJournalBatchStatus.POSTED,
+        metadata: {
+          path: ['reconciliationDelta'],
+          not: 0,
+        },
+      },
+      select: { id: true, sourceKey: true },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('requires separate approval and evidence before marking partner withholding remittance paid', async () => {
     const prisma = {
       monthlyTaxClosing: {
@@ -8460,6 +8552,9 @@ describe('AdminService query orchestration', () => {
       $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
       monthlyTaxClosing: {
         findUnique: vi.fn().mockResolvedValue(existingClosing),
+      },
+      accountingJournalBatch: {
+        findFirst: vi.fn().mockResolvedValue(null),
       },
       bookingSettlementSnapshot: {
         aggregate: vi
