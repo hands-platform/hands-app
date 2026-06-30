@@ -210,6 +210,7 @@ import type {
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
   ReverseBankReconciliationMatchDto,
+  UpdateFinanceApproverRoleDto,
   UpdateNotificationTemplateDto,
 } from './admin.dto';
 
@@ -1522,6 +1523,79 @@ export class AdminService {
       ...(skip > 0 ? { skip } : {}),
       take: adminUserListTake(options.take),
       select: adminUserListSelect,
+    });
+  }
+
+  async updateUserFinanceApproverRole(
+    actorId: string,
+    userId: string,
+    input: UpdateFinanceApproverRoleDto,
+  ) {
+    const targetUserId = userId.trim();
+    if (!targetUserId) {
+      throw new BadRequestException('Admin user id is required');
+    }
+    if (actorId === targetUserId) {
+      throw new BadRequestException('Finance approver role changes cannot target the acting admin');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const targetUser = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          phone: true,
+          fullName: true,
+          roles: true,
+        },
+      });
+      if (!targetUser) {
+        throw new NotFoundException('Admin user not found');
+      }
+      if (!targetUser.roles.includes(Role.ADMIN)) {
+        throw new BadRequestException('Finance approver role can only be assigned to admin users');
+      }
+
+      const previousRoles = [...targetUser.roles];
+      const enabled = input.enabled;
+      const currentlyEnabled = previousRoles.includes(Role.FINANCE_APPROVER);
+      if (!enabled && currentlyEnabled) {
+        const remainingApprovers = await tx.user.count({
+          where: {
+            id: { not: targetUserId },
+            roles: { has: Role.FINANCE_APPROVER },
+          },
+        });
+        if (remainingApprovers === 0) {
+          throw new BadRequestException('Cannot remove the last finance approver');
+        }
+      }
+
+      const nextRoles = enabled
+        ? Array.from(new Set([...previousRoles, Role.FINANCE_APPROVER]))
+        : previousRoles.filter((role) => role !== Role.FINANCE_APPROVER);
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { roles: { set: nextRoles } },
+        select: adminUserListSelect,
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: enabled
+            ? 'admin_user.finance_approver.grant'
+            : 'admin_user.finance_approver.revoke',
+          target: `user:${targetUserId}`,
+          metadata: {
+            enabled,
+            reason: normalizeAuditReason(input.reason),
+            previousRoles,
+            nextRoles,
+          },
+        },
+      });
+
+      return { user, auditLog };
     });
   }
 

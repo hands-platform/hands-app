@@ -83,6 +83,7 @@ export type TaxFinanceWorkflowPage =
   | 'booking-settlement-audit'
   | 'settlement-reversals'
   | 'general-ledger'
+  | 'finance-approvers'
   | 'payment-clearing'
   | 'bank-reconciliation'
   | 'coupon-finance'
@@ -616,6 +617,11 @@ export function buildTaxFinanceWorkflowLinks({
       key: 'general-ledger',
       label: 'General ledger',
       href: generalLedgerHref(ledgerFilters),
+    },
+    {
+      key: 'finance-approvers',
+      label: 'Finance approvers',
+      href: '/finance-tax/finance-approvers',
     },
     {
       key: 'payment-clearing',

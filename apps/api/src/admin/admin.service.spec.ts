@@ -107,6 +107,185 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('grants finance approver role only to admin users and audits the change', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'finance-admin-2',
+          phone: '+84900000002',
+          fullName: 'Finance Approver',
+          roles: [Role.ADMIN],
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'finance-admin-2',
+          phone: '+84900000002',
+          fullName: 'Finance Approver',
+          roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      (
+        service as unknown as {
+          updateUserFinanceApproverRole: (
+            actorId: string,
+            userId: string,
+            input: { enabled: boolean; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateUserFinanceApproverRole('admin-1', 'finance-admin-2', {
+        enabled: true,
+        reason: 'Treasury owner',
+      }),
+    ).resolves.toMatchObject({
+      user: {
+        id: 'finance-admin-2',
+        roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+      },
+    });
+
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'finance-admin-2' },
+      data: { roles: { set: [Role.ADMIN, Role.FINANCE_APPROVER] } },
+      select: expect.any(Object),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'admin_user.finance_approver.grant',
+        target: 'user:finance-admin-2',
+        metadata: {
+          enabled: true,
+          reason: 'Treasury owner',
+          previousRoles: [Role.ADMIN],
+          nextRoles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        },
+      },
+    });
+  });
+
+  it('rejects finance approver role changes against the acting admin', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn(),
+        update: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      (
+        service as unknown as {
+          updateUserFinanceApproverRole: (
+            actorId: string,
+            userId: string,
+            input: { enabled: boolean; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateUserFinanceApproverRole('admin-1', 'admin-1', {
+        enabled: true,
+        reason: 'Self grant',
+      }),
+    ).rejects.toThrow('Finance approver role changes cannot target the acting admin');
+
+    expect(tx.user.findUnique).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects assigning finance approver role to non-admin users', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'customer-user-1',
+          roles: [Role.CUSTOMER],
+        }),
+        update: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      (
+        service as unknown as {
+          updateUserFinanceApproverRole: (
+            actorId: string,
+            userId: string,
+            input: { enabled: boolean; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateUserFinanceApproverRole('admin-1', 'customer-user-1', {
+        enabled: true,
+      }),
+    ).rejects.toThrow('Finance approver role can only be assigned to admin users');
+
+    expect(tx.user.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects revoking the last finance approver role', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'finance-admin-2',
+          roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        }),
+        count: vi.fn().mockResolvedValue(0),
+        update: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      (
+        service as unknown as {
+          updateUserFinanceApproverRole: (
+            actorId: string,
+            userId: string,
+            input: { enabled: boolean; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateUserFinanceApproverRole('admin-1', 'finance-admin-2', {
+        enabled: false,
+        reason: 'Rotation',
+      }),
+    ).rejects.toThrow('Cannot remove the last finance approver');
+
+    expect(tx.user.count).toHaveBeenCalledWith({
+      where: {
+        id: { not: 'finance-admin-2' },
+        roles: { has: Role.FINANCE_APPROVER },
+      },
+    });
+    expect(tx.user.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
   it('filters operational policy settings by requested keys before returning definitions', async () => {
     const prisma = {
       operationalPolicySetting: {

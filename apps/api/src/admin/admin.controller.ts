@@ -35,6 +35,7 @@ import {
   ReverseBankReconciliationMatchDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
+  UpdateFinanceApproverRoleDto,
   UpdateMonthlyTaxClosingStatusDto,
   UpdateNotificationTemplateDto,
   UpdateOperationalPolicyDto,
@@ -57,6 +58,15 @@ export class AdminController {
   @Get('users')
   users(@Query('take') take?: string, @Query('skip') skip?: string) {
     return this.admin.listUsers({ skip, take });
+  }
+
+  @Patch('users/:id/finance-approver')
+  updateUserFinanceApproverRole(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') userId: string,
+    @Body() body: UpdateFinanceApproverRoleDto,
+  ) {
+    return this.admin.updateUserFinanceApproverRole(user.id, userId, body);
   }
 
   @Get('customers')

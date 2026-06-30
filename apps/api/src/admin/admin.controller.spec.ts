@@ -33,6 +33,7 @@ describe('AdminController notification and push actions', () => {
     listAuditLogs: vi.fn(),
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
+    updateUserFinanceApproverRole: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
     listProviderReports: vi.fn(),
@@ -2112,6 +2113,38 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listUsers).toHaveBeenCalledWith({
       skip: '100',
       take: '50',
+    });
+  });
+
+  it('exposes finance approver role changes as an audited PATCH action', async () => {
+    admin.updateUserFinanceApproverRole.mockResolvedValue({
+      user: { id: 'finance-admin-2', roles: ['ADMIN', 'FINANCE_APPROVER'] },
+    });
+
+    await expect(
+      (
+        controller as unknown as {
+          updateUserFinanceApproverRole: (
+            actor: AuthenticatedUser,
+            userId: string,
+            body: { enabled: boolean; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateUserFinanceApproverRole(user, 'finance-admin-2', {
+        enabled: true,
+        reason: 'Treasury owner',
+      }),
+    ).resolves.toEqual({
+      user: { id: 'finance-admin-2', roles: ['ADMIN', 'FINANCE_APPROVER'] },
+    });
+
+    expect(routeMetadata('updateUserFinanceApproverRole' as keyof AdminController)).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'users/:id/finance-approver',
+    });
+    expect(admin.updateUserFinanceApproverRole).toHaveBeenCalledWith('admin-1', 'finance-admin-2', {
+      enabled: true,
+      reason: 'Treasury owner',
     });
   });
 

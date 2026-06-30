@@ -1,0 +1,210 @@
+import type { AdminUser } from '../../../lib/admin-api';
+import { adminGet } from '../../../lib/admin-api';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { formatDateTime } from '../../../lib/admin-format';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
+import {
+  buildTaxFinanceWorkflowLinks,
+  readBookingSettlementFilters,
+  readFinanceAccountingFilters,
+  readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
+} from '../tax-settlement-page-model';
+import { updateFinanceApproverRole } from './actions';
+
+type FinanceApproversPageProps = {
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const FINANCE_APPROVER_ROLE = 'FINANCE_APPROVER';
+const ADMIN_ROLE = 'ADMIN';
+
+export default async function FinanceApproversPage({ searchParams }: FinanceApproversPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
+  const adminUsers = users.filter((user) => user.roles.includes(ADMIN_ROLE));
+  const approverCount = adminUsers.filter((user) => isFinanceApprover(user)).length;
+  const settlementFilters = readBookingSettlementFilters(params);
+  const accountingFilters = readFinanceAccountingFilters(params, 'all');
+  const monthlyFilters = readMonthlyTaxClosingFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
+  const roleNotice = readSearchParam(params.roleNotice);
+
+  return (
+    <AdminPageTemplate
+      actions={
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            accountingFilters,
+            current: 'finance-approvers',
+            monthlyFilters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        />
+      }
+      description="Grant or revoke the second finance approval role used by settlement, payout, withdrawal, bank, and wallet money actions."
+      metrics={[
+        {
+          helper: 'Admin users returned by the bounded admin user API.',
+          label: 'Admin users',
+          value: adminUsers.length,
+        },
+        {
+          helper: 'Users allowed to approve finance money actions after maker submission.',
+          label: 'Finance approvers',
+          value: approverCount,
+        },
+        {
+          helper: 'System keeps at least one finance approver and blocks self role changes.',
+          label: 'Guard status',
+          value: 'Protected',
+        },
+      ]}
+      title="Finance Approvers"
+    >
+      {roleNotice ? (
+        <section className={`card admin-mb-16 ${roleNotice === 'updated' ? 'surface-success' : 'surface-danger'}`}>
+          <AdminSectionHeader
+            description={roleNoticeMessage(roleNotice)}
+            status={<span className="pill pill-info">{roleNotice}</span>}
+            title="Role update notice"
+          />
+        </section>
+      ) : null}
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Finance approver is not a generic menu count. It is a second-control role for actions that move money, recognize tax, or close finance evidence."
+          status={<span className="pill pill-warn">Dual control</span>}
+          title="Finance approver operating rule"
+        />
+        <div className="setup-stage-list admin-mt-12">
+          <div className="setup-stage-item">
+            <span>1</span>
+            <div>
+              <strong>Admin role remains the base permission</strong>
+              <p className="muted">
+                Only admin users can receive the finance approver role. Customer or Partner accounts are
+                rejected by the API.
+              </p>
+            </div>
+            <small>{adminUsers.length} admins</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>2</span>
+            <div>
+              <strong>Finance approver is required for money approval</strong>
+              <p className="muted">
+                Payout, withdrawal, manual wallet, bank reconciliation, and tax closeout approvals require
+                this role in addition to Admin.
+              </p>
+            </div>
+            <small>{approverCount} approvers</small>
+          </div>
+          <div className="setup-stage-item">
+            <span>3</span>
+            <div>
+              <strong>Self-change and last-approver removal are blocked</strong>
+              <p className="muted">
+                The API prevents an acting admin from changing their own finance role and prevents removing
+                the final approver.
+              </p>
+            </div>
+            <small>Safe guard</small>
+          </div>
+        </div>
+      </section>
+
+      <section className="card admin-card-scroll">
+        <AdminSectionHeader
+          description="Use a reason for every role change. The API writes an immutable admin audit log with previous and next role sets."
+          title="Finance approver directory"
+        />
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage="No admin users were returned by the bounded admin user API."
+            headers={['Admin', 'Roles', 'Latest session', 'Push devices', 'Finance approver']}
+            rowCount={adminUsers.length}
+          >
+            {adminUsers.map((user) => {
+              const enabled = isFinanceApprover(user);
+              return (
+                <tr key={user.id}>
+                  <td>
+                    <strong>{user.fullName ?? user.phone ?? user.id}</strong>
+                    <div className="muted">{user.phone ?? user.id}</div>
+                    <div className="muted">{user.id}</div>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {user.roles.map((role) => (
+                        <span className={`pill ${role === FINANCE_APPROVER_ROLE ? 'pill-success' : 'pill-neutral'}`} key={role}>
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{latestSessionLabel(user)}</strong>
+                    <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
+                  </td>
+                  <td>
+                    <strong>{user.pushDevices?.filter((device) => device.enabled).length ?? 0} enabled</strong>
+                    <div className="muted">{user.pushDevices?.length ?? 0} registered</div>
+                  </td>
+                  <td>
+                    <form action={updateFinanceApproverRole} className="inline-admin-action-form">
+                      <input name="userId" type="hidden" value={user.id} />
+                      <input name="enabled" type="hidden" value={enabled ? 'false' : 'true'} />
+                      <input name="returnTo" type="hidden" value="/finance-tax/finance-approvers" />
+                      <label>
+                        Reason
+                        <input
+                          className="form-input"
+                          name="reason"
+                          placeholder={enabled ? 'Rotation or access removal reason' : 'Finance approval owner reason'}
+                          required
+                        />
+                      </label>
+                      <button className={`btn ${enabled ? 'btn-outline' : 'btn-primary'}`} type="submit">
+                        {enabled ? 'Revoke approver' : 'Grant approver'}
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              );
+            })}
+          </AdminDataTable>
+        </AdminTableScroll>
+      </section>
+    </AdminPageTemplate>
+  );
+}
+
+function isFinanceApprover(user: AdminUser) {
+  return user.roles.includes(FINANCE_APPROVER_ROLE);
+}
+
+function latestSessionLabel(user: AdminUser) {
+  const latest = user.appSessions?.[0];
+  return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) : 'No recent session';
+}
+
+function roleNoticeMessage(notice: string) {
+  switch (notice) {
+    case 'updated':
+      return 'Finance approver role was updated and the finance pages were refreshed.';
+    case 'invalid':
+      return 'No target admin user was provided. No role change was sent to the API.';
+    case 'failed':
+      return 'The API rejected this role update. Check that the target is an admin user and that at least one approver remains.';
+    default:
+      return 'Finance approver role action finished.';
+  }
+}
+
+function readSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}

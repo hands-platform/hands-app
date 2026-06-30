@@ -350,6 +350,17 @@ export class AdminReasonDto {
   reason?: string;
 }
 
+export class UpdateFinanceApproverRoleDto {
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
 export class UpdateMonthlyTaxClosingStatusDto {
   @IsEnum(MonthlyTaxClosingStatus)
   status!: MonthlyTaxClosingStatus;
