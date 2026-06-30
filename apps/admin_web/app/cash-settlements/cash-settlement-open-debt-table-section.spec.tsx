@@ -2,6 +2,7 @@ import {
   CashSettlementOpenDebtTableSection,
   type CashSettlementOpenDebtTableRow,
 } from './cash-settlement-open-debt-table-section';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('CashSettlementOpenDebtTableSection', () => {
   it('renders open cash debt rows with settlement form defaults', () => {
@@ -33,6 +34,11 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(inputDefaultsIn(section)).toEqual(
       expect.arrayContaining(['earning-1', 'provider-1', '500000', 'HANDS-CASH-BOOKIN']),
     );
+    const markup = renderToStaticMarkup(section);
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-select');
+    expect(markup).toContain('admin-form-control-button');
+    expect(markup).not.toContain('class="form-input"');
   });
 
   it('renders empty state when no open cash debt rows exist', () => {

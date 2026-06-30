@@ -1,5 +1,10 @@
 import Link from 'next/link';
 
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { recordPartnerBankDeposit } from './actions';
@@ -151,46 +156,45 @@ export function CashSettlementOpenDebtTableSection({
             <td>
               <form action={recordPartnerBankDeposit} className="inline-form">
                 <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
-                <input
-                  aria-label="Deposit amount"
-                  name="amount"
-                  type="number"
-                  min="1"
-                  step="1"
+                <AdminFormInput
                   defaultValue={row.depositAmountDefault}
+                  label="Deposit amount"
+                  min="1"
+                  name="amount"
                   required
+                  step="1"
+                  type="number"
                 />
-                <input
-                  aria-label="Bank transaction id"
+                <AdminFormInput
+                  defaultValue={row.settlementReference}
+                  label="Bank transaction id"
                   name="bankTransactionId"
                   placeholder="Bank transaction id"
-                  defaultValue={row.settlementReference}
                   required
                 />
-                <input aria-label="Deposit date" name="depositDate" type="datetime-local" required />
-                <input aria-label="Bank account" name="bankAccount" placeholder="Bank account" />
-                <input
-                  aria-label="Attachment evidence"
+                <AdminFormInput label="Deposit date" name="depositDate" required type="datetime-local" />
+                <AdminFormInput label="Bank account" name="bankAccount" placeholder="Bank account" />
+                <AdminFormInput
+                  label="Attachment evidence"
                   name="attachmentUrl"
                   placeholder="Evidence file URL"
                   required
                 />
-                <input
-                  aria-label="Deposit notes"
+                <AdminFormInput
+                  defaultValue={row.settlementNotesDefault}
+                  label="Deposit notes"
                   name="notes"
                   placeholder="Deposit notes"
-                  defaultValue={row.settlementNotesDefault}
                 />
-                <label>
-                  Finance approver id
-                  <input
-                    aria-label="Finance approver admin id"
-                    name="approvalAdminId"
-                    placeholder="Finance approver admin id"
-                    required
-                  />
-                </label>
-                <button type="submit">Record bank deposit</button>
+                <AdminFormInput
+                  label="Finance approver id"
+                  name="approvalAdminId"
+                  placeholder="Finance approver admin id"
+                  required
+                />
+                <AdminFormControlButton className="btn btn-primary" type="submit">
+                  Record bank deposit
+                </AdminFormControlButton>
               </form>
               <p className="muted admin-mt-8">
                 Partner deposit is not platform revenue. It first settles negative wallet receivable, then
@@ -199,27 +203,30 @@ export function CashSettlementOpenDebtTableSection({
               <form action="/cash-settlements" className="inline-form">
                 <input type="hidden" name="confirm" value="settle" />
                 <input type="hidden" name="earningId" value={row.earningId} />
-                <select
-                  aria-label="Settlement method"
-                  name="settlementMethod"
+                <AdminFormSelect
                   defaultValue={row.settlementMethodDefault}
-                >
-                  <option value="PARTNER_DEPOSIT">Partner deposit</option>
-                  <option value="ADMIN_OFFSET">Admin offset</option>
-                </select>
-                <input
-                  aria-label="Settlement reference"
+                  label="Settlement method"
+                  name="settlementMethod"
+                  options={[
+                    { label: 'Partner deposit', value: 'PARTNER_DEPOSIT' },
+                    { label: 'Admin offset', value: 'ADMIN_OFFSET' },
+                  ]}
+                />
+                <AdminFormInput
+                  defaultValue={row.settlementReference}
+                  label="Settlement reference"
                   name="settlementRef"
                   placeholder="Bank deposit ref or admin offset"
-                  defaultValue={row.settlementReference}
                 />
-                <input
-                  aria-label="Settlement notes"
+                <AdminFormInput
+                  defaultValue={row.settlementNotesDefault}
+                  label="Settlement notes"
                   name="settlementNotes"
                   placeholder="Evidence note"
-                  defaultValue={row.settlementNotesDefault}
                 />
-                <button type="submit">Review settlement</button>
+                <AdminFormControlButton className="btn btn-outline" type="submit">
+                  Review settlement
+                </AdminFormControlButton>
               </form>
             </td>
           </tr>
