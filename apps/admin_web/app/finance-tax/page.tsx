@@ -25,6 +25,7 @@ import {
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
   buildFinanceOperationsPriorityLinks,
+  buildFinanceOperationsSummaryFilters,
   buildFinancePayoutPriorityLinks,
   bankReconciliationHref,
   emptyBankReconciliationSummary,
@@ -54,6 +55,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const params = searchParams ? await searchParams : {};
   const settlementFilters = readBookingSettlementFilters(params);
   const accountingFilters = readFinanceAccountingFilters(params, 'all');
+  const { bankFilters, clearingFilters } = buildFinanceOperationsSummaryFilters(accountingFilters);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
   const [
@@ -83,11 +85,11 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         emptyProviderWalletWithdrawalRequestSummary(),
       ),
       adminGet<AdminBookingPaymentClearingSummary>(
-        buildBookingPaymentClearingSummaryApiHref(accountingFilters),
+        buildBookingPaymentClearingSummaryApiHref(clearingFilters),
         emptyBookingPaymentClearingSummary(),
       ),
       adminGet<AdminBankReconciliationSummary>(
-        buildBankReconciliationSummaryApiHref(accountingFilters),
+        buildBankReconciliationSummaryApiHref(bankFilters),
         emptyBankReconciliationSummary(),
       ),
       adminGet<AdminMonthlyTaxClosingSummary>(

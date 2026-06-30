@@ -780,6 +780,21 @@ export function buildFinanceOperationsPriorityLinks({
   ];
 }
 
+export function buildFinanceOperationsSummaryFilters(accountingFilters: FinanceAccountingFilters) {
+  return {
+    clearingFilters: {
+      ...accountingFilters,
+      page: 1,
+      review: 'open' as const,
+    },
+    bankFilters: {
+      ...accountingFilters,
+      page: 1,
+      review: 'unmatched' as const,
+    },
+  };
+}
+
 export function buildTaxFinanceMetrics(
   settlementSummary: AdminBookingSettlementSnapshotSummary,
   withholdingSummary: AdminPartnerWithholdingTaxSummary,

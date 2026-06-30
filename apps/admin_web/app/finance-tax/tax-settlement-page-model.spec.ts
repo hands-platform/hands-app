@@ -34,6 +34,7 @@ import {
   buildTaxSettlementServerPagination,
   couponFinanceHref,
   buildTaxFinanceMetrics,
+  buildFinanceOperationsSummaryFilters,
   buildMonthlyTaxClosingMetrics,
   buildMonthlyTaxClosingRiskLinks,
   emptyMonthlyTaxClosingSummary,
@@ -204,6 +205,7 @@ describe('tax settlement page model', () => {
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
       ['Settlement reversals', '/finance-tax/settlement-reversals?range=7d&take=50'],
       ['General ledger', '/finance-tax/general-ledger?range=7d&take=50'],
+      ['Finance approvers', '/finance-tax/finance-approvers'],
       ['Payment clearing', '/finance-tax/payment-clearing?range=7d&take=50'],
       ['Bank reconciliation', '/finance-tax/bank-reconciliation?range=7d&take=50'],
       ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid&take=50'],
@@ -362,6 +364,27 @@ describe('tax settlement page model', () => {
       ['Bank unmatched', '/finance-tax/bank-reconciliation?range=today&review=unmatched', 3, '800.000 VND', 'Unmatched'],
       ['Monthly close risk', '/finance-tax/monthly-tax-closing?period=2026-06', 3, '170.000 VND cash debt', 'Closeout risk'],
     ]);
+  });
+
+  it('uses needs-action accounting filters for finance overview summaries', () => {
+    const accountingFilters = readFinanceAccountingFilters({ range: 'today', review: 'all', take: '50' });
+
+    const filters = buildFinanceOperationsSummaryFilters(accountingFilters);
+
+    expect(filters).toEqual({
+      clearingFilters: {
+        page: 1,
+        range: 'today',
+        review: 'open',
+        take: 50,
+      },
+      bankFilters: {
+        page: 1,
+        range: 'today',
+        review: 'unmatched',
+        take: 50,
+      },
+    });
   });
 
   it('builds overview metrics from summary APIs without list data', () => {
