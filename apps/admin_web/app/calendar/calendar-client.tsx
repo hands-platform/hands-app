@@ -13,6 +13,7 @@ import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { MetricCard } from '../../components/metric-card';
 import {
@@ -234,14 +235,14 @@ export function CalendarClient() {
       <div className="calendar-shell">
         <aside className="calendar-sidebar card">
           <div className="calendar-sidebar-section">
-            <button
+            <AdminFormControlButton
               className="button button-primary calendar-add-button"
               onClick={() => openCreateDrawer(new Date())}
               type="button"
             >
               <Plus aria-hidden="true" size={16} />
               Add Event
-            </button>
+            </AdminFormControlButton>
           </div>
 
           <div className="calendar-sidebar-section">
@@ -376,14 +377,14 @@ export function CalendarClient() {
 
           <div className="calendar-board-footer">
             <span className="muted">Drag, resize, or click an event to update it.</span>
-            <button
+            <AdminFormControlButton
               className="button button-secondary calendar-quick-add"
               onClick={() => openCreateDrawer(new Date())}
               type="button"
             >
               <SquarePen aria-hidden="true" size={15} />
               Quick add
-            </button>
+            </AdminFormControlButton>
           </div>
         </section>
       </div>
