@@ -258,6 +258,7 @@ const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 25;
 const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 20;
 const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 20;
+const ADMIN_NOTIFICATION_TEMPLATE_LIST_LIMIT = 50;
 const ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES = [
   'booking.requested',
   'booking.backup_available',
@@ -8678,11 +8679,13 @@ export class AdminService {
     };
   }
 
-  async listNotificationTemplates() {
+  async listNotificationTemplates(options: AdminNotificationTemplateListQuery = {}) {
     await this.ensureDefaultNotificationTemplates();
 
     return this.prisma.notificationTemplate.findMany({
       orderBy: [{ audience: 'asc' }, { key: 'asc' }],
+      skip: boundedAdminListSkip(options.skip),
+      take: boundedAdminListLimit(options.take, ADMIN_NOTIFICATION_TEMPLATE_LIST_LIMIT),
       include: {
         translations: { orderBy: { locale: 'asc' } },
       },
@@ -13582,6 +13585,11 @@ type NotificationBoardSummaryOptions = {
 };
 
 type NotificationBoardQueryOptions = NotificationBoardSummaryOptions & {
+  readonly skip?: string;
+  readonly take?: string;
+};
+
+type AdminNotificationTemplateListQuery = {
   readonly skip?: string;
   readonly take?: string;
 };

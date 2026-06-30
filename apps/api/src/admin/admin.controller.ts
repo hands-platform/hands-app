@@ -1332,8 +1332,8 @@ export class AdminController {
   }
 
   @Get('notifications/templates')
-  notificationTemplates() {
-    return this.admin.listNotificationTemplates();
+  notificationTemplates(@Query('take') take?: string, @Query('skip') skip?: string) {
+    return this.admin.listNotificationTemplates({ skip, take });
   }
 
   @Patch('notifications/templates/:key')

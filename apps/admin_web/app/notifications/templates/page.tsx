@@ -20,6 +20,7 @@ const TEMPLATE_LOCALES = [
   { value: 'ja', label: 'Japanese' },
   { value: 'zh', label: 'Chinese' },
 ] as const;
+const NOTIFICATION_TEMPLATE_LIST_TAKE = 50;
 
 export default async function NotificationTemplatesPage({
   searchParams,
@@ -27,7 +28,10 @@ export default async function NotificationTemplatesPage({
   searchParams?: NotificationTemplatesPageSearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const templates = await adminGet<AdminNotificationTemplate[]>('/admin/notifications/templates', []);
+  const templates = await adminGet<AdminNotificationTemplate[]>(
+    `/admin/notifications/templates?take=${NOTIFICATION_TEMPLATE_LIST_TAKE}`,
+    [],
+  );
   const notice = notificationTemplateNotice(readSearchParam(params.notice), readSearchParam(params.template));
   const enabledCount = templates.filter((template) => template.enabled).length;
   const customerCount = templates.filter((template) => template.audience === 'CUSTOMER').length;

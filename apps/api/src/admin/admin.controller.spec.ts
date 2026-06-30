@@ -1409,16 +1409,16 @@ describe('AdminController notification and push actions', () => {
     );
   });
 
-  it('exposes notification templates as a GET catalog', async () => {
+  it('exposes notification templates as a bounded GET catalog', async () => {
     admin.listNotificationTemplates.mockResolvedValue([{ key: 'booking.matched' }]);
 
-    await expect(controller.notificationTemplates()).resolves.toEqual([{ key: 'booking.matched' }]);
+    await expect(controller.notificationTemplates('25', '50')).resolves.toEqual([{ key: 'booking.matched' }]);
 
     expect(routeMetadata('notificationTemplates')).toEqual({
       method: RequestMethod.GET,
       path: 'notifications/templates',
     });
-    expect(admin.listNotificationTemplates).toHaveBeenCalledWith();
+    expect(admin.listNotificationTemplates).toHaveBeenCalledWith({ skip: '50', take: '25' });
   });
 
   it('exposes notification template copy updates as an audited PATCH action', async () => {

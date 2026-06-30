@@ -9608,7 +9608,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.notification.findMany).not.toHaveBeenCalled();
   });
 
-  it('seeds editable notification templates before listing the catalog', async () => {
+  it('seeds editable notification templates before listing the bounded catalog', async () => {
     const prisma = {
       notificationTemplate: {
         findMany: vi.fn().mockResolvedValue([{ key: 'booking.matched', translations: [] }]),
@@ -9620,7 +9620,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listNotificationTemplates()).resolves.toEqual([
+    await expect(service.listNotificationTemplates({ skip: '10', take: '500' })).resolves.toEqual([
       { key: 'booking.matched', translations: [] },
     ]);
 
@@ -9638,6 +9638,8 @@ describe('AdminService query orchestration', () => {
     });
     expect(prisma.notificationTemplate.findMany).toHaveBeenCalledWith({
       orderBy: [{ audience: 'asc' }, { key: 'asc' }],
+      skip: 10,
+      take: 50,
       include: {
         translations: { orderBy: { locale: 'asc' } },
       },
