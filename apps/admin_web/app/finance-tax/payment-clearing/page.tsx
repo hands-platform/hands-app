@@ -4,7 +4,7 @@ import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSumma
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -116,13 +116,16 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Use this queue to compare captured customer money, settlement postings, refunds, payment fees, and coupon offsets before closeout."
-          title="Payment clearing rows"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Use this queue to compare captured customer money, settlement postings, refunds, payment fees, and coupon offsets before closeout."
+        resultLabel={`${pagination.totalRows} row(s)`}
+        resultTone="info"
+        title="Payment clearing rows"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No payment clearing rows match the current filters."
             headers={['Booking', 'Payment', 'Clearing type', 'Amount', 'Occurred', 'Status']}
             rowCount={pagination.rows.length}
@@ -176,7 +179,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

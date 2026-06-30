@@ -4,7 +4,7 @@ import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } 
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -117,13 +117,16 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="This list intentionally shows journal batches and entry counts only. Open source records when entry-level evidence is required."
-          title="Journal batches"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="This list intentionally shows journal batches and entry counts only. Open source records when entry-level evidence is required."
+        resultLabel={`${pagination.totalRows} batch(es)`}
+        resultTone="info"
+        title="Journal batches"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No journal batches match the current filters."
             headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status']}
             rowCount={pagination.rows.length}
@@ -196,7 +199,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

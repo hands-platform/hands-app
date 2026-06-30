@@ -190,13 +190,16 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </form>
       </section>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="The list keeps match details collapsed. Use transfer reference, bank account, and source key to open the related evidence only when needed."
-          title="Company bank transactions"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="The list keeps match details collapsed. Use transfer reference, bank account, and source key to open the related evidence only when needed."
+        resultLabel={`${pagination.totalRows} transaction(s)`}
+        resultTone="info"
+        title="Company bank transactions"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No bank transactions match the current filters."
             headers={[
               'Transaction',
@@ -267,7 +270,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             totalPages={pagination.totalPages}
           />
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }
