@@ -699,6 +699,65 @@ describe('EarningsService payout batches', () => {
     });
   });
 
+  it('keeps payout evidence on partner receivable ledger when refund happens after a paid payout batch', async () => {
+    const paidAt = new Date('2026-06-29T09:30:00.000Z');
+    const earning = {
+      id: 'earning-paid-batch-1',
+      bookingId: 'booking-paid-batch-refund-1',
+      providerProfileId: 'provider-1',
+      payoutBatchId: 'payout-batch-paid-1',
+      payoutBatch: {
+        id: 'payout-batch-paid-1',
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'VCB-PAID-001',
+        paidAt,
+      },
+      netAmount: 430_000,
+      currency: 'VND',
+      status: EarningStatus.PAID,
+    };
+    const tx = {
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'refund-receivable-ledger-1' }),
+      },
+    };
+    const prisma = {
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await service.cancelForRefund('booking-paid-batch-refund-1');
+
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'earning:earning-paid-batch-1:paid-refund-receivable' },
+      update: expect.objectContaining({
+        amount: -430_000,
+        reference: 'VCB-PAID-001',
+        metadata: expect.objectContaining({
+          payoutBatchId: 'payout-batch-paid-1',
+          payoutBatchStatus: PayoutBatchStatus.PAID,
+          payoutPaidAt: paidAt.toISOString(),
+          payoutTransferRef: 'VCB-PAID-001',
+        }),
+      }),
+      create: expect.objectContaining({
+        payoutBatchId: 'payout-batch-paid-1',
+        reference: 'VCB-PAID-001',
+        metadata: expect.objectContaining({
+          payoutBatchId: 'payout-batch-paid-1',
+          payoutBatchStatus: PayoutBatchStatus.PAID,
+          payoutPaidAt: paidAt.toISOString(),
+          payoutTransferRef: 'VCB-PAID-001',
+        }),
+      }),
+    });
+  });
+
   it('posts a split VAT/PIT settlement snapshot inside the completed booking transaction', async () => {
     const occurredAt = new Date('2026-06-13T03:02:00.000Z');
     const booking = {

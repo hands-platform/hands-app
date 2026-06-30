@@ -1539,7 +1539,19 @@ export class EarningsService {
 
   async cancelForRefund(bookingId: string, transactionClient?: TxClient) {
     const client = transactionClient ?? this.prisma;
-    const earning = await client.providerEarning.findUnique({ where: { bookingId } });
+    const earning = await client.providerEarning.findUnique({
+      where: { bookingId },
+      include: {
+        payoutBatch: {
+          select: {
+            id: true,
+            paidAt: true,
+            status: true,
+            transferRef: true,
+          },
+        },
+      },
+    });
     if (!earning) {
       return { skipped: true, reason: 'NO_EARNING' };
     }
@@ -1549,35 +1561,37 @@ export class EarningsService {
         return { skipped: true, reason: 'ALREADY_PAID', earningId: earning.id };
       }
 
+      const payoutEvidence = paidRefundReceivablePayoutEvidence(earning);
+      const metadata = {
+        previousNetAmount: earning.netAmount,
+        previousStatus: earning.status,
+        refundAfterPayout: true,
+        partnerReceivableAmount: receivableAmount,
+        ...payoutEvidence.metadata,
+      } satisfies Prisma.InputJsonObject;
       const createReceivableLedger = async (tx: TxClient | PrismaService) => {
         await tx.providerWalletLedgerEntry.upsert({
           where: { sourceKey: `earning:${earning.id}:paid-refund-receivable` },
           update: {
             amount: -receivableAmount,
             currency: earning.currency,
+            ...(payoutEvidence.payoutBatchId ? { payoutBatchId: payoutEvidence.payoutBatchId } : {}),
+            ...(payoutEvidence.reference ? { reference: payoutEvidence.reference } : {}),
             notes: 'Paid earning converted to partner receivable by refund workflow',
-            metadata: {
-              previousNetAmount: earning.netAmount,
-              previousStatus: earning.status,
-              refundAfterPayout: true,
-              partnerReceivableAmount: receivableAmount,
-            },
+            metadata,
           },
           create: {
             providerProfileId: earning.providerProfileId,
             bookingId: earning.bookingId,
             earningId: earning.id,
+            ...(payoutEvidence.payoutBatchId ? { payoutBatchId: payoutEvidence.payoutBatchId } : {}),
             type: ProviderWalletLedgerType.REFUND_REVERSAL,
             sourceKey: `earning:${earning.id}:paid-refund-receivable`,
             amount: -receivableAmount,
             currency: earning.currency,
+            ...(payoutEvidence.reference ? { reference: payoutEvidence.reference } : {}),
             notes: 'Paid earning converted to partner receivable by refund workflow',
-            metadata: {
-              previousNetAmount: earning.netAmount,
-              previousStatus: earning.status,
-              refundAfterPayout: true,
-              partnerReceivableAmount: receivableAmount,
-            },
+            metadata,
           },
         });
       };
@@ -2352,6 +2366,39 @@ function cleanOptionalText(value: string | null | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function paidRefundReceivablePayoutEvidence(earning: {
+  payoutBatchId?: string | null;
+  payoutBatch?: {
+    id: string;
+    paidAt: Date | null;
+    status: PayoutBatchStatus;
+    transferRef: string | null;
+  } | null;
+}) {
+  const payoutBatchId = earning.payoutBatch?.id ?? earning.payoutBatchId ?? null;
+  const reference = cleanOptionalText(earning.payoutBatch?.transferRef ?? null);
+  const metadata: Record<string, Prisma.InputJsonValue> = {};
+
+  if (payoutBatchId) {
+    metadata.payoutBatchId = payoutBatchId;
+  }
+  if (earning.payoutBatch?.status) {
+    metadata.payoutBatchStatus = earning.payoutBatch.status;
+  }
+  if (reference) {
+    metadata.payoutTransferRef = reference;
+  }
+  if (earning.payoutBatch?.paidAt) {
+    metadata.payoutPaidAt = earning.payoutBatch.paidAt.toISOString();
+  }
+
+  return {
+    metadata: metadata as Prisma.InputJsonObject,
+    payoutBatchId,
+    reference,
+  };
 }
 
 function calculateCappedBpsAmount(baseAmount: number, rateBps: number, fixedAmount: number) {
