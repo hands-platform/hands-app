@@ -15,8 +15,21 @@ describe('settlementMonthlyPeriod', () => {
 describe('SettlementsService', () => {
   it('upserts a booking settlement snapshot with calculated tax and fee amounts', async () => {
     const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-1' }),
+      },
       bookingSettlementSnapshot: {
-        upsert: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-1',
+          bookingId: 'booking-1',
+          currency: 'VND',
+          metadata: null,
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
       },
     };
     const service = new SettlementsService(prisma as never);
@@ -48,7 +61,7 @@ describe('SettlementsService', () => {
         providerWalletLedgerEntryIds: ['wallet-1'],
         occurredAt: new Date('2026-06-13T03:02:00.000Z'),
       }),
-    ).resolves.toEqual({ id: 'settlement-1' });
+    ).resolves.toMatchObject({ id: 'settlement-1' });
 
     expect(prisma.bookingSettlementSnapshot.upsert).toHaveBeenCalledWith({
       where: { bookingId: 'booking-1' },
@@ -74,8 +87,24 @@ describe('SettlementsService', () => {
 
   it('stores coupon accounting policy metadata while keeping paid amount separate from taxable base', async () => {
     const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-1' }),
+      },
       bookingSettlementSnapshot: {
-        upsert: vi.fn().mockResolvedValue({ id: 'settlement-coupon-1' }),
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-coupon-1',
+          bookingId: 'booking-coupon-1',
+          currency: 'VND',
+          metadata: {
+            companyCouponExpense: 60_000,
+            couponDiscountAmount: 60_000,
+          },
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
       },
     };
     const service = new SettlementsService(prisma as never);
@@ -127,6 +156,97 @@ describe('SettlementsService', () => {
     });
   });
 
+  it('persists booking payment clearing and accounting journal records with the settlement snapshot', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-1' }),
+      },
+      bookingSettlementSnapshot: {
+        upsert: vi.fn().mockResolvedValue({
+          id: 'settlement-1',
+          bookingId: 'booking-1',
+          customerProfileId: 'customer-1',
+          providerProfileId: 'provider-1',
+          paymentId: 'payment-1',
+          providerEarningId: 'earning-1',
+          currency: 'VND',
+          monthlyPeriod: '2026-06',
+          postedAt: new Date('2026-06-13T03:02:00.000Z'),
+        }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await service.upsertBookingSettlementSnapshot({
+      bookingId: 'booking-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'provider-1',
+      paymentId: 'payment-1',
+      providerEarningId: 'earning-1',
+      paymentMethod: 'CARD',
+      currency: 'VND',
+      customerPaymentAmount: 600_000,
+      partnerPayoutAmount: 472_000,
+      platformFeeGross: 128_000,
+      partnerVatRateBps: 500,
+      partnerPitRateBps: 200,
+      platformVatRateBps: 800,
+      paymentFeeRateBps: 150,
+      paymentFeeFixedAmount: 1_000,
+      occurredAt: new Date('2026-06-13T03:02:00.000Z'),
+    });
+
+    expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'booking-payment-clearing:booking-1:settlement' },
+      update: expect.objectContaining({
+        amount: 600_000,
+        status: 'OPEN',
+      }),
+      create: expect.objectContaining({
+        amount: 600_000,
+        bookingId: 'booking-1',
+        paymentId: 'payment-1',
+        settlementSnapshotId: 'settlement-1',
+        sourceKey: 'booking-payment-clearing:booking-1:settlement',
+        type: 'SETTLEMENT_POSTED',
+      }),
+    });
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:booking-settlement:booking-1' },
+      update: expect.objectContaining({
+        totalCredit: 610_000,
+        totalDebit: 610_000,
+      }),
+      create: expect.objectContaining({
+        bookingId: 'booking-1',
+        customerProfileId: 'customer-1',
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              accountCode: 'booking_payment_clearing',
+              amount: 600_000,
+              side: 'DEBIT',
+            }),
+            expect.objectContaining({
+              accountCode: 'platform_fee_net_revenue',
+              amount: 118_519,
+              side: 'CREDIT',
+            }),
+          ]),
+        },
+        providerProfileId: 'provider-1',
+        settlementSnapshotId: 'settlement-1',
+        sourceKey: 'accounting-journal:booking-settlement:booking-1',
+        sourceType: 'BOOKING_SETTLEMENT',
+        totalCredit: 610_000,
+        totalDebit: 610_000,
+      }),
+    });
+  });
+
   it('reverses an open coupon settlement snapshot for refund without changing historical amounts', async () => {
     const existing = {
       id: 'settlement-coupon-1',
@@ -151,7 +271,9 @@ describe('SettlementsService', () => {
     const prisma = {
       bookingSettlementSnapshot: {
         findUnique: vi.fn().mockResolvedValue(existing),
-        update: vi.fn().mockResolvedValue({ ...existing, settlementStatus: BookingSettlementStatus.REVERSED }),
+        update: vi
+          .fn()
+          .mockResolvedValue({ ...existing, settlementStatus: BookingSettlementStatus.REVERSED }),
       },
     };
     const service = new SettlementsService(prisma as never);

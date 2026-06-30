@@ -8,10 +8,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  calculateBookingSettlementAmounts,
-  SettlementPaymentMethod,
-} from './settlement-calculator';
+import { calculateBookingSettlementAmounts, SettlementPaymentMethod } from './settlement-calculator';
+import { buildBookingSettlementJournal } from './settlement-journal';
 
 export type UpsertBookingSettlementSnapshotInput = {
   bookingId: string;
@@ -58,7 +56,7 @@ type SettlementPrismaClient = PrismaService | Prisma.TransactionClient;
 export class SettlementsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  upsertBookingSettlementSnapshot(
+  async upsertBookingSettlementSnapshot(
     input: UpsertBookingSettlementSnapshotInput,
     client: SettlementPrismaClient = this.prisma,
   ) {
@@ -119,7 +117,7 @@ export class SettlementsService {
       postedAt: input.occurredAt,
     };
 
-    return client.bookingSettlementSnapshot.upsert({
+    const snapshot = await client.bookingSettlementSnapshot.upsert({
       where: { bookingId: input.bookingId },
       update: data,
       create: {
@@ -127,6 +125,10 @@ export class SettlementsService {
         bookingId: input.bookingId,
       },
     });
+
+    await this.upsertBookingSettlementAccountingRecords(input, amounts, snapshot, client);
+
+    return snapshot;
   }
 
   async reverseBookingSettlementSnapshotForRefund(
@@ -208,6 +210,131 @@ export class SettlementsService {
       },
     });
   }
+
+  private async upsertBookingSettlementAccountingRecords(
+    input: UpsertBookingSettlementSnapshotInput,
+    amounts: ReturnType<typeof calculateBookingSettlementAmounts>,
+    snapshot: BookingSettlementSnapshotRecord,
+    client: SettlementPrismaClient,
+  ) {
+    const currency = snapshot.currency ?? input.currency ?? 'VND';
+    const journal = buildBookingSettlementJournal({
+      bookingId: input.bookingId,
+      companyOutputVat: amounts.companyOutputVat,
+      currency,
+      customerPaymentAmount: input.customerPaymentAmount,
+      metadata:
+        snapshot.metadata && typeof snapshot.metadata === 'object' && !Array.isArray(snapshot.metadata)
+          ? (snapshot.metadata as Record<string, unknown>)
+          : {},
+      partnerPayoutAmount: input.partnerPayoutAmount,
+      partnerWithholdingTotal: amounts.partnerWithholdingTotal,
+      paymentMethod: input.paymentMethod as SettlementPaymentMethod,
+      paymentProcessingFee: amounts.paymentProcessingFee,
+      platformFeeNetRevenue: amounts.platformFeeNetRevenue,
+    });
+    const journalSourceKey = `accounting-journal:booking-settlement:${input.bookingId}`;
+    const journalEntries = journal.entries.map((entry) => ({
+      accountCode: entry.accountCode,
+      accountName: entry.accountName,
+      amount: entry.amount,
+      currency: entry.currency,
+      memo: entry.memo,
+      metadata: {
+        bookingId: input.bookingId,
+        settlementSnapshotId: snapshot.id,
+      } satisfies Prisma.InputJsonObject,
+      side: entry.side,
+      sourceId: snapshot.id,
+      sourceType: 'BOOKING_SETTLEMENT' as const,
+    }));
+    const journalMetadata = {
+      bookingId: input.bookingId,
+      reconciliationDelta: journal.reconciliationDelta,
+      settlementSnapshotId: snapshot.id,
+    } satisfies Prisma.InputJsonObject;
+
+    await client.accountingJournalBatch.upsert({
+      where: { sourceKey: journalSourceKey },
+      update: {
+        bookingId: input.bookingId,
+        currency,
+        customerProfileId: input.customerProfileId,
+        entries: {
+          create: journalEntries,
+          deleteMany: {},
+        },
+        metadata: journalMetadata,
+        monthlyPeriod: snapshot.monthlyPeriod,
+        paymentId: input.paymentId ?? null,
+        postedAt: snapshot.postedAt,
+        providerProfileId: input.providerProfileId,
+        settlementSnapshotId: snapshot.id,
+        sourceId: snapshot.id,
+        sourceType: 'BOOKING_SETTLEMENT',
+        status: 'POSTED',
+        totalCredit: journal.totalCredit,
+        totalDebit: journal.totalDebit,
+      },
+      create: {
+        bookingId: input.bookingId,
+        currency,
+        customerProfileId: input.customerProfileId,
+        entries: {
+          create: journalEntries,
+        },
+        metadata: journalMetadata,
+        monthlyPeriod: snapshot.monthlyPeriod,
+        paymentId: input.paymentId ?? null,
+        postedAt: snapshot.postedAt,
+        providerProfileId: input.providerProfileId,
+        settlementSnapshotId: snapshot.id,
+        sourceId: snapshot.id,
+        sourceKey: journalSourceKey,
+        sourceType: 'BOOKING_SETTLEMENT',
+        status: 'POSTED',
+        totalCredit: journal.totalCredit,
+        totalDebit: journal.totalDebit,
+      },
+    });
+
+    if (input.paymentMethod === 'CASH') {
+      return;
+    }
+
+    await client.bookingPaymentClearingEntry.upsert({
+      where: { sourceKey: bookingPaymentClearingSourceKey(input.bookingId) },
+      update: {
+        amount: input.customerPaymentAmount,
+        currency,
+        metadata: {
+          bookingId: input.bookingId,
+          journalBatchSourceKey: journalSourceKey,
+          settlementSnapshotId: snapshot.id,
+        } satisfies Prisma.InputJsonObject,
+        occurredAt: snapshot.postedAt,
+        paymentId: input.paymentId ?? null,
+        settlementSnapshotId: snapshot.id,
+        status: 'OPEN',
+      },
+      create: {
+        amount: input.customerPaymentAmount,
+        bookingId: input.bookingId,
+        currency,
+        metadata: {
+          bookingId: input.bookingId,
+          journalBatchSourceKey: journalSourceKey,
+          settlementSnapshotId: snapshot.id,
+        } satisfies Prisma.InputJsonObject,
+        occurredAt: snapshot.postedAt,
+        paymentId: input.paymentId ?? null,
+        settlementSnapshotId: snapshot.id,
+        sourceKey: bookingPaymentClearingSourceKey(input.bookingId),
+        status: 'OPEN',
+        type: 'SETTLEMENT_POSTED',
+      },
+    });
+  }
 }
 
 export function bookingSettlementSourceKey(bookingId: string) {
@@ -216,6 +343,10 @@ export function bookingSettlementSourceKey(bookingId: string) {
 
 export function bookingSettlementReversalSourceKey(snapshotId: string) {
   return `booking-settlement-reversal:${snapshotId}`;
+}
+
+export function bookingPaymentClearingSourceKey(bookingId: string) {
+  return `booking-payment-clearing:${bookingId}:settlement`;
 }
 
 export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
@@ -236,7 +367,8 @@ function settlementRefundReversalMetadata(metadata: Prisma.JsonValue | null, occ
 
   return {
     ...record,
-    couponReversalStatus: couponDiscountAmount > 0 || companyCouponExpense > 0 ? 'REVERSED' : record.couponReversalStatus,
+    couponReversalStatus:
+      couponDiscountAmount > 0 || companyCouponExpense > 0 ? 'REVERSED' : record.couponReversalStatus,
     reversedAt: occurredAt.toISOString(),
     reversedCompanyCouponExpense: companyCouponExpense,
     reversedCouponDiscountAmount: couponDiscountAmount,
@@ -281,6 +413,10 @@ type ClosedSettlementSnapshot = NonNullable<
 > & {
   monthlyClosingId: string;
 };
+
+type BookingSettlementSnapshotRecord = Awaited<
+  ReturnType<SettlementPrismaClient['bookingSettlementSnapshot']['upsert']>
+>;
 
 function jsonRecord(value: Prisma.JsonValue | null | undefined) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
