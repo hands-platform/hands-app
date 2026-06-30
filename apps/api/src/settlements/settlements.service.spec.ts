@@ -55,6 +55,50 @@ describe('SettlementsService', () => {
     expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
   });
 
+  it.each([MonthlyTaxClosingStatus.DECLARED, MonthlyTaxClosingStatus.PAID])(
+    'rejects direct settlement snapshot edits in %s monthly periods',
+    async (status) => {
+      const prisma = {
+        accountingJournalBatch: {
+          upsert: vi.fn(),
+        },
+        bookingPaymentClearingEntry: {
+          upsert: vi.fn(),
+        },
+        bookingSettlementSnapshot: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'settlement-finalized-1',
+            monthlyClosingId: 'closing-1',
+            monthlyClosing: { status },
+          }),
+          upsert: vi.fn().mockResolvedValue({ id: 'settlement-finalized-1' }),
+        },
+      };
+      const service = new SettlementsService(prisma as never);
+
+      await expect(
+        service.upsertBookingSettlementSnapshot({
+          bookingId: 'booking-finalized-1',
+          customerProfileId: 'customer-1',
+          providerProfileId: 'provider-1',
+          paymentMethod: 'CARD',
+          currency: 'VND',
+          customerPaymentAmount: 600_000,
+          partnerPayoutAmount: 430_000,
+          platformFeeGross: 128_000,
+          partnerVatRateBps: 500,
+          partnerPitRateBps: 200,
+          platformVatRateBps: 800,
+          occurredAt: new Date('2026-07-13T03:02:00.000Z'),
+        }),
+      ).rejects.toThrow('Finalized monthly periods require reversal entries, not direct settlement snapshot edits.');
+
+      expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
+      expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+      expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+    },
+  );
+
   it('upserts a booking settlement snapshot with calculated tax and fee amounts', async () => {
     const prisma = {
       accountingJournalBatch: {

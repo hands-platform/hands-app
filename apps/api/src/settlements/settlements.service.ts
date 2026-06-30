@@ -164,6 +164,14 @@ export class SettlementsService {
         'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
       );
     }
+    if (
+      existing?.monthlyClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
+      existing?.monthlyClosing?.status === MonthlyTaxClosingStatus.PAID
+    ) {
+      throw new BadRequestException(
+        'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
+      );
+    }
   }
 
   async reverseBookingSettlementSnapshotForRefund(
