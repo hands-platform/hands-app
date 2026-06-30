@@ -6,6 +6,7 @@ import {
   PaymentFeeTreatment,
   PaymentMethod,
   PayoutBatchStatus,
+  ProviderAgreementType,
   ProviderBankAccountStatus,
   ProviderTaxProfileStatus,
   ProviderWalletLedgerType,
@@ -552,6 +553,83 @@ describe('EarningsService payout batches', () => {
         }),
       }),
     );
+  });
+
+  it('blocks payout batches from ledger balance even when earning aggregate is positive', async () => {
+    const tx = {
+      booking: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: 600_000 } }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'earning-1',
+            netAmount: 600_000,
+            currency: 'VND',
+          },
+        ]),
+        updateMany: vi.fn(),
+      },
+      providerPayoutBatch: {
+        create: vi.fn().mockResolvedValue({ id: 'payout-batch-1' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'payout-batch-1' }),
+      },
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          residentialAddress: 'Cau Giay, Hanoi',
+          bankAccounts: [{ id: 'bank-account-1' }],
+          agreements: [
+            { type: ProviderAgreementType.TERMS },
+            { type: ProviderAgreementType.PRIVACY },
+            { type: ProviderAgreementType.LOCATION },
+            { type: ProviderAgreementType.PAYOUT },
+            { type: ProviderAgreementType.TAX },
+          ],
+        }),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerTaxLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -170_000 } }),
+      },
+      withholdingLog: {
+        createMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      $transaction: vi.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.createProviderPayoutBatch({
+        providerProfileId: 'provider-1',
+        transferRef: 'BANK-OUT-001',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
+        walletBalance: -170_000,
+      }),
+    });
+
+    expect(tx.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+      _sum: { amount: true },
+    });
+    expect(tx.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(tx.providerPayoutBatch.create).not.toHaveBeenCalled();
   });
 
   it('posts a split VAT/PIT settlement snapshot inside the completed booking transaction', async () => {
@@ -2136,6 +2214,7 @@ describe('EarningsService payout batches', () => {
         findUniqueOrThrow: vi.fn().mockResolvedValue(paidBatch),
       },
       providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 380000 } }),
         upsert: vi.fn(),
       },
       withholdingLog: {
@@ -2157,6 +2236,10 @@ describe('EarningsService payout batches', () => {
       service.updatePayoutBatch('payout-batch-1', { status: PayoutBatchStatus.PAID }),
     ).resolves.toEqual(paidBatch);
 
+    expect(tx.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+      _sum: { amount: true },
+    });
     expect(tx.providerEarning.updateMany).toHaveBeenCalledWith({
       where: {
         payoutBatchId: 'payout-batch-1',

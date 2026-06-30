@@ -2110,15 +2110,7 @@ export class EarningsService {
   }
 
   private async ensureProviderWalletNonNegative(client: TxClient, providerProfileId: string) {
-    const wallet = await client.providerEarning.aggregate({
-      where: {
-        providerProfileId,
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-      },
-      _sum: { netAmount: true },
-    });
-    const walletBalance = wallet._sum.netAmount ?? 0;
+    const walletBalance = await this.providerWalletLedgerBalance(client, providerProfileId);
     if (walletBalance < 0) {
       throwProviderWalletBlocked({ providerProfileId, walletBalance });
     }
