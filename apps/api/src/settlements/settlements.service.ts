@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  AccountingJournalEntrySide,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   MonthlyTaxClosingStatus,
@@ -186,7 +187,7 @@ export class SettlementsService {
       );
     }
 
-    return client.bookingSettlementSnapshot.update({
+    const reversedSnapshot = await client.bookingSettlementSnapshot.update({
       where: { bookingId: input.bookingId },
       data: {
         closedAt: input.occurredAt,
@@ -197,15 +198,17 @@ export class SettlementsService {
         taxStatus: BookingSettlementTaxStatus.REVERSED,
       },
     });
+    await this.upsertBookingSettlementReversalAccountingRecords(existing, input, client);
+    return reversedSnapshot;
   }
 
-  private upsertClosedSettlementReversalEntry(
+  private async upsertClosedSettlementReversalEntry(
     snapshot: ClosedSettlementSnapshot,
     input: ReverseBookingSettlementSnapshotInput,
     client: SettlementPrismaClient,
   ) {
     const metadata = settlementRefundReversalMetadata(snapshot.metadata, input.occurredAt);
-    return client.bookingSettlementReversalEntry.upsert({
+    const reversalEntry = await client.bookingSettlementReversalEntry.upsert({
       where: { originalSettlementSnapshotId: snapshot.id },
       update: {
         metadata: closedSettlementReversalMetadata(metadata, snapshot.id),
@@ -241,6 +244,139 @@ export class SettlementsService {
         settlementStatus: BookingSettlementStatus.REVERSED,
         sourceKey: bookingSettlementReversalSourceKey(snapshot.id),
         taxStatus: BookingSettlementTaxStatus.REVERSED,
+      },
+    });
+    await this.upsertBookingSettlementReversalAccountingRecords(snapshot, input, client, reversalEntry.id);
+    return reversalEntry;
+  }
+
+  private async upsertBookingSettlementReversalAccountingRecords(
+    snapshot: SettlementSnapshotForReversal,
+    input: ReverseBookingSettlementSnapshotInput,
+    client: SettlementPrismaClient,
+    reversalEntryId?: string | null,
+  ) {
+    const metadata = jsonRecord(snapshot.metadata);
+    const journal = buildBookingSettlementJournal({
+      bookingId: snapshot.bookingId,
+      companyOutputVat: snapshot.companyOutputVat,
+      currency: snapshot.currency,
+      customerPaymentAmount: snapshot.customerPaymentAmount,
+      metadata,
+      partnerPayoutAmount: snapshot.partnerPayoutAmount,
+      partnerWithholdingTotal: snapshot.partnerWithholdingTotal,
+      paymentMethod: snapshot.paymentMethod,
+      paymentProcessingFee: snapshot.paymentProcessingFee,
+      platformFeeNetRevenue: snapshot.platformFeeNetRevenue,
+    });
+    const sourceKey = accountingJournalReversalSourceKey(snapshot.id);
+    const sourceId = reversalEntryId ?? snapshot.id;
+    const journalEntries = journal.entries.map((entry) => ({
+      accountCode: entry.accountCode,
+      accountName: entry.accountName,
+      amount: entry.amount,
+      currency: entry.currency,
+      memo: `Refund reversal: ${entry.memo}`,
+      metadata: {
+        bookingId: snapshot.bookingId,
+        originalSettlementSnapshotId: snapshot.id,
+        settlementReversalEntryId: reversalEntryId ?? null,
+      } satisfies Prisma.InputJsonObject,
+      side: reverseJournalSide(entry.side),
+      sourceId,
+      sourceType: 'BOOKING_SETTLEMENT_REVERSAL' as const,
+    }));
+    const journalMetadata = {
+      bookingId: snapshot.bookingId,
+      originalSettlementSnapshotId: snapshot.id,
+      reason: input.reason?.trim() || 'Payment refund',
+      settlementReversalEntryId: reversalEntryId ?? null,
+    } satisfies Prisma.InputJsonObject;
+
+    await client.accountingJournalBatch.upsert({
+      where: { sourceKey },
+      update: {
+        bookingId: snapshot.bookingId,
+        currency: snapshot.currency,
+        customerProfileId: snapshot.customerProfileId,
+        entries: {
+          create: journalEntries,
+          deleteMany: {},
+        },
+        metadata: journalMetadata,
+        monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
+        paymentId: snapshot.paymentId ?? null,
+        postedAt: input.occurredAt,
+        providerProfileId: snapshot.providerProfileId,
+        settlementReversalEntryId: reversalEntryId ?? null,
+        settlementSnapshotId: snapshot.id,
+        sourceId,
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+        status: 'POSTED',
+        totalCredit: journal.totalDebit,
+        totalDebit: journal.totalCredit,
+      },
+      create: {
+        bookingId: snapshot.bookingId,
+        currency: snapshot.currency,
+        customerProfileId: snapshot.customerProfileId,
+        entries: {
+          create: journalEntries,
+        },
+        metadata: journalMetadata,
+        monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
+        paymentId: snapshot.paymentId ?? null,
+        postedAt: input.occurredAt,
+        providerProfileId: snapshot.providerProfileId,
+        settlementReversalEntryId: reversalEntryId ?? null,
+        settlementSnapshotId: snapshot.id,
+        sourceId,
+        sourceKey,
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+        status: 'POSTED',
+        totalCredit: journal.totalDebit,
+        totalDebit: journal.totalCredit,
+      },
+    });
+
+    if (snapshot.paymentMethod === PaymentMethod.CASH) {
+      return;
+    }
+
+    await client.bookingPaymentClearingEntry.upsert({
+      where: { sourceKey: bookingPaymentClearingRefundReversalSourceKey(snapshot.bookingId) },
+      update: {
+        amount: -snapshot.customerPaymentAmount,
+        currency: snapshot.currency,
+        metadata: {
+          bookingId: snapshot.bookingId,
+          journalBatchSourceKey: sourceKey,
+          originalSettlementSnapshotId: snapshot.id,
+          settlementReversalEntryId: reversalEntryId ?? null,
+        } satisfies Prisma.InputJsonObject,
+        occurredAt: input.occurredAt,
+        paymentId: snapshot.paymentId ?? null,
+        settlementReversalEntryId: reversalEntryId ?? null,
+        settlementSnapshotId: snapshot.id,
+        status: 'REVERSED',
+      },
+      create: {
+        amount: -snapshot.customerPaymentAmount,
+        bookingId: snapshot.bookingId,
+        currency: snapshot.currency,
+        metadata: {
+          bookingId: snapshot.bookingId,
+          journalBatchSourceKey: sourceKey,
+          originalSettlementSnapshotId: snapshot.id,
+          settlementReversalEntryId: reversalEntryId ?? null,
+        } satisfies Prisma.InputJsonObject,
+        occurredAt: input.occurredAt,
+        paymentId: snapshot.paymentId ?? null,
+        settlementReversalEntryId: reversalEntryId ?? null,
+        settlementSnapshotId: snapshot.id,
+        sourceKey: bookingPaymentClearingRefundReversalSourceKey(snapshot.bookingId),
+        status: 'REVERSED',
+        type: 'REFUND_REVERSAL',
       },
     });
   }
@@ -379,8 +515,16 @@ export function bookingSettlementReversalSourceKey(snapshotId: string) {
   return `booking-settlement-reversal:${snapshotId}`;
 }
 
+export function accountingJournalReversalSourceKey(snapshotId: string) {
+  return `accounting-journal:booking-settlement-reversal:${snapshotId}`;
+}
+
 export function bookingPaymentClearingSourceKey(bookingId: string) {
   return `booking-payment-clearing:${bookingId}:settlement`;
+}
+
+export function bookingPaymentClearingRefundReversalSourceKey(bookingId: string) {
+  return `booking-payment-clearing:${bookingId}:refund-reversal`;
 }
 
 export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
@@ -448,9 +592,17 @@ type ClosedSettlementSnapshot = NonNullable<
   monthlyClosingId: string;
 };
 
+type SettlementSnapshotForReversal = NonNullable<
+  Awaited<ReturnType<SettlementPrismaClient['bookingSettlementSnapshot']['findUnique']>>
+>;
+
 type BookingSettlementSnapshotRecord = Awaited<
   ReturnType<SettlementPrismaClient['bookingSettlementSnapshot']['upsert']>
 >;
+
+function reverseJournalSide(side: 'DEBIT' | 'CREDIT') {
+  return side === 'DEBIT' ? AccountingJournalEntrySide.CREDIT : AccountingJournalEntrySide.DEBIT;
+}
 
 function jsonRecord(value: Prisma.JsonValue | null | undefined) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

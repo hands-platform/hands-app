@@ -297,6 +297,8 @@ describe('SettlementsService', () => {
       companyOutputVat: 9_481,
       companyOutputVatTotal: undefined,
       customerPaymentAmount: 540_000,
+      customerProfileId: 'customer-1',
+      currency: 'VND',
       metadata: {
         bookingServiceAmount: 600_000,
         companyCouponExpense: 60_000,
@@ -304,13 +306,26 @@ describe('SettlementsService', () => {
         couponReversalStatus: 'NONE',
       },
       monthlyClosingId: null,
+      monthlyPeriod: '2026-06',
       partnerPayoutAmount: 430_000,
+      partnerTaxableRevenue: 600_000,
       partnerWithholdingTotal: 42_000,
+      paymentId: 'payment-1',
+      paymentMethod: 'CARD',
+      paymentProcessingFee: 0,
       platformFeeNetRevenue: 118_519,
+      providerEarningId: 'earning-1',
+      providerProfileId: 'provider-1',
       settlementStatus: BookingSettlementStatus.POSTED,
       taxStatus: BookingSettlementTaxStatus.OPEN,
     };
     const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-reversal-1' }),
+      },
       bookingSettlementSnapshot: {
         findUnique: vi.fn().mockResolvedValue(existing),
         update: vi
@@ -347,6 +362,48 @@ describe('SettlementsService', () => {
         }),
       }),
     });
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-coupon-1' },
+      update: expect.objectContaining({
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+        totalCredit: 618_000,
+        totalDebit: 618_000,
+      }),
+      create: expect.objectContaining({
+        bookingId: 'booking-coupon-1',
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              accountCode: 'booking_payment_clearing',
+              amount: 540_000,
+              side: 'CREDIT',
+            }),
+            expect.objectContaining({
+              accountCode: 'platform_fee_net_revenue',
+              amount: 118_519,
+              side: 'DEBIT',
+            }),
+          ]),
+        },
+        settlementSnapshotId: 'settlement-coupon-1',
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+        totalCredit: 618_000,
+        totalDebit: 618_000,
+      }),
+    });
+    expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'booking-payment-clearing:booking-coupon-1:refund-reversal' },
+      update: expect.objectContaining({
+        amount: -540_000,
+        status: 'REVERSED',
+      }),
+      create: expect.objectContaining({
+        amount: -540_000,
+        bookingId: 'booking-coupon-1',
+        sourceKey: 'booking-payment-clearing:booking-coupon-1:refund-reversal',
+        type: 'REFUND_REVERSAL',
+      }),
+    });
   });
 
   it('creates a reversal entry instead of editing a closed monthly settlement snapshot', async () => {
@@ -380,6 +437,12 @@ describe('SettlementsService', () => {
       taxStatus: BookingSettlementTaxStatus.CLOSED,
     };
     const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'journal-reversal-1' }),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'clearing-reversal-1' }),
+      },
       bookingSettlementReversalEntry: {
         upsert: vi.fn().mockResolvedValue({
           id: 'reversal-entry-1',
@@ -432,6 +495,48 @@ describe('SettlementsService', () => {
         reason: 'Closed refund',
         settlementStatus: BookingSettlementStatus.REVERSED,
         taxStatus: BookingSettlementTaxStatus.REVERSED,
+      }),
+    });
+    expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-closed-1' },
+      update: expect.objectContaining({
+        settlementReversalEntryId: 'reversal-entry-1',
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+      }),
+      create: expect.objectContaining({
+        bookingId: 'booking-closed-1',
+        entries: {
+          create: expect.arrayContaining([
+            expect.objectContaining({
+              accountCode: 'booking_payment_clearing',
+              amount: 540_000,
+              side: 'CREDIT',
+            }),
+            expect.objectContaining({
+              accountCode: 'platform_fee_net_revenue',
+              amount: 118_519,
+              side: 'DEBIT',
+            }),
+          ]),
+        },
+        settlementReversalEntryId: 'reversal-entry-1',
+        settlementSnapshotId: 'settlement-closed-1',
+        sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
+      }),
+    });
+    expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'booking-payment-clearing:booking-closed-1:refund-reversal' },
+      update: expect.objectContaining({
+        amount: -540_000,
+        settlementReversalEntryId: 'reversal-entry-1',
+        status: 'REVERSED',
+      }),
+      create: expect.objectContaining({
+        amount: -540_000,
+        bookingId: 'booking-closed-1',
+        settlementReversalEntryId: 'reversal-entry-1',
+        sourceKey: 'booking-payment-clearing:booking-closed-1:refund-reversal',
+        type: 'REFUND_REVERSAL',
       }),
     });
   });
