@@ -4,7 +4,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
   cashSettlementHref,
@@ -27,21 +27,23 @@ export function CashSettlementFilterSection({
   visibleRowCount,
 }: CashSettlementFilterSectionProps) {
   return (
-    <section className="card admin-mt-16 admin-mb-16">
-      <AdminSectionHeader
-        actions={
-          <Link className="text-link" href="/finance-closeout">
-            Open finance closeout
-          </Link>
-        }
-        description={
-          <>
-            Range: {dateRangeLabel(filters.range)}. List rows are server paginated; totals come from the summary API
-            for the same range, queue, and search filters.
-          </>
-        }
-        title="Cash settlement date range"
-      />
+    <AdminFilterPanel
+      className="admin-mt-16 admin-mb-16"
+      description={
+        <>
+          Range: {dateRangeLabel(filters.range)}. List rows are server paginated; totals come from the summary API
+          for the same range, queue, and search filters.
+        </>
+      }
+      footer={
+        <Link className="text-link" href="/finance-closeout">
+          Open finance closeout
+        </Link>
+      }
+      resultLabel={`${visibleRowCount} of ${totalRowCount}`}
+      resultTone="success"
+      title="Cash settlement date range"
+    >
       <div className="filter-row admin-mt-12">
         {[
           ['All dates', cashSettlementHref({ range: 'all', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
@@ -98,6 +100,6 @@ export function CashSettlementFilterSection({
         {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
         {filters.queue !== 'all' ? `Queue: ${cashSettlementQueueLabel(filters.queue)}.` : ''}
       </p>
-    </section>
+    </AdminFilterPanel>
   );
 }
