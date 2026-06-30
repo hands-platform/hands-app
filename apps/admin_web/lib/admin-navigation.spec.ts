@@ -14,13 +14,24 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/usage-overview')).toBe('Command: Usage Overview');
     expect(linksByHref.get('/marketing-analytics')).toBe('Command: Marketing Analytics');
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
+    expect(linksByHref.get('/finance-closeout')).toBe('Finance: Finance Closeout');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
+    expect(linksByHref.get('/wallet-adjustments')).toBe('Finance: Wallet Adjustments');
     expect(linksByHref.get('/finance-tax')).toBe('Finance: Tax Overview');
     expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe('Finance: Partner Withholding Tax');
     expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe('Finance: Booking Settlement Audit');
+    expect(linksByHref.get('/finance-tax/settlement-reversals')).toBe('Finance: Settlement Reversals');
+    expect(linksByHref.get('/finance-tax/general-ledger')).toBe('Finance: General Ledger');
+    expect(linksByHref.get('/finance-tax/payment-clearing')).toBe('Finance: Payment Clearing');
+    expect(linksByHref.get('/finance-tax/bank-reconciliation')).toBe('Finance: Bank Reconciliation');
     expect(linksByHref.get('/finance-tax/monthly-tax-closing')).toBe('Finance: Monthly Tax Closing');
     expect(linksByHref.get('/finance-tax/platform-vat')).toBe('Finance: Platform VAT');
     expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Finance: Payment Fees');
+    expect(linksByHref.get('/payments')).toBe('Finance: Payments');
+    expect(linksByHref.get('/earnings')).toBe('Finance: Earnings');
+    expect(linksByHref.get('/payouts')).toBe('Finance: Payouts');
+    expect(linksByHref.get('/referrals/cashouts')).toBe('Finance: Referral Cashouts');
+    expect(linksByHref.get('/refunds')).toBe('Finance: Refunds');
   });
 
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
