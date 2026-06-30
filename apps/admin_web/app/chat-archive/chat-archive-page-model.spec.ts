@@ -45,4 +45,17 @@ describe('chat archive page model', () => {
     expect(plan.archivePageHref(2)).toBe('/chat-archive?q=room&sender=customer&range=7d&page=2');
     expect(plan.archivePageHref(1)).toBe('/chat-archive?q=room&sender=customer&range=7d');
   });
+
+  it('treats direct bookingId links as bounded all-time booking searches', () => {
+    const plan = buildChatArchiveLoadPlan({
+      bookingId: 'booking-1',
+    });
+
+    expect(plan.dateFilters.range).toBe('all');
+    expect(plan.filters.q).toBe('booking-1');
+    expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=all&q=booking-1&take=10');
+    expect(plan.archiveSummaryHref).toBe('/admin/chat-archive/summary?dateRange=all&q=booking-1');
+    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=all&take=10');
+    expect(plan.archivePageHref(2)).toBe('/chat-archive?q=booking-1&range=all&page=2');
+  });
 });

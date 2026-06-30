@@ -9599,6 +9599,30 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('filters notification board rows by user id without loading unrelated notifications', async () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({
+      review: 'all',
+      take: '20',
+      user: 'user-1',
+    });
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 20,
+        where: {
+          AND: [{ userId: 'user-1' }],
+        },
+      }),
+    );
+  });
+
   it('counts notification summary with the same filters without loading rows', async () => {
     const prisma = {
       notification: {

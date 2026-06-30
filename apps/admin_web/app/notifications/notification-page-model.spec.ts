@@ -1233,11 +1233,13 @@ describe('notification page model', () => {
       booking: 'booking-1',
       range: 'today',
       review: 'failed',
+      user: '',
     });
     expect(buildNotificationFilters({})).toEqual({
       booking: '',
       range: 'today',
       review: 'needs-retry',
+      user: '',
     });
     expect(
       buildNotificationListHref({ booking: 'booking-1', range: 'today', review: 'failed' }, { page: 2 }),
@@ -1353,6 +1355,29 @@ describe('notification page model', () => {
       title: 'Worker path gate',
     });
     expect(notificationReviewRunbook('unknown')).toBeNull();
+  });
+
+  it('keeps direct user notification links bounded by user id on list and summary APIs', () => {
+    expect(buildNotificationFilters({ range: 'all', review: 'all', user: 'user-1' })).toEqual({
+      booking: '',
+      range: 'all',
+      review: 'all',
+      user: 'user-1',
+    });
+    expect(buildNotificationListHref({ booking: '', range: 'all', review: 'all', user: 'user-1' })).toBe(
+      '/notifications?range=all&review=all&user=user-1',
+    );
+
+    const apiHref = buildNotificationApiHref({ range: 'all', review: 'all', user: 'user-1' });
+    const apiUrl = new URL(apiHref, 'http://admin.local');
+    expect(apiUrl.pathname).toBe('/admin/notifications');
+    expect(apiUrl.searchParams.get('take')).toBe('20');
+    expect(apiUrl.searchParams.get('user')).toBe('user-1');
+
+    const summaryHref = buildNotificationSummaryApiHref({ range: 'all', review: 'all', user: 'user-1' });
+    const summaryUrl = new URL(summaryHref, 'http://admin.local');
+    expect(summaryUrl.pathname).toBe('/admin/notifications/summary');
+    expect(summaryUrl.searchParams.get('user')).toBe('user-1');
   });
 
   it('builds shared review state from the active notification queue', () => {

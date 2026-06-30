@@ -28,8 +28,12 @@ export function buildChatArchiveLoadPlan(
   params: Record<string, string | string[] | undefined>,
 ): ChatArchiveLoadPlan {
   const normalizedParams = { ...params };
+  const directBookingId = readSearchParam(normalizedParams.bookingId).trim();
+  if (directBookingId && !readSearchParam(normalizedParams.q)) {
+    normalizedParams.q = directBookingId;
+  }
   if (!readSearchParam(normalizedParams.range)) {
-    normalizedParams.range = 'today';
+    normalizedParams.range = directBookingId ? 'all' : 'today';
   }
 
   const filters = readChatArchiveFilters(normalizedParams);

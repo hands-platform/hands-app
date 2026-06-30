@@ -1317,8 +1317,9 @@ export class AdminController {
     @Query('to') to?: string,
     @Query('review') review?: string,
     @Query('booking') booking?: string,
+    @Query('user') user?: string,
   ) {
-    return this.admin.listNotifications({ booking, from, review, skip, take, to });
+    return this.admin.listNotifications({ booking, from, review, skip, take, to, user });
   }
 
   @Get('notifications/summary')
@@ -1327,8 +1328,9 @@ export class AdminController {
     @Query('to') to?: string,
     @Query('review') review?: string,
     @Query('booking') booking?: string,
+    @Query('user') user?: string,
   ) {
-    return this.admin.notificationSummary({ booking, from, review, to });
+    return this.admin.notificationSummary({ booking, from, review, to, user });
   }
 
   @Get('notifications/templates')

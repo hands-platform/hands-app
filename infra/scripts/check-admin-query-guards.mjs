@@ -204,11 +204,26 @@ if (!chatArchivePageModelSource.includes('const CHAT_ARCHIVE_DEFAULT_TAKE = 10;'
   });
 }
 
-if (!chatArchivePageModelSource.includes("normalizedParams.range = 'today';")) {
+const chatArchiveDefaultsToToday =
+  chatArchivePageModelSource.includes("normalizedParams.range = 'today';") ||
+  chatArchivePageModelSource.includes("normalizedParams.range = directBookingId ? 'all' : 'today';");
+
+if (!chatArchiveDefaultsToToday) {
   violations.push({
     area: 'admin chat archive page',
     file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
     message: 'Chat archive page must default audit loading to today.',
+  });
+}
+
+if (
+  chatArchivePageModelSource.includes('directBookingId') &&
+  !chatArchivePageModelSource.includes('normalizedParams.q = directBookingId;')
+) {
+  violations.push({
+    area: 'admin chat archive page',
+    file: 'apps/admin_web/app/chat-archive/chat-archive-page-model.ts',
+    message: 'Chat archive direct booking lookup must remain an exact bounded search.',
   });
 }
 

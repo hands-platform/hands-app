@@ -13581,6 +13581,7 @@ type NotificationBoardSummaryOptions = {
   readonly from?: string;
   readonly review?: string;
   readonly to?: string;
+  readonly user?: string;
 };
 
 type NotificationBoardQueryOptions = NotificationBoardSummaryOptions & {
@@ -13600,6 +13601,7 @@ function notificationBoardWhere(
   const dateWhere = notificationBoardDateWhere(options);
   const filters: Prisma.NotificationWhereInput[] = [];
   const booking = normalizeNullable(options.booking);
+  const user = normalizeNullable(options.user);
   const reviewWhere = notificationBoardReviewWhere(options.review);
 
   if (dateWhere) {
@@ -13607,6 +13609,9 @@ function notificationBoardWhere(
   }
   if (booking) {
     filters.push({ data: { path: ['bookingId'], equals: booking } });
+  }
+  if (user) {
+    filters.push({ userId: user });
   }
   if (reviewWhere) {
     filters.push(reviewWhere);

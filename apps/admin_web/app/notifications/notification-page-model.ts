@@ -68,6 +68,7 @@ export type NotificationFilters = {
   readonly booking: string;
   readonly range: NotificationDateRange;
   readonly review: string;
+  readonly user: string;
 };
 
 export type NotificationTablePagination = {
@@ -224,11 +225,17 @@ export function buildNotificationFilters(params: Record<string, string | string[
     review: review || DEFAULT_NOTIFICATION_REVIEW,
     booking: readSearchParam(params.booking),
     range: normalizeNotificationDateRange(readSearchParam(params.range)),
+    user: readSearchParam(params.user),
   };
 }
 
 export function buildNotificationListHref(
-  filters: { readonly booking: string; readonly range?: NotificationDateRange; readonly review: string },
+  filters: {
+    readonly booking: string;
+    readonly range?: NotificationDateRange;
+    readonly review: string;
+    readonly user?: string;
+  },
   options: { readonly page?: number } = {},
 ) {
   const query = new URLSearchParams();
@@ -240,6 +247,9 @@ export function buildNotificationListHref(
   }
   if (filters.booking) {
     query.set('booking', filters.booking);
+  }
+  if (filters.user) {
+    query.set('user', filters.user);
   }
   if (options.page && options.page > 1) {
     query.set('page', String(options.page));
@@ -262,6 +272,9 @@ export function buildNotificationApiHref(params: Record<string, string | string[
   if (filters.booking) {
     query.set('booking', filters.booking);
   }
+  if (filters.user) {
+    query.set('user', filters.user);
+  }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
     query.set('from', window.from.toISOString());
@@ -280,6 +293,9 @@ export function buildNotificationSummaryApiHref(params: Record<string, string | 
   }
   if (filters.booking) {
     query.set('booking', filters.booking);
+  }
+  if (filters.user) {
+    query.set('user', filters.user);
   }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
