@@ -2,6 +2,8 @@ import {
   BookingStatus,
   EarningStatus,
   PartnerTaxLineKind,
+  PaymentFeePayer,
+  PaymentFeeTreatment,
   PaymentMethod,
   PayoutBatchStatus,
   ProviderBankAccountStatus,
@@ -684,6 +686,171 @@ describe('EarningsService payout batches', () => {
         providerPlatformFeeLogId: 'platform-log-1',
         providerWalletLedgerEntryIds: ['wallet-ledger-1'],
         occurredAt,
+      }),
+      tx,
+    );
+  });
+
+  it('applies active payment fee policy to completed booking settlement snapshots', async () => {
+    const occurredAt = new Date('2026-06-13T03:02:00.000Z');
+    const booking = {
+      id: 'booking-payment-fee-1',
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'provider-1',
+      status: BookingStatus.COMPLETED,
+      updatedAt: occurredAt,
+      payment: {
+        id: 'payment-payment-fee-1',
+        amount: 600_000,
+        currency: 'VND',
+        method: PaymentMethod.CARD,
+      },
+      review: null,
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 600_000,
+          quantity: 1,
+          service: { id: 'service-1', name: 'Massage' },
+        },
+      ],
+    };
+    const earning = {
+      id: 'earning-payment-fee-1',
+      bookingId: 'booking-payment-fee-1',
+      providerProfileId: 'provider-1',
+      grossAmount: 600_000,
+      platformFee: 170_000,
+      withholdingAmount: 42_000,
+      netAmount: 388_000,
+      currency: 'VND',
+    };
+    const tx = {
+      paymentFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'payment-fee-policy-1',
+          name: 'Card processing fee',
+          rules: [
+            {
+              id: 'payment-fee-rule-1',
+              feeType: 'RATE_PLUS_FIXED',
+              method: PaymentMethod.CARD,
+              rateBps: 150,
+              fixedAmount: 1_000,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+          ],
+        }),
+      },
+      platformFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'platform-policy-1',
+          name: 'Default platform fee',
+          vatRateBps: 800,
+          rules: [
+            {
+              id: 'platform-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              rateBps: 0,
+              fixedAmount: 170_000,
+            },
+          ],
+        }),
+      },
+      servicePayoutRule: { findMany: vi.fn().mockResolvedValue([]) },
+      taxPolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'tax-policy-1',
+          name: 'Default partner tax',
+          rules: [
+            {
+              id: 'tax-vat-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_VAT,
+              rateBps: 500,
+              fixedAmount: 0,
+            },
+            {
+              id: 'tax-pit-rule-1',
+              scope: 'DEFAULT',
+              serviceType: null,
+              minGrossAmount: null,
+              maxGrossAmount: null,
+              taxKind: PartnerTaxLineKind.PARTNER_PIT,
+              rateBps: 200,
+              fixedAmount: 0,
+            },
+          ],
+        }),
+      },
+      providerTaxProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'tax-profile-1',
+          status: ProviderTaxProfileStatus.APPROVED,
+        }),
+      },
+      providerEarning: {
+        upsert: vi.fn().mockResolvedValue(earning),
+      },
+      providerPlatformFeeLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'platform-log-1' }),
+      },
+      providerTaxLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: 'tax-log-1' }),
+      },
+      providerWalletLedgerEntry: {
+        upsert: vi.fn().mockResolvedValue({ id: 'wallet-ledger-1' }),
+      },
+    };
+    const prisma = {
+      booking: { findUniqueOrThrow: vi.fn().mockResolvedValue(booking) },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const settlements = {
+      upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+    };
+    const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+    await expect(service.createForCompletedBooking('booking-payment-fee-1', 'provider-1')).resolves.toEqual(
+      earning,
+    );
+
+    expect(tx.paymentFeePolicyVersion.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          rules: expect.objectContaining({
+            where: { active: true, method: PaymentMethod.CARD },
+          }),
+        }),
+        where: expect.objectContaining({
+          effectiveFrom: { lte: occurredAt },
+          status: 'ACTIVE',
+        }),
+      }),
+    );
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookingId: 'booking-payment-fee-1',
+        paymentFeeFixedAmount: 1_000,
+        paymentFeePayer: PaymentFeePayer.HANDS,
+        paymentFeePolicyVersionId: 'payment-fee-policy-1',
+        paymentFeeRateBps: 150,
+        paymentFeeRuleSnapshot: expect.objectContaining({
+          method: PaymentMethod.CARD,
+          policyName: 'Card processing fee',
+          ruleId: 'payment-fee-rule-1',
+        }),
+        paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+        platformFeeGross: 118_000,
       }),
       tx,
     );

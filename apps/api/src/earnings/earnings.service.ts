@@ -3,6 +3,9 @@ import {
   PartnerTaxLineKind,
   BookingStatus,
   EarningStatus,
+  PaymentFeePayer,
+  PaymentFeeRuleType,
+  PaymentFeeTreatment,
   PaymentMethod,
   PayoutBatchStatus,
   Prisma,
@@ -21,6 +24,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { providerBankCorrectionRequest } from '../provider-onboarding/provider-bank-correction';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { bookingServiceAmount, buildCouponSettlementContext } from '../settlements/coupon-settlement';
+import { bpsAmount } from '../settlements/settlement-calculator';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
   allocatePartnerBankDeposit,
@@ -51,6 +55,8 @@ type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: 
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
 type PlatformFeePolicyWithRules = Prisma.PlatformFeePolicyVersionGetPayload<{ include: { rules: true } }>;
 type PlatformFeeRuleRecord = PlatformFeePolicyWithRules['rules'][number];
+type PaymentFeePolicyWithRules = Prisma.PaymentFeePolicyVersionGetPayload<{ include: { rules: true } }>;
+type PaymentFeeRuleRecord = PaymentFeePolicyWithRules['rules'][number];
 type TxClient = Prisma.TransactionClient;
 type PricedBookingService = {
   serviceId: string;
@@ -645,10 +651,20 @@ export class EarningsService {
         { companyCouponExpense: couponSettlement.companyCouponExpense },
       );
       const partnerPayoutAmount = Math.max(0, grossAmount - platformFee.platformFeeAmount);
-      const paymentProcessingFee = 0;
+      const paymentMethod = booking.payment?.method ?? PaymentMethod.MANUAL;
+      const paymentFee = await this.calculatePaymentFee(tx, {
+        customerPaymentAmount: couponSettlement.customerPaymentAmount,
+        occurredAt: booking.updatedAt ?? new Date(),
+        paymentMethod,
+      });
+      const paymentProcessingFee =
+        bpsAmount(couponSettlement.customerPaymentAmount, paymentFee.rateBps) + paymentFee.fixedAmount;
       const platformFeeGross = Math.max(
         0,
-        grossAmount - partnerPayoutAmount - tax.withholdingAmount - paymentProcessingFee,
+        grossAmount -
+          partnerPayoutAmount -
+          tax.withholdingAmount -
+          paymentFeePlatformFeeOffset(paymentFee, paymentProcessingFee),
       );
 
       await this.settlements?.upsertBookingSettlementSnapshot(
@@ -658,7 +674,7 @@ export class EarningsService {
           providerProfileId,
           paymentId: booking.payment?.id ?? null,
           providerEarningId: earning.id,
-          paymentMethod: booking.payment?.method ?? PaymentMethod.MANUAL,
+          paymentMethod,
           currency,
           customerPaymentAmount: couponSettlement.customerPaymentAmount,
           partnerPayoutAmount,
@@ -667,12 +683,16 @@ export class EarningsService {
           partnerVatRateBps: tax.partnerVatRateBps,
           partnerPitRateBps: tax.partnerPitRateBps,
           platformVatRateBps: platformFee.vatRateBps,
-          paymentFeeRateBps: 0,
-          paymentFeeFixedAmount: paymentProcessingFee,
+          paymentFeeRateBps: paymentFee.rateBps,
+          paymentFeeFixedAmount: paymentFee.fixedAmount,
+          paymentFeePayer: paymentFee.payer,
+          paymentFeeTreatment: paymentFee.treatment,
           taxPolicyVersionId: tax.policyVersionId ?? null,
           platformFeePolicyVersionId: platformFee.policyVersionId ?? null,
+          paymentFeePolicyVersionId: paymentFee.policyVersionId ?? null,
           taxRuleSnapshot: tax.ruleSnapshot,
           platformFeeRuleSnapshot: platformFee.ruleSnapshot,
+          paymentFeeRuleSnapshot: paymentFee.ruleSnapshot,
           providerTaxLogIds: taxLog?.id ? [taxLog.id] : [],
           providerPlatformFeeLogId: platformFeeLog?.id ?? null,
           providerWalletLedgerEntryIds: walletLedgerEntries.map((entry) => entry.id),
@@ -1908,6 +1928,74 @@ export class EarningsService {
     };
   }
 
+  private async calculatePaymentFee(
+    tx: TxClient,
+    input: {
+      customerPaymentAmount: number;
+      occurredAt: Date;
+      paymentMethod: PaymentMethod;
+    },
+  ) {
+    const paymentFeePolicyVersion = transactionPaymentFeePolicyVersion(tx);
+    if (!paymentFeePolicyVersion) {
+      return defaultPaymentFee({
+        method: input.paymentMethod,
+        reason: 'PAYMENT_FEE_POLICY_CLIENT_UNAVAILABLE',
+      });
+    }
+
+    const policy = await paymentFeePolicyVersion.findFirst({
+      where: {
+        status: TaxPolicyStatus.ACTIVE,
+        effectiveFrom: { lte: input.occurredAt },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: input.occurredAt } }],
+      },
+      include: {
+        rules: {
+          where: { active: true, method: input.paymentMethod },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    if (!policy) {
+      return defaultPaymentFee({
+        method: input.paymentMethod,
+        reason: 'NO_ACTIVE_PAYMENT_FEE_POLICY',
+      });
+    }
+
+    const rule = policy.rules[0] ?? null;
+    if (!rule) {
+      return defaultPaymentFee({
+        method: input.paymentMethod,
+        policyName: policy.name,
+        policyVersionId: policy.id,
+        reason: 'NO_MATCHING_PAYMENT_FEE_RULE',
+      });
+    }
+
+    const { fixedAmount, rateBps } = paymentFeeRuleAmounts(rule);
+    return {
+      fixedAmount,
+      payer: rule.payer,
+      policyVersionId: policy.id,
+      rateBps,
+      ruleSnapshot: {
+        feeType: rule.feeType,
+        fixedAmount,
+        method: rule.method,
+        payer: rule.payer,
+        policyName: policy.name,
+        rateBps,
+        ruleId: rule.id,
+        treatment: rule.treatment,
+      },
+      treatment: rule.treatment,
+    };
+  }
+
   private async calculateServicePayoutFee(
     tx: TxClient,
     input: {
@@ -2265,6 +2353,60 @@ function servicePayoutVatRateBps(ruleSnapshot: Prisma.InputJsonValue) {
   const lines = (ruleSnapshot as { lines?: Array<{ vatBps?: number }> }).lines;
   const firstLine = Array.isArray(lines) ? lines.find((line) => typeof line.vatBps === 'number') : null;
   return firstLine?.vatBps ?? 0;
+}
+
+function transactionPaymentFeePolicyVersion(tx: TxClient) {
+  return (
+    tx as TxClient & {
+      paymentFeePolicyVersion?: TxClient['paymentFeePolicyVersion'];
+    }
+  ).paymentFeePolicyVersion;
+}
+
+function defaultPaymentFee(input: {
+  method: PaymentMethod;
+  policyName?: string | null;
+  policyVersionId?: string | null;
+  reason: string;
+}) {
+  return {
+    fixedAmount: 0,
+    payer: PaymentFeePayer.HANDS,
+    policyVersionId: input.policyVersionId ?? null,
+    rateBps: 0,
+    ruleSnapshot: {
+      method: input.method,
+      policyName: input.policyName ?? null,
+      reason: input.reason,
+    },
+    treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+  };
+}
+
+function paymentFeeRuleAmounts(rule: PaymentFeeRuleRecord) {
+  if (rule.feeType === PaymentFeeRuleType.FIXED) {
+    return { fixedAmount: rule.fixedAmount ?? 0, rateBps: 0 };
+  }
+  if (rule.feeType === PaymentFeeRuleType.RATE) {
+    return { fixedAmount: 0, rateBps: rule.rateBps ?? 0 };
+  }
+  return {
+    fixedAmount: rule.fixedAmount ?? 0,
+    rateBps: rule.rateBps ?? 0,
+  };
+}
+
+function paymentFeePlatformFeeOffset(
+  paymentFee: { payer: PaymentFeePayer; treatment: PaymentFeeTreatment },
+  paymentProcessingFee: number,
+) {
+  if (
+    paymentFee.payer === PaymentFeePayer.HANDS &&
+    paymentFee.treatment === PaymentFeeTreatment.OPERATING_EXPENSE
+  ) {
+    return paymentProcessingFee;
+  }
+  return 0;
 }
 
 function providerWalletLedgerType(value: string): ProviderWalletLedgerType {
