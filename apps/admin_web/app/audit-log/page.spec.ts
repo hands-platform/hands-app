@@ -64,6 +64,10 @@ describe('audit log page model', () => {
     expect(markup).toContain('>22<');
     expect(markup).toContain('>33<');
     expect(markup).toContain('>11<');
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-select');
+    expect(markup).toContain('admin-form-control-button button button-primary');
+    expect(markup).toContain('admin-form-control-link button button-secondary');
   });
 
   it('surfaces FCM sent evidence for notification retry audit rows', () => {

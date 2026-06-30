@@ -4,6 +4,12 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
 import {
   formatDateTime,
@@ -99,53 +105,73 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
 
         <section className="card admin-mb-16">
           <form className="form-grid" action="/audit-log">
-            <label>
-              Search
-              <input name="q" defaultValue={filters.q} placeholder="Action, target, actor, metadata" />
-            </label>
-            <label>
-              Date range
-              <select name="range" defaultValue={filters.range}>
-                <option value="all">All dates</option>
-                <option value="today">Today</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-              </select>
-            </label>
-            <label>
-              Bucket
-              <select name="bucket" defaultValue={filters.bucket}>
-                <option value="">All</option>
-                <option value="Dispatch">Dispatch</option>
-                <option value="Operations/Policy">Operations/Policy</option>
-                <option value="Payment">Payment</option>
-                <option value="Finance/Closeout">Finance/Closeout</option>
-                <option value="Service/Pricing">Service/Pricing</option>
-                <option value="Notification">Notification</option>
-                <option value="Partner">Partner</option>
-                <option value="Tax">Tax</option>
-                <option value="System">System</option>
-              </select>
-            </label>
-            <label>
-              Priority
-              <select name="priority" defaultValue={filters.priority}>
-                <option value="">All</option>
-                <option value="4">Review this first</option>
-                <option value="3">Check before close</option>
-                <option value="2">Trace related flow</option>
-                <option value="1">Reference event</option>
-              </select>
-            </label>
+            <div className="calendar-field">
+              <span>Search</span>
+              <AdminFormInput
+                defaultValue={filters.q}
+                label="Search"
+                name="q"
+                placeholder="Action, target, actor, metadata"
+              />
+            </div>
+            <div className="calendar-field">
+              <span>Date range</span>
+              <AdminFormSelect
+                defaultValue={filters.range}
+                label="Date range"
+                name="range"
+                options={[
+                  { label: 'All dates', value: 'all' },
+                  { label: 'Today', value: 'today' },
+                  { label: 'Last 7 days', value: '7d' },
+                  { label: 'Last 30 days', value: '30d' },
+                ]}
+              />
+            </div>
+            <div className="calendar-field">
+              <span>Bucket</span>
+              <AdminFormSelect
+                defaultValue={filters.bucket}
+                label="Bucket"
+                name="bucket"
+                options={[
+                  { label: 'All', value: '' },
+                  { label: 'Dispatch', value: 'Dispatch' },
+                  { label: 'Operations/Policy', value: 'Operations/Policy' },
+                  { label: 'Payment', value: 'Payment' },
+                  { label: 'Finance/Closeout', value: 'Finance/Closeout' },
+                  { label: 'Service/Pricing', value: 'Service/Pricing' },
+                  { label: 'Notification', value: 'Notification' },
+                  { label: 'Partner', value: 'Partner' },
+                  { label: 'Tax', value: 'Tax' },
+                  { label: 'System', value: 'System' },
+                ]}
+              />
+            </div>
+            <div className="calendar-field">
+              <span>Priority</span>
+              <AdminFormSelect
+                defaultValue={filters.priority}
+                label="Priority"
+                name="priority"
+                options={[
+                  { label: 'All', value: '' },
+                  { label: 'Review this first', value: '4' },
+                  { label: 'Check before close', value: '3' },
+                  { label: 'Trace related flow', value: '2' },
+                  { label: 'Reference event', value: '1' },
+                ]}
+              />
+            </div>
             <div className="actions full-span">
-              <button className="button button-primary" type="submit">
+              <AdminFormControlButton className="button button-primary" type="submit">
                 <Filter aria-hidden="true" size={16} />
                 Apply filters
-              </button>
-              <a className="button button-secondary" href="/audit-log">
+              </AdminFormControlButton>
+              <AdminFormControlLink className="button button-secondary" href="/audit-log">
                 <X aria-hidden="true" size={16} />
                 Clear filters
-              </a>
+              </AdminFormControlLink>
               <span className="muted">
                 Showing {logs.length} of {totalEvents} events / {dateRangeLabel(filters.range)}
               </span>
