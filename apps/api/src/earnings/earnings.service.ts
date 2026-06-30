@@ -142,6 +142,13 @@ function appendProviderEarningAndWhere(
   where.AND = [...existingItems, next];
 }
 
+function mergeProviderEarningWhere(
+  base: Prisma.ProviderEarningWhereInput,
+  next: Prisma.ProviderEarningWhereInput,
+): Prisma.ProviderEarningWhereInput {
+  return { AND: [base, next] };
+}
+
 function cashSettlementQueueWhere(queue: string | null | undefined): Prisma.ProviderEarningWhereInput | null {
   switch (normalizeOptionalQuery(queue)) {
     case 'stale':
@@ -786,113 +793,115 @@ export class EarningsService {
 
   async cashSettlementSummaryForAdmin(options: AdminFinanceListQuery = {}) {
     const where = cashSettlementDebtListWhere(options);
-
-    const debtRows = await this.prisma.providerEarning.findMany({
-      where,
-      orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
-      select: {
-        id: true,
-        providerProfileId: true,
-        bookingId: true,
-        grossAmount: true,
-        platformFee: true,
-        withholdingAmount: true,
-        netAmount: true,
-        currency: true,
-        createdAt: true,
-        booking: { select: { payment: { select: { id: true, method: true, amount: true, status: true } } } },
-        walletLedgerEntries: {
-          orderBy: { createdAt: 'desc' },
-          select: { metadata: true },
-          take: 1,
+    const now = Date.now();
+    const staleCutoffAt = new Date(now - CASH_SETTLEMENT_STALE_MS);
+    const [
+      amountSummary,
+      rowCount,
+      providerSummaryRows,
+      staleDebtRowCount,
+      missingPaymentEvidenceCount,
+      cashPaymentRowCount,
+      companyCouponOffsetEntries,
+    ] = await Promise.all([
+      this.prisma.providerEarning.aggregate({
+        where,
+        _min: { createdAt: true },
+        _sum: { netAmount: true, platformFee: true, withholdingAmount: true },
+      }),
+      this.prisma.providerEarning.count({ where }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId', 'currency'],
+        where,
+        _count: { _all: true },
+        _sum: { netAmount: true, platformFee: true, withholdingAmount: true },
+        _min: { createdAt: true },
+        _max: { createdAt: true },
+      }),
+      this.prisma.providerEarning.count({
+        where: mergeProviderEarningWhere(where, { createdAt: { lte: staleCutoffAt } }),
+      }),
+      this.prisma.providerEarning.count({
+        where: mergeProviderEarningWhere(where, { booking: { is: { payment: { is: null } } } }),
+      }),
+      this.prisma.providerEarning.count({
+        where: mergeProviderEarningWhere(where, {
+          booking: { is: { payment: { is: { method: PaymentMethod.CASH } } } },
+        }),
+      }),
+      this.prisma.providerWalletLedgerEntry.findMany({
+        where: {
+          earning: { is: where },
+          type: ProviderWalletLedgerType.CASH_BOOKING_PLATFORM_FEE_DEDUCTED,
+          metadata: { path: ['cashBookingCompanyCouponExpense'], not: Prisma.JsonNull },
         },
-        providerProfile: {
+        select: { metadata: true },
+      }),
+    ]);
+
+    const sortedProviderSummaryRows = providerSummaryRows
+      .map((row) => ({
+        providerProfileId: row.providerProfileId,
+        currency: row.currency,
+        rowCount: row._count._all,
+        debtAmount: Math.abs(row._sum.netAmount ?? 0),
+        platformFee: row._sum.platformFee ?? 0,
+        taxAmount: row._sum.withholdingAmount ?? 0,
+        oldestOpenAt: row._min.createdAt ?? new Date(0),
+        latestOpenAt: row._max.createdAt ?? new Date(0),
+        settlementReference: providerWalletSettlementReference(row.providerProfileId),
+      }))
+      .sort((left, right) => right.debtAmount - left.debtAmount);
+    const topProviderProfileIds = sortedProviderSummaryRows
+      .slice(0, 20)
+      .map((group) => group.providerProfileId);
+    const providerProfiles = topProviderProfileIds.length
+      ? await this.prisma.providerProfile.findMany({
+          where: { id: { in: topProviderProfileIds } },
           select: {
             id: true,
             displayName: true,
-            user: { select: { phone: true, fullName: true } },
+            user: { select: { fullName: true, phone: true } },
           },
-        },
-      },
-    });
-    const now = Date.now();
-    const providerGroups = new Map<
-      string,
-      {
-        providerProfileId: string;
-        providerName: string;
-        providerPhone: string | null;
-        rowCount: number;
-        debtAmount: number;
-        platformFee: number;
-        taxAmount: number;
-        currency: string;
-        oldestOpenAt: Date;
-        latestOpenAt: Date;
-        settlementReference: string;
-      }
-    >();
-
-    for (const row of debtRows) {
-      const providerName =
-        row.providerProfile.displayName ?? row.providerProfile.user?.fullName ?? 'Unknown partner';
-      const existing = providerGroups.get(row.providerProfileId);
-      const group = existing ?? {
-        providerProfileId: row.providerProfileId,
-        providerName,
-        providerPhone: row.providerProfile.user?.phone ?? null,
-        rowCount: 0,
-        debtAmount: 0,
-        platformFee: 0,
-        taxAmount: 0,
-        currency: row.currency,
-        oldestOpenAt: row.createdAt,
-        latestOpenAt: row.createdAt,
-        settlementReference: providerWalletSettlementReference(row.providerProfileId),
+        })
+      : [];
+    const providerProfileById = new Map(providerProfiles.map((profile) => [profile.id, profile]));
+    const sortedProviderGroups = sortedProviderSummaryRows.map((group) => {
+      const profile = providerProfileById.get(group.providerProfileId);
+      return {
+        ...group,
+        providerName: profile?.displayName ?? profile?.user?.fullName ?? 'Unknown partner',
+        providerPhone: profile?.user?.phone ?? null,
       };
-
-      group.rowCount += 1;
-      group.debtAmount += Math.abs(row.netAmount);
-      group.platformFee += row.platformFee;
-      group.taxAmount += row.withholdingAmount;
-      if (row.createdAt < group.oldestOpenAt) {
-        group.oldestOpenAt = row.createdAt;
-      }
-      if (row.createdAt > group.latestOpenAt) {
-        group.latestOpenAt = row.createdAt;
-      }
-      providerGroups.set(row.providerProfileId, group);
-    }
-
-    const sortedProviderGroups = [...providerGroups.values()].sort(
-      (left, right) => right.debtAmount - left.debtAmount,
+    });
+    const oldestOpenAt = amountSummary._min.createdAt ?? null;
+    const totalCompanyCouponOffset = companyCouponOffsetEntries.reduce(
+      (sum, entry) =>
+        sum + cashSettlementCompanyCouponOffset({ walletLedgerEntries: [{ metadata: entry.metadata }] }),
+      0,
     );
-    const oldestOpenAt = debtRows[0]?.createdAt ?? null;
-    const staleCutoffMs = 24 * 60 * 60 * 1000;
-    const highDebtThreshold = 500_000;
+
+    const highDebtProviderCount = sortedProviderGroups.filter(
+      (group) => group.debtAmount >= CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD,
+    ).length;
 
     return {
       generatedAt: new Date(),
-      currency: debtRows[0]?.currency ?? 'VND',
-      rowCount: debtRows.length,
-      providerCount: providerGroups.size,
-      totalCompanyCouponOffset: debtRows.reduce(
-        (sum, row) => sum + cashSettlementCompanyCouponOffset(row),
-        0,
-      ),
-      totalDebtAmount: debtRows.reduce((sum, row) => sum + Math.abs(row.netAmount), 0),
-      totalPlatformFee: debtRows.reduce((sum, row) => sum + row.platformFee, 0),
-      totalTaxAmount: debtRows.reduce((sum, row) => sum + row.withholdingAmount, 0),
+      currency: sortedProviderSummaryRows[0]?.currency ?? 'VND',
+      rowCount,
+      providerCount: providerSummaryRows.length,
+      totalCompanyCouponOffset,
+      totalDebtAmount: Math.abs(amountSummary._sum.netAmount ?? 0),
+      totalPlatformFee: amountSummary._sum.platformFee ?? 0,
+      totalTaxAmount: amountSummary._sum.withholdingAmount ?? 0,
       oldestOpenAt,
       oldestOpenAgeMinutes: oldestOpenAt
         ? Math.max(0, Math.round((now - oldestOpenAt.getTime()) / 60_000))
         : 0,
-      staleDebtRowCount: debtRows.filter((row) => now - row.createdAt.getTime() > staleCutoffMs).length,
-      highDebtProviderCount: sortedProviderGroups.filter((group) => group.debtAmount >= highDebtThreshold)
-        .length,
-      missingPaymentEvidenceCount: debtRows.filter((row) => !row.booking?.payment).length,
-      cashPaymentRowCount: debtRows.filter((row) => row.booking?.payment?.method === PaymentMethod.CASH)
-        .length,
+      staleDebtRowCount,
+      highDebtProviderCount,
+      missingPaymentEvidenceCount,
+      cashPaymentRowCount,
       topProviderGroups: sortedProviderGroups.slice(0, 20),
     };
   }

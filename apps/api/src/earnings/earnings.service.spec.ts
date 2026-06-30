@@ -436,6 +436,14 @@ describe('EarningsService payout batches', () => {
   it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
     const prisma = {
       providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _min: { createdAt: null }, _sum: {} }),
+        count: vi.fn().mockResolvedValue(0),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerWalletLedgerEntry: {
         findMany: vi.fn().mockResolvedValue([]),
       },
     };
@@ -446,7 +454,7 @@ describe('EarningsService payout batches', () => {
       totalDebtAmount: 0,
     });
 
-    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           NOT: {
@@ -465,30 +473,43 @@ describe('EarningsService payout batches', () => {
   it('summarizes company coupon offsets for cash settlement debt', async () => {
     const prisma = {
       providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({
+          _min: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
+          _sum: { netAmount: -110_000, platformFee: 170_000, withholdingAmount: 42_000 },
+        }),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(0)
+          .mockResolvedValueOnce(0)
+          .mockResolvedValueOnce(1),
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            currency: 'VND',
+            providerProfileId: 'provider-coupon-1',
+            _count: { _all: 1 },
+            _sum: { netAmount: -110_000, platformFee: 170_000, withholdingAmount: 42_000 },
+            _min: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
+            _max: { createdAt: new Date('2026-06-13T03:02:00.000Z') },
+          },
+        ]),
+      },
+      providerProfile: {
         findMany: vi.fn().mockResolvedValue([
           {
-            booking: { payment: { amount: 540_000, method: PaymentMethod.CASH, status: 'PENDING' } },
-            bookingId: 'booking-cash-coupon-1',
-            createdAt: new Date('2026-06-13T03:02:00.000Z'),
-            currency: 'VND',
-            grossAmount: 600_000,
-            id: 'earning-cash-coupon-1',
-            netAmount: -110_000,
-            platformFee: 170_000,
-            providerProfile: {
-              displayName: 'Coupon Partner',
-              user: { fullName: 'Coupon Partner', phone: '+8490' },
+            id: 'provider-coupon-1',
+            displayName: 'Coupon Partner',
+            user: { fullName: 'Coupon Partner', phone: '+8490' },
+          },
+        ]),
+      },
+      providerWalletLedgerEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            metadata: {
+              cashBookingCompanyCouponExpense: 60_000,
+              totalPartnerDueToCompany: 110_000,
             },
-            providerProfileId: 'provider-coupon-1',
-            walletLedgerEntries: [
-              {
-                metadata: {
-                  cashBookingCompanyCouponExpense: 60_000,
-                  totalPartnerDueToCompany: 110_000,
-                },
-              },
-            ],
-            withholdingAmount: 42_000,
           },
         ]),
       },
@@ -503,14 +524,13 @@ describe('EarningsService payout batches', () => {
       totalTaxAmount: 42_000,
     });
 
-    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+    expect(prisma.providerWalletLedgerEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        select: expect.objectContaining({
-          walletLedgerEntries: expect.objectContaining({
-            select: { metadata: true },
-            take: 1,
-          }),
+        where: expect.objectContaining({
+          type: ProviderWalletLedgerType.CASH_BOOKING_PLATFORM_FEE_DEDUCTED,
+          metadata: { path: ['cashBookingCompanyCouponExpense'], not: expect.anything() },
         }),
+        select: { metadata: true },
       }),
     );
   });
@@ -518,6 +538,15 @@ describe('EarningsService payout batches', () => {
   it('filters cash settlement summaries by range and queue without hydrating unrelated earning rows', async () => {
     const prisma = {
       providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _min: { createdAt: null }, _sum: {} }),
+        count: vi.fn().mockResolvedValue(0),
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn(),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerWalletLedgerEntry: {
         findMany: vi.fn().mockResolvedValue([]),
       },
     };
@@ -530,7 +559,7 @@ describe('EarningsService payout batches', () => {
       totalDebtAmount: 0,
     });
 
-    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
@@ -553,6 +582,7 @@ describe('EarningsService payout batches', () => {
         }),
       }),
     );
+    expect(prisma.providerEarning.findMany).not.toHaveBeenCalled();
   });
 
   it('blocks payout batches from ledger balance even when earning aggregate is positive', async () => {

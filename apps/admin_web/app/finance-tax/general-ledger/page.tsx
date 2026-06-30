@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -74,13 +75,14 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
       ]}
       title="General Ledger"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, GENERAL_LEDGER_REVIEW_LINKS)}.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="General ledger filters"
-        />
-        <div className="participant-list admin-mt-12">
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, GENERAL_LEDGER_REVIEW_LINKS)}.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="General ledger filters"
+      >
+        <div className="participant-list">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
               className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
@@ -113,7 +115,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <section className="card admin-card-scroll">
         <AdminSectionHeader

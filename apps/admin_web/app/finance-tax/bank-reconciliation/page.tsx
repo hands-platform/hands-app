@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import type { AdminBankReconciliationSummary, AdminCompanyBankTransaction } from '../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormInput,
@@ -98,13 +99,14 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       ]}
       title="Bank Reconciliation"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, BANK_RECONCILIATION_REVIEW_LINKS)}.`}
-          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
-          title="Bank reconciliation filters"
-        />
-        <div className="participant-list admin-mt-12">
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, BANK_RECONCILIATION_REVIEW_LINKS)}.`}
+        resultLabel={`${pagination.pageSize} per page`}
+        resultTone="success"
+        title="Bank reconciliation filters"
+      >
+        <div className="participant-list">
           {DATE_RANGE_LINKS.map(([label, range]) => (
             <Link
               className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
@@ -137,7 +139,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <section className="card admin-mb-16">
         <AdminSectionHeader
