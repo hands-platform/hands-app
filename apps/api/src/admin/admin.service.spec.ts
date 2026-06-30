@@ -7577,6 +7577,9 @@ describe('AdminService query orchestration', () => {
       },
     };
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       $transaction: vi.fn(async (callback) => callback(tx)),
     };
     const service = createAdminService(prisma);
@@ -7585,6 +7588,7 @@ describe('AdminService query orchestration', () => {
       service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
         paymentClearingEntryId: 'clearing-1',
         amount: 900000,
+        approvalAdminId: 'finance-admin-2',
         notes: 'Matched to VCB transfer',
       }),
     ).resolves.toMatchObject({
@@ -7619,6 +7623,7 @@ describe('AdminService query orchestration', () => {
         action: 'bank_reconciliation.match.create',
         target: 'bank_transaction:bank-tx-1',
         metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
           paymentClearingEntryId: 'clearing-1',
           amount: 900000,
           bankStatusBefore: BankReconciliationStatus.UNMATCHED,
@@ -7629,6 +7634,59 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     });
+  });
+
+  it('rejects manual bank reconciliation matches without separate finance approval before opening a transaction', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn(),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      paymentClearingEntryId: 'clearing-1',
+      amount: 900000,
+      notes: 'Matched to VCB transfer',
+    };
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input),
+    ).rejects.toThrow('Bank reconciliation match requires approval from a different admin');
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        ...input,
+        approvalAdminId: 'admin-user-1',
+      }),
+    ).rejects.toThrow('Bank reconciliation match requires approval from a different admin');
+
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects manual bank reconciliation matches approved by an admin without finance approver authority', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        paymentClearingEntryId: 'clearing-1',
+        amount: 900000,
+        approvalAdminId: 'support-user-2',
+        notes: 'Matched to VCB transfer',
+      }),
+    ).rejects.toThrow('Bank reconciliation match requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('rejects manual bank reconciliation matches that exceed the remaining bank transaction amount', async () => {
@@ -7663,6 +7721,9 @@ describe('AdminService query orchestration', () => {
       },
     };
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       $transaction: vi.fn(async (callback) => callback(tx)),
     };
     const service = createAdminService(prisma);
@@ -7671,6 +7732,7 @@ describe('AdminService query orchestration', () => {
       service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
         paymentClearingEntryId: 'clearing-1',
         amount: 300000,
+        approvalAdminId: 'finance-admin-2',
         notes: 'Would overmatch the bank transaction',
       }),
     ).rejects.toThrow('Match amount exceeds remaining bank transaction amount');
@@ -7710,6 +7772,9 @@ describe('AdminService query orchestration', () => {
       },
     };
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       $transaction: vi.fn(async (callback) => callback(tx)),
     };
     const service = createAdminService(prisma);
@@ -7718,6 +7783,7 @@ describe('AdminService query orchestration', () => {
       service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
         paymentClearingEntryId: 'clearing-1',
         amount: 300000,
+        approvalAdminId: 'finance-admin-2',
         notes: 'Would overmatch the clearing source',
       }),
     ).rejects.toThrow('Match amount exceeds remaining reconciliation source amount');
@@ -7773,12 +7839,16 @@ describe('AdminService query orchestration', () => {
       },
     };
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       $transaction: vi.fn(async (callback) => callback(tx)),
     };
     const service = createAdminService(prisma);
 
     await expect(
       service.reverseBankReconciliationMatch('admin-user-1', 'bank-tx-1', 'match-1', {
+        approvalAdminId: 'finance-admin-2',
         reason: 'Wrong payment clearing source',
       }),
     ).resolves.toMatchObject({
@@ -7813,6 +7883,7 @@ describe('AdminService query orchestration', () => {
           bankTransactionId: 'bank-tx-1',
           bankStatusBefore: BankReconciliationStatus.MATCHED,
           bankStatusAfter: BankReconciliationStatus.PARTIALLY_MATCHED,
+          approvalAdminId: 'finance-admin-2',
           paymentClearingEntryId: 'clearing-1',
           paymentClearingStatusAfter: BookingPaymentClearingStatus.PARTIALLY_CLEARED,
           reason: 'Wrong payment clearing source',
@@ -7821,13 +7892,45 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('rejects manual bank reconciliation match reversals without separate finance approval before opening a transaction', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn(),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.reverseBankReconciliationMatch('admin-user-1', 'bank-tx-1', 'match-1', {
+        reason: 'Wrong payment clearing source',
+      }),
+    ).rejects.toThrow('Bank reconciliation match reversal requires approval from a different admin');
+    await expect(
+      service.reverseBankReconciliationMatch('admin-user-1', 'bank-tx-1', 'match-1', {
+        approvalAdminId: 'admin-user-1',
+        reason: 'Wrong payment clearing source',
+      }),
+    ).rejects.toThrow('Bank reconciliation match reversal requires approval from a different admin');
+
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects manual bank reconciliation matches with more than one source record', async () => {
-    const service = createAdminService({});
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
+      $transaction: vi.fn(),
+    };
+    const service = createAdminService(prisma);
 
     await expect(
       service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
         paymentClearingEntryId: 'clearing-1',
         payoutBatchId: 'payout-1',
+        approvalAdminId: 'finance-admin-2',
         amount: 900000,
       }),
     ).rejects.toThrow('Select exactly one reconciliation source');

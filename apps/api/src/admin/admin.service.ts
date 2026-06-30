@@ -6373,6 +6373,16 @@ export class AdminService {
     bankTransactionId: string,
     input: CreateBankReconciliationMatchDto,
   ) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Bank reconciliation match',
+    );
+    await assertFinanceActionApprovalAdmin(
+      this.prisma,
+      approvalAdminId,
+      'Bank reconciliation match',
+    );
     const source = adminBankReconciliationMatchSource(input);
     return this.prisma.$transaction(async (tx) => {
       const bankTransaction = await tx.companyBankTransaction.findUnique({
@@ -6469,6 +6479,7 @@ export class AdminService {
           target: `bank_transaction:${bankTransactionId}`,
           metadata: {
             amount: input.amount,
+            approvalAdminId,
             bankTransactionId,
             bankStatusBefore: bankTransaction.status,
             bankStatusAfter: updatedBankTransaction.status,
@@ -6502,6 +6513,16 @@ export class AdminService {
     matchId: string,
     input: ReverseBankReconciliationMatchDto,
   ) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Bank reconciliation match reversal',
+    );
+    await assertFinanceActionApprovalAdmin(
+      this.prisma,
+      approvalAdminId,
+      'Bank reconciliation match reversal',
+    );
     return this.prisma.$transaction(async (tx) => {
       const match = await tx.bankReconciliationMatch.findUnique({
         where: { id: matchId },
@@ -6568,6 +6589,7 @@ export class AdminService {
           target: `bank_reconciliation_match:${matchId}`,
           metadata: {
             amount: match.amount,
+            approvalAdminId,
             bankTransactionId,
             bankStatusBefore: match.bankTransaction.status,
             bankStatusAfter: updatedBankTransaction.status,

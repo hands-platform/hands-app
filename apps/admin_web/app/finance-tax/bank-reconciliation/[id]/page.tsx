@@ -100,12 +100,12 @@ export default async function BankReconciliationDetailPage({
         />
         {matchError ? (
           <p className="muted admin-mt-8">
-            No match was saved. Check the source id, amount, currency, and current transaction state before trying again.
+            No match was saved. Check the source id, amount, currency, approval admin, and current transaction state before trying again.
           </p>
         ) : null}
         {reverseError ? (
           <p className="muted admin-mt-8">
-            No match was reversed. Check whether the match already belongs to this bank row and is not already reversed.
+            No match was reversed. Check the approval admin and whether the match already belongs to this bank row and is not already reversed.
           </p>
         ) : null}
         <form action={createBankReconciliationMatchAction} className="form-grid compact-form admin-mt-16">
@@ -134,6 +134,12 @@ export default async function BankReconciliationDetailPage({
             defaultValue={transaction.currency}
             label="Currency"
             name="currency"
+            required
+          />
+          <AdminFormInput
+            label="Approving admin ID"
+            name="approvalAdminId"
+            placeholder="Finance approver admin id"
             required
           />
           <AdminFormTextarea
@@ -222,6 +228,13 @@ export default async function BankReconciliationDetailPage({
                         type="hidden"
                         value="Operator reversed incorrect reconciliation match from Admin detail."
                       />
+                      <AdminFormInput
+                        className="admin-inline-approval-input"
+                        label="Approving admin ID"
+                        name="approvalAdminId"
+                        placeholder="Approver id"
+                        required
+                      />
                       <AdminFormControlButton className="button button-secondary admin-inline-action">
                         Reverse
                       </AdminFormControlButton>
@@ -245,19 +258,21 @@ async function createBankReconciliationMatchAction(formData: FormData) {
   const sourceId = readFormString(formData, 'sourceId');
   const amount = Number(readFormString(formData, 'amount'));
   const currency = readFormString(formData, 'currency');
+  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const notes = readFormString(formData, 'notes');
   const sourceField = bankReconciliationSourceField(sourceType);
   const returnHref = bankTransactionId
     ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
     : '/finance-tax/bank-reconciliation';
 
-  if (!bankTransactionId || !sourceField || !sourceId || !Number.isFinite(amount) || amount <= 0) {
+  if (!bankTransactionId || !sourceField || !sourceId || !approvalAdminId || !Number.isFinite(amount) || amount <= 0) {
     redirect(`${returnHref}?matchError=invalid`);
   }
 
   try {
     await adminPostOrThrow(`/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches`, {
       amount,
+      approvalAdminId,
       ...(currency ? { currency } : {}),
       ...(notes ? { notes } : {}),
       [sourceField]: sourceId,
@@ -274,12 +289,13 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
 
   const bankTransactionId = readFormString(formData, 'bankTransactionId');
   const matchId = readFormString(formData, 'matchId');
+  const approvalAdminId = readFormString(formData, 'approvalAdminId');
   const reason = readFormString(formData, 'reason');
   const returnHref = bankTransactionId
     ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
     : '/finance-tax/bank-reconciliation';
 
-  if (!bankTransactionId || !matchId) {
+  if (!bankTransactionId || !matchId || !approvalAdminId) {
     redirect(`${returnHref}?reverseError=invalid`);
   }
 
@@ -288,7 +304,7 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
       `/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches/${encodeURIComponent(
         matchId,
       )}/reverse`,
-      { ...(reason ? { reason } : {}) },
+      { approvalAdminId, ...(reason ? { reason } : {}) },
     );
   } catch {
     redirect(`${returnHref}?reverseError=failed`);

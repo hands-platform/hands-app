@@ -1080,6 +1080,12 @@ export class CreateBankReconciliationMatchDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(128)
+  approvalAdminId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
   accountingJournalEntryId?: string | null;
 
   @IsOptional()
@@ -1120,6 +1126,12 @@ export class CreateBankReconciliationMatchDto {
 }
 
 export class ReverseBankReconciliationMatchDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  approvalAdminId?: string | null;
+
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
