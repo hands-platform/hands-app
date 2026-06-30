@@ -13,6 +13,7 @@ import {
   ParticipantStatus,
   PayoutBatchStatus,
   PaymentStatus,
+  CompanyBankTransactionType,
   PaymentFeePayer,
   PaymentFeeTreatment,
   PaymentMethod,
@@ -7076,6 +7077,61 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+  });
+
+  it('creates manual company bank transactions with audit evidence for reconciliation', async () => {
+    const prisma = {
+      companyBankAccount: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-account-1',
+          currency: 'VND',
+          status: 'ACTIVE',
+        }),
+      },
+      companyBankTransaction: {
+        create: vi.fn().mockResolvedValue({ id: 'bank-tx-1', amount: 900000 }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createCompanyBankTransaction('admin-user-1', {
+        bankAccountId: 'bank-account-1',
+        type: 'INFLOW',
+        amount: 900000,
+        occurredAt: '2026-06-30T05:00:00.000Z',
+        valueDate: '2026-06-30T00:00:00.000Z',
+        transferRef: 'VCB-900',
+        counterpartyName: 'Demo Customer',
+        description: 'Manual import from bank statement',
+      }),
+    ).resolves.toEqual({ id: 'bank-tx-1', amount: 900000 });
+
+    expect(prisma.companyBankTransaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 900000,
+        bankAccountId: 'bank-account-1',
+        counterpartyName: 'Demo Customer',
+        currency: 'VND',
+        description: 'Manual import from bank statement',
+        occurredAt: new Date('2026-06-30T05:00:00.000Z'),
+        sourceKey: 'manual-bank-transaction:bank-account-1:INFLOW:VCB-900',
+        transferRef: 'VCB-900',
+        type: CompanyBankTransactionType.INFLOW,
+        valueDate: new Date('2026-06-30T00:00:00.000Z'),
+      }),
+      select: expect.objectContaining({ id: true }),
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'company_bank_transaction.manual_create',
+        target: 'company_bank_transaction:bank-tx-1',
+      }),
+    });
   });
 
   it('creates a manual bank reconciliation match and closes matching clearing evidence in one transaction', async () => {

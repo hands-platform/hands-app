@@ -16,6 +16,7 @@ import {
   BulkUpsertServicePayoutRulesDto,
   CreateAdminServiceDto,
   CreateBankReconciliationMatchDto,
+  CreateCompanyBankTransactionDto,
   CreateCouponDto,
   CreateManualWalletAdjustmentDto,
   CreatePartnerReportDto,
@@ -938,6 +939,14 @@ export class AdminController {
   @Get('bank-reconciliation/:id')
   bankReconciliationTransactionDetail(@Param('id') id: string) {
     return this.admin.bankReconciliationTransactionDetail(id);
+  }
+
+  @Post('bank-reconciliation/transactions')
+  createCompanyBankTransaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateCompanyBankTransactionDto,
+  ) {
+    return this.admin.createCompanyBankTransaction(user.id, body);
   }
 
   @Post('bank-reconciliation/:id/matches')

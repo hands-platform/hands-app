@@ -23,6 +23,7 @@ import {
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  CompanyBankTransactionType,
   MonthlyTaxClosingStatus,
   PayoutBatchStatus,
   ProviderWalletWithdrawalRequestStatus,
@@ -995,6 +996,60 @@ export class UpdateProviderWalletWithdrawalRequestDto {
   @IsString()
   @MaxLength(500)
   correctionReason?: string | null;
+}
+
+export class CreateCompanyBankTransactionDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  bankAccountId!: string;
+
+  @IsEnum(CompanyBankTransactionType)
+  type!: CompanyBankTransactionType;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(10_000_000_000)
+  amount!: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsDateString()
+  occurredAt!: string;
+
+  @IsOptional()
+  @IsDateString()
+  valueDate?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  sourceKey?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  transferRef?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  counterpartyName?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  description?: string | null;
 }
 
 export class CreateBankReconciliationMatchDto {

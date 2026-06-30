@@ -86,6 +86,7 @@ describe('AdminController notification and push actions', () => {
     listBankReconciliationTransactions: vi.fn(),
     bankReconciliationSummary: vi.fn(),
     bankReconciliationTransactionDetail: vi.fn(),
+    createCompanyBankTransaction: vi.fn(),
     createBankReconciliationMatch: vi.fn(),
     reverseBankReconciliationMatch: vi.fn(),
     listPayoutBatches: vi.fn(),
@@ -1022,6 +1023,28 @@ describe('AdminController notification and push actions', () => {
       path: 'bank-reconciliation/:id',
     });
     expect(admin.bankReconciliationTransactionDetail).toHaveBeenCalledWith('bank-tx-1');
+  });
+
+  it('exposes manual company bank transaction creation for reconciliation import', async () => {
+    const user = { id: 'admin-1' } as never;
+    const payload = {
+      bankAccountId: 'bank-account-1',
+      type: 'INFLOW',
+      amount: 900000,
+      occurredAt: '2026-06-30T05:00:00.000Z',
+      transferRef: 'VCB-900',
+    };
+    admin.createCompanyBankTransaction.mockResolvedValue({ id: 'bank-tx-1' });
+
+    await expect(controller.createCompanyBankTransaction(user, payload as never)).resolves.toEqual({
+      id: 'bank-tx-1',
+    });
+
+    expect(routeMetadata('createCompanyBankTransaction' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'bank-reconciliation/transactions',
+    });
+    expect(admin.createCompanyBankTransaction).toHaveBeenCalledWith('admin-1', payload);
   });
 
   it('exposes manual bank reconciliation match creation by transaction id', async () => {

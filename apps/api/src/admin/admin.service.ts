@@ -5,6 +5,7 @@ import {
   BookingPaymentClearingStatus,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  CompanyBankAccountStatus,
   CompanyBankTransactionType,
   BookingStatus,
   EarningStatus,
@@ -203,6 +204,7 @@ import {
 import type {
   AdminPushCampaignDto,
   CreateBankReconciliationMatchDto,
+  CreateCompanyBankTransactionDto,
   CreateManualWalletAdjustmentDto,
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
@@ -6204,6 +6206,71 @@ export class AdminService {
     if (!transaction) {
       throw new NotFoundException('Bank reconciliation transaction not found');
     }
+    return transaction;
+  }
+
+  async createCompanyBankTransaction(actorId: string, input: CreateCompanyBankTransactionDto) {
+    const type = companyBankTransactionType(input.type);
+    const amount = integerValue(input.amount);
+    if (amount <= 0) {
+      throw new BadRequestException('Bank transaction amount must be positive');
+    }
+    const occurredAt = requiredAdminDate(input.occurredAt, 'Bank transaction occurredAt');
+    const valueDate = optionalAdminDate(input.valueDate, 'Bank transaction valueDate');
+    const bankAccountId = normalizeRequiredId(input.bankAccountId, 'Company bank account id');
+    const bankAccount = await this.prisma.companyBankAccount.findUnique({
+      where: { id: bankAccountId },
+      select: { id: true, currency: true, status: true },
+    });
+    if (!bankAccount) {
+      throw new NotFoundException('Company bank account not found');
+    }
+    if (bankAccount.status !== CompanyBankAccountStatus.ACTIVE) {
+      throw new BadRequestException('Company bank account must be active before importing transactions');
+    }
+
+    const currency = normalizeCompanyBankTransactionCurrency(input.currency, bankAccount.currency);
+    const sourceKey = companyBankTransactionSourceKey({
+      amount,
+      bankAccountId,
+      occurredAt,
+      sourceKey: input.sourceKey,
+      transferRef: input.transferRef,
+      type,
+    });
+    const transferRef = normalizeNullable(input.transferRef);
+    const counterpartyName = normalizeNullable(input.counterpartyName);
+    const description = normalizeNullable(input.description);
+    const transaction = await this.prisma.companyBankTransaction.create({
+      data: {
+        amount,
+        bankAccountId,
+        counterpartyName,
+        currency,
+        description,
+        metadata: toJson({
+          manualImport: true,
+          importedByAdminId: actorId,
+        }),
+        occurredAt,
+        sourceKey,
+        transferRef,
+        type,
+        valueDate,
+      },
+      select: adminCompanyBankTransactionListSelect,
+    });
+
+    await this.writeAudit(actorId, 'company_bank_transaction.manual_create', `company_bank_transaction:${transaction.id}`, {
+      amount,
+      bankAccountId,
+      currency,
+      occurredAt: occurredAt.toISOString(),
+      sourceKey,
+      transferRef,
+      type,
+    });
+
     return transaction;
   }
 
@@ -12608,6 +12675,61 @@ function adminBankReconciliationCountArgs(
   where: Prisma.CompanyBankTransactionWhereInput | undefined,
 ): Prisma.CompanyBankTransactionCountArgs {
   return where ? { where } : {};
+}
+
+function companyBankTransactionType(value: string | CompanyBankTransactionType) {
+  if (Object.values(CompanyBankTransactionType).includes(value as CompanyBankTransactionType)) {
+    return value as CompanyBankTransactionType;
+  }
+  throw new BadRequestException('Valid bank transaction type is required');
+}
+
+function normalizeCompanyBankTransactionCurrency(value: string | null | undefined, fallback: string | null | undefined) {
+  return (normalizeNullable(value) ?? fallback ?? 'VND').toUpperCase();
+}
+
+function companyBankTransactionSourceKey(input: {
+  amount: number;
+  bankAccountId: string;
+  occurredAt: Date;
+  sourceKey?: string | null;
+  transferRef?: string | null;
+  type: CompanyBankTransactionType;
+}) {
+  const sourceKey = normalizeNullable(input.sourceKey);
+  if (sourceKey) {
+    return sourceKey;
+  }
+  const transferRef = normalizeNullable(input.transferRef);
+  const uniquePart = transferRef ?? `${input.occurredAt.toISOString()}:${input.amount}`;
+  return `manual-bank-transaction:${input.bankAccountId}:${input.type}:${uniquePart}`;
+}
+
+function normalizeRequiredId(value: string | null | undefined, label: string) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    throw new BadRequestException(`${label} is required`);
+  }
+  return normalized;
+}
+
+function requiredAdminDate(value: string | Date | null | undefined, label: string) {
+  const date = optionalAdminDate(value, label);
+  if (!date) {
+    throw new BadRequestException(`${label} is required`);
+  }
+  return date;
+}
+
+function optionalAdminDate(value: string | Date | null | undefined, label: string) {
+  if (!value) {
+    return null;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`${label} must be a valid date`);
+  }
+  return date;
 }
 
 type AdminBankReconciliationMatchSource = {

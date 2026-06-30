@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import type { AdminBankReconciliationSummary, AdminCompanyBankTransaction } from '../../../lib/admin-api';
-import { adminGet } from '../../../lib/admin-api';
+import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
@@ -114,6 +115,56 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </div>
       </section>
 
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Create one bank statement row from manual evidence. Imported rows start unmatched and can be reconciled from the transaction detail page."
+          title="Manual bank transaction import"
+        />
+        <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
+          <input name="redirectTo" type="hidden" value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })} />
+          <label>
+            Bank account ID
+            <input className="form-input" name="bankAccountId" required />
+          </label>
+          <label>
+            Type
+            <select className="form-input" name="type" required defaultValue="INFLOW">
+              <option value="INFLOW">Inflow</option>
+              <option value="OUTFLOW">Outflow</option>
+            </select>
+          </label>
+          <label>
+            Amount
+            <input className="form-input" inputMode="numeric" min={1} name="amount" required type="number" />
+          </label>
+          <label>
+            Occurred at
+            <input className="form-input" name="occurredAt" required type="datetime-local" />
+          </label>
+          <label>
+            Value date
+            <input className="form-input" name="valueDate" type="date" />
+          </label>
+          <label>
+            Transfer reference
+            <input className="form-input" name="transferRef" />
+          </label>
+          <label>
+            Counterparty
+            <input className="form-input" name="counterpartyName" />
+          </label>
+          <label className="form-grid-wide">
+            Description
+            <textarea className="form-input" name="description" rows={2} />
+          </label>
+          <div className="form-actions form-grid-wide">
+            <button className="btn btn-primary" type="submit">
+              Import bank transaction
+            </button>
+          </div>
+        </form>
+      </section>
+
       <section className="card admin-card-scroll">
         <AdminSectionHeader
           description="The list keeps match details collapsed. Use transfer reference, bank account, and source key to open the related evidence only when needed."
@@ -178,6 +229,33 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       </section>
     </AdminPageTemplate>
   );
+}
+
+async function createCompanyBankTransactionAction(formData: FormData) {
+  'use server';
+
+  const redirectTo = String(formData.get('redirectTo') ?? '/finance-tax/bank-reconciliation');
+  const occurredAt = formDateTimeToIso(formData.get('occurredAt'));
+  const valueDate = String(formData.get('valueDate') ?? '').trim();
+  await adminPostOrThrow('/admin/bank-reconciliation/transactions', {
+    amount: Number(formData.get('amount')),
+    bankAccountId: String(formData.get('bankAccountId') ?? '').trim(),
+    counterpartyName: String(formData.get('counterpartyName') ?? '').trim() || null,
+    description: String(formData.get('description') ?? '').trim() || null,
+    occurredAt,
+    transferRef: String(formData.get('transferRef') ?? '').trim() || null,
+    type: String(formData.get('type') ?? 'INFLOW').trim(),
+    valueDate: valueDate ? `${valueDate}T00:00:00.000Z` : null,
+  });
+  redirect(redirectTo);
+}
+
+function formDateTimeToIso(value: FormDataEntryValue | null) {
+  const input = String(value ?? '').trim();
+  if (!input) {
+    return '';
+  }
+  return new Date(input).toISOString();
 }
 
 function statusPill(status: string) {
