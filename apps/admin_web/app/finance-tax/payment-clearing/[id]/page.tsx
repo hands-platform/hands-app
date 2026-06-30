@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
@@ -86,13 +87,16 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         </div>
       </section>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Bank matches are loaded from this detail endpoint only. Open the bank transaction detail for full reconciliation evidence."
-          title="Bank reconciliation matches"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Bank matches are loaded from this detail endpoint only. Open the bank transaction detail for full reconciliation evidence."
+        resultLabel={`${matches.length} match(es)`}
+        resultTone="info"
+        title="Bank reconciliation matches"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No bank reconciliation matches are linked to this clearing row."
             headers={['Bank transaction', 'Journal entry', 'Counterparty', 'Amount', 'Matched', 'Status']}
             rowCount={matches.length}
@@ -134,7 +138,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

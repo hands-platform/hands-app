@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { AdminBankReconciliationTransactionDetail } from '../../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormInput,
@@ -154,13 +155,16 @@ export default async function BankReconciliationDetailPage({
         </form>
       </section>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Each match points to the finance source used to reconcile this bank row."
-          title="Reconciliation matches"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Each match points to the finance source used to reconcile this bank row."
+        resultLabel={`${matches.length} match(es)`}
+        resultTone="info"
+        title="Reconciliation matches"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No reconciliation matches are linked to this bank transaction."
             headers={[
               'Matched source',
@@ -245,7 +249,7 @@ export default async function BankReconciliationDetailPage({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

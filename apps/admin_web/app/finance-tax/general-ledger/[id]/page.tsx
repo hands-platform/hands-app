@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
@@ -90,13 +91,16 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         </div>
       </section>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Debits and credits posted by the source record. Bank match count is shown without loading unrelated bank transaction lists."
-          title="Journal entries"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Debits and credits posted by the source record. Bank match count is shown without loading unrelated bank transaction lists."
+        resultLabel={`${batch.entries.length} entry row(s)`}
+        resultTone="info"
+        title="Journal entries"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No journal entries were recorded for this batch."
             headers={['Side', 'Account', 'Amount', 'Memo', 'Source', 'Bank match']}
             rowCount={batch.entries.length}
@@ -126,7 +130,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

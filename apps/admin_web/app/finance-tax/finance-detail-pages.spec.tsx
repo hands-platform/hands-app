@@ -81,6 +81,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('Bank reconciliation matches');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
   });
 
   it('renders general ledger detail journal rows and evidence links', async () => {
@@ -145,6 +147,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
   });
 
   it('renders bank reconciliation detail and manual match controls', async () => {
@@ -216,5 +220,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('Create match');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
   });
 });
