@@ -1,6 +1,9 @@
 import type {
+  AdminAccountingJournalBatchSummary,
+  AdminBankReconciliationSummary,
   AdminBookingSettlementSnapshot,
   AdminBookingSettlementSnapshotSummary,
+  AdminBookingPaymentClearingSummary,
   AdminCouponFinanceSummary,
   AdminPaymentFeeSummary,
   AdminPlatformVatSummary,
@@ -27,10 +30,31 @@ export type BookingSettlementReview =
   | 'cash'
   | 'non-cash';
 
+export type FinanceAccountingReview =
+  | 'all'
+  | 'draft'
+  | 'posted'
+  | 'reversed'
+  | 'open'
+  | 'partial'
+  | 'cleared'
+  | 'unmatched'
+  | 'matched'
+  | 'ignored'
+  | 'inflow'
+  | 'outflow';
+
 export type BookingSettlementFilters = {
   readonly page: number;
   readonly range: AdminDateRange;
   readonly review: BookingSettlementReview;
+  readonly take: number;
+};
+
+export type FinanceAccountingFilters = {
+  readonly page: number;
+  readonly range: AdminDateRange;
+  readonly review: FinanceAccountingReview;
   readonly take: number;
 };
 
@@ -55,6 +79,9 @@ export type MonthlyTaxClosingStatusOption = {
 export type TaxFinanceWorkflowPage =
   | 'overview'
   | 'booking-settlement-audit'
+  | 'general-ledger'
+  | 'payment-clearing'
+  | 'bank-reconciliation'
   | 'coupon-finance'
   | 'monthly-tax-closing'
   | 'platform-vat'
@@ -91,6 +118,20 @@ const BOOKING_SETTLEMENT_REVIEW_VALUES: readonly BookingSettlementReview[] = [
   'cash',
   'non-cash',
 ];
+const FINANCE_ACCOUNTING_REVIEW_VALUES: readonly FinanceAccountingReview[] = [
+  'all',
+  'draft',
+  'posted',
+  'reversed',
+  'open',
+  'partial',
+  'cleared',
+  'unmatched',
+  'matched',
+  'ignored',
+  'inflow',
+  'outflow',
+];
 
 export const BOOKING_SETTLEMENT_REVIEW_LINKS: readonly {
   readonly label: string;
@@ -105,6 +146,39 @@ export const BOOKING_SETTLEMENT_REVIEW_LINKS: readonly {
   { label: 'All', review: 'all' },
 ];
 
+export const GENERAL_LEDGER_REVIEW_LINKS: readonly {
+  readonly label: string;
+  readonly review: FinanceAccountingReview;
+}[] = [
+  { label: 'Posted', review: 'posted' },
+  { label: 'Draft', review: 'draft' },
+  { label: 'Reversed', review: 'reversed' },
+  { label: 'All', review: 'all' },
+];
+
+export const PAYMENT_CLEARING_REVIEW_LINKS: readonly {
+  readonly label: string;
+  readonly review: FinanceAccountingReview;
+}[] = [
+  { label: 'Open', review: 'open' },
+  { label: 'Partial', review: 'partial' },
+  { label: 'Cleared', review: 'cleared' },
+  { label: 'Reversed', review: 'reversed' },
+  { label: 'All', review: 'all' },
+];
+
+export const BANK_RECONCILIATION_REVIEW_LINKS: readonly {
+  readonly label: string;
+  readonly review: FinanceAccountingReview;
+}[] = [
+  { label: 'Unmatched', review: 'unmatched' },
+  { label: 'Matched', review: 'matched' },
+  { label: 'Partial', review: 'partial' },
+  { label: 'Inflow', review: 'inflow' },
+  { label: 'Outflow', review: 'outflow' },
+  { label: 'All', review: 'all' },
+];
+
 export function readBookingSettlementFilters(
   params: Record<string, string | string[] | undefined>,
 ): BookingSettlementFilters {
@@ -112,6 +186,18 @@ export function readBookingSettlementFilters(
     page: readTaxSettlementPage(readSearchParam(params.page)),
     range: normalizeDateRange(readSearchParam(params.range)),
     review: normalizeBookingSettlementReview(readSearchParam(params.review)),
+    take: boundedTake(readSearchParam(params.take)),
+  };
+}
+
+export function readFinanceAccountingFilters(
+  params: Record<string, string | string[] | undefined>,
+  fallbackReview: FinanceAccountingReview = 'all',
+): FinanceAccountingFilters {
+  return {
+    page: readTaxSettlementPage(readSearchParam(params.page)),
+    range: normalizeDateRange(readSearchParam(params.range)),
+    review: normalizeFinanceAccountingReview(readSearchParam(params.review), fallbackReview),
     take: boundedTake(readSearchParam(params.take)),
   };
 }
@@ -154,6 +240,47 @@ export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSet
     params.set('review', filters.review);
   }
   return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
+}
+
+export function buildAccountingJournalBatchApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingApiHref('/admin/accounting-journal-batches', filters);
+}
+
+export function buildAccountingJournalBatchSummaryApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingSummaryApiHref('/admin/accounting-journal-batches/summary', filters);
+}
+
+export function buildBookingPaymentClearingApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingApiHref('/admin/booking-payment-clearing', filters);
+}
+
+export function buildBookingPaymentClearingSummaryApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingSummaryApiHref('/admin/booking-payment-clearing/summary', filters);
+}
+
+export function buildBankReconciliationApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingApiHref('/admin/bank-reconciliation', filters);
+}
+
+export function buildBankReconciliationSummaryApiHref(filters: FinanceAccountingFilters) {
+  return buildFinanceAccountingSummaryApiHref('/admin/bank-reconciliation/summary', filters);
+}
+
+function buildFinanceAccountingApiHref(basePath: string, filters: FinanceAccountingFilters) {
+  const params = new URLSearchParams({ range: filters.range, take: String(filters.take) });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  appendTaxSettlementSkip(params, filters);
+  return `${basePath}?${params.toString()}`;
+}
+
+function buildFinanceAccountingSummaryApiHref(basePath: string, filters: FinanceAccountingFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  return `${basePath}?${params.toString()}`;
 }
 
 export function buildCouponFinanceSummaryApiHref(filters: BookingSettlementFilters) {
@@ -233,6 +360,27 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
+export function generalLedgerHref(filters: FinanceAccountingFilters) {
+  return financeAccountingHref('/finance-tax/general-ledger', filters);
+}
+
+export function paymentClearingHref(filters: FinanceAccountingFilters) {
+  return financeAccountingHref('/finance-tax/payment-clearing', filters);
+}
+
+export function bankReconciliationHref(filters: FinanceAccountingFilters) {
+  return financeAccountingHref('/finance-tax/bank-reconciliation', filters);
+}
+
+function financeAccountingHref(pathname: string, filters: FinanceAccountingFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (filters.review !== 'all') {
+    params.set('review', filters.review);
+  }
+  appendTaxSettlementUiPagination(params, filters);
+  return `${pathname}?${params.toString()}`;
+}
+
 export function couponFinanceHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
   if (filters.review !== 'all') {
@@ -284,22 +432,45 @@ export function paymentFeeHref(filters: MonthlyTaxClosingFilters) {
 }
 
 export function buildTaxFinanceWorkflowLinks({
+  accountingFilters,
   current,
   monthlyFilters,
   settlementFilters,
   withholdingFilters,
 }: {
+  readonly accountingFilters?: FinanceAccountingFilters;
   readonly current: TaxFinanceWorkflowPage;
   readonly monthlyFilters: MonthlyTaxClosingFilters;
   readonly settlementFilters: BookingSettlementFilters;
   readonly withholdingFilters: PartnerWithholdingTaxFilters;
 }): TaxFinanceWorkflowLink[] {
+  const ledgerFilters: FinanceAccountingFilters = accountingFilters ?? {
+    page: settlementFilters.page,
+    range: settlementFilters.range,
+    review: 'all',
+    take: settlementFilters.take,
+  };
   const links: TaxFinanceWorkflowLink[] = [
     { key: 'overview', label: 'Tax overview', href: '/finance-tax' },
     {
       key: 'booking-settlement-audit',
       label: 'Booking settlement audit',
       href: bookingSettlementAuditHref(settlementFilters),
+    },
+    {
+      key: 'general-ledger',
+      label: 'General ledger',
+      href: generalLedgerHref(ledgerFilters),
+    },
+    {
+      key: 'payment-clearing',
+      label: 'Payment clearing',
+      href: paymentClearingHref(ledgerFilters),
+    },
+    {
+      key: 'bank-reconciliation',
+      label: 'Bank reconciliation',
+      href: bankReconciliationHref(ledgerFilters),
     },
     {
       key: 'coupon-finance',
@@ -450,6 +621,37 @@ export function emptyBookingSettlementSummary(): AdminBookingSettlementSnapshotS
     paymentProcessingFee: 0,
     openTaxCount: 0,
     paidTaxCount: 0,
+  };
+}
+
+export function emptyAccountingJournalBatchSummary(): AdminAccountingJournalBatchSummary {
+  return {
+    count: 0,
+    currency: 'VND',
+    postedCount: 0,
+    reversedCount: 0,
+    totalCredit: 0,
+    totalDebit: 0,
+  };
+}
+
+export function emptyBookingPaymentClearingSummary(): AdminBookingPaymentClearingSummary {
+  return {
+    amount: 0,
+    clearedCount: 0,
+    count: 0,
+    currency: 'VND',
+    openCount: 0,
+  };
+}
+
+export function emptyBankReconciliationSummary(): AdminBankReconciliationSummary {
+  return {
+    amount: 0,
+    count: 0,
+    currency: 'VND',
+    matchedCount: 0,
+    unmatchedCount: 0,
   };
 }
 
@@ -1117,10 +1319,26 @@ export function reviewLabel(review: BookingSettlementReview) {
   return BOOKING_SETTLEMENT_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'Needs action';
 }
 
+export function financeAccountingReviewLabel(
+  review: FinanceAccountingReview,
+  links: readonly { readonly label: string; readonly review: FinanceAccountingReview }[],
+) {
+  return links.find((item) => item.review === review)?.label ?? 'All';
+}
+
 function normalizeBookingSettlementReview(value: string): BookingSettlementReview {
   return BOOKING_SETTLEMENT_REVIEW_VALUES.includes(value as BookingSettlementReview)
     ? (value as BookingSettlementReview)
     : 'open';
+}
+
+function normalizeFinanceAccountingReview(
+  value: string,
+  fallback: FinanceAccountingReview,
+): FinanceAccountingReview {
+  return FINANCE_ACCOUNTING_REVIEW_VALUES.includes(value as FinanceAccountingReview)
+    ? (value as FinanceAccountingReview)
+    : fallback;
 }
 
 function payoutWithdrawalStatusHref(range: AdminDateRange, withdrawalStatus: string) {

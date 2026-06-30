@@ -1,0 +1,199 @@
+import Link from 'next/link';
+
+import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
+import { adminGet } from '../../../lib/admin-api';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
+import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { dateRangeLabel } from '../../../lib/date-range';
+import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
+import {
+  GENERAL_LEDGER_REVIEW_LINKS,
+  buildAccountingJournalBatchApiHref,
+  buildAccountingJournalBatchSummaryApiHref,
+  buildTaxFinanceWorkflowLinks,
+  buildTaxSettlementServerPagination,
+  emptyAccountingJournalBatchSummary,
+  financeAccountingReviewLabel,
+  generalLedgerHref,
+  readBookingSettlementFilters,
+  readFinanceAccountingFilters,
+  readMonthlyTaxClosingFilters,
+  readPartnerWithholdingTaxFilters,
+} from '../tax-settlement-page-model';
+
+type GeneralLedgerPageProps = {
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const DATE_RANGE_LINKS = [
+  ['Today', 'today'],
+  ['Last 7 days', '7d'],
+  ['Last 30 days', '30d'],
+  ['All dates', 'all'],
+] as const;
+
+export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const filters = readFinanceAccountingFilters(params, 'posted');
+  const settlementFilters = readBookingSettlementFilters(params);
+  const monthlyFilters = readMonthlyTaxClosingFilters(params);
+  const withholdingFilters = readPartnerWithholdingTaxFilters(params);
+  const [summary, batches] = await Promise.all([
+    adminGet<AdminAccountingJournalBatchSummary>(
+      buildAccountingJournalBatchSummaryApiHref(filters),
+      emptyAccountingJournalBatchSummary(),
+    ),
+    adminGet<AdminAccountingJournalBatch[]>(buildAccountingJournalBatchApiHref(filters), []),
+  ]);
+  const pagination = buildTaxSettlementServerPagination(batches, filters, summary.count);
+
+  return (
+    <AdminPageTemplate
+      actions={
+        <TaxFinanceWorkflowActions
+          links={buildTaxFinanceWorkflowLinks({
+            accountingFilters: filters,
+            current: 'general-ledger',
+            monthlyFilters,
+            settlementFilters,
+            withholdingFilters,
+          })}
+        />
+      }
+      description="Bounded journal batch lookup for booking settlement, reversal, manual adjustment, refund, payout, and bank reconciliation evidence."
+      metrics={[
+        { helper: 'Journal batches matching the current filters.', label: 'Batches', value: summary.count },
+        { helper: 'Posted journal batches.', label: 'Posted', value: summary.postedCount },
+        { helper: 'Reversed journal batches.', label: 'Reversed', value: summary.reversedCount },
+        { helper: 'Total debits in the selected scope.', label: 'Debits', value: formatMoney(summary.totalDebit, summary.currency) },
+        { helper: 'Total credits in the selected scope.', label: 'Credits', value: formatMoney(summary.totalCredit, summary.currency) },
+      ]}
+      title="General Ledger"
+    >
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, GENERAL_LEDGER_REVIEW_LINKS)}.`}
+          status={<span className="pill pill-success">{pagination.pageSize} per page</span>}
+          title="General ledger filters"
+        />
+        <div className="participant-list admin-mt-12">
+          {DATE_RANGE_LINKS.map(([label, range]) => (
+            <Link
+              className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
+              href={generalLedgerHref({ ...filters, page: 1, range })}
+              key={range}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="participant-list admin-mt-10">
+          {GENERAL_LEDGER_REVIEW_LINKS.map((item) => (
+            <Link
+              className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
+              href={generalLedgerHref({ ...filters, page: 1, review: item.review })}
+              key={item.review}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card admin-card-scroll">
+        <AdminSectionHeader
+          description="This list intentionally shows journal batches and entry counts only. Open source records when entry-level evidence is required."
+          title="Journal batches"
+        />
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage="No journal batches match the current filters."
+            headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status']}
+            rowCount={pagination.rows.length}
+          >
+            {pagination.rows.map((batch) => (
+              <tr key={batch.id}>
+                <td>
+                  <strong>{batch.sourceType}</strong>
+                  <div className="muted">{shortId(batch.sourceId)}</div>
+                  <div className="muted">{batch._count?.entries ?? 0} entries</div>
+                </td>
+                <td>
+                  {batch.bookingId ? (
+                    <Link className="text-link" href={`/bookings/${batch.bookingId}`}>
+                      {shortId(batch.bookingId)}
+                    </Link>
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                  <div className="muted">{batch.booking?.status ?? 'No booking'}</div>
+                </td>
+                <td>{personCell(batch.customerProfile?.user, 'Unknown customer')}</td>
+                <td>
+                  {batch.providerProfileId ? (
+                    <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
+                      {batch.providerProfile?.displayName ?? personName(batch.providerProfile?.user, 'Unknown partner')}
+                    </Link>
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                  <div className="muted">{batch.providerProfile?.user?.phone ?? '-'}</div>
+                </td>
+                <td>
+                  <strong>{batch.monthlyPeriod ?? '-'}</strong>
+                  <div className="muted">{formatDateTime(batch.postedAt)}</div>
+                </td>
+                <td>
+                  <strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>
+                  <div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>
+                </td>
+                <td>
+                  <span className={`pill ${statusPill(batch.status)}`}>{batch.status}</span>
+                  {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+        <div className="vuexy-booking-table-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="General ledger pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) => generalLedgerHref({ ...filters, page })}
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={pagination.totalPages}
+          />
+        </div>
+      </section>
+    </AdminPageTemplate>
+  );
+}
+
+function personCell(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
+  return (
+    <>
+      <strong>{personName(user, fallback)}</strong>
+      <div className="muted">{user?.phone ?? '-'}</div>
+    </>
+  );
+}
+
+function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
+  return user?.fullName ?? user?.phone ?? fallback;
+}
+
+function statusPill(status: string) {
+  if (status === 'POSTED') {
+    return 'pill-success';
+  }
+  if (status === 'REVERSED') {
+    return 'pill-danger';
+  }
+  return 'pill-warn';
+}

@@ -1,7 +1,10 @@
 import {
+  AccountingJournalBatchStatus,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  BankReconciliationStatus,
   BookingMatchSource,
+  BookingPaymentClearingStatus,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingStatus,
@@ -6447,6 +6450,201 @@ describe('AdminService query orchestration', () => {
             { settlementStatus: BookingSettlementStatus.POSTED },
           ]),
         }),
+      }),
+    );
+  });
+
+  it('lists accounting journal batches with bounded posted-at filters and entry counts only', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'journal-batch-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listAccountingJournalBatches({
+        range: '7d',
+        review: 'posted',
+        skip: '50',
+        take: '75',
+      }),
+    ).resolves.toEqual([{ id: 'journal-batch-1' }]);
+
+    expect(prisma.accountingJournalBatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { postedAt: 'desc' },
+        select: expect.objectContaining({
+          _count: { select: { entries: true } },
+        }),
+        skip: 50,
+        take: 75,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ postedAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: AccountingJournalBatchStatus.POSTED },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes accounting journal batches from journal aggregates only', async () => {
+    const prisma = {
+      accountingJournalBatch: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { totalCredit: 500000, totalDebit: 500000 },
+        }),
+        count: vi.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(2).mockResolvedValueOnce(0),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.accountingJournalBatchSummary({ range: '30d', review: 'posted' })).resolves.toEqual({
+      count: 2,
+      currency: 'VND',
+      postedCount: 2,
+      reversedCount: 0,
+      totalCredit: 500000,
+      totalDebit: 500000,
+    });
+
+    expect(prisma.accountingJournalBatch.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { totalCredit: true, totalDebit: true },
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ postedAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: AccountingJournalBatchStatus.POSTED },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('lists booking payment clearing entries with bounded occurrence filters', async () => {
+    const prisma = {
+      bookingPaymentClearingEntry: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'clearing-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listBookingPaymentClearingEntries({
+        range: 'today',
+        review: 'open',
+        skip: '25',
+        take: '125',
+      }),
+    ).resolves.toEqual([{ id: 'clearing-1' }]);
+
+    expect(prisma.bookingPaymentClearingEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { occurredAt: 'desc' },
+        select: expect.objectContaining({ booking: expect.any(Object), payment: expect.any(Object) }),
+        skip: 25,
+        take: 100,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: BookingPaymentClearingStatus.OPEN },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes booking payment clearing without loading booking rows', async () => {
+    const prisma = {
+      bookingPaymentClearingEntry: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { amount: 900000 },
+        }),
+        count: vi.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(1).mockResolvedValueOnce(2),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bookingPaymentClearingSummary({ range: '30d', review: 'open' })).resolves.toEqual({
+      amount: 900000,
+      clearedCount: 2,
+      count: 3,
+      currency: 'VND',
+      openCount: 1,
+    });
+
+    expect(prisma.bookingPaymentClearingEntry.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { amount: true },
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: BookingPaymentClearingStatus.OPEN },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('lists bank reconciliation transactions with bounded occurrence filters and match counts only', async () => {
+    const prisma = {
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'bank-tx-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listBankReconciliationTransactions({
+        range: '7d',
+        review: 'unmatched',
+        skip: '50',
+        take: '75',
+      }),
+    ).resolves.toEqual([{ id: 'bank-tx-1' }]);
+
+    expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { occurredAt: 'desc' },
+        select: expect.objectContaining({
+          _count: { select: { reconciliationMatches: true } },
+        }),
+        skip: 50,
+        take: 75,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
+            { status: BankReconciliationStatus.UNMATCHED },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('summarizes bank reconciliation transactions without loading transaction rows', async () => {
+    const prisma = {
+      companyBankTransaction: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { amount: 1200000 },
+        }),
+        count: vi.fn().mockResolvedValueOnce(4).mockResolvedValueOnce(1).mockResolvedValueOnce(3),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bankReconciliationSummary({ range: 'all', review: 'matched' })).resolves.toEqual({
+      amount: 1200000,
+      count: 4,
+      currency: 'VND',
+      matchedCount: 3,
+      unmatchedCount: 1,
+    });
+
+    expect(prisma.companyBankTransaction.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { amount: true },
+        where: { status: BankReconciliationStatus.MATCHED },
       }),
     );
   });

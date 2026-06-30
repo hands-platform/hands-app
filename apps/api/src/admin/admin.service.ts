@@ -1,7 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  AccountingJournalBatchStatus,
+  BankReconciliationStatus,
+  BookingPaymentClearingStatus,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
+  CompanyBankTransactionType,
   BookingStatus,
   EarningStatus,
   BookingOpsTaskStatus,
@@ -457,6 +461,91 @@ const adminBookingSettlementSnapshotListSelect = {
     },
   },
 } satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminAccountingJournalBatchListSelect = {
+  id: true,
+  sourceKey: true,
+  sourceType: true,
+  sourceId: true,
+  bookingId: true,
+  customerProfileId: true,
+  providerProfileId: true,
+  paymentId: true,
+  settlementSnapshotId: true,
+  settlementReversalEntryId: true,
+  monthlyPeriod: true,
+  currency: true,
+  status: true,
+  totalDebit: true,
+  totalCredit: true,
+  postedAt: true,
+  reversedAt: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { entries: true } },
+  booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
+  customerProfile: {
+    select: {
+      id: true,
+      user: { select: { id: true, fullName: true, phone: true } },
+    },
+  },
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { id: true, fullName: true, phone: true } },
+    },
+  },
+} satisfies Prisma.AccountingJournalBatchSelect;
+const adminBookingPaymentClearingEntryListSelect = {
+  id: true,
+  sourceKey: true,
+  type: true,
+  status: true,
+  bookingId: true,
+  paymentId: true,
+  settlementSnapshotId: true,
+  settlementReversalEntryId: true,
+  amount: true,
+  currency: true,
+  occurredAt: true,
+  clearedAt: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
+  payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
+} satisfies Prisma.BookingPaymentClearingEntrySelect;
+const adminCompanyBankTransactionListSelect = {
+  id: true,
+  sourceKey: true,
+  bankAccountId: true,
+  type: true,
+  amount: true,
+  currency: true,
+  occurredAt: true,
+  valueDate: true,
+  transferRef: true,
+  counterpartyName: true,
+  description: true,
+  status: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { reconciliationMatches: true } },
+  bankAccount: {
+    select: {
+      id: true,
+      name: true,
+      bankName: true,
+      accountNumberMasked: true,
+      accountNumberLast4: true,
+      currency: true,
+      status: true,
+    },
+  },
+} satisfies Prisma.CompanyBankTransactionSelect;
 const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
   BookingStatus.CREATED,
   BookingStatus.OPEN_MATCHING,
@@ -5604,6 +5693,127 @@ export class AdminService {
       paymentProcessingFee: sums._sum.paymentProcessingFee ?? 0,
       openTaxCount,
       paidTaxCount,
+    };
+  }
+
+  listAccountingJournalBatches(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminAccountingJournalBatchWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
+
+    return this.prisma.accountingJournalBatch.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { postedAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
+      take: adminPaymentOperationsTake(options.take),
+      select: adminAccountingJournalBatchListSelect,
+    });
+  }
+
+  async accountingJournalBatchSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminAccountingJournalBatchWhere(options);
+    const postedWhere = adminMergeAccountingJournalBatchWhere(where, {
+      status: AccountingJournalBatchStatus.POSTED,
+    });
+    const reversedWhere = adminMergeAccountingJournalBatchWhere(where, {
+      status: AccountingJournalBatchStatus.REVERSED,
+    });
+    const [count, sums, postedCount, reversedCount] = await Promise.all([
+      this.prisma.accountingJournalBatch.count(adminAccountingJournalBatchCountArgs(where)),
+      this.prisma.accountingJournalBatch.aggregate({
+        ...(where ? { where } : {}),
+        _sum: { totalCredit: true, totalDebit: true },
+      }),
+      this.prisma.accountingJournalBatch.count(adminAccountingJournalBatchCountArgs(postedWhere)),
+      this.prisma.accountingJournalBatch.count(adminAccountingJournalBatchCountArgs(reversedWhere)),
+    ]);
+
+    return {
+      count,
+      currency: 'VND',
+      postedCount,
+      reversedCount,
+      totalCredit: sums._sum.totalCredit ?? 0,
+      totalDebit: sums._sum.totalDebit ?? 0,
+    };
+  }
+
+  listBookingPaymentClearingEntries(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingPaymentClearingWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
+
+    return this.prisma.bookingPaymentClearingEntry.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { occurredAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
+      take: adminPaymentOperationsTake(options.take),
+      select: adminBookingPaymentClearingEntryListSelect,
+    });
+  }
+
+  async bookingPaymentClearingSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBookingPaymentClearingWhere(options);
+    const openWhere = adminMergeBookingPaymentClearingWhere(where, {
+      status: BookingPaymentClearingStatus.OPEN,
+    });
+    const clearedWhere = adminMergeBookingPaymentClearingWhere(where, {
+      status: BookingPaymentClearingStatus.CLEARED,
+    });
+    const [count, sums, openCount, clearedCount] = await Promise.all([
+      this.prisma.bookingPaymentClearingEntry.count(adminBookingPaymentClearingCountArgs(where)),
+      this.prisma.bookingPaymentClearingEntry.aggregate({
+        ...(where ? { where } : {}),
+        _sum: { amount: true },
+      }),
+      this.prisma.bookingPaymentClearingEntry.count(adminBookingPaymentClearingCountArgs(openWhere)),
+      this.prisma.bookingPaymentClearingEntry.count(adminBookingPaymentClearingCountArgs(clearedWhere)),
+    ]);
+
+    return {
+      amount: sums._sum.amount ?? 0,
+      clearedCount,
+      count,
+      currency: 'VND',
+      openCount,
+    };
+  }
+
+  listBankReconciliationTransactions(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBankReconciliationWhere(options);
+    const skip = boundedAdminListSkip(options.skip);
+
+    return this.prisma.companyBankTransaction.findMany({
+      ...(where ? { where } : {}),
+      orderBy: { occurredAt: 'desc' },
+      ...(skip > 0 ? { skip } : {}),
+      take: adminPaymentOperationsTake(options.take),
+      select: adminCompanyBankTransactionListSelect,
+    });
+  }
+
+  async bankReconciliationSummary(options: AdminPaymentOperationsQuery = {}) {
+    const where = adminBankReconciliationWhere(options);
+    const unmatchedWhere = adminMergeBankReconciliationWhere(where, {
+      status: BankReconciliationStatus.UNMATCHED,
+    });
+    const matchedWhere = adminMergeBankReconciliationWhere(where, {
+      status: BankReconciliationStatus.MATCHED,
+    });
+    const [count, sums, unmatchedCount, matchedCount] = await Promise.all([
+      this.prisma.companyBankTransaction.count(adminBankReconciliationCountArgs(where)),
+      this.prisma.companyBankTransaction.aggregate({
+        ...(where ? { where } : {}),
+        _sum: { amount: true },
+      }),
+      this.prisma.companyBankTransaction.count(adminBankReconciliationCountArgs(unmatchedWhere)),
+      this.prisma.companyBankTransaction.count(adminBankReconciliationCountArgs(matchedWhere)),
+    ]);
+
+    return {
+      amount: sums._sum.amount ?? 0,
+      count,
+      currency: 'VND',
+      matchedCount,
+      unmatchedCount,
     };
   }
 
@@ -11278,6 +11488,165 @@ function adminBookingSettlementSnapshotReviewWhere(
     default:
       return undefined;
   }
+}
+
+function adminAccountingJournalBatchWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.AccountingJournalBatchWhereInput | undefined {
+  const filters: Prisma.AccountingJournalBatchWhereInput[] = [];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const reviewWhere = adminAccountingJournalBatchReviewWhere(options.review ?? options.status);
+
+  if (dateRange) {
+    filters.push({ postedAt: dateRange });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminAccountingJournalBatchReviewWhere(
+  review: string | null | undefined,
+): Prisma.AccountingJournalBatchWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'draft':
+      return { status: AccountingJournalBatchStatus.DRAFT };
+    case 'posted':
+    case 'open':
+      return { status: AccountingJournalBatchStatus.POSTED };
+    case 'reversed':
+      return { status: AccountingJournalBatchStatus.REVERSED };
+    default:
+      return undefined;
+  }
+}
+
+function adminMergeAccountingJournalBatchWhere(
+  base: Prisma.AccountingJournalBatchWhereInput | undefined,
+  next: Prisma.AccountingJournalBatchWhereInput,
+): Prisma.AccountingJournalBatchWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminAccountingJournalBatchCountArgs(
+  where: Prisma.AccountingJournalBatchWhereInput | undefined,
+): Prisma.AccountingJournalBatchCountArgs {
+  return where ? { where } : {};
+}
+
+function adminBookingPaymentClearingWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.BookingPaymentClearingEntryWhereInput | undefined {
+  const filters: Prisma.BookingPaymentClearingEntryWhereInput[] = [];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const reviewWhere = adminBookingPaymentClearingReviewWhere(options.review ?? options.status);
+
+  if (dateRange) {
+    filters.push({ occurredAt: dateRange });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminBookingPaymentClearingReviewWhere(
+  review: string | null | undefined,
+): Prisma.BookingPaymentClearingEntryWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'needs-action':
+    case 'open':
+      return { status: BookingPaymentClearingStatus.OPEN };
+    case 'partial':
+    case 'partially-cleared':
+      return { status: BookingPaymentClearingStatus.PARTIALLY_CLEARED };
+    case 'cleared':
+      return { status: BookingPaymentClearingStatus.CLEARED };
+    case 'reversed':
+      return { status: BookingPaymentClearingStatus.REVERSED };
+    default:
+      return undefined;
+  }
+}
+
+function adminMergeBookingPaymentClearingWhere(
+  base: Prisma.BookingPaymentClearingEntryWhereInput | undefined,
+  next: Prisma.BookingPaymentClearingEntryWhereInput,
+): Prisma.BookingPaymentClearingEntryWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminBookingPaymentClearingCountArgs(
+  where: Prisma.BookingPaymentClearingEntryWhereInput | undefined,
+): Prisma.BookingPaymentClearingEntryCountArgs {
+  return where ? { where } : {};
+}
+
+function adminBankReconciliationWhere(
+  options: AdminPaymentOperationsQuery,
+): Prisma.CompanyBankTransactionWhereInput | undefined {
+  const filters: Prisma.CompanyBankTransactionWhereInput[] = [];
+  const dateRange = adminPaymentDateRangeWhere(options.range);
+  const reviewWhere = adminBankReconciliationReviewWhere(options.review ?? options.status);
+
+  if (dateRange) {
+    filters.push({ occurredAt: dateRange });
+  }
+  if (reviewWhere) {
+    filters.push(reviewWhere);
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminBankReconciliationReviewWhere(
+  review: string | null | undefined,
+): Prisma.CompanyBankTransactionWhereInput | undefined {
+  switch (normalizeNullable(review)) {
+    case 'needs-action':
+    case 'unmatched':
+      return { status: BankReconciliationStatus.UNMATCHED };
+    case 'matched':
+      return { status: BankReconciliationStatus.MATCHED };
+    case 'partial':
+    case 'partially-matched':
+      return { status: BankReconciliationStatus.PARTIALLY_MATCHED };
+    case 'ignored':
+      return { status: BankReconciliationStatus.IGNORED };
+    case 'reversed':
+      return { status: BankReconciliationStatus.REVERSED };
+    case 'inflow':
+      return { type: CompanyBankTransactionType.INFLOW };
+    case 'outflow':
+      return { type: CompanyBankTransactionType.OUTFLOW };
+    default:
+      return undefined;
+  }
+}
+
+function adminMergeBankReconciliationWhere(
+  base: Prisma.CompanyBankTransactionWhereInput | undefined,
+  next: Prisma.CompanyBankTransactionWhereInput,
+): Prisma.CompanyBankTransactionWhereInput {
+  return base ? { AND: [base, next] } : next;
+}
+
+function adminBankReconciliationCountArgs(
+  where: Prisma.CompanyBankTransactionWhereInput | undefined,
+): Prisma.CompanyBankTransactionCountArgs {
+  return where ? { where } : {};
 }
 
 function adminCouponFinanceSqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {

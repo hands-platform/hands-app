@@ -863,6 +863,51 @@ export class AdminController {
     return this.admin.paymentFeeSummary({ period });
   }
 
+  @Get('accounting-journal-batches')
+  accountingJournalBatches(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listAccountingJournalBatches({ range, review, skip, take });
+  }
+
+  @Get('accounting-journal-batches/summary')
+  accountingJournalBatchSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.accountingJournalBatchSummary({ range, review });
+  }
+
+  @Get('booking-payment-clearing')
+  bookingPaymentClearingEntries(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listBookingPaymentClearingEntries({ range, review, skip, take });
+  }
+
+  @Get('booking-payment-clearing/summary')
+  bookingPaymentClearingSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.bookingPaymentClearingSummary({ range, review });
+  }
+
+  @Get('bank-reconciliation')
+  bankReconciliationTransactions(
+    @Query('take') take?: string,
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listBankReconciliationTransactions({ range, review, skip, take });
+  }
+
+  @Get('bank-reconciliation/summary')
+  bankReconciliationSummary(@Query('range') range?: string, @Query('review') review?: string) {
+    return this.admin.bankReconciliationSummary({ range, review });
+  }
+
   @Get('services')
   services() {
     return this.admin.listServices();

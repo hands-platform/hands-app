@@ -75,6 +75,12 @@ describe('AdminController notification and push actions', () => {
     updateMonthlyTaxClosingStatus: vi.fn(),
     platformVatSummary: vi.fn(),
     paymentFeeSummary: vi.fn(),
+    listAccountingJournalBatches: vi.fn(),
+    accountingJournalBatchSummary: vi.fn(),
+    listBookingPaymentClearingEntries: vi.fn(),
+    bookingPaymentClearingSummary: vi.fn(),
+    listBankReconciliationTransactions: vi.fn(),
+    bankReconciliationSummary: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -811,6 +817,119 @@ describe('AdminController notification and push actions', () => {
       path: 'payment-fees/summary',
     });
     expect(admin.paymentFeeSummary).toHaveBeenCalledWith({ period: '2026-06' });
+  });
+
+  it('exposes accounting journal batches as a bounded finance list', async () => {
+    admin.listAccountingJournalBatches.mockResolvedValue([{ id: 'journal-batch-1' }]);
+
+    await expect(controller.accountingJournalBatches('25', '30d', 'posted', '50')).resolves.toEqual([
+      { id: 'journal-batch-1' },
+    ]);
+
+    expect(routeMetadata('accountingJournalBatches')).toEqual({
+      method: RequestMethod.GET,
+      path: 'accounting-journal-batches',
+    });
+    expect(admin.listAccountingJournalBatches).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'posted',
+      skip: '50',
+      take: '25',
+    });
+  });
+
+  it('exposes accounting journal batch summary with the same filters', async () => {
+    admin.accountingJournalBatchSummary.mockResolvedValue({ count: 2, totalDebit: 500000, totalCredit: 500000 });
+
+    await expect(controller.accountingJournalBatchSummary('7d', 'reversed')).resolves.toEqual({
+      count: 2,
+      totalCredit: 500000,
+      totalDebit: 500000,
+    });
+
+    expect(routeMetadata('accountingJournalBatchSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'accounting-journal-batches/summary',
+    });
+    expect(admin.accountingJournalBatchSummary).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'reversed',
+    });
+  });
+
+  it('exposes booking payment clearing entries as a bounded finance list', async () => {
+    admin.listBookingPaymentClearingEntries.mockResolvedValue([{ id: 'clearing-1' }]);
+
+    await expect(controller.bookingPaymentClearingEntries('25', 'today', 'open', '50')).resolves.toEqual([
+      { id: 'clearing-1' },
+    ]);
+
+    expect(routeMetadata('bookingPaymentClearingEntries')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-payment-clearing',
+    });
+    expect(admin.listBookingPaymentClearingEntries).toHaveBeenCalledWith({
+      range: 'today',
+      review: 'open',
+      skip: '50',
+      take: '25',
+    });
+  });
+
+  it('exposes booking payment clearing summary with the same filters', async () => {
+    admin.bookingPaymentClearingSummary.mockResolvedValue({ count: 3, amount: 900000, openAmount: 300000 });
+
+    await expect(controller.bookingPaymentClearingSummary('30d', 'cleared')).resolves.toEqual({
+      amount: 900000,
+      count: 3,
+      openAmount: 300000,
+    });
+
+    expect(routeMetadata('bookingPaymentClearingSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-payment-clearing/summary',
+    });
+    expect(admin.bookingPaymentClearingSummary).toHaveBeenCalledWith({
+      range: '30d',
+      review: 'cleared',
+    });
+  });
+
+  it('exposes bank reconciliation transactions as a bounded finance list', async () => {
+    admin.listBankReconciliationTransactions.mockResolvedValue([{ id: 'bank-tx-1' }]);
+
+    await expect(controller.bankReconciliationTransactions('25', '7d', 'unmatched', '50')).resolves.toEqual([
+      { id: 'bank-tx-1' },
+    ]);
+
+    expect(routeMetadata('bankReconciliationTransactions')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bank-reconciliation',
+    });
+    expect(admin.listBankReconciliationTransactions).toHaveBeenCalledWith({
+      range: '7d',
+      review: 'unmatched',
+      skip: '50',
+      take: '25',
+    });
+  });
+
+  it('exposes bank reconciliation summary with the same filters', async () => {
+    admin.bankReconciliationSummary.mockResolvedValue({ count: 4, unmatchedAmount: 120000 });
+
+    await expect(controller.bankReconciliationSummary('all', 'matched')).resolves.toEqual({
+      count: 4,
+      unmatchedAmount: 120000,
+    });
+
+    expect(routeMetadata('bankReconciliationSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bank-reconciliation/summary',
+    });
+    expect(admin.bankReconciliationSummary).toHaveBeenCalledWith({
+      range: 'all',
+      review: 'matched',
+    });
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

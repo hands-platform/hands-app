@@ -187,6 +187,9 @@ describe('tax settlement page model', () => {
     expect(links.map((link) => [link.label, link.href])).toEqual([
       ['Tax overview', '/finance-tax'],
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
+      ['General ledger', '/finance-tax/general-ledger?range=7d&take=50'],
+      ['Payment clearing', '/finance-tax/payment-clearing?range=7d&take=50'],
+      ['Bank reconciliation', '/finance-tax/bank-reconciliation?range=7d&take=50'],
       ['Coupon finance', '/finance-tax/coupon-finance?range=7d&review=paid&take=50'],
       ['Monthly tax closing', '/finance-tax/monthly-tax-closing?period=2026-06&take=75'],
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],

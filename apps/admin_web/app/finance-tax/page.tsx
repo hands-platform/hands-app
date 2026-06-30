@@ -19,15 +19,19 @@ import {
   buildTaxFinanceWorkflowLinks,
   buildTaxFinanceMetrics,
   buildFinancePayoutPriorityLinks,
+  bankReconciliationHref,
   emptyBookingSettlementSummary,
   emptyCouponFinanceSummary,
   emptyPartnerWithholdingTaxSummary,
   emptyProviderWalletWithdrawalRequestSummary,
+  generalLedgerHref,
   monthlyTaxClosingHref,
+  paymentClearingHref,
   paymentFeeHref,
   partnerWithholdingTaxHref,
   platformVatHref,
   readBookingSettlementFilters,
+  readFinanceAccountingFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
 } from './tax-settlement-page-model';
@@ -39,6 +43,7 @@ type FinanceTaxPageProps = {
 export default async function FinanceTaxPage({ searchParams }: FinanceTaxPageProps) {
   const params = searchParams ? await searchParams : {};
   const settlementFilters = readBookingSettlementFilters(params);
+  const accountingFilters = readFinanceAccountingFilters(params, 'all');
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
   const [settlementSummary, couponFinanceSummary, withholdingSummary, withdrawalRequestSummary] =
@@ -69,6 +74,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         <TaxFinanceWorkflowActions
           links={buildTaxFinanceWorkflowLinks({
             current: 'overview',
+            accountingFilters,
             monthlyFilters: monthlyClosingFilters,
             settlementFilters,
             withholdingFilters,
@@ -250,6 +256,30 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               </p>
             </div>
             <small>{settlementSummary.openTaxCount} open</small>
+          </Link>
+          <Link className="setup-stage-item" href={generalLedgerHref(accountingFilters)}>
+            <span>GL</span>
+            <div>
+              <strong>General Ledger</strong>
+              <p className="muted">Bounded journal batch lookup for posting, reversal, refund, and adjustment evidence.</p>
+            </div>
+            <small>Journal</small>
+          </Link>
+          <Link className="setup-stage-item" href={paymentClearingHref(accountingFilters)}>
+            <span>CLEAR</span>
+            <div>
+              <strong>Payment Clearing</strong>
+              <p className="muted">Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.</p>
+            </div>
+            <small>Clearing</small>
+          </Link>
+          <Link className="setup-stage-item" href={bankReconciliationHref(accountingFilters)}>
+            <span>BANK</span>
+            <div>
+              <strong>Bank Reconciliation</strong>
+              <p className="muted">Company bank transaction lookup for manual matching against accounting evidence.</p>
+            </div>
+            <small>Reconcile</small>
           </Link>
           <Link className="setup-stage-item" href={partnerWithholdingTaxHref(withholdingFilters)}>
             <span>TAX</span>

@@ -1847,6 +1847,28 @@ export type AdminTaxRule = {
 export type AdminBookingSettlementStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
 export type AdminBookingSettlementTaxStatus = 'OPEN' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
 export type AdminMonthlyTaxClosingStatus = 'DRAFT' | 'REVIEWED' | 'DECLARED' | 'PAID' | 'CLOSED' | 'REVERSED';
+export type AdminAccountingJournalBatchStatus = 'DRAFT' | 'POSTED' | 'REVERSED';
+export type AdminAccountingJournalSourceType =
+  | 'BOOKING_SETTLEMENT'
+  | 'BOOKING_SETTLEMENT_REVERSAL'
+  | 'MANUAL_WALLET_ADJUSTMENT'
+  | 'PROVIDER_WITHDRAWAL'
+  | 'PROVIDER_PAYOUT_BATCH'
+  | 'PROVIDER_BANK_DEPOSIT'
+  | 'REFERRAL_REWARD'
+  | 'REFUND'
+  | 'PAYMENT_CALLBACK'
+  | 'BANK_RECONCILIATION_ADJUSTMENT';
+export type AdminBookingPaymentClearingEntryType =
+  | 'CUSTOMER_PAYMENT_CAPTURED'
+  | 'SETTLEMENT_POSTED'
+  | 'REFUND_REVERSAL'
+  | 'PAYMENT_FEE_ACCRUAL'
+  | 'COUPON_OFFSET'
+  | 'MANUAL_ADJUSTMENT';
+export type AdminBookingPaymentClearingStatus = 'OPEN' | 'PARTIALLY_CLEARED' | 'CLEARED' | 'REVERSED';
+export type AdminCompanyBankTransactionType = 'INFLOW' | 'OUTFLOW';
+export type AdminBankReconciliationStatus = 'UNMATCHED' | 'MATCHED' | 'PARTIALLY_MATCHED' | 'IGNORED' | 'REVERSED';
 
 export type AdminBookingSettlementSnapshot = {
   id: string;
@@ -1903,6 +1925,119 @@ export type AdminBookingSettlementSnapshotSummary = {
   paymentProcessingFee: number;
   openTaxCount: number;
   paidTaxCount: number;
+};
+
+export type AdminAccountingJournalBatch = {
+  id: string;
+  sourceKey: string;
+  sourceType: AdminAccountingJournalSourceType;
+  sourceId: string;
+  bookingId?: string | null;
+  customerProfileId?: string | null;
+  providerProfileId?: string | null;
+  paymentId?: string | null;
+  settlementSnapshotId?: string | null;
+  settlementReversalEntryId?: string | null;
+  monthlyPeriod?: string | null;
+  currency: string;
+  status: AdminAccountingJournalBatchStatus;
+  totalDebit: number;
+  totalCredit: number;
+  postedAt: string;
+  reversedAt?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { entries: number };
+  booking?: { id: string; status: string; createdAt?: string; closedAt?: string | null } | null;
+  customerProfile?: {
+    id: string;
+    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+  } | null;
+  providerProfile?: {
+    id: string;
+    displayName?: string | null;
+    user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+  } | null;
+};
+
+export type AdminAccountingJournalBatchSummary = {
+  count: number;
+  currency: string;
+  postedCount: number;
+  reversedCount: number;
+  totalCredit: number;
+  totalDebit: number;
+};
+
+export type AdminBookingPaymentClearingEntry = {
+  id: string;
+  sourceKey: string;
+  type: AdminBookingPaymentClearingEntryType;
+  status: AdminBookingPaymentClearingStatus;
+  bookingId: string;
+  paymentId?: string | null;
+  settlementSnapshotId?: string | null;
+  settlementReversalEntryId?: string | null;
+  amount: number;
+  currency: string;
+  occurredAt: string;
+  clearedAt?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+  updatedAt: string;
+  booking?: { id: string; status: string; createdAt?: string; closedAt?: string | null } | null;
+  payment?: {
+    id: string;
+    method: AdminPaymentMethod;
+    status: AdminPaymentStatus;
+    amount: number;
+    currency: string;
+  } | null;
+};
+
+export type AdminBookingPaymentClearingSummary = {
+  amount: number;
+  clearedCount: number;
+  count: number;
+  currency: string;
+  openCount: number;
+};
+
+export type AdminCompanyBankTransaction = {
+  id: string;
+  sourceKey: string;
+  bankAccountId: string;
+  type: AdminCompanyBankTransactionType;
+  amount: number;
+  currency: string;
+  occurredAt: string;
+  valueDate?: string | null;
+  transferRef?: string | null;
+  counterpartyName?: string | null;
+  description?: string | null;
+  status: AdminBankReconciliationStatus;
+  metadata?: unknown;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { reconciliationMatches: number };
+  bankAccount?: {
+    id: string;
+    name: string;
+    bankName: string;
+    accountNumberMasked?: string | null;
+    accountNumberLast4?: string | null;
+    currency: string;
+    status: string;
+  } | null;
+};
+
+export type AdminBankReconciliationSummary = {
+  amount: number;
+  count: number;
+  currency: string;
+  matchedCount: number;
+  unmatchedCount: number;
 };
 
 export type AdminCouponFinanceSummary = {

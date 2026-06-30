@@ -156,6 +156,21 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Immutable booking settlement snapshots for tax and finance audit review.',
       },
       {
+        href: '/finance-tax/general-ledger',
+        label: 'General Ledger',
+        description: 'Accounting journal batches for settlement, reversals, adjustments, refunds, and payouts.',
+      },
+      {
+        href: '/finance-tax/payment-clearing',
+        label: 'Payment Clearing',
+        description: 'Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.',
+      },
+      {
+        href: '/finance-tax/bank-reconciliation',
+        label: 'Bank Reconciliation',
+        description: 'Company bank transactions and reconciliation status for manual finance closeout.',
+      },
+      {
         href: '/finance-tax/monthly-tax-closing',
         label: 'Monthly Tax Closing',
         description: 'Monthly platform VAT, Partner withholding, payment fee, and reconciliation closeout.',
