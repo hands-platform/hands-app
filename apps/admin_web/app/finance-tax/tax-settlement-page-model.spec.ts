@@ -3,6 +3,7 @@ import {
   buildBookingSettlementReversalApiHref,
   buildBookingSettlementReversalSummaryApiHref,
   buildBookingSettlementReversalTraceLinks,
+  buildFinanceSettlementTraceLinks,
   buildCouponFinanceApiHref,
   buildCouponFinanceSummaryApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
@@ -260,6 +261,26 @@ describe('tax settlement page model', () => {
         href: '/finance-tax/payment-clearing/clearing-1',
         label: 'Payment clearing',
         value: 'clearing',
+      },
+    ]);
+  });
+
+  it('builds finance detail trace links back to settlement and reversal queues', () => {
+    const links = buildFinanceSettlementTraceLinks({
+      settlementSnapshotId: 'settlement-1',
+      settlementReversalEntryId: 'reversal-1',
+    });
+
+    expect(links).toEqual([
+      {
+        href: '/finance-tax/booking-settlement-audit?range=all',
+        label: 'Settlement snapshot',
+        value: 'settleme',
+      },
+      {
+        href: '/finance-tax/settlement-reversals?range=all&review=reversed',
+        label: 'Settlement reversal',
+        value: 'reversal',
       },
     ]);
   });

@@ -9,6 +9,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-form
 import {
   bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
+  buildFinanceSettlementTraceLinks,
   generalLedgerHref,
   paymentClearingDetailHref,
 } from '../../tax-settlement-page-model';
@@ -30,6 +31,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   if (!batch) {
     notFound();
   }
+  const settlementTraceLinks = buildFinanceSettlementTraceLinks(batch);
 
   return (
     <AdminPageTemplate
@@ -69,6 +71,22 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           />
           <InfoCard label="Payment" value={batch.payment ? `${batch.payment.method} · ${batch.payment.status}` : '-'} />
           <InfoCard label="Entries" value={`${batch.entries.length} journal rows`} />
+          <InfoCard
+            label="Settlement trace"
+            value={
+              settlementTraceLinks.length > 0 ? (
+                <div className="admin-table-substack">
+                  {settlementTraceLinks.map((link) => (
+                    <Link className="text-link" href={link.href} key={link.label}>
+                      {link.label} <span className="muted">{link.value}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                '-'
+              )
+            }
+          />
         </div>
       </section>
 

@@ -103,6 +103,8 @@ export type BookingSettlementReversalTraceLink = {
   readonly value: string;
 };
 
+export type FinanceSettlementTraceLink = BookingSettlementReversalTraceLink;
+
 export type FinancePayoutPriorityLink = {
   readonly key: string;
   readonly count: number | null;
@@ -455,6 +457,41 @@ export function buildBookingSettlementReversalTraceLinks(
       href: paymentClearingDetailHref(clearing.id),
       label: 'Payment clearing',
       value: shortId(clearing.id),
+    });
+  }
+
+  return links;
+}
+
+export function buildFinanceSettlementTraceLinks(record: {
+  readonly settlementSnapshotId?: string | null;
+  readonly settlementReversalEntryId?: string | null;
+}): FinanceSettlementTraceLink[] {
+  const links: FinanceSettlementTraceLink[] = [];
+
+  if (record.settlementSnapshotId) {
+    links.push({
+      href: bookingSettlementAuditHref({
+        page: 1,
+        range: 'all',
+        review: 'all',
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
+      label: 'Settlement snapshot',
+      value: shortId(record.settlementSnapshotId),
+    });
+  }
+
+  if (record.settlementReversalEntryId) {
+    links.push({
+      href: bookingSettlementReversalHref({
+        page: 1,
+        range: 'all',
+        review: 'reversed',
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
+      label: 'Settlement reversal',
+      value: shortId(record.settlementReversalEntryId),
     });
   }
 

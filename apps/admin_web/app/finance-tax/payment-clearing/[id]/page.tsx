@@ -8,6 +8,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/ad
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
   buildBookingPaymentClearingDetailApiHref,
+  buildFinanceSettlementTraceLinks,
   generalLedgerDetailHref,
   paymentClearingHref,
 } from '../../tax-settlement-page-model';
@@ -31,6 +32,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   }
 
   const matches = entry.bankReconciliationMatches ?? [];
+  const settlementTraceLinks = buildFinanceSettlementTraceLinks(entry);
 
   return (
     <AdminPageTemplate
@@ -64,7 +66,22 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <InfoCard label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
-          <InfoCard label="Settlement snapshot" value={entry.settlementSnapshotId ? shortId(entry.settlementSnapshotId) : '-'} />
+          <InfoCard
+            label="Settlement trace"
+            value={
+              settlementTraceLinks.length > 0 ? (
+                <div className="admin-table-substack">
+                  {settlementTraceLinks.map((link) => (
+                    <Link className="text-link" href={link.href} key={link.label}>
+                      {link.label} <span className="muted">{link.value}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                '-'
+              )
+            }
+          />
           <InfoCard label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
         </div>
       </section>
