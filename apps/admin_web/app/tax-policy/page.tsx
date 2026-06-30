@@ -1,5 +1,10 @@
 import Link from 'next/link';
 import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
@@ -8,6 +13,8 @@ import { taxPolicyNotice } from './tax-policy-notice';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
+const statusSelectOptions = statusOptions.map((status) => ({ label: status, value: status }));
+const scopeSelectOptions = scopeOptions.map((scope) => ({ label: scope, value: scope }));
 const TAX_POLICY_VERSION_PAGE_SIZE = 20;
 const TAX_POLICY_AUDIT_LOG_PAGE_SIZE = 8;
 const TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE = 8;
@@ -109,21 +116,29 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </span>
         </div>
         <form className="form-grid" method="get">
-          <label>
-            Service type
-            <input name="serviceType" defaultValue={preview.serviceType} placeholder="leg_massage" />
-          </label>
-          <label>
-            Gross amount
-            <input
-              name="grossAmount"
-              type="number"
-              min="0"
-              step="100000"
-              defaultValue={preview.grossAmount}
+          <div className="calendar-field">
+            <span>Service type</span>
+            <AdminFormInput
+              defaultValue={preview.serviceType}
+              label="Service type"
+              name="serviceType"
+              placeholder="leg_massage"
             />
-          </label>
-          <button type="submit">Preview withholding</button>
+          </div>
+          <div className="calendar-field">
+            <span>Gross amount</span>
+            <AdminFormInput
+              defaultValue={preview.grossAmount}
+              label="Gross amount"
+              min="0"
+              name="grossAmount"
+              step="100000"
+              type="number"
+            />
+          </div>
+          <AdminFormControlButton className="button button-primary" type="submit">
+            Preview withholding
+          </AdminFormControlButton>
         </form>
         <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
@@ -167,33 +182,50 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         <h2>Create policy version</h2>
         <p className="muted">Use basis points for percentage rates. Example: 500 bps = 5%.</p>
         <form action={createTaxPolicyVersion} className="form-grid">
-          <label>
-            Name
-            <input name="name" placeholder="Vietnam freelance withholding 2026" required />
-          </label>
-          <label>
-            Status
-            <select name="status" defaultValue="DRAFT">
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Effective from
-            <input name="effectiveFrom" type="datetime-local" required />
-          </label>
-          <label>
-            Default rate bps
-            <input name="defaultRateBps" type="number" min="0" max="10000" placeholder="500" />
-          </label>
-          <label className="full-span">
-            Notes
-            <input name="notes" placeholder="Policy source, approval note, or internal memo" />
-          </label>
-          <button type="submit">Create policy</button>
+          <div className="calendar-field">
+            <span>Name</span>
+            <AdminFormInput
+              label="Name"
+              name="name"
+              placeholder="Vietnam freelance withholding 2026"
+              required
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Status</span>
+            <AdminFormSelect
+              defaultValue="DRAFT"
+              label="Status"
+              name="status"
+              options={statusSelectOptions}
+            />
+          </div>
+          <div className="calendar-field">
+            <span>Effective from</span>
+            <AdminFormInput label="Effective from" name="effectiveFrom" required type="datetime-local" />
+          </div>
+          <div className="calendar-field">
+            <span>Default rate bps</span>
+            <AdminFormInput
+              label="Default rate bps"
+              max="10000"
+              min="0"
+              name="defaultRateBps"
+              placeholder="500"
+              type="number"
+            />
+          </div>
+          <div className="calendar-field full-span">
+            <span>Notes</span>
+            <AdminFormInput
+              label="Notes"
+              name="notes"
+              placeholder="Policy source, approval note, or internal memo"
+            />
+          </div>
+          <AdminFormControlButton className="button button-primary" type="submit">
+            Create policy
+          </AdminFormControlButton>
         </form>
       </section>
 
@@ -216,37 +248,40 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
             <form action={updateTaxPolicyVersion} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
-              <label>
-                Status
-                <select name="status" defaultValue={policy.status}>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Effective from
-                <input
+              <div className="calendar-field">
+                <span>Status</span>
+                <AdminFormSelect
+                  defaultValue={policy.status}
+                  label="Status"
+                  name="status"
+                  options={statusSelectOptions}
+                />
+              </div>
+              <div className="calendar-field">
+                <span>Effective from</span>
+                <AdminFormInput
+                  defaultValue={toDateTimeLocal(policy.effectiveFrom)}
+                  label="Effective from"
                   name="effectiveFrom"
                   type="datetime-local"
-                  defaultValue={toDateTimeLocal(policy.effectiveFrom)}
                 />
-              </label>
-              <label>
-                Effective to
-                <input
+              </div>
+              <div className="calendar-field">
+                <span>Effective to</span>
+                <AdminFormInput
+                  defaultValue={toDateTimeLocal(policy.effectiveTo)}
+                  label="Effective to"
                   name="effectiveTo"
                   type="datetime-local"
-                  defaultValue={toDateTimeLocal(policy.effectiveTo)}
                 />
-              </label>
-              <label>
-                Notes
-                <input name="notes" defaultValue={policy.notes ?? ''} />
-              </label>
-              <button type="submit">Update policy</button>
+              </div>
+              <div className="calendar-field">
+                <span>Notes</span>
+                <AdminFormInput defaultValue={policy.notes ?? ''} label="Notes" name="notes" />
+              </div>
+              <AdminFormControlButton className="button button-primary" type="submit">
+                Update policy
+              </AdminFormControlButton>
             </form>
 
             <h3>Rules</h3>
@@ -272,51 +307,71 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     </p>
                     <form action={updateTaxRule} className="form-grid compact-form">
                       <input type="hidden" name="ruleId" value={rule.id} />
-                      <label>
-                        Scope
-                        <select name="scope" defaultValue={rule.scope}>
-                          {scopeOptions.map((scope) => (
-                            <option key={scope} value={scope}>
-                              {scope}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Service type
-                        <input name="serviceType" defaultValue={rule.serviceType ?? ''} />
-                      </label>
-                      <label>
-                        Min amount
-                        <input
+                      <div className="calendar-field">
+                        <span>Scope</span>
+                        <AdminFormSelect
+                          defaultValue={rule.scope}
+                          label="Scope"
+                          name="scope"
+                          options={scopeSelectOptions}
+                        />
+                      </div>
+                      <div className="calendar-field">
+                        <span>Service type</span>
+                        <AdminFormInput
+                          defaultValue={rule.serviceType ?? ''}
+                          label="Service type"
+                          name="serviceType"
+                        />
+                      </div>
+                      <div className="calendar-field">
+                        <span>Min amount</span>
+                        <AdminFormInput
+                          defaultValue={rule.minGrossAmount ?? ''}
+                          label="Min amount"
+                          min="0"
                           name="minGrossAmount"
                           type="number"
-                          min="0"
-                          defaultValue={rule.minGrossAmount ?? ''}
                         />
-                      </label>
-                      <label>
-                        Max amount
-                        <input
+                      </div>
+                      <div className="calendar-field">
+                        <span>Max amount</span>
+                        <AdminFormInput
+                          defaultValue={rule.maxGrossAmount ?? ''}
+                          label="Max amount"
+                          min="0"
                           name="maxGrossAmount"
                           type="number"
-                          min="0"
-                          defaultValue={rule.maxGrossAmount ?? ''}
                         />
-                      </label>
-                      <label>
-                        Rate bps
-                        <input name="rateBps" type="number" min="0" max="10000" defaultValue={rule.rateBps} />
-                      </label>
-                      <label>
-                        Fixed amount
-                        <input name="fixedAmount" type="number" min="0" defaultValue={rule.fixedAmount} />
-                      </label>
+                      </div>
+                      <div className="calendar-field">
+                        <span>Rate bps</span>
+                        <AdminFormInput
+                          defaultValue={rule.rateBps}
+                          label="Rate bps"
+                          max="10000"
+                          min="0"
+                          name="rateBps"
+                          type="number"
+                        />
+                      </div>
+                      <div className="calendar-field">
+                        <span>Fixed amount</span>
+                        <AdminFormInput
+                          defaultValue={rule.fixedAmount}
+                          label="Fixed amount"
+                          min="0"
+                          name="fixedAmount"
+                          type="number"
+                        />
+                      </div>
                       <label>
                         Active
                         <input name="active" type="checkbox" defaultChecked={rule.active} />
                       </label>
-                      <button type="submit">Update rule</button>
+                      <AdminFormControlButton className="button button-primary" type="submit">
+                        Update rule
+                      </AdminFormControlButton>
                     </form>
                   </div>
                   <small>{rule.id.slice(0, 8)}</small>
@@ -327,37 +382,63 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
             <form action={createTaxRule} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
-              <label>
-                Scope
-                <select name="scope" defaultValue="DEFAULT">
-                  {scopeOptions.map((scope) => (
-                    <option key={scope} value={scope}>
-                      {scope}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Service type
-                <input name="serviceType" placeholder="optional" />
-              </label>
-              <label>
-                Min amount
-                <input name="minGrossAmount" type="number" min="0" placeholder="optional" />
-              </label>
-              <label>
-                Max amount
-                <input name="maxGrossAmount" type="number" min="0" placeholder="optional" />
-              </label>
-              <label>
-                Rate bps
-                <input name="rateBps" type="number" min="0" max="10000" defaultValue="0" />
-              </label>
-              <label>
-                Fixed amount
-                <input name="fixedAmount" type="number" min="0" defaultValue="0" />
-              </label>
-              <button type="submit">Add rule</button>
+              <div className="calendar-field">
+                <span>Scope</span>
+                <AdminFormSelect
+                  defaultValue="DEFAULT"
+                  label="Scope"
+                  name="scope"
+                  options={scopeSelectOptions}
+                />
+              </div>
+              <div className="calendar-field">
+                <span>Service type</span>
+                <AdminFormInput label="Service type" name="serviceType" placeholder="optional" />
+              </div>
+              <div className="calendar-field">
+                <span>Min amount</span>
+                <AdminFormInput
+                  label="Min amount"
+                  min="0"
+                  name="minGrossAmount"
+                  placeholder="optional"
+                  type="number"
+                />
+              </div>
+              <div className="calendar-field">
+                <span>Max amount</span>
+                <AdminFormInput
+                  label="Max amount"
+                  min="0"
+                  name="maxGrossAmount"
+                  placeholder="optional"
+                  type="number"
+                />
+              </div>
+              <div className="calendar-field">
+                <span>Rate bps</span>
+                <AdminFormInput
+                  defaultValue="0"
+                  label="Rate bps"
+                  max="10000"
+                  min="0"
+                  name="rateBps"
+                  type="number"
+                />
+              </div>
+              <div className="calendar-field">
+                <span>Fixed amount</span>
+                <AdminFormInput
+                  defaultValue="0"
+                  label="Fixed amount"
+                  min="0"
+                  name="fixedAmount"
+                  type="number"
+                />
+              </div>
+              <AdminFormControlButton className="button button-primary" type="submit">
+                Add rule
+              </AdminFormControlButton>
             </form>
           </article>
         ))}
