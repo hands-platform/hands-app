@@ -6750,6 +6750,105 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('creates a manual bank reconciliation match and closes matching clearing evidence in one transaction', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 900000,
+          currency: 'VND',
+          status: BankReconciliationStatus.UNMATCHED,
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'bank-tx-1', status: BankReconciliationStatus.MATCHED }),
+      },
+      bookingPaymentClearingEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'clearing-1',
+          amount: 900000,
+          currency: 'VND',
+          status: BookingPaymentClearingStatus.OPEN,
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'clearing-1', status: BookingPaymentClearingStatus.CLEARED }),
+      },
+      bankReconciliationMatch: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 900000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 900000 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'match-1',
+          bankTransactionId: 'bank-tx-1',
+          paymentClearingEntryId: 'clearing-1',
+          amount: 900000,
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        paymentClearingEntryId: 'clearing-1',
+        amount: 900000,
+        notes: 'Matched to VCB transfer',
+      }),
+    ).resolves.toMatchObject({
+      match: { id: 'match-1', bankTransactionId: 'bank-tx-1' },
+      bankTransaction: { id: 'bank-tx-1', status: BankReconciliationStatus.MATCHED },
+    });
+
+    expect(tx.bankReconciliationMatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        bankTransactionId: 'bank-tx-1',
+        paymentClearingEntryId: 'clearing-1',
+        amount: 900000,
+        currency: 'VND',
+        matchedByAdminId: 'admin-user-1',
+        sourceKey: 'bank-reconciliation-match:bank-tx-1:payment-clearing:clearing-1',
+        notes: 'Matched to VCB transfer',
+      }),
+    });
+    expect(tx.companyBankTransaction.update).toHaveBeenCalledWith({
+      where: { id: 'bank-tx-1' },
+      data: { status: BankReconciliationStatus.MATCHED },
+      select: expect.any(Object),
+    });
+    expect(tx.bookingPaymentClearingEntry.update).toHaveBeenCalledWith({
+      where: { id: 'clearing-1' },
+      data: { status: BookingPaymentClearingStatus.CLEARED, clearedAt: expect.any(Date) },
+      select: expect.any(Object),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'bank_reconciliation.match.create',
+        target: 'bank_transaction:bank-tx-1',
+        metadata: expect.objectContaining({
+          paymentClearingEntryId: 'clearing-1',
+          amount: 900000,
+          currency: 'VND',
+        }),
+      }),
+    });
+  });
+
+  it('rejects manual bank reconciliation matches with more than one source record', async () => {
+    const service = createAdminService({});
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        paymentClearingEntryId: 'clearing-1',
+        payoutBatchId: 'payout-1',
+        amount: 900000,
+      }),
+    ).rejects.toThrow('Select exactly one reconciliation source');
+  });
+
   it('summarizes coupon finance from settlement snapshot metadata without loading booking rows', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([

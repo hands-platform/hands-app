@@ -157,6 +157,34 @@ describe('admin request DTO validation', () => {
     );
     expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe('CreatePayoutBatchDto');
     expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe('UpdatePayoutBatchDto');
+    expect((bodyMetatype('createBankReconciliationMatch' as keyof AdminController, 2) as { name?: string })?.name).toBe(
+      'CreateBankReconciliationMatchDto',
+    );
+  });
+
+  it('normalizes manual bank reconciliation match payloads and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        paymentClearingEntryId: ' clearing-1 ',
+        amount: '900000',
+        currency: ' VND ',
+        notes: ' matched against VCB transfer ',
+        bankBalance: 123,
+      },
+      {
+        type: 'body',
+        metatype: bodyMetatype('createBankReconciliationMatch' as keyof AdminController, 2) as never,
+        data: '',
+      },
+    );
+
+    expect(transformed).toHaveProperty('paymentClearingEntryId', 'clearing-1');
+    expect(transformed).toHaveProperty('amount', 900000);
+    expect(transformed).toHaveProperty('currency', 'VND');
+    expect(transformed).toHaveProperty('notes', 'matched against VCB transfer');
+    expect(transformed).not.toHaveProperty('bankBalance');
   });
 
   it('normalizes partner bank deposit approval payloads and strips unsupported fields', async () => {

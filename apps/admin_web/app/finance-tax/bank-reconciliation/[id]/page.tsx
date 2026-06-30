@@ -1,9 +1,15 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import type { AdminBankReconciliationTransactionDetail } from '../../../../lib/admin-api';
-import { adminGet } from '../../../../lib/admin-api';
+import { adminGet, adminPostOrThrow } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import {
@@ -13,13 +19,27 @@ import {
 
 type BankReconciliationDetailPageProps = {
   readonly params?: Promise<{ readonly id?: string }>;
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function BankReconciliationDetailPage({ params }: BankReconciliationDetailPageProps) {
+const reconciliationSourceOptions = [
+  { label: 'Payment clearing entry', value: 'payment-clearing' },
+  { label: 'Accounting journal entry', value: 'accounting-journal' },
+  { label: 'Withdrawal request', value: 'withdrawal' },
+  { label: 'Payout batch', value: 'payout-batch' },
+];
+
+export default async function BankReconciliationDetailPage({
+  params,
+  searchParams,
+}: BankReconciliationDetailPageProps) {
   const id = (await params)?.id;
   if (!id) {
     notFound();
   }
+  const noticeParams = searchParams ? await searchParams : {};
+  const matchNotice = readParam(noticeParams, 'matched');
+  const matchError = readParam(noticeParams, 'matchError');
 
   const transaction = await adminGet<AdminBankReconciliationTransactionDetail | null>(
     buildBankReconciliationDetailApiHref(id),
@@ -59,6 +79,63 @@ export default async function BankReconciliationDetailPage({ params }: BankRecon
           <InfoCard label="Counterparty" value={transaction.counterpartyName ?? '-'} />
           <InfoCard label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
         </div>
+      </section>
+
+      <section className="card admin-mb-16">
+        <AdminSectionHeader
+          description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
+          status={
+            matchNotice === '1' ? (
+              <span className="pill pill-success">Match saved</span>
+            ) : matchError ? (
+              <span className="pill pill-danger">Match failed</span>
+            ) : null
+          }
+          title="Manual reconciliation match"
+        />
+        {matchError ? (
+          <p className="muted admin-mt-8">
+            No match was saved. Check the source id, amount, currency, and current transaction state before trying again.
+          </p>
+        ) : null}
+        <form action={createBankReconciliationMatchAction} className="form-grid compact-form admin-mt-16">
+          <input name="bankTransactionId" type="hidden" value={transaction.id} />
+          <AdminFormSelect
+            label="Match source"
+            name="sourceType"
+            options={reconciliationSourceOptions}
+          />
+          <AdminFormInput
+            label="Source id"
+            name="sourceId"
+            placeholder="clearing, journal, withdrawal, or payout id"
+            required
+          />
+          <AdminFormInput
+            defaultValue={Math.abs(transaction.amount)}
+            label="Match amount"
+            min={1}
+            name="amount"
+            required
+            step={1}
+            type="number"
+          />
+          <AdminFormInput
+            defaultValue={transaction.currency}
+            label="Currency"
+            name="currency"
+            required
+          />
+          <AdminFormTextarea
+            className="admin-grid-span-2"
+            label="Operator notes"
+            maxLength={500}
+            name="notes"
+            placeholder="Why this bank row matches the selected finance source"
+            rows={3}
+          />
+          <AdminFormControlButton>Create match</AdminFormControlButton>
+        </form>
       </section>
 
       <section className="card admin-card-scroll">
@@ -118,6 +195,38 @@ export default async function BankReconciliationDetailPage({ params }: BankRecon
   );
 }
 
+async function createBankReconciliationMatchAction(formData: FormData) {
+  'use server';
+
+  const bankTransactionId = readFormString(formData, 'bankTransactionId');
+  const sourceType = readFormString(formData, 'sourceType');
+  const sourceId = readFormString(formData, 'sourceId');
+  const amount = Number(readFormString(formData, 'amount'));
+  const currency = readFormString(formData, 'currency');
+  const notes = readFormString(formData, 'notes');
+  const sourceField = bankReconciliationSourceField(sourceType);
+  const returnHref = bankTransactionId
+    ? `/finance-tax/bank-reconciliation/${encodeURIComponent(bankTransactionId)}`
+    : '/finance-tax/bank-reconciliation';
+
+  if (!bankTransactionId || !sourceField || !sourceId || !Number.isFinite(amount) || amount <= 0) {
+    redirect(`${returnHref}?matchError=invalid`);
+  }
+
+  try {
+    await adminPostOrThrow(`/admin/bank-reconciliation/${encodeURIComponent(bankTransactionId)}/matches`, {
+      amount,
+      ...(currency ? { currency } : {}),
+      ...(notes ? { notes } : {}),
+      [sourceField]: sourceId,
+    });
+  } catch {
+    redirect(`${returnHref}?matchError=failed`);
+  }
+
+  redirect(`${returnHref}?matched=1`);
+}
+
 function InfoCard({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {
   return (
     <div className="card">
@@ -138,4 +247,29 @@ function statusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function bankReconciliationSourceField(sourceType: string) {
+  if (sourceType === 'payment-clearing') {
+    return 'paymentClearingEntryId';
+  }
+  if (sourceType === 'accounting-journal') {
+    return 'accountingJournalEntryId';
+  }
+  if (sourceType === 'withdrawal') {
+    return 'withdrawalRequestId';
+  }
+  if (sourceType === 'payout-batch') {
+    return 'payoutBatchId';
+  }
+  return null;
+}
+
+function readParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function readFormString(formData: FormData, key: string) {
+  return String(formData.get(key) ?? '').trim();
 }

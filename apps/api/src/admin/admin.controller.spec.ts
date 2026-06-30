@@ -84,6 +84,7 @@ describe('AdminController notification and push actions', () => {
     listBankReconciliationTransactions: vi.fn(),
     bankReconciliationSummary: vi.fn(),
     bankReconciliationTransactionDetail: vi.fn(),
+    createBankReconciliationMatch: vi.fn(),
     listPayoutBatches: vi.fn(),
     payoutBatchSummary: vi.fn(),
     previewAdminPushCampaign: vi.fn(),
@@ -978,6 +979,26 @@ describe('AdminController notification and push actions', () => {
       path: 'bank-reconciliation/:id',
     });
     expect(admin.bankReconciliationTransactionDetail).toHaveBeenCalledWith('bank-tx-1');
+  });
+
+  it('exposes manual bank reconciliation match creation by transaction id', async () => {
+    const user = { id: 'admin-1' } as never;
+    const payload = {
+      paymentClearingEntryId: 'clearing-1',
+      amount: 900000,
+      notes: 'Matched to VCB transfer',
+    };
+    admin.createBankReconciliationMatch.mockResolvedValue({ id: 'match-1' });
+
+    await expect(controller.createBankReconciliationMatch(user, 'bank-tx-1', payload as never)).resolves.toEqual({
+      id: 'match-1',
+    });
+
+    expect(routeMetadata('createBankReconciliationMatch')).toEqual({
+      method: RequestMethod.POST,
+      path: 'bank-reconciliation/:id/matches',
+    });
+    expect(admin.createBankReconciliationMatch).toHaveBeenCalledWith('admin-1', 'bank-tx-1', payload);
   });
 
   it('exposes cash settlement earnings as a bounded filtered finance list', async () => {

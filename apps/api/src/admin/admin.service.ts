@@ -202,6 +202,7 @@ import {
 } from './admin-marketing-analytics';
 import type {
   AdminPushCampaignDto,
+  CreateBankReconciliationMatchDto,
   CreateManualWalletAdjustmentDto,
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
@@ -6050,6 +6051,191 @@ export class AdminService {
     return transaction;
   }
 
+  async createBankReconciliationMatch(
+    actorId: string,
+    bankTransactionId: string,
+    input: CreateBankReconciliationMatchDto,
+  ) {
+    const source = adminBankReconciliationMatchSource(input);
+    return this.prisma.$transaction(async (tx) => {
+      const bankTransaction = await tx.companyBankTransaction.findUnique({
+        where: { id: bankTransactionId },
+        select: { id: true, amount: true, currency: true, status: true },
+      });
+      if (!bankTransaction) {
+        throw new NotFoundException('Bank transaction not found');
+      }
+      if (
+        bankTransaction.status === BankReconciliationStatus.IGNORED ||
+        bankTransaction.status === BankReconciliationStatus.REVERSED
+      ) {
+        throw new BadRequestException('Bank transaction cannot be matched in its current status');
+      }
+
+      const currency = normalizeNullable(input.currency)?.toUpperCase() ?? bankTransaction.currency;
+      if (currency !== bankTransaction.currency) {
+        throw new BadRequestException('Match currency must equal bank transaction currency');
+      }
+
+      const sourceAmount = await this.validateBankReconciliationSource(tx, source, currency);
+      if (Math.abs(input.amount) > Math.abs(sourceAmount)) {
+        throw new BadRequestException('Match amount exceeds source amount');
+      }
+
+      const match = await tx.bankReconciliationMatch.create({
+        data: {
+          bankTransactionId,
+          [source.field]: source.id,
+          amount: input.amount,
+          currency,
+          status: BankReconciliationStatus.MATCHED,
+          matchedByAdminId: actorId,
+          notes: normalizeNullable(input.notes),
+          sourceKey: bankReconciliationMatchSourceKey(bankTransactionId, source),
+          metadata: {
+            manual: true,
+            sourceType: source.type,
+          },
+        } as Prisma.BankReconciliationMatchUncheckedCreateInput,
+      });
+
+      const bankMatched = await tx.bankReconciliationMatch.aggregate({
+        where: {
+          bankTransactionId,
+          status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+        },
+        _sum: { amount: true },
+      });
+      const bankStatus = bankReconciliationStatusForAmount(bankMatched._sum.amount ?? 0, bankTransaction.amount);
+      const updatedBankTransaction = await tx.companyBankTransaction.update({
+        where: { id: bankTransactionId },
+        data: { status: bankStatus },
+        select: adminCompanyBankTransactionListSelect,
+      });
+
+      const updatedPaymentClearingEntry =
+        source.type === 'payment-clearing'
+          ? await this.updatePaymentClearingReconciliationStatus(tx, source.id)
+          : null;
+
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'bank_reconciliation.match.create',
+          target: `bank_transaction:${bankTransactionId}`,
+          metadata: {
+            amount: input.amount,
+            bankTransactionId,
+            currency,
+            matchId: match.id,
+            notes: normalizeNullable(input.notes),
+            [source.field]: source.id,
+            sourceType: source.type,
+          },
+        },
+      });
+
+      return {
+        auditLog,
+        bankTransaction: updatedBankTransaction,
+        match,
+        paymentClearingEntry: updatedPaymentClearingEntry,
+      };
+    });
+  }
+
+  private async validateBankReconciliationSource(
+    tx: Prisma.TransactionClient,
+    source: AdminBankReconciliationMatchSource,
+    currency: string,
+  ) {
+    if (source.type === 'accounting-journal') {
+      const row = await tx.accountingJournalEntry.findUnique({
+        where: { id: source.id },
+        select: { amount: true, currency: true },
+      });
+      if (!row) {
+        throw new NotFoundException('Accounting journal entry not found');
+      }
+      if (row.currency !== currency) {
+        throw new BadRequestException('Match currency must equal accounting journal entry currency');
+      }
+      return row.amount;
+    }
+    if (source.type === 'payment-clearing') {
+      const row = await tx.bookingPaymentClearingEntry.findUnique({
+        where: { id: source.id },
+        select: { amount: true, currency: true, status: true },
+      });
+      if (!row) {
+        throw new NotFoundException('Booking payment clearing entry not found');
+      }
+      if (row.status === BookingPaymentClearingStatus.REVERSED) {
+        throw new BadRequestException('Reversed booking payment clearing entries cannot be matched');
+      }
+      if (row.currency !== currency) {
+        throw new BadRequestException('Match currency must equal payment clearing currency');
+      }
+      return row.amount;
+    }
+    if (source.type === 'withdrawal') {
+      const row = await tx.providerWalletWithdrawalRequest.findUnique({
+        where: { id: source.id },
+        select: { amount: true, currency: true },
+      });
+      if (!row) {
+        throw new NotFoundException('Provider withdrawal request not found');
+      }
+      if (row.currency !== currency) {
+        throw new BadRequestException('Match currency must equal withdrawal currency');
+      }
+      return row.amount;
+    }
+
+    const row = await tx.providerPayoutBatch.findUnique({
+      where: { id: source.id },
+      select: { totalNetAmount: true, currency: true },
+    });
+    if (!row) {
+      throw new NotFoundException('Provider payout batch not found');
+    }
+    if (row.currency !== currency) {
+      throw new BadRequestException('Match currency must equal payout batch currency');
+    }
+    return row.totalNetAmount;
+  }
+
+  private async updatePaymentClearingReconciliationStatus(
+    tx: Prisma.TransactionClient,
+    paymentClearingEntryId: string,
+  ) {
+    const entry = await tx.bookingPaymentClearingEntry.findUnique({
+      where: { id: paymentClearingEntryId },
+      select: { amount: true },
+    });
+    if (!entry) {
+      throw new NotFoundException('Booking payment clearing entry not found');
+    }
+
+    const matched = await tx.bankReconciliationMatch.aggregate({
+      where: {
+        paymentClearingEntryId,
+        status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+      },
+      _sum: { amount: true },
+    });
+    const status = bookingPaymentClearingStatusForAmount(matched._sum.amount ?? 0, entry.amount);
+
+    return tx.bookingPaymentClearingEntry.update({
+      where: { id: paymentClearingEntryId },
+      data: {
+        status,
+        ...(status === BookingPaymentClearingStatus.CLEARED ? { clearedAt: new Date() } : {}),
+      },
+      select: adminBookingPaymentClearingEntryListSelect,
+    });
+  }
+
   async couponFinanceSummary(options: AdminPaymentOperationsQuery = {}) {
     const rows = await this.prisma.$queryRaw<
       Array<{
@@ -11880,6 +12066,71 @@ function adminBankReconciliationCountArgs(
   where: Prisma.CompanyBankTransactionWhereInput | undefined,
 ): Prisma.CompanyBankTransactionCountArgs {
   return where ? { where } : {};
+}
+
+type AdminBankReconciliationMatchSource = {
+  readonly field: 'accountingJournalEntryId' | 'paymentClearingEntryId' | 'withdrawalRequestId' | 'payoutBatchId';
+  readonly id: string;
+  readonly key: string;
+  readonly type: 'accounting-journal' | 'payment-clearing' | 'withdrawal' | 'payout-batch';
+};
+
+function adminBankReconciliationMatchSource(input: CreateBankReconciliationMatchDto): AdminBankReconciliationMatchSource {
+  const candidates: AdminBankReconciliationMatchSource[] = [
+    {
+      field: 'accountingJournalEntryId',
+      id: normalizeNullable(input.accountingJournalEntryId) ?? '',
+      key: 'accounting-journal',
+      type: 'accounting-journal',
+    },
+    {
+      field: 'paymentClearingEntryId',
+      id: normalizeNullable(input.paymentClearingEntryId) ?? '',
+      key: 'payment-clearing',
+      type: 'payment-clearing',
+    },
+    {
+      field: 'withdrawalRequestId',
+      id: normalizeNullable(input.withdrawalRequestId) ?? '',
+      key: 'withdrawal',
+      type: 'withdrawal',
+    },
+    {
+      field: 'payoutBatchId',
+      id: normalizeNullable(input.payoutBatchId) ?? '',
+      key: 'payout-batch',
+      type: 'payout-batch',
+    },
+  ];
+  const sources = candidates.filter((source) => source.id.length > 0);
+
+  if (sources.length !== 1) {
+    throw new BadRequestException('Select exactly one reconciliation source');
+  }
+
+  return sources[0]!;
+}
+
+function bankReconciliationMatchSourceKey(bankTransactionId: string, source: AdminBankReconciliationMatchSource) {
+  return `bank-reconciliation-match:${bankTransactionId}:${source.key}:${source.id}`;
+}
+
+function bankReconciliationStatusForAmount(matchedAmount: number, transactionAmount: number) {
+  const matched = Math.abs(matchedAmount);
+  const target = Math.abs(transactionAmount);
+  if (matched <= 0) {
+    return BankReconciliationStatus.UNMATCHED;
+  }
+  return matched >= target ? BankReconciliationStatus.MATCHED : BankReconciliationStatus.PARTIALLY_MATCHED;
+}
+
+function bookingPaymentClearingStatusForAmount(matchedAmount: number, clearingAmount: number) {
+  const matched = Math.abs(matchedAmount);
+  const target = Math.abs(clearingAmount);
+  if (matched <= 0) {
+    return BookingPaymentClearingStatus.OPEN;
+  }
+  return matched >= target ? BookingPaymentClearingStatus.CLEARED : BookingPaymentClearingStatus.PARTIALLY_CLEARED;
 }
 
 function adminCouponFinanceSqlWhere(options: AdminPaymentOperationsQuery): Prisma.Sql {

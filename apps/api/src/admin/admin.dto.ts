@@ -942,6 +942,50 @@ export class UpdateProviderWalletWithdrawalRequestDto {
   correctionReason?: string | null;
 }
 
+export class CreateBankReconciliationMatchDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  accountingJournalEntryId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  paymentClearingEntryId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  withdrawalRequestId?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  payoutBatchId?: string | null;
+
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1_000_000_000)
+  amount!: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  notes?: string | null;
+}
+
 export class CreatePayoutBatchDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
