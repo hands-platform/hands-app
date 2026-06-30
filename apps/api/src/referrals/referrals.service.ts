@@ -12,7 +12,11 @@ import {
 } from '@prisma/client';
 import { calculatePlatformFeeBreakdown } from '../earnings/earnings.policy';
 import { PrismaService } from '../prisma/prisma.service';
-import { calculateCustomerReferralReward } from './referrals.accounting';
+import {
+  calculateCustomerReferralReward,
+  calculateReferralTaxWithholding,
+  type ReferralTaxPolicy,
+} from './referrals.accounting';
 
 const DEFAULT_REFERRAL_PLATFORM_FEE_VAT_RATE_BPS = 800;
 const CASHOUT_APPROVED_REFERRAL_REWARD_STATUS = referralRewardStatus('CASHOUT_APPROVED');
@@ -132,6 +136,7 @@ type ReferralRewardRecord = Prisma.ReferralRewardGetPayload<{ select: typeof ref
 const referralRewardCreditCandidateSelect = {
   id: true,
   amount: true,
+  calculationSnapshot: true,
   currency: true,
   qualifyingBookingId: true,
   sourceKey: true,
@@ -474,6 +479,8 @@ export class ReferralsService {
             select: { id: true },
           });
 
+      await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-credit');
+
       return tx.referralReward.update({
         data: {
           status: CREDITED_REFERRAL_REWARD_STATUS,
@@ -548,6 +555,8 @@ export class ReferralsService {
             },
             select: { id: true },
           });
+
+      await upsertReferralRewardJournal(tx, reward, ledger.id, 'wallet-cashout');
 
       return tx.referralReward.update({
         data: {
@@ -1123,6 +1132,180 @@ function referralWalletCashoutMetadata(reward: ReferralRewardCreditCandidate, wa
     walletCreditLedgerReference: reward.walletLedgerReference,
     walletOwner,
   };
+}
+
+async function upsertReferralRewardJournal(
+  tx: Prisma.TransactionClient,
+  reward: ReferralRewardCreditCandidate,
+  ledgerId: string,
+  action: 'wallet-credit' | 'wallet-cashout',
+) {
+  const owner = referralRewardWalletOwner(reward);
+  const taxPolicy = referralRewardTaxPolicySnapshot(reward);
+  const withholding = calculateReferralTaxWithholding({
+    grossRewardAmount: reward.amount,
+    taxPolicy,
+  });
+  const sourceKey = `accounting-journal:referral-${action}:${reward.id}`;
+  const sourceType = 'REFERRAL_REWARD' as const;
+  const metadata = {
+    action,
+    bookingId: reward.qualifyingBookingId,
+    ledgerId,
+    manualReviewRequired: withholding.manualReviewRequired,
+    referralRewardId: reward.id,
+    rewardSourceKey: reward.sourceKey,
+    taxPolicySnapshot: withholding.taxPolicySnapshot,
+    totalWithheldAmount: withholding.totalWithheldAmount,
+    vatWithheldAmount: withholding.vatWithheldAmount,
+    pitWithheldAmount: withholding.pitWithheldAmount,
+    walletOwner: owner.type,
+  } satisfies Prisma.InputJsonObject;
+  const entries =
+    action === 'wallet-credit'
+      ? [
+          referralJournalEntry({
+            account: `${owner.type}_REFERRAL_REWARD_EXPENSE`,
+            amount: reward.amount,
+            currency: reward.currency,
+            memo: `Referral reward ${reward.id} credited to ${owner.type.toLowerCase()} wallet.`,
+            metadata,
+            side: 'DEBIT',
+            sourceId: reward.id,
+            sourceType,
+          }),
+          referralJournalEntry({
+            account: `${owner.type}_WALLET_LIABILITY`,
+            amount: reward.amount,
+            currency: reward.currency,
+            memo: `Referral reward ${reward.id} increases ${owner.type.toLowerCase()} wallet liability.`,
+            metadata,
+            side: 'CREDIT',
+            sourceId: reward.id,
+            sourceType,
+          }),
+        ]
+      : [
+          referralJournalEntry({
+            account: `${owner.type}_WALLET_LIABILITY`,
+            amount: reward.amount,
+            currency: reward.currency,
+            memo: `Referral cashout ${reward.id} decreases ${owner.type.toLowerCase()} wallet liability.`,
+            metadata,
+            side: 'DEBIT',
+            sourceId: reward.id,
+            sourceType,
+          }),
+          referralJournalEntry({
+            account: 'REFERRAL_CASHOUT_BANK_CLEARING',
+            amount: reward.amount,
+            currency: reward.currency,
+            memo: `Referral cashout ${reward.id} awaits bank reconciliation evidence.`,
+            metadata,
+            side: 'CREDIT',
+            sourceId: reward.id,
+            sourceType,
+          }),
+        ];
+  const totalDebit = entries
+    .filter((entry) => entry.side === 'DEBIT')
+    .reduce((total, entry) => total + entry.amount, 0);
+  const totalCredit = entries
+    .filter((entry) => entry.side === 'CREDIT')
+    .reduce((total, entry) => total + entry.amount, 0);
+  const batchData = {
+    bookingId: reward.qualifyingBookingId ?? null,
+    currency: reward.currency,
+    customerProfileId: owner.type === 'CUSTOMER' ? owner.id : null,
+    entries: {
+      create: entries,
+    },
+    metadata,
+    providerProfileId: owner.type === 'PARTNER' ? owner.id : null,
+    sourceId: reward.id,
+    sourceType,
+    status: 'POSTED' as const,
+    totalCredit,
+    totalDebit,
+  };
+
+  await tx.accountingJournalBatch.upsert({
+    where: { sourceKey },
+    update: {
+      ...batchData,
+      entries: {
+        create: entries,
+        deleteMany: {},
+      },
+    },
+    create: {
+      ...batchData,
+      sourceKey,
+    },
+  });
+}
+
+function referralRewardWalletOwner(reward: ReferralRewardCreditCandidate) {
+  if (reward.walletOwnerCustomerProfileId) {
+    return { id: reward.walletOwnerCustomerProfileId, type: 'CUSTOMER' as const };
+  }
+  return { id: reward.walletOwnerProviderProfileId as string, type: 'PARTNER' as const };
+}
+
+function referralRewardTaxPolicySnapshot(reward: ReferralRewardCreditCandidate): ReferralTaxPolicy {
+  const snapshot = reward.calculationSnapshot;
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    return 'CUSTOMER_SERVICE_CREDIT_ONLY';
+  }
+  const value = snapshot.taxPolicySnapshot;
+  return isReferralTaxPolicy(value) ? value : 'CUSTOMER_SERVICE_CREDIT_ONLY';
+}
+
+function isReferralTaxPolicy(value: unknown): value is ReferralTaxPolicy {
+  return (
+    value === 'NONE' ||
+    value === 'CUSTOMER_SERVICE_CREDIT_ONLY' ||
+    value === 'INDIVIDUAL_COMMISSION_PIT_10' ||
+    value === 'BUSINESS_SERVICE_VAT5_PIT2' ||
+    value === 'NON_RESIDENT_MANUAL_REVIEW' ||
+    value === 'MANUAL_REVIEW'
+  );
+}
+
+function referralJournalEntry(input: {
+  account: string;
+  amount: number;
+  currency: string;
+  memo: string;
+  metadata: Prisma.InputJsonObject;
+  side: 'DEBIT' | 'CREDIT';
+  sourceId: string;
+  sourceType: 'REFERRAL_REWARD';
+}) {
+  return {
+    accountCode: referralJournalAccountCode(input.account),
+    accountName: referralJournalAccountName(input.account),
+    amount: input.amount,
+    currency: input.currency,
+    memo: input.memo,
+    metadata: input.metadata,
+    side: input.side,
+    sourceId: input.sourceId,
+    sourceType: input.sourceType,
+  };
+}
+
+function referralJournalAccountCode(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function referralJournalAccountName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function referralRewardSourceKey(audience: ReferralAudience, attributionId: string, bookingId: string) {

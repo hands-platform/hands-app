@@ -986,6 +986,9 @@ describe('ReferralsService', () => {
       providerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'referral-journal-1' }),
+      },
       referralReward: {
         findUnique: vi.fn().mockResolvedValue(reward),
         update: vi.fn().mockResolvedValue({
@@ -1033,6 +1036,24 @@ describe('ReferralsService', () => {
       where: { id: 'reward-1' },
       select: expect.any(Object),
     });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:referral-wallet-credit:reward-1' },
+      update: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceId: 'reward-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+      create: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceKey: 'accounting-journal:referral-wallet-credit:reward-1',
+        sourceId: 'reward-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+    });
   });
 
   it('credits an available Partner referral reward to the Partner wallet ledger once', async () => {
@@ -1056,6 +1077,9 @@ describe('ReferralsService', () => {
       },
       providerWalletLedgerEntry: {
         upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-journal-1' }),
       },
       referralReward: {
         findUnique: vi.fn().mockResolvedValue(reward),
@@ -1127,6 +1151,9 @@ describe('ReferralsService', () => {
       providerWalletLedgerEntry: {
         upsert: vi.fn(),
       },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'referral-cashout-journal-1' }),
+      },
       referralReward: {
         findUnique: vi.fn().mockResolvedValue(reward),
         update: vi.fn().mockResolvedValue({
@@ -1183,6 +1210,24 @@ describe('ReferralsService', () => {
       where: { id: 'reward-1' },
       select: expect.any(Object),
     });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith({
+      where: { sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1' },
+      update: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceId: 'reward-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+      create: expect.objectContaining({
+        customerProfileId: 'customer-profile-1',
+        sourceKey: 'accounting-journal:referral-wallet-cashout:reward-1',
+        sourceId: 'reward-1',
+        sourceType: 'REFERRAL_REWARD',
+        totalCredit: 25_000,
+        totalDebit: 25_000,
+      }),
+    });
   });
 
   it('marks an approved Partner referral cashout as paid with a Partner cashout ledger entry', async () => {
@@ -1206,6 +1251,9 @@ describe('ReferralsService', () => {
       },
       providerWalletLedgerEntry: {
         upsert: vi.fn().mockResolvedValue(ledger),
+      },
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'partner-referral-cashout-journal-1' }),
       },
       referralReward: {
         findUnique: vi.fn().mockResolvedValue(reward),
