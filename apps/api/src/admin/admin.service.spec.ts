@@ -2410,6 +2410,32 @@ describe('AdminService query orchestration', () => {
     expect(referrals.payRewardCashout).not.toHaveBeenCalled();
   });
 
+  it('rejects referral reward cashout paid closeout approved by an admin without finance approver authority', async () => {
+    const referrals = {
+      payRewardCashout: vi.fn(),
+    };
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.markReferralRewardCashoutPaid('admin-1', 'reward-1', {
+        approvalAdminId: 'support-user-2',
+        reason: 'cashout transfer completed',
+        transferRef: 'VCB-REF-001',
+      }),
+    ).rejects.toThrow('Referral reward cashout paid closeout requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(referrals.payRewardCashout).not.toHaveBeenCalled();
+  });
+
   it('rejects referral reward cashout paid closeout without a transfer reference at the API boundary', async () => {
     const referrals = {
       payRewardCashout: vi.fn(),
@@ -6876,6 +6902,32 @@ describe('AdminService query orchestration', () => {
     expect(earnings.updateProviderWalletWithdrawalRequestForAdmin).not.toHaveBeenCalled();
   });
 
+  it('rejects paid provider wallet withdrawal request closeout approved by an admin without finance approver authority', async () => {
+    const earnings = {
+      updateProviderWalletWithdrawalRequestForAdmin: vi.fn(),
+    };
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.updateProviderWalletWithdrawalRequest('admin-user-1', 'withdrawal-request-1', {
+        approvalAdminId: 'support-user-2',
+        status: 'PAID',
+        transferRef: 'BANK-OUT-001',
+      }),
+    ).rejects.toThrow('Provider wallet withdrawal paid closeout requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(earnings.updateProviderWalletWithdrawalRequestForAdmin).not.toHaveBeenCalled();
+  });
+
   it('requires separate approval before marking payout batches as paid', async () => {
     const earnings = {
       updatePayoutBatch: vi.fn(),
@@ -6897,6 +6949,32 @@ describe('AdminService query orchestration', () => {
       } as never),
     ).rejects.toThrow('Payout batch paid closeout requires approval from a different admin');
 
+    expect(earnings.updatePayoutBatch).not.toHaveBeenCalled();
+  });
+
+  it('rejects payout batch paid closeout approved by an admin without finance approver authority', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const earnings = {
+      updatePayoutBatch: vi.fn(),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.updatePayoutBatch('admin-user-1', 'payout-batch-1', {
+        approvalAdminId: 'support-user-2',
+        status: PayoutBatchStatus.PAID,
+        transferRef: 'BANK-PAYOUT-001',
+      } as never),
+    ).rejects.toThrow('Payout batch paid closeout requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
     expect(earnings.updatePayoutBatch).not.toHaveBeenCalled();
   });
 
