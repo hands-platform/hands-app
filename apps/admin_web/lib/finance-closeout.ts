@@ -368,12 +368,14 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
     range: filters.range,
     take: String(FINANCE_CLOSEOUT_API_LIMIT),
   });
+  const payoutBatchQuery = new URLSearchParams(query);
+  payoutBatchQuery.set('review', 'needs-review');
 
   return {
     cashSettlementSummaryHref: `/admin/cash-settlement-summary?range=${filters.range}`,
     earningsHref: `/admin/earnings?${query.toString()}`,
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
-    payoutBatchesHref: `/admin/payout-batches?${query.toString()}`,
+    payoutBatchesHref: `/admin/payout-batches?${payoutBatchQuery.toString()}`,
     paymentsHref: `/admin/payments?${query.toString()}`,
     paymentSummaryHref: `/admin/payments/summary?range=${filters.range}`,
     refundsHref: `/admin/refunds?${query.toString()}`,

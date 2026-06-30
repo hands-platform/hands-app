@@ -28,8 +28,10 @@ describe('finance closeout helpers', () => {
       cashSettlementSummaryHref: '/admin/cash-settlement-summary?range=30d',
       earningsHref: '/admin/earnings?range=30d&take=10',
       earningsSummaryHref: '/admin/earnings/summary?range=30d',
-      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
+      paymentSummaryHref: '/admin/payments/summary?range=30d',
       paymentsHref: '/admin/payments?range=30d&take=10',
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10&review=needs-review',
+      refundSummaryHref: '/admin/refunds/summary?range=30d',
       refundsHref: '/admin/refunds?range=30d&take=10',
     });
   });
