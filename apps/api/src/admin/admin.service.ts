@@ -390,6 +390,10 @@ type AdminMonthlyTaxClosingQuery = {
 type AdminMonthlyTaxClosingStatusInput = {
   readonly status?: MonthlyTaxClosingStatus | string | null;
   readonly notes?: string | null;
+  readonly paidAt?: string | null;
+  readonly remittanceChannel?: string | null;
+  readonly remittanceEvidenceUrl?: string | null;
+  readonly remittanceTransferRef?: string | null;
 };
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
@@ -412,6 +416,7 @@ const adminMonthlyTaxClosingListSelect = {
   paidAt: true,
   closedAt: true,
   notes: true,
+  remittanceMetadata: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.MonthlyTaxClosingSelect;
@@ -6769,6 +6774,7 @@ export class AdminService {
       paidAt: closing?.paidAt ?? null,
       closedAt: closing?.closedAt ?? null,
       notes: closing?.notes ?? null,
+      remittanceMetadata: closing?.remittanceMetadata ?? null,
     };
   }
 
@@ -6788,10 +6794,16 @@ export class AdminService {
       throw new BadRequestException('Closed monthly periods require reversal entries, not direct edits.');
     }
     assertMonthlyTaxClosingStatusTransition(existing?.status ?? MonthlyTaxClosingStatus.DRAFT, status);
+    const remittance = monthlyTaxClosingRemittanceMetadata(status, input, actorId);
 
     const summary = await this.monthlyTaxClosingSummary({ period });
     const now = new Date();
-    const statusData = monthlyTaxClosingStatusMutationData(status, actorId, now);
+    const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
+    const remittanceData = remittance
+      ? {
+          remittanceMetadata: toJson(remittance.metadata),
+        }
+      : {};
     const totalsData = {
       platformFeeGrossTotal: summary.platformFeeGrossTotal,
       platformFeeNetRevenueTotal: summary.platformFeeNetRevenueTotal,
@@ -6821,12 +6833,14 @@ export class AdminService {
           notes,
           ...totalsData,
           ...statusData,
+          ...remittanceData,
         },
         update: {
           status,
           notes,
           ...totalsData,
           ...statusData,
+          ...remittanceData,
         },
         select: adminMonthlyTaxClosingListSelect,
       });
@@ -6874,6 +6888,7 @@ export class AdminService {
             couponReviewFlagCount: summary.couponReviewFlagCount,
             reconciliationDelta: summary.reconciliationDelta,
             netRevenueDelta: summary.netRevenueDelta,
+            remittance: remittance?.metadata ?? null,
             notes,
           }),
         },
@@ -12580,6 +12595,48 @@ function monthlyTaxClosingStatus(value: MonthlyTaxClosingStatus | string | null 
   }
 
   throw new BadRequestException('Valid monthly tax closing status is required.');
+}
+
+function monthlyTaxClosingRemittanceMetadata(
+  status: MonthlyTaxClosingStatus,
+  input: AdminMonthlyTaxClosingStatusInput,
+  actorId: string,
+) {
+  if (status !== MonthlyTaxClosingStatus.PAID) {
+    return null;
+  }
+
+  const transferRef = normalizeNullable(input.remittanceTransferRef);
+  if (!transferRef) {
+    throw new BadRequestException(
+      'Partner withholding remittance transfer reference is required before marking paid.',
+    );
+  }
+
+  const paidAtDate = monthlyTaxClosingPaidAtDate(input.paidAt);
+  return {
+    paidAtDate,
+    metadata: {
+      transferRef,
+      channel: normalizeNullable(input.remittanceChannel),
+      evidenceUrl: normalizeNullable(input.remittanceEvidenceUrl),
+      paidAt: paidAtDate.toISOString(),
+      remittedByAdminId: actorId,
+    },
+  };
+}
+
+function monthlyTaxClosingPaidAtDate(value: string | null | undefined) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return new Date();
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException('Valid partner withholding remittance paidAt is required.');
+  }
+  return parsed;
 }
 
 function monthlyTaxClosingStatusMutationData(

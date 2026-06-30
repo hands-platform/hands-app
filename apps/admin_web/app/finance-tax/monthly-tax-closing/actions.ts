@@ -9,6 +9,10 @@ export async function updateMonthlyTaxClosingStatus(formData: FormData) {
   const period = String(formData.get('period') || '').trim();
   const status = String(formData.get('status') || '').trim();
   const notes = String(formData.get('notes') || '').trim();
+  const paidAt = String(formData.get('paidAt') || '').trim();
+  const remittanceChannel = String(formData.get('remittanceChannel') || '').trim();
+  const remittanceEvidenceUrl = String(formData.get('remittanceEvidenceUrl') || '').trim();
+  const remittanceTransferRef = String(formData.get('remittanceTransferRef') || '').trim();
   const returnTo = safeMonthlyTaxClosingReturnTo(
     String(formData.get('returnTo') || `/finance-tax/monthly-tax-closing?period=${encodeURIComponent(period)}`),
   );
@@ -22,6 +26,10 @@ export async function updateMonthlyTaxClosingStatus(formData: FormData) {
     {
       status,
       notes: notes || null,
+      paidAt: paidAt || null,
+      remittanceChannel: remittanceChannel || null,
+      remittanceEvidenceUrl: remittanceEvidenceUrl || null,
+      remittanceTransferRef: remittanceTransferRef || null,
     },
     null,
   );

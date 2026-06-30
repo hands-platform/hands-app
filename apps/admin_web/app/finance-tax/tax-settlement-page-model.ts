@@ -984,6 +984,7 @@ export function emptyMonthlyTaxClosingSummary(
     paidAt: null,
     closedAt: null,
     notes: null,
+    remittanceMetadata: null,
   };
 }
 

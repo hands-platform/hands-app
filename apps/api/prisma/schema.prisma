@@ -1536,6 +1536,7 @@ model MonthlyTaxClosing {
   paidById                   String?
   closedById                 String?
   notes                      String?
+  remittanceMetadata          Json?
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
   settlementSnapshots        BookingSettlementSnapshot[]

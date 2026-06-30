@@ -2328,8 +2328,17 @@ export type AdminMonthlyTaxClosing = {
   paidAt?: string | null;
   closedAt?: string | null;
   notes?: string | null;
+  remittanceMetadata?: AdminMonthlyTaxClosingRemittanceMetadata | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type AdminMonthlyTaxClosingRemittanceMetadata = {
+  transferRef?: string | null;
+  channel?: string | null;
+  evidenceUrl?: string | null;
+  paidAt?: string | null;
+  remittedByAdminId?: string | null;
 };
 
 export type AdminMonthlyTaxClosingSummary = {
@@ -2364,6 +2373,7 @@ export type AdminMonthlyTaxClosingSummary = {
   paidAt?: string | null;
   closedAt?: string | null;
   notes?: string | null;
+  remittanceMetadata?: AdminMonthlyTaxClosingRemittanceMetadata | null;
 };
 
 export type AdminPlatformVatRateBreakdown = {

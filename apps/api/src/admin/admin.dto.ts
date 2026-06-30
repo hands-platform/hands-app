@@ -358,6 +358,30 @@ export class UpdateMonthlyTaxClosingStatusDto {
   @IsString()
   @MaxLength(1000)
   notes?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  remittanceTransferRef?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  remittanceChannel?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  remittanceEvidenceUrl?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  paidAt?: string | null;
 }
 
 export class CreatePartnerReportDto {

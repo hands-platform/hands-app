@@ -7472,6 +7472,7 @@ describe('AdminService query orchestration', () => {
       paidAt: null,
       closedAt: null,
       notes: 'Ready for review',
+      remittanceMetadata: null,
     });
 
     expect(prisma.bookingSettlementSnapshot.aggregate).toHaveBeenNthCalledWith(
@@ -7624,6 +7625,175 @@ describe('AdminService query orchestration', () => {
           companyOutputVatTotal: 18962,
         }),
       },
+    });
+  });
+
+  it('requires transfer evidence before marking partner withholding remittance paid', async () => {
+    const prisma = {
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.DECLARED,
+          declaredAt: new Date('2026-06-30T10:00:00.000Z'),
+          paidAt: null,
+          closedAt: null,
+          notes: null,
+        }),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn(),
+        count: vi.fn(),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+      }),
+    ).rejects.toThrow('Partner withholding remittance transfer reference is required before marking paid.');
+    expect(prisma.bookingSettlementSnapshot.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('stores partner withholding remittance evidence when closing status moves to paid', async () => {
+    const existingClosing = {
+      id: 'closing-1',
+      period: '2026-06',
+      currency: 'VND',
+      status: MonthlyTaxClosingStatus.DECLARED,
+      declaredAt: new Date('2026-06-30T10:00:00.000Z'),
+      paidAt: null,
+      closedAt: null,
+      notes: 'Declared',
+      remittanceMetadata: null,
+    };
+    const paidAt = new Date('2026-07-01T04:30:00.000Z');
+    const updatedClosing = {
+      ...existingClosing,
+      status: MonthlyTaxClosingStatus.PAID,
+      paidAt,
+      notes: 'Paid through tax portal',
+      remittanceMetadata: {
+        transferRef: 'VCB-TAX-202606',
+        channel: 'VCB_MANUAL_TRANSFER',
+        evidenceUrl: 'https://evidence.example/remittance.pdf',
+        paidAt: paidAt.toISOString(),
+        remittedByAdminId: 'admin-1',
+      },
+    };
+    const tx = {
+      monthlyTaxClosing: {
+        upsert: vi.fn().mockResolvedValue(updatedClosing),
+      },
+      bookingSettlementSnapshot: {
+        updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          companyCouponExpense: 0n,
+          couponDiscountAmount: 0n,
+          couponReviewFlagCount: 0n,
+          couponSettlementCount: 0n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+        },
+      ]),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue(existingClosing),
+      },
+      bookingSettlementSnapshot: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({
+            _count: { _all: 2 },
+            _sum: {
+              customerPaymentAmount: 1200000,
+              partnerPayoutAmount: 860000,
+              platformFeeGross: 256000,
+              platformFeeNetRevenue: 237038,
+              companyOutputVat: 18962,
+              partnerVatAmount: 60000,
+              partnerPitAmount: 24000,
+              partnerWithholdingTotal: 84000,
+              paymentProcessingFee: 0,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              platformFeeGross: 128000,
+              partnerWithholdingTotal: 42000,
+            },
+          })
+          .mockResolvedValueOnce({
+            _sum: {
+              partnerPayoutAmount: 430000,
+            },
+          }),
+        count: vi.fn().mockResolvedValueOnce(0).mockResolvedValueOnce(2),
+        groupBy: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.PAID,
+        notes: ' Paid through tax portal ',
+        paidAt: paidAt.toISOString(),
+        remittanceTransferRef: ' VCB-TAX-202606 ',
+        remittanceChannel: ' VCB_MANUAL_TRANSFER ',
+        remittanceEvidenceUrl: ' https://evidence.example/remittance.pdf ',
+      }),
+    ).resolves.toEqual(updatedClosing);
+
+    expect(tx.monthlyTaxClosing.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          status: MonthlyTaxClosingStatus.PAID,
+          paidAt,
+          paidById: 'admin-1',
+          remittanceMetadata: expect.objectContaining({
+            transferRef: 'VCB-TAX-202606',
+            channel: 'VCB_MANUAL_TRANSFER',
+            evidenceUrl: 'https://evidence.example/remittance.pdf',
+            paidAt: paidAt.toISOString(),
+            remittedByAdminId: 'admin-1',
+          }),
+        }),
+      }),
+    );
+    expect(tx.bookingSettlementSnapshot.updateMany).toHaveBeenCalledWith({
+      where: {
+        monthlyPeriod: '2026-06',
+        currency: 'VND',
+        settlementStatus: BookingSettlementStatus.POSTED,
+      },
+      data: {
+        monthlyClosingId: 'closing-1',
+        taxStatus: BookingSettlementTaxStatus.PAID,
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'monthly_tax_closing.status_update',
+        metadata: expect.objectContaining({
+          toStatus: MonthlyTaxClosingStatus.PAID,
+          partnerWithholdingTotal: 84000,
+          remittance: expect.objectContaining({
+            transferRef: 'VCB-TAX-202606',
+            channel: 'VCB_MANUAL_TRANSFER',
+          }),
+        }),
+      }),
     });
   });
 

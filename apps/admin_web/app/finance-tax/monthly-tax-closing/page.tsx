@@ -145,6 +145,38 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                 defaultValue={summary.notes ?? ''}
               />
             </label>
+            <label>
+              Remittance ref
+              <input
+                name="remittanceTransferRef"
+                placeholder="Required when moving to PAID"
+                defaultValue={summary.remittanceMetadata?.transferRef ?? ''}
+              />
+            </label>
+            <label>
+              Paid at
+              <input
+                name="paidAt"
+                type="datetime-local"
+                defaultValue={datetimeLocalValue(summary.remittanceMetadata?.paidAt ?? summary.paidAt)}
+              />
+            </label>
+            <label>
+              Channel
+              <input
+                name="remittanceChannel"
+                placeholder="VCB manual transfer"
+                defaultValue={summary.remittanceMetadata?.channel ?? ''}
+              />
+            </label>
+            <label>
+              Evidence URL
+              <input
+                name="remittanceEvidenceUrl"
+                placeholder="Tax portal receipt or retained evidence URL"
+                defaultValue={summary.remittanceMetadata?.evidenceUrl ?? ''}
+              />
+            </label>
             <button type="submit">Save closing status</button>
             <p className="muted">{nextStatusOptions[0]?.helper}</p>
           </form>
@@ -298,4 +330,12 @@ function closingStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function datetimeLocalValue(value?: string | null) {
+  if (!value) {
+    return '';
+  }
+
+  return value.slice(0, 16);
 }

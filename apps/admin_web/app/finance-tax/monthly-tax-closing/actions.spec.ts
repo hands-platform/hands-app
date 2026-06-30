@@ -39,6 +39,10 @@ describe('monthly tax closing actions', () => {
       '/admin/monthly-tax-closings/2026-06/status',
       {
         notes: 'Submitted to tax portal',
+        paidAt: null,
+        remittanceChannel: null,
+        remittanceEvidenceUrl: null,
+        remittanceTransferRef: null,
         status: 'DECLARED',
       },
       null,
@@ -57,5 +61,29 @@ describe('monthly tax closing actions', () => {
     await updateMonthlyTaxClosingStatus(formData);
 
     expect(mockedRedirect).toHaveBeenCalledWith('/finance-tax/monthly-tax-closing');
+  });
+
+  it('passes partner withholding remittance evidence when marking the period paid', async () => {
+    const formData = new FormData();
+    formData.set('period', '2026-06');
+    formData.set('status', 'PAID');
+    formData.set('paidAt', '2026-07-01T04:30');
+    formData.set('remittanceTransferRef', ' VCB-TAX-202606 ');
+    formData.set('remittanceChannel', ' VCB_MANUAL_TRANSFER ');
+    formData.set('remittanceEvidenceUrl', ' https://evidence.example/remittance.pdf ');
+
+    await updateMonthlyTaxClosingStatus(formData);
+
+    expect(mockedAdminPatch).toHaveBeenCalledWith(
+      '/admin/monthly-tax-closings/2026-06/status',
+      expect.objectContaining({
+        paidAt: '2026-07-01T04:30',
+        remittanceChannel: 'VCB_MANUAL_TRANSFER',
+        remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
+        remittanceTransferRef: 'VCB-TAX-202606',
+        status: 'PAID',
+      }),
+      null,
+    );
   });
 });
