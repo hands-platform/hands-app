@@ -13,7 +13,7 @@ import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
-import { AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { MetricCard } from '../../components/metric-card';
 import {
@@ -254,39 +254,38 @@ export function CalendarClient() {
 
           <div className="calendar-sidebar-section">
             <AdminSectionHeader title="Event Filters" />
-            <label
+            <AdminFormCheckbox
               className={`calendar-filter-row calendar-filter-row-all ${
                 selectedCategories.length === CALENDAR_CATEGORIES.length ? 'is-active' : ''
               }`}
+              checked={selectedCategories.length === CALENDAR_CATEGORIES.length}
+              label="View all calendar categories"
+              onChange={(event) =>
+                setSelectedCategories(event.target.checked ? [...CALENDAR_CATEGORIES] : [])
+              }
             >
-              <input
-                checked={selectedCategories.length === CALENDAR_CATEGORIES.length}
-                onChange={(event) =>
-                  setSelectedCategories(event.target.checked ? [...CALENDAR_CATEGORIES] : [])
-                }
-                type="checkbox"
-              />
               <span>View all</span>
-            </label>
+            </AdminFormCheckbox>
             <div className="calendar-filter-list">
               {CALENDAR_CATEGORIES.map((category) => {
                 const active = selectedCategories.includes(category);
 
                 return (
-                  <label className={active ? 'calendar-filter-row is-active' : 'calendar-filter-row'} key={category}>
-                    <input
-                      checked={active}
-                      onChange={() =>
-                        setSelectedCategories((current) =>
-                          current.includes(category)
-                            ? current.filter((value) => value !== category)
-                            : [...current, category],
-                        )
-                      }
-                      type="checkbox"
-                    />
+                  <AdminFormCheckbox
+                    checked={active}
+                    className={active ? 'calendar-filter-row is-active' : 'calendar-filter-row'}
+                    key={category}
+                    label={`View ${category} calendar events`}
+                    onChange={() =>
+                      setSelectedCategories((current) =>
+                        current.includes(category)
+                          ? current.filter((value) => value !== category)
+                          : [...current, category],
+                      )
+                    }
+                  >
                     <span className={`pill pill-${CALENDAR_CATEGORY_COLORS[category]}`}>{category}</span>
-                  </label>
+                  </AdminFormCheckbox>
                 );
               })}
             </div>

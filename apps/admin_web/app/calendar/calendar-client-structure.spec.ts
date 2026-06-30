@@ -9,4 +9,12 @@ describe('calendar client structure', () => {
     expect(clientSource).not.toContain('<button\n              className="button button-primary calendar-add-button"');
     expect(clientSource).not.toContain('<button\n              className="button button-secondary calendar-quick-add"');
   });
+
+  it('uses shared AdminForm checkbox atoms for calendar filters', () => {
+    const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
+
+    expect(clientSource).toContain('AdminFormCheckbox');
+    expect(clientSource).not.toContain('<input\n                checked={selectedCategories.length === CALENDAR_CATEGORIES.length}');
+    expect(clientSource).not.toContain('<input\n                      checked={active}');
+  });
 });
