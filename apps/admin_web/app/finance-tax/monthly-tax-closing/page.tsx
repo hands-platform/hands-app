@@ -5,6 +5,11 @@ import type {
   AdminMonthlyTaxClosingSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../../components/admin-form-controls';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
@@ -99,21 +104,16 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           title="Monthly closing period"
         />
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <label>
-            Month
-            <input name="period" type="month" defaultValue={filters.period} />
-          </label>
-          <label>
-            Rows
-            <select name="take" defaultValue={filters.take}>
-              {[25, 50, 75, 100].map((take) => (
-                <option key={take} value={take}>
-                  {take}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit">Apply period</button>
+          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormSelect
+            defaultValue={String(filters.take)}
+            label="Rows"
+            name="take"
+            options={[25, 50, 75, 100].map((take) => ({ label: String(take), value: String(take) }))}
+          />
+          <AdminFormControlButton className="btn btn-primary" type="submit">
+            Apply period
+          </AdminFormControlButton>
         </form>
       </section>
 
@@ -127,65 +127,51 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
             <input name="period" type="hidden" value={filters.period} />
             <input name="returnTo" type="hidden" value={returnTo} />
-            <label>
-              Next status
-              <select name="status" defaultValue={nextStatusOptions[0]?.value}>
-                {nextStatusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Operator notes
-              <input
-                name="notes"
-                placeholder="Tax portal reference, declaration note, or closeout memo"
-                defaultValue={summary.notes ?? ''}
-              />
-            </label>
-            <label>
-              Remittance ref
-              <input
-                name="remittanceTransferRef"
-                placeholder="Required when moving to PAID"
-                defaultValue={summary.remittanceMetadata?.transferRef ?? ''}
-              />
-            </label>
-            <label>
-              Approving admin ID
-              <input
-                name="approvalAdminId"
-                placeholder="Required when moving to PAID"
-                defaultValue={summary.remittanceMetadata?.approvedByAdminId ?? ''}
-              />
-            </label>
-            <label>
-              Paid at
-              <input
-                name="paidAt"
-                type="datetime-local"
-                defaultValue={datetimeLocalValue(summary.remittanceMetadata?.paidAt ?? summary.paidAt)}
-              />
-            </label>
-            <label>
-              Channel
-              <input
-                name="remittanceChannel"
-                placeholder="VCB manual transfer"
-                defaultValue={summary.remittanceMetadata?.channel ?? ''}
-              />
-            </label>
-            <label>
-              Evidence URL
-              <input
-                name="remittanceEvidenceUrl"
-                placeholder="Tax portal receipt or retained evidence URL"
-                defaultValue={summary.remittanceMetadata?.evidenceUrl ?? ''}
-              />
-            </label>
-            <button type="submit">Save closing status</button>
+            <AdminFormSelect
+              defaultValue={nextStatusOptions[0]?.value}
+              label="Next status"
+              name="status"
+              options={nextStatusOptions.map((option) => ({ label: option.label, value: option.value }))}
+            />
+            <AdminFormInput
+              defaultValue={summary.notes ?? ''}
+              label="Operator notes"
+              name="notes"
+              placeholder="Tax portal reference, declaration note, or closeout memo"
+            />
+            <AdminFormInput
+              defaultValue={summary.remittanceMetadata?.transferRef ?? ''}
+              label="Remittance ref"
+              name="remittanceTransferRef"
+              placeholder="Required when moving to PAID"
+            />
+            <AdminFormInput
+              defaultValue={summary.remittanceMetadata?.approvedByAdminId ?? ''}
+              label="Approving admin ID"
+              name="approvalAdminId"
+              placeholder="Required when moving to PAID"
+            />
+            <AdminFormInput
+              defaultValue={datetimeLocalValue(summary.remittanceMetadata?.paidAt ?? summary.paidAt)}
+              label="Paid at"
+              name="paidAt"
+              type="datetime-local"
+            />
+            <AdminFormInput
+              defaultValue={summary.remittanceMetadata?.channel ?? ''}
+              label="Channel"
+              name="remittanceChannel"
+              placeholder="VCB manual transfer"
+            />
+            <AdminFormInput
+              defaultValue={summary.remittanceMetadata?.evidenceUrl ?? ''}
+              label="Evidence URL"
+              name="remittanceEvidenceUrl"
+              placeholder="Tax portal receipt or retained evidence URL"
+            />
+            <AdminFormControlButton className="btn btn-primary" type="submit">
+              Save closing status
+            </AdminFormControlButton>
             <p className="muted">{nextStatusOptions[0]?.helper}</p>
           </form>
         ) : (
