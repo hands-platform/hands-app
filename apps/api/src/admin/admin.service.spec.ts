@@ -6102,6 +6102,9 @@ describe('AdminService query orchestration', () => {
 
   it('delegates partner bank deposit approvals to the earnings service with actor id', async () => {
     const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
       adminAuditLog: {
         create: vi.fn(),
       },
@@ -6125,6 +6128,7 @@ describe('AdminService query orchestration', () => {
         bankTransactionId: 'BIDV-20260629-001',
         depositDate: '2026-06-29T09:30:00.000Z',
         attachmentFileId: 'file-deposit-proof-1',
+        approvalAdminId: 'finance-admin-2',
       }),
     ).resolves.toEqual(
       expect.objectContaining({
@@ -6142,13 +6146,89 @@ describe('AdminService query orchestration', () => {
       attachmentFileId: 'file-deposit-proof-1',
       adminId: 'admin-user-1',
     });
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'finance-admin-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: 'admin-user-1',
         action: 'provider_wallet.bank_deposit_received',
         target: 'provider_wallet_ledger:wallet-deposit-1',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+        }),
       }),
     });
+  });
+
+  it('rejects partner bank deposits without separate approval before writing wallet ledger', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn(),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const earnings = {
+      recordPartnerBankDeposit: vi.fn(),
+    };
+    const service = createAdminService(prisma, { earnings });
+    const input = {
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      bankTransactionId: 'BIDV-20260629-001',
+      depositDate: '2026-06-29T09:30:00.000Z',
+      attachmentFileId: 'file-deposit-proof-1',
+    };
+
+    await expect(service.recordPartnerBankDeposit('admin-user-1', input)).rejects.toThrow(
+      'Partner bank deposit requires approval from a different admin',
+    );
+    await expect(
+      service.recordPartnerBankDeposit('admin-user-1', {
+        ...input,
+        approvalAdminId: 'admin-user-1',
+      } as never),
+    ).rejects.toThrow('Partner bank deposit requires approval from a different admin');
+
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+    expect(earnings.recordPartnerBankDeposit).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects partner bank deposits approved by an admin without finance approver authority', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const earnings = {
+      recordPartnerBankDeposit: vi.fn(),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.recordPartnerBankDeposit('admin-user-1', {
+        providerProfileId: 'provider-1',
+        amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
+        approvalAdminId: 'support-user-2',
+      } as never),
+    ).rejects.toThrow('Partner bank deposit requires approval from a finance approver');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(earnings.recordPartnerBankDeposit).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('previews customer manual promotion credits without creating revenue or bank movement', async () => {

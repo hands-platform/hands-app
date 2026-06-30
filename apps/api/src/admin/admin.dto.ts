@@ -829,6 +829,12 @@ export class RecordPartnerBankDepositDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(128)
+  approvalAdminId!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
   providerProfileId!: string;
 
   @Transform(({ value }) => numberString(value))

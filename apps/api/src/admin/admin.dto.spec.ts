@@ -283,6 +283,7 @@ describe('admin request DTO validation', () => {
 
     const transformed = await pipe.transform(
       {
+        approvalAdminId: ' finance-admin-2 ',
         providerProfileId: ' provider-1 ',
         amount: '1000000',
         bankTransactionId: ' BIDV-20260629-001 ',
@@ -295,6 +296,7 @@ describe('admin request DTO validation', () => {
       { type: 'body', metatype: bodyMetatype('recordPartnerBankDeposit', 1) as never, data: '' },
     );
 
+    expect(transformed).toHaveProperty('approvalAdminId', 'finance-admin-2');
     expect(transformed).toHaveProperty('providerProfileId', 'provider-1');
     expect(transformed).toHaveProperty('amount', 1000000);
     expect(transformed).toHaveProperty('bankTransactionId', 'BIDV-20260629-001');

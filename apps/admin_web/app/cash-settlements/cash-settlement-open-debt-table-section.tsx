@@ -181,6 +181,15 @@ export function CashSettlementOpenDebtTableSection({
                   placeholder="Deposit notes"
                   defaultValue={row.settlementNotesDefault}
                 />
+                <label>
+                  Finance approver id
+                  <input
+                    aria-label="Finance approver admin id"
+                    name="approvalAdminId"
+                    placeholder="Finance approver admin id"
+                    required
+                  />
+                </label>
                 <button type="submit">Record bank deposit</button>
               </form>
               <p className="muted admin-mt-8">

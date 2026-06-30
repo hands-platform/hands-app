@@ -42,9 +42,13 @@ export async function recordPartnerBankDeposit(formData: FormData) {
   const attachmentFileId = String(formData.get('attachmentFileId') ?? '').trim();
   const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
+  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
 
   if (!providerProfileId || !Number.isFinite(amount) || amount <= 0 || !bankTransactionId || !depositDate) {
     throw new Error('Partner bank deposit requires partner, amount, transaction id, and deposit date');
+  }
+  if (!approvalAdminId) {
+    throw new Error('Partner bank deposit requires approval from a finance approver');
   }
   if (!attachmentFileId && !attachmentUrl) {
     throw new Error('Partner bank deposit requires attachment evidence');
@@ -59,6 +63,7 @@ export async function recordPartnerBankDeposit(formData: FormData) {
     attachmentFileId: attachmentFileId || undefined,
     attachmentUrl: attachmentUrl || undefined,
     notes: notes || undefined,
+    approvalAdminId,
   });
 
   revalidatePath('/cash-settlements');

@@ -25,6 +25,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).toContain('Cr Partner withholding tax payable 42.000 VND');
     expect(rendered).toContain('Coupon offset already applied 60.000 VND');
     expect(rendered).toContain('Record bank deposit');
+    expect(rendered).toContain('Finance approver id');
     expect(rendered).toContain('Review settlement');
     expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 12 entries');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1', '/bookings/booking-1']));

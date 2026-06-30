@@ -192,6 +192,7 @@ describe('AdminController notification and push actions', () => {
         bankTransactionId: 'BIDV-20260629-001',
         depositDate: '2026-06-29T09:30:00.000Z',
         attachmentFileId: 'file-deposit-proof-1',
+        approvalAdminId: 'finance-admin-2',
       }),
     ).resolves.toEqual({ id: 'wallet-deposit-1' });
 
@@ -205,6 +206,7 @@ describe('AdminController notification and push actions', () => {
       bankTransactionId: 'BIDV-20260629-001',
       depositDate: '2026-06-29T09:30:00.000Z',
       attachmentFileId: 'file-deposit-proof-1',
+      approvalAdminId: 'finance-admin-2',
     });
   });
 

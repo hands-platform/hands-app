@@ -7588,8 +7588,16 @@ export class AdminService {
   }
 
   async recordPartnerBankDeposit(actorId: string, input: RecordPartnerBankDepositDto) {
+    const { approvalAdminId: rawApprovalAdminId, ...depositInput } = input;
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      rawApprovalAdminId,
+      actorId,
+      'Partner bank deposit',
+    );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Partner bank deposit');
+
     const ledger = await this.earnings.recordPartnerBankDeposit({
-      ...input,
+      ...depositInput,
       adminId: actorId,
     });
     await this.writeAudit(
@@ -7602,6 +7610,7 @@ export class AdminService {
         currency: ledger.currency,
         reference: ledger.reference,
         sourceKey: ledger.sourceKey,
+        approvalAdminId,
       },
     );
     return ledger;
