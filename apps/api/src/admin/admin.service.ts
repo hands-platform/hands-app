@@ -6882,6 +6882,7 @@ export class AdminService {
     }
 
     const summary = await this.monthlyTaxClosingSummary({ period });
+    assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
     const now = new Date();
     const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
     const remittanceData = remittance
@@ -12890,6 +12891,20 @@ function monthlyTaxClosingStatus(value: MonthlyTaxClosingStatus | string | null 
   }
 
   throw new BadRequestException('Valid monthly tax closing status is required.');
+}
+
+function assertMonthlyTaxClosingReconciliationIsBalanced(
+  summary: { reconciliationDelta: number },
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (nextStatus === MonthlyTaxClosingStatus.DRAFT) {
+    return;
+  }
+  if (summary.reconciliationDelta !== 0) {
+    throw new BadRequestException(
+      'Monthly close requires reconciliation delta to be zero before status can advance.',
+    );
+  }
 }
 
 function monthlyTaxClosingRemittanceMetadata(
