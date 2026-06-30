@@ -10,7 +10,8 @@ import type {
   AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
@@ -117,12 +118,13 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
       metrics={buildTaxFinanceMetrics(settlementSummary, withholdingSummary)}
       title="Tax Overview"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Use the summary APIs first. Open the bounded audit lists only when a finance operator needs booking-level evidence."
-          status={<span className="pill pill-success">Summary API</span>}
-          title="Tax finance operating model"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Use the summary APIs first. Open the bounded audit lists only when a finance operator needs booking-level evidence."
+        resultLabel="Summary API"
+        resultTone="success"
+        title="Tax finance operating model"
+      >
         <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
             <span>1</span>
@@ -158,14 +160,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
           </div>
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Summary-only command desk for today's finance work. Open bounded lists only when a row-level review is needed."
-          status={<span className="pill pill-warn">Needs action first</span>}
-          title="Finance operations priority desk"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Summary-only command desk for today's finance work. Open bounded lists only when a row-level review is needed."
+        resultLabel="Needs action first"
+        resultTone="warning"
+        title="Finance operations priority desk"
+      >
         <div className="setup-stage-list admin-mt-12">
           {buildFinanceOperationsPriorityLinks({
             accountingFilters,
@@ -188,14 +191,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
-          status={<span className="pill pill-info">Coupon summary API</span>}
-          title="Coupon finance summary"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
+        resultLabel="Coupon summary API"
+        resultTone="info"
+        title="Coupon finance summary"
+      >
         <div className="setup-stage-list admin-mt-12">
           <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
             <span>COUPON</span>
@@ -278,14 +282,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             </small>
           </div>
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
-          status={<span className="pill pill-info">Priority links</span>}
-          title="Payout and wallet priority desk"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
+        resultLabel="Priority links"
+        resultTone="info"
+        title="Payout and wallet priority desk"
+      >
         <div className="setup-stage-list admin-mt-12">
           {buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => (
             <Link className="setup-stage-item" href={link.href} key={link.key}>
@@ -300,13 +305,13 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Keep these two workspaces separate: one reviews booking-level immutable evidence, the other reviews Partner monthly withholding totals."
-          title="Finance tax workspaces"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Keep these two workspaces separate: one reviews booking-level immutable evidence, the other reviews Partner monthly withholding totals."
+        title="Finance tax workspaces"
+      >
         <div className="setup-stage-list admin-mt-12">
           <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
             <span>AUDIT</span>
@@ -392,7 +397,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             <small>Policy</small>
           </Link>
         </div>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

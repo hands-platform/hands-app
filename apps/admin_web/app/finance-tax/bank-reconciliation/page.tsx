@@ -11,7 +11,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -141,18 +141,13 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Create one bank statement row from manual evidence. Imported rows start unmatched and can be reconciled from the transaction detail page."
-          status={
-            importNotice === '1' ? (
-              <span className="pill pill-success">Bank transaction imported</span>
-            ) : importError ? (
-              <span className="pill pill-danger">Import failed</span>
-            ) : null
-          }
-          title="Manual bank transaction import"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Create one bank statement row from manual evidence. Imported rows start unmatched and can be reconciled from the transaction detail page."
+        resultLabel={importNotice === '1' ? 'Bank transaction imported' : importError ? 'Import failed' : undefined}
+        resultTone={importNotice === '1' ? 'success' : importError ? 'danger' : 'info'}
+        title="Manual bank transaction import"
+      >
         {importError ? (
           <p className="muted admin-mt-8">
             Bank transaction import failed. Check approval admin, bank account, type, amount, and occurred date before
@@ -188,7 +183,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             </AdminFormControlButton>
           </div>
         </form>
-      </section>
+      </AdminFilterPanel>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"

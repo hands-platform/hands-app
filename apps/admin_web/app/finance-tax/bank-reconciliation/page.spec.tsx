@@ -41,6 +41,7 @@ describe('BankReconciliationPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Bank transaction import failed');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-textarea');
