@@ -78,14 +78,22 @@ describe('Admin form controls', () => {
     const textarea = AdminFormTextarea({
       className: 'partner-note',
       label: 'Partner operation note',
+      minLength: 12,
       name: 'note',
       placeholder: 'Add factual note',
+      required: true,
       rows: 3,
       textareaClassName: 'ops-note-textarea',
     });
 
     expect(textarea.props.className).toBe('admin-form-textarea partner-note');
     expect(textarea.props.children[1].props.className).toBe('ops-note-textarea');
+    expect(textarea.props.children[1].props).toMatchObject({
+      minLength: 12,
+      name: 'note',
+      required: true,
+      rows: 3,
+    });
     expect(textContent(textarea)).toContain('Partner operation note');
   });
 

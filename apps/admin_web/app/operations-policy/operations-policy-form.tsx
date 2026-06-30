@@ -1,5 +1,11 @@
 import Link from 'next/link';
 import { ExternalLink, Save } from 'lucide-react';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -117,16 +123,18 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       </div>
       {setting.options?.length ? (
         <>
-          <label className="field">
+          <div className="calendar-field">
             <span>Decision</span>
-            <select name="value" defaultValue={String(setting.value)}>
-              {setting.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {displayOperationalWording(option.label)}
-                </option>
-              ))}
-            </select>
-          </label>
+            <AdminFormSelect
+              defaultValue={String(setting.value)}
+              label="Decision"
+              name="value"
+              options={setting.options.map((option) => ({
+                label: displayOperationalWording(option.label),
+                value: option.value,
+              }))}
+            />
+          </div>
           <div className="booking-radar admin-mt-12">
             {setting.options.map((option) => (
               <div key={option.value} className="insight-card">
@@ -137,35 +145,37 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           </div>
         </>
       ) : (
-        <label className="field">
+        <div className="calendar-field">
           <span>
             Value {setting.unit ? `(${setting.unit})` : ''}
             {isNumber && setting.min !== undefined && setting.max !== undefined
               ? `, ${setting.min}-${setting.max}`
               : ''}
           </span>
-          <input
-            type={isNumber ? 'number' : 'text'}
-            name="value"
+          <AdminFormInput
             defaultValue={String(setting.value)}
-            min={isNumber ? (setting.min ?? undefined) : undefined}
+            label="Value"
             max={isNumber ? (setting.max ?? undefined) : undefined}
+            min={isNumber ? (setting.min ?? undefined) : undefined}
+            name="value"
+            type={isNumber ? 'number' : 'text'}
           />
-        </label>
+        </div>
       )}
-      <label className="field">
+      <div className="calendar-field">
         <span>Change reason</span>
-        <textarea
-          name="reason"
+        <AdminFormTextarea
+          label="Change reason"
           minLength={12}
-          required
+          name="reason"
           placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
+          required
         />
-      </label>
-      <button className="button button-primary admin-mt-12" type="submit">
+      </div>
+      <AdminFormControlButton className="button button-primary admin-mt-12" type="submit">
         <Save size={16} aria-hidden="true" />
         Save policy
-      </button>
+      </AdminFormControlButton>
       {setting.updatedAt ? (
         <p className="muted admin-mt-10">
           Last changed {formatDate(setting.updatedAt)} by{' '}

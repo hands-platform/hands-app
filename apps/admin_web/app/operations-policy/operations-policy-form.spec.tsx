@@ -32,4 +32,55 @@ describe('OperationsPolicyForm', () => {
     expect(rendered).toContain('Before saving this policy');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings?view=customer-choice']));
   });
+
+  it('uses shared admin form atoms for editable controls', () => {
+    const setting = {
+      category: 'Matching',
+      description: 'Controls the first-pick response window.',
+      enforced: true,
+      key: 'matching.first_pick_response_window_min',
+      label: 'First-pick response window',
+      max: 30,
+      min: 1,
+      recommendedValue: 10,
+      unit: 'minutes',
+      value: 10,
+    } as AdminOperationalPolicySetting;
+
+    const section = OperationsPolicyForm({ setting, bookings: [] as AdminBooking[] });
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toContain('admin-form-input');
+    expect(classNames).toContain('admin-form-textarea');
+    expect(classNames).toContain('admin-form-control-button button button-primary admin-mt-12');
+    expect(classNames).not.toContain('field');
+  });
 });
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

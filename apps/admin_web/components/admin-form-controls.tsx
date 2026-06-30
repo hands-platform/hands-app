@@ -60,7 +60,14 @@ type AdminFormTextareaProps = {
   readonly textareaClassName?: string;
 } & Pick<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
-  'defaultValue' | 'maxLength' | 'onChange' | 'placeholder' | 'required' | 'rows' | 'value'
+  | 'defaultValue'
+  | 'maxLength'
+  | 'minLength'
+  | 'onChange'
+  | 'placeholder'
+  | 'required'
+  | 'rows'
+  | 'value'
 >;
 
 type AdminFormControlLinkProps = {
@@ -191,6 +198,7 @@ export function AdminFormTextarea({
   defaultValue,
   label,
   maxLength,
+  minLength,
   name,
   onChange,
   placeholder,
@@ -206,6 +214,7 @@ export function AdminFormTextarea({
         className={textareaClassName}
         defaultValue={defaultValue}
         maxLength={maxLength}
+        minLength={minLength}
         name={name}
         onChange={onChange}
         placeholder={placeholder}
