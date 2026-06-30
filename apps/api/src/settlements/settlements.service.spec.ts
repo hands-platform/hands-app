@@ -238,6 +238,9 @@ describe('SettlementsService', () => {
       platformVatRateBps: 800,
       paymentFeeRateBps: 150,
       paymentFeeFixedAmount: 1_000,
+      paymentFeePayer: PaymentFeePayer.HANDS,
+      paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+      paymentFeePolicyVersionId: 'payment-fee-policy-1',
       occurredAt: new Date('2026-06-13T03:02:00.000Z'),
     });
 
@@ -245,11 +248,27 @@ describe('SettlementsService', () => {
       where: { sourceKey: 'booking-payment-clearing:booking-1:settlement' },
       update: expect.objectContaining({
         amount: 600_000,
+        metadata: expect.objectContaining({
+          paymentFeeFixedAmount: 1_000,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: 'payment-fee-policy-1',
+          paymentFeeRateBps: 150,
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          paymentProcessingFee: 10_000,
+        }),
         status: 'OPEN',
       }),
       create: expect.objectContaining({
         amount: 600_000,
         bookingId: 'booking-1',
+        metadata: expect.objectContaining({
+          paymentFeeFixedAmount: 1_000,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: 'payment-fee-policy-1',
+          paymentFeeRateBps: 150,
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          paymentProcessingFee: 10_000,
+        }),
         paymentId: 'payment-1',
         settlementSnapshotId: 'settlement-1',
         sourceKey: 'booking-payment-clearing:booking-1:settlement',
@@ -259,6 +278,14 @@ describe('SettlementsService', () => {
     expect(prisma.accountingJournalBatch.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'accounting-journal:booking-settlement:booking-1' },
       update: expect.objectContaining({
+        metadata: expect.objectContaining({
+          paymentFeeFixedAmount: 1_000,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: 'payment-fee-policy-1',
+          paymentFeeRateBps: 150,
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          paymentProcessingFee: 10_000,
+        }),
         totalCredit: 610_000,
         totalDebit: 610_000,
       }),
@@ -279,6 +306,14 @@ describe('SettlementsService', () => {
             }),
           ]),
         },
+        metadata: expect.objectContaining({
+          paymentFeeFixedAmount: 1_000,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: 'payment-fee-policy-1',
+          paymentFeeRateBps: 150,
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          paymentProcessingFee: 10_000,
+        }),
         providerProfileId: 'provider-1',
         settlementSnapshotId: 'settlement-1',
         sourceKey: 'accounting-journal:booking-settlement:booking-1',

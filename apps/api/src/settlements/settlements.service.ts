@@ -388,6 +388,7 @@ export class SettlementsService {
     client: SettlementPrismaClient,
   ) {
     const currency = snapshot.currency ?? input.currency ?? 'VND';
+    const paymentFeeEvidence = settlementPaymentFeeEvidence(input, amounts);
     const journal = buildBookingSettlementJournal({
       bookingId: input.bookingId,
       companyOutputVat: amounts.companyOutputVat,
@@ -412,6 +413,7 @@ export class SettlementsService {
       memo: entry.memo,
       metadata: {
         bookingId: input.bookingId,
+        ...paymentFeeEvidence,
         settlementSnapshotId: snapshot.id,
       } satisfies Prisma.InputJsonObject,
       side: entry.side,
@@ -420,6 +422,7 @@ export class SettlementsService {
     }));
     const journalMetadata = {
       bookingId: input.bookingId,
+      ...paymentFeeEvidence,
       reconciliationDelta: journal.reconciliationDelta,
       settlementSnapshotId: snapshot.id,
     } satisfies Prisma.InputJsonObject;
@@ -480,6 +483,7 @@ export class SettlementsService {
         metadata: {
           bookingId: input.bookingId,
           journalBatchSourceKey: journalSourceKey,
+          ...paymentFeeEvidence,
           settlementSnapshotId: snapshot.id,
         } satisfies Prisma.InputJsonObject,
         occurredAt: snapshot.postedAt,
@@ -494,6 +498,7 @@ export class SettlementsService {
         metadata: {
           bookingId: input.bookingId,
           journalBatchSourceKey: journalSourceKey,
+          ...paymentFeeEvidence,
           settlementSnapshotId: snapshot.id,
         } satisfies Prisma.InputJsonObject,
         occurredAt: snapshot.postedAt,
@@ -583,6 +588,20 @@ function settlementSnapshotMetadata(
   return {
     ...metadata,
     settlementBaseAmount: numberValue(record.settlementBaseAmount) || settlementBaseAmount,
+  } satisfies Prisma.InputJsonObject;
+}
+
+function settlementPaymentFeeEvidence(
+  input: UpsertBookingSettlementSnapshotInput,
+  amounts: ReturnType<typeof calculateBookingSettlementAmounts>,
+) {
+  return {
+    paymentFeeFixedAmount: input.paymentFeeFixedAmount ?? 0,
+    paymentFeePayer: input.paymentFeePayer ?? PaymentFeePayer.HANDS,
+    paymentFeePolicyVersionId: input.paymentFeePolicyVersionId ?? null,
+    paymentFeeRateBps: input.paymentFeeRateBps ?? 0,
+    paymentFeeTreatment: input.paymentFeeTreatment ?? PaymentFeeTreatment.OPERATING_EXPENSE,
+    paymentProcessingFee: amounts.paymentProcessingFee,
   } satisfies Prisma.InputJsonObject;
 }
 
