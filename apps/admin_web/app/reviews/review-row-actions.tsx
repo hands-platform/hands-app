@@ -5,6 +5,11 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { CheckCircle2, EyeOff, Flag, MoreVertical, Pencil, Save, Star, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import {
+  AdminFormControlButton,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../components/admin-form-controls';
 import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
 
@@ -220,34 +225,30 @@ function ReviewEditDrawer({
                 <span className="calendar-drawer-eyebrow">Replacement</span>
                 <strong>Edited review</strong>
               </div>
-              <label className="calendar-field">
-                <span>Revised rating</span>
-                <select defaultValue={String(editReview.rating)} name="rating">
-                  {reviewRatingOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="calendar-field calendar-field-wide">
-                <span>Revised review content</span>
-                <textarea
-                  defaultValue={editReview.commentValue}
-                  name="comment"
-                  placeholder="Write the review copy that should be shown across the admin and app surfaces."
-                  rows={7}
-                />
-              </label>
+              <AdminFormSelect
+                className="calendar-field"
+                defaultValue={String(editReview.rating)}
+                label="Revised rating"
+                name="rating"
+                options={reviewRatingOptions}
+              />
+              <AdminFormTextarea
+                className="calendar-field calendar-field-wide"
+                defaultValue={editReview.commentValue}
+                label="Revised review content"
+                name="comment"
+                placeholder="Write the review copy that should be shown across the admin and app surfaces."
+                rows={7}
+              />
             </section>
             <div className="calendar-drawer-footer review-edit-drawer-footer">
-              <button className="button button-primary" type="submit">
+              <AdminFormControlButton className="button button-primary" type="submit">
                 <Save aria-hidden="true" size={16} />
                 Save review
-              </button>
-              <button className="button button-secondary" onClick={onClose} type="button">
+              </AdminFormControlButton>
+              <AdminFormControlButton className="button button-secondary" onClick={onClose} type="button">
                 Cancel
-              </button>
+              </AdminFormControlButton>
             </div>
           </form>
         </div>
