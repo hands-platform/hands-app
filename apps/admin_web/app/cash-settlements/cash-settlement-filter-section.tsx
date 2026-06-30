@@ -1,4 +1,9 @@
 import Link from 'next/link';
+import {
+  AdminFormControlButton,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
@@ -52,20 +57,27 @@ export function CashSettlementFilterSection({
       <form className="inline-form admin-mt-12" action="/cash-settlements">
         <input type="hidden" name="range" value={filters.range} />
         <input type="hidden" name="pageSize" value={filters.pageSize} />
-        <input
-          aria-label="Search cash settlement queue"
+        <AdminFormSearch
           defaultValue={filters.q}
+          label="Search cash settlement queue"
           name="q"
           placeholder="Partner, phone, booking, reference"
         />
-        <select aria-label="Cash settlement queue" defaultValue={filters.queue} name="queue">
-          <option value="all">All open debt</option>
-          <option value="stale">Over 24h</option>
-          <option value="high-debt">High debt</option>
-          <option value="missing-ref">No recorded ref</option>
-          <option value="payment-check">Payment evidence check</option>
-        </select>
-        <button type="submit">Apply</button>
+        <AdminFormSelect
+          defaultValue={filters.queue}
+          label="Cash settlement queue"
+          name="queue"
+          options={[
+            { label: 'All open debt', value: 'all' },
+            { label: 'Over 24h', value: 'stale' },
+            { label: 'High debt', value: 'high-debt' },
+            { label: 'No recorded ref', value: 'missing-ref' },
+            { label: 'Payment evidence check', value: 'payment-check' },
+          ]}
+        />
+        <AdminFormControlButton className="btn btn-primary" type="submit">
+          Apply
+        </AdminFormControlButton>
         <Link className="text-link" href="/cash-settlements">
           Clear
         </Link>
