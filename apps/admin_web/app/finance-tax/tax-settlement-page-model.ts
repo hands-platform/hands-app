@@ -2,6 +2,7 @@ import type {
   AdminAccountingJournalBatchSummary,
   AdminBankReconciliationSummary,
   AdminBookingSettlementSnapshot,
+  AdminBookingSettlementReversalSummary,
   AdminBookingSettlementSnapshotSummary,
   AdminBookingPaymentClearingSummary,
   AdminCouponFinanceSummary,
@@ -79,6 +80,7 @@ export type MonthlyTaxClosingStatusOption = {
 export type TaxFinanceWorkflowPage =
   | 'overview'
   | 'booking-settlement-audit'
+  | 'settlement-reversals'
   | 'general-ledger'
   | 'payment-clearing'
   | 'bank-reconciliation'
@@ -142,6 +144,16 @@ export const BOOKING_SETTLEMENT_REVIEW_LINKS: readonly {
   { label: 'Declared', review: 'declared' },
   { label: 'Paid', review: 'paid' },
   { label: 'Posted', review: 'posted' },
+  { label: 'Cash', review: 'cash' },
+  { label: 'Non-cash', review: 'non-cash' },
+  { label: 'All', review: 'all' },
+];
+
+export const SETTLEMENT_REVERSAL_REVIEW_LINKS: readonly {
+  readonly label: string;
+  readonly review: BookingSettlementReview;
+}[] = [
+  { label: 'Reversed', review: 'reversed' },
   { label: 'Cash', review: 'cash' },
   { label: 'Non-cash', review: 'non-cash' },
   { label: 'All', review: 'all' },
@@ -241,6 +253,26 @@ export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSet
     params.set('review', filters.review);
   }
   return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
+}
+
+export function buildBookingSettlementReversalApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+  });
+  if (isSettlementReversalReview(filters.review)) {
+    params.set('review', filters.review);
+  }
+  params.set('take', String(filters.take));
+  appendTaxSettlementSkip(params, filters);
+  return `/admin/booking-settlement-reversals?${params.toString()}`;
+}
+
+export function buildBookingSettlementReversalSummaryApiHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (isSettlementReversalReview(filters.review)) {
+    params.set('review', filters.review);
+  }
+  return `/admin/booking-settlement-reversals/summary?${params.toString()}`;
 }
 
 export function buildAccountingJournalBatchApiHref(filters: FinanceAccountingFilters) {
@@ -373,6 +405,15 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
+export function bookingSettlementReversalHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({ range: filters.range });
+  if (isSettlementReversalReview(filters.review)) {
+    params.set('review', filters.review);
+  }
+  appendTaxSettlementUiPagination(params, filters);
+  return `/finance-tax/settlement-reversals?${params.toString()}`;
+}
+
 export function generalLedgerHref(filters: FinanceAccountingFilters) {
   return financeAccountingHref('/finance-tax/general-ledger', filters);
 }
@@ -481,6 +522,11 @@ export function buildTaxFinanceWorkflowLinks({
       key: 'booking-settlement-audit',
       label: 'Booking settlement audit',
       href: bookingSettlementAuditHref(settlementFilters),
+    },
+    {
+      key: 'settlement-reversals',
+      label: 'Settlement reversals',
+      href: bookingSettlementReversalHref(settlementFilters),
     },
     {
       key: 'general-ledger',
@@ -719,6 +765,22 @@ export function emptyBookingSettlementSummary(): AdminBookingSettlementSnapshotS
     paymentProcessingFee: 0,
     openTaxCount: 0,
     paidTaxCount: 0,
+  };
+}
+
+export function emptyBookingSettlementReversalSummary(): AdminBookingSettlementReversalSummary {
+  return {
+    count: 0,
+    currency: 'VND',
+    customerPaymentAmount: 0,
+    partnerPayoutAmount: 0,
+    partnerWithholdingTotal: 0,
+    platformFeeGross: 0,
+    platformFeeNetRevenue: 0,
+    companyOutputVat: 0,
+    paymentProcessingFee: 0,
+    cashCount: 0,
+    nonCashCount: 0,
   };
 }
 
@@ -1477,6 +1539,10 @@ function normalizeBookingSettlementReview(value: string): BookingSettlementRevie
   return BOOKING_SETTLEMENT_REVIEW_VALUES.includes(value as BookingSettlementReview)
     ? (value as BookingSettlementReview)
     : 'open';
+}
+
+function isSettlementReversalReview(review: BookingSettlementReview) {
+  return review === 'reversed' || review === 'cash' || review === 'non-cash';
 }
 
 function normalizeFinanceAccountingReview(

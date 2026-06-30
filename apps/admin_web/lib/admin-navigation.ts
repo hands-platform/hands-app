@@ -156,6 +156,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Immutable booking settlement snapshots for tax and finance audit review.',
       },
       {
+        href: '/finance-tax/settlement-reversals',
+        label: 'Settlement Reversals',
+        description: 'Closed-period refund and settlement reversal rows with accounting impact.',
+      },
+      {
         href: '/finance-tax/general-ledger',
         label: 'General Ledger',
         description: 'Accounting journal batches for settlement, reversals, adjustments, refunds, and payouts.',

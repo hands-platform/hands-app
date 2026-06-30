@@ -1927,6 +1927,70 @@ export type AdminBookingSettlementSnapshotSummary = {
   paidTaxCount: number;
 };
 
+export type AdminBookingSettlementReversalEntry = {
+  id: string;
+  sourceKey: string;
+  originalSettlementSnapshotId: string;
+  bookingId: string;
+  customerProfileId: string;
+  providerProfileId: string;
+  paymentId?: string | null;
+  providerEarningId?: string | null;
+  paymentMethod: AdminPaymentMethod;
+  currency: string;
+  customerPaymentAmount: number;
+  partnerPayoutAmount: number;
+  partnerTaxableRevenue: number;
+  partnerVatAmount: number;
+  partnerPitAmount: number;
+  partnerWithholdingTotal: number;
+  platformFeeGross: number;
+  platformFeeNetRevenue: number;
+  companyOutputVat: number;
+  paymentProcessingFee: number;
+  settlementStatus: AdminBookingSettlementStatus;
+  taxStatus: AdminBookingSettlementTaxStatus;
+  monthlyPeriod: string;
+  originalMonthlyPeriod: string;
+  originalMonthlyClosingId: string;
+  occurredAt: string;
+  reason?: string | null;
+  metadata?: unknown;
+  createdAt: string;
+  updatedAt: string;
+  originalSettlementSnapshot?: {
+    id: string;
+    monthlyPeriod: string;
+    postedAt: string;
+    settlementStatus: AdminBookingSettlementStatus;
+    taxStatus: AdminBookingSettlementTaxStatus;
+    booking?: { id: string; status: string; createdAt?: string; closedAt?: string | null } | null;
+    customerProfile?: {
+      id: string;
+      user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+    } | null;
+    providerProfile?: {
+      id: string;
+      displayName?: string | null;
+      user?: { id: string; fullName?: string | null; phone?: string | null } | null;
+    } | null;
+  } | null;
+};
+
+export type AdminBookingSettlementReversalSummary = {
+  count: number;
+  currency: string;
+  customerPaymentAmount: number;
+  partnerPayoutAmount: number;
+  partnerWithholdingTotal: number;
+  platformFeeGross: number;
+  platformFeeNetRevenue: number;
+  companyOutputVat: number;
+  paymentProcessingFee: number;
+  cashCount: number;
+  nonCashCount: number;
+};
+
 export type AdminAccountingJournalBatch = {
   id: string;
   sourceKey: string;

@@ -1,5 +1,7 @@
 import {
   buildBookingSettlementSnapshotApiHref,
+  buildBookingSettlementReversalApiHref,
+  buildBookingSettlementReversalSummaryApiHref,
   buildCouponFinanceApiHref,
   buildCouponFinanceSummaryApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
@@ -26,6 +28,7 @@ import {
   monthlyTaxClosingHref,
   monthlyTaxClosingNextStatusOptions,
   bookingSettlementAuditHref,
+  bookingSettlementReversalHref,
   buildTaxSettlementServerPagination,
   couponFinanceHref,
   buildTaxFinanceMetrics,
@@ -53,6 +56,12 @@ describe('tax settlement page model', () => {
     );
     expect(buildBookingSettlementSnapshotSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/summary?range=today&review=open',
+    );
+    expect(buildBookingSettlementReversalSummaryApiHref(filters)).toBe(
+      '/admin/booking-settlement-reversals/summary?range=today',
+    );
+    expect(buildBookingSettlementReversalApiHref(filters)).toBe(
+      '/admin/booking-settlement-reversals?range=today&take=25',
     );
     expect(buildCouponFinanceSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/coupon-finance-summary?range=today&review=open',
@@ -191,6 +200,7 @@ describe('tax settlement page model', () => {
     expect(links.map((link) => [link.label, link.href])).toEqual([
       ['Tax overview', '/finance-tax'],
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
+      ['Settlement reversals', '/finance-tax/settlement-reversals?range=7d&take=50'],
       ['General ledger', '/finance-tax/general-ledger?range=7d&take=50'],
       ['Payment clearing', '/finance-tax/payment-clearing?range=7d&take=50'],
       ['Bank reconciliation', '/finance-tax/bank-reconciliation?range=7d&take=50'],
@@ -199,6 +209,20 @@ describe('tax settlement page model', () => {
       ['Payment fees', '/finance-tax/payment-fees?period=2026-06'],
       ['Partner withholding tax', '/finance-tax/partner-withholding-tax?period=2026-06&take=75'],
     ]);
+  });
+
+  it('builds settlement reversal hrefs with booking settlement pagination filters', () => {
+    const filters = readBookingSettlementFilters({ page: '2', range: '30d', review: 'non-cash', take: '50' });
+
+    expect(bookingSettlementReversalHref(filters)).toBe(
+      '/finance-tax/settlement-reversals?range=30d&review=non-cash&take=50&page=2',
+    );
+    expect(buildBookingSettlementReversalApiHref(filters)).toBe(
+      '/admin/booking-settlement-reversals?range=30d&review=non-cash&take=50&skip=50',
+    );
+    expect(buildBookingSettlementReversalSummaryApiHref(filters)).toBe(
+      '/admin/booking-settlement-reversals/summary?range=30d&review=non-cash',
+    );
   });
 
   it('builds payout priority shortcuts without adding list payload to tax overview', () => {
