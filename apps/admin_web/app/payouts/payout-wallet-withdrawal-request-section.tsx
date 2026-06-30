@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
 import type {
@@ -223,16 +224,15 @@ function WithdrawalRequestActions({
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="APPROVED" />
-          <input
-            aria-label={`Approval note for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Approval note for ${partnerLabel(request)}`}
             name="adminNote"
             placeholder={request.status === 'REQUESTED' ? 'Approval note' : 'Review resolution note'}
             type="text"
           />
-          <button className="btn btn-sm btn-primary" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-primary" type="submit">
             {request.status === 'REQUESTED' ? 'Approve' : 'Clear review'}
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -240,16 +240,15 @@ function WithdrawalRequestActions({
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
-          <input
-            aria-label={`Bank pending note for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank pending note for ${partnerLabel(request)}`}
             name="adminNote"
             placeholder="Bank payout run note"
             type="text"
           />
-          <button className="btn btn-sm btn-info" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-info" type="submit">
             Bank pending
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -261,40 +260,36 @@ function WithdrawalRequestActions({
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="PAID" />
-          <input
-            aria-label={`Transfer reference for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Transfer reference for ${partnerLabel(request)}`}
             name="transferRef"
             placeholder="Bank transfer ref"
             required
             type="text"
           />
-          <input
-            aria-label={`Bank transfer date for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank transfer date for ${partnerLabel(request)}`}
             name="bankTransferDate"
             required
             type="datetime-local"
           />
-          <input
-            aria-label={`Bank transfer evidence URL for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank transfer evidence URL for ${partnerLabel(request)}`}
             name="attachmentUrl"
             placeholder="Evidence URL"
             required
             type="url"
           />
-          <input
-            aria-label={`Approving admin id for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Approving admin id for ${partnerLabel(request)}`}
             name="approvalAdminId"
             placeholder="Approving admin id"
             required
             type="text"
           />
-          <button className="btn btn-sm btn-success" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-success" type="submit">
             Mark paid
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -302,17 +297,16 @@ function WithdrawalRequestActions({
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="NEEDS_BANK_CORRECTION" />
-          <input
-            aria-label={`Bank correction reason for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Bank correction reason for ${partnerLabel(request)}`}
             name="correctionReason"
             placeholder="Bank correction reason"
             required
             type="text"
           />
-          <button className="btn btn-sm btn-outline" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-outline" type="submit">
             Request correction
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
 
@@ -324,16 +318,15 @@ function WithdrawalRequestActions({
         <form action={updateWithdrawalRequestAction} className="admin-inline-form">
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="REJECTED" />
-          <input
-            aria-label={`Reject note for ${partnerLabel(request)}`}
-            className="form-control"
+          <AdminFormInput
+            label={`Reject note for ${partnerLabel(request)}`}
             name="adminNote"
             placeholder="Reject note"
             type="text"
           />
-          <button className="btn btn-sm btn-danger" type="submit">
+          <AdminFormControlButton className="btn btn-sm btn-danger" type="submit">
             Reject
-          </button>
+          </AdminFormControlButton>
         </form>
       ) : null}
     </div>
