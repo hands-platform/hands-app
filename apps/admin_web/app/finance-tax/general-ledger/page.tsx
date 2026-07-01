@@ -128,7 +128,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No journal batches match the current filters."
-            headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status']}
+            headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status', 'Evidence']}
             rowCount={pagination.rows.length}
           >
             {pagination.rows.map((batch) => (
@@ -181,6 +181,12 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 <td>
                   <span className={`pill ${statusPill(batch.status)}`}>{batch.status}</span>
                   {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
+                </td>
+                <td>
+                  <Link className="pill pill-info" href={generalLedgerDetailHref(batch.id)}>
+                    Open detail
+                  </Link>
+                  <div className="muted">{batch._count?.entries ?? 0} entries</div>
                 </td>
               </tr>
             ))}

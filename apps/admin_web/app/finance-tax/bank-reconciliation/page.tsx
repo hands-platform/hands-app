@@ -204,6 +204,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
               'Value date',
               'Match',
               'Status',
+              'Evidence',
             ]}
             rowCount={pagination.rows.length}
           >
@@ -247,6 +248,12 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 </td>
                 <td>
                   <span className={`pill ${statusPill(transaction.status)}`}>{transaction.status}</span>
+                </td>
+                <td>
+                  <Link className="pill pill-info" href={bankReconciliationDetailHref(transaction.id)}>
+                    Open detail
+                  </Link>
+                  <div className="muted">{transaction._count?.reconciliationMatches ?? 0} match</div>
                 </td>
               </tr>
             ))}

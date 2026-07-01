@@ -127,7 +127,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No payment clearing rows match the current filters."
-            headers={['Booking', 'Payment', 'Clearing type', 'Amount', 'Occurred', 'Status']}
+            headers={['Booking', 'Payment', 'Clearing type', 'Amount', 'Occurred', 'Status', 'Evidence']}
             rowCount={pagination.rows.length}
           >
             {pagination.rows.map((entry) => (
@@ -161,6 +161,12 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 </td>
                 <td>
                   <span className={`pill ${statusPill(entry.status)}`}>{entry.status}</span>
+                </td>
+                <td>
+                  <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
+                    Open detail
+                  </Link>
+                  <div className="muted">{shortId(entry.id)}</div>
                 </td>
               </tr>
             ))}
