@@ -83,8 +83,14 @@ export type AdminReferralRewardStatus =
 export type AdminUser = {
   id: string;
   phone: string;
+  email?: string | null;
   fullName?: string | null;
   roles: string[];
+  adminOperatorPermission?: {
+    id: string;
+    categories: string[];
+    updatedAt: string;
+  } | null;
   providerProfile?: AdminProvider | null;
   customerProfile?: { id: string; userId: string; addresses?: unknown } | null;
   appSessions?: Array<{
@@ -2762,6 +2768,10 @@ export async function adminPatchOrThrow<T>(path: string, body: unknown): Promise
 
 export async function adminDeleteOrThrow<T>(path: string): Promise<T> {
   return adminJsonRequestOrThrow<T>('DELETE', path);
+}
+
+export async function adminDeleteWithBodyOrThrow<T>(path: string, body: unknown): Promise<T> {
+  return adminJsonRequestOrThrow<T>('DELETE', path, body);
 }
 
 export async function adminPatch<T>(path: string, body: unknown, fallback: T): Promise<T> {

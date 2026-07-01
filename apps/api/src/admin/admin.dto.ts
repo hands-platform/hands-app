@@ -21,6 +21,7 @@ import {
   ValidatorConstraintInterface,
 } from 'class-validator';
 import {
+  AdminOperatorPermissionCategory,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   CompanyBankTransactionType,
@@ -354,6 +355,68 @@ export class UpdateFinanceApproverRoleDto {
   @IsBoolean()
   enabled!: boolean;
 
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class CreateAdminOperatorDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(32)
+  phone!: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  email?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  fullName?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  roles?: Role[];
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(AdminOperatorPermissionCategory, { each: true })
+  permissionCategories?: AdminOperatorPermissionCategory[];
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class UpdateAdminOperatorAccessDto {
+  @IsOptional()
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  roles?: Role[];
+
+  @IsOptional()
+  @IsArray()
+  @IsEnum(AdminOperatorPermissionCategory, { each: true })
+  permissionCategories?: AdminOperatorPermissionCategory[];
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class DeleteAdminOperatorAccessDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()

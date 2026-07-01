@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
+  AdminOperatorPermissionCategory,
   BankReconciliationStatus,
   BookingPaymentClearingStatus,
   BookingSettlementStatus,
@@ -204,12 +205,15 @@ import {
 } from './admin-marketing-analytics';
 import type {
   AdminPushCampaignDto,
+  CreateAdminOperatorDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankTransactionDto,
   CreateManualWalletAdjustmentDto,
+  DeleteAdminOperatorAccessDto,
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
   ReverseBankReconciliationMatchDto,
+  UpdateAdminOperatorAccessDto,
   UpdateFinanceApproverRoleDto,
   UpdateNotificationTemplateDto,
 } from './admin.dto';
@@ -222,6 +226,15 @@ const ADMIN_BOOKING_LIST_LIMIT = 50;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
 const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
 const ADMIN_USER_LIST_LIMIT = 50;
+const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
+const ADMIN_OPERATOR_PERMISSION_CATEGORIES = [
+  AdminOperatorPermissionCategory.BOOKINGS,
+  AdminOperatorPermissionCategory.CUSTOMERS,
+  AdminOperatorPermissionCategory.PARTNERS,
+  AdminOperatorPermissionCategory.FINANCE,
+  AdminOperatorPermissionCategory.NOTIFICATIONS,
+  AdminOperatorPermissionCategory.SYSTEM,
+] as const;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
 const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 10;
@@ -1497,6 +1510,10 @@ type ManualWalletAdjustmentDb = Pick<
 >;
 
 type FinanceApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
+type AdminOperatorAccessDb = Pick<
+  Prisma.TransactionClient,
+  'adminAuditLog' | 'adminOperatorPermission' | 'user'
+>;
 
 type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
   readonly approvalAdminId: string | null;
@@ -1525,6 +1542,230 @@ export class AdminService {
       take: adminUserListTake(options.take),
       select: adminUserListSelect,
     });
+  }
+
+  async createAdminOperator(actorId: string, input: CreateAdminOperatorDto) {
+    const phone = normalizeNullable(input.phone);
+    if (!phone) {
+      throw new BadRequestException('Operator phone is required');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      const existingUser = await tx.user.findUnique({
+        where: { phone },
+        select: {
+          id: true,
+          roles: true,
+        },
+      });
+      const nextRoles = mergeAdminOperatorRoles(existingUser?.roles ?? [], input.roles);
+      const nextCategories = normalizeAdminOperatorPermissionCategories(
+        nextRoles,
+        input.permissionCategories,
+      );
+      const reason = normalizeAuditReason(input.reason);
+      const userId = existingUser?.id;
+      const user = userId
+        ? await tx.user.update({
+            where: { id: userId },
+            data: {
+              ...(input.email !== undefined ? { email: normalizeNullable(input.email) } : {}),
+              ...(input.fullName !== undefined ? { fullName: normalizeNullable(input.fullName) } : {}),
+              roles: { set: nextRoles },
+            },
+            select: adminUserListSelect,
+          })
+        : await tx.user.create({
+            data: {
+              phone,
+              email: normalizeNullable(input.email),
+              fullName: normalizeNullable(input.fullName),
+              roles: nextRoles,
+            },
+            select: adminUserListSelect,
+          });
+
+      const permission = await tx.adminOperatorPermission.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          categories: { set: nextCategories },
+        },
+        update: {
+          categories: { set: nextCategories },
+        },
+      });
+      const hydratedUser = await tx.user.findUnique({
+        where: { id: user.id },
+        select: adminUserListSelect,
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: userId ? 'admin_operator.access.grant' : 'admin_operator.create',
+          target: `user:${user.id}`,
+          metadata: {
+            permissionId: permission.id,
+            previousRoles: existingUser?.roles ?? [],
+            nextRoles,
+            permissionCategories: nextCategories,
+            reason,
+          },
+        },
+      });
+
+      return { user: hydratedUser ?? user, auditLog };
+    });
+  }
+
+  async updateAdminOperatorAccess(
+    actorId: string,
+    userId: string,
+    input: UpdateAdminOperatorAccessDto,
+  ) {
+    const targetUserId = normalizeNullable(userId);
+    if (!targetUserId) {
+      throw new BadRequestException('Admin user id is required');
+    }
+    if (actorId === targetUserId) {
+      throw new BadRequestException('Master Admin access changes cannot target the acting admin');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      const targetUser = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          roles: true,
+          adminOperatorPermission: { select: { categories: true } },
+        },
+      });
+      if (!targetUser || !targetUser.roles.includes(Role.ADMIN)) {
+        throw new NotFoundException('Admin operator not found');
+      }
+
+      const previousRoles = [...targetUser.roles];
+      const nextRoles = mergeAdminOperatorRoles(previousRoles, input.roles ?? previousRoles);
+      await assertAdminOperatorProtectedRoleRemoval(tx, targetUserId, previousRoles, nextRoles);
+      const nextCategories = normalizeAdminOperatorPermissionCategories(
+        nextRoles,
+        input.permissionCategories ?? targetUser.adminOperatorPermission?.categories,
+      );
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { roles: { set: nextRoles } },
+        select: adminUserListSelect,
+      });
+      const permission = await tx.adminOperatorPermission.upsert({
+        where: { userId: targetUserId },
+        create: {
+          userId: targetUserId,
+          categories: { set: nextCategories },
+        },
+        update: {
+          categories: { set: nextCategories },
+        },
+      });
+      const hydratedUser = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: adminUserListSelect,
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.access.update',
+          target: `user:${targetUserId}`,
+          metadata: {
+            permissionId: permission.id,
+            previousRoles,
+            nextRoles,
+            permissionCategories: nextCategories,
+            reason: normalizeAuditReason(input.reason),
+          },
+        },
+      });
+
+      return { user: hydratedUser ?? user, auditLog };
+    });
+  }
+
+  async revokeAdminOperatorAccess(
+    actorId: string,
+    userId: string,
+    input: DeleteAdminOperatorAccessDto = {},
+  ) {
+    const targetUserId = normalizeNullable(userId);
+    if (!targetUserId) {
+      throw new BadRequestException('Admin user id is required');
+    }
+    if (actorId === targetUserId) {
+      throw new BadRequestException('Master Admin access revocation cannot target the acting admin');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.assertMasterAdminAccess(tx, actorId);
+      const targetUser = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          roles: true,
+          adminOperatorPermission: { select: { id: true, categories: true } },
+        },
+      });
+      if (!targetUser || !targetUser.roles.includes(Role.ADMIN)) {
+        throw new NotFoundException('Admin operator not found');
+      }
+
+      const previousRoles = [...targetUser.roles];
+      const nextRoles = previousRoles.filter((role) => !isAdminOperatorRole(role));
+      await assertAdminOperatorProtectedRoleRemoval(tx, targetUserId, previousRoles, nextRoles);
+      await tx.adminOperatorPermission.deleteMany({ where: { userId: targetUserId } });
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: { roles: { set: nextRoles } },
+        select: adminUserListSelect,
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'admin_operator.access.revoke',
+          target: `user:${targetUserId}`,
+          metadata: {
+            permissionId: targetUser.adminOperatorPermission?.id ?? null,
+            previousRoles,
+            nextRoles,
+            previousPermissionCategories: targetUser.adminOperatorPermission?.categories ?? [],
+            reason: normalizeAuditReason(input.reason),
+          },
+        },
+      });
+
+      return { ok: true, user, auditLog };
+    });
+  }
+
+  private async assertMasterAdminAccess(db: AdminOperatorAccessDb, actorId: string) {
+    const actor = await db.user.findUnique({
+      where: { id: actorId },
+      select: { id: true, roles: true },
+    });
+    if (!actor?.roles.includes(Role.ADMIN)) {
+      throw new ForbiddenException('Admin access is required');
+    }
+    if (actor.roles.includes(Role.MASTER_ADMIN)) {
+      return actor;
+    }
+
+    const masterAdminCount = await db.user.count({
+      where: { roles: { has: Role.MASTER_ADMIN } },
+    });
+    if (masterAdminCount === 0) {
+      return actor;
+    }
+
+    throw new ForbiddenException('Master Admin role is required for operator access changes');
   }
 
   async updateUserFinanceApproverRole(
@@ -11761,6 +12002,88 @@ function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketpla
     seen.add(provider.id);
     return true;
   });
+}
+
+function mergeAdminOperatorRoles(currentRoles: readonly Role[], requestedRoles: readonly Role[] | undefined) {
+  const preservedRoles = currentRoles.filter((role) => !isAdminOperatorRole(role));
+  const nextOperatorRoles = normalizeAdminOperatorRoles(requestedRoles);
+  return [...preservedRoles, ...nextOperatorRoles];
+}
+
+function normalizeAdminOperatorRoles(requestedRoles: readonly Role[] | undefined) {
+  const roles = new Set<Role>([Role.ADMIN]);
+  for (const role of requestedRoles ?? []) {
+    if (isAdminOperatorRole(role)) {
+      roles.add(role);
+    }
+  }
+
+  return [...roles];
+}
+
+function isAdminOperatorRole(role: Role) {
+  return ADMIN_OPERATOR_ROLES.includes(role as (typeof ADMIN_OPERATOR_ROLES)[number]);
+}
+
+function normalizeAdminOperatorPermissionCategories(
+  roles: readonly Role[],
+  requestedCategories: readonly AdminOperatorPermissionCategory[] | undefined,
+) {
+  const categories =
+    requestedCategories && requestedCategories.length > 0
+      ? requestedCategories
+      : defaultAdminOperatorPermissionCategories(roles);
+  const allowed = new Set<AdminOperatorPermissionCategory>(ADMIN_OPERATOR_PERMISSION_CATEGORIES);
+  return [...new Set(categories.filter((category) => allowed.has(category)))];
+}
+
+function defaultAdminOperatorPermissionCategories(roles: readonly Role[]) {
+  if (roles.includes(Role.MASTER_ADMIN)) {
+    return [...ADMIN_OPERATOR_PERMISSION_CATEGORIES];
+  }
+
+  const categories: AdminOperatorPermissionCategory[] = [
+    AdminOperatorPermissionCategory.BOOKINGS,
+    AdminOperatorPermissionCategory.CUSTOMERS,
+    AdminOperatorPermissionCategory.PARTNERS,
+    AdminOperatorPermissionCategory.NOTIFICATIONS,
+  ];
+  if (roles.includes(Role.FINANCE_APPROVER)) {
+    categories.push(AdminOperatorPermissionCategory.FINANCE);
+  }
+
+  return categories;
+}
+
+async function assertAdminOperatorProtectedRoleRemoval(
+  db: AdminOperatorAccessDb,
+  targetUserId: string,
+  previousRoles: readonly Role[],
+  nextRoles: readonly Role[],
+) {
+  if (previousRoles.includes(Role.MASTER_ADMIN) && !nextRoles.includes(Role.MASTER_ADMIN)) {
+    const remainingMasterAdmins = await db.user.count({
+      where: {
+        id: { not: targetUserId },
+        roles: { has: Role.MASTER_ADMIN },
+      },
+    });
+    if (remainingMasterAdmins === 0) {
+      throw new BadRequestException('Cannot remove the last master admin');
+    }
+  }
+
+  if (previousRoles.includes(Role.FINANCE_APPROVER) && !nextRoles.includes(Role.FINANCE_APPROVER)) {
+    const remainingApprovers = await db.user.count({
+      where: {
+        id: { not: targetUserId },
+        roles: { has: Role.FINANCE_APPROVER },
+      },
+    });
+    if (remainingApprovers === 0) {
+      throw new BadRequestException('Cannot remove the last finance approver');
+    }
+  }
 }
 
 function adminUserListTake(value: number | string | null | undefined) {

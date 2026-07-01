@@ -33,6 +33,9 @@ describe('AdminController notification and push actions', () => {
     listAuditLogs: vi.fn(),
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
+    createAdminOperator: vi.fn(),
+    updateAdminOperatorAccess: vi.fn(),
+    revokeAdminOperatorAccess: vi.fn(),
     updateUserFinanceApproverRole: vi.fn(),
     listNotifications: vi.fn(),
     notificationSummary: vi.fn(),
@@ -2147,6 +2150,107 @@ describe('AdminController notification and push actions', () => {
     expect(admin.updateUserFinanceApproverRole).toHaveBeenCalledWith('admin-1', 'finance-admin-2', {
       enabled: true,
       reason: 'Treasury owner',
+    });
+  });
+
+  it('exposes master admin operator creation as an audited POST action', async () => {
+    admin.createAdminOperator.mockResolvedValue({
+      user: { id: 'master-admin-2', roles: ['ADMIN', 'MASTER_ADMIN'] },
+    });
+
+    await expect(
+      (
+        controller as unknown as {
+          createAdminOperator: (
+            actor: AuthenticatedUser,
+            body: { phone: string; roles?: string[]; permissionCategories?: string[]; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).createAdminOperator(user, {
+        permissionCategories: ['SYSTEM'],
+        phone: '+84900000009',
+        reason: 'Bootstrap master',
+        roles: ['MASTER_ADMIN'],
+      }),
+    ).resolves.toEqual({
+      user: { id: 'master-admin-2', roles: ['ADMIN', 'MASTER_ADMIN'] },
+    });
+
+    expect(routeMetadata('createAdminOperator' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'users/admin-operators',
+    });
+    expect(admin.createAdminOperator).toHaveBeenCalledWith('admin-1', {
+      permissionCategories: ['SYSTEM'],
+      phone: '+84900000009',
+      reason: 'Bootstrap master',
+      roles: ['MASTER_ADMIN'],
+    });
+  });
+
+  it('exposes master admin operator access updates as an audited PATCH action', async () => {
+    admin.updateAdminOperatorAccess.mockResolvedValue({
+      user: { id: 'ops-admin-2', roles: ['ADMIN'] },
+    });
+
+    await expect(
+      (
+        controller as unknown as {
+          updateAdminOperatorAccess: (
+            actor: AuthenticatedUser,
+            userId: string,
+            body: { roles?: string[]; permissionCategories?: string[]; reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).updateAdminOperatorAccess(user, 'ops-admin-2', {
+        permissionCategories: ['BOOKINGS', 'CUSTOMERS'],
+        reason: 'Queue rotation',
+        roles: ['ADMIN'],
+      }),
+    ).resolves.toEqual({
+      user: { id: 'ops-admin-2', roles: ['ADMIN'] },
+    });
+
+    expect(routeMetadata('updateAdminOperatorAccess' as keyof AdminController)).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'users/:id/admin-operator-access',
+    });
+    expect(admin.updateAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops-admin-2', {
+      permissionCategories: ['BOOKINGS', 'CUSTOMERS'],
+      reason: 'Queue rotation',
+      roles: ['ADMIN'],
+    });
+  });
+
+  it('exposes master admin operator access revocation as an audited DELETE action', async () => {
+    admin.revokeAdminOperatorAccess.mockResolvedValue({
+      ok: true,
+      user: { id: 'ops-admin-2', roles: [] },
+    });
+
+    await expect(
+      (
+        controller as unknown as {
+          revokeAdminOperatorAccess: (
+            actor: AuthenticatedUser,
+            userId: string,
+            body: { reason?: string },
+          ) => Promise<unknown>;
+        }
+      ).revokeAdminOperatorAccess(user, 'ops-admin-2', {
+        reason: 'Left operations team',
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      user: { id: 'ops-admin-2', roles: [] },
+    });
+
+    expect(routeMetadata('revokeAdminOperatorAccess' as keyof AdminController)).toEqual({
+      method: RequestMethod.DELETE,
+      path: 'users/:id/admin-operator',
+    });
+    expect(admin.revokeAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops-admin-2', {
+      reason: 'Left operations team',
     });
   });
 

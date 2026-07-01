@@ -15,13 +15,25 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 
+vi.mock('./actions', () => ({
+  createAdminOperator: vi.fn(),
+  revokeAdminOperatorAccess: vi.fn(),
+  updateAdminOperatorAccess: vi.fn(),
+}));
+
 describe('AdminOperatorsPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockResolvedValue([
       {
         id: 'master-admin-1',
         roles: ['ADMIN', 'FINANCE_APPROVER'],
+        adminOperatorPermission: {
+          id: 'permission-1',
+          categories: ['BOOKINGS', 'FINANCE', 'SYSTEM'],
+          updatedAt: '2026-06-30T09:00:00.000Z',
+        },
         fullName: 'Master Admin',
+        email: 'master@hands.vn',
         phone: '+84900000001',
         appSessions: [
           {
@@ -38,6 +50,11 @@ describe('AdminOperatorsPage', () => {
       {
         id: 'ops-admin-1',
         roles: ['ADMIN'],
+        adminOperatorPermission: {
+          id: 'permission-2',
+          categories: ['BOOKINGS', 'CUSTOMERS', 'PARTNERS'],
+          updatedAt: '2026-06-30T09:00:00.000Z',
+        },
         fullName: 'Booking Operator',
         phone: '+84900000002',
         appSessions: [],
@@ -72,6 +89,7 @@ describe('AdminOperatorsPage', () => {
     expect(markup).not.toContain('Customer User');
     expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
-    expect(markup).toContain('API required');
+    expect(markup).toContain('Save permissions');
+    expect(markup).not.toContain('API required');
   });
 });

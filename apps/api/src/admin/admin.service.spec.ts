@@ -1,6 +1,7 @@
 import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
+  AdminOperatorPermissionCategory,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   BankReconciliationStatus,
@@ -284,6 +285,182 @@ describe('AdminService query orchestration', () => {
     });
     expect(tx.user.update).not.toHaveBeenCalled();
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('creates the first master admin operator with category permissions and audit metadata', async () => {
+    const tx = {
+      user: {
+        count: vi.fn().mockResolvedValue(0),
+        create: vi.fn().mockResolvedValue({ id: 'master-admin-2', roles: [Role.ADMIN, Role.MASTER_ADMIN] }),
+        findUnique: vi.fn(async (query: { where: { id?: string; phone?: string } }) => {
+          if (query.where.id === 'admin-1') {
+            return { id: 'admin-1', roles: [Role.ADMIN] };
+          }
+          if (query.where.phone === '+84900000009') {
+            return null;
+          }
+          if (query.where.id === 'master-admin-2') {
+            return {
+              id: 'master-admin-2',
+              phone: '+84900000009',
+              roles: [Role.ADMIN, Role.MASTER_ADMIN],
+              adminOperatorPermission: {
+                id: 'permission-1',
+                categories: [AdminOperatorPermissionCategory.SYSTEM],
+              },
+            };
+          }
+          return null;
+        }),
+      },
+      adminOperatorPermission: {
+        upsert: vi.fn().mockResolvedValue({ id: 'permission-1' }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createAdminOperator('admin-1', {
+        fullName: 'Master Admin 2',
+        permissionCategories: [AdminOperatorPermissionCategory.SYSTEM],
+        phone: '+84900000009',
+        reason: 'Bootstrap first master',
+        roles: [Role.MASTER_ADMIN],
+      }),
+    ).resolves.toMatchObject({
+      user: {
+        id: 'master-admin-2',
+        roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      },
+    });
+
+    expect(tx.user.create).toHaveBeenCalledWith({
+      data: {
+        email: null,
+        fullName: 'Master Admin 2',
+        phone: '+84900000009',
+        roles: [Role.ADMIN, Role.MASTER_ADMIN],
+      },
+      select: expect.any(Object),
+    });
+    expect(tx.adminOperatorPermission.upsert).toHaveBeenCalledWith({
+      where: { userId: 'master-admin-2' },
+      create: {
+        userId: 'master-admin-2',
+        categories: { set: [AdminOperatorPermissionCategory.SYSTEM] },
+      },
+      update: {
+        categories: { set: [AdminOperatorPermissionCategory.SYSTEM] },
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'admin_operator.create',
+        target: 'user:master-admin-2',
+        metadata: {
+          permissionId: 'permission-1',
+          previousRoles: [],
+          nextRoles: [Role.ADMIN, Role.MASTER_ADMIN],
+          permissionCategories: [AdminOperatorPermissionCategory.SYSTEM],
+          reason: 'Bootstrap first master',
+        },
+      },
+    });
+  });
+
+  it('requires an existing master admin once one has been bootstrapped', async () => {
+    const tx = {
+      user: {
+        count: vi.fn().mockResolvedValue(1),
+        findUnique: vi.fn().mockResolvedValue({ id: 'admin-1', roles: [Role.ADMIN] }),
+      },
+      adminOperatorPermission: { upsert: vi.fn() },
+      adminAuditLog: { create: vi.fn() },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createAdminOperator('admin-1', {
+        phone: '+84900000009',
+        roles: [Role.ADMIN],
+      }),
+    ).rejects.toThrow('Master Admin role is required for operator access changes');
+
+    expect(tx.adminOperatorPermission.upsert).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('revokes admin operator access while preserving non-admin product roles', async () => {
+    const tx = {
+      user: {
+        count: vi.fn().mockResolvedValue(2),
+        findUnique: vi.fn(async (query: { where: { id?: string } }) => {
+          if (query.where.id === 'master-admin-1') {
+            return { id: 'master-admin-1', roles: [Role.ADMIN, Role.MASTER_ADMIN] };
+          }
+          if (query.where.id === 'operator-1') {
+            return {
+              id: 'operator-1',
+              roles: [Role.CUSTOMER, Role.ADMIN, Role.FINANCE_APPROVER],
+              adminOperatorPermission: {
+                id: 'permission-1',
+                categories: [AdminOperatorPermissionCategory.BOOKINGS],
+              },
+            };
+          }
+          return null;
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'operator-1', roles: [Role.CUSTOMER] }),
+      },
+      adminOperatorPermission: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.revokeAdminOperatorAccess('master-admin-1', 'operator-1', { reason: 'Role rotation' }),
+    ).resolves.toMatchObject({
+      ok: true,
+      user: { id: 'operator-1', roles: [Role.CUSTOMER] },
+    });
+
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'operator-1' },
+      data: { roles: { set: [Role.CUSTOMER] } },
+      select: expect.any(Object),
+    });
+    expect(tx.adminOperatorPermission.deleteMany).toHaveBeenCalledWith({ where: { userId: 'operator-1' } });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'master-admin-1',
+        action: 'admin_operator.access.revoke',
+        target: 'user:operator-1',
+        metadata: {
+          permissionId: 'permission-1',
+          previousRoles: [Role.CUSTOMER, Role.ADMIN, Role.FINANCE_APPROVER],
+          nextRoles: [Role.CUSTOMER],
+          previousPermissionCategories: [AdminOperatorPermissionCategory.BOOKINGS],
+          reason: 'Role rotation',
+        },
+      },
+    });
   });
 
   it('filters operational policy settings by requested keys before returning definitions', async () => {

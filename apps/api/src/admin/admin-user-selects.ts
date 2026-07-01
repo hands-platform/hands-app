@@ -183,6 +183,13 @@ export const adminUserListSessionSelect = {
 
 export const adminUserListSelect = {
   ...adminUserSummarySelect,
+  adminOperatorPermission: {
+    select: {
+      id: true,
+      categories: true,
+      updatedAt: true,
+    },
+  },
   customerProfile: { select: { id: true, userId: true, addresses: true } },
   providerProfile: { select: { id: true, displayName: true, status: true } },
   appSessions: {

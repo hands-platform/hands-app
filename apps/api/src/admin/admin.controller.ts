@@ -14,6 +14,7 @@ import {
   BookingOpsTaskDto,
   BookingPostMatchCancellationDecisionDto,
   BulkUpsertServicePayoutRulesDto,
+  CreateAdminOperatorDto,
   CreateAdminServiceDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankTransactionDto,
@@ -24,6 +25,7 @@ import {
   CreatePayoutBatchDto,
   CreateServiceDurationSetDto,
   CustomerOpsNoteDto,
+  DeleteAdminOperatorAccessDto,
   MarkEarningPaidDto,
   ModerateReviewDto,
   OperationsHandoffNoteDto,
@@ -34,6 +36,7 @@ import {
   RecordPartnerBankDepositDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminServiceDto,
+  UpdateAdminOperatorAccessDto,
   UpdateCouponDto,
   UpdateFinanceApproverRoleDto,
   UpdateMonthlyTaxClosingStatusDto,
@@ -58,6 +61,32 @@ export class AdminController {
   @Get('users')
   users(@Query('take') take?: string, @Query('skip') skip?: string) {
     return this.admin.listUsers({ skip, take });
+  }
+
+  @Post('users/admin-operators')
+  createAdminOperator(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateAdminOperatorDto,
+  ) {
+    return this.admin.createAdminOperator(user.id, body);
+  }
+
+  @Patch('users/:id/admin-operator-access')
+  updateAdminOperatorAccess(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') userId: string,
+    @Body() body: UpdateAdminOperatorAccessDto,
+  ) {
+    return this.admin.updateAdminOperatorAccess(user.id, userId, body);
+  }
+
+  @Delete('users/:id/admin-operator')
+  revokeAdminOperatorAccess(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') userId: string,
+    @Body() body: DeleteAdminOperatorAccessDto,
+  ) {
+    return this.admin.revokeAdminOperatorAccess(user.id, userId, body);
   }
 
   @Patch('users/:id/finance-approver')

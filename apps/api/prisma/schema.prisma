@@ -12,6 +12,16 @@ enum Role {
   PROVIDER
   ADMIN
   FINANCE_APPROVER
+  MASTER_ADMIN
+}
+
+enum AdminOperatorPermissionCategory {
+  BOOKINGS
+  CUSTOMERS
+  PARTNERS
+  FINANCE
+  NOTIFICATIONS
+  SYSTEM
 }
 
 enum BookingStatus {
@@ -474,6 +484,18 @@ model User {
   operationalPolicyUpdates  OperationalPolicySetting[] @relation("OperationalPolicySettingUpdater")
   accountingJournalBatches  AccountingJournalBatch[]   @relation("AccountingJournalBatchCreator")
   bankReconciliationMatches BankReconciliationMatch[]  @relation("BankReconciliationMatcher")
+  adminOperatorPermission   AdminOperatorPermission?
+}
+
+model AdminOperatorPermission {
+  id         String                            @id @default(cuid())
+  userId     String                            @unique
+  categories AdminOperatorPermissionCategory[]
+  createdAt  DateTime                          @default(now())
+  updatedAt  DateTime                          @updatedAt
+  user       User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
 }
 
 model AppSession {

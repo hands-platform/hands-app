@@ -110,6 +110,7 @@ describe('admin navigation', () => {
       '/reviews',
       '/reviews/partner-customer-evaluations',
       '/audit-log',
+      '/admin-operators',
       '/setup',
     ]);
   });
