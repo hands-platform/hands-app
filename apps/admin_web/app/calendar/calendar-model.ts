@@ -83,10 +83,13 @@ export function filterCalendarEvents(
   return events.filter((event) => event.tags.some((tag) => selected.has(normalizeTag(tag))));
 }
 
-export function buildCalendarTagFilters(events: readonly CalendarEventRecord[]) {
+export function buildCalendarTagFilters(events: readonly CalendarEventRecord[], visibleMonth?: Date) {
   const counts = new Map<string, number>();
+  const countableEvents = visibleMonth
+    ? events.filter((event) => eventOverlapsMonth(event, visibleMonth))
+    : events;
 
-  for (const event of events) {
+  for (const event of countableEvents) {
     for (const tag of event.tags) {
       const normalized = normalizeTag(tag);
       if (!normalized) continue;
@@ -97,6 +100,15 @@ export function buildCalendarTagFilters(events: readonly CalendarEventRecord[]) 
   return [...counts.entries()]
     .map(([tag, count]) => ({ tag, count, tone: calendarTagTone(tag) }))
     .sort((left, right) => right.count - left.count || left.tag.localeCompare(right.tag));
+}
+
+function eventOverlapsMonth(event: CalendarEventRecord, visibleMonth: Date) {
+  const monthStart = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
+  const nextMonthStart = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+  const eventStart = new Date(event.start);
+  const eventEnd = new Date(event.end || event.start);
+
+  return eventStart < nextMonthStart && eventEnd >= monthStart;
 }
 
 export function parseCalendarTags(value: string) {

@@ -1157,11 +1157,34 @@ a {
 }
 
 .calendar-add-button {
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-primary-shadow-sm);
+  gap: 8px;
+  min-height: var(--admin-control-height);
+  padding: 0 14px;
   width: 100%;
 }
 
+.admin-form-control-button.calendar-add-button {
+  min-height: var(--admin-control-height);
+  padding: 0 14px;
+}
+
 .calendar-mini-picker {
+  display: flex;
+  justify-content: center;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   overflow: visible;
+  width: 100%;
+}
+
+.calendar-sidebar-section:has(.calendar-mini-picker) {
+  padding-inline: 0;
+}
+
+.calendar-sidebar-section:has(.calendar-mini-picker) .admin-section-header {
+  padding-inline: 16px;
 }
 
 .calendar-field .react-datepicker-wrapper,
@@ -1195,6 +1218,8 @@ a {
   display: block !important;
   box-shadow: none !important;
   inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .calendar-vuexy-datepicker .react-datepicker__month-container {
@@ -1204,6 +1229,24 @@ a {
 
 .calendar-vuexy-datepicker-inline .react-datepicker__month-container {
   inline-size: 100%;
+}
+
+.calendar-vuexy-datepicker-inline .react-datepicker__current-month {
+  padding: 12px 16px 14px;
+}
+
+.calendar-vuexy-datepicker-inline .react-datepicker__month {
+  margin: 12px 14px 14px;
+}
+
+.calendar-vuexy-datepicker-inline .react-datepicker__day-name,
+.calendar-vuexy-datepicker-inline .react-datepicker__day {
+  line-height: 2.25rem;
+  width: 2.25rem;
+}
+
+.calendar-vuexy-datepicker-inline .react-datepicker__navigation--previous {
+  right: 57px;
 }
 
 .calendar-vuexy-datepicker .react-datepicker__header {

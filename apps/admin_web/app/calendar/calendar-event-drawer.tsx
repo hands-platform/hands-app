@@ -153,6 +153,7 @@ export function CalendarEventDrawer({
                 disabled={!canEdit}
                 onChange={updateDateField('start')}
                 popperClassName="calendar-vuexy-datepicker-popper"
+                popperPlacement="bottom-end"
                 selected={toDateValue(draft.start)}
                 selectsStart
                 showTimeSelect={!draft.allDay}
@@ -173,6 +174,7 @@ export function CalendarEventDrawer({
                 minDate={toDateValue(draft.start) ?? undefined}
                 onChange={updateDateField('end')}
                 popperClassName="calendar-vuexy-datepicker-popper"
+                popperPlacement="bottom-end"
                 selected={toDateValue(draft.end)}
                 selectsEnd
                 showTimeSelect={!draft.allDay}

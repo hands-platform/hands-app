@@ -31,6 +31,33 @@ describe('calendar-model', () => {
     expect(filters.map((filter) => filter.tag)).toContain('finance');
   });
 
+  it('builds hashtag filters for the visible calendar month', () => {
+    const events = [
+      {
+        ...createSeedEvents(new Date('2026-06-16T09:00:00.000Z'))[0],
+        id: 'june-booking',
+        start: '2026-06-16T10:00:00.000Z',
+        end: '2026-06-16T11:00:00.000Z',
+        tags: ['booking'],
+      },
+      {
+        ...createSeedEvents(new Date('2026-07-16T09:00:00.000Z'))[0],
+        id: 'july-booking',
+        start: '2026-07-16T10:00:00.000Z',
+        end: '2026-07-16T11:00:00.000Z',
+        tags: ['booking'],
+      },
+    ];
+
+    const juneFilters = buildCalendarTagFilters(events, new Date('2026-06-01'));
+    const julyFilters = buildCalendarTagFilters(events, new Date('2026-07-01'));
+    const augustFilters = buildCalendarTagFilters(events, new Date('2026-08-01'));
+
+    expect(juneFilters.find((filter) => filter.tag === 'booking')?.count).toBe(1);
+    expect(julyFilters.find((filter) => filter.tag === 'booking')?.count).toBe(1);
+    expect(augustFilters.find((filter) => filter.tag === 'booking')).toBeUndefined();
+  });
+
   it('normalizes free-form hashtags for event drafts', () => {
     expect(parseCalendarTags('#Finance #finance booking, 정산')).toEqual(['finance', 'booking', '정산']);
   });

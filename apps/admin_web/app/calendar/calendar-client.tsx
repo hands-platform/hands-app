@@ -102,7 +102,7 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
     () => filterCalendarEvents(events, selectedTags),
     [events, selectedTags],
   );
-  const tagFilters = useMemo(() => buildCalendarTagFilters(events), [events]);
+  const tagFilters = useMemo(() => buildCalendarTagFilters(events, currentDate), [events, currentDate]);
   const metrics = useMemo(() => buildCalendarMetrics(visibleEvents, new Date()), [visibleEvents]);
   const calendarEvents = useMemo(() => visibleEvents.map(toCalendarEventInput), [visibleEvents]);
   const editingEvent = editingEventId ? (events.find((event) => event.id === editingEventId) ?? null) : null;
