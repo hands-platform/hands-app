@@ -1382,12 +1382,56 @@ if (paymentLinkMatch) {
   console.log(`PASS ${paymentPath}`);
 }
 
+await runFinanceDetailRouteSmoke();
+
 }
 if (runBudgetSmoke) {
   await runBudgetDetailRoutes();
 }
 printRouteBudgetSummary();
 console.log(`Admin web smoke passed for ${smokePages.length} page(s) at ${baseUrl}.`);
+
+async function runFinanceDetailRouteSmoke() {
+  const financeDetailSmokeTargets = [
+    {
+      listPath: '/finance-tax/payment-clearing',
+      markers: ['Payment Clearing Detail', 'Clearing overview', 'Source key', 'Bank reconciliation matches'],
+      routePrefix: 'finance-tax/payment-clearing',
+    },
+    {
+      listPath: '/finance-tax/general-ledger',
+      markers: ['General Ledger Detail', 'Journal batch overview', 'Double-entry check', 'Journal entries'],
+      routePrefix: 'finance-tax/general-ledger',
+    },
+    {
+      listPath: '/finance-tax/bank-reconciliation',
+      markers: [
+        'Bank Reconciliation Detail',
+        'Bank transaction overview',
+        'Transfer reference',
+        'Manual reconciliation match',
+        'Reconciliation matches',
+      ],
+      routePrefix: 'finance-tax/bank-reconciliation',
+    },
+  ];
+
+  for (const target of financeDetailSmokeTargets) {
+    if (!shouldRunDeepSection(target.listPath)) continue;
+
+    const listBody = pageBodies.get(target.listPath) ?? (await fetchPage(target.listPath));
+    const detailPath = firstDetailPath(listBody, target.routePrefix);
+    if (!detailPath) continue;
+
+    const detailBody = await fetchPage(detailPath);
+    const missing = target.markers.filter((marker) => !detailBody.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${detailPath} is missing expected markers: ${missing.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(detailPath, detailBody);
+    console.log(`PASS ${detailPath}`);
+  }
+}
 
 async function runBudgetDetailRoutes() {
   for (const path of [
@@ -1396,6 +1440,9 @@ async function runBudgetDetailRoutes() {
     firstDetailPath(pageBodies.get('/bookings/post-match-cancellations'), 'bookings'),
     firstDetailPath(pageBodies.get('/customers'), 'customers'),
     firstDetailPath(pageBodies.get('/partners'), 'partners'),
+    firstDetailPath(pageBodies.get('/finance-tax/payment-clearing'), 'finance-tax/payment-clearing'),
+    firstDetailPath(pageBodies.get('/finance-tax/general-ledger'), 'finance-tax/general-ledger'),
+    firstDetailPath(pageBodies.get('/finance-tax/bank-reconciliation'), 'finance-tax/bank-reconciliation'),
   ].filter(Boolean)) {
     await fetchPage(path);
     console.log(`PASS ${path}`);
