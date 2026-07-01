@@ -13,6 +13,7 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
+import { readSearchParam } from '../../lib/date-range';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
@@ -59,6 +60,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
   const { bankFilters, clearingFilters } = buildFinanceOperationsSummaryFilters(accountingFilters);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
   const monthlyClosingFilters = readMonthlyTaxClosingFilters(params);
+  const showFullSummaryView = readSearchParam(params.view) === 'full';
   const [
     settlementSummary,
     couponFinanceSummary,
@@ -73,18 +75,22 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         buildBookingSettlementSnapshotSummaryApiHref(settlementFilters),
         emptyBookingSettlementSummary(),
       ),
-      adminGet<AdminCouponFinanceSummary>(
-        buildCouponFinanceSummaryApiHref(settlementFilters),
-        emptyCouponFinanceSummary(),
-      ),
+      showFullSummaryView
+        ? adminGet<AdminCouponFinanceSummary>(
+            buildCouponFinanceSummaryApiHref(settlementFilters),
+            emptyCouponFinanceSummary(),
+          )
+        : Promise.resolve(emptyCouponFinanceSummary()),
       adminGet<AdminPartnerWithholdingTaxSummary>(
         buildPartnerWithholdingTaxSummaryApiHref(withholdingFilters),
         emptyPartnerWithholdingTaxSummary(withholdingFilters.period),
       ),
-      adminGet<AdminProviderWalletWithdrawalRequestSummary>(
-        buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
-        emptyProviderWalletWithdrawalRequestSummary(),
-      ),
+      showFullSummaryView
+        ? adminGet<AdminProviderWalletWithdrawalRequestSummary>(
+            buildProviderWalletWithdrawalRequestSummaryApiHref(settlementFilters),
+            emptyProviderWalletWithdrawalRequestSummary(),
+          )
+        : Promise.resolve(emptyProviderWalletWithdrawalRequestSummary()),
       adminGet<AdminBookingPaymentClearingSummary>(
         buildBookingPaymentClearingSummaryApiHref(clearingFilters),
         emptyBookingPaymentClearingSummary(),
@@ -193,119 +199,130 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         </div>
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="admin-mb-16"
-        description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
-        resultLabel="Coupon summary API"
-        resultTone="info"
-        title="Coupon finance summary"
-      >
-        <div className="setup-stage-list admin-mt-12">
-          <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
-            <span>COUPON</span>
-            <div>
-              <strong>Coupon settlement rows</strong>
-              <p className="muted">Bookings with coupon metadata in the current finance range and queue.</p>
-            </div>
-            <small>{couponFinanceSummary.couponSettlementCount} rows</small>
-          </Link>
-          <div className="setup-stage-item">
-            <span>DISC</span>
-            <div>
-              <strong>Customer discount</strong>
-              <p className="muted">
-                Discount applied to customer payment while settlement keeps the pre-coupon service amount.
-              </p>
-            </div>
-            <small>
-              {formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}
-            </small>
-          </div>
-          <div className="setup-stage-item">
-            <span>PAID</span>
-            <div>
-              <strong>Customer paid amount</strong>
-              <p className="muted">
-                Actual customer payment after coupon discount. This feeds clearing and is not platform
-                revenue.
-              </p>
-            </div>
-            <small>
-              {formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}
-            </small>
-          </div>
-          <div className="setup-stage-item">
-            <span>BASE</span>
-            <div>
-              <strong>Settlement base</strong>
-              <p className="muted">
-                Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.
-              </p>
-            </div>
-            <small>
-              {formatMoney(
-                couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount,
-                couponFinanceSummary.currency,
-              )}
-            </small>
-          </div>
-          <div className="setup-stage-item">
-            <span>EXP</span>
-            <div>
-              <strong>Company coupon expense</strong>
-              <p className="muted">
-                Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.
-              </p>
-            </div>
-            <small>
-              {formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}
-            </small>
-          </div>
-          <div className="setup-stage-item">
-            <span>FLAG</span>
-            <div>
-              <strong>Coupon review flags</strong>
-              <p className="muted">Rows where coupon metadata needs finance review before closing.</p>
-            </div>
-            <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>REV</span>
-            <div>
-              <strong>Reversed coupon amount</strong>
-              <p className="muted">
-                Refund or reversal metadata for coupon discount and company coupon expense recovery.
-              </p>
-            </div>
-            <small>
-              {formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}
-            </small>
-          </div>
-        </div>
-      </AdminFilterPanel>
-
-      <AdminFilterPanel
-        className="admin-mb-16"
-        description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
-        resultLabel="Priority links"
-        resultTone="info"
-        title="Payout and wallet priority desk"
-      >
-        <div className="setup-stage-list admin-mt-12">
-          {buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => (
-            <Link className="setup-stage-item" href={link.href} key={link.key}>
-              <span>{link.signal}</span>
-              <div>
-                <strong>{link.label}</strong>
-                <p className="muted">{link.helper}</p>
+      {showFullSummaryView ? (
+        <>
+          <AdminFilterPanel
+            className="admin-mb-16"
+            description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
+            resultLabel="Coupon summary API"
+            resultTone="info"
+            title="Coupon finance summary"
+          >
+            <div className="setup-stage-list admin-mt-12">
+              <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
+                <span>COUPON</span>
+                <div>
+                  <strong>Coupon settlement rows</strong>
+                  <p className="muted">Bookings with coupon metadata in the current finance range and queue.</p>
+                </div>
+                <small>{couponFinanceSummary.couponSettlementCount} rows</small>
+              </Link>
+              <div className="setup-stage-item">
+                <span>DISC</span>
+                <div>
+                  <strong>Customer discount</strong>
+                  <p className="muted">
+                    Discount applied to customer payment while settlement keeps the pre-coupon service amount.
+                  </p>
+                </div>
+                <small>{formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}</small>
               </div>
-              <small>
-                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
-              </small>
+              <div className="setup-stage-item">
+                <span>PAID</span>
+                <div>
+                  <strong>Customer paid amount</strong>
+                  <p className="muted">
+                    Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.
+                  </p>
+                </div>
+                <small>{formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}</small>
+              </div>
+              <div className="setup-stage-item">
+                <span>BASE</span>
+                <div>
+                  <strong>Settlement base</strong>
+                  <p className="muted">
+                    Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.
+                  </p>
+                </div>
+                <small>
+                  {formatMoney(
+                    couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount,
+                    couponFinanceSummary.currency,
+                  )}
+                </small>
+              </div>
+              <div className="setup-stage-item">
+                <span>EXP</span>
+                <div>
+                  <strong>Company coupon expense</strong>
+                  <p className="muted">
+                    Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.
+                  </p>
+                </div>
+                <small>{formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}</small>
+              </div>
+              <div className="setup-stage-item">
+                <span>FLAG</span>
+                <div>
+                  <strong>Coupon review flags</strong>
+                  <p className="muted">Rows where coupon metadata needs finance review before closing.</p>
+                </div>
+                <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
+              </div>
+              <div className="setup-stage-item">
+                <span>REV</span>
+                <div>
+                  <strong>Reversed coupon amount</strong>
+                  <p className="muted">
+                    Refund or reversal metadata for coupon discount and company coupon expense recovery.
+                  </p>
+                </div>
+                <small>
+                  {formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}
+                </small>
+              </div>
+            </div>
+          </AdminFilterPanel>
+
+          <AdminFilterPanel
+            className="admin-mb-16"
+            description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
+            resultLabel="Priority links"
+            resultTone="info"
+            title="Payout and wallet priority desk"
+          >
+            <div className="setup-stage-list admin-mt-12">
+              {buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => (
+                <Link className="setup-stage-item" href={link.href} key={link.key}>
+                  <span>{link.signal}</span>
+                  <div>
+                    <strong>{link.label}</strong>
+                    <p className="muted">{link.helper}</p>
+                  </div>
+                  <small>
+                    {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
+                  </small>
+                </Link>
+              ))}
+            </div>
+          </AdminFilterPanel>
+        </>
+      ) : (
+        <AdminFilterPanel
+          className="admin-mb-16"
+          description="Default view keeps finance overview focused on current action counts. Open the full summary only when coupon and payout rollups are needed."
+          resultLabel="Compact default"
+          resultTone="info"
+          title="Finance optional summary desk"
+        >
+          <div className="participant-list">
+            <Link className="pill pill-info" href="/finance-tax?view=full">
+              Open full finance summary view
             </Link>
-          ))}
-        </div>
-      </AdminFilterPanel>
+          </div>
+        </AdminFilterPanel>
+      )}
 
       <AdminFilterPanel
         className="admin-mb-16"
