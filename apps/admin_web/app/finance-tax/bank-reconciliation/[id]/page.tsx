@@ -73,7 +73,7 @@ export default async function BankReconciliationDetailPage({
       title="Bank Reconciliation Detail"
     >
       <AdminFilterPanel
-        className="admin-mb-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
         resultLabel={transaction.status}
         resultTone={statusTone(transaction.status)}
@@ -84,11 +84,14 @@ export default async function BankReconciliationDetailPage({
           <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
           <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
           <FinanceDetailInfoItem label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
+          <FinanceDetailInfoItem label="Transfer reference" value={transaction.transferRef ?? '-'} />
+          <FinanceDetailInfoItem label="Source key" value={transaction.sourceKey} />
+          <FinanceDetailInfoItem label="Description" value={transaction.description ?? '-'} />
         </div>
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        className="admin-mb-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
         resultLabel={manualMatchResultLabel({ matchError, matchNotice, reverseError, reverseNotice })}
         resultTone={manualMatchResultTone({ matchError, matchNotice, reverseError, reverseNotice })}

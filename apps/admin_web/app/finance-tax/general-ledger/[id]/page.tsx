@@ -52,7 +52,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       title="General Ledger Detail"
     >
       <AdminFilterPanel
-        className="admin-mb-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
         resultLabel={batch.status}
         resultTone={statusTone(batch.status)}
@@ -60,6 +60,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       >
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
+          <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -175,4 +176,13 @@ function statusTone(status: string): 'danger' | 'success' | 'warning' {
     return 'danger';
   }
   return 'warning';
+}
+
+function journalBalanceLabel(batch: AdminAccountingJournalBatchDetail) {
+  const delta = batch.totalDebit - batch.totalCredit;
+  if (delta === 0) {
+    return 'Balanced';
+  }
+
+  return `Delta ${formatMoney(Math.abs(delta), batch.currency)}`;
 }

@@ -53,7 +53,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       title="Payment Clearing Detail"
     >
       <AdminFilterPanel
-        className="admin-mb-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
         resultLabel={entry.status}
         resultTone={statusTone(entry.status)}
@@ -69,6 +69,19 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
+          <FinanceDetailInfoItem label="Source key" value={entry.sourceKey} />
+          <FinanceDetailInfoItem
+            label="Payment record"
+            value={
+              entry.paymentId ? (
+                <Link className="text-link" href={`/payments/${entry.paymentId}`}>
+                  {shortId(entry.paymentId)}
+                </Link>
+              ) : (
+                '-'
+              )
+            }
+          />
           <FinanceDetailInfoItem
             label="Settlement trace"
             value={
