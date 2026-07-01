@@ -8,7 +8,9 @@ import {
   AdminProviderWalletWithdrawalRequest,
   adminGet,
 } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
@@ -166,21 +168,18 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
       ) : null}
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          actions={
-            <a className="text-link" href="/finance-closeout">
-              Open finance closeout
-            </a>
-          }
-          description={
-            <>
-              Range: {dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service
-              evidence use payout batch record dates.
-            </>
-          }
-          title="Payout date range"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-date-range-card"
+        description={`Range: ${dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service evidence use payout batch record dates.`}
+        resultLabel={`${summary.total} batch(es)`}
+        resultTone={summary.total > 0 ? 'info' : 'warning'}
+        title="Payout date range"
+      >
+        <div className="participant-list admin-mb-12">
+          <Link className="text-link" href="/finance-closeout">
+            Open finance closeout
+          </Link>
+        </div>
         <div className="filter-row admin-mt-12">
           {[
             ['All dates', '/payouts?range=all'],
@@ -188,21 +187,20 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             ['Last 7 days', '/payouts?range=7d'],
             ['Last 30 days', '/payouts?range=30d'],
           ].map(([label, href]) => (
-            <a className="filter-pill" href={href} key={href}>
+            <Link className="filter-pill" href={href} key={href}>
               {label}
-            </a>
+            </Link>
           ))}
         </div>
-      </section>
-      <section className="card admin-mb-16 payout-release-policy-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout batch release policy desk</h2>
-            <p className="muted">
-              Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected
-              batch timing stays configurable from Operations Policy.
-            </p>
-          </div>
+      </AdminFilterPanel>
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-release-policy-card"
+        description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
+        resultLabel={`${releasePolicyDesk.length} gate(s)`}
+        resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
+        title="Payout batch release policy desk"
+      >
+        <div className="participant-list admin-mb-12">
           <Link className="text-link" href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
             Batch policy
           </Link>
@@ -250,34 +248,29 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Cash settlements
           </Link>
         </div>
-        <div className="admin-scroll-x admin-mt-12">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th>Queue</th>
-                <th>Operator check</th>
-                <th>Next action</th>
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table payout-release-cycle-table"
+            emptyMessage="No payout release cycle steps are configured."
+            headers={['Step', 'Queue', 'Operator check', 'Next action']}
+            rowCount={releaseCycleBoard.length}
+          >
+            {releaseCycleBoard.map((item) => (
+              <tr key={item.step}>
+                <td>
+                  <strong>{item.step}</strong>
+                  <div className="muted">{item.timing}</div>
+                </td>
+                <td>
+                  <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                  <div className="muted">{item.queue}</div>
+                </td>
+                <td>{item.operatorCheck}</td>
+                <td>{item.nextAction}</td>
               </tr>
-            </thead>
-            <tbody>
-              {releaseCycleBoard.map((item) => (
-                <tr key={item.step}>
-                  <td>
-                    <strong>{item.step}</strong>
-                    <div className="muted">{item.timing}</div>
-                  </td>
-                  <td>
-                    <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                    <div className="muted">{item.queue}</div>
-                  </td>
-                  <td>{item.operatorCheck}</td>
-                  <td>{item.nextAction}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
         <div className="ops-section-header admin-mt-16">
           <div>
             <h3>Marketplace and payout unblock bridge</h3>
@@ -302,7 +295,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <PayoutMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
 

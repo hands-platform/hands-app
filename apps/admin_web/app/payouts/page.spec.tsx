@@ -70,6 +70,13 @@ describe('PayoutsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Server Trusted Payout');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-date-range-card',
+    );
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-release-policy-card',
+    );
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table payout-release-cycle-table');
   });
 
   it('uses the payout summary endpoint for top-level payout metrics', async () => {
