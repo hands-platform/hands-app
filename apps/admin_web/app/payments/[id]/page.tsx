@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
+import { AdminDataTable } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { MetricCard } from '../../../components/metric-card';
 import {
@@ -160,8 +162,14 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
 
       <section className="grid admin-mb-16">
-        <section className="card" id="booking-evidence">
-          <h2>Linked booking evidence</h2>
+        <AdminFilterPanel
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          description="Booking, customer, partner, address, service, and chat evidence attached to this payment."
+          id="booking-evidence"
+          resultLabel={booking ? 'Linked booking' : 'No booking'}
+          resultTone={booking ? 'info' : 'warning'}
+          title="Linked booking evidence"
+        >
           <div className="setup-stage-list">
             <EvidenceRow label="Booking" value={booking?.id ?? 'Not linked'} helper={booking?.status ?? 'No booking status'} />
             <EvidenceRow label="Customer" value={customerLabel(payment)} helper={booking?.customerProfile?.user?.phone ?? 'No customer phone'} />
@@ -170,10 +178,16 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <EvidenceRow label="Service" value={serviceLabel} helper={bookingServicePriceLabel(payment)} />
             <EvidenceRow label="Chat" value={booking?.chatRoom ? `${messages.length} message(s)` : 'No room'} helper="Admin keeps chat evidence after service completion." />
           </div>
-        </section>
+        </AdminFilterPanel>
 
-        <section className="card" id="money-ledger">
-          <h2>Money ledger</h2>
+        <AdminFilterPanel
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          description="Money movement facts for gross, HANDS fee, withholding, partner net, earning state, and refund rows."
+          id="money-ledger"
+          resultLabel={money(payment.amount, payment.currency)}
+          resultTone={cashDebt ? 'warning' : 'info'}
+          title="Money ledger"
+        >
           <div className="setup-stage-list">
             <EvidenceRow label="Gross" value={money(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
             <EvidenceRow label="HANDS fee" value={money(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
@@ -182,22 +196,17 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
-        </section>
+        </AdminFilterPanel>
       </section>
 
-      <section className="card admin-mb-16" id="chat-payment-evidence">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat and operation evidence</h2>
-            <p className="muted">
-              Matched bookings should have chat evidence. Operators use this before cancellation, no-show, refund,
-              or payout decisions.
-            </p>
-          </div>
-          <span className={`pill ${messages.length ? 'pill-success' : 'pill-warn'}`}>
-            {messages.length ? 'Chat retained' : 'No chat messages'}
-          </span>
-        </div>
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        description="Matched bookings should have chat evidence. Operators use this before cancellation, no-show, refund, or payout decisions."
+        id="chat-payment-evidence"
+        resultLabel={messages.length ? 'Chat retained' : 'No chat messages'}
+        resultTone={messages.length ? 'success' : 'warning'}
+        title="Chat and operation evidence"
+      >
         <div className="setup-stage-list">
           {messages.slice(-8).map((message) => (
             <ChatEvidenceRow message={message} key={message.id} />
@@ -212,38 +221,27 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             </div>
           ) : null}
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card" id="payment-audit-log">
-        <div className="ops-section-header">
-          <div>
-            <h2>Payment audit trail</h2>
-            <p className="muted">Admin actions tied to this payment or linked booking.</p>
-          </div>
-          <span className="pill pill-info">{auditRows.length} event(s)</span>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Action</th>
-              <th>Actor</th>
-              <th>Target</th>
-              <th>Evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {auditRows.map((row) => (
-              <AuditRow row={row} key={row.id} />
-            ))}
-            {auditRows.length === 0 ? (
-              <tr>
-                <td colSpan={5}>No admin audit event has been captured for this payment yet.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Admin actions tied to this payment or linked booking."
+        id="payment-audit-log"
+        resultLabel={`${auditRows.length} event(s)`}
+        resultTone={auditRows.length ? 'info' : 'warning'}
+        title="Payment audit trail"
+      >
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage="No admin audit event has been captured for this payment yet."
+          headers={['Time', 'Action', 'Actor', 'Target', 'Evidence']}
+          rowCount={auditRows.length}
+        >
+          {auditRows.map((row) => (
+            <AuditRow row={row} key={row.id} />
+          ))}
+        </AdminDataTable>
+      </AdminFilterPanel>
     </>
   );
 }

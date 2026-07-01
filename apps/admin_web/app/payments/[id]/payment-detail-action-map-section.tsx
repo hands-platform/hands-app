@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 
 export type PaymentDetailActionMapRow = {
   readonly action: string;
@@ -28,17 +29,15 @@ export function PaymentDetailActionMapSection({
   rows,
 }: PaymentDetailActionMapSectionProps) {
   return (
-    <section className="card admin-mb-16" id="payment-action-map">
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Operator action checks for sync, capture, release, refund, and cash fee settlement."
+      id="payment-action-map"
+      resultLabel={hasBlockingReview ? 'Review needed' : 'No urgent block'}
+      resultTone={hasBlockingReview ? 'warning' : 'success'}
+      title="Payment action execution map"
+    >
       {confirmation}
-      <div className="ops-section-header">
-        <div>
-          <h2>Payment action execution map</h2>
-          <p className="muted">Operator action checks for sync, capture, release, refund, and cash fee settlement.</p>
-        </div>
-        <span className={`pill ${hasBlockingReview ? 'pill-warn' : 'pill-success'}`}>
-          {hasBlockingReview ? 'Review needed' : 'No urgent block'}
-        </span>
-      </div>
       <div className="setup-stage-list">
         {rows.map((row) => (
           <div className="setup-stage-item" key={row.action}>
@@ -55,6 +54,6 @@ export function PaymentDetailActionMapSection({
         <ActionMenu actions={actions} label={actionLabel} />
       </div>
       {cashDebtSettlementForm}
-    </section>
+    </AdminFilterPanel>
   );
 }

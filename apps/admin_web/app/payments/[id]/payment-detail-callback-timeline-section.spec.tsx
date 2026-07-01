@@ -29,6 +29,12 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     expect(rendered).toContain('gateway-ref-1');
     expect(rendered).toContain('SIG_MISMATCH');
     expect(rendered).toContain('4 key(s)');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'table vuexy-data-table vuexy-booking-table',
+      ]),
+    );
   });
 
   it('renders empty state when no callbacks exist', () => {
@@ -54,6 +60,21 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
