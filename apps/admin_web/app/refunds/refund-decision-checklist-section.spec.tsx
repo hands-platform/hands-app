@@ -18,7 +18,13 @@ describe('RefundDecisionChecklistSection', () => {
     expect(rendered).toContain('2 outcome-linked');
     expect(rendered).toContain('Decision must be based on saved evidence');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings?view=manual-decision']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'ops-task-card ops-task-pending']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'pill pill-warn',
+        'ops-task-card ops-task-pending',
+      ]),
+    );
   });
 });
 

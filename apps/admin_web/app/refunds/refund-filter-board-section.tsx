@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { AdminDateRange } from '../../lib/date-range';
 
 export type RefundFilterLink = {
@@ -40,22 +41,18 @@ export function RefundFilterBoardSection({
   const isFiltered = Boolean(review || activeRange !== 'all');
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Refund operation filters</h2>
-          <p className="muted">Use these shortcuts from the dashboard to focus on the refund queue state.</p>
-          <p className="muted">Refund date range: {rangeLabel}.</p>
-          {activeFilterLabel && activeFilterDescription ? (
-            <p className="muted">
-              Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
-            </p>
-          ) : null}
-        </div>
-        <span className={`pill ${review ? 'pill-warn' : 'pill-success'}`}>
-          Showing {filteredCount} of {totalCount}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description={`Use these shortcuts from the dashboard to focus on the refund queue state. Refund date range: ${rangeLabel}.`}
+      resultLabel={`Showing ${filteredCount} of ${totalCount}`}
+      resultTone={review ? 'warning' : 'success'}
+      title="Refund operation filters"
+    >
+      {activeFilterLabel && activeFilterDescription ? (
+        <p className="muted admin-mb-12">
+          Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
+        </p>
+      ) : null}
       <div className="participant-list admin-mb-12">
         {rangeLinks.map((item) => (
           <Link
@@ -83,6 +80,6 @@ export function RefundFilterBoardSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }

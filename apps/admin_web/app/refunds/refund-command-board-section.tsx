@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type RefundCommandTone = 'warn' | 'info' | 'ok';
 
@@ -29,16 +29,13 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
   const hasOpenOperatorWork = items.some((item) => item.refunds.length > 0 && item.tone !== 'ok');
 
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one operational view before closing a shift."
-        status={
-          <span className={`pill ${hasOpenOperatorWork ? 'pill-warn' : 'pill-success'}`}>
-            {totalRefundCount} refund record(s)
-          </span>
-        }
-        title="Refund command board"
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one operational view before closing a shift."
+      resultLabel={`${totalRefundCount} refund record(s)`}
+      resultTone={hasOpenOperatorWork ? 'warning' : 'success'}
+      title="Refund command board"
+    >
       <div className="ops-task-grid">
         {items.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.title}>
@@ -62,7 +59,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }
 

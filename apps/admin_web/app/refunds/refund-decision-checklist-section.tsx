@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type RefundDecisionChecklistItem = {
   readonly className: string;
@@ -18,16 +18,18 @@ type RefundDecisionChecklistSectionProps = {
 
 export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklistSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        actions={
-          <Link className="text-link" href="/bookings?view=manual-decision">
-            Manual decision queue
-          </Link>
-        }
-        description="Evidence-first checklist for operators before a refund is released, rejected, or handed to finance closeout."
-        title="Refund decision checklist"
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Evidence-first checklist for operators before a refund is released, rejected, or handed to finance closeout."
+      resultLabel={`${items.length} check(s)`}
+      resultTone={items.length > 0 ? 'warning' : 'success'}
+      title="Refund decision checklist"
+    >
+      <div className="participant-list admin-mb-12">
+        <Link className="text-link" href="/bookings?view=manual-decision">
+          Manual decision queue
+        </Link>
+      </div>
       <div className="ops-task-grid">
         {items.map((item) => (
           <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
@@ -40,6 +42,6 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }

@@ -20,7 +20,13 @@ describe('RefundCommandBoardSection', () => {
     expect(rendered).toContain('2 case(s)');
     expect(rendered).toContain('refund-1 / Customer One / 200000 VND');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?review=requested']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'signal signal-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'pill pill-warn',
+        'signal signal-warn',
+      ]),
+    );
   });
 
   it('renders a clear status when all command lanes are clear', () => {
