@@ -1,18 +1,61 @@
 import {
+  buildCalendarTagFilters,
   buildCalendarMetrics,
+  normalizeStoredCalendarEvent,
   createSeedEvents,
   filterCalendarEvents,
+  parseCalendarTags,
   normalizeCalendarDraft,
 } from './calendar-model';
 
 describe('calendar-model', () => {
-  it('filters events by selected categories', () => {
+  it('filters events by selected hashtags', () => {
     const events = createSeedEvents(new Date('2026-06-16T09:00:00.000Z'));
 
-    expect(filterCalendarEvents(events, ['Operations', 'Finance']).map((event) => event.category)).toEqual([
-      'Operations',
-      'Finance',
+    expect(filterCalendarEvents(events, ['finance']).map((event) => event.title)).toEqual(['Weekly finance closeout']);
+    expect(filterCalendarEvents(events, []).length).toBe(events.length);
+  });
+
+  it('builds hashtag filters with counts across repeated tags', () => {
+    const events = createSeedEvents(new Date('2026-06-16T09:00:00.000Z'));
+    const filters = buildCalendarTagFilters([
+      ...events,
+      {
+        ...events[0],
+        id: 'extra',
+        tags: ['handoff', 'ops'],
+      },
     ]);
+
+    expect(filters.find((filter) => filter.tag === 'handoff')?.count).toBe(2);
+    expect(filters.map((filter) => filter.tag)).toContain('finance');
+  });
+
+  it('normalizes free-form hashtags for event drafts', () => {
+    expect(parseCalendarTags('#Finance #finance booking, 정산')).toEqual(['finance', 'booking', '정산']);
+  });
+
+  it('migrates legacy stored category events into tag and author records', () => {
+    const event = normalizeStoredCalendarEvent(
+      {
+        id: 'legacy',
+        title: 'Old booking block',
+        start: '2026-06-16T10:00:00.000Z',
+        end: '2026-06-16T11:00:00.000Z',
+        allDay: false,
+        category: 'Bookings',
+        description: '',
+        location: '',
+        url: '',
+      },
+      { id: 'operator@hands.vn', name: 'Operator' },
+    );
+
+    expect(event).toMatchObject({
+      authorId: 'operator@hands.vn',
+      authorName: 'Operator',
+      tags: ['bookings'],
+    });
   });
 
   it('builds summary metrics from the visible events', () => {
@@ -31,7 +74,9 @@ describe('calendar-model', () => {
       start: '2026-06-16T10:00:00.000Z',
       end: '2026-06-16T08:00:00.000Z',
       allDay: false,
-      category: 'Operations',
+      authorId: 'operator@hands.vn',
+      authorName: 'Operator',
+      tags: ['ops'],
       description: '',
       location: '',
       url: '',

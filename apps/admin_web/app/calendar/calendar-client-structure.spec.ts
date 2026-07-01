@@ -10,11 +10,25 @@ describe('calendar client structure', () => {
     expect(clientSource).not.toContain('<button\n              className="button button-secondary calendar-quick-add"');
   });
 
-  it('uses shared AdminForm checkbox atoms for calendar filters', () => {
+  it('uses shared AdminForm checkbox atoms for hashtag calendar filters', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
     expect(clientSource).toContain('AdminFormCheckbox');
+    expect(clientSource).toContain('buildCalendarTagFilters');
+    expect(clientSource).toContain('selectedTags');
+    expect(clientSource).toContain('calendar-filter-count');
     expect(clientSource).not.toContain('<input\n                checked={selectedCategories.length === CALENDAR_CATEGORIES.length}');
     expect(clientSource).not.toContain('<input\n                      checked={active}');
+    expect(clientSource).not.toContain('CALENDAR_CATEGORIES.map');
+  });
+
+  it('renders author metadata and blocks non-author mutations', () => {
+    const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
+
+    expect(clientSource).toContain('currentOperator');
+    expect(clientSource).toContain('canEditCalendarEvent');
+    expect(clientSource).toContain('payload.revert()');
+    expect(clientSource).toContain('calendar-event-author');
+    expect(clientSource).toContain('calendar-event-locked');
   });
 });

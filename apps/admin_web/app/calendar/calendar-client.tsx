@@ -18,28 +18,35 @@ import { AdminSectionHeader } from '../../components/admin-page-template';
 import { MetricCard } from '../../components/metric-card';
 import {
   buildCalendarMetrics,
-  CALENDAR_CATEGORIES,
-  CALENDAR_CATEGORY_COLORS,
+  buildCalendarTagFilters,
+  calendarTagTone,
+  canEditCalendarEvent,
   CALENDAR_STORAGE_KEY,
   createBlankDraft,
   createCalendarEventId,
   createSeedEvents,
   filterCalendarEvents,
   fromCalendarEventInput,
+  normalizeStoredCalendarEvent,
   normalizeCalendarDraft,
   toCalendarEventInput,
-  type CalendarCategory,
   type CalendarEventDraft,
   type CalendarEventRecord,
+  type CalendarOperator,
+  type CalendarTagTone,
 } from './calendar-model';
 import { CalendarEventDrawer } from './calendar-event-drawer';
 
 type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listMonth';
 
-export function CalendarClient() {
+type CalendarClientProps = {
+  readonly currentOperator: CalendarOperator;
+};
+
+export function CalendarClient({ currentOperator }: CalendarClientProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [events, setEvents] = useState<CalendarEventRecord[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<CalendarCategory[]>([...CALENDAR_CATEGORIES]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<CalendarViewName>('dayGridMonth');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,7 +66,13 @@ export function CalendarClient() {
 
       if (storedEvents) {
         try {
-          setEvents(JSON.parse(storedEvents) as CalendarEventRecord[]);
+          const parsed = JSON.parse(storedEvents) as unknown;
+          const nextEvents = Array.isArray(parsed)
+            ? parsed
+                .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
+                .filter((event): event is CalendarEventRecord => Boolean(event))
+            : [];
+          setEvents(nextEvents);
           setHydrated(true);
           return;
         } catch {
@@ -67,7 +80,7 @@ export function CalendarClient() {
         }
       }
 
-      const seedEvents = createSeedEvents(new Date());
+      const seedEvents = createSeedEvents(new Date(), currentOperator);
       setEvents(seedEvents);
       setHydrated(true);
     });
@@ -75,7 +88,7 @@ export function CalendarClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentOperator]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -86,16 +99,22 @@ export function CalendarClient() {
   }, [events, hydrated]);
 
   const visibleEvents = useMemo(
-    () => filterCalendarEvents(events, selectedCategories),
-    [events, selectedCategories],
+    () => filterCalendarEvents(events, selectedTags),
+    [events, selectedTags],
   );
+  const tagFilters = useMemo(() => buildCalendarTagFilters(events), [events]);
   const metrics = useMemo(() => buildCalendarMetrics(visibleEvents, new Date()), [visibleEvents]);
   const calendarEvents = useMemo(() => visibleEvents.map(toCalendarEventInput), [visibleEvents]);
   const editingEvent = editingEventId ? (events.find((event) => event.id === editingEventId) ?? null) : null;
+  const canEditSelectedEvent = editingEventId ? canEditCalendarEvent(editingEvent, currentOperator) : true;
 
   const openCreateDrawer = (date: Date) => {
     setEditingEventId(null);
-    setDraft(createBlankDraft(date));
+    setDraft({
+      ...createBlankDraft(date),
+      authorId: currentOperator.id,
+      authorName: currentOperator.name,
+    });
     setDrawerOpen(true);
   };
 
@@ -106,9 +125,11 @@ export function CalendarClient() {
       start: event.start,
       end: event.end,
       allDay: event.allDay,
-      category: event.category,
+      authorId: event.authorId,
+      authorName: event.authorName,
       description: event.description,
       location: event.location,
+      tags: event.tags,
       url: event.url,
     });
     setDrawerOpen(true);
@@ -126,14 +147,20 @@ export function CalendarClient() {
   const handleEventClick = (info: EventClickArg) => {
     info.jsEvent.preventDefault();
     openEditDrawer(
-      fromCalendarEventInput(info.event.toPlainObject({ collapseExtendedProps: false }) as EventInput),
+      fromCalendarEventInput(info.event.toPlainObject({ collapseExtendedProps: false }) as EventInput, currentOperator),
     );
   };
 
   const handleEventMutation = (payload: EventDropArg | EventResizeDoneArg) => {
     const next = fromCalendarEventInput(
       payload.event.toPlainObject({ collapseExtendedProps: false }) as EventInput,
+      currentOperator,
     );
+
+    if (!canEditCalendarEvent(events.find((event) => event.id === next.id), currentOperator)) {
+      payload.revert();
+      return;
+    }
 
     setEvents((current) => current.map((event) => (event.id === next.id ? next : event)));
   };
@@ -146,18 +173,32 @@ export function CalendarClient() {
     }
 
     if (editingEventId) {
+      if (!canEditCalendarEvent(editingEvent, currentOperator)) {
+        return;
+      }
+
       setEvents((current) =>
         current.map((event) =>
           event.id === editingEventId
             ? {
                 id: editingEventId,
                 ...normalized,
+                authorId: event.authorId,
+                authorName: event.authorName,
               }
             : event,
         ),
       );
     } else {
-      setEvents((current) => [...current, { id: createCalendarEventId(), ...normalized }]);
+      setEvents((current) => [
+        ...current,
+        {
+          id: createCalendarEventId(),
+          ...normalized,
+          authorId: currentOperator.id,
+          authorName: currentOperator.name,
+        },
+      ]);
     }
 
     closeDrawer();
@@ -169,7 +210,9 @@ export function CalendarClient() {
       return;
     }
 
-    setEvents((current) => current.filter((event) => event.id !== editingEventId));
+    if (canEditCalendarEvent(editingEvent, currentOperator)) {
+      setEvents((current) => current.filter((event) => event.id !== editingEventId));
+    }
     closeDrawer();
   };
 
@@ -179,7 +222,11 @@ export function CalendarClient() {
       return;
     }
 
-    setDraft(createBlankDraft(new Date(draft.start)));
+    setDraft({
+      ...createBlankDraft(new Date(draft.start)),
+      authorId: currentOperator.id,
+      authorName: currentOperator.name,
+    });
   };
 
   const handleJumpDate = (date: Date | null) => {
@@ -256,38 +303,41 @@ export function CalendarClient() {
             <AdminSectionHeader title="Event Filters" />
             <AdminFormCheckbox
               className={`calendar-filter-row calendar-filter-row-all ${
-                selectedCategories.length === CALENDAR_CATEGORIES.length ? 'is-active' : ''
+                selectedTags.length === 0 ? 'is-active' : ''
               }`}
-              checked={selectedCategories.length === CALENDAR_CATEGORIES.length}
-              label="View all calendar categories"
-              onChange={(event) =>
-                setSelectedCategories(event.target.checked ? [...CALENDAR_CATEGORIES] : [])
-              }
+              checked={selectedTags.length === 0}
+              label="View all calendar hashtags"
+              onChange={() => setSelectedTags([])}
             >
               <span>View all</span>
             </AdminFormCheckbox>
             <div className="calendar-filter-list">
-              {CALENDAR_CATEGORIES.map((category) => {
-                const active = selectedCategories.includes(category);
+              {tagFilters.length ? (
+                tagFilters.map((filter) => {
+                  const active = selectedTags.includes(filter.tag);
 
-                return (
-                  <AdminFormCheckbox
-                    checked={active}
-                    className={active ? 'calendar-filter-row is-active' : 'calendar-filter-row'}
-                    key={category}
-                    label={`View ${category} calendar events`}
-                    onChange={() =>
-                      setSelectedCategories((current) =>
-                        current.includes(category)
-                          ? current.filter((value) => value !== category)
-                          : [...current, category],
-                      )
-                    }
-                  >
-                    <span className={`pill pill-${CALENDAR_CATEGORY_COLORS[category]}`}>{category}</span>
-                  </AdminFormCheckbox>
-                );
-              })}
+                  return (
+                    <AdminFormCheckbox
+                      checked={active}
+                      className={active ? 'calendar-filter-row is-active' : 'calendar-filter-row'}
+                      key={filter.tag}
+                      label={`View #${filter.tag} calendar events`}
+                      onChange={() =>
+                        setSelectedTags((current) =>
+                          current.includes(filter.tag)
+                            ? current.filter((value) => value !== filter.tag)
+                            : [...current, filter.tag],
+                        )
+                      }
+                    >
+                      <span className={`pill pill-${filter.tone}`}>#{filter.tag}</span>
+                      <span className="calendar-filter-count">({filter.count})</span>
+                    </AdminFormCheckbox>
+                  );
+                })
+              ) : (
+                <p className="calendar-empty-filter muted">No hashtags yet.</p>
+              )}
             </div>
           </div>
         </aside>
@@ -361,6 +411,16 @@ export function CalendarClient() {
               height="auto"
               dateClick={handleDateClick}
               eventClick={handleEventClick}
+              eventContent={(info) => {
+                const authorName = String(info.event.extendedProps.authorName ?? 'Unknown');
+
+                return (
+                  <div className="calendar-event-content">
+                    <span className="calendar-event-title">{info.event.title}</span>
+                    <span className="calendar-event-author">{authorName}</span>
+                  </div>
+                );
+              }}
               eventDrop={handleEventMutation}
               eventResize={handleEventMutation}
               datesSet={(info) => {
@@ -368,8 +428,10 @@ export function CalendarClient() {
                 setCurrentView(info.view.type as CalendarViewName);
               }}
               eventClassNames={(info) => {
-                const category = info.event.extendedProps.category as CalendarCategory;
-                return [`calendar-event`, `calendar-event-${CALENDAR_CATEGORY_COLORS[category]}`];
+                const tags = info.event.extendedProps.tags as readonly string[] | undefined;
+                const tone: CalendarTagTone = tags?.[0] ? calendarTagTone(tags[0]) : 'accent';
+                const canEdit = info.event.extendedProps.authorId === currentOperator.id;
+                return [`calendar-event`, `calendar-event-${tone}`, canEdit ? 'calendar-event-owned' : 'calendar-event-locked'];
               }}
             />
           </div>
@@ -397,6 +459,8 @@ export function CalendarClient() {
         onDelete={handleDelete}
         onReset={handleReset}
         onSubmit={handleSubmit}
+        canEdit={canEditSelectedEvent}
+        currentOperatorName={currentOperator.name}
       />
     </div>
   );

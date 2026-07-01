@@ -6,10 +6,9 @@ import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 import {
   AdminFormControlButton,
   AdminFormInput,
-  AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { CALENDAR_CATEGORIES, type CalendarCategory, type CalendarEventDraft } from './calendar-model';
+import { calendarTagsToInputValue, parseCalendarTags, type CalendarEventDraft } from './calendar-model';
 
 type CalendarEventDrawerProps = {
   readonly draft: CalendarEventDraft;
@@ -20,6 +19,8 @@ type CalendarEventDrawerProps = {
   readonly onDelete: () => void;
   readonly onReset: () => void;
   readonly onSubmit: () => void;
+  readonly canEdit: boolean;
+  readonly currentOperatorName: string;
 };
 
 export function CalendarEventDrawer({
@@ -31,6 +32,8 @@ export function CalendarEventDrawer({
   onDelete,
   onReset,
   onSubmit,
+  canEdit,
+  currentOperatorName,
 }: CalendarEventDrawerProps) {
   if (!isOpen) {
     return null;
@@ -47,11 +50,13 @@ export function CalendarEventDrawer({
         [key]:
           key === 'allDay'
             ? nextValue === 'true'
-            : key === 'category'
-              ? (nextValue as CalendarCategory)
+            : key === 'tags'
+              ? parseCalendarTags(nextValue)
               : nextValue,
       });
     };
+  const readonlyReason =
+    mode === 'edit' && !canEdit ? `Only ${draft.authorName} can update or delete this event.` : null;
 
   return (
     <>
@@ -68,9 +73,12 @@ export function CalendarEventDrawer({
               {mode === 'create' ? 'Add event' : 'Update event'}
             </span>
             <h2>{mode === 'create' ? 'Create calendar event' : 'Edit calendar event'}</h2>
+            <p className="calendar-drawer-author">
+              Author: <strong>{draft.authorName || currentOperatorName}</strong>
+            </p>
           </div>
           <div className="calendar-drawer-header-actions">
-            {mode === 'edit' ? (
+            {mode === 'edit' && canEdit ? (
               <button
                 className="calendar-icon-button calendar-icon-button-danger"
                 onClick={onDelete}
@@ -92,10 +100,12 @@ export function CalendarEventDrawer({
         </div>
 
         <div className="calendar-drawer-body">
+          {readonlyReason ? <div className="calendar-readonly-alert">{readonlyReason}</div> : null}
           <div className="calendar-form-grid">
             <div className="calendar-field">
               <span>Title</span>
               <AdminFormInput
+                disabled={!canEdit}
                 label="Title"
                 onChange={updateField('title')}
                 placeholder="Add event title"
@@ -105,19 +115,21 @@ export function CalendarEventDrawer({
             </div>
 
             <div className="calendar-field">
-              <span>Category</span>
-              <AdminFormSelect
-                label="Category"
-                name="category"
-                onChange={updateField('category')}
-                options={CALENDAR_CATEGORIES.map((category) => ({ label: category, value: category }))}
-                value={draft.category}
+              <span>Hashtags</span>
+              <AdminFormInput
+                disabled={!canEdit}
+                label="Hashtags"
+                name="tags"
+                onChange={updateField('tags')}
+                placeholder="#booking #handoff"
+                value={calendarTagsToInputValue(draft.tags)}
               />
             </div>
 
             <div className="calendar-field">
               <span>Start</span>
               <AdminFormInput
+                disabled={!canEdit}
                 label="Start"
                 name="start"
                 onChange={updateField('start')}
@@ -129,6 +141,7 @@ export function CalendarEventDrawer({
             <div className="calendar-field">
               <span>End</span>
               <AdminFormInput
+                disabled={!canEdit}
                 label="End"
                 name="end"
                 onChange={updateField('end')}
@@ -139,12 +152,13 @@ export function CalendarEventDrawer({
 
             <label className="calendar-field calendar-field-toggle">
               <span>All day</span>
-              <input checked={draft.allDay} onChange={updateField('allDay')} type="checkbox" />
+              <input checked={draft.allDay} disabled={!canEdit} onChange={updateField('allDay')} type="checkbox" />
             </label>
 
             <div className="calendar-field">
               <span>Location</span>
               <AdminFormInput
+                disabled={!canEdit}
                 label="Location"
                 name="location"
                 onChange={updateField('location')}
@@ -156,6 +170,7 @@ export function CalendarEventDrawer({
             <div className="calendar-field">
               <span>Link</span>
               <AdminFormInput
+                disabled={!canEdit}
                 label="Link"
                 name="url"
                 onChange={updateField('url')}
@@ -167,6 +182,7 @@ export function CalendarEventDrawer({
             <div className="calendar-field calendar-field-wide">
               <span>Notes</span>
               <AdminFormTextarea
+                disabled={!canEdit}
                 label="Notes"
                 name="description"
                 onChange={updateField('description')}
@@ -178,16 +194,18 @@ export function CalendarEventDrawer({
           </div>
         </div>
 
-        <div className="calendar-drawer-footer">
-          <AdminFormControlButton className="button button-primary" onClick={onSubmit} type="button">
-            <Save aria-hidden="true" size={16} />
-            {mode === 'create' ? 'Add Event' : 'Update Event'}
-          </AdminFormControlButton>
-          <AdminFormControlButton className="button button-secondary" onClick={onReset} type="button">
-            <RotateCcw aria-hidden="true" size={16} />
-            Reset
-          </AdminFormControlButton>
-        </div>
+        {canEdit ? (
+          <div className="calendar-drawer-footer">
+            <AdminFormControlButton className="button button-primary" onClick={onSubmit} type="button">
+              <Save aria-hidden="true" size={16} />
+              {mode === 'create' ? 'Add Event' : 'Update Event'}
+            </AdminFormControlButton>
+            <AdminFormControlButton className="button button-secondary" onClick={onReset} type="button">
+              <RotateCcw aria-hidden="true" size={16} />
+              Reset
+            </AdminFormControlButton>
+          </div>
+        ) : null}
       </aside>
     </>
   );

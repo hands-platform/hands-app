@@ -61,6 +61,7 @@ type AdminFormTextareaProps = {
 } & Pick<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
   | 'defaultValue'
+  | 'disabled'
   | 'maxLength'
   | 'minLength'
   | 'onChange'
@@ -207,6 +208,7 @@ export function AdminFormInput({
 export function AdminFormTextarea({
   className,
   defaultValue,
+  disabled,
   label,
   maxLength,
   minLength,
@@ -224,6 +226,7 @@ export function AdminFormTextarea({
       <textarea
         className={textareaClassName}
         defaultValue={defaultValue}
+        disabled={disabled}
         maxLength={maxLength}
         minLength={minLength}
         name={name}

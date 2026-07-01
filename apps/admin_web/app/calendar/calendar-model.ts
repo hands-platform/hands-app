@@ -2,31 +2,30 @@ import type { EventInput } from '@fullcalendar/core';
 
 export const CALENDAR_STORAGE_KEY = 'hands-admin-calendar-events-v1';
 
-export const CALENDAR_CATEGORIES = ['Operations', 'Bookings', 'Partners', 'Customers', 'Finance'] as const;
+export const CALENDAR_TAG_TONES = ['accent', 'info', 'success', 'warning', 'danger'] as const;
 
-export type CalendarCategory = (typeof CALENDAR_CATEGORIES)[number];
+export type CalendarTagTone = (typeof CALENDAR_TAG_TONES)[number];
+
+export type CalendarOperator = {
+  readonly id: string;
+  readonly name: string;
+};
 
 export type CalendarEventRecord = {
   readonly allDay: boolean;
-  readonly category: CalendarCategory;
+  readonly authorId: string;
+  readonly authorName: string;
   readonly description: string;
   readonly end: string;
   readonly id: string;
   readonly location: string;
   readonly start: string;
+  readonly tags: readonly string[];
   readonly title: string;
   readonly url: string;
 };
 
 export type CalendarEventDraft = Omit<CalendarEventRecord, 'id'>;
-
-export const CALENDAR_CATEGORY_COLORS: Record<CalendarCategory, string> = {
-  Operations: 'accent',
-  Bookings: 'info',
-  Partners: 'success',
-  Customers: 'warning',
-  Finance: 'danger',
-};
 
 export function toCalendarEventInput(event: CalendarEventRecord): EventInput {
   return {
@@ -37,18 +36,23 @@ export function toCalendarEventInput(event: CalendarEventRecord): EventInput {
     allDay: event.allDay,
     url: event.url || undefined,
     extendedProps: {
-      category: event.category,
+      authorId: event.authorId,
+      authorName: event.authorName,
       description: event.description,
       location: event.location,
+      tags: event.tags,
     },
   };
 }
 
-export function fromCalendarEventInput(event: EventInput): CalendarEventRecord {
+export function fromCalendarEventInput(event: EventInput, fallbackAuthor: CalendarOperator): CalendarEventRecord {
   const extendedProps = (event.extendedProps ?? {}) as {
-    readonly category?: CalendarCategory;
+    readonly authorId?: string;
+    readonly authorName?: string;
+    readonly category?: string;
     readonly description?: string;
     readonly location?: string;
+    readonly tags?: readonly string[] | string;
   };
 
   return {
@@ -57,24 +61,97 @@ export function fromCalendarEventInput(event: EventInput): CalendarEventRecord {
     start: toIsoString(event.start),
     end: toIsoString(event.end ?? event.start),
     allDay: Boolean(event.allDay),
-    category: isCalendarCategory(extendedProps.category) ? extendedProps.category : 'Operations',
+    authorId: extendedProps.authorId || fallbackAuthor.id,
+    authorName: extendedProps.authorName || fallbackAuthor.name,
     description: extendedProps.description ?? '',
     location: extendedProps.location ?? '',
+    tags: normalizeCalendarTags(extendedProps.tags, extendedProps.category),
     url: typeof event.url === 'string' ? event.url : '',
   };
 }
 
 export function filterCalendarEvents(
   events: readonly CalendarEventRecord[],
-  categories: readonly CalendarCategory[],
+  selectedTags: readonly string[],
 ): CalendarEventRecord[] {
-  if (!categories.length) {
-    return [];
+  if (!selectedTags.length) {
+    return [...events];
   }
 
-  const selected = new Set(categories);
+  const selected = new Set(selectedTags.map(normalizeTag).filter(Boolean));
 
-  return events.filter((event) => selected.has(event.category));
+  return events.filter((event) => event.tags.some((tag) => selected.has(normalizeTag(tag))));
+}
+
+export function buildCalendarTagFilters(events: readonly CalendarEventRecord[]) {
+  const counts = new Map<string, number>();
+
+  for (const event of events) {
+    for (const tag of event.tags) {
+      const normalized = normalizeTag(tag);
+      if (!normalized) continue;
+      counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+    }
+  }
+
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count, tone: calendarTagTone(tag) }))
+    .sort((left, right) => right.count - left.count || left.tag.localeCompare(right.tag));
+}
+
+export function parseCalendarTags(value: string) {
+  return uniqueTags(
+    value
+      .split(/[\s,]+/)
+      .map((tag) => normalizeTag(tag))
+      .filter(Boolean),
+  );
+}
+
+export function calendarTagsToInputValue(tags: readonly string[]) {
+  return tags.map((tag) => `#${tag}`).join(' ');
+}
+
+export function calendarTagTone(tag: string): CalendarTagTone {
+  const normalized = normalizeTag(tag);
+  if (!normalized) return 'accent';
+
+  const index = [...normalized].reduce((sum, character) => sum + character.charCodeAt(0), 0);
+
+  return CALENDAR_TAG_TONES[index % CALENDAR_TAG_TONES.length];
+}
+
+export function canEditCalendarEvent(event: CalendarEventRecord | null | undefined, operator: CalendarOperator) {
+  return Boolean(event && event.authorId === operator.id);
+}
+
+export function normalizeStoredCalendarEvent(value: unknown, fallbackAuthor: CalendarOperator): CalendarEventRecord | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const event = value as Partial<CalendarEventRecord> & { readonly category?: string };
+  const title = typeof event.title === 'string' ? event.title : '';
+  const start = toIsoString(event.start);
+  const end = toIsoString(event.end ?? event.start);
+
+  if (!event.id || !title) {
+    return null;
+  }
+
+  return {
+    id: String(event.id),
+    title,
+    start,
+    end,
+    allDay: Boolean(event.allDay),
+    authorId: typeof event.authorId === 'string' && event.authorId ? event.authorId : fallbackAuthor.id,
+    authorName: typeof event.authorName === 'string' && event.authorName ? event.authorName : fallbackAuthor.name,
+    description: typeof event.description === 'string' ? event.description : '',
+    location: typeof event.location === 'string' ? event.location : '',
+    tags: normalizeCalendarTags(event.tags, event.category),
+    url: typeof event.url === 'string' ? event.url : '',
+  };
 }
 
 export function buildCalendarMetrics(events: readonly CalendarEventRecord[], now = new Date()) {
@@ -101,7 +178,7 @@ export function buildCalendarMetrics(events: readonly CalendarEventRecord[], now
   };
 }
 
-export function createSeedEvents(now = new Date()): CalendarEventRecord[] {
+export function createSeedEvents(now = new Date(), author: CalendarOperator = SYSTEM_CALENDAR_OPERATOR): CalendarEventRecord[] {
   const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
 
   return [
@@ -110,48 +187,53 @@ export function createSeedEvents(now = new Date()): CalendarEventRecord[] {
       'Morning shift handoff',
       addHours(base, 0),
       addHours(base, 1),
-      'Operations',
       {
         description: 'Review unresolved operator tasks and prepare the live queue.',
+        tags: ['ops', 'handoff'],
         location: 'Admin operations room',
       },
+      author,
     ),
-    createSeedEvent('booking-watch', 'Peak booking watch', addHours(base, 3), addHours(base, 5), 'Bookings', {
+    createSeedEvent('booking-watch', 'Peak booking watch', addHours(base, 3), addHours(base, 5), {
       description: 'Monitor supply response for midday reservations and customer-choice windows.',
+      tags: ['booking', 'live'],
       location: 'District cluster board',
-    }),
+    }, author),
     createSeedEvent(
       'partner-kyc',
       'Partner KYC review block',
       addDays(addHours(base, 28), 0),
       addDays(addHours(base, 30), 0),
-      'Partners',
       {
         description: 'Process queued identity reviews and marketplace readiness holds.',
+        tags: ['partner', 'kyc'],
         location: 'Compliance queue',
       },
+      author,
     ),
     createSeedEvent(
       'customer-health',
       'Customer support follow-up',
       addDays(addHours(base, 52), 0),
       addDays(addHours(base, 53), 0),
-      'Customers',
       {
         description: 'Audit recent complaints, reviews on hold, and wallet-support cases.',
+        tags: ['customer', 'support'],
         location: 'Support desk',
       },
+      author,
     ),
     createSeedEvent(
       'finance-close',
       'Weekly finance closeout',
       addDays(addHours(base, 76), 0),
       addDays(addHours(base, 78), 0),
-      'Finance',
       {
         description: 'Reconcile manual adjustments, refunds, and partner cash debt.',
+        tags: ['finance', 'closeout'],
         location: 'Finance workspace',
       },
+      author,
     ),
   ];
 }
@@ -186,9 +268,11 @@ export function createBlankDraft(date = new Date()): CalendarEventDraft {
     start: start.toISOString(),
     end: end.toISOString(),
     allDay: false,
-    category: 'Operations',
+    authorId: SYSTEM_CALENDAR_OPERATOR.id,
+    authorName: SYSTEM_CALENDAR_OPERATOR.name,
     description: '',
     location: '',
+    tags: [],
     url: '',
   };
 }
@@ -208,8 +292,8 @@ function createSeedEvent(
   title: string,
   start: Date,
   end: Date,
-  category: CalendarCategory,
-  options: { readonly description: string; readonly location: string },
+  options: { readonly description: string; readonly location: string; readonly tags: readonly string[] },
+  author: CalendarOperator,
 ): CalendarEventRecord {
   return {
     id,
@@ -217,9 +301,11 @@ function createSeedEvent(
     start: start.toISOString(),
     end: end.toISOString(),
     allDay: false,
-    category,
+    authorId: author.id,
+    authorName: author.name,
     description: options.description,
     location: options.location,
+    tags: uniqueTags(options.tags.map(normalizeTag).filter(Boolean)),
     url: '',
   };
 }
@@ -238,10 +324,6 @@ function addHours(date: Date, hours: number) {
   return result;
 }
 
-function isCalendarCategory(value: string | undefined): value is CalendarCategory {
-  return CALENDAR_CATEGORIES.includes(value as CalendarCategory);
-}
-
 function isSameDay(left: Date, right: Date) {
   return (
     left.getFullYear() === right.getFullYear() &&
@@ -249,6 +331,35 @@ function isSameDay(left: Date, right: Date) {
     left.getDate() === right.getDate()
   );
 }
+
+function normalizeCalendarTags(tags: readonly string[] | string | undefined, legacyCategory?: string) {
+  if (Array.isArray(tags)) {
+    return uniqueTags(tags.map(normalizeTag).filter(Boolean));
+  }
+
+  if (typeof tags === 'string') {
+    return parseCalendarTags(tags);
+  }
+
+  return legacyCategory ? parseCalendarTags(legacyCategory) : [];
+}
+
+function normalizeTag(tag: string) {
+  return tag
+    .trim()
+    .replace(/^#+/, '')
+    .replace(/[^\p{L}\p{N}_-]/gu, '')
+    .toLowerCase();
+}
+
+function uniqueTags(tags: readonly string[]) {
+  return [...new Set(tags)];
+}
+
+const SYSTEM_CALENDAR_OPERATOR: CalendarOperator = {
+  id: 'hands-system',
+  name: 'HANDS System',
+};
 
 function toIsoString(value: Date | number | readonly number[] | string | undefined | null) {
   if (!value) {
