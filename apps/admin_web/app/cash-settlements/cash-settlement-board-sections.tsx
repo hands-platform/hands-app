@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
 import type {
@@ -29,15 +30,14 @@ type WorkflowSectionsProps = {
 
 export function CashSettlementExecutionSection({ executionDesk, priorityBoardRows }: ExecutionSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Cash settlement execution desk</h2>
-          <p className="muted">
-            Operator-first view for clearing Partner cash-fee debt. It does not judge Partner quality; it only
-            shows what must be evidenced before final acceptance, service start, and payout release reopen.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Operator-first view for clearing Partner cash-fee debt. It does not judge Partner quality; it only shows what must be evidenced before final acceptance, service start, and payout release reopen."
+      resultLabel={`${priorityBoardRows.length} priority row(s)`}
+      resultTone={priorityBoardRows.length > 0 ? 'warning' : 'success'}
+      title="Cash settlement execution desk"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
           Audit evidence
         </Link>
@@ -56,22 +56,20 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
         </Link>
       </div>
       <CashSettlementPriorityBoardSection rows={priorityBoardRows} />
-    </section>
+    </AdminFilterPanel>
   );
 }
 
 export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleCards }: RulesSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Cash fee operating rules</h2>
-          <p className="muted">
-            Use this as the first read before finance calls a Partner or clears a wallet. The rule is factual:
-            cash fee debt gates final acceptance, service start, and payout release, not customer access or
-            account status.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Use this as the first read before finance calls a Partner or clears a wallet. The rule is factual: cash fee debt gates final acceptance, service start, and payout release, not customer access or account status."
+      resultLabel={`${settlementRuleCards.length} rule(s)`}
+      resultTone="info"
+      title="Cash fee operating rules"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/operations-policy?review=wallet">
           Wallet policy
         </Link>
@@ -96,7 +94,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
         ))}
       </div>
       <CommandCardGrid cards={settlementRuleCards} />
-    </section>
+    </AdminFilterPanel>
   );
 }
 
@@ -116,15 +114,14 @@ export function CashSettlementWorkflowSections({
         linkLabel="Review cash payments"
         title="Debt cause board"
       />
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Cash fee settlement workflow</h2>
-            <p className="muted">
-              Standard operating flow for reopening final acceptance, service start, and payout release after
-              cash-fee debt is paid or offset. This does not track blocked marketplace attempts.
-            </p>
-          </div>
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        description="Standard operating flow for reopening final acceptance, service start, and payout release after cash-fee debt is paid or offset. This does not track blocked marketplace attempts."
+        resultLabel={`${recoverySteps.length} step(s)`}
+        resultTone={recoverySteps.length > 0 ? 'warning' : 'success'}
+        title="Cash fee settlement workflow"
+      >
+        <div className="participant-list admin-mb-12">
           <Link className="text-link" href="/partner-controls?review=cash-debt">
             Open Partner controls
           </Link>
@@ -141,7 +138,7 @@ export function CashSettlementWorkflowSections({
             </div>
           ))}
         </div>
-      </div>
+      </AdminFilterPanel>
       <LinkedCardSection
         description="Follow a cash booking from customer payment evidence to Partner wallet reopening and payout release. Marketplace viewing attempts are not tracked; actual marketplace participants remain on the booking record."
         href="/bookings?view=cash-debt"
@@ -181,18 +178,20 @@ function CommandCardSection({
   readonly title: string;
 }) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description={description}
+      resultLabel={`${cards.length} item(s)`}
+      resultTone={cards.length > 0 ? 'warning' : 'success'}
+      title={title}
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href={href}>
           {linkLabel}
         </Link>
       </div>
       <CommandCardGrid cards={cards} />
-    </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -227,12 +226,14 @@ function LinkedCardSection({
   readonly title: string;
 }) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description={description}
+      resultLabel={`${items.length} item(s)`}
+      resultTone={items.length > 0 ? 'warning' : 'success'}
+      title={title}
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href={href}>
           {linkLabel}
         </Link>
@@ -249,6 +250,6 @@ function LinkedCardSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }

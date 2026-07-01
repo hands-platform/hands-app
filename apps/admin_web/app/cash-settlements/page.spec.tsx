@@ -78,6 +78,8 @@ describe('CashSettlementsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Server Trusted Cash Partner');
+    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
+    expect(markup).not.toContain('class="card admin-mb-16"');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });

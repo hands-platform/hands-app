@@ -37,7 +37,12 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
 
   return (
     <div className="admin-scroll-x admin-mt-12">
-      <AdminDataTable emptyMessage={null} headers={CASH_SETTLEMENT_PRIORITY_HEADERS} rowCount={rows.length}>
+      <AdminDataTable
+        className="vuexy-booking-table"
+        emptyMessage={null}
+        headers={CASH_SETTLEMENT_PRIORITY_HEADERS}
+        rowCount={rows.length}
+      >
         {rows.map((row) => (
           <tr key={`${row.bookingHref}-${row.priority}`}>
             <td>

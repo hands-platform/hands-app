@@ -16,7 +16,9 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(rendered).toContain('500.000 VND');
     expect(rendered).toContain('Confirm bank deposit reference');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-scroll-x admin-mt-12', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-scroll-x admin-mt-12', 'table vuexy-data-table vuexy-booking-table']),
+    );
   });
 
   it('renders empty state when there are no priority rows', () => {

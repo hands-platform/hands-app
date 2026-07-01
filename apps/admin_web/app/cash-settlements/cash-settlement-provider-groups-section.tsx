@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
 
@@ -8,15 +9,14 @@ type CashSettlementProviderGroupsSectionProps = {
 
 export function CashSettlementProviderGroupsSection({ providers }: CashSettlementProviderGroupsSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner wallet debt groups</h2>
-          <p className="muted">
-            Partner-level view for deciding whether to collect a direct deposit or approve an offset against later
-            positive earnings.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Partner-level view for deciding whether to collect a direct deposit or approve an offset against later positive earnings."
+      resultLabel={`${providers.length} partner(s)`}
+      resultTone={providers.length > 0 ? 'warning' : 'success'}
+      title="Partner wallet debt groups"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/partner-controls">
           Partner controls
         </Link>
@@ -46,6 +46,6 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
       ) : (
         <p className="muted">No Partner has open cash settlement debt.</p>
       )}
-    </div>
+    </AdminFilterPanel>
   );
 }
