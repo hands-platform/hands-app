@@ -1,5 +1,9 @@
-const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://127.0.0.1:3101';
-const rawSmokeArgs = process.argv.slice(2);
+import { loadMergedEnv } from './lib/env-file.mjs';
+
+const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
+const { env } = loadMergedEnv(envFile);
+const baseUrl = env.ADMIN_WEB_BASE_URL ?? 'http://127.0.0.1:3101';
+const rawSmokeArgs = process.argv.slice(2).filter((value) => !value.startsWith('--env='));
 const criticalSmokePaths = [
   '/',
   '/?details=all',
@@ -25,15 +29,19 @@ const budgetSmokePaths = [
   '/partners',
   '/reviews',
   '/notifications',
+  '/finance-tax/payment-clearing',
+  '/finance-tax/general-ledger',
+  '/finance-tax/bank-reconciliation',
   '/operations-policy',
   '/setup',
+  '/cash-settlements',
+  '/wallet-adjustments',
 ];
 const runCriticalSmoke =
-  rawSmokeArgs.includes('--critical') || process.env.ADMIN_WEB_SMOKE_MODE === 'critical';
+  rawSmokeArgs.includes('--critical') || env.ADMIN_WEB_SMOKE_MODE === 'critical';
 const runBudgetSmoke =
-  rawSmokeArgs.includes('--budget') || process.env.ADMIN_WEB_SMOKE_MODE === 'budget';
-const requestedSmokeArgs = process.argv
-  .slice(2)
+  rawSmokeArgs.includes('--budget') || env.ADMIN_WEB_SMOKE_MODE === 'budget';
+const requestedSmokeArgs = rawSmokeArgs
   .filter((value) => value !== '--critical' && value !== '--budget')
   .flatMap((value) => value.split(','))
   .map((path) => path.trim())
@@ -518,6 +526,38 @@ const pages = [
     ],
   },
   {
+    path: '/finance-tax/payment-clearing',
+    markers: [
+      'Booking Payment Clearing',
+      'Payment clearing filters',
+      'Payment clearing rows',
+      'Payment',
+      'Clearing type',
+      'Status',
+    ],
+  },
+  {
+    path: '/finance-tax/general-ledger',
+    markers: [
+      'General Ledger',
+      'General ledger filters',
+      'Journal batches',
+      'Debit / Credit',
+      'Status',
+    ],
+  },
+  {
+    path: '/finance-tax/bank-reconciliation',
+    markers: [
+      'Bank Reconciliation',
+      'Bank reconciliation filters',
+      'Manual bank transaction import',
+      'Company bank transactions',
+      'Transaction',
+      'Match',
+    ],
+  },
+  {
     path: '/finance-closeout',
     markers: [
       'Finance Closeout',
@@ -547,6 +587,16 @@ const pages = [
       'Earnings date range',
       'Money flow command center',
       'Earning batch state filters',
+    ],
+  },
+  {
+    path: '/wallet-adjustments',
+    markers: [
+      'Wallet Adjustments',
+      'Manual adjustment request',
+      'Manual adjustment history',
+      'Accounting preview',
+      'Owner profile id',
     ],
   },
   {
@@ -870,7 +920,7 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
 
-const explicitSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
+const explicitSmokePaths = ((env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
   .split(',')
   .map((path) => path.trim())
   .filter(Boolean);
@@ -888,12 +938,13 @@ const smokePages =
     : requestedSmokePaths.length > 0
       ? pages.filter((page) => requestedSmokePaths.includes(page.path))
       : pages;
-const FETCH_TIMEOUT_MS = Number(process.env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
-const ROUTE_BUDGET_WARN_MS = Number(process.env.ADMIN_WEB_SMOKE_WARN_MS ?? 5_000);
-const ROUTE_BUDGET_WARN_BYTES = Number(process.env.ADMIN_WEB_SMOKE_WARN_BYTES ?? 2_000_000);
-const ENFORCE_ROUTE_BUDGET = process.env.ADMIN_WEB_SMOKE_ENFORCE_BUDGET === '1';
+const FETCH_TIMEOUT_MS = Number(env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
+const ROUTE_BUDGET_WARN_MS = Number(env.ADMIN_WEB_SMOKE_WARN_MS ?? 5_000);
+const ROUTE_BUDGET_WARN_BYTES = Number(env.ADMIN_WEB_SMOKE_WARN_BYTES ?? 2_000_000);
+const ENFORCE_ROUTE_BUDGET = env.ADMIN_WEB_SMOKE_ENFORCE_BUDGET === '1';
 const pageBodies = new Map();
 const routeMetrics = [];
+const smokeCookieHeader = await loadSmokeCookieHeader();
 
 if (!runBudgetSmoke && requestedSmokePaths.length > 0 && smokePages.length === 0) {
   throw new Error(`No admin smoke pages matched ADMIN_WEB_SMOKE_PATHS=${requestedSmokePaths.join(',')}`);
@@ -905,6 +956,7 @@ async function fetchPage(path, redirectDepth = 0, attempt = 0) {
   let body;
   try {
     response = await fetch(`${baseUrl}${path}`, {
+      headers: smokeCookieHeader ? { cookie: smokeCookieHeader } : undefined,
       redirect: 'manual',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -932,6 +984,43 @@ async function fetchPage(path, redirectDepth = 0, attempt = 0) {
     throw new Error(`${path} returned ${response.status}: ${body.slice(0, 240)}`);
   }
   return body;
+}
+
+async function loadSmokeCookieHeader() {
+  if (env.ADMIN_WEB_SMOKE_COOKIE?.trim()) {
+    return env.ADMIN_WEB_SMOKE_COOKIE.trim();
+  }
+
+  const email = env.ADMIN_WEB_LOGIN_EMAIL?.trim();
+  const password = env.ADMIN_WEB_LOGIN_PASSWORD;
+  if (!email || !password) {
+    return null;
+  }
+
+  const response = await fetch(`${baseUrl}/api/admin/session/login`, {
+    body: JSON.stringify({ email, password }),
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    method: 'POST',
+    redirect: 'manual',
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Admin web smoke login failed with ${response.status}: ${body.slice(0, 160)}`);
+  }
+
+  const setCookie = response.headers.get('set-cookie');
+  const sessionCookie = setCookie?.split(';')[0]?.trim();
+  if (!sessionCookie) {
+    throw new Error('Admin web smoke login did not return a session cookie.');
+  }
+
+  console.log('Admin web smoke session acquired.');
+  return sessionCookie;
 }
 
 function delay(ms) {
@@ -1001,7 +1090,8 @@ function assertNoLegacyVisibleLanguage(path, body) {
   ];
   const violations = bannedPatterns
     .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))
-    .filter((rule) => rule.match);
+    .filter((rule) => rule.match)
+    .filter((rule) => !isAllowedVisibleLanguageViolation(path, rule.label, rule.match?.[0] ?? ''));
   if (violations.length > 0) {
     throw new Error(
       `${path} contains visible banned operator wording: ${violations
@@ -1009,6 +1099,11 @@ function assertNoLegacyVisibleLanguage(path, body) {
         .join(', ')}`,
     );
   }
+}
+
+function isAllowedVisibleLanguageViolation(path, label, match) {
+  // Wallet adjustment uses Penalty as a finance/accounting adjustment type, not as partner scoring copy.
+  return path.startsWith('/wallet-adjustments') && label === 'people scoring wording' && /^penalty$/i.test(match);
 }
 
 for (const page of smokePages) {
