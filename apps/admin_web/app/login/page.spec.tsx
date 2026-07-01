@@ -8,10 +8,13 @@ describe('LoginPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Welcome to HANDS Admin');
     expect(markup).toContain('action="/api/admin/session/login?redirectTo=%2Fbookings%3Fview%3Dmatching"');
     expect(markup).toContain('name="email"');
     expect(markup).toContain('name="password"');
+    expect(markup).not.toContain('Review bookings, Partners, finance approvals, notifications, and audit evidence');
+    expect(markup).not.toContain('Welcome to HANDS Admin');
+    expect(markup).not.toContain('Sign in to continue to the operations console.');
+    expect(markup).not.toContain('Master and operator access is controlled by HANDS admin policy.');
     expect(markup).not.toContain('ADMIN_ACCESS_TOKEN');
     expect(markup).not.toContain('ADMIN_WEB_SESSION_COOKIE_SECRET');
   });
@@ -25,7 +28,7 @@ describe('LoginPage', () => {
     expect(markup).toContain('admin-auth-page');
     expect(markup).toContain('admin-auth-visual');
     expect(markup).toContain('admin-auth-card');
-    expect(markup).toContain('Welcome to HANDS Admin');
+    expect(markup).not.toContain('Welcome to HANDS Admin');
     expect(markup).toContain('Sign in failed. Check your admin credentials and try again.');
     expect(markup).toContain('action="/api/admin/session/login?redirectTo=%2Fvietnam-overview"');
     expect(markup).not.toContain('card admin-filter-panel');

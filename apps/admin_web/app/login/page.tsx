@@ -16,10 +16,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="admin-auth-visual-copy">
           <span>HANDS Operations</span>
           <h1>Command center access for trusted operators</h1>
-          <p>
-            Review bookings, Partners, finance approvals, notifications, and audit evidence from one protected
-            workspace.
-          </p>
         </div>
         <div className="admin-auth-illustration" aria-hidden="true" />
       </section>
@@ -28,10 +24,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="admin-auth-brand">
           <strong>HANDS Admin</strong>
           <span>Secure operator workspace</span>
-        </div>
-        <div className="admin-auth-heading">
-          <h1>Welcome to HANDS Admin</h1>
-          <p className="muted">Sign in to continue to the operations console.</p>
         </div>
         {params?.error ? (
           <p className="form-error admin-auth-error" role="alert">
@@ -50,9 +42,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <button className="button button-primary admin-auth-submit" type="submit">
             Sign in
           </button>
-          <p className="muted admin-auth-footnote">
-            Master and operator access is controlled by HANDS admin policy. Do not share credentials.
-          </p>
         </form>
       </section>
     </main>
