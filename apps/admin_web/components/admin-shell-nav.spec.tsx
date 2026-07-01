@@ -46,6 +46,13 @@ describe('admin shell navigation', () => {
     expect(html).toContain('href="/partners"');
     expect(html).toContain('Partner Referrals');
     expect(html).toContain('Admin Operators');
+    expect(html).toContain('lucide-calendar-clock');
+    expect(html).toContain('lucide-users-round');
+    expect(html).toContain('lucide-heart-handshake');
+    expect(html).toContain('lucide-landmark');
+    expect(html).toContain('lucide-credit-card');
+    expect(html).toContain('lucide-send');
+    expect(html).toContain('lucide-user-round-cog');
   });
 
   it('shows a section badge only when an operation count needs review', () => {
@@ -76,6 +83,9 @@ describe('admin shell navigation', () => {
     expect(html).toContain('Vietnam Operations');
     expect(html).toContain('Live Workspace');
     expect(html).toContain('action="/api/admin/session/logout"');
-    expect(html).toContain('Sign out');
+    expect(html).toContain('aria-label="Sign out"');
+    expect(html).toContain('title="Sign out"');
+    expect(html).toContain('lucide-log-out');
+    expect(html).not.toContain('<span>Sign out</span>');
   });
 });

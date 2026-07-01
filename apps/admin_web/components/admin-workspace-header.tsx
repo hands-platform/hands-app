@@ -196,9 +196,8 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           Live Workspace
         </span>
         <form action="/api/admin/session/logout" method="post">
-          <button className="topbar-icon-chip topbar-icon-button" aria-label="Sign out" type="submit">
+          <button className="topbar-icon-chip topbar-icon-button" aria-label="Sign out" title="Sign out" type="submit">
             <LogOut aria-hidden="true" size={18} />
-            <span>Sign out</span>
           </button>
         </form>
       </div>
