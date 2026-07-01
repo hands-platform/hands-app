@@ -83,6 +83,7 @@ describe('CashSettlementsPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
     expect(markup).toContain('Open full operations view');
     expect(markup).toContain('/cash-settlements?view=full');
+    expect(markup).not.toContain('Cash settlement execution desk');
     expect(markup).not.toContain('Cash fee operating rules');
     expect(markup).not.toContain('Cash fee settlement workflow');
     expect(markup).not.toContain('Partner wallet debt groups');
@@ -116,6 +117,7 @@ describe('CashSettlementsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('Cash settlement execution desk');
     expect(markup).toContain('Cash fee operating rules');
     expect(markup).toContain('Cash fee settlement workflow');
     expect(markup).toContain('Partner wallet debt groups');

@@ -166,12 +166,12 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         visibleRowCount={rows.length}
         totalRowCount={summary.rowCount}
       />
-      <CashSettlementExecutionSection
-        executionDesk={buildCashSettlementExecutionDesk(rows, providers, summary)}
-        priorityBoardRows={buildCashSettlementPriorityBoardRows(priorityBoard)}
-      />
       {showFullOperationsView ? (
         <>
+          <CashSettlementExecutionSection
+            executionDesk={buildCashSettlementExecutionDesk(rows, providers, summary)}
+            priorityBoardRows={buildCashSettlementPriorityBoardRows(priorityBoard)}
+          />
           <CashSettlementRulesSection
             appliedPolicyCards={buildAppliedCashSettlementPolicyCards(liveOperationsPolicy)}
             settlementRuleCards={buildCashSettlementRuleCards(summary)}
