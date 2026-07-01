@@ -889,8 +889,22 @@ const adminAuditLogSelect = {
   target: true,
   metadata: true,
   createdAt: true,
-  actor: { select: { id: true, phone: true, fullName: true } },
+  actor: { select: { id: true, email: true, phone: true, fullName: true } },
 } satisfies Prisma.AdminAuditLogSelect;
+
+const adminOperatorAccessSelect = {
+  id: true,
+  email: true,
+  phone: true,
+  fullName: true,
+  roles: true,
+  adminOperatorPermission: {
+    select: {
+      categories: true,
+      updatedAt: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
 
 const adminBookingMarketplaceProviderSelect = {
   id: true,
@@ -1065,6 +1079,7 @@ const adminPartnerReferralParentSelect = {
 } satisfies Prisma.ProviderProfileSelect;
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+type AdminOperatorAccessSummary = Prisma.UserGetPayload<{ select: typeof adminOperatorAccessSelect }>;
 const ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT = 40;
 const ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT = 20;
@@ -1338,6 +1353,7 @@ type AdminAuditLogSummaryRow = {
   metadata: Prisma.JsonValue | null;
   createdAt: Date;
   actorId: string;
+  actorEmail: string | null;
   actorPhone: string;
   actorFullName: string | null;
 };
@@ -1541,6 +1557,63 @@ export class AdminService {
       ...(skip > 0 ? { skip } : {}),
       take: adminUserListTake(options.take),
       select: adminUserListSelect,
+    });
+  }
+
+  async getAdminOperatorAccess(actorId: string, identity?: string) {
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, identity);
+    if (!operator) {
+      return null;
+    }
+
+    return adminOperatorAccessView(operator);
+  }
+
+  async recordAdminOperatorActivity(
+    actorId: string,
+    input: { action?: string; operatorIdentity?: string; target?: string; metadata?: unknown },
+  ) {
+    const action = normalizeNullable(input.action);
+    const target = normalizeNullable(input.target);
+    if (!action) {
+      throw new BadRequestException('Admin operator activity action is required');
+    }
+    if (!target) {
+      throw new BadRequestException('Admin operator activity target is required');
+    }
+
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, input.operatorIdentity);
+    const operatorIdentity = normalizeNullable(input.operatorIdentity);
+    const auditLog = await this.prisma.adminAuditLog.create({
+      data: {
+        actorId: operator?.id ?? actorId,
+        action,
+        target,
+        metadata: {
+          ...adminOperatorActivityMetadata(input.metadata),
+          ...(operatorIdentity ? { operatorIdentity } : {}),
+          requestedByAdminId: actorId,
+        },
+      },
+    });
+
+    return { ok: true, auditLog };
+  }
+
+  private findAdminOperatorForIdentity(
+    db: Pick<Prisma.TransactionClient, 'user'>,
+    actorId: string,
+    identity?: string | null,
+  ) {
+    const normalizedIdentity = normalizeNullable(identity);
+    const lookup = normalizedIdentity ?? actorId;
+
+    return db.user.findFirst({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [{ id: lookup }, { email: lookup }, { phone: lookup }],
+      },
+      select: adminOperatorAccessSelect,
     });
   }
 
@@ -9244,6 +9317,7 @@ export class AdminService {
           logs."metadata",
           logs."createdAt",
           actor."id" AS "actorId",
+          actor."email" AS "actorEmail",
           actor."phone" AS "actorPhone",
           actor."fullName" AS "actorFullName",
           ROW_NUMBER() OVER (PARTITION BY logs."target" ORDER BY logs."createdAt" DESC) AS "targetRank"
@@ -9258,6 +9332,7 @@ export class AdminService {
         "metadata",
         "createdAt",
         "actorId",
+        "actorEmail",
         "actorPhone",
         "actorFullName"
       FROM ranked_logs
@@ -9274,6 +9349,7 @@ export class AdminService {
       createdAt: row.createdAt,
       actor: {
         id: row.actorId,
+        email: row.actorEmail,
         phone: row.actorPhone,
         fullName: row.actorFullName,
       },
@@ -10335,6 +10411,8 @@ function adminAuditLogWhere(options: AdminAuditLogListOptions): Prisma.AdminAudi
       OR: [
         { action: { contains: q, mode: 'insensitive' } },
         { target: { contains: q, mode: 'insensitive' } },
+        { actor: { id: { contains: q, mode: 'insensitive' } } },
+        { actor: { email: { contains: q, mode: 'insensitive' } } },
         { actor: { fullName: { contains: q, mode: 'insensitive' } } },
         { actor: { phone: { contains: q, mode: 'insensitive' } } },
       ],
@@ -10423,6 +10501,9 @@ function adminAuditLogActionPriority(action: string) {
     return 4;
   }
   if (action.startsWith('payment.') || action.startsWith('refund.')) {
+    return 3;
+  }
+  if (action === 'admin_web.access_denied' || action === 'admin_web.action_denied') {
     return 3;
   }
   if (action.startsWith('booking.') || action.startsWith('notification.')) {
@@ -10543,6 +10624,8 @@ function adminAuditLogBucketWhere(bucket: string | null): Prisma.AdminAuditLogWh
       return {
         OR: [{ action: { startsWith: 'notification.' } }, { action: { startsWith: 'push_device.' } }],
       };
+    case 'Admin Web':
+      return { action: { startsWith: 'admin_web.' } };
     case 'Partner':
       return {
         OR: [
@@ -10574,6 +10657,7 @@ function adminAuditLogBucketWhere(bucket: string | null): Prisma.AdminAuditLogWh
             { action: { startsWith: 'notification.' } },
             { action: { startsWith: 'push_device.' } },
             { action: { startsWith: 'tax_' } },
+            { action: { startsWith: 'admin_web.' } },
           ],
         },
       };
@@ -12023,6 +12107,29 @@ function normalizeAdminOperatorRoles(requestedRoles: readonly Role[] | undefined
 
 function isAdminOperatorRole(role: Role) {
   return ADMIN_OPERATOR_ROLES.includes(role as (typeof ADMIN_OPERATOR_ROLES)[number]);
+}
+
+function adminOperatorAccessView(operator: AdminOperatorAccessSummary) {
+  return {
+    id: operator.id,
+    email: operator.email,
+    phone: operator.phone,
+    fullName: operator.fullName,
+    roles: operator.roles,
+    categories: operator.adminOperatorPermission?.categories ?? defaultAdminOperatorPermissionCategories(operator.roles),
+    updatedAt: operator.adminOperatorPermission?.updatedAt.toISOString() ?? null,
+  };
+}
+
+function adminOperatorActivityMetadata(metadata: unknown): Prisma.InputJsonObject {
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return metadata as Prisma.InputJsonObject;
+  }
+  if (metadata === undefined) {
+    return {};
+  }
+
+  return { value: metadata as Prisma.InputJsonValue };
 }
 
 function normalizeAdminOperatorPermissionCategories(

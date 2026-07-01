@@ -23,52 +23,85 @@ vi.mock('./actions', () => ({
 
 describe('AdminOperatorsPage', () => {
   beforeEach(() => {
-    mockedAdminGet.mockResolvedValue([
-      {
-        id: 'master-admin-1',
-        roles: ['ADMIN', 'FINANCE_APPROVER'],
-        adminOperatorPermission: {
-          id: 'permission-1',
-          categories: ['BOOKINGS', 'FINANCE', 'SYSTEM'],
-          updatedAt: '2026-06-30T09:00:00.000Z',
-        },
-        fullName: 'Master Admin',
-        email: 'master@hands.vn',
-        phone: '+84900000001',
-        appSessions: [
+    mockedAdminGet.mockImplementation(async (path) => {
+      if (String(path).startsWith('/admin/audit-logs')) {
+        return [
           {
-            id: 'session-1',
-            role: 'ADMIN',
-            deviceId: 'web-session',
-            active: true,
-            platform: 'WEB',
-            lastSeenAt: '2026-06-30T09:00:00.000Z',
+            id: 'audit-1',
+            action: 'admin_web.page_view',
+            target: '/bookings',
+            metadata: { category: 'BOOKINGS' },
+            createdAt: '2026-06-30T09:30:00.000Z',
+            actor: {
+              id: 'ops-admin-1',
+              email: 'ops@hands.vn',
+              phone: '+84900000002',
+              fullName: 'Booking Operator',
+            },
           },
-        ],
-        pushDevices: [],
-      },
-      {
-        id: 'ops-admin-1',
-        roles: ['ADMIN'],
-        adminOperatorPermission: {
-          id: 'permission-2',
-          categories: ['BOOKINGS', 'CUSTOMERS', 'PARTNERS'],
-          updatedAt: '2026-06-30T09:00:00.000Z',
+          {
+            id: 'audit-2',
+            action: 'admin_web.action_denied',
+            target: 'POST /admin/manual-wallet-adjustments',
+            metadata: { category: 'FINANCE', status: 403 },
+            createdAt: '2026-06-30T09:35:00.000Z',
+            actor: {
+              id: 'ops-admin-1',
+              email: 'ops@hands.vn',
+              phone: '+84900000002',
+              fullName: 'Booking Operator',
+            },
+          },
+        ] as never;
+      }
+
+      return [
+        {
+          id: 'master-admin-1',
+          roles: ['ADMIN', 'FINANCE_APPROVER'],
+          adminOperatorPermission: {
+            id: 'permission-1',
+            categories: ['BOOKINGS', 'FINANCE', 'SYSTEM'],
+            updatedAt: '2026-06-30T09:00:00.000Z',
+          },
+          fullName: 'Master Admin',
+          email: 'master@hands.vn',
+          phone: '+84900000001',
+          appSessions: [
+            {
+              id: 'session-1',
+              role: 'ADMIN',
+              deviceId: 'web-session',
+              active: true,
+              platform: 'WEB',
+              lastSeenAt: '2026-06-30T09:00:00.000Z',
+            },
+          ],
+          pushDevices: [],
         },
-        fullName: 'Booking Operator',
-        phone: '+84900000002',
-        appSessions: [],
-        pushDevices: [],
-      },
-      {
-        id: 'customer-user-1',
-        roles: ['CUSTOMER'],
-        fullName: 'Customer User',
-        phone: '+84900000003',
-        appSessions: [],
-        pushDevices: [],
-      },
-    ]);
+        {
+          id: 'ops-admin-1',
+          roles: ['ADMIN'],
+          adminOperatorPermission: {
+            id: 'permission-2',
+            categories: ['BOOKINGS', 'CUSTOMERS', 'PARTNERS'],
+            updatedAt: '2026-06-30T09:00:00.000Z',
+          },
+          fullName: 'Booking Operator',
+          phone: '+84900000002',
+          appSessions: [],
+          pushDevices: [],
+        },
+        {
+          id: 'customer-user-1',
+          roles: ['CUSTOMER'],
+          fullName: 'Customer User',
+          phone: '+84900000003',
+          appSessions: [],
+          pushDevices: [],
+        },
+      ] as never;
+    });
   });
 
   it('renders a master admin workspace from the bounded admin users API', async () => {
@@ -76,6 +109,7 @@ describe('AdminOperatorsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/audit-logs?bucket=Admin%20Web&take=30', []);
     expect(markup).toContain('Admin Operators');
     expect(markup).toContain('Master admin control');
     expect(markup).toContain('Add operator');
@@ -90,6 +124,11 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('Save permissions');
+    expect(markup).toContain('Operator activity log');
+    expect(markup).toContain('page view');
+    expect(markup).toContain('action denied');
+    expect(markup).toContain('/bookings');
+    expect(markup).toContain('POST /admin/manual-wallet-adjustments');
     expect(markup).not.toContain('API required');
   });
 });

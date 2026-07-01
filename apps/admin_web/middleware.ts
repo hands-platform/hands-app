@@ -8,13 +8,14 @@ const NO_STORE_HEADERS = {
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const requestHeaders = requestHeadersWithAdminPathname(request, pathname);
 
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   if (await hasValidAdminWebSession(request)) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   if (isBrowserFacingApi(pathname)) {
@@ -108,6 +109,12 @@ function isBrowserFacingApi(pathname: string) {
   }
 
   return false;
+}
+
+function requestHeadersWithAdminPathname(request: NextRequest, pathname: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-admin-pathname', pathname);
+  return requestHeaders;
 }
 
 function constantTimeStringEqual(left: string, right: string) {

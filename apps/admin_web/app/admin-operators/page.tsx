@@ -1,4 +1,4 @@
-import type { AdminUser } from '../../lib/admin-api';
+import type { AdminAuditLog, AdminUser } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
@@ -65,7 +65,10 @@ type AdminOperatorsPageProps = {
 
 export default async function AdminOperatorsPage({ searchParams }: AdminOperatorsPageProps) {
   const params = searchParams ? await searchParams : {};
-  const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
+  const [users, operatorActivityLogs] = await Promise.all([
+    adminGet<AdminUser[]>('/admin/users?take=100', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs?bucket=Admin%20Web&take=30', []),
+  ]);
   const adminUsers = users.filter((user) => user.roles.includes(ADMIN_ROLE));
   const masterAdminCount = adminUsers.filter((user) => user.roles.includes(MASTER_ADMIN_ROLE)).length;
   const financeApproverCount = adminUsers.filter((user) => user.roles.includes(FINANCE_APPROVER_ROLE)).length;
@@ -166,6 +169,40 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             </article>
           ))}
         </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Recent Admin Web page visits and server actions are stored in the shared audit log by resolved operator identity."
+        resultLabel={`${operatorActivityLogs.length} recent action(s)`}
+        resultTone="info"
+        title="Operator activity log"
+      >
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table admin-operator-table"
+            emptyMessage="No Admin Web operator activity has been recorded yet."
+            headers={['Operator', 'Activity', 'Target', 'Time']}
+            rowCount={operatorActivityLogs.length}
+          >
+            {operatorActivityLogs.map((log) => (
+              <tr key={log.id}>
+                <td>
+                  <strong>{log.actor?.fullName ?? log.actor?.email ?? log.actor?.phone ?? log.actor?.id ?? 'Admin'}</strong>
+                  <div className="muted">{log.actor?.email ?? log.actor?.phone ?? log.actor?.id ?? 'Unknown operator'}</div>
+                </td>
+                <td>
+                  <strong>{operatorActivityLabel(log.action)}</strong>
+                  <div className="muted">{operatorActivityMetadataLabel(log.metadata)}</div>
+                </td>
+                <td>
+                  <span className="muted">{log.target}</span>
+                </td>
+                <td>{formatDateTime(log.createdAt)}</td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -332,4 +369,22 @@ function operatorRolePillClassName(role: string) {
     return 'pill pill-success';
   }
   return 'pill pill-neutral';
+}
+
+function operatorActivityLabel(action: string) {
+  return action.replace(/^admin_web\./u, '').replace(/_/gu, ' ');
+}
+
+function operatorActivityMetadataLabel(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return 'No metadata';
+  }
+
+  const record = metadata as Record<string, unknown>;
+  const parts = [
+    typeof record.category === 'string' ? record.category : null,
+    typeof record.status === 'number' ? `HTTP ${record.status}` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(' · ') : 'No metadata';
 }

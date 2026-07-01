@@ -1,0 +1,57 @@
+import { headers } from 'next/headers';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+
+import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';
+
+const PUBLIC_PATH_PREFIXES = ['/api/', '/files/', '/login', '/r/'];
+
+export async function AdminOperatorAccessGate({ children }: { readonly children: ReactNode }) {
+  const pathname = await currentRequestPathname();
+  if (!pathname || isPublicPath(pathname)) {
+    return <>{children}</>;
+  }
+
+  const access = await getAdminOperatorPageAccess(pathname);
+  if (access.allowed) {
+    return <>{children}</>;
+  }
+
+  return (
+    <main className="admin-content admin-operator-access-denied-shell">
+      <section className="card admin-filter-panel admin-operator-access-denied-card">
+        <div className="admin-filter-panel-header">
+          <div>
+            <p className="admin-section-eyebrow">Operator access</p>
+            <h1>Access restricted</h1>
+            <p className="muted">
+              This operator does not have {access.category.toLowerCase()} category access. Ask a Master Admin to grant
+              the matching category before opening this page.
+            </p>
+          </div>
+          <span className="pill pill-danger">{access.category}</span>
+        </div>
+        <div className="admin-empty-state">
+          <strong>Page content is hidden.</strong>
+          <p className="muted">The denied page visit was recorded in the operator audit log.</p>
+          <Link className="button button-secondary" href="/">
+            Back to command center
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+async function currentRequestPathname() {
+  try {
+    const headerList = await headers();
+    return headerList.get('x-admin-pathname');
+  } catch {
+    return null;
+  }
+}
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+}

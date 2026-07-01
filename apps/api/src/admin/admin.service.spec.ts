@@ -89,6 +89,123 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('resolves admin operator access by session identity', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'operator-1',
+          email: 'operator@hands.vn',
+          fullName: 'Operator One',
+          phone: '+84900000001',
+          roles: [Role.ADMIN],
+          adminOperatorPermission: {
+            categories: [
+              AdminOperatorPermissionCategory.BOOKINGS,
+              AdminOperatorPermissionCategory.CUSTOMERS,
+            ],
+            updatedAt: new Date('2026-07-01T01:00:00.000Z'),
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getAdminOperatorAccess('admin-token-user', 'operator@hands.vn')).resolves.toEqual({
+      categories: [
+        AdminOperatorPermissionCategory.BOOKINGS,
+        AdminOperatorPermissionCategory.CUSTOMERS,
+      ],
+      email: 'operator@hands.vn',
+      fullName: 'Operator One',
+      id: 'operator-1',
+      phone: '+84900000001',
+      roles: [Role.ADMIN],
+      updatedAt: '2026-07-01T01:00:00.000Z',
+    });
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [{ id: 'operator@hands.vn' }, { email: 'operator@hands.vn' }, { phone: 'operator@hands.vn' }],
+      },
+      select: expect.any(Object),
+    });
+  });
+
+  it('falls back to role defaults when an existing master admin has no category row yet', async () => {
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'master-admin-1',
+          email: 'master@hands.vn',
+          fullName: 'Master Admin',
+          phone: '+84900000009',
+          roles: [Role.ADMIN, Role.MASTER_ADMIN],
+          adminOperatorPermission: null,
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getAdminOperatorAccess('admin-token-user', 'master@hands.vn')).resolves.toMatchObject({
+      categories: [
+        AdminOperatorPermissionCategory.BOOKINGS,
+        AdminOperatorPermissionCategory.CUSTOMERS,
+        AdminOperatorPermissionCategory.PARTNERS,
+        AdminOperatorPermissionCategory.FINANCE,
+        AdminOperatorPermissionCategory.NOTIFICATIONS,
+        AdminOperatorPermissionCategory.SYSTEM,
+      ],
+      email: 'master@hands.vn',
+      id: 'master-admin-1',
+      updatedAt: null,
+    });
+  });
+
+  it('records admin web activity against the resolved operator identity', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'operator-1',
+          email: 'operator@hands.vn',
+          fullName: 'Operator One',
+          phone: '+84900000001',
+          roles: [Role.ADMIN],
+          adminOperatorPermission: {
+            categories: [AdminOperatorPermissionCategory.SYSTEM],
+            updatedAt: new Date('2026-07-01T01:00:00.000Z'),
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.recordAdminOperatorActivity('admin-token-user', {
+        action: 'admin_web.page_view',
+        operatorIdentity: 'operator@hands.vn',
+        target: 'admin_page:/admin-operators',
+        metadata: { category: 'SYSTEM' },
+      }),
+    ).resolves.toEqual({ auditLog: { id: 'audit-1' }, ok: true });
+
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'admin_web.page_view',
+        actorId: 'operator-1',
+        metadata: {
+          category: 'SYSTEM',
+          operatorIdentity: 'operator@hands.vn',
+          requestedByAdminId: 'admin-token-user',
+        },
+        target: 'admin_page:/admin-operators',
+      },
+    });
+  });
+
   it('applies admin user list pagination when requested by dashboard diagnostics', async () => {
     const prisma = {
       user: {
@@ -1044,6 +1161,8 @@ describe('AdminService query orchestration', () => {
             OR: [
               { action: { contains: 'booking-1', mode: 'insensitive' } },
               { target: { contains: 'booking-1', mode: 'insensitive' } },
+              { actor: { id: { contains: 'booking-1', mode: 'insensitive' } } },
+              { actor: { email: { contains: 'booking-1', mode: 'insensitive' } } },
               { actor: { fullName: { contains: 'booking-1', mode: 'insensitive' } } },
               { actor: { phone: { contains: 'booking-1', mode: 'insensitive' } } },
             ],

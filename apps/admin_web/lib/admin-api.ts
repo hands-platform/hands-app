@@ -1,3 +1,12 @@
+import { headers } from 'next/headers';
+
+import { getAdminWebSession } from './admin-session';
+import {
+  adminOperatorCategoryForAdminApiPath,
+  hasAdminOperatorCategory,
+  type AdminOperatorPermissionCategory,
+} from './admin-operator-access-model';
+
 const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
 const ADMIN_TOKEN_REFRESH_SKEW_MS = 60_000;
 
@@ -121,6 +130,16 @@ export type AdminUser = {
       response?: unknown;
     }>;
   }>;
+};
+
+export type AdminOperatorAccess = {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  fullName?: string | null;
+  roles: string[];
+  categories: string[];
+  updatedAt?: string | null;
 };
 
 export type AdminReferralPolicy = {
@@ -2441,7 +2460,7 @@ export type AdminAuditLog = {
   target: string;
   metadata?: unknown;
   createdAt: string;
-  actor?: { phone?: string; fullName?: string | null };
+  actor?: { id?: string; email?: string | null; phone?: string; fullName?: string | null };
 };
 
 export type AdminOperationalPolicySetting = {
@@ -2737,6 +2756,11 @@ export async function adminGet<T>(path: string, fallback: T): Promise<T> {
 
 export async function adminPost<T>(path: string, body: unknown, fallback: T): Promise<T> {
   try {
+    const operatorContext = await verifyAdminOperatorWriteAccess('POST', path, 'fallback');
+    if (operatorContext.denied) {
+      return fallback;
+    }
+
     const token = await getAdminAccessToken();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
@@ -2749,7 +2773,18 @@ export async function adminPost<T>(path: string, body: unknown, fallback: T): Pr
     });
 
     if (!response.ok) {
+      await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action_failed', `POST ${path}`, {
+        category: operatorContext.category,
+        status: response.status,
+      });
       return fallback;
+    }
+
+    if (path !== '/admin/operator-activity') {
+      await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action', `POST ${path}`, {
+        category: operatorContext.category,
+        status: response.status,
+      });
     }
 
     return (await response.json()) as T;
@@ -2776,6 +2811,11 @@ export async function adminDeleteWithBodyOrThrow<T>(path: string, body: unknown)
 
 export async function adminPatch<T>(path: string, body: unknown, fallback: T): Promise<T> {
   try {
+    const operatorContext = await verifyAdminOperatorWriteAccess('PATCH', path, 'fallback');
+    if (operatorContext.denied) {
+      return fallback;
+    }
+
     const token = await getAdminAccessToken();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'PATCH',
@@ -2788,8 +2828,17 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
     });
 
     if (!response.ok) {
+      await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action_failed', `PATCH ${path}`, {
+        category: operatorContext.category,
+        status: response.status,
+      });
       return fallback;
     }
+
+    await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action', `PATCH ${path}`, {
+      category: operatorContext.category,
+      status: response.status,
+    });
 
     return (await response.json()) as T;
   } catch {
@@ -2799,6 +2848,11 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
 
 export async function adminDelete<T>(path: string, fallback: T): Promise<T> {
   try {
+    const operatorContext = await verifyAdminOperatorWriteAccess('DELETE', path, 'fallback');
+    if (operatorContext.denied) {
+      return fallback;
+    }
+
     const token = await getAdminAccessToken();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'DELETE',
@@ -2809,8 +2863,17 @@ export async function adminDelete<T>(path: string, fallback: T): Promise<T> {
     });
 
     if (!response.ok) {
+      await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action_failed', `DELETE ${path}`, {
+        category: operatorContext.category,
+        status: response.status,
+      });
       return fallback;
     }
+
+    await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action', `DELETE ${path}`, {
+      category: operatorContext.category,
+      status: response.status,
+    });
 
     return (await response.json()) as T;
   } catch {
@@ -2849,6 +2912,9 @@ export class AdminApiRequestError extends Error {
 }
 
 export function isAdminApiAuthError(error: unknown) {
+  if (error instanceof AdminOperatorAccessDeniedError) {
+    return true;
+  }
   if (error instanceof AdminApiRequestError) {
     return error.status === 401 || error.status === 403;
   }
@@ -2856,11 +2922,20 @@ export function isAdminApiAuthError(error: unknown) {
   return error instanceof Error && error.message.startsWith('ADMIN_ACCESS_TOKEN');
 }
 
+export class AdminOperatorAccessDeniedError extends Error {
+  constructor(readonly category: AdminOperatorPermissionCategory) {
+    super(`Admin operator access denied for ${category}`);
+    this.name = 'AdminOperatorAccessDeniedError';
+  }
+}
+
 async function adminJsonRequestOrThrow<T>(
   method: 'DELETE' | 'PATCH' | 'POST',
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const operatorContext = await verifyAdminOperatorWriteAccess(method, path, 'throw');
+
   const token = await getAdminAccessToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
@@ -2873,14 +2948,108 @@ async function adminJsonRequestOrThrow<T>(
   });
 
   if (!response.ok) {
+    await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action_failed', `${method} ${path}`, {
+      category: operatorContext.category,
+      status: response.status,
+    });
     throw new AdminApiRequestError(method, path, response.status);
   }
+
+  await recordAdminOperatorActivityForIdentity(operatorContext.operatorIdentity, 'admin_web.action', `${method} ${path}`, {
+    category: operatorContext.category,
+    status: response.status,
+  });
 
   if (response.status === 204) {
     return undefined as T;
   }
 
   return (await response.json()) as T;
+}
+
+async function verifyAdminOperatorWriteAccess(
+  method: 'DELETE' | 'PATCH' | 'POST',
+  path: string,
+  mode: 'fallback' | 'throw',
+) {
+  const operatorIdentity = await currentAdminWebSessionIdentity();
+  const category = adminOperatorCategoryForAdminApiPath(method, path);
+  if (!category || !operatorIdentity || path === '/admin/operator-activity') {
+    return { category, denied: false, operatorIdentity };
+  }
+
+  const access = await fetchAdminOperatorAccess(operatorIdentity);
+  if (hasAdminOperatorCategory(access, category)) {
+    return { category, denied: false, operatorIdentity };
+  }
+
+  await recordAdminOperatorActivityForIdentity(operatorIdentity, 'admin_web.action_denied', `${method} ${path}`, {
+    category,
+  });
+  if (mode === 'throw') {
+    throw new AdminOperatorAccessDeniedError(category);
+  }
+
+  return { category, denied: true, operatorIdentity };
+}
+
+async function currentAdminWebSessionIdentity() {
+  try {
+    const headerList = await headers();
+    const session = getAdminWebSession({ headers: headerList });
+
+    return session?.sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchAdminOperatorAccess(identity: string) {
+  const token = await getAdminAccessToken();
+  const response = await fetch(
+    `${API_BASE_URL}/admin/users/admin-operator-access?identity=${encodeURIComponent(identity)}`,
+    {
+      headers: { authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    },
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as AdminOperatorAccess | null;
+}
+
+async function recordAdminOperatorActivityForIdentity(
+  operatorIdentity: string | null,
+  action: string,
+  target: string,
+  metadata: Record<string, unknown>,
+) {
+  if (!operatorIdentity) {
+    return;
+  }
+
+  try {
+    const token = await getAdminAccessToken();
+    await fetch(`${API_BASE_URL}/admin/operator-activity`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action,
+        metadata,
+        operatorIdentity,
+        target,
+      }),
+      cache: 'no-store',
+    });
+  } catch {
+    // Activity logging must never make a successful admin action fail.
+  }
 }
 
 function readJwtExpiry(token: string) {

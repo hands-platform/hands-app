@@ -7,6 +7,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminReasonDto,
+  AdminOperatorActivityDto,
   AdminPushCampaignDto,
   BookingCloseoutDto,
   BookingOpsNoteDto,
@@ -63,6 +64,11 @@ export class AdminController {
     return this.admin.listUsers({ skip, take });
   }
 
+  @Get('users/admin-operator-access')
+  adminOperatorAccess(@CurrentUser() user: AuthenticatedUser, @Query('identity') identity?: string) {
+    return this.admin.getAdminOperatorAccess(user.id, identity);
+  }
+
   @Post('users/admin-operators')
   createAdminOperator(
     @CurrentUser() user: AuthenticatedUser,
@@ -87,6 +93,11 @@ export class AdminController {
     @Body() body: DeleteAdminOperatorAccessDto,
   ) {
     return this.admin.revokeAdminOperatorAccess(user.id, userId, body);
+  }
+
+  @Post('operator-activity')
+  recordAdminOperatorActivity(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminOperatorActivityDto) {
+    return this.admin.recordAdminOperatorActivity(user.id, body);
   }
 
   @Patch('users/:id/finance-approver')

@@ -424,6 +424,30 @@ export class DeleteAdminOperatorAccessDto {
   reason?: string;
 }
 
+export class AdminOperatorActivityDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  operatorIdentity?: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  action!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(240)
+  target!: string;
+
+  @IsOptional()
+  @Allow()
+  metadata?: unknown;
+}
+
 export class UpdateMonthlyTaxClosingStatusDto {
   @IsEnum(MonthlyTaxClosingStatus)
   status!: MonthlyTaxClosingStatus;

@@ -34,6 +34,8 @@ describe('AdminController notification and push actions', () => {
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
     createAdminOperator: vi.fn(),
+    getAdminOperatorAccess: vi.fn(),
+    recordAdminOperatorActivity: vi.fn(),
     updateAdminOperatorAccess: vi.fn(),
     revokeAdminOperatorAccess: vi.fn(),
     updateUserFinanceApproverRole: vi.fn(),
@@ -2251,6 +2253,53 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.revokeAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops-admin-2', {
       reason: 'Left operations team',
+    });
+  });
+
+  it('exposes admin operator access lookup for Admin Web session enforcement', async () => {
+    admin.getAdminOperatorAccess.mockResolvedValue({ id: 'ops-admin-2' });
+
+    await expect(
+      (
+        controller as unknown as {
+          adminOperatorAccess: (actor: AuthenticatedUser, identity?: string) => Promise<unknown>;
+        }
+      ).adminOperatorAccess(user, 'ops@hands.vn'),
+    ).resolves.toEqual({ id: 'ops-admin-2' });
+
+    expect(routeMetadata('adminOperatorAccess' as keyof AdminController)).toEqual({
+      method: RequestMethod.GET,
+      path: 'users/admin-operator-access',
+    });
+    expect(admin.getAdminOperatorAccess).toHaveBeenCalledWith('admin-1', 'ops@hands.vn');
+  });
+
+  it('exposes admin web activity recording for operator audit history', async () => {
+    admin.recordAdminOperatorActivity.mockResolvedValue({ ok: true });
+
+    await expect(
+      (
+        controller as unknown as {
+          recordAdminOperatorActivity: (
+            actor: AuthenticatedUser,
+            body: { action: string; operatorIdentity?: string; target: string },
+          ) => Promise<unknown>;
+        }
+      ).recordAdminOperatorActivity(user, {
+        action: 'admin_web.page_view',
+        operatorIdentity: 'ops@hands.vn',
+        target: 'admin_page:/admin-operators',
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(routeMetadata('recordAdminOperatorActivity' as keyof AdminController)).toEqual({
+      method: RequestMethod.POST,
+      path: 'operator-activity',
+    });
+    expect(admin.recordAdminOperatorActivity).toHaveBeenCalledWith('admin-1', {
+      action: 'admin_web.page_view',
+      operatorIdentity: 'ops@hands.vn',
+      target: 'admin_page:/admin-operators',
     });
   });
 
