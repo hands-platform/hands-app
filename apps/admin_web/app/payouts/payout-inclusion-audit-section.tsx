@@ -1,3 +1,5 @@
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+
 export type PayoutInclusionAuditCard = {
   readonly helper: string;
   readonly label: string;
@@ -26,19 +28,13 @@ type PayoutInclusionAuditSectionProps = {
 
 export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout inclusion audit</h2>
-          <p className="muted">
-            Unbatched earning review before finance creates the next weekly, monthly, or admin-selected partner
-            settlement batch.
-          </p>
-        </div>
-        <span className={`pill ${audit.blockedCount ? 'pill-warn' : 'pill-success'}`}>
-          {audit.readyCount} ready / {audit.blockedCount} held
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Unbatched earning review before finance creates the next weekly, monthly, or admin-selected partner settlement batch."
+      resultLabel={`${audit.readyCount} ready / ${audit.blockedCount} held`}
+      resultTone={audit.blockedCount ? 'warning' : 'success'}
+      title="Payout inclusion audit"
+    >
       <div className="service-trace-summary">
         {audit.cards.map((card) => (
           <div key={card.label}>
@@ -73,6 +69,6 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
           </div>
         ) : null}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
