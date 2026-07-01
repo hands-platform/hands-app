@@ -45,6 +45,7 @@ describe('admin shell navigation', () => {
     expect(html).toContain('data-active="true"');
     expect(html).toContain('href="/partners"');
     expect(html).toContain('Partner Referrals');
+    expect(html).toContain('Admin Operators');
   });
 
   it('shows a section badge only when an operation count needs review', () => {

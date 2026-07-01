@@ -277,6 +277,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Admin and system audit trail.',
       },
       {
+        href: '/admin-operators',
+        label: 'Admin Operators',
+        description: 'Master Admin workspace for operator access, category permissions, and admin role review.',
+      },
+      {
         href: '/setup',
         label: 'Setup',
         description: 'External integration and production readiness checklist.',

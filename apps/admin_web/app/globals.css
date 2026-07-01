@@ -383,6 +383,160 @@ a {
   min-width: 0;
 }
 
+.auth-shell {
+  min-height: 100vh;
+  min-width: 1024px;
+  width: 100%;
+}
+
+.admin-auth-page {
+  background: var(--admin-bg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 480px;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.admin-auth-visual {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 56px;
+  position: relative;
+}
+
+.admin-auth-visual::after {
+  background: url('/images/illustrations/auth/auth-mask-light.png') bottom center / contain no-repeat;
+  bottom: 0;
+  content: '';
+  height: 280px;
+  left: 7%;
+  opacity: 0.74;
+  position: absolute;
+  right: 7%;
+}
+
+.admin-auth-visual-copy {
+  display: grid;
+  gap: 14px;
+  max-width: 520px;
+  position: relative;
+  z-index: 2;
+}
+
+.admin-auth-visual-copy span {
+  color: var(--admin-accent-strong);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-auth-visual-copy h1 {
+  font-size: 38px;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.admin-auth-visual-copy p {
+  color: var(--admin-muted);
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.admin-auth-illustration {
+  background: url('/images/illustrations/auth/v2-login-light.png') center / contain no-repeat;
+  bottom: 72px;
+  height: 56%;
+  max-height: 520px;
+  min-height: 360px;
+  position: absolute;
+  right: 40px;
+  width: min(56%, 640px);
+  z-index: 1;
+}
+
+.admin-auth-card {
+  align-content: center;
+  background: var(--admin-surface);
+  border-left: 1px solid var(--admin-border);
+  box-shadow: -16px 0 44px rgb(var(--admin-shadow-channel) / 0.08);
+  display: grid;
+  gap: 28px;
+  min-height: 100vh;
+  padding: 56px 48px;
+}
+
+.admin-auth-brand,
+.admin-auth-heading,
+.admin-auth-form {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-auth-brand strong {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.admin-auth-brand span {
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+
+.admin-auth-heading h1 {
+  font-size: 24px;
+  line-height: 1.28;
+  margin: 0;
+}
+
+.admin-auth-heading p,
+.admin-auth-footnote {
+  margin: 0;
+}
+
+.admin-auth-form {
+  gap: 16px;
+}
+
+.admin-auth-field {
+  color: var(--admin-muted);
+  display: grid;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 7px;
+}
+
+.admin-auth-field input {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  font: inherit;
+  min-height: 44px;
+  outline: none;
+  padding: 0 14px;
+  transition:
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition);
+}
+
+.admin-auth-field input:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgb(var(--admin-primary-channel) / 0.14);
+}
+
+.admin-auth-submit {
+  min-height: 44px;
+  width: 100%;
+}
+
+.admin-auth-error {
+  margin: 0;
+}
+
 .topbar {
   align-items: center;
   backdrop-filter: blur(10px);
@@ -1728,6 +1882,83 @@ a.action-button-card:hover {
 
 .admin-filter-panel-footer .muted {
   margin: 0;
+}
+
+.admin-operator-control-grid {
+  align-items: stretch;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-operator-control-card {
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.admin-operator-control-card h3,
+.admin-operator-permission-item strong {
+  margin: 0;
+}
+
+.admin-operator-control-card p,
+.admin-operator-permission-item p {
+  margin: 4px 0 0;
+}
+
+.admin-operator-control-card .pill {
+  width: fit-content;
+}
+
+.admin-operator-permission-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-operator-permission-item {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.admin-operator-permission-toggle-row,
+.admin-operator-access-pills,
+.admin-operator-action-stack {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-operator-permission-toggle-row .admin-form-checkbox {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.admin-operator-permission-item small {
+  color: var(--admin-muted);
+  font-weight: 600;
+}
+
+.admin-operator-action-stack {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.admin-operator-table td:nth-child(1) {
+  min-width: 220px;
 }
 
 .ops-filter-grid {

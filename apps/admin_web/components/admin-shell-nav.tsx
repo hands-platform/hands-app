@@ -58,6 +58,7 @@ const iconByLabel = {
   Partners: HeartHandshake,
   'Partner Referrals': HeartHandshake,
   'Partner Evaluations': MessageSquareText,
+  'Admin Operators': UserRoundCog,
   Payments: ReceiptText,
   Payouts: WalletCards,
   'Post-match Cancellations': RefreshCw,

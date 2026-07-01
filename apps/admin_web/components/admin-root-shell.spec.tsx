@@ -1,0 +1,46 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
+
+import { AdminRootShell } from './admin-root-shell';
+
+const mockUsePathname = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => mockUsePathname(),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+describe('AdminRootShell', () => {
+  beforeEach(() => {
+    mockUsePathname.mockReturnValue('/bookings');
+  });
+
+  it('renders the operations shell for authenticated workspace pages', () => {
+    const markup = renderToStaticMarkup(
+      <AdminRootShell>
+        <div>Workspace content</div>
+      </AdminRootShell>,
+    );
+
+    expect(markup).toContain('class="shell"');
+    expect(markup).toContain('class="sidebar"');
+    expect(markup).toContain('aria-label="Admin navigation"');
+    expect(markup).toContain('Workspace content');
+  });
+
+  it('renders login as an auth-only page without sidebar or navbar chrome', () => {
+    mockUsePathname.mockReturnValue('/login');
+
+    const markup = renderToStaticMarkup(
+      <AdminRootShell>
+        <div>Login content</div>
+      </AdminRootShell>,
+    );
+
+    expect(markup).toContain('class="auth-shell"');
+    expect(markup).toContain('Login content');
+    expect(markup).not.toContain('class="sidebar"');
+    expect(markup).not.toContain('aria-label="Admin navigation"');
+    expect(markup).not.toContain('class="topbar vuexy-navbar"');
+  });
+});

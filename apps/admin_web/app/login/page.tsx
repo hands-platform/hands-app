@@ -11,36 +11,51 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const action = `/api/admin/session/login?redirectTo=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <section className="card admin-filter-panel admin-mt-16">
-      <div className="admin-filter-panel-heading">
-        <div>
-          <h1>HANDS Admin Login</h1>
+    <main className="admin-auth-page" aria-label="HANDS Admin login">
+      <section className="admin-auth-visual" aria-label="Operations control preview">
+        <div className="admin-auth-visual-copy">
+          <span>HANDS Operations</span>
+          <h1>Command center access for trusted operators</h1>
+          <p>
+            Review bookings, Partners, finance approvals, notifications, and audit evidence from one protected
+            workspace.
+          </p>
+        </div>
+        <div className="admin-auth-illustration" aria-hidden="true" />
+      </section>
+
+      <section className="admin-auth-card" aria-label="Admin sign in form">
+        <div className="admin-auth-brand">
+          <strong>HANDS Admin</strong>
+          <span>Secure operator workspace</span>
+        </div>
+        <div className="admin-auth-heading">
+          <h1>Welcome to HANDS Admin</h1>
           <p className="muted">Sign in to continue to the operations console.</p>
         </div>
-      </div>
-      <div className="admin-filter-panel-body">
         {params?.error ? (
-          <p className="form-error" role="alert">
+          <p className="form-error admin-auth-error" role="alert">
             Sign in failed. Check your admin credentials and try again.
           </p>
         ) : null}
-        <form action={action} className="admin-form-grid" method="post">
-          <label className="form-field">
+        <form action={action} className="admin-auth-form" method="post">
+          <label className="admin-auth-field">
             <span>Email</span>
             <input autoComplete="username" name="email" required type="email" />
           </label>
-          <label className="form-field">
+          <label className="admin-auth-field">
             <span>Password</span>
             <input autoComplete="current-password" name="password" required type="password" />
           </label>
-          <div className="admin-form-actions">
-            <button className="button button-primary" type="submit">
-              Sign in
-            </button>
-          </div>
+          <button className="button button-primary admin-auth-submit" type="submit">
+            Sign in
+          </button>
+          <p className="muted admin-auth-footnote">
+            Master and operator access is controlled by HANDS admin policy. Do not share credentials.
+          </p>
         </form>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
 
