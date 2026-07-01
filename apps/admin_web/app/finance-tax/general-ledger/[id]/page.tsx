@@ -5,7 +5,7 @@ import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-ap
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
@@ -51,12 +51,13 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       ]}
       title="General Ledger Detail"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
-          status={<span className={`pill ${statusPill(batch.status)}`}>{batch.status}</span>}
-          title="Journal batch overview"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
+        resultLabel={batch.status}
+        resultTone={statusTone(batch.status)}
+        title="Journal batch overview"
+      >
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
           <FinanceDetailInfoItem
@@ -90,7 +91,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             }
           />
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
@@ -166,12 +167,12 @@ function BankMatchEvidence({
   );
 }
 
-function statusPill(status: string) {
+function statusTone(status: string): 'danger' | 'success' | 'warning' {
   if (status === 'POSTED') {
-    return 'pill-success';
+    return 'success';
   }
   if (status === 'REVERSED') {
-    return 'pill-danger';
+    return 'danger';
   }
-  return 'pill-warn';
+  return 'warning';
 }

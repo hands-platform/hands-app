@@ -11,7 +11,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
@@ -72,19 +72,20 @@ export default async function BankReconciliationDetailPage({
       ]}
       title="Bank Reconciliation Detail"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
-          status={<span className={`pill ${statusPill(transaction.status)}`}>{transaction.status}</span>}
-          title="Bank transaction overview"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
+        resultLabel={transaction.status}
+        resultTone={statusTone(transaction.status)}
+        title="Bank transaction overview"
+      >
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
           <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
           <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
           <FinanceDetailInfoItem label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <AdminFilterPanel
         className="admin-mb-16"
@@ -394,6 +395,19 @@ function statusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function statusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
+  if (status === 'MATCHED' || status === 'CLEARED') {
+    return 'success';
+  }
+  if (status === 'PARTIALLY_MATCHED' || status === 'PARTIALLY_CLEARED') {
+    return 'info';
+  }
+  if (status === 'REVERSED') {
+    return 'danger';
+  }
+  return 'warning';
 }
 
 function readRecordString(record: Record<string, unknown> | null, key: string) {

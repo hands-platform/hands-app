@@ -77,12 +77,15 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-payment-clearing/clearing-1', null);
     expect(markup).toContain('Payment Clearing Detail');
+    expect(markup).toContain('Clearing overview');
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('Bank reconciliation matches');
     expect(markup).toContain('finance-detail-info-item');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
+    expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });
@@ -145,12 +148,15 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/accounting-journal-batches/journal-batch-1', null);
     expect(markup).toContain('General Ledger Detail');
+    expect(markup).toContain('Journal batch overview');
     expect(markup).toContain('Journal entries');
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('finance-detail-info-item');
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
+    expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });
@@ -220,6 +226,7 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/bank-reconciliation/bank-transaction-1', null);
     expect(markup).toContain('Bank Reconciliation Detail');
+    expect(markup).toContain('Bank transaction overview');
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
@@ -227,6 +234,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Create match');
     expect(markup).toContain('finance-detail-info-item');
     expect(markup).not.toContain('<div class="detail-grid admin-mt-16"><div class="card">');
+    expect(markup).not.toContain('<section class="card admin-mb-16">');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
   });

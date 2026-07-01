@@ -5,7 +5,7 @@ import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/adm
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../../components/admin-page-template';
+import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
@@ -52,12 +52,13 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       ]}
       title="Payment Clearing Detail"
     >
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
-          status={<span className={`pill ${statusPill(entry.status)}`}>{entry.status}</span>}
-          title="Clearing overview"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
+        resultLabel={entry.status}
+        resultTone={statusTone(entry.status)}
+        title="Clearing overview"
+      >
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Booking"
@@ -86,7 +87,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           />
           <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
@@ -144,17 +145,17 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   );
 }
 
-function statusPill(status: string) {
+function statusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
   if (status === 'CLEARED') {
-    return 'pill-success';
+    return 'success';
   }
   if (status === 'PARTIALLY_CLEARED') {
-    return 'pill-info';
+    return 'info';
   }
   if (status === 'REVERSED') {
-    return 'pill-danger';
+    return 'danger';
   }
-  return 'pill-warn';
+  return 'warning';
 }
 
 function bankStatusPill(status: string) {
