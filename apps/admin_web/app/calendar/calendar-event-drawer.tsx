@@ -1,6 +1,7 @@
 'use client';
 
-import type { ChangeEvent } from 'react';
+import { forwardRef, type ChangeEvent } from 'react';
+import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import {
@@ -21,6 +22,13 @@ type CalendarEventDrawerProps = {
   readonly onSubmit: () => void;
   readonly canEdit: boolean;
   readonly currentOperatorName: string;
+};
+
+type CalendarDatePickerInputProps = {
+  readonly disabled?: boolean;
+  readonly label: string;
+  readonly onClick?: () => void;
+  readonly value?: string;
 };
 
 export function CalendarEventDrawer({
@@ -55,6 +63,16 @@ export function CalendarEventDrawer({
               : nextValue,
       });
     };
+  const updateDateField = (key: 'start' | 'end') => (date: Date | null) => {
+    if (!date) {
+      return;
+    }
+
+    onChange({
+      ...draft,
+      [key]: toDraftIsoDate(date, draft.allDay),
+    });
+  };
   const readonlyReason =
     mode === 'edit' && !canEdit ? `Only ${draft.authorName} can update or delete this event.` : null;
 
@@ -128,25 +146,38 @@ export function CalendarEventDrawer({
 
             <div className="calendar-field">
               <span>Start</span>
-              <AdminFormInput
+              <DatePicker
+                calendarClassName="calendar-vuexy-datepicker"
+                customInput={<CalendarDatePickerInput disabled={!canEdit} label="Start" />}
+                dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
                 disabled={!canEdit}
-                label="Start"
-                name="start"
-                onChange={updateField('start')}
-                type={draft.allDay ? 'date' : 'datetime-local'}
-                value={toInputDateValue(draft.start, draft.allDay)}
+                onChange={updateDateField('start')}
+                popperClassName="calendar-vuexy-datepicker-popper"
+                selected={toDateValue(draft.start)}
+                selectsStart
+                showTimeSelect={!draft.allDay}
+                startDate={toDateValue(draft.start)}
+                endDate={toDateValue(draft.end)}
+                timeIntervals={30}
               />
             </div>
 
             <div className="calendar-field">
               <span>End</span>
-              <AdminFormInput
+              <DatePicker
+                calendarClassName="calendar-vuexy-datepicker"
+                customInput={<CalendarDatePickerInput disabled={!canEdit} label="End" />}
+                dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
                 disabled={!canEdit}
-                label="End"
-                name="end"
-                onChange={updateField('end')}
-                type={draft.allDay ? 'date' : 'datetime-local'}
-                value={toInputDateValue(draft.end, draft.allDay)}
+                endDate={toDateValue(draft.end)}
+                minDate={toDateValue(draft.start) ?? undefined}
+                onChange={updateDateField('end')}
+                popperClassName="calendar-vuexy-datepicker-popper"
+                selected={toDateValue(draft.end)}
+                selectsEnd
+                showTimeSelect={!draft.allDay}
+                startDate={toDateValue(draft.start)}
+                timeIntervals={30}
               />
             </div>
 
@@ -211,18 +242,38 @@ export function CalendarEventDrawer({
   );
 }
 
-function toInputDateValue(value: string, allDay: boolean) {
+const CalendarDatePickerInput = forwardRef<HTMLInputElement, CalendarDatePickerInputProps>(
+  function CalendarDatePickerInput({ disabled, label, onClick, value }, ref) {
+    return (
+      <label className="admin-form-input calendar-datepicker-input">
+        <span className="sr-only">{label}</span>
+        <input
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          readOnly
+          ref={ref}
+          value={value ?? ''}
+        />
+      </label>
+    );
+  },
+);
+
+function toDateValue(value: string) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return '';
+    return null;
   }
 
+  return date;
+}
+
+function toDraftIsoDate(value: Date, allDay: boolean) {
   if (allDay) {
-    return date.toISOString().slice(0, 10);
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0).toISOString();
   }
 
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-
-  return local.toISOString().slice(0, 16);
+  return value.toISOString();
 }
