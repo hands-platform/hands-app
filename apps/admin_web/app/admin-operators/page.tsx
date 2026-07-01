@@ -17,42 +17,211 @@ const MASTER_ADMIN_ROLE = 'MASTER_ADMIN';
 
 const permissionCategories = [
   {
-    key: 'BOOKINGS',
-    label: 'Bookings',
-    scope: 'Booking monitor, cancellation approval, chat evidence, booking detail',
+    group: 'Bookings',
+    key: 'BOOKINGS_REALTIME',
+    label: 'Realtime bookings',
+    scope: 'Open matching queue and live booking monitor',
     defaultOwner: 'Operations Admin',
   },
   {
-    key: 'CUSTOMERS',
-    label: 'Customers',
-    scope: 'Customer directory, customer detail, wallet evidence, retained booking history',
+    group: 'Bookings',
+    key: 'BOOKINGS_IN_PROGRESS',
+    label: 'Post-match / In progress',
+    scope: 'Matched bookings, live work state, partner progress evidence',
+    defaultOwner: 'Operations Admin',
+  },
+  {
+    group: 'Bookings',
+    key: 'BOOKINGS_COMPLETED',
+    label: 'Completed bookings',
+    scope: 'Completed booking lists, closeout detail, settlement evidence',
+    defaultOwner: 'Operations Admin',
+  },
+  {
+    group: 'Bookings',
+    key: 'BOOKINGS_CANCELLATIONS',
+    label: 'Booking cancellations',
+    scope: 'Pre-match and post-match cancellation review',
+    defaultOwner: 'Operations Admin',
+  },
+  {
+    group: 'Bookings',
+    key: 'BOOKINGS_DETAIL',
+    label: 'Booking detail',
+    scope: 'Booking detail, chat evidence, customer/partner operational evidence',
+    defaultOwner: 'Operations Admin',
+  },
+  {
+    group: 'Customers',
+    key: 'CUSTOMERS_DIRECTORY',
+    label: 'Customer directory',
+    scope: 'Customer list, filters, customer summary',
     defaultOwner: 'Support Admin',
   },
   {
-    key: 'PARTNERS',
-    label: 'Partners',
-    scope: 'Partner approval, KYC/document review, partner detail, account holds',
+    group: 'Customers',
+    key: 'CUSTOMERS_DETAIL',
+    label: 'Customer detail',
+    scope: 'Customer profile, addresses, booking history, wallet evidence',
+    defaultOwner: 'Support Admin',
+  },
+  {
+    group: 'Customers',
+    key: 'CUSTOMERS_REVIEWS',
+    label: 'Customer reviews',
+    scope: 'Customer reviews and partner customer evaluations',
+    defaultOwner: 'Support Admin',
+  },
+  {
+    group: 'Partners',
+    key: 'PARTNERS_DIRECTORY',
+    label: 'Partner directory',
+    scope: 'Partner list, marketplace-ready and unsettled partner views',
     defaultOwner: 'Partner Admin',
   },
   {
-    key: 'FINANCE',
-    label: 'Finance',
-    scope: 'Wallet adjustments, settlement, tax, bank reconciliation, payout closeout',
+    group: 'Partners',
+    key: 'PARTNERS_UNAPPROVED',
+    label: 'Unapproved partners',
+    scope: 'KYC review, registration hold, approval and reject workflows',
+    defaultOwner: 'Partner Admin',
+  },
+  {
+    group: 'Partners',
+    key: 'PARTNERS_DETAIL',
+    label: 'Partner detail',
+    scope: 'Partner profile, service pricing, wallet, reviews and controls',
+    defaultOwner: 'Partner Admin',
+  },
+  {
+    group: 'Partners',
+    key: 'PARTNERS_KYC',
+    label: 'Partner KYC',
+    scope: 'Document evidence, verification files, sanctions and hold reasons',
+    defaultOwner: 'Partner Admin',
+  },
+  {
+    group: 'Finance',
+    key: 'FINANCE_PAYMENT_CLEARING',
+    label: 'Payment clearing',
+    scope: 'Booking payment clearing and payment fee evidence',
     defaultOwner: 'Finance Approver',
   },
   {
-    key: 'NOTIFICATIONS',
-    label: 'Notifications',
-    scope: 'Templates, push send, delivery evidence, failed delivery review',
+    group: 'Finance',
+    key: 'FINANCE_GENERAL_LEDGER',
+    label: 'General ledger',
+    scope: 'Journal batches, entries, accounting evidence',
+    defaultOwner: 'Finance Approver',
+  },
+  {
+    group: 'Finance',
+    key: 'FINANCE_BANK_RECONCILIATION',
+    label: 'Bank reconciliation',
+    scope: 'Bank transactions, matching, reconciliation delta review',
+    defaultOwner: 'Finance Approver',
+  },
+  {
+    group: 'Finance',
+    key: 'FINANCE_WALLET_ADJUSTMENTS',
+    label: 'Wallet adjustments',
+    scope: 'Customer and partner manual wallet adjustment approval',
+    defaultOwner: 'Finance Approver',
+  },
+  {
+    group: 'Finance',
+    key: 'FINANCE_SETTLEMENTS',
+    label: 'Settlements',
+    scope: 'Cash settlements, earnings, withdrawals, payout closeout',
+    defaultOwner: 'Finance Approver',
+  },
+  {
+    group: 'Finance',
+    key: 'FINANCE_TAX',
+    label: 'Tax and VAT',
+    scope: 'Finance tax, platform VAT, withholding and monthly close',
+    defaultOwner: 'Finance Approver',
+  },
+  {
+    group: 'Notifications',
+    key: 'NOTIFICATIONS_TEMPLATES',
+    label: 'Notification templates',
+    scope: 'Notification wording, language variants, template controls',
     defaultOwner: 'Support Admin',
   },
   {
-    key: 'SYSTEM',
-    label: 'System',
-    scope: 'Operations policy, services, coupons, audit log, setup, operator access',
+    group: 'Notifications',
+    key: 'NOTIFICATIONS_PUSH',
+    label: 'Push send',
+    scope: 'Push audience filters, campaign send and deep link targets',
+    defaultOwner: 'Support Admin',
+  },
+  {
+    group: 'Notifications',
+    key: 'NOTIFICATIONS_DELIVERY',
+    label: 'Delivery evidence',
+    scope: 'Push delivery log, failed deliveries and notification history',
+    defaultOwner: 'Support Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_SERVICES',
+    label: 'Services',
+    scope: 'Service catalog, duration options, pricing and payout defaults',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_COUPONS',
+    label: 'Coupons',
+    scope: 'Coupon creation, usage, edit and delete workflows',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_ADMIN_OPERATORS',
+    label: 'Admin operators',
+    scope: 'Operator creation, role assignment, category access and revocation',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_POLICY',
+    label: 'Operations policy',
+    scope: 'Operations policy, partner levels, wallet and bank policy settings',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_AUDIT',
+    label: 'Audit log',
+    scope: 'Admin action history, operator activity and retained evidence search',
+    defaultOwner: 'Master Admin',
+  },
+  {
+    group: 'System',
+    key: 'SYSTEM_SETUP',
+    label: 'Setup',
+    scope: 'Setup, usage overview, Vietnam overview and marketing analytics',
     defaultOwner: 'Master Admin',
   },
 ] as const;
+
+const legacyPermissionGroups: Record<string, readonly string[]> = {
+  BOOKINGS: ['BOOKINGS_REALTIME', 'BOOKINGS_IN_PROGRESS', 'BOOKINGS_COMPLETED', 'BOOKINGS_CANCELLATIONS', 'BOOKINGS_DETAIL'],
+  CUSTOMERS: ['CUSTOMERS_DIRECTORY', 'CUSTOMERS_DETAIL', 'CUSTOMERS_REVIEWS'],
+  FINANCE: [
+    'FINANCE_PAYMENT_CLEARING',
+    'FINANCE_GENERAL_LEDGER',
+    'FINANCE_BANK_RECONCILIATION',
+    'FINANCE_WALLET_ADJUSTMENTS',
+    'FINANCE_SETTLEMENTS',
+    'FINANCE_TAX',
+  ],
+  NOTIFICATIONS: ['NOTIFICATIONS_TEMPLATES', 'NOTIFICATIONS_PUSH', 'NOTIFICATIONS_DELIVERY'],
+  PARTNERS: ['PARTNERS_DIRECTORY', 'PARTNERS_UNAPPROVED', 'PARTNERS_DETAIL', 'PARTNERS_KYC'],
+  SYSTEM: ['SYSTEM_SERVICES', 'SYSTEM_COUPONS', 'SYSTEM_ADMIN_OPERATORS', 'SYSTEM_POLICY', 'SYSTEM_AUDIT', 'SYSTEM_SETUP'],
+};
 
 const operatorRoleFields = [
   { label: 'Master Admin', value: MASTER_ADMIN_ROLE },
@@ -114,10 +283,10 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
           <form action={createAdminOperator} className="admin-operator-control-card" aria-label="Add operator">
             <div>
               <h3>Add operator</h3>
-              <p className="muted">Creates a new admin user or grants admin access to an existing phone number.</p>
+            <p className="muted">Creates a new operator login and grants Admin Web access by email.</p>
             </div>
-            <AdminFormInput label="Operator phone" name="phone" placeholder="+84900000001" required />
-            <AdminFormInput label="Operator email" name="email" placeholder="operator@hands.vn" type="email" />
+            <AdminFormInput label="Operator email" name="email" placeholder="operator@hands.vn" required type="email" />
+            <AdminFormInput label="Temporary password" name="password" placeholder="Set initial password" required type="password" />
             <AdminFormInput label="Operator name" name="fullName" placeholder="Full name" />
             <div className="admin-operator-permission-toggle-row" aria-label="Operator roles">
               {operatorRoleFields.map((role) => (
@@ -126,11 +295,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                 </AdminFormCheckbox>
               ))}
             </div>
-            <div className="admin-operator-master-lock" role="note">
-              <strong>Master Admin</strong>
-              <span>Full access is automatic. Category checks are only used for non-master operators.</span>
-            </div>
-            <CategoryCheckboxGrid defaults={['BOOKINGS', 'CUSTOMERS', 'PARTNERS', 'NOTIFICATIONS']} />
+            <CategoryCheckboxGrid defaults={['BOOKINGS_REALTIME', 'CUSTOMERS_DIRECTORY', 'PARTNERS_DIRECTORY', 'NOTIFICATIONS_PUSH']} />
             <AdminFormInput label="Reason" name="reason" placeholder="Access request reason" />
             <AdminFormControlButton className="btn btn-primary" type="submit">
               Add operator
@@ -151,6 +316,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             <article className="admin-operator-permission-item" key={category.key}>
               <div>
                 <strong>{category.label}</strong>
+                <span className="pill pill-neutral">{category.group}</span>
                 <p className="muted">{category.scope}</p>
               </div>
               <small>{category.defaultOwner}</small>
@@ -234,7 +400,6 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                     {isMasterAdmin ? (
                       <div className="admin-operator-master-access" role="note">
                         <span className="pill pill-primary">All categories</span>
-                        <span className="muted">Master Admin has full access automatically.</span>
                       </div>
                     ) : (
                       <div className="admin-operator-access-pills">
@@ -264,10 +429,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                           ))}
                         </div>
                         {isMasterAdmin ? (
-                          <div className="admin-operator-master-lock" role="note">
-                            <strong>Master Admin</strong>
-                            <span>No category setup is required while this role is active.</span>
-                          </div>
+                          null
                         ) : (
                           <CategoryCheckboxGrid defaults={operatorPermissionCategoryKeys(user)} compact />
                         )}
@@ -303,7 +465,9 @@ function OperatorNotice({ notice }: { readonly notice: string }) {
       'admin-auth': 'Admin API authentication failed. Refresh the admin session and try again.',
       created: 'Operator access was created.',
       failed: 'Operator access update failed. Check master admin permission, duplicate phone, or last role guard.',
+      'missing-email': 'Operator email is required.',
       'missing-phone': 'Operator phone is required.',
+      'missing-password': 'Temporary password is required.',
       'missing-user': 'Admin user ID is required.',
       revoked: 'Operator access was revoked.',
       updated: 'Operator access was updated.',
@@ -366,7 +530,8 @@ function operatorAccessLabels(user: AdminUser) {
 }
 
 function operatorPermissionCategoryKeys(user: AdminUser) {
-  return user.adminOperatorPermission?.categories ?? [];
+  const categories = user.adminOperatorPermission?.categories ?? [];
+  return [...new Set(categories.flatMap((category) => legacyPermissionGroups[category] ?? [category]))];
 }
 
 function operatorRolePillClassName(role: string) {

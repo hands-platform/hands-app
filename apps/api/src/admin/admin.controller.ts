@@ -50,6 +50,7 @@ import {
   UpdateServicePayoutRuleDto,
   UpsertMarketingSpendDailyDto,
   UpsertServicePayoutRuleDto,
+  VerifyAdminOperatorLoginDto,
 } from './admin.dto';
 import { AdminService } from './admin.service';
 
@@ -75,6 +76,11 @@ export class AdminController {
     @Body() body: CreateAdminOperatorDto,
   ) {
     return this.admin.createAdminOperator(user.id, body);
+  }
+
+  @Post('users/admin-operator-login')
+  verifyAdminOperatorLogin(@Body() body: VerifyAdminOperatorLoginDto) {
+    return this.admin.verifyAdminOperatorLogin(body);
   }
 
   @Patch('users/:id/admin-operator-access')

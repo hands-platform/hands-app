@@ -44,13 +44,13 @@ describe('admin operator server actions', () => {
 
   it('creates an operator through the Admin API boundary with constrained roles and categories', async () => {
     const formData = new FormData();
-    formData.set('phone', ' +84900000009 ');
     formData.set('email', ' operator@hands.vn ');
+    formData.set('password', ' temp-password-123 ');
     formData.set('fullName', ' Ops Admin ');
     formData.append('roles', 'MASTER_ADMIN');
     formData.append('roles', 'CUSTOMER');
-    formData.append('permissionCategories', 'BOOKINGS');
-    formData.append('permissionCategories', 'SYSTEM');
+    formData.append('permissionCategories', 'BOOKINGS_REALTIME');
+    formData.append('permissionCategories', 'SYSTEM_ADMIN_OPERATORS');
     formData.append('permissionCategories', 'UNKNOWN');
     formData.set('reason', ' Launch desk ');
 
@@ -59,8 +59,8 @@ describe('admin operator server actions', () => {
     expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/users/admin-operators', {
       email: 'operator@hands.vn',
       fullName: 'Ops Admin',
-      permissionCategories: ['BOOKINGS', 'SYSTEM'],
-      phone: '+84900000009',
+      password: 'temp-password-123',
+      permissionCategories: ['BOOKINGS_REALTIME', 'SYSTEM_ADMIN_OPERATORS'],
       reason: 'Launch desk',
       roles: ['ADMIN', 'MASTER_ADMIN'],
     });
@@ -100,10 +100,20 @@ describe('admin operator server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=revoked');
   });
 
-  it('redirects missing phone before creating an operator', async () => {
+  it('redirects missing email before creating an operator', async () => {
     await createAdminOperator(new FormData());
 
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=missing-phone');
+    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=missing-email');
+  });
+
+  it('redirects missing password before creating an operator', async () => {
+    const formData = new FormData();
+    formData.set('email', 'operator@hands.vn');
+
+    await createAdminOperator(formData);
+
+    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
+    expect(mockedRedirect).toHaveBeenCalledWith('/admin-operators?operatorNotice=missing-password');
   });
 });

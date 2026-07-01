@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import {
   adminWebSessionCookieName,
   authenticateAdminWebLogin,
+  createAdminWebSessionCookieValue,
+  parseAdminWebSessionTtlSeconds,
+  verifyAdminWebSessionCookieValue,
+  type AdminWebLoginResult,
 } from '../../../../../lib/admin-session';
+import { getAdminAccessToken } from '../../../../../lib/admin-api';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +19,7 @@ const NO_STORE_HEADERS = {
 
 export async function POST(request: Request) {
   const credentials = await readCredentials(request);
-  const login = authenticateAdminWebLogin(credentials);
+  const login = (await authenticateStoredAdminOperatorLogin(credentials)) ?? authenticateAdminWebLogin(credentials);
   const wantsHtml = request.headers.get('accept')?.includes('text/html') ?? false;
 
   if (!login.ok) {
@@ -50,6 +55,67 @@ export async function POST(request: Request) {
   });
 
   return response;
+}
+
+async function authenticateStoredAdminOperatorLogin(
+  credentials: { email: string; password: string },
+): Promise<AdminWebLoginResult | null> {
+  const sessionSecret = process.env.ADMIN_WEB_SESSION_COOKIE_SECRET?.trim();
+  if (!sessionSecret) {
+    return null;
+  }
+
+  try {
+    const token = await getAdminAccessToken();
+    const apiBaseUrl = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
+    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/admin/users/admin-operator-login`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const body = (await response.json()) as {
+      authenticated?: unknown;
+      user?: { id?: unknown; roles?: unknown };
+    };
+    if (
+      body.authenticated !== true ||
+      typeof body.user?.id !== 'string' ||
+      !Array.isArray(body.user.roles) ||
+      !body.user.roles.includes('ADMIN')
+    ) {
+      return { ok: false, error: 'INVALID_ADMIN_CREDENTIALS', status: 401 };
+    }
+
+    const maxAgeSeconds = parseAdminWebSessionTtlSeconds(process.env.ADMIN_WEB_SESSION_TTL_SECONDS);
+    const nowMs = Date.now();
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: nowMs + maxAgeSeconds * 1000,
+      issuedAtMs: nowMs,
+      secret: sessionSecret,
+      sub: body.user.id,
+    });
+    const session = verifyAdminWebSessionCookieValue(sessionCookieValue, sessionSecret, nowMs);
+
+    return session
+      ? {
+          ok: true,
+          maxAgeSeconds,
+          session,
+          sessionCookieValue,
+        }
+      : { ok: false, error: 'ADMIN_LOGIN_UNAVAILABLE', status: 503 };
+  } catch {
+    return null;
+  }
 }
 
 async function readCredentials(request: Request) {

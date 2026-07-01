@@ -13,24 +13,55 @@ import {
 const operatorRoles = new Set(['ADMIN', 'FINANCE_APPROVER', 'MASTER_ADMIN']);
 const permissionCategories = new Set([
   'BOOKINGS',
+  'BOOKINGS_REALTIME',
+  'BOOKINGS_IN_PROGRESS',
+  'BOOKINGS_COMPLETED',
+  'BOOKINGS_CANCELLATIONS',
+  'BOOKINGS_DETAIL',
   'CUSTOMERS',
+  'CUSTOMERS_DIRECTORY',
+  'CUSTOMERS_DETAIL',
+  'CUSTOMERS_REVIEWS',
   'PARTNERS',
+  'PARTNERS_DIRECTORY',
+  'PARTNERS_UNAPPROVED',
+  'PARTNERS_DETAIL',
+  'PARTNERS_KYC',
   'FINANCE',
+  'FINANCE_PAYMENT_CLEARING',
+  'FINANCE_GENERAL_LEDGER',
+  'FINANCE_BANK_RECONCILIATION',
+  'FINANCE_WALLET_ADJUSTMENTS',
+  'FINANCE_SETTLEMENTS',
+  'FINANCE_TAX',
   'NOTIFICATIONS',
+  'NOTIFICATIONS_TEMPLATES',
+  'NOTIFICATIONS_PUSH',
+  'NOTIFICATIONS_DELIVERY',
   'SYSTEM',
+  'SYSTEM_SERVICES',
+  'SYSTEM_COUPONS',
+  'SYSTEM_ADMIN_OPERATORS',
+  'SYSTEM_POLICY',
+  'SYSTEM_AUDIT',
+  'SYSTEM_SETUP',
 ]);
 
 export async function createAdminOperator(formData: FormData) {
-  const phone = readOptionalString(formData, 'phone');
-  if (!phone) {
-    return redirect('/admin-operators?operatorNotice=missing-phone');
+  const email = readOptionalString(formData, 'email');
+  if (!email) {
+    return redirect('/admin-operators?operatorNotice=missing-email');
+  }
+  const password = readOptionalString(formData, 'password');
+  if (!password) {
+    return redirect('/admin-operators?operatorNotice=missing-password');
   }
 
   try {
     await adminPostOrThrow('/admin/users/admin-operators', {
-      phone,
-      email: readOptionalString(formData, 'email') || null,
+      email,
       fullName: readOptionalString(formData, 'fullName') || null,
+      password,
       roles: readOperatorRoles(formData),
       permissionCategories: readPermissionCategories(formData),
       reason: readOptionalString(formData, 'reason'),

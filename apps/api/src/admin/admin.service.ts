@@ -1,4 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
@@ -227,13 +229,43 @@ const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
 const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
+const ADMIN_OPERATOR_PASSWORD_HASH_BYTES = 64;
+const ADMIN_OPERATOR_PASSWORD_SALT_BYTES = 16;
+const ADMIN_OPERATOR_PASSWORD_MIN_LENGTH = 8;
 const ADMIN_OPERATOR_PERMISSION_CATEGORIES = [
   AdminOperatorPermissionCategory.BOOKINGS,
+  AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
+  AdminOperatorPermissionCategory.BOOKINGS_IN_PROGRESS,
+  AdminOperatorPermissionCategory.BOOKINGS_COMPLETED,
+  AdminOperatorPermissionCategory.BOOKINGS_CANCELLATIONS,
+  AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
   AdminOperatorPermissionCategory.CUSTOMERS,
+  AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY,
+  AdminOperatorPermissionCategory.CUSTOMERS_DETAIL,
+  AdminOperatorPermissionCategory.CUSTOMERS_REVIEWS,
   AdminOperatorPermissionCategory.PARTNERS,
+  AdminOperatorPermissionCategory.PARTNERS_DIRECTORY,
+  AdminOperatorPermissionCategory.PARTNERS_UNAPPROVED,
+  AdminOperatorPermissionCategory.PARTNERS_DETAIL,
+  AdminOperatorPermissionCategory.PARTNERS_KYC,
   AdminOperatorPermissionCategory.FINANCE,
+  AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+  AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
+  AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+  AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+  AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+  AdminOperatorPermissionCategory.FINANCE_TAX,
   AdminOperatorPermissionCategory.NOTIFICATIONS,
+  AdminOperatorPermissionCategory.NOTIFICATIONS_TEMPLATES,
+  AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH,
+  AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY,
   AdminOperatorPermissionCategory.SYSTEM,
+  AdminOperatorPermissionCategory.SYSTEM_SERVICES,
+  AdminOperatorPermissionCategory.SYSTEM_COUPONS,
+  AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+  AdminOperatorPermissionCategory.SYSTEM_POLICY,
+  AdminOperatorPermissionCategory.SYSTEM_AUDIT,
+  AdminOperatorPermissionCategory.SYSTEM_SETUP,
 ] as const;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
@@ -1528,7 +1560,7 @@ type ManualWalletAdjustmentDb = Pick<
 type FinanceApprovalLookupDb = Partial<Pick<Prisma.TransactionClient, 'user'>>;
 type AdminOperatorAccessDb = Pick<
   Prisma.TransactionClient,
-  'adminAuditLog' | 'adminOperatorPermission' | 'user'
+  'adminAuditLog' | 'adminOperatorCredential' | 'adminOperatorPermission' | 'user'
 >;
 
 type AdminManualWalletAdjustmentPreview = ManualWalletAdjustmentPreview & {
@@ -1618,20 +1650,39 @@ export class AdminService {
   }
 
   async createAdminOperator(actorId: string, input: CreateAdminOperatorDto) {
-    const phone = normalizeNullable(input.phone);
-    if (!phone) {
-      throw new BadRequestException('Operator phone is required');
+    const email = normalizeAdminOperatorEmail(input.email);
+    if (!email) {
+      throw new BadRequestException('Operator email is required');
+    }
+    const password = normalizeNullable(input.password);
+    if (!password || password.length < ADMIN_OPERATOR_PASSWORD_MIN_LENGTH) {
+      throw new BadRequestException('Operator password must be at least 8 characters');
     }
 
     return this.prisma.$transaction(async (tx) => {
       await this.assertMasterAdminAccess(tx, actorId);
-      const existingUser = await tx.user.findUnique({
-        where: { phone },
-        select: {
-          id: true,
-          roles: true,
-        },
+      const existingCredential = await tx.adminOperatorCredential.findUnique({
+        where: { email },
+        select: { userId: true },
       });
+      const adminPhone = normalizeNullable(input.phone) ?? generatedAdminOperatorPhone(email);
+      const existingUser = existingCredential
+        ? await tx.user.findUnique({
+            where: { id: existingCredential.userId },
+            select: {
+              id: true,
+              roles: true,
+            },
+          })
+        : await tx.user.findFirst({
+            where: {
+              OR: [{ email }, { phone: adminPhone }],
+            },
+            select: {
+              id: true,
+              roles: true,
+            },
+          });
       const nextRoles = mergeAdminOperatorRoles(existingUser?.roles ?? [], input.roles);
       const nextCategories = normalizeAdminOperatorPermissionCategories(
         nextRoles,
@@ -1643,7 +1694,7 @@ export class AdminService {
         ? await tx.user.update({
             where: { id: userId },
             data: {
-              ...(input.email !== undefined ? { email: normalizeNullable(input.email) } : {}),
+              email,
               ...(input.fullName !== undefined ? { fullName: normalizeNullable(input.fullName) } : {}),
               roles: { set: nextRoles },
             },
@@ -1651,14 +1702,29 @@ export class AdminService {
           })
         : await tx.user.create({
             data: {
-              phone,
-              email: normalizeNullable(input.email),
+              phone: adminPhone,
+              email,
               fullName: normalizeNullable(input.fullName),
               roles: nextRoles,
             },
             select: adminUserListSelect,
           });
 
+      const passwordCredential = hashAdminOperatorPassword(password);
+      await tx.adminOperatorCredential.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          email,
+          passwordHash: passwordCredential.passwordHash,
+          passwordSalt: passwordCredential.passwordSalt,
+        },
+        update: {
+          email,
+          passwordHash: passwordCredential.passwordHash,
+          passwordSalt: passwordCredential.passwordSalt,
+        },
+      });
       const permission = await tx.adminOperatorPermission.upsert({
         where: { userId: user.id },
         create: {
@@ -1690,6 +1756,43 @@ export class AdminService {
 
       return { user: hydratedUser ?? user, auditLog };
     });
+  }
+
+  async verifyAdminOperatorLogin(input: { email?: string | null; password?: string | null }) {
+    const email = normalizeAdminOperatorEmail(input.email);
+    const password = normalizeNullable(input.password);
+    if (!email || !password) {
+      throw new UnauthorizedException('Invalid admin operator credentials');
+    }
+
+    const credential = await this.prisma.adminOperatorCredential.findUnique({
+      where: { email },
+      select: {
+        passwordHash: true,
+        passwordSalt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            roles: true,
+          },
+        },
+      },
+    });
+    if (!credential?.user.roles.includes(Role.ADMIN) || !verifyAdminOperatorPassword(password, credential)) {
+      throw new UnauthorizedException('Invalid admin operator credentials');
+    }
+
+    return {
+      authenticated: true,
+      user: {
+        id: credential.user.id,
+        email: credential.user.email,
+        fullName: credential.user.fullName,
+        roles: credential.user.roles,
+      },
+    };
   }
 
   async updateAdminOperatorAccess(
@@ -12154,16 +12257,53 @@ function defaultAdminOperatorPermissionCategories(roles: readonly Role[]) {
   }
 
   const categories: AdminOperatorPermissionCategory[] = [
-    AdminOperatorPermissionCategory.BOOKINGS,
-    AdminOperatorPermissionCategory.CUSTOMERS,
-    AdminOperatorPermissionCategory.PARTNERS,
-    AdminOperatorPermissionCategory.NOTIFICATIONS,
+    AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
+    AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY,
+    AdminOperatorPermissionCategory.PARTNERS_DIRECTORY,
+    AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH,
   ];
   if (roles.includes(Role.FINANCE_APPROVER)) {
-    categories.push(AdminOperatorPermissionCategory.FINANCE);
+    categories.push(
+      AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+      AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
+      AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+      AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+      AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+      AdminOperatorPermissionCategory.FINANCE_TAX,
+    );
   }
 
   return categories;
+}
+
+function normalizeAdminOperatorEmail(value: string | null | undefined) {
+  return normalizeNullable(value)?.toLowerCase() ?? null;
+}
+
+function generatedAdminOperatorPhone(email: string) {
+  return `admin:${createHash('sha256').update(email).digest('hex').slice(0, 24)}`;
+}
+
+function hashAdminOperatorPassword(password: string) {
+  const passwordSalt = randomBytes(ADMIN_OPERATOR_PASSWORD_SALT_BYTES).toString('base64url');
+  const passwordHash = scryptSync(password, passwordSalt, ADMIN_OPERATOR_PASSWORD_HASH_BYTES).toString('base64url');
+
+  return { passwordHash, passwordSalt };
+}
+
+function verifyAdminOperatorPassword(
+  password: string,
+  credential: { readonly passwordHash: string; readonly passwordSalt: string },
+) {
+  const candidateHash = scryptSync(
+    password,
+    credential.passwordSalt,
+    ADMIN_OPERATOR_PASSWORD_HASH_BYTES,
+  ).toString('base64url');
+  const candidate = Buffer.from(candidateHash);
+  const expected = Buffer.from(credential.passwordHash);
+
+  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
 async function assertAdminOperatorProtectedRoleRemoval(

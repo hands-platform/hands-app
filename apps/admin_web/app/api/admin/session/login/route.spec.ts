@@ -9,6 +9,80 @@ describe('Admin web session login route', () => {
     vi.restoreAllMocks();
   });
 
+  it('issues an HttpOnly admin session cookie for a stored operator credential verified by the API', async () => {
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_LOGIN_EMAIL: undefined,
+      ADMIN_WEB_LOGIN_PASSWORD_HASH: undefined,
+      ADMIN_WEB_LOGIN_PASSWORD_SALT: undefined,
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
+      NODE_ENV: 'production',
+    };
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        authenticated: true,
+        user: {
+          email: 'operator@hands.vn',
+          id: 'ops-admin-1',
+          roles: ['ADMIN'],
+        },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new Request('http://localhost/api/admin/session/login', {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'operator@hands.vn',
+          password: 'temporary-password',
+        }),
+      }),
+    );
+    const body = (await response.json()) as {
+      authenticated?: boolean;
+      password?: string;
+      role?: string;
+      secret?: string;
+      sub?: string;
+      token?: string;
+    };
+    const setCookie = response.headers.get('set-cookie') ?? '';
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/api/admin/users/admin-operator-login',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          authorization: 'Bearer server-admin-token',
+          'content-type': 'application/json',
+        }),
+      }),
+    );
+    expect(body).toMatchObject({ authenticated: true, role: 'ADMIN', sub: 'ops-admin-1' });
+    expect(body.password).toBeUndefined();
+    expect(body.secret).toBeUndefined();
+    expect(body.token).toBeUndefined();
+    expect(setCookie).toContain('hands_admin_session=');
+    expect(setCookie).toContain('HttpOnly');
+    expect(setCookie).toContain('Secure');
+    const sessionPayload = decodeSessionCookiePayload(setCookie);
+    expect(sessionPayload).toMatchObject({
+      role: 'ADMIN',
+      sessionVersion: 1,
+      sub: 'ops-admin-1',
+    });
+  });
+
   it('issues an HttpOnly admin session cookie for valid credentials', async () => {
     const salt = 'test-admin-login-salt';
     process.env = {

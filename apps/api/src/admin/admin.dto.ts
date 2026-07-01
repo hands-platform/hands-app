@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsDateString,
   IsDefined,
+  IsEmail,
   IsEnum,
   IsIn,
   IsInt,
@@ -363,17 +364,24 @@ export class UpdateFinanceApproverRoleDto {
 }
 
 export class CreateAdminOperatorDto {
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(32)
-  phone!: string;
-
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @MaxLength(32)
+  phone?: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(160)
-  email?: string | null;
+  email!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  password!: string;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -396,6 +404,21 @@ export class CreateAdminOperatorDto {
   @IsString()
   @MaxLength(500)
   reason?: string;
+}
+
+export class VerifyAdminOperatorLoginDto {
+  @Transform(({ value }) => trimString(value))
+  @IsEmail()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  email!: string;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  password!: string;
 }
 
 export class UpdateAdminOperatorAccessDto {

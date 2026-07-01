@@ -148,14 +148,20 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(service.getAdminOperatorAccess('admin-token-user', 'master@hands.vn')).resolves.toMatchObject({
-      categories: [
+      categories: expect.arrayContaining([
         AdminOperatorPermissionCategory.BOOKINGS,
+        AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
         AdminOperatorPermissionCategory.CUSTOMERS,
+        AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY,
         AdminOperatorPermissionCategory.PARTNERS,
+        AdminOperatorPermissionCategory.PARTNERS_DIRECTORY,
         AdminOperatorPermissionCategory.FINANCE,
+        AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
         AdminOperatorPermissionCategory.NOTIFICATIONS,
+        AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH,
         AdminOperatorPermissionCategory.SYSTEM,
-      ],
+        AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+      ]),
       email: 'master@hands.vn',
       id: 'master-admin-1',
       updatedAt: null,
@@ -404,31 +410,34 @@ describe('AdminService query orchestration', () => {
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
-  it('creates the first master admin operator with category permissions and audit metadata', async () => {
+  it('creates the first master admin operator with email credentials and detailed category permissions', async () => {
     const tx = {
       user: {
         count: vi.fn().mockResolvedValue(0),
         create: vi.fn().mockResolvedValue({ id: 'master-admin-2', roles: [Role.ADMIN, Role.MASTER_ADMIN] }),
+        findFirst: vi.fn().mockResolvedValue(null),
         findUnique: vi.fn(async (query: { where: { id?: string; phone?: string } }) => {
           if (query.where.id === 'admin-1') {
             return { id: 'admin-1', roles: [Role.ADMIN] };
           }
-          if (query.where.phone === '+84900000009') {
-            return null;
-          }
           if (query.where.id === 'master-admin-2') {
             return {
               id: 'master-admin-2',
-              phone: '+84900000009',
+              email: 'operator@hands.vn',
+              phone: 'admin:operator',
               roles: [Role.ADMIN, Role.MASTER_ADMIN],
               adminOperatorPermission: {
                 id: 'permission-1',
-                categories: [AdminOperatorPermissionCategory.SYSTEM],
+                categories: [AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS],
               },
             };
           }
           return null;
         }),
+      },
+      adminOperatorCredential: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'credential-1' }),
       },
       adminOperatorPermission: {
         upsert: vi.fn().mockResolvedValue({ id: 'permission-1' }),
@@ -444,9 +453,10 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.createAdminOperator('admin-1', {
+        email: 'operator@hands.vn',
         fullName: 'Master Admin 2',
-        permissionCategories: [AdminOperatorPermissionCategory.SYSTEM],
-        phone: '+84900000009',
+        password: 'initial-password',
+        permissionCategories: [AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS],
         reason: 'Bootstrap first master',
         roles: [Role.MASTER_ADMIN],
       }),
@@ -459,20 +469,61 @@ describe('AdminService query orchestration', () => {
 
     expect(tx.user.create).toHaveBeenCalledWith({
       data: {
-        email: null,
+        email: 'operator@hands.vn',
         fullName: 'Master Admin 2',
-        phone: '+84900000009',
+        phone: expect.stringMatching(/^admin:/u),
         roles: [Role.ADMIN, Role.MASTER_ADMIN],
       },
       select: expect.any(Object),
     });
+    expect(tx.adminOperatorCredential.upsert).toHaveBeenCalledWith({
+      where: { userId: 'master-admin-2' },
+      create: {
+        email: 'operator@hands.vn',
+        passwordHash: expect.any(String),
+        passwordSalt: expect.any(String),
+        userId: 'master-admin-2',
+      },
+      update: {
+        email: 'operator@hands.vn',
+        passwordHash: expect.any(String),
+        passwordSalt: expect.any(String),
+      },
+    });
     const allPermissionCategories = [
       AdminOperatorPermissionCategory.BOOKINGS,
+      AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
+      AdminOperatorPermissionCategory.BOOKINGS_IN_PROGRESS,
+      AdminOperatorPermissionCategory.BOOKINGS_COMPLETED,
+      AdminOperatorPermissionCategory.BOOKINGS_CANCELLATIONS,
+      AdminOperatorPermissionCategory.BOOKINGS_DETAIL,
       AdminOperatorPermissionCategory.CUSTOMERS,
+      AdminOperatorPermissionCategory.CUSTOMERS_DIRECTORY,
+      AdminOperatorPermissionCategory.CUSTOMERS_DETAIL,
+      AdminOperatorPermissionCategory.CUSTOMERS_REVIEWS,
       AdminOperatorPermissionCategory.PARTNERS,
+      AdminOperatorPermissionCategory.PARTNERS_DIRECTORY,
+      AdminOperatorPermissionCategory.PARTNERS_UNAPPROVED,
+      AdminOperatorPermissionCategory.PARTNERS_DETAIL,
+      AdminOperatorPermissionCategory.PARTNERS_KYC,
       AdminOperatorPermissionCategory.FINANCE,
+      AdminOperatorPermissionCategory.FINANCE_PAYMENT_CLEARING,
+      AdminOperatorPermissionCategory.FINANCE_GENERAL_LEDGER,
+      AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION,
+      AdminOperatorPermissionCategory.FINANCE_WALLET_ADJUSTMENTS,
+      AdminOperatorPermissionCategory.FINANCE_SETTLEMENTS,
+      AdminOperatorPermissionCategory.FINANCE_TAX,
       AdminOperatorPermissionCategory.NOTIFICATIONS,
+      AdminOperatorPermissionCategory.NOTIFICATIONS_TEMPLATES,
+      AdminOperatorPermissionCategory.NOTIFICATIONS_PUSH,
+      AdminOperatorPermissionCategory.NOTIFICATIONS_DELIVERY,
       AdminOperatorPermissionCategory.SYSTEM,
+      AdminOperatorPermissionCategory.SYSTEM_SERVICES,
+      AdminOperatorPermissionCategory.SYSTEM_COUPONS,
+      AdminOperatorPermissionCategory.SYSTEM_ADMIN_OPERATORS,
+      AdminOperatorPermissionCategory.SYSTEM_POLICY,
+      AdminOperatorPermissionCategory.SYSTEM_AUDIT,
+      AdminOperatorPermissionCategory.SYSTEM_SETUP,
     ];
 
     expect(tx.adminOperatorPermission.upsert).toHaveBeenCalledWith({
@@ -517,6 +568,8 @@ describe('AdminService query orchestration', () => {
 
     await expect(
       service.createAdminOperator('admin-1', {
+        email: 'operator@hands.vn',
+        password: 'initial-password',
         phone: '+84900000009',
         roles: [Role.ADMIN],
       }),
