@@ -2,7 +2,8 @@ import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -66,21 +67,22 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
       title="Finance Approvers"
     >
       {roleNotice ? (
-        <section className={`card admin-mb-16 ${roleNotice === 'updated' ? 'surface-success' : 'surface-danger'}`}>
-          <AdminSectionHeader
-            description={roleNoticeMessage(roleNotice)}
-            status={<span className="pill pill-info">{roleNotice}</span>}
-            title="Role update notice"
-          />
-        </section>
+        <AdminFilterPanel
+          className={`admin-mb-16 ${roleNotice === 'updated' ? 'surface-success' : 'surface-danger'}`}
+          description={roleNoticeMessage(roleNotice)}
+          resultLabel={roleNotice}
+          resultTone={roleNotice === 'updated' ? 'success' : 'danger'}
+          title="Role update notice"
+        />
       ) : null}
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Finance approver is not a generic menu count. It is a second-control role for actions that move money, recognize tax, or close finance evidence."
-          status={<span className="pill pill-warn">Dual control</span>}
-          title="Finance approver operating rule"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description="Finance approver is not a generic menu count. It is a second-control role for actions that move money, recognize tax, or close finance evidence."
+        resultLabel="Dual control"
+        resultTone="warning"
+        title="Finance approver operating rule"
+      >
         <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
             <span>1</span>
@@ -116,15 +118,18 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
             <small>Safe guard</small>
           </div>
         </div>
-      </section>
+      </AdminFilterPanel>
 
-      <section className="card admin-card-scroll">
-        <AdminSectionHeader
-          description="Use a reason for every role change. The API writes an immutable admin audit log with previous and next role sets."
-          title="Finance approver directory"
-        />
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        description="Use a reason for every role change. The API writes an immutable admin audit log with previous and next role sets."
+        resultLabel={`${adminUsers.length} admin(s)`}
+        resultTone="info"
+        title="Finance approver directory"
+      >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No admin users were returned by the bounded admin user API."
             headers={['Admin', 'Roles', 'Latest session', 'Push devices', 'Finance approver']}
             rowCount={adminUsers.length}
@@ -179,7 +184,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
             })}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminFilterPanel>
     </AdminPageTemplate>
   );
 }

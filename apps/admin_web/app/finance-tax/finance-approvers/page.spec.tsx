@@ -51,11 +51,17 @@ describe('FinanceApproversPage', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);
     expect(markup).toContain('Finance approver role was updated');
+    expect(markup).toContain('Finance approver operating rule');
+    expect(markup).toContain('Finance approver directory');
     expect(markup).toContain('Finance Admin');
     expect(markup).toContain('Support Admin');
     expect(markup).not.toContain('Customer User');
+    expect(markup).toContain('card admin-filter-panel');
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
   });
 });
