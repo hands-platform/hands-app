@@ -64,10 +64,14 @@ export function cashSettlementHref(input: {
   pageSize?: number;
   queue?: CashSettlementQueueFilter;
   q?: string;
+  view?: 'full';
 }) {
   const params = new URLSearchParams();
   if (input.range && input.range !== 'today') {
     params.set('range', input.range);
+  }
+  if (input.view === 'full') {
+    params.set('view', input.view);
   }
   if (input.queue && input.queue !== 'all') {
     params.set('queue', input.queue);

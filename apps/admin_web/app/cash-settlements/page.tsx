@@ -1,3 +1,6 @@
+import Link from 'next/link';
+
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   type AdminCashSettlementSummary,
   type AdminEarning,
@@ -32,6 +35,7 @@ import {
   buildCashSettlementFilters,
   buildCashSettlementServerPagination,
   buildCashSettlementSummaryApiHref,
+  cashSettlementHref,
 } from './cash-settlement-page-filters';
 import {
   buildCashSettlementPriorityBoard,
@@ -69,10 +73,13 @@ const CASH_SETTLEMENT_POLICY_HREF = `/admin/operational-policy?${new URLSearchPa
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildCashSettlementFilters(params);
+  const showFullOperationsView = readSearchParam(params.view) === 'full';
   const [earnings, apiSummary, policySettings] = await Promise.all([
     adminGet<AdminEarning[]>(buildCashSettlementApiHref(filters), []),
     adminGet<AdminCashSettlementSummary | null>(buildCashSettlementSummaryApiHref(filters), null),
-    adminGet<AdminOperationalPolicySetting[]>(CASH_SETTLEMENT_POLICY_HREF, []),
+    showFullOperationsView
+      ? adminGet<AdminOperationalPolicySetting[]>(CASH_SETTLEMENT_POLICY_HREF, [])
+      : Promise.resolve([] as AdminOperationalPolicySetting[]),
   ]);
   const rows = buildCashSettlementRows(earnings);
   const providers = buildProviderGroups(rows);
@@ -163,18 +170,45 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         executionDesk={buildCashSettlementExecutionDesk(rows, providers, summary)}
         priorityBoardRows={buildCashSettlementPriorityBoardRows(priorityBoard)}
       />
-      <CashSettlementRulesSection
-        appliedPolicyCards={buildAppliedCashSettlementPolicyCards(liveOperationsPolicy)}
-        settlementRuleCards={buildCashSettlementRuleCards(summary)}
-      />
-      <CashSettlementWorkflowSections
-        commandCards={buildCommandCards(rows, providers, summary)}
-        debtCauseCards={buildDebtCauseCards(rows, summary)}
-        evidenceChecklist={buildCashSettlementEvidenceChecklist(rows, providers, summary)}
-        recoverySteps={buildWalletRecoverySteps(rows, providers, summary)}
-        settlementHandoff={buildCashSettlementHandoffMap(rows, providers, summary)}
-      />
-      <CashSettlementProviderGroupsSection providers={providers} />
+      {showFullOperationsView ? (
+        <>
+          <CashSettlementRulesSection
+            appliedPolicyCards={buildAppliedCashSettlementPolicyCards(liveOperationsPolicy)}
+            settlementRuleCards={buildCashSettlementRuleCards(summary)}
+          />
+          <CashSettlementWorkflowSections
+            commandCards={buildCommandCards(rows, providers, summary)}
+            debtCauseCards={buildDebtCauseCards(rows, summary)}
+            evidenceChecklist={buildCashSettlementEvidenceChecklist(rows, providers, summary)}
+            recoverySteps={buildWalletRecoverySteps(rows, providers, summary)}
+            settlementHandoff={buildCashSettlementHandoffMap(rows, providers, summary)}
+          />
+          <CashSettlementProviderGroupsSection providers={providers} />
+        </>
+      ) : (
+        <AdminFilterPanel
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          description="The default queue keeps payload focused on today's action list. Open the full view only when policy, workflow, and Partner group evidence is needed."
+          resultLabel="Compact default"
+          resultTone="info"
+          title="Cash settlement operations playbook"
+        >
+          <div className="participant-list">
+            <Link
+              className="pill pill-info"
+              href={cashSettlementHref({
+                pageSize: filters.pageSize,
+                q: filters.q,
+                queue: filters.queue,
+                range: filters.range,
+                view: 'full',
+              })}
+            >
+              Open full operations view
+            </Link>
+          </div>
+        </AdminFilterPanel>
+      )}
       <CashSettlementOpenDebtTableSection filters={filters} pagination={openDebtPagination} />
     </AdminPageTemplate>
   );

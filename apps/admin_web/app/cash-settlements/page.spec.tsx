@@ -81,6 +81,47 @@ describe('CashSettlementsPage', () => {
     expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
     expect(markup).not.toContain('class="card admin-mb-16"');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/cash-settlement-summary?range=today', null);
+    expect(markup).toContain('Open full operations view');
+    expect(markup).toContain('/cash-settlements?view=full');
+    expect(markup).not.toContain('Cash fee operating rules');
+    expect(markup).not.toContain('Cash fee settlement workflow');
+    expect(markup).not.toContain('Partner wallet debt groups');
+    expect(markup).not.toContain('Cash settlement evidence checklist');
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
+      [],
+    );
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
+  });
+
+  it('loads the full cash settlement operations playbook only when requested', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/cash-settlement-earnings?range=today&take=10') {
+        return [] as AdminEarning[];
+      }
+      if (href === '/admin/cash-settlement-summary?range=today') {
+        return null as AdminCashSettlementSummary | null;
+      }
+      if (
+        href ===
+        '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters'
+      ) {
+        return [] as AdminOperationalPolicySetting[];
+      }
+      return fallback;
+    });
+
+    const page = await CashSettlementsPage({
+      searchParams: Promise.resolve({ range: 'today', view: 'full' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Cash fee operating rules');
+    expect(markup).toContain('Cash fee settlement workflow');
+    expect(markup).toContain('Partner wallet debt groups');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/operational-policy?keys=cash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cpayout.batch_cycle_policy%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
+      [],
+    );
   });
 });
