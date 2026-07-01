@@ -293,7 +293,6 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
           </div>
 
           <div className="calendar-sidebar-section">
-            <AdminSectionHeader title="Mini calendar" description={formatMonthLabel(currentDate)} />
             <div className="calendar-mini-picker">
               <DatePicker
                 calendarClassName="calendar-vuexy-datepicker calendar-vuexy-datepicker-inline"

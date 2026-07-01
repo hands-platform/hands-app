@@ -17,6 +17,8 @@ describe('calendar client structure', () => {
     expect(clientSource).toContain('buildCalendarTagFilters');
     expect(clientSource).toContain('selectedTags');
     expect(clientSource).toContain('calendar-filter-count');
+    expect(clientSource).not.toContain('title="Mini calendar"');
+    expect(clientSource).not.toContain('description={formatMonthLabel(currentDate)}');
     expect(clientSource).not.toContain('<input\n                checked={selectedCategories.length === CALENDAR_CATEGORIES.length}');
     expect(clientSource).not.toContain('<input\n                      checked={active}');
     expect(clientSource).not.toContain('CALENDAR_CATEGORIES.map');
