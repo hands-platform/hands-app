@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsBatchStateCard = {
@@ -24,17 +25,13 @@ export function EarningsBatchStateFilterSection({
   ledgerCount,
 }: EarningsBatchStateFilterSectionProps) {
   return (
-    <div className="card admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Earning batch state filters</h2>
-          <p className="muted">
-            Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue
-            stay based on the selected date range.
-          </p>
-        </div>
-        <span className="pill pill-info">{ledgerCount} ledger row(s)</span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue stay based on the selected date range."
+      resultLabel={`${ledgerCount} ledger row(s)`}
+      resultTone={ledgerCount > 0 ? 'info' : 'warning'}
+      title="Earning batch state filters"
+    >
       <div className="filter-row admin-mt-12">
         {cards.map((card) => (
           <Link
@@ -57,6 +54,6 @@ export function EarningsBatchStateFilterSection({
             </div>
           ))}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { formatMoney } from '../../lib/admin-format';
 
@@ -37,19 +38,13 @@ type EarningsCashDebtQueueSectionProps = {
 
 export function EarningsCashDebtQueueSection({ currency, items, totals }: EarningsCashDebtQueueSectionProps) {
   return (
-    <div className="card admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Cash fee debt queue</h2>
-          <p className="muted">
-            Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or finance
-            offsets it.
-          </p>
-        </div>
-        <span className={items.length ? 'pill pill-danger' : 'pill pill-success'}>
-          {items.length} blocked wallet(s)
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or finance offsets it."
+      resultLabel={`${items.length} blocked wallet(s)`}
+      resultTone={items.length > 0 ? 'danger' : 'success'}
+      title="Cash fee debt queue"
+    >
       {items.length ? (
         <div className="service-trace-summary">
           <CashDebtMetric label="Blocked wallets" value={String(items.length)} />
@@ -127,7 +122,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
       ) : (
         <p className="muted">No Partner has unsettled cash fee debt in the current admin result window.</p>
       )}
-    </div>
+    </AdminFilterPanel>
   );
 }
 

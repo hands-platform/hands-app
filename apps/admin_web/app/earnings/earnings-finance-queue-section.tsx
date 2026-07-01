@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+
 export type EarningsFinanceSignal = {
   readonly action: string;
   readonly className: string;
@@ -15,15 +17,14 @@ type EarningsFinanceQueueSectionProps = {
 
 export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSectionProps) {
   return (
-    <div className="card admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Finance queue</h2>
-          <p className="muted">
-            Operator summary for Partner payout readiness, batched earnings, tax logs, and stale pending
-            revenue.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Operator summary for Partner payout readiness, batched earnings, tax logs, and stale pending revenue."
+      resultLabel={`${signals.length} signal(s)`}
+      resultTone={signals.length > 0 ? 'info' : 'warning'}
+      title="Finance queue"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/payouts">
           Open payout batches
         </Link>
@@ -40,6 +41,6 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
           </div>
         ))}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

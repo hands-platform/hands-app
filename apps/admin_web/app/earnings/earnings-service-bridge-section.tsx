@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsServiceBridgeItem = {
@@ -31,15 +33,14 @@ type EarningsServiceBridgeSectionProps = {
 
 export function EarningsServiceBridgeSection({ currency, items }: EarningsServiceBridgeSectionProps) {
   return (
-    <div className="card admin-card-scroll admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Service to earnings bridge</h2>
-          <p className="muted">
-            Confirms which service duration options are creating Partner net, HANDS platform fee, tax
-            withholding, cash wallet debt, and payout-batch pressure.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Confirms which service duration options are creating Partner net, HANDS platform fee, tax withholding, cash wallet debt, and payout-batch pressure."
+      resultLabel={`${items.length} option(s)`}
+      resultTone={items.length > 0 ? 'info' : 'warning'}
+      title="Service to earnings bridge"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/services">
           Review service pricing
         </Link>
@@ -58,24 +59,25 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
         <ServiceBridgeMetric amount={sumBridge(items, 'withholdingAmount')} currency={currency} label="Tax withheld" />
         <ServiceBridgeMetric amount={sumBridge(items, 'cashDebtAmount')} currency={currency} label="Cash debt" />
       </div>
-      {items.length ? (
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Service option</th>
-              <th>Bookings</th>
-              <th>Gross</th>
-              <th>Partner payout</th>
-              <th>Partner net</th>
-              <th>Platform fee</th>
-              <th>VAT / cost</th>
-              <th>Tax withheld</th>
-              <th>Net company fee</th>
-              <th>Cash debt</th>
-              <th>Payout state</th>
-            </tr>
-          </thead>
-          <tbody>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage="No earning has linked service details yet."
+          headers={[
+            'Service option',
+            'Bookings',
+            'Gross',
+            'Partner payout',
+            'Partner net',
+            'Platform fee',
+            'VAT / cost',
+            'Tax withheld',
+            'Net company fee',
+            'Cash debt',
+            'Payout state',
+          ]}
+          rowCount={items.length}
+        >
             {items.map((item) => (
               <tr key={item.key}>
                 <td>
@@ -117,12 +119,9 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="muted">No earning has linked service details yet.</p>
-      )}
-    </div>
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminFilterPanel>
   );
 }
 

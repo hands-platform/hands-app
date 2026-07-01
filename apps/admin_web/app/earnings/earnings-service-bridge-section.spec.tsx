@@ -31,12 +31,17 @@ describe('EarningsServiceBridgeSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('div');
     expect(rendered).toContain('Service to earnings bridge');
     expect(rendered).toContain('Deep Tissue / 90 min');
     expect(rendered).toContain('1.500.000 VND');
     expect(rendered).toContain('50.000 VND');
     expect(hrefsIn(section)).toContain('/services');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'table vuexy-data-table vuexy-booking-table',
+      ]),
+    );
   });
 
   it('renders an empty state when no service bridge rows exist', () => {
@@ -47,6 +52,7 @@ describe('EarningsServiceBridgeSection', () => {
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -63,6 +69,7 @@ function textContent(value: unknown): string {
 }
 
 function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -74,6 +81,27 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

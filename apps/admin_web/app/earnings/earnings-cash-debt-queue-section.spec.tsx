@@ -38,7 +38,6 @@ describe('EarningsCashDebtQueueSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('div');
     expect(rendered).toContain('Cash fee debt queue');
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('80.000 VND');
@@ -49,6 +48,11 @@ describe('EarningsCashDebtQueueSection', () => {
     expect(rendered).toContain('Review fee settlement');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+      ]),
     );
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(hrefsIn(section)).toContain('/partners/partner-1');

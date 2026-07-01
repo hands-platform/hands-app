@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsMoneyFlowCard = {
@@ -25,15 +26,14 @@ type EarningsMoneyFlowSectionProps = {
 
 export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMoneyFlowSectionProps) {
   return (
-    <div className="card admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Money flow command center</h2>
-          <p className="muted">
-            Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax,
-            company net, and cash debt before payout.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax, company net, and cash debt before payout."
+      resultLabel={`${checks.length} check(s)`}
+      resultTone={checks.length > 0 ? 'warning' : 'success'}
+      title="Money flow command center"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/bookings">
           Trace bookings
         </Link>
@@ -59,6 +59,6 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
           </div>
         ))}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
