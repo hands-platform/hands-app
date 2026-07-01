@@ -1,3 +1,4 @@
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney, shortRecordId } from '../../lib/admin-format';
 
 export type PayoutStatusLaneBatch = {
@@ -23,17 +24,13 @@ type PayoutStatusLanesSectionProps = {
 
 export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLanesSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout status lanes</h2>
-          <p className="muted">
-            Work from blocked and failed lanes first, then draft review, processing confirmation, and paid
-            reconciliation.
-          </p>
-        </div>
-        <span className="pill pill-info">{batchCount} batch(es)</span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Work from blocked and failed lanes first, then draft review, processing confirmation, and paid reconciliation."
+      resultLabel={`${batchCount} batch(es)`}
+      resultTone={batchCount > 0 ? 'info' : 'warning'}
+      title="Payout status lanes"
+    >
       <div className="detail-grid admin-mt-16">
         {lanes.map((lane) => (
           <div key={lane.title}>
@@ -65,6 +62,6 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
           </div>
         ))}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

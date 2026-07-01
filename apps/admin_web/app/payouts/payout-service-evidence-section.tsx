@@ -1,5 +1,6 @@
 import { formatMoney } from '../../lib/admin-format';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type PayoutServiceEvidenceItem = {
   readonly batchCount: number;
@@ -27,15 +28,14 @@ export function PayoutServiceEvidenceSection({
   items,
 }: PayoutServiceEvidenceSectionProps) {
   return (
-    <div className="card admin-card-scroll admin-mb-16 payout-service-evidence-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout service evidence</h2>
-          <p className="muted">
-            Shows which service duration options are inside payout batches, so finance can reconcile partner
-            net, HANDS fee, tax withholding, and cash wallet debt before bank transfer.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Shows which service duration options are inside payout batches, so finance can reconcile partner net, HANDS fee, tax withholding, and cash wallet debt before bank transfer."
+      resultLabel={`${items.length} option(s)`}
+      resultTone={items.length > 0 ? 'info' : 'warning'}
+      title="Payout service evidence"
+    >
+      <div className="participant-list admin-mb-12">
         <a className="text-link" href="/services">
           Review service pricing
         </a>
@@ -66,48 +66,44 @@ export function PayoutServiceEvidenceSection({
           <strong>{formatMoney(sumEvidence(items, 'withholdingAmount'), currency)}</strong>
         </div>
       </div>
-      {items.length ? (
-        <AdminTableScroll>
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Service option</th>
-                <th>Batches</th>
-                <th>Earnings</th>
-                <th>Gross</th>
-                <th>Partner net</th>
-                <th>Platform fee</th>
-                <th>Tax</th>
-                <th>Cash debt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.key}>
-                  <td>
-                    <strong>{item.label}</strong>
-                    <p className="muted">{item.groupKey}</p>
-                  </td>
-                  <td>{item.batchCount}</td>
-                  <td>{item.earningCount}</td>
-                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
-                  <td>{formatMoney(item.netAmount, item.currency)}</td>
-                  <td>{formatMoney(item.platformFee, item.currency)}</td>
-                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
-                  <td>
-                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
-                      {formatMoney(item.cashDebtAmount, item.currency)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AdminTableScroll>
-      ) : (
-        <p className="muted">No payout batch has linked service evidence yet.</p>
-      )}
-    </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage="No payout batch has linked service evidence yet."
+          headers={[
+            'Service option',
+            'Batches',
+            'Earnings',
+            'Gross',
+            'Partner net',
+            'Platform fee',
+            'Tax',
+            'Cash debt',
+          ]}
+          rowCount={items.length}
+        >
+          {items.map((item) => (
+            <tr key={item.key}>
+              <td>
+                <strong>{item.label}</strong>
+                <p className="muted">{item.groupKey}</p>
+              </td>
+              <td>{item.batchCount}</td>
+              <td>{item.earningCount}</td>
+              <td>{formatMoney(item.grossAmount, item.currency)}</td>
+              <td>{formatMoney(item.netAmount, item.currency)}</td>
+              <td>{formatMoney(item.platformFee, item.currency)}</td>
+              <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+              <td>
+                <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
+                  {formatMoney(item.cashDebtAmount, item.currency)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </AdminFilterPanel>
   );
 }
 

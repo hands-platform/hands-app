@@ -1,3 +1,5 @@
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+
 export type PayoutCommandSignal = {
   readonly action: string;
   readonly className: string;
@@ -13,14 +15,14 @@ type PayoutCommandQueueSectionProps = {
 
 export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout command queue</h2>
-          <p className="muted">
-            Finance-first view for review money, active transfers, payout holds, and reconciliation warnings.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Finance-first view for review money, active transfers, payout holds, and reconciliation warnings."
+      resultLabel={`${signals.length} signal(s)`}
+      resultTone={signals.length > 0 ? 'warning' : 'success'}
+      title="Payout command queue"
+    >
+      <div className="participant-list admin-mb-12">
         <a className="text-link" href="/earnings">
           Review earnings queue
         </a>
@@ -41,6 +43,6 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       ) : (
         <p className="muted">No payout command signal is visible for this range.</p>
       )}
-    </div>
+    </AdminFilterPanel>
   );
 }

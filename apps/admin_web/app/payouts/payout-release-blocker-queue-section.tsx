@@ -1,3 +1,4 @@
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutReleaseBlockerReason = {
@@ -23,19 +24,13 @@ type PayoutReleaseBlockerQueueSectionProps = {
 
 export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlockerQueueSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Release blocker queue</h2>
-          <p className="muted">
-            Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and
-            bank references are clean.
-          </p>
-        </div>
-        <span className={`pill ${items.length ? 'pill-danger' : 'pill-success'}`}>
-          {items.length ? `${items.length} blocker(s)` : 'Clear'}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and bank references are clean."
+      resultLabel={items.length ? `${items.length} blocker(s)` : 'Clear'}
+      resultTone={items.length > 0 ? 'danger' : 'success'}
+      title="Release blocker queue"
+    >
       <div className="setup-stage-list">
         {items.map((item) => (
           <div className="setup-stage-item" key={`${item.id}-${item.label}`}>
@@ -75,6 +70,6 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
           </div>
         ) : null}
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

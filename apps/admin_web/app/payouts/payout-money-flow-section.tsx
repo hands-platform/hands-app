@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutMoneyFlowCard = {
@@ -25,15 +26,15 @@ type PayoutMoneyFlowSectionProps = {
 
 export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyFlowSectionProps) {
   return (
-    <div className="card admin-mb-16" id="release-blocker-queue">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout money flow</h2>
-          <p className="muted">
-            Reconciles payout batches against service pricing evidence before transfer: gross represented,
-            partner payout, HANDS fee, withholding, and cash debt.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description="Reconciles payout batches against service pricing evidence before transfer: gross represented, partner payout, HANDS fee, withholding, and cash debt."
+      id="release-blocker-queue"
+      resultLabel={`${checks.length} check(s)`}
+      resultTone={checks.length > 0 ? 'warning' : 'success'}
+      title="Payout money flow"
+    >
+      <div className="participant-list admin-mb-12">
         <Link className="text-link" href="/bookings">
           Trace bookings
         </Link>
@@ -63,6 +64,6 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
       ) : (
         <p className="muted">No payout money flow check is visible for this range.</p>
       )}
-    </div>
+    </AdminFilterPanel>
   );
 }

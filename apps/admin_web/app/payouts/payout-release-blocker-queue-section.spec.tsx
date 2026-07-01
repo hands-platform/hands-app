@@ -20,12 +20,16 @@ describe('PayoutReleaseBlockerQueueSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('div');
     expect(rendered).toContain('Release blocker queue');
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('750.000 VND');
     expect(rendered).toContain('Missing ref');
     expect(hrefsIn(section)).toContain('#batch-1');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+      ]),
+    );
   });
 
   it('renders a clear state when no release blocker is visible', () => {
@@ -36,6 +40,7 @@ describe('PayoutReleaseBlockerQueueSection', () => {
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -52,6 +57,7 @@ function textContent(value: unknown): string {
 }
 
 function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -63,6 +69,27 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
