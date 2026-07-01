@@ -1,6 +1,15 @@
 const {
   PrismaClient,
   Role,
+  AccountingJournalBatchStatus,
+  AccountingJournalEntrySide,
+  AccountingJournalSourceType,
+  BankReconciliationStatus,
+  BookingPaymentClearingEntryType,
+  BookingPaymentClearingStatus,
+  BookingStatus,
+  CompanyBankAccountStatus,
+  CompanyBankTransactionType,
   ProviderStatus,
   ProviderKycStatus,
   ProviderDocumentStatus,
@@ -13,6 +22,8 @@ const {
   TaxPolicyStatus,
   TaxRuleScope,
   VerificationStatus,
+  PaymentMethod,
+  PaymentStatus,
 } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -416,6 +427,269 @@ async function main() {
       },
     },
   });
+
+  if (customer.customerProfile && provider.providerProfile) {
+    const financeSmokeNow = new Date();
+    const financeSmokeScheduledEndAt = new Date(financeSmokeNow.getTime() + 60 * 60 * 1000);
+    const financeSmokeMonthlyPeriod = financeSmokeNow.toISOString().slice(0, 7);
+
+    const financeSmokeBooking = await prisma.booking.upsert({
+      where: { id: 'seed-finance-smoke-booking' },
+      update: {
+        customerProfileId: customer.customerProfile.id,
+        preferredProviderId: provider.providerProfile.id,
+        selectedProviderId: provider.providerProfile.id,
+        status: BookingStatus.COMPLETED,
+        scheduledStartAt: financeSmokeNow,
+        scheduledEndAt: financeSmokeScheduledEndAt,
+        openedAt: financeSmokeNow,
+        matchedAt: financeSmokeNow,
+        closedAt: financeSmokeNow,
+        closedByRole: Role.PROVIDER,
+        closedReason: 'FINANCE_SMOKE_FIXTURE',
+        address: {
+          city: 'Ho Chi Minh City',
+          country: 'Vietnam',
+          district: 'District 1',
+          text: '22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City',
+        },
+        lat: 10.7757,
+        lng: 106.7004,
+        metadata: {
+          smokeFixture: true,
+          purpose: 'Admin Finance detail route smoke',
+        },
+      },
+      create: {
+        id: 'seed-finance-smoke-booking',
+        customerProfileId: customer.customerProfile.id,
+        preferredProviderId: provider.providerProfile.id,
+        selectedProviderId: provider.providerProfile.id,
+        status: BookingStatus.COMPLETED,
+        scheduledStartAt: financeSmokeNow,
+        scheduledEndAt: financeSmokeScheduledEndAt,
+        openedAt: financeSmokeNow,
+        matchedAt: financeSmokeNow,
+        closedAt: financeSmokeNow,
+        closedByRole: Role.PROVIDER,
+        closedReason: 'FINANCE_SMOKE_FIXTURE',
+        address: {
+          city: 'Ho Chi Minh City',
+          country: 'Vietnam',
+          district: 'District 1',
+          text: '22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City',
+        },
+        lat: 10.7757,
+        lng: 106.7004,
+        metadata: {
+          smokeFixture: true,
+          purpose: 'Admin Finance detail route smoke',
+        },
+      },
+    });
+
+    const financeSmokePayment = await prisma.payment.upsert({
+      where: { id: 'seed-finance-smoke-payment' },
+      update: {
+        bookingId: financeSmokeBooking.id,
+        method: PaymentMethod.CARD,
+        status: PaymentStatus.CAPTURED,
+        amount: 500000,
+        currency: 'VND',
+        providerRef: 'seed-finance-smoke-payment-ref',
+        rawMeta: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-payment',
+        bookingId: financeSmokeBooking.id,
+        method: PaymentMethod.CARD,
+        status: PaymentStatus.CAPTURED,
+        amount: 500000,
+        currency: 'VND',
+        providerRef: 'seed-finance-smoke-payment-ref',
+        rawMeta: { smokeFixture: true },
+      },
+    });
+
+    const financeSmokeJournalBatch = await prisma.accountingJournalBatch.upsert({
+      where: { sourceKey: 'seed-finance-smoke-journal-batch' },
+      update: {
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        bookingId: financeSmokeBooking.id,
+        customerProfileId: customer.customerProfile.id,
+        providerProfileId: provider.providerProfile.id,
+        paymentId: financeSmokePayment.id,
+        monthlyPeriod: financeSmokeMonthlyPeriod,
+        currency: 'VND',
+        status: AccountingJournalBatchStatus.POSTED,
+        totalDebit: 500000,
+        totalCredit: 500000,
+        postedAt: financeSmokeNow,
+        reversedAt: null,
+        createdById: admin.id,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-journal-batch',
+        sourceKey: 'seed-finance-smoke-journal-batch',
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        bookingId: financeSmokeBooking.id,
+        customerProfileId: customer.customerProfile.id,
+        providerProfileId: provider.providerProfile.id,
+        paymentId: financeSmokePayment.id,
+        monthlyPeriod: financeSmokeMonthlyPeriod,
+        currency: 'VND',
+        status: AccountingJournalBatchStatus.POSTED,
+        totalDebit: 500000,
+        totalCredit: 500000,
+        postedAt: financeSmokeNow,
+        createdById: admin.id,
+        metadata: { smokeFixture: true },
+      },
+    });
+
+    await prisma.accountingJournalEntry.upsert({
+      where: { id: 'seed-finance-smoke-journal-entry-debit' },
+      update: {
+        batchId: financeSmokeJournalBatch.id,
+        side: AccountingJournalEntrySide.DEBIT,
+        accountCode: '1100',
+        accountName: 'Customer payment clearing asset',
+        amount: 500000,
+        currency: 'VND',
+        memo: 'Finance smoke debit entry.',
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-journal-entry-debit',
+        batchId: financeSmokeJournalBatch.id,
+        side: AccountingJournalEntrySide.DEBIT,
+        accountCode: '1100',
+        accountName: 'Customer payment clearing asset',
+        amount: 500000,
+        currency: 'VND',
+        memo: 'Finance smoke debit entry.',
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        metadata: { smokeFixture: true },
+      },
+    });
+
+    await prisma.accountingJournalEntry.upsert({
+      where: { id: 'seed-finance-smoke-journal-entry-credit' },
+      update: {
+        batchId: financeSmokeJournalBatch.id,
+        side: AccountingJournalEntrySide.CREDIT,
+        accountCode: '2100',
+        accountName: 'Booking settlement payable clearing',
+        amount: 500000,
+        currency: 'VND',
+        memo: 'Finance smoke credit entry.',
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-journal-entry-credit',
+        batchId: financeSmokeJournalBatch.id,
+        side: AccountingJournalEntrySide.CREDIT,
+        accountCode: '2100',
+        accountName: 'Booking settlement payable clearing',
+        amount: 500000,
+        currency: 'VND',
+        memo: 'Finance smoke credit entry.',
+        sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+        sourceId: financeSmokeBooking.id,
+        metadata: { smokeFixture: true },
+      },
+    });
+
+    await prisma.bookingPaymentClearingEntry.upsert({
+      where: { sourceKey: 'seed-finance-smoke-clearing' },
+      update: {
+        type: BookingPaymentClearingEntryType.CUSTOMER_PAYMENT_CAPTURED,
+        status: BookingPaymentClearingStatus.OPEN,
+        bookingId: financeSmokeBooking.id,
+        paymentId: financeSmokePayment.id,
+        amount: 500000,
+        currency: 'VND',
+        occurredAt: financeSmokeNow,
+        clearedAt: null,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-clearing',
+        sourceKey: 'seed-finance-smoke-clearing',
+        type: BookingPaymentClearingEntryType.CUSTOMER_PAYMENT_CAPTURED,
+        status: BookingPaymentClearingStatus.OPEN,
+        bookingId: financeSmokeBooking.id,
+        paymentId: financeSmokePayment.id,
+        amount: 500000,
+        currency: 'VND',
+        occurredAt: financeSmokeNow,
+        metadata: { smokeFixture: true },
+      },
+    });
+
+    const financeSmokeBankAccount = await prisma.companyBankAccount.upsert({
+      where: { id: 'seed-finance-smoke-bank-account' },
+      update: {
+        name: 'HANDS Finance Smoke Account',
+        bankName: 'Vietcombank',
+        accountNumberMasked: '****3101',
+        accountNumberLast4: '3101',
+        currency: 'VND',
+        status: CompanyBankAccountStatus.ACTIVE,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-bank-account',
+        name: 'HANDS Finance Smoke Account',
+        bankName: 'Vietcombank',
+        accountNumberMasked: '****3101',
+        accountNumberLast4: '3101',
+        currency: 'VND',
+        status: CompanyBankAccountStatus.ACTIVE,
+        metadata: { smokeFixture: true },
+      },
+    });
+
+    await prisma.companyBankTransaction.upsert({
+      where: { sourceKey: 'seed-finance-smoke-bank-transaction' },
+      update: {
+        bankAccountId: financeSmokeBankAccount.id,
+        type: CompanyBankTransactionType.INFLOW,
+        amount: 500000,
+        currency: 'VND',
+        occurredAt: financeSmokeNow,
+        valueDate: financeSmokeNow,
+        transferRef: 'FIN-SMOKE-3101',
+        counterpartyName: 'Demo customer card processor',
+        description: 'Finance smoke bank transaction for Admin detail route checks.',
+        status: BankReconciliationStatus.UNMATCHED,
+        metadata: { smokeFixture: true },
+      },
+      create: {
+        id: 'seed-finance-smoke-bank-transaction',
+        sourceKey: 'seed-finance-smoke-bank-transaction',
+        bankAccountId: financeSmokeBankAccount.id,
+        type: CompanyBankTransactionType.INFLOW,
+        amount: 500000,
+        currency: 'VND',
+        occurredAt: financeSmokeNow,
+        valueDate: financeSmokeNow,
+        transferRef: 'FIN-SMOKE-3101',
+        counterpartyName: 'Demo customer card processor',
+        description: 'Finance smoke bank transaction for Admin detail route checks.',
+        status: BankReconciliationStatus.UNMATCHED,
+        metadata: { smokeFixture: true },
+      },
+    });
+  }
 
   if (provider.providerProfile) {
     for (const service of services) {
