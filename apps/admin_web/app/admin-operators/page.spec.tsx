@@ -72,7 +72,7 @@ describe('AdminOperatorsPage', () => {
   });
 
   it('renders a master admin workspace from the bounded admin users API', async () => {
-    const page = await AdminOperatorsPage();
+    const page = await AdminOperatorsPage({});
     const markup = renderToStaticMarkup(page);
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);

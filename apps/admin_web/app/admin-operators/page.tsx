@@ -63,7 +63,7 @@ type AdminOperatorsPageProps = {
   readonly searchParams?: Promise<{ readonly operatorNotice?: string }>;
 };
 
-export default async function AdminOperatorsPage({ searchParams }: AdminOperatorsPageProps = {}) {
+export default async function AdminOperatorsPage({ searchParams }: AdminOperatorsPageProps) {
   const params = searchParams ? await searchParams : {};
   const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
   const adminUsers = users.filter((user) => user.roles.includes(ADMIN_ROLE));

@@ -1,6 +1,7 @@
 const {
   PrismaClient,
   Role,
+  AdminOperatorPermissionCategory,
   AccountingJournalBatchStatus,
   AccountingJournalEntrySide,
   AccountingJournalSourceType,
@@ -27,6 +28,7 @@ const {
 } = require('@prisma/client');
 
 const prisma = new PrismaClient();
+const adminOperatorPermissionCategories = Object.values(AdminOperatorPermissionCategory);
 
 function assertSeedAllowed() {
   if (
@@ -37,6 +39,91 @@ function assertSeedAllowed() {
       'Refusing to run Prisma seed in production without ALLOW_PRISMA_SEED=true.',
     );
   }
+}
+
+function decodeJwtPayloadUnsafe(token) {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  const [, encodedPayload] = token.split('.');
+  if (!encodedPayload) {
+    return null;
+  }
+
+  try {
+    const normalizedPayload = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedPayload = normalizedPayload.padEnd(
+      normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+      '=',
+    );
+    return JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSeedAdminRoles(payload) {
+  const validRoles = new Set(Object.values(Role));
+  const payloadRoles = Array.isArray(payload?.roles) ? payload.roles : [];
+  const roles = new Set(
+    [...payloadRoles, payload?.activeRole, payload?.role].filter((role) => validRoles.has(role)),
+  );
+
+  if (!roles.has(Role.ADMIN)) {
+    return [];
+  }
+
+  roles.add(Role.FINANCE_APPROVER);
+  roles.add(Role.MASTER_ADMIN);
+
+  return [...roles];
+}
+
+async function seedAdminAccessTokenActor() {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_LOCAL_ADMIN_TOKEN_SEED !== 'true'
+  ) {
+    return null;
+  }
+
+  const payload = decodeJwtPayloadUnsafe(process.env.ADMIN_ACCESS_TOKEN);
+  const actorId = typeof payload?.sub === 'string' ? payload.sub.trim() : '';
+  const roles = normalizeSeedAdminRoles(payload);
+  if (!actorId || roles.length === 0) {
+    return null;
+  }
+
+  const phone = process.env.ADMIN_ACCESS_TOKEN_SEED_PHONE?.trim() || '+84900000998';
+
+  const user = await prisma.user.upsert({
+    where: { id: actorId },
+    update: {
+      fullName: 'Local Admin Web Actor',
+      roles: { set: roles },
+    },
+    create: {
+      id: actorId,
+      phone,
+      email: process.env.ADMIN_WEB_LOGIN_EMAIL?.trim() || null,
+      fullName: 'Local Admin Web Actor',
+      roles,
+    },
+  });
+
+  await prisma.adminOperatorPermission.upsert({
+    where: { userId: user.id },
+    update: {
+      categories: { set: adminOperatorPermissionCategories },
+    },
+    create: {
+      userId: user.id,
+      categories: { set: adminOperatorPermissionCategories },
+    },
+  });
+
+  return user;
 }
 
 async function main() {
@@ -384,6 +471,8 @@ async function main() {
       roles: [Role.ADMIN, Role.FINANCE_APPROVER],
     },
   });
+
+  await seedAdminAccessTokenActor();
 
   await prisma.platformFeePolicyVersion.upsert({
     where: { id: 'platform-fee-vn-mvp-2026' },
