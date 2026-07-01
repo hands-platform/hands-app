@@ -16,6 +16,12 @@ describe('PaymentOperationsTableSection', () => {
     expect(rendered).toContain('Payment action execution map');
     expect(rendered).toContain('Gateway callback evidence');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/earnings#earning-1', '/refunds#refund-1']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'table vuexy-data-table vuexy-booking-table',
+      ]),
+    );
   });
 
   it('renders the empty state when there are no payment rows', () => {
@@ -122,6 +128,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

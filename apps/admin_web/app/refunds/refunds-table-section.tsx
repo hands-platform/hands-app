@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type RefundActionExecutionRow = {
@@ -45,9 +46,16 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
   const rows = pagination.rows;
 
   return (
-    <div className="card refunds-table-card">
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Refund rows with booking, payment, customer, partner, and ledger action evidence for finance follow-up."
+      resultLabel={`${pagination.totalRows} row(s)`}
+      resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
+      title="Refund operations"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className="vuexy-booking-table"
           emptyMessage={emptyMessage}
           headers={['Refund', 'Customer', 'Partner', 'Payment', 'Booking', 'Amount', 'Status', 'Ops hint']}
           rowCount={rows.length}
@@ -108,6 +116,6 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
           totalPages={pagination.totalPages}
         />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

@@ -51,13 +51,18 @@ describe('PayoutBatchListSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('div');
     expect(rendered).toContain('Partner settlement batches ordered');
     expect(rendered).toContain('Newest active first');
     expect(rendered).toContain('Partner One');
     expect(rendered).toMatch(/Showing\s+11\s+to\s+20\s+of\s+25\s+entries/);
     expect(hrefsIn(section)).toContain('/earnings');
     expect(hrefsIn(section)).toContain('/payouts?page=3');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'table vuexy-data-table vuexy-booking-table',
+      ]),
+    );
   });
 });
 
@@ -91,6 +96,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

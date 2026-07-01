@@ -85,6 +85,7 @@ const payoutBatchTableHeaders = [
 export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchTableProps) {
   return (
     <AdminDataTable
+      className="vuexy-booking-table"
       emptyMessage="No payout batches loaded."
       headers={payoutBatchTableHeaders}
       rowCount={rows.length}

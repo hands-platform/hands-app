@@ -85,7 +85,11 @@ describe('PayoutBatchTable', () => {
     expect(hrefsIn(table)).toContain('/payouts?confirm=paid&payoutBatchId=batch-123456');
     expect(hrefsIn(table)).toContain('/partners/partner-1');
     expect(classNamesIn(table)).toEqual(
-      expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+      expect.arrayContaining([
+        'table vuexy-data-table vuexy-booking-table',
+        'admin-form-input',
+        'admin-form-control-button btn btn-primary',
+      ]),
     );
   });
 

@@ -1,5 +1,6 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { PayoutServerPagination } from './payouts-page-model';
 
@@ -19,21 +20,20 @@ export function PayoutBatchListSection({
   updateTransferRefAction,
 }: PayoutBatchListSectionProps) {
   return (
-    <div className="card payout-batch-list-card">
-      <div className="toolbar">
-        <div>
-          <p className="muted">
-            Partner settlement batches ordered so unresolved money movement stays at the top.
-          </p>
-        </div>
-        <div className="participant-list">
-          <span className="pill pill-success">Newest active first</span>
-          <span className="pill pill-info">Payout record</span>
-          <span className="pill pill-warn">Reconciliation</span>
-          <a className="pill" href="/earnings">
-            Review earnings
-          </a>
-        </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Partner settlement batches ordered so unresolved money movement stays at the top."
+      resultLabel={`${pagination.totalRows} row(s)`}
+      resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
+      title="Payout batch list"
+    >
+      <div className="participant-list admin-mb-12">
+        <span className="pill pill-success">Newest active first</span>
+        <span className="pill pill-info">Payout record</span>
+        <span className="pill pill-warn">Reconciliation</span>
+        <a className="pill" href="/earnings">
+          Review earnings
+        </a>
       </div>
 
       <AdminTableScroll>
@@ -52,6 +52,6 @@ export function PayoutBatchListSection({
           totalPages={pagination.totalPages}
         />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

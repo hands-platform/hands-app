@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
 export type PaymentActionExecutionRow = {
@@ -53,75 +54,84 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
   const rows = pagination.rows;
 
   return (
-    <div className="card">
-      <AdminDataTable
-        emptyMessage={emptyMessage}
-        headers={['Payment', 'Method', 'Status', 'Amount', 'Booking', 'Ops hint', 'Gateway ref', 'Action']}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <tr id={`payment-${row.id}`} key={row.id}>
-            <td>{row.id}</td>
-            <td>{row.method}</td>
-            <td>
-              {row.status}
-              <div className="muted">{row.stateLabel}</div>
-            </td>
-            <td>{row.amountLabel}</td>
-            <td>
-              {row.bookingIdLabel}
-              <div className="muted">{row.bookingStatus}</div>
-              <div className="muted">{row.recordDateLabel}</div>
-              <div className="muted">{row.customerPhone}</div>
-              {row.cashDebtLabel ? <div className="muted">{row.cashDebtLabel}</div> : null}
-              <div className="actions admin-mt-8">
-                <a className="text-link" href={row.bookingHref}>
-                  Open booking
-                </a>
-                {row.earningHref ? (
-                  <a className="text-link" href={row.earningHref}>
-                    Open earning
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Payment rows with booking links, gateway evidence, callback state, refund paths, and cash debt settlement actions."
+      resultLabel={`${pagination.totalRows} row(s)`}
+      resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
+      title="Payment operations"
+    >
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage={emptyMessage}
+          headers={['Payment', 'Method', 'Status', 'Amount', 'Booking', 'Ops hint', 'Gateway ref', 'Action']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr id={`payment-${row.id}`} key={row.id}>
+              <td>{row.id}</td>
+              <td>{row.method}</td>
+              <td>
+                {row.status}
+                <div className="muted">{row.stateLabel}</div>
+              </td>
+              <td>{row.amountLabel}</td>
+              <td>
+                {row.bookingIdLabel}
+                <div className="muted">{row.bookingStatus}</div>
+                <div className="muted">{row.recordDateLabel}</div>
+                <div className="muted">{row.customerPhone}</div>
+                {row.cashDebtLabel ? <div className="muted">{row.cashDebtLabel}</div> : null}
+                <div className="actions admin-mt-8">
+                  <a className="text-link" href={row.bookingHref}>
+                    Open booking
                   </a>
-                ) : null}
-                {row.refundHref ? (
-                  <a className="text-link" href={row.refundHref}>
-                    Open refund
-                  </a>
-                ) : null}
-              </div>
-            </td>
-            <td>
-              <div>{row.opsSignal}</div>
-              <div className="muted admin-mt-8">
-                {row.opsHint}
-              </div>
-              <div className="ops-task-note admin-mt-10">
-                <strong>Payment action execution map</strong>
-                <div className="setup-stage-list admin-mt-8">
-                  {row.executionRows.map((executionRow) => (
-                    <div className="setup-stage-item" key={`${row.id}-${executionRow.action}`}>
-                      <span className={`pill ${executionRow.pillClass}`}>{executionRow.status}</span>
-                      <div>
-                        <strong>{executionRow.action}</strong>
-                        <p className="muted">{executionRow.reason}</p>
-                        <small>{executionRow.operatorRule}</small>
-                      </div>
-                    </div>
-                  ))}
+                  {row.earningHref ? (
+                    <a className="text-link" href={row.earningHref}>
+                      Open earning
+                    </a>
+                  ) : null}
+                  {row.refundHref ? (
+                    <a className="text-link" href={row.refundHref}>
+                      Open refund
+                    </a>
+                  ) : null}
                 </div>
-              </div>
-            </td>
-            <td>
-              <div>{row.providerRef}</div>
-              {row.callbackEvidence}
-            </td>
-            <td>
-              <ActionMenu actions={row.actions} label={row.actionLabel} />
-              {row.cashDebtSettlementForm}
-            </td>
-          </tr>
-        ))}
-      </AdminDataTable>
+              </td>
+              <td>
+                <div>{row.opsSignal}</div>
+                <div className="muted admin-mt-8">
+                  {row.opsHint}
+                </div>
+                <div className="ops-task-note admin-mt-10">
+                  <strong>Payment action execution map</strong>
+                  <div className="setup-stage-list admin-mt-8">
+                    {row.executionRows.map((executionRow) => (
+                      <div className="setup-stage-item" key={`${row.id}-${executionRow.action}`}>
+                        <span className={`pill ${executionRow.pillClass}`}>{executionRow.status}</span>
+                        <div>
+                          <strong>{executionRow.action}</strong>
+                          <p className="muted">{executionRow.reason}</p>
+                          <small>{executionRow.operatorRule}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div>{row.providerRef}</div>
+                {row.callbackEvidence}
+              </td>
+              <td>
+                <ActionMenu actions={row.actions} label={row.actionLabel} />
+                {row.cashDebtSettlementForm}
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
       <div className="vuexy-booking-table-footer">
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
@@ -135,6 +145,6 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
           totalPages={pagination.totalPages}
         />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
