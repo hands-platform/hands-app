@@ -28,7 +28,13 @@ describe('PaymentFilterBoardSection', () => {
     expect(rendered).toContain('Last 7 days');
     expect(rendered).toContain('Capture review');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments?range=all&review=all', '/payments?range=7d', '/payments?review=capture&range=7d']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'pill pill-info']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'pill pill-warn',
+        'pill pill-info',
+      ]),
+    );
   });
 
   it('renders an unfiltered state without clear filter affordance', () => {

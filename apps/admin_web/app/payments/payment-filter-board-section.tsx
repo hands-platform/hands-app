@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { AdminDateRange } from '../../lib/date-range';
 
 export type PaymentFilterLink = {
@@ -40,27 +41,18 @@ export function PaymentFilterBoardSection({
   const isFiltered = Boolean(review || activeRange !== 'all');
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payment operation filters</h2>
-          <p className="muted">
-            Jump straight from the dashboard lane into the payment subset that needs operator review.
-          </p>
-          <p className="muted">
-            Payment date range: {rangeLabel}. Until the payment table stores its own timestamp, this uses the
-            linked booking record date.
-          </p>
-          {activeFilterLabel && activeFilterDescription ? (
-            <p className="muted">
-              Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
-            </p>
-          ) : null}
-        </div>
-        <span className={`pill ${review ? 'pill-warn' : 'pill-success'}`}>
-          Showing {filteredCount} of {totalCount}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      description={`Jump straight from the dashboard lane into the payment subset that needs operator review. Payment date range: ${rangeLabel}. Until the payment table stores its own timestamp, this uses the linked booking record date.`}
+      resultLabel={`Showing ${filteredCount} of ${totalCount}`}
+      resultTone={review ? 'warning' : 'success'}
+      title="Payment operation filters"
+    >
+      {activeFilterLabel && activeFilterDescription ? (
+        <p className="muted admin-mb-12">
+          Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
+        </p>
+      ) : null}
       <div className="participant-list admin-mb-12">
         {rangeLinks.map((item) => (
           <Link
@@ -88,6 +80,6 @@ export function PaymentFilterBoardSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }

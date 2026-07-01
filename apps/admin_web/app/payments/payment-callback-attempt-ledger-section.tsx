@@ -1,5 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type PaymentCallbackAttemptLedgerRow = {
   readonly amountLabel: string;
@@ -25,13 +25,15 @@ type PaymentCallbackAttemptLedgerSectionProps = {
 
 export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAttemptLedgerSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Accepted, replayed, rejected, and conflicting gateway callbacks. Unknown gateway references remain visible here even when they cannot attach to a payment row."
-        status={<span className="pill pill-info">{rows.length} attempt(s)</span>}
-        title="Payment callback attempt ledger"
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Accepted, replayed, rejected, and conflicting gateway callbacks. Unknown gateway references remain visible here even when they cannot attach to a payment row."
+      resultLabel={`${rows.length} attempt(s)`}
+      resultTone={rows.length > 0 ? 'info' : 'warning'}
+      title="Payment callback attempt ledger"
+    >
       <AdminDataTable
+        className="vuexy-booking-table"
         emptyMessage="No callback attempts match this queue."
         headers={['Received', 'Method', 'Outcome', 'Gateway ref', 'Payment', 'Evidence']}
         rowCount={rows.length}
@@ -87,6 +89,6 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
           </tr>
         ))}
       </AdminDataTable>
-    </section>
+    </AdminFilterPanel>
   );
 }

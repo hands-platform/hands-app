@@ -26,12 +26,17 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Payment callback attempt ledger');
     expect(rendered).toContain('ACCEPTED');
     expect(rendered).toContain('provider-1');
     expect(rendered).toContain('Verified');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'table vuexy-data-table vuexy-booking-table',
+      ]),
+    );
   });
 
   it('renders empty state when no callback attempt rows exist', () => {
@@ -71,6 +76,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
