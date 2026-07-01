@@ -1081,6 +1081,17 @@ a {
   background: var(--admin-action-hover);
 }
 
+.button-danger {
+  background: color-mix(in srgb, var(--admin-danger) 10%, var(--admin-surface));
+  border-color: color-mix(in srgb, var(--admin-danger) 36%, var(--admin-border));
+  color: var(--admin-danger);
+}
+
+.button-danger:hover {
+  background: color-mix(in srgb, var(--admin-danger) 16%, var(--admin-surface));
+  border-color: var(--admin-danger);
+}
+
 .admin-inline-action {
   box-shadow: none;
   font-size: 13px;
@@ -1888,7 +1899,7 @@ a.action-button-card:hover {
   align-items: stretch;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-operator-control-card {
@@ -1955,6 +1966,42 @@ a.action-button-card:hover {
 .admin-operator-action-stack {
   align-items: flex-start;
   flex-direction: column;
+}
+
+.admin-operator-inline-form,
+.admin-operator-inline-delete-form {
+  display: grid;
+  gap: 8px;
+  min-width: min(100%, 420px);
+}
+
+.admin-operator-inline-delete-form {
+  justify-items: start;
+}
+
+.admin-operator-master-lock,
+.admin-operator-master-access {
+  align-items: center;
+  background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface));
+  border: 1px solid color-mix(in srgb, var(--admin-accent) 20%, var(--admin-border));
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 34px;
+  padding: 8px 10px;
+}
+
+.admin-operator-master-lock span,
+.admin-operator-master-access .muted {
+  font-size: 13px;
+}
+
+.admin-operator-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .admin-operator-table td:nth-child(1) {

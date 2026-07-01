@@ -12136,6 +12136,10 @@ function normalizeAdminOperatorPermissionCategories(
   roles: readonly Role[],
   requestedCategories: readonly AdminOperatorPermissionCategory[] | undefined,
 ) {
+  if (roles.includes(Role.MASTER_ADMIN)) {
+    return [...ADMIN_OPERATOR_PERMISSION_CATEGORIES];
+  }
+
   const categories =
     requestedCategories && requestedCategories.length > 0
       ? requestedCategories

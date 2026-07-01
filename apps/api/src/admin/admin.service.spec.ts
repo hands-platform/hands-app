@@ -466,14 +466,23 @@ describe('AdminService query orchestration', () => {
       },
       select: expect.any(Object),
     });
+    const allPermissionCategories = [
+      AdminOperatorPermissionCategory.BOOKINGS,
+      AdminOperatorPermissionCategory.CUSTOMERS,
+      AdminOperatorPermissionCategory.PARTNERS,
+      AdminOperatorPermissionCategory.FINANCE,
+      AdminOperatorPermissionCategory.NOTIFICATIONS,
+      AdminOperatorPermissionCategory.SYSTEM,
+    ];
+
     expect(tx.adminOperatorPermission.upsert).toHaveBeenCalledWith({
       where: { userId: 'master-admin-2' },
       create: {
         userId: 'master-admin-2',
-        categories: { set: [AdminOperatorPermissionCategory.SYSTEM] },
+        categories: { set: allPermissionCategories },
       },
       update: {
-        categories: { set: [AdminOperatorPermissionCategory.SYSTEM] },
+        categories: { set: allPermissionCategories },
       },
     });
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
@@ -485,7 +494,7 @@ describe('AdminService query orchestration', () => {
           permissionId: 'permission-1',
           previousRoles: [],
           nextRoles: [Role.ADMIN, Role.MASTER_ADMIN],
-          permissionCategories: [AdminOperatorPermissionCategory.SYSTEM],
+          permissionCategories: allPermissionCategories,
           reason: 'Bootstrap first master',
         },
       },

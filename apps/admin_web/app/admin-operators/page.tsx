@@ -126,26 +126,14 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                 </AdminFormCheckbox>
               ))}
             </div>
+            <div className="admin-operator-master-lock" role="note">
+              <strong>Master Admin</strong>
+              <span>Full access is automatic. Category checks are only used for non-master operators.</span>
+            </div>
             <CategoryCheckboxGrid defaults={['BOOKINGS', 'CUSTOMERS', 'PARTNERS', 'NOTIFICATIONS']} />
             <AdminFormInput label="Reason" name="reason" placeholder="Access request reason" />
             <AdminFormControlButton className="btn btn-primary" type="submit">
               Add operator
-            </AdminFormControlButton>
-          </form>
-
-          <form
-            action={revokeAdminOperatorAccess}
-            className="admin-operator-control-card"
-            aria-label="Delete operator access"
-          >
-            <div>
-              <h3>Delete operator</h3>
-              <p className="muted">Revokes Admin roles and category access while keeping audit history intact.</p>
-            </div>
-            <AdminFormInput label="Admin user ID" name="userId" placeholder="Admin user id" required />
-            <AdminFormInput label="Delete reason" name="reason" placeholder="Access removal reason" />
-            <AdminFormControlButton className="btn btn-outline" type="submit">
-              Delete operator
             </AdminFormControlButton>
           </form>
         </div>
@@ -216,72 +204,92 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
           <AdminDataTable
             className="vuexy-booking-table admin-operator-table"
             emptyMessage="No admin operators were returned by the bounded admin user API."
-            headers={['Operator', 'Roles', 'Latest session', 'Category access', 'Master action']}
+            headers={['Operator', 'Roles', 'Latest session', 'Category access', 'Actions']}
             rowCount={adminUsers.length}
           >
-            {adminUsers.map((user) => (
-              <tr key={user.id}>
-                <td>
-                  <strong>{user.fullName ?? user.phone ?? user.id}</strong>
-                  <div className="muted">{user.email ?? user.phone ?? user.id}</div>
-                  <div className="muted">{user.id}</div>
-                </td>
-                <td>
-                  <div className="participant-list">
-                    {user.roles.map((role) => (
-                      <span className={operatorRolePillClassName(role)} key={role}>
-                        {role}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <strong>{latestSessionLabel(user)}</strong>
-                  <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
-                </td>
-                <td>
-                  <div className="admin-operator-access-pills">
-                    {operatorAccessLabels(user).map((label) => (
-                      <span className="pill pill-info" key={`${user.id}:${label}`}>
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <div className="admin-operator-action-stack">
-                    <form action={updateAdminOperatorAccess} className="admin-operator-inline-form">
-                      <input name="userId" type="hidden" value={user.id} />
-                      <div className="admin-operator-permission-toggle-row" aria-label={`${user.id} roles`}>
-                        {operatorRoleFields.map((role) => (
-                          <AdminFormCheckbox
-                            defaultChecked={user.roles.includes(role.value)}
-                            key={role.value}
-                            label={role.label}
-                            name="roles"
-                            value={role.value}
-                          >
-                            <span>{role.label}</span>
-                          </AdminFormCheckbox>
+            {adminUsers.map((user) => {
+              const isMasterAdmin = user.roles.includes(MASTER_ADMIN_ROLE);
+
+              return (
+                <tr key={user.id}>
+                  <td>
+                    <strong>{user.fullName ?? user.phone ?? user.id}</strong>
+                    <div className="muted">{user.email ?? user.phone ?? user.id}</div>
+                    <div className="muted">{user.id}</div>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {user.roles.map((role) => (
+                        <span className={operatorRolePillClassName(role)} key={role}>
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{latestSessionLabel(user)}</strong>
+                    <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
+                  </td>
+                  <td>
+                    {isMasterAdmin ? (
+                      <div className="admin-operator-master-access" role="note">
+                        <span className="pill pill-primary">All categories</span>
+                        <span className="muted">Master Admin has full access automatically.</span>
+                      </div>
+                    ) : (
+                      <div className="admin-operator-access-pills">
+                        {operatorAccessLabels(user).map((label) => (
+                          <span className="pill pill-info" key={`${user.id}:${label}`}>
+                            {label}
+                          </span>
                         ))}
                       </div>
-                      <CategoryCheckboxGrid defaults={operatorPermissionCategoryKeys(user)} compact />
-                      <AdminFormInput label="Update reason" name="reason" placeholder="Reason" />
-                      <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
-                        Save permissions
-                      </AdminFormControlButton>
-                    </form>
-                    <form action={revokeAdminOperatorAccess} className="admin-operator-inline-form">
-                      <input name="userId" type="hidden" value={user.id} />
-                      <AdminFormInput label="Delete reason" name="reason" placeholder="Removal reason" />
-                      <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
-                        Delete operator
-                      </AdminFormControlButton>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                    )}
+                  </td>
+                  <td>
+                    <div className="admin-operator-action-stack">
+                      <form action={updateAdminOperatorAccess} className="admin-operator-inline-form">
+                        <input name="userId" type="hidden" value={user.id} />
+                        <div className="admin-operator-permission-toggle-row" aria-label={`${user.id} roles`}>
+                          {operatorRoleFields.map((role) => (
+                            <AdminFormCheckbox
+                              defaultChecked={user.roles.includes(role.value)}
+                              key={role.value}
+                              label={role.label}
+                              name="roles"
+                              value={role.value}
+                            >
+                              <span>{role.label}</span>
+                            </AdminFormCheckbox>
+                          ))}
+                        </div>
+                        {isMasterAdmin ? (
+                          <div className="admin-operator-master-lock" role="note">
+                            <strong>Master Admin</strong>
+                            <span>No category setup is required while this role is active.</span>
+                          </div>
+                        ) : (
+                          <CategoryCheckboxGrid defaults={operatorPermissionCategoryKeys(user)} compact />
+                        )}
+                        <AdminFormInput label="Update reason" name="reason" placeholder="Reason" />
+                        <div className="admin-operator-row-actions">
+                          <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
+                            Save permissions
+                          </AdminFormControlButton>
+                        </div>
+                      </form>
+                      <form action={revokeAdminOperatorAccess} className="admin-operator-inline-delete-form">
+                        <input name="userId" type="hidden" value={user.id} />
+                        <input name="reason" type="hidden" value="Master Admin row action" />
+                        <AdminFormControlButton className="button button-danger admin-inline-action" type="submit">
+                          Delete operator
+                        </AdminFormControlButton>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </AdminDataTable>
         </AdminTableScroll>
       </AdminFilterPanel>

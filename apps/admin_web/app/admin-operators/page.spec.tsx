@@ -58,7 +58,7 @@ describe('AdminOperatorsPage', () => {
       return [
         {
           id: 'master-admin-1',
-          roles: ['ADMIN', 'FINANCE_APPROVER'],
+          roles: ['ADMIN', 'FINANCE_APPROVER', 'MASTER_ADMIN'],
           adminOperatorPermission: {
             id: 'permission-1',
             categories: ['BOOKINGS', 'FINANCE', 'SYSTEM'],
@@ -114,6 +114,10 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('Master admin control');
     expect(markup).toContain('Add operator');
     expect(markup).toContain('Delete operator');
+    expect(markup).not.toContain('Delete operator access');
+    expect(markup).not.toContain('Admin user ID');
+    expect(markup).toContain('Master Admin has full access automatically.');
+    expect(markup).toContain('No category setup is required while this role is active.');
     expect(markup).toContain('Category permissions');
     expect(markup).toContain('Bookings');
     expect(markup).toContain('Finance');
