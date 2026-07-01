@@ -1719,6 +1719,8 @@ model AccountingJournalBatch {
   @@index([settlementSnapshotId])
   @@index([settlementReversalEntryId])
   @@index([monthlyPeriod, status])
+  @@index([postedAt])
+  @@index([status, postedAt])
 }
 
 model AccountingJournalEntry {
@@ -1770,6 +1772,7 @@ model BookingPaymentClearingEntry {
   @@index([settlementReversalEntryId])
   @@index([status, occurredAt])
   @@index([type, occurredAt])
+  @@index([occurredAt])
 }
 
 model CompanyBankAccount {
@@ -1809,6 +1812,7 @@ model CompanyBankTransaction {
 
   @@index([bankAccountId, occurredAt])
   @@index([status, occurredAt])
+  @@index([occurredAt])
   @@index([transferRef])
 }
 
