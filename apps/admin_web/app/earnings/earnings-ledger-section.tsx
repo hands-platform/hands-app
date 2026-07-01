@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 
@@ -62,18 +63,20 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
   const rows = pagination.rows;
 
   return (
-    <div className="card admin-mt-20">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recent earnings ledger</h2>
-          <p className="muted">
-            Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash fee
-            settlement correction.
-          </p>
-        </div>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description="Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash fee settlement correction."
+      resultLabel={`${pagination.totalRows} row(s)`}
+      resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
+      title="Recent earnings ledger"
+    >
       <AdminTableScroll>
-        <AdminDataTable emptyMessage="No earnings loaded." headers={ledgerHeaders} rowCount={rows.length}>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage="No earnings loaded."
+          headers={ledgerHeaders}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
             <tr id={`earning-${row.id}`} key={row.id}>
               <td>
@@ -188,6 +191,6 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
           totalPages={pagination.totalPages}
         />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }

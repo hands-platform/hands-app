@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatMoney } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
@@ -159,21 +160,18 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         />
       ) : null}
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          actions={
-            <Link className="text-link" href="/finance-closeout">
-              Open finance closeout
-            </Link>
-          }
-          description={
-            <>
-              Range: {dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout
-              batches on this page use record dates.
-            </>
-          }
-          title="Earnings date range"
-        />
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={`Range: ${dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches on this page use record dates.`}
+        resultLabel={`${summary.count} row(s)`}
+        resultTone={summary.count > 0 ? 'info' : 'warning'}
+        title="Earnings date range"
+      >
+        <div className="participant-list admin-mb-12">
+          <Link className="text-link" href="/finance-closeout">
+            Open finance closeout
+          </Link>
+        </div>
         <div className="filter-row admin-mt-12">
           {[
             ['All dates', '/earnings?range=all'],
@@ -186,7 +184,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
             </Link>
           ))}
         </div>
-      </section>
+      </AdminFilterPanel>
 
       <EarningsMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
       <EarningsFinanceQueueSection signals={financeSignals} />

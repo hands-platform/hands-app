@@ -35,6 +35,9 @@ describe('CashSettlementOpenDebtTableSection', () => {
       expect.arrayContaining(['earning-1', 'provider-1', '500000', 'HANDS-CASH-BOOKIN']),
     );
     const markup = renderToStaticMarkup(section);
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
+    expect(markup).not.toContain('admin-card-scroll');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');

@@ -81,6 +81,8 @@ describe('EarningsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('Server Trusted Earning');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
   });

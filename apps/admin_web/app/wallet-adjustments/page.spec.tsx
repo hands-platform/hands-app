@@ -282,6 +282,8 @@ describe('WalletAdjustmentsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('vuexy-booking-table-card');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
       [],

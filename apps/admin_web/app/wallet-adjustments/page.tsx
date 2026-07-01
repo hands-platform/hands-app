@@ -193,7 +193,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        className="admin-mt-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         description={
           formState.ownerId
             ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
@@ -205,6 +205,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       >
         <AdminTableScroll>
           <AdminDataTable
+            className="vuexy-booking-table"
             emptyMessage="No manual wallet adjustment ledger rows found for this filter."
             headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
             rowCount={historyPagination.rows.length}
@@ -320,6 +321,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         >
           <AdminTableScroll>
             <AdminDataTable
+              className="vuexy-booking-table"
               emptyMessage="No accounting entries returned."
               headers={['Debit account', 'Credit account', 'Amount']}
               rowCount={preview.accountingEntries.length}
