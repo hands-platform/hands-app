@@ -1119,7 +1119,7 @@ a {
   display: grid;
   gap: 0;
   grid-template-columns: 280px minmax(0, 1fr);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .calendar-sidebar,
@@ -1128,17 +1128,16 @@ a {
 }
 
 .calendar-sidebar {
+  align-self: stretch;
   border: 0;
   border-radius: 0;
   border-right: 1px solid var(--admin-border);
   box-shadow: none;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0;
-  max-height: calc(100vh - 124px);
-  overflow: auto;
   padding: 0;
-  position: sticky;
-  top: 100px;
+  position: relative;
 }
 
 .calendar-board.card {
@@ -1280,30 +1279,55 @@ a {
   color: var(--admin-accent-strong);
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation {
-  background: var(--admin-action-hover);
+.calendar-vuexy-datepicker > .react-datepicker__navigation {
+  background-color: var(--admin-action-selected) !important;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 30px 30px;
   border: 0;
   border-radius: 999px;
+  box-shadow: none !important;
   height: 30px;
+  min-height: 30px;
+  padding: 0 !important;
   top: 12px;
+  transform: none !important;
   width: 30px;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation--previous {
+.calendar-vuexy-datepicker > .react-datepicker__navigation:hover,
+.calendar-vuexy-datepicker > .react-datepicker__navigation:focus,
+.calendar-vuexy-datepicker > .react-datepicker__navigation:active {
+  background-color: var(--admin-action-selected) !important;
+  box-shadow: none !important;
+  outline: 0;
+}
+
+.calendar-vuexy-datepicker > .react-datepicker__navigation--previous {
+  background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgb(47 43 61 / 0.7)' d='M17.5 10L12.5 15L17.5 20' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E");
   left: auto;
   right: 57px;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation--next {
+.calendar-vuexy-datepicker > .react-datepicker__navigation--next {
+  background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgb(47 43 61 / 0.7)' d='M12.5 10L17.5 15L12.5 20' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E");
   left: auto;
   right: 15px;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation--previous:has(+ .react-datepicker__navigation--next--with-time) {
+[data-theme='dark'] .calendar-vuexy-datepicker > .react-datepicker__navigation--previous {
+  background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgb(225 222 245 / 0.7)' d='M17.5 10L12.5 15L17.5 20' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] .calendar-vuexy-datepicker > .react-datepicker__navigation--next {
+  background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgb(225 222 245 / 0.7)' d='M12.5 10L17.5 15L12.5 20' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' /%3E%3C/svg%3E");
+}
+
+.calendar-vuexy-datepicker > .react-datepicker__navigation--previous:has(+ .react-datepicker__navigation--next--with-time) {
   right: 177px;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation--next--with-time {
+.calendar-vuexy-datepicker > .react-datepicker__navigation--next--with-time {
   right: 135px;
 }
 
@@ -1312,25 +1336,7 @@ a {
 }
 
 .calendar-vuexy-datepicker .react-datepicker__navigation::before {
-  border-color: var(--admin-muted);
-  border-style: solid;
-  border-width: 0 1.5px 1.5px 0;
-  content: '';
-  display: inline-block;
-  height: 8px;
-  left: 11px;
-  position: absolute;
-  top: 10px;
-  width: 8px;
-}
-
-.calendar-vuexy-datepicker .react-datepicker__navigation--previous::before {
-  transform: rotate(135deg);
-}
-
-.calendar-vuexy-datepicker .react-datepicker__navigation--next::before {
-  left: 9px;
-  transform: rotate(-45deg);
+  display: none;
 }
 
 .calendar-vuexy-datepicker .react-datepicker__time-container {
@@ -1481,11 +1487,12 @@ a {
 }
 
 .calendar-segmented-control {
-  background: var(--admin-action-hover);
-  border: 1px solid var(--admin-border);
-  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--admin-radius);
   display: inline-flex;
-  padding: 4px;
+  overflow: hidden;
+  padding: 0;
   white-space: nowrap;
 }
 
@@ -1494,7 +1501,8 @@ a {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--admin-radius);
+  box-shadow: none;
   color: var(--admin-text);
   cursor: pointer;
   display: inline-flex;
@@ -1510,10 +1518,38 @@ a {
     border-color var(--admin-transition);
 }
 
-.calendar-segmented-control button.is-active {
-  background: var(--admin-surface);
-  box-shadow: var(--admin-shadow-xs);
+.calendar-segmented-control button {
+  background: var(--admin-primary-soft);
+  border-radius: 0;
   color: var(--admin-accent-strong);
+  min-height: 38px;
+  padding: 0 22px;
+}
+
+.calendar-segmented-control button:first-child {
+  border-bottom-left-radius: var(--admin-radius);
+  border-top-left-radius: var(--admin-radius);
+}
+
+.calendar-segmented-control button:last-child {
+  border-bottom-right-radius: var(--admin-radius);
+  border-top-right-radius: var(--admin-radius);
+}
+
+.calendar-segmented-control button.is-active {
+  background: rgb(var(--admin-primary-channel) / 0.24);
+  box-shadow: none;
+  color: var(--admin-accent-strong);
+}
+
+.calendar-segmented-control button:hover,
+.calendar-segmented-control button:focus,
+.calendar-segmented-control button:active {
+  background: rgb(var(--admin-primary-channel) / 0.24);
+  box-shadow: none;
+  color: var(--admin-accent-strong);
+  outline: 0;
+  transform: none;
 }
 
 .calendar-icon-button {
