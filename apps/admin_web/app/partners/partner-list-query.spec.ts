@@ -14,6 +14,7 @@ import {
 const now = new Date();
 
 const emptyFilters: ProviderFilters = {
+  activity: '',
   page: 1,
   pageSize: 10,
   q: '',
@@ -335,6 +336,45 @@ describe('partner list query', () => {
         deps,
       ).map((item: AdminProvider) => item.id),
     ).toEqual(['blocked-device']);
+  });
+
+  it('filters partner activity drilldowns by factual last activity age', () => {
+    const rows = [
+      partner({
+        id: 'recent-activity',
+        currentLocationUpdatedAt: now.toISOString(),
+        sessions: [{ id: 'session-recent', lastSeenAt: now.toISOString(), suspicious: false }],
+      }),
+      partner({
+        id: 'inactive-7d',
+        currentLocationUpdatedAt: '2026-01-01T00:00:00.000Z',
+        devices: [{ id: 'device-old', deviceId: 'old-device', enabled: true, lastSeenAt: '2026-01-02T00:00:00.000Z' }],
+        sessions: [{ id: 'session-old', lastSeenAt: '2026-01-03T00:00:00.000Z', suspicious: false }],
+      }),
+      partner({
+        id: 'never-online',
+        currentLocationUpdatedAt: null,
+        devices: [],
+        sessions: [],
+      }),
+    ];
+
+    expect(
+      filterPartners(
+        rows,
+        { ...emptyFilters, activity: 'inactive-7d' },
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ).map((item: AdminProvider) => item.id),
+    ).toEqual(['inactive-7d', 'never-online']);
+    expect(
+      filterPartners(
+        rows,
+        { ...emptyFilters, activity: 'never-online' },
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ).map((item: AdminProvider) => item.id),
+    ).toEqual(['never-online']);
   });
 
   it('sorts wallet debt first and keeps checklist order stable by partner name', () => {

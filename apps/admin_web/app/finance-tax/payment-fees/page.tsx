@@ -1,3 +1,5 @@
+import { CreditCard, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react';
+
 import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -5,6 +7,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPaymentFeeMetrics,
@@ -12,6 +15,7 @@ import {
   buildPaymentFeeSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyPaymentFeeSummary,
+  paymentFeeHref,
   readBookingSettlementFilters,
   readMonthlyTaxClosingFilters,
   readPartnerWithholdingTaxFilters,
@@ -52,6 +56,49 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
       metrics={buildPaymentFeeMetrics(summary)}
       title="Payment Fees"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Fee command board">
+        <FinanceListCommandCard
+          detail="Payment processing fee cost from immutable settlement snapshots."
+          href={paymentFeeHref(filters)}
+          icon={CreditCard}
+          label="Processing fee"
+          tone={summary.paymentProcessingFeeTotal > 0 ? 'warning' : 'neutral'}
+          value={formatMoney(summary.paymentProcessingFeeTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Processing fee as a share of customer payment volume for the selected period."
+          href={paymentFeeHref(filters)}
+          icon={ReceiptText}
+          label="Effective rate"
+          tone={summary.paymentProcessingFeeTotal > 0 ? 'info' : 'neutral'}
+          value={formatFinancePercent(summary.paymentProcessingFeeTotal, summary.customerPaymentAmountTotal)}
+        />
+        <FinanceListCommandCard
+          detail="Customer payment volume used only to audit payment fee cost."
+          href="/finance-tax/booking-settlement-audit"
+          icon={WalletCards}
+          label="Customer paid"
+          tone={summary.customerPaymentAmountTotal > 0 ? 'primary' : 'neutral'}
+          value={formatMoney(summary.customerPaymentAmountTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Payment methods with fee aggregation rows in this period."
+          href={paymentFeeHref(filters)}
+          icon={ReceiptText}
+          label="Fee methods"
+          tone={summary.byPaymentMethod.length > 0 ? 'info' : 'neutral'}
+          value={`${summary.byPaymentMethod.length} method(s)`}
+        />
+        <FinanceListCommandCard
+          detail="Fee payer and treatment splits remain separate from VAT/PIT."
+          href={paymentFeeHref(filters)}
+          icon={ShieldCheck}
+          label="Fee treatment"
+          tone={summary.byTreatment.length > 0 ? 'success' : 'neutral'}
+          value={`${summary.byTreatment.length} treatment(s)`}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Period ${summary.period}. Fee totals are grouped from immutable settlement snapshots; no booking list is loaded here.`}
@@ -60,7 +107,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         title="Payment fee period"
       >
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
           <AdminFormControlButton className="btn btn-primary" type="submit">
             Apply period
           </AdminFormControlButton>
@@ -68,6 +115,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
       </AdminFilterPanel>
 
       <PaymentFeeBreakdownTable
+        currency={summary.currency}
         emptyMessage="No payment method fee rows exist for this period."
         keyField="paymentMethod"
         label="Payment method"
@@ -75,6 +123,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         title="Fees by payment method"
       />
       <PaymentFeeBreakdownTable
+        currency={summary.currency}
         emptyMessage="No payment payer fee rows exist for this period."
         keyField="paymentFeePayer"
         label="Fee payer"
@@ -82,6 +131,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         title="Fees by payer"
       />
       <PaymentFeeBreakdownTable
+        currency={summary.currency}
         emptyMessage="No payment treatment fee rows exist for this period."
         keyField="paymentFeeTreatment"
         label="Fee treatment"
@@ -93,12 +143,14 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
 }
 
 function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
+  currency,
   emptyMessage,
   keyField,
   label,
   rows,
   title,
 }: {
+  readonly currency: string;
   readonly emptyMessage: string;
   readonly keyField: keyof T;
   readonly label: string;
@@ -117,7 +169,7 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
         <AdminDataTable
           className="vuexy-booking-table"
           emptyMessage={emptyMessage}
-          headers={[label, 'Settlements', 'Customer paid', 'Payment fees']}
+          headers={[label, 'Settlements', 'Customer paid', 'Payment fees', 'Effective rate']}
           rowCount={rows.length}
         >
           {rows.map((row) => (
@@ -126,10 +178,11 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
                 <strong>{String(row[keyField])}</strong>
               </td>
               <td>{Number(row.settlementCount ?? 0)}</td>
-              <td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), 'VND')}</td>
+              <td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>
               <td>
-                <strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), 'VND')}</strong>
+                <strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>
               </td>
+              <td>{formatFinancePercent(Number(row.paymentProcessingFeeTotal ?? 0), Number(row.customerPaymentAmountTotal ?? 0))}</td>
             </tr>
           ))}
         </AdminDataTable>

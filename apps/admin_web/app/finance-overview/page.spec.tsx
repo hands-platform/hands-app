@@ -1,0 +1,207 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
+
+import { adminGet } from '../../lib/admin-api';
+import FinanceOverviewPage from './page';
+
+vi.mock('../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
+
+  return {
+    ...actual,
+    adminGet: vi.fn(),
+  };
+});
+
+const mockedAdminGet = vi.mocked(adminGet);
+
+describe('FinanceOverviewPage', () => {
+  beforeEach(() => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/finance-overview?range=7d&period=2026-07') {
+        return {
+          generatedAt: '2026-07-02T00:00:00.000Z',
+          range: '7d',
+          period: '2026-07',
+          amountSummary: {
+            currency: 'VND',
+            paymentFailedAmount: 75_000,
+            refundCompletedAmount: 60_000,
+            refundPendingAmount: 40_000,
+          },
+          bankSummary: { amount: 0, clearedCount: 0, count: 0, currency: 'VND', matchedCount: 0, unmatchedCount: 0 },
+          cashSummary: null,
+          clearingSummary: { amount: 0, clearedCount: 0, count: 0, currency: 'VND', openCount: 0 },
+          couponSummary: {
+            bookingServiceAmount: 100_000_000,
+            companyCouponExpense: 2_000_000,
+            couponDiscountAmount: 3_000_000,
+            couponReviewFlagCount: 1,
+            couponSettlementCount: 4,
+            currency: 'VND',
+            customerPaidAmount: 97_000_000,
+            partnerFundedCouponAmount: 500_000,
+            platformFeeDiscountAmount: 0,
+            reversedCompanyCouponExpense: 0,
+            reversedCouponDiscountAmount: 0,
+            settlementBaseAmount: 100_000_000,
+          },
+          earningsSummary: null,
+          monthlyClosingSummary: {
+            cashDebtTotal: 0,
+            companyOutputVatTotal: 0,
+            couponReviewFlagCount: 0,
+            currency: 'VND',
+            customerPaymentAmountTotal: 0,
+            netRevenueDelta: 0,
+            nonCashPartnerPayoutTotal: 0,
+            partnerPitWithheldTotal: 0,
+            partnerPayoutTotal: 0,
+            partnerVatWithheldTotal: 0,
+            partnerWithholdingTotal: 0,
+            paymentProcessingFeeTotal: 0,
+            period: '2026-07',
+            platformFeeGrossTotal: 0,
+            platformFeeNetRevenueTotal: 0,
+            reconciliationDelta: 0,
+            settlementCount: 0,
+            status: 'DRAFT',
+          },
+          partnerWithholdingSummary: {
+            currency: 'VND',
+            grossServiceRevenue: 0,
+            partnerCountWithRevenue: 0,
+            partnerPayoutTotal: 0,
+            partnerPitWithheldTotal: 0,
+            partnerVatWithheldTotal: 0,
+            period: '2026-07',
+            taxableBookingCount: 0,
+            totalPartnerTaxWithheld: 0,
+          },
+          paymentFeeSummary: null,
+          paymentSummary: null,
+          refundSummary: {
+            completedCount: 1,
+            needsUpdateCount: 1,
+            openCount: 2,
+            outcomeLinkedCount: 1,
+            refundedBookingCount: 0,
+            requestedCount: 1,
+            totalCount: 3,
+          },
+          settlementSummary: {
+            count: 12,
+            currency: 'VND',
+            customerPaymentAmount: 100_000_000,
+            partnerPayoutAmount: 76_000_000,
+            partnerWithholdingTotal: 3_000_000,
+            platformFeeGross: 24_000_000,
+            platformFeeNetRevenue: 22_000_000,
+            companyOutputVat: 2_000_000,
+            paymentProcessingFee: 1_000_000,
+            openTaxCount: 2,
+            paidTaxCount: 10,
+          },
+          walletSummary: {
+            currency: 'VND',
+            customerWalletAccountCount: 2,
+            customerWalletLiabilityAmount: 130_000,
+            negativePartnerWalletAmount: 70_000,
+            partnerNegativeWalletAccountCount: 1,
+            partnerPositiveWalletAccountCount: 1,
+            partnerWalletLiabilityAmount: 200_000,
+          },
+          withdrawalSummary: {
+            approved: 0,
+            bankTransferPending: 0,
+            correctionRequested: 0,
+            currency: 'VND',
+            paid: 0,
+            pendingWithdrawalPayableAmount: 0,
+            rejected: 0,
+            requested: 0,
+            reviewRequired: 0,
+          },
+        };
+      }
+      if (href === '/admin/booking-settlement-snapshots/summary?range=7d') {
+        return {
+          count: 12,
+          currency: 'VND',
+          customerPaymentAmount: 100_000_000,
+          partnerPayoutAmount: 76_000_000,
+          partnerWithholdingTotal: 3_000_000,
+          platformFeeGross: 24_000_000,
+          platformFeeNetRevenue: 22_000_000,
+          companyOutputVat: 2_000_000,
+          paymentProcessingFee: 1_000_000,
+          openTaxCount: 2,
+          paidTaxCount: 10,
+        };
+      }
+      if (href === '/admin/booking-settlement-snapshots/coupon-finance-summary?range=7d') {
+        return {
+          bookingServiceAmount: 100_000_000,
+          companyCouponExpense: 2_000_000,
+          couponDiscountAmount: 3_000_000,
+          couponReviewFlagCount: 1,
+          couponSettlementCount: 4,
+          currency: 'VND',
+          customerPaidAmount: 97_000_000,
+          partnerFundedCouponAmount: 500_000,
+          platformFeeDiscountAmount: 0,
+          reversedCompanyCouponExpense: 0,
+          reversedCouponDiscountAmount: 0,
+          settlementBaseAmount: 100_000_000,
+        };
+      }
+      return fallback;
+    });
+  });
+
+  it('renders finance overview with actual company revenue separated from gross payment', async () => {
+    const page = await FinanceOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Finance Overview');
+    expect(markup).toContain('Finance control board');
+    expect(markup).toContain('Finance Priority Desk');
+    expect(markup).toContain('Top finance queues');
+    expect(markup).toContain('finance-overview-priority-board');
+    expect(markup).toContain('finance-overview-priority-card');
+    expect(markup).toContain('Core Finance KPI');
+    expect(markup).toContain('6 signals');
+    expect(markup).toContain('Revenue separation');
+    expect(markup).toContain('Wallet exposure');
+    expect(markup).toContain('Open finance risks');
+    expect(markup).toContain('Gross Booking Amount');
+    expect(markup).toContain('Platform Fee');
+    expect(markup).toContain('Customer paid amount is not company revenue');
+    expect(markup).toContain('100.000.000');
+    expect(markup).toContain('22.000.000');
+    expect(markup).toContain('130.000');
+    expect(markup).toContain('200.000');
+    expect(markup).toContain('75.000');
+    expect(markup).toContain('Finance Action Lists');
+    expect(markup).toContain('/finance-tax/payment-clearing');
+    expect(markup).toContain('/finance-tax/general-ledger');
+    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-control-labeled');
+    expect(markup).toContain('admin-form-label');
+    expect(markup).not.toContain('<label class="admin-form-control"><span>Monthly tax period</span>');
+  });
+
+  it('calls the consolidated Finance Overview summary API and forwards range and period', async () => {
+    await FinanceOverviewPage({
+      searchParams: Promise.resolve({ range: '7d', period: '2026-07' }),
+    });
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/finance-overview?range=7d&period=2026-07',
+      expect.any(Object),
+    );
+    expect(mockedAdminGet).toHaveBeenCalledTimes(1);
+  });
+});

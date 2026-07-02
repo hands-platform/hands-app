@@ -8,7 +8,6 @@ import {
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { CalendarDays } from 'lucide-react';
 import {
   buildCouponDeleteConfirmation,
   buildCouponToggleConfirmation,
@@ -132,18 +131,10 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             type="number"
           />
           <div className="calendar-field coupon-date-field">
-            <span>Starts</span>
-            <span className="coupon-date-input-shell">
-              <AdminFormInput label="Starts" name="startsAt" type="datetime-local" />
-              <CalendarDays aria-hidden="true" size={17} />
-            </span>
+            <AdminFormInput label="Starts" labelVisibility="visible" name="startsAt" type="datetime-local" />
           </div>
           <div className="calendar-field coupon-date-field">
-            <span>Ends</span>
-            <span className="coupon-date-input-shell">
-              <AdminFormInput label="Ends" name="endsAt" type="datetime-local" />
-              <CalendarDays aria-hidden="true" size={17} />
-            </span>
+            <AdminFormInput label="Ends" labelVisibility="visible" name="endsAt" type="datetime-local" />
           </div>
           <AdminFormControlButton className="button" type="submit">
             Create coupons

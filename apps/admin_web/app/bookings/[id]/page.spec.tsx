@@ -1,7 +1,8 @@
 import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
-import BookingDetailPage, { shouldLoadBookingDetailMarketplaceProviders } from './page';
+import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
+import BookingDetailPage from './page';
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {

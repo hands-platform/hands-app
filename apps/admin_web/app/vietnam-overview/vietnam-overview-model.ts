@@ -58,14 +58,14 @@ export type VietnamOverviewMapPoint = VietnamOverviewPointInput & {
   readonly mapYPercent: number;
 };
 
-export type VietnamOverviewGeoapifyTile = {
+export type VietnamOverviewMapTilerTile = {
   readonly src: string;
   readonly x: number;
   readonly y: number;
   readonly z: number;
 };
 
-export type VietnamOverviewGeoapifyTileGrid = {
+export type VietnamOverviewMapTilerTileGrid = {
   readonly cols: number;
   readonly layerHeightPercent: number;
   readonly layerLeftPercent: number;
@@ -73,7 +73,7 @@ export type VietnamOverviewGeoapifyTileGrid = {
   readonly layerWidthPercent: number;
   readonly rows: number;
   readonly style: string;
-  readonly tiles: readonly VietnamOverviewGeoapifyTile[];
+  readonly tiles: readonly VietnamOverviewMapTilerTile[];
   readonly viewAspectRatio: number;
   readonly zoom: number;
 };
@@ -88,6 +88,8 @@ export type VietnamOverviewMetricDotKey =
   | 'active'
   | 'partners'
   | 'online'
+  | 'offline-partners'
+  | 'stale-partners'
   | 'bookings'
   | 'done'
   | 'cancel';
@@ -116,8 +118,11 @@ export const vietnamOverviewRealtimeMetricDotLegend: Array<{
   key: VietnamOverviewMetricDotKey;
   label: string;
 }> = [
+  { key: 'customers', label: 'All customers' },
   { key: 'active', label: 'Active customers' },
-  { key: 'online', label: 'Online Partners' },
+  { key: 'online', label: 'Ready Partners' },
+  { key: 'stale-partners', label: '7d inactive Partners' },
+  { key: 'offline-partners', label: 'Offline Partners' },
   { key: 'bookings', label: 'Active bookings' },
 ];
 
@@ -156,7 +161,7 @@ export function vietnamOverviewHref(range: VietnamOverviewRange) {
 }
 
 export function vietnamOverviewRealtimePointsApiHref() {
-  return '/admin/vietnam-overview/realtime-points?take=20';
+  return '/admin/vietnam-overview/realtime-points?take=50';
 }
 
 export function vietnamOverviewMapMarkers(
@@ -252,21 +257,21 @@ export function vietnamOverviewRealtimePointCounts(
   );
 }
 
-export function vietnamOverviewGeoapifyTileGrid(): VietnamOverviewGeoapifyTileGrid {
-  const tileWindow = vietnamOverviewGeoapifyTileWindow();
+export function vietnamOverviewMapTilerTileGrid(): VietnamOverviewMapTilerTileGrid {
+  const tileWindow = vietnamOverviewMapTilerTileWindow(VIETNAM_MAPTILER_TILE_VIEW.zoom);
   const viewWidth = tileWindow.maxXFloat - tileWindow.minXFloat;
   const viewHeight = tileWindow.maxYFloat - tileWindow.minYFloat;
   const tileAreaWidth = tileWindow.maxTileX + 1 - tileWindow.minTileX;
   const tileAreaHeight = tileWindow.maxTileY + 1 - tileWindow.minTileY;
-  const tiles: VietnamOverviewGeoapifyTile[] = [];
+  const tiles: VietnamOverviewMapTilerTile[] = [];
 
   for (let y = tileWindow.minTileY; y <= tileWindow.maxTileY; y += 1) {
     for (let x = tileWindow.minTileX; x <= tileWindow.maxTileX; x += 1) {
       tiles.push({
-        src: `/api/admin/geoapify-tiles/${VIETNAM_GEOAPIFY_TILE_VIEW.zoom}/${x}/${y}.png`,
+        src: `/api/admin/maptiler-tiles/${VIETNAM_MAPTILER_TILE_VIEW.zoom}/${x}/${y}.png`,
         x,
         y,
-        z: VIETNAM_GEOAPIFY_TILE_VIEW.zoom,
+        z: VIETNAM_MAPTILER_TILE_VIEW.zoom,
       });
     }
   }
@@ -278,18 +283,24 @@ export function vietnamOverviewGeoapifyTileGrid(): VietnamOverviewGeoapifyTileGr
     layerTopPercent: ((tileWindow.minTileY - tileWindow.minYFloat) / viewHeight) * 100,
     layerWidthPercent: (tileAreaWidth / viewWidth) * 100,
     rows: tileWindow.maxTileY - tileWindow.minTileY + 1,
-    style: VIETNAM_GEOAPIFY_TILE_VIEW.style,
+    style: VIETNAM_MAPTILER_TILE_VIEW.style,
     tiles,
     viewAspectRatio: viewWidth / viewHeight,
-    zoom: VIETNAM_GEOAPIFY_TILE_VIEW.zoom,
+    zoom: VIETNAM_MAPTILER_TILE_VIEW.zoom,
   };
 }
 
-export function isVietnamOverviewGeoapifyTile(z: number, x: number, y: number) {
-  const tileWindow = vietnamOverviewGeoapifyTileWindow();
+export function isVietnamOverviewMapTilerTile(z: number, x: number, y: number) {
+  if (
+    z < VIETNAM_MAPTILER_TILE_VIEW.minZoom ||
+    z > VIETNAM_MAPTILER_TILE_VIEW.maxZoom
+  ) {
+    return false;
+  }
+
+  const tileWindow = vietnamOverviewMapTilerTileWindow(z);
 
   return (
-    z === VIETNAM_GEOAPIFY_TILE_VIEW.zoom &&
     x >= tileWindow.minTileX &&
     x <= tileWindow.maxTileX &&
     y >= tileWindow.minTileY &&
@@ -298,7 +309,14 @@ export function isVietnamOverviewGeoapifyTile(z: number, x: number, y: number) {
 }
 
 function isRealtimeMapPointKind(kind: VietnamOverviewMetricDotKey) {
-  return kind === 'active' || kind === 'online' || kind === 'bookings';
+  return (
+    kind === 'customers' ||
+    kind === 'active' ||
+    kind === 'online' ||
+    kind === 'stale-partners' ||
+    kind === 'offline-partners' ||
+    kind === 'bookings'
+  );
 }
 
 function demandCount(region: VietnamOverviewRegionMarkerInput) {
@@ -364,9 +382,9 @@ function vietnamCoordinateMapPosition(latitude: number, longitude: number) {
 }
 
 function vietnamMercatorYPercent(latitude: number) {
-  const minY = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.maxLat, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
-  const maxY = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.minLat, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
-  const y = latitudeToTileYFloat(latitude, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
+  const minY = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.maxLat, VIETNAM_MAPTILER_TILE_VIEW.zoom);
+  const maxY = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.minLat, VIETNAM_MAPTILER_TILE_VIEW.zoom);
+  const y = latitudeToTileYFloat(latitude, VIETNAM_MAPTILER_TILE_VIEW.zoom);
 
   return ((y - minY) / (maxY - minY)) * 100;
 }
@@ -399,16 +417,18 @@ export const VIETNAM_MAP_BOUNDS = {
   maxLng: 110.0,
 } as const;
 
-export const VIETNAM_GEOAPIFY_TILE_VIEW = {
-  style: 'osm-bright-smooth',
+export const VIETNAM_MAPTILER_TILE_VIEW = {
+  maxZoom: 16,
+  minZoom: 5,
+  style: 'streets-v2',
   zoom: 7,
 } as const;
 
-function vietnamOverviewGeoapifyTileWindow() {
-  const minXFloat = longitudeToTileXFloat(VIETNAM_MAP_BOUNDS.minLng, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
-  const maxXFloat = longitudeToTileXFloat(VIETNAM_MAP_BOUNDS.maxLng, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
-  const minYFloat = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.maxLat, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
-  const maxYFloat = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.minLat, VIETNAM_GEOAPIFY_TILE_VIEW.zoom);
+function vietnamOverviewMapTilerTileWindow(zoom: number) {
+  const minXFloat = longitudeToTileXFloat(VIETNAM_MAP_BOUNDS.minLng, zoom);
+  const maxXFloat = longitudeToTileXFloat(VIETNAM_MAP_BOUNDS.maxLng, zoom);
+  const minYFloat = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.maxLat, zoom);
+  const maxYFloat = latitudeToTileYFloat(VIETNAM_MAP_BOUNDS.minLat, zoom);
 
   return {
     maxTileX: Math.floor(maxXFloat),

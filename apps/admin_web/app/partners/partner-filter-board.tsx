@@ -143,6 +143,13 @@ export function PartnerFilterBoard({
               />
               <AdminFormSelect
                 className="vuexy-partner-select"
+                defaultValue={filters.activity}
+                label="Activity"
+                name="activity"
+                options={partnerActivityFilterOptions}
+              />
+              <AdminFormSelect
+                className="vuexy-partner-select"
                 defaultValue={filters.bookingFlow}
                 label="Booking flow"
                 name="bookingFlow"
@@ -225,6 +232,13 @@ const partnerDeviceSessionFilterOptions = [
   { label: 'Shared device', value: 'shared' },
   { label: 'No app device', value: 'missing' },
   { label: 'Clear', value: 'clear' },
+] as const;
+
+const partnerActivityFilterOptions = [
+  { label: 'All activity', value: '' },
+  { label: 'Never online', value: 'never-online' },
+  { label: 'Inactive 7D', value: 'inactive-7d' },
+  { label: 'Inactive 30D', value: 'inactive-30d' },
 ] as const;
 
 const partnerBookingFlowFilterOptions = [

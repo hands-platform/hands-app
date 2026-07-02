@@ -1,7 +1,12 @@
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2, Landmark, ReceiptText } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
-import type { AdminBankReconciliationSummary, AdminCompanyBankTransaction } from '../../../lib/admin-api';
+import type {
+  AdminBankReconciliationSummary,
+  AdminCompanyBankAccount,
+  AdminCompanyBankTransaction,
+} from '../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -15,6 +20,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BANK_RECONCILIATION_REVIEW_LINKS,
@@ -52,14 +58,22 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
   const settlementFilters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const [summary, transactions] = await Promise.all([
+  const [summary, transactions, companyBankAccounts] = await Promise.all([
     adminGet<AdminBankReconciliationSummary>(
       buildBankReconciliationSummaryApiHref(filters),
       emptyBankReconciliationSummary(),
     ),
     adminGet<AdminCompanyBankTransaction[]>(buildBankReconciliationApiHref(filters), []),
+    adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ACTIVE', []),
   ]);
   const pagination = buildTaxSettlementServerPagination(transactions, filters, summary.count);
+  const shouldOpenImportDisclosure = importNotice === '1' || Boolean(importError);
+  const bankAccountOptions = companyBankAccounts.length
+    ? companyBankAccounts.map((account) => ({
+        label: companyBankAccountOptionLabel(account),
+        value: account.id,
+      }))
+    : [{ label: 'No active company bank account', value: '' }];
 
   return (
     <AdminPageTemplate
@@ -99,6 +113,45 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       ]}
       title="Bank Reconciliation"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Bank command board">
+        <FinanceListCommandCard
+          detail={`${summary.unmatchedCount} bank transaction(s) still need source evidence matching.`}
+          href={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
+          icon={AlertTriangle}
+          label="Unmatched ratio"
+          tone={summary.unmatchedCount > 0 ? 'danger' : 'success'}
+          value={formatFinancePercent(summary.unmatchedCount, summary.count)}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.matchedCount} bank transaction(s) already matched to accounting evidence.`}
+          href={bankReconciliationHref({ ...filters, page: 1, review: 'matched' })}
+          icon={CheckCircle2}
+          label="Matched ratio"
+          tone={summary.matchedCount > 0 ? 'success' : 'neutral'}
+          value={formatFinancePercent(summary.matchedCount, summary.count)}
+        />
+        <FinanceListCommandCard
+          detail="Total bank statement amount in the selected reconciliation scope."
+          href={bankReconciliationHref({ ...filters, page: 1 })}
+          icon={Landmark}
+          label="Bank amount"
+          tone={summary.amount > 0 ? 'primary' : 'neutral'}
+          value={formatMoney(summary.amount, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Open transaction detail to match bank money against clearing, journal, withdrawal, or payout evidence."
+          href={
+            summary.unmatchedCount > 0
+              ? bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })
+              : '/finance-overview'
+          }
+          icon={ReceiptText}
+          label="Match status"
+          tone={summary.unmatchedCount > 0 ? 'warning' : 'success'}
+          value={summary.unmatchedCount > 0 ? 'Needs match' : 'Matched'}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, BANK_RECONCILIATION_REVIEW_LINKS)}.`}
@@ -148,41 +201,56 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         resultTone={importNotice === '1' ? 'success' : importError ? 'danger' : 'info'}
         title="Manual bank transaction import"
       >
-        {importError ? (
-          <p className="muted admin-mt-8">
-            Bank transaction import failed. Check approval admin, bank account, type, amount, and occurred date before
-            trying again.
-          </p>
-        ) : null}
-        <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
-          <input
-            name="redirectTo"
-            type="hidden"
-            value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
-          />
-          <AdminFormInput label="Approving admin ID" name="approvalAdminId" required />
-          <AdminFormInput label="Bank account ID" name="bankAccountId" required />
-          <AdminFormSelect
-            defaultValue="INFLOW"
-            label="Type"
-            name="type"
-            options={[
-              { label: 'Inflow', value: 'INFLOW' },
-              { label: 'Outflow', value: 'OUTFLOW' },
-            ]}
-          />
-          <AdminFormInput label="Amount" min={1} name="amount" required step={1} type="number" />
-          <AdminFormInput label="Occurred at" name="occurredAt" required type="datetime-local" />
-          <AdminFormInput label="Value date" name="valueDate" type="date" />
-          <AdminFormInput label="Transfer reference" name="transferRef" />
-          <AdminFormInput label="Counterparty" name="counterpartyName" />
-          <AdminFormTextarea className="admin-grid-span-2" label="Description" name="description" rows={2} />
-          <div className="form-actions form-grid-wide">
-            <AdminFormControlButton className="button button-primary">
-              Import bank transaction
-            </AdminFormControlButton>
-          </div>
-        </form>
+        <details className="finance-reconciliation-import-disclosure" open={shouldOpenImportDisclosure}>
+          <summary>
+            <span>Bank import form</span>
+            <small>Open only when a bank statement row is missing from the reconciliation list.</small>
+          </summary>
+          {importError ? (
+            <p className="muted admin-mt-8">
+              Bank transaction import failed. Check approval admin, bank account, type, amount, and occurred date before
+              trying again.
+            </p>
+          ) : null}
+          <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
+            <input
+              name="redirectTo"
+              type="hidden"
+              value={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
+            />
+            <AdminFormInput label="Approving admin ID" labelVisibility="visible" name="approvalAdminId" required />
+            <AdminFormSelect
+              defaultValue={bankAccountOptions[0]?.value ?? ''}
+              disabled={!companyBankAccounts.length}
+              label="Bank account"
+              labelVisibility="visible"
+              name="bankAccountId"
+              options={bankAccountOptions}
+              required
+            />
+            <AdminFormSelect
+              defaultValue="INFLOW"
+              label="Type"
+              labelVisibility="visible"
+              name="type"
+              options={[
+                { label: 'Inflow', value: 'INFLOW' },
+                { label: 'Outflow', value: 'OUTFLOW' },
+              ]}
+            />
+            <AdminFormInput label="Amount" labelVisibility="visible" min={1} name="amount" required step={1} type="number" />
+            <AdminFormInput label="Occurred at" labelVisibility="visible" name="occurredAt" required type="datetime-local" />
+            <AdminFormInput label="Value date" labelVisibility="visible" name="valueDate" type="date" />
+            <AdminFormInput label="Transfer reference" labelVisibility="visible" name="transferRef" />
+            <AdminFormInput label="Counterparty" labelVisibility="visible" name="counterpartyName" />
+            <AdminFormTextarea className="admin-grid-span-2" label="Description" labelVisibility="visible" name="description" rows={2} />
+            <div className="form-actions form-grid-wide">
+              <AdminFormControlButton className="button button-primary" disabled={!companyBankAccounts.length}>
+                Import bank transaction
+              </AdminFormControlButton>
+            </div>
+          </form>
+        </details>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -338,6 +406,11 @@ function statusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function companyBankAccountOptionLabel(account: AdminCompanyBankAccount) {
+  const masked = account.accountNumberMasked ?? (account.accountNumberLast4 ? `****${account.accountNumberLast4}` : '');
+  return [account.name, account.bankName, masked, account.currency].filter(Boolean).join(' - ');
 }
 
 function isBankTransactionType(value: string) {

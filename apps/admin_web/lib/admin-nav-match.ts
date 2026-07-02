@@ -9,7 +9,21 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
     return pathname === hrefPath && new URLSearchParams(search).toString() === hrefQuery;
   }
 
-  if (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) {
+  if (pathname === hrefPath) {
+    if (hrefPath === '/partners' && search) {
+      return false;
+    }
+
+    return true;
+  }
+
+  if (pathname.startsWith(`${hrefPath}/`)) {
+    if (hrefPath === '/finance-tax' || hrefPath === '/notifications') {
+      return false;
+    }
+    if (hrefPath === '/partners' && pathname.startsWith('/partners/overview')) {
+      return false;
+    }
     if (hrefPath === '/bookings') {
       return pathname === '/bookings' || isBookingDetailPath(pathname);
     }

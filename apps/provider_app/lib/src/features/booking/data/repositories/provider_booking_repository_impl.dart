@@ -1,6 +1,7 @@
 import '../../../../core/api_client.dart';
 import '../../../../core/realtime_socket.dart';
 import '../../domain/repositories/provider_booking_repository.dart';
+import '../../domain/services/provider_booking_detail_view_tracker.dart';
 
 class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   const ProviderBookingRepositoryImpl(this._api, this._socket);
@@ -117,6 +118,22 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
         lng: lng,
         addressText: addressText,
       ),
+    );
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordDetailViewTelemetry(
+    String bookingId, {
+    required ProviderBookingDetailViewTelemetryEvent eventType,
+    Duration? duration,
+  }) async {
+    final result = await _api.postJson(
+      '/partner/bookings/$bookingId/detail-view',
+      {
+        'eventType': eventType.name,
+        if (duration != null) 'durationSeconds': duration.inSeconds,
+      },
     );
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }

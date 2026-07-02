@@ -27,8 +27,20 @@ describe('BankReconciliationPage', () => {
           unmatchedCount: 0,
         };
       }
-      if (href === '/admin/bank-reconciliation?range=today&take=25&review=unmatched') {
+      if (href === '/admin/bank-reconciliation?range=today&take=10&review=unmatched') {
         return [];
+      }
+      if (href === '/admin/company-bank-accounts?status=ACTIVE') {
+        return [
+          {
+            accountNumberMasked: '****0001',
+            bankName: 'VCB',
+            currency: 'VND',
+            id: 'bank-account-1',
+            name: 'Operations VND',
+            status: 'ACTIVE',
+          },
+        ];
       }
       return fallback;
     });
@@ -41,6 +53,11 @@ describe('BankReconciliationPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Bank transaction import failed');
+    expect(markup).toContain('finance-reconciliation-import-disclosure');
+    expect(markup).toContain('Bank import form');
+    expect(markup).toContain('Bank account');
+    expect(markup).toContain('Operations VND - VCB - ****0001 - VND');
+    expect(markup).toContain('<details class="finance-reconciliation-import-disclosure" open="">');
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
@@ -51,8 +68,20 @@ describe('BankReconciliationPage', () => {
       expect.any(Object),
     );
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bank-reconciliation?range=today&take=25&review=unmatched',
+      '/admin/bank-reconciliation?range=today&take=10&review=unmatched',
       [],
     );
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/company-bank-accounts?status=ACTIVE', []);
+  });
+
+  it('keeps the manual import form collapsed during normal unmatched review', async () => {
+    const page = await BankReconciliationPage({
+      searchParams: Promise.resolve({ range: 'today', review: 'unmatched' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('finance-reconciliation-import-disclosure');
+    expect(markup).toContain('Bank import form');
+    expect(markup).not.toContain('<details class="finance-reconciliation-import-disclosure" open="">');
   });
 });

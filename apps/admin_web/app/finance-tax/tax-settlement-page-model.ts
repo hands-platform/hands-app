@@ -78,6 +78,13 @@ export type MonthlyTaxClosingStatusOption = {
   readonly helper: string;
 };
 
+export type MonthlyTaxClosingRemittanceEvidenceState = {
+  readonly detail: string;
+  readonly evidenceHref: string | null;
+  readonly label: string;
+  readonly tone: 'neutral' | 'success' | 'warning';
+};
+
 export type TaxFinanceWorkflowPage =
   | 'overview'
   | 'booking-settlement-audit'
@@ -102,6 +109,12 @@ export type BookingSettlementReversalTraceLink = {
   readonly href: string;
   readonly label: string;
   readonly value: string;
+};
+
+export type BookingSettlementReversalEvidenceState = {
+  readonly detail: string;
+  readonly label: string;
+  readonly tone: 'danger' | 'success' | 'warning';
 };
 
 export type FinanceSettlementTraceLink = BookingSettlementReversalTraceLink;
@@ -257,6 +270,10 @@ export function buildBookingSettlementSnapshotApiHref(filters: BookingSettlement
   return `/admin/booking-settlement-snapshots?${params.toString()}`;
 }
 
+export function buildBookingSettlementSnapshotDetailApiHref(id: string) {
+  return `/admin/booking-settlement-snapshots/${encodeURIComponent(id)}`;
+}
+
 export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
   if (filters.review !== 'all') {
@@ -275,6 +292,10 @@ export function buildBookingSettlementReversalApiHref(filters: BookingSettlement
   params.set('take', String(filters.take));
   appendTaxSettlementSkip(params, filters);
   return `/admin/booking-settlement-reversals?${params.toString()}`;
+}
+
+export function buildBookingSettlementReversalDetailApiHref(id: string) {
+  return `/admin/booking-settlement-reversals/${encodeURIComponent(id)}`;
 }
 
 export function buildBookingSettlementReversalSummaryApiHref(filters: BookingSettlementFilters) {
@@ -415,6 +436,10 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
 
+export function bookingSettlementAuditDetailHref(id: string) {
+  return `/finance-tax/booking-settlement-audit/${encodeURIComponent(id)}`;
+}
+
 export function bookingSettlementReversalHref(filters: BookingSettlementFilters) {
   const params = new URLSearchParams({ range: filters.range });
   if (isSettlementReversalReview(filters.review)) {
@@ -422,6 +447,10 @@ export function bookingSettlementReversalHref(filters: BookingSettlementFilters)
   }
   appendTaxSettlementUiPagination(params, filters);
   return `/finance-tax/settlement-reversals?${params.toString()}`;
+}
+
+export function bookingSettlementReversalDetailHref(id: string) {
+  return `/finance-tax/settlement-reversals/${encodeURIComponent(id)}`;
 }
 
 export function buildBookingSettlementReversalTraceLinks(
@@ -434,12 +463,7 @@ export function buildBookingSettlementReversalTraceLinks(
   const clearing = reversal.paymentClearingEntries?.[0] ?? null;
   const links: BookingSettlementReversalTraceLink[] = [
     {
-      href: bookingSettlementAuditHref({
-        page: 1,
-        range: 'all',
-        review: 'all',
-        take: TAX_SETTLEMENT_DEFAULT_TAKE,
-      }),
+      href: bookingSettlementAuditDetailHref(reversal.originalSettlementSnapshotId),
       label: 'Original settlement',
       value: shortId(reversal.originalSettlementSnapshotId),
     },
@@ -464,6 +488,68 @@ export function buildBookingSettlementReversalTraceLinks(
   return links;
 }
 
+export function buildBookingSettlementReversalEvidenceState(
+  reversal: Pick<AdminBookingSettlementReversalEntry, 'accountingJournalBatches' | 'paymentClearingEntries'>,
+): BookingSettlementReversalEvidenceState {
+  const journal = reversal.accountingJournalBatches?.[0] ?? null;
+  const clearing = reversal.paymentClearingEntries?.[0] ?? null;
+  const journalStatus = journal?.status ?? 'missing';
+  const clearingStatus = clearing?.status ?? 'missing';
+  const detail = `Journal ${formatEvidenceStatus(journalStatus)} · Clearing ${formatEvidenceStatus(clearingStatus)}`;
+
+  if (!journal && !clearing) {
+    return {
+      detail,
+      label: 'Evidence missing',
+      tone: 'danger',
+    };
+  }
+  if (!journal) {
+    return {
+      detail,
+      label: 'Missing journal',
+      tone: 'danger',
+    };
+  }
+  if (!clearing) {
+    return {
+      detail,
+      label: 'Missing clearing',
+      tone: 'danger',
+    };
+  }
+  if (journal.status !== 'POSTED') {
+    return {
+      detail,
+      label: 'Journal pending',
+      tone: 'warning',
+    };
+  }
+  if (clearing.status === 'OPEN') {
+    return {
+      detail,
+      label: 'Clearing open',
+      tone: 'warning',
+    };
+  }
+  if (clearing.status === 'PARTIALLY_CLEARED') {
+    return {
+      detail,
+      label: 'Clearing partial',
+      tone: 'warning',
+    };
+  }
+  return {
+    detail,
+    label: 'Evidence complete',
+    tone: 'success',
+  };
+}
+
+function formatEvidenceStatus(status: string) {
+  return status === 'missing' ? status : status.toUpperCase();
+}
+
 export function buildFinanceSettlementTraceLinks(record: {
   readonly settlementSnapshotId?: string | null;
   readonly settlementReversalEntryId?: string | null;
@@ -472,12 +558,7 @@ export function buildFinanceSettlementTraceLinks(record: {
 
   if (record.settlementSnapshotId) {
     links.push({
-      href: bookingSettlementAuditHref({
-        page: 1,
-        range: 'all',
-        review: 'all',
-        take: TAX_SETTLEMENT_DEFAULT_TAKE,
-      }),
+      href: bookingSettlementAuditDetailHref(record.settlementSnapshotId),
       label: 'Settlement snapshot',
       value: shortId(record.settlementSnapshotId),
     });
@@ -1106,6 +1187,48 @@ export function buildMonthlyTaxClosingRiskLinks(
       signal: 'Formula check',
     },
   ];
+}
+
+export function buildMonthlyTaxClosingRemittanceEvidenceState(input: Pick<
+  AdminMonthlyTaxClosingSummary,
+  'paidAt' | 'remittanceMetadata' | 'status'
+>): MonthlyTaxClosingRemittanceEvidenceState {
+  const metadata = input.remittanceMetadata ?? null;
+  const paidAt = metadata?.paidAt ?? input.paidAt ?? null;
+  const transferRef = metadata?.transferRef ?? null;
+  const evidenceHref = metadata?.evidenceUrl ?? null;
+
+  if (!paidAt) {
+    return {
+      detail: 'Tax declaration is not paid yet.',
+      evidenceHref: null,
+      label: 'Pending remittance',
+      tone: 'neutral',
+    };
+  }
+  if (!transferRef) {
+    return {
+      detail: 'Missing transfer reference',
+      evidenceHref,
+      label: 'Evidence incomplete',
+      tone: 'warning',
+    };
+  }
+  if (!evidenceHref) {
+    return {
+      detail: 'Missing evidence URL',
+      evidenceHref: null,
+      label: 'Evidence incomplete',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    detail: `${transferRef} · ${metadata?.channel ?? 'Manual remittance'}`,
+    evidenceHref,
+    label: 'Evidence retained',
+    tone: 'success',
+  };
 }
 
 export function monthlyTaxClosingNextStatusOptions(

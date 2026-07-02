@@ -12,6 +12,7 @@ export type ProviderSecurityState =
   | 'missing';
 
 export type ProviderFilters = {
+  activity: string;
   page: number;
   pageSize: number;
   q: string;
@@ -37,11 +38,12 @@ export function buildProviderFilters(
   params: Record<string, string | string[] | undefined>,
 ): ProviderFilters {
   return {
+    activity: normalizePartnerActivityFilter(readParam(params.activity)),
     page: readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readParam(params.q),
     verification: readParam(params.verification),
-    providerStatus: readParam(params.providerStatus),
+    providerStatus: readProviderStatusFilter(readParam(params.providerStatus), readParam(params.onlineStatus)),
     kyc: readParam(params.kyc),
     location: readParam(params.location),
     security: normalizeProviderSecurityFilter(readParam(params.security)),
@@ -56,9 +58,10 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   const listParams = new URLSearchParams();
   const summaryParams = new URLSearchParams();
   const listIsServerPaginated = canUsePartnerDirectoryServerPagination(filters);
+  const summaryMatchesVisibleFilter = !hasLocalOnlyPartnerFilters(filters);
   const listTake = listIsServerPaginated
     ? filters.pageSize
-    : Math.min(filters.page * filters.pageSize, PARTNER_LOCAL_FILTER_HYDRATION_LIMIT);
+    : PARTNER_LOCAL_FILTER_HYDRATION_LIMIT;
 
   listParams.set('take', String(listTake));
   if (listIsServerPaginated) {
@@ -89,10 +92,10 @@ export function buildPartnerDataHrefs(filters: ProviderFilters): PartnerDataHref
   return {
     listHref: `/admin/partners/list-providers?${listParams.toString()}`,
     listIsServerPaginated,
-    summaryHref: summaryParams.toString()
+    summaryHref: summaryMatchesVisibleFilter && summaryParams.toString()
       ? `/admin/partners/list-providers/summary?${summaryParams.toString()}`
       : '/admin/partners/list-providers/summary',
-    summaryMatchesVisibleFilter: !hasLocalOnlyPartnerFilters(filters),
+    summaryMatchesVisibleFilter,
   };
 }
 
@@ -199,7 +202,7 @@ export function buildProviderActiveFilters(filters: ProviderFilters) {
       ? {
           kind: 'providerStatus',
           value: filters.providerStatus,
-          label: `Status: ${filters.providerStatus}`,
+          label: `State: ${partnerProviderStatusFilterLabel(filters.providerStatus)}`,
           description: providerFilterDescription('providerStatus', filters.providerStatus),
         }
       : null,
@@ -233,6 +236,14 @@ export function buildProviderActiveFilters(filters: ProviderFilters) {
           value: filters.readiness,
           label: `Readiness: ${filters.readiness}`,
           description: providerFilterDescription('readiness', filters.readiness),
+        }
+      : null,
+    filters.activity
+      ? {
+          kind: 'activity',
+          value: filters.activity,
+          label: `Activity: ${partnerActivityFilterLabel(filters.activity)}`,
+          description: providerFilterDescription('activity', filters.activity),
         }
       : null,
     filters.bookingFlow
@@ -286,6 +297,15 @@ export function providerFilterDescription(kind: string, value: string) {
   }
   if (kind === 'readiness') {
     return 'Readiness shows whether a Partner can safely appear in customer discovery and dispatch.';
+  }
+  if (kind === 'activity' && value === 'never-online') {
+    return 'Activity is narrowed to approved Partners without a recorded app session.';
+  }
+  if (kind === 'activity' && value === 'inactive-7d') {
+    return 'Activity is narrowed to Partners without factual activity in the last 7 days.';
+  }
+  if (kind === 'activity' && value === 'inactive-30d') {
+    return 'Activity is narrowed to Partners without factual activity in the last 30 days.';
   }
   if (kind === 'bookingFlow' && value === 'active-booking') {
     return 'Booking flow is narrowed to Partners with live or in-progress booking records.';
@@ -367,6 +387,7 @@ export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
   return Boolean(
     filters.location ||
       filters.security ||
+      filters.activity ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
@@ -423,9 +444,29 @@ export function partnerBookingFlowFilterLabel(flow: string) {
   return labels[flow] ?? flow;
 }
 
+export function partnerActivityFilterLabel(activity: string) {
+  const labels: Record<string, string> = {
+    'never-online': 'Never online',
+    'inactive-7d': 'Inactive 7D',
+    'inactive-30d': 'Inactive 30D',
+  };
+  return labels[activity] ?? activity;
+}
+
+export function partnerProviderStatusFilterLabel(status: string) {
+  const labels: Record<string, string> = {
+    ONLINE_AVAILABLE: 'Online available',
+    ONLINE_BUSY: 'Online busy',
+    ONLINE_AVAILABLE_SOON: 'Available soon',
+    OFFLINE: 'Offline',
+  };
+  return labels[status] ?? status;
+}
+
 export function buildPartnerExportSlug(filters: ProviderFilters) {
   const parts = [
     filters.q ? 'search' : '',
+    filters.activity ? `activity-${filters.activity}` : '',
     filters.bookingFlow ? `flow-${filters.bookingFlow}` : '',
     filters.review ? `review-${filters.review}` : '',
     filters.providerStatus ? `status-${filters.providerStatus.toLowerCase()}` : '',
@@ -488,6 +529,29 @@ function normalizeProviderSecurityFilter(value: string) {
   return value;
 }
 
+function normalizePartnerActivityFilter(value: string) {
+  return ['never-online', 'inactive-7d', 'inactive-30d'].includes(value) ? value : '';
+}
+
+function readProviderStatusFilter(providerStatus: string, onlineStatus: string) {
+  if (providerStatus) {
+    return providerStatus;
+  }
+
+  const aliases: Record<string, string> = {
+    available: 'ONLINE_AVAILABLE',
+    busy: 'ONLINE_BUSY',
+    offline: 'OFFLINE',
+    online_available: 'ONLINE_AVAILABLE',
+    online_busy: 'ONLINE_BUSY',
+    online_available_soon: 'ONLINE_AVAILABLE_SOON',
+    soon: 'ONLINE_AVAILABLE_SOON',
+  };
+  const normalized = onlineStatus.trim().toLowerCase();
+
+  return aliases[normalized] ?? '';
+}
+
 function normalizePartnerBookingFlowFilter(value: string) {
   const allowed = [
     'active-booking',
@@ -507,6 +571,7 @@ function hasLocalOnlyPartnerFilters(filters: ProviderFilters) {
     filters.location ||
       filters.security ||
       filters.readiness ||
+      filters.activity ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
 }
@@ -557,6 +622,7 @@ const partnerFilterHrefParamKeys = [
   'location',
   'security',
   'readiness',
+  'activity',
   'bookingFlow',
   'review',
   'sort',

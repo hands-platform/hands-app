@@ -10,6 +10,7 @@ import {
   CompleteProviderBookingDto,
   CreateCustomerBookingDto,
   CreateProviderCustomerReviewDto,
+  RecordProviderBookingDetailViewDto,
   SelectBookingProviderDto,
 } from './bookings.dto';
 import { BookingsService } from './bookings.service';
@@ -76,6 +77,24 @@ export class BookingsController {
   @Roles(Role.PROVIDER)
   listProviderBookings(@CurrentUser() user: AuthenticatedUser) {
     return this.bookings.listProviderBookings(user.id);
+  }
+
+  @Get(['partner/bookings/:id', 'provider/bookings/:id'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  getProviderBooking(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
+    return this.bookings.getProviderBooking(bookingId, user.id);
+  }
+
+  @Post(['partner/bookings/:id/detail-view', 'provider/bookings/:id/detail-view'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  recordProviderBookingDetailView(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bookingId: string,
+    @Body() body: RecordProviderBookingDetailViewDto,
+  ) {
+    return this.bookings.recordProviderBookingDetailView(bookingId, user.id, body);
   }
 
   @Post(['partner/bookings/:id/join', 'provider/bookings/:id/join'])

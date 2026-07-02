@@ -14,6 +14,8 @@ import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format'
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
+  FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
+  bookingSettlementAuditDetailHref,
   bookingSettlementAuditHref,
   buildBookingSettlementSnapshotApiHref,
   buildBookingSettlementSnapshotRowsCsvHref,
@@ -126,6 +128,17 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             </Link>
           ))}
         </div>
+        <div className="participant-list admin-mt-10">
+          {FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => (
+            <Link
+              className={`pill ${filters.take === take ? 'pill-success' : 'pill-neutral'}`}
+              href={bookingSettlementAuditHref({ ...filters, page: 1, take })}
+              key={take}
+            >
+              {take} rows
+            </Link>
+          ))}
+        </div>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -139,18 +152,20 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No settlement snapshots match the current filters."
-            headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon', 'Partner tax', 'HANDS fee', 'Status']}
+            headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon evidence', 'Partner tax', 'HANDS fee', 'Status', 'Evidence']}
             rowCount={tableRows.length}
           >
-            {tableRows.map((snapshot) => {
-              const coupon = couponSettlementInfo(snapshot);
-
-              return (
-                <tr key={snapshot.id}>
+            {tableRows.map((snapshot) => (
+              <tr key={snapshot.id}>
                   <td>
                     <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
                       {shortId(snapshot.bookingId)}
                     </Link>
+                    <div>
+                      <Link className="text-link" href={bookingSettlementAuditDetailHref(snapshot.id)}>
+                        Snapshot {shortId(snapshot.id)}
+                      </Link>
+                    </div>
                     <div className="muted">{formatDateTime(snapshot.postedAt)}</div>
                     <div className="muted">{snapshot.booking?.status ?? 'Unknown status'}</div>
                   </td>
@@ -173,10 +188,10 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted">Processing {formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}</div>
                   </td>
                   <td>
-                    <strong>{coupon.code}</strong>
-                    <div className="muted">Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</div>
-                    <div className="muted">Expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>
-                    {coupon.reviewFlag ? <span className="pill pill-warn">{coupon.reviewFlag}</span> : null}
+                    <Link className="text-link" href={bookingSettlementAuditDetailHref(snapshot.id)}>
+                      View coupon snapshot
+                    </Link>
+                    <div className="muted">Discount, expense, and funding source are loaded on detail.</div>
                   </td>
                   <td>
                     <strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>
@@ -193,9 +208,15 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
+                  <td>
+                    <Link className="pill pill-info" href={bookingSettlementAuditDetailHref(snapshot.id)}>
+                      Open detail
+                    </Link>
+                    <div className="muted">Snapshot {shortId(snapshot.id)}</div>
+                    <div className="muted">Posted {formatDateTime(snapshot.postedAt)}</div>
+                  </td>
                 </tr>
-              );
-            })}
+            ))}
           </AdminDataTable>
         </AdminTableScroll>
         <div className="vuexy-booking-table-footer">
@@ -231,31 +252,4 @@ function taxStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
-}
-
-function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
-  const metadata = jsonRecord(snapshot.metadata);
-  const discountAmount = numberValue(metadata?.couponDiscountAmount);
-  const companyExpense = numberValue(metadata?.companyCouponExpense);
-  return {
-    code: stringValue(metadata?.couponCodeSnapshot) ?? '-',
-    companyExpense,
-    discountAmount,
-    reviewFlag: stringValue(metadata?.couponReviewFlag),
-  };
-}
-
-function jsonRecord(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
-
-function numberValue(value: unknown) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-}
-
-function stringValue(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

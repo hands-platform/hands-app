@@ -202,6 +202,10 @@ import {
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
+import {
+  BOOKING_DETAIL_TERMINAL_STATUSES,
+  shouldLoadBookingDetailMarketplaceProviders,
+} from './booking-detail-marketplace-provider-loader';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -236,7 +240,6 @@ const bookingDetailAuthoritySourceMarkers = [
   'Service pricing snapshot',
 ] as const;
 
-const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const BOOKING_DETAIL_CHAT_PREVIEW_LIMIT = 12;
 const BOOKING_DETAIL_NOTIFICATION_BATCH_PREVIEW_LIMIT = 4;
 const BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT = 12;
@@ -264,14 +267,6 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS = [
 const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new URLSearchParams({
   keys: BOOKING_DETAIL_OPERATIONAL_POLICY_KEYS.join(','),
 }).toString()}`;
-
-export function shouldLoadBookingDetailMarketplaceProviders(
-  booking: Pick<AdminBookingDetail, 'status'> | null,
-): boolean {
-  if (!booking) return false;
-
-  return !TERMINAL_BOOKING_STATUSES.has(booking.status);
-}
 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -618,7 +613,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     opsTaskCards,
     operatorNotesPlacement: booking.status === 'COMPLETED' ? 'after-actions' : 'before-actions',
     outcomeReview,
-    showDispatchChecklist: !TERMINAL_BOOKING_STATUSES.has(booking.status),
+    showDispatchChecklist: !BOOKING_DETAIL_TERMINAL_STATUSES.has(booking.status),
     showLiveServiceBoard: booking.status === 'MATCHED' || booking.status === 'IN_SERVICE',
     showOutcomeReview: !showPostMatchDecisionBelowLifecycle,
     showStructuredOpsStatus: booking.status !== 'COMPLETED',

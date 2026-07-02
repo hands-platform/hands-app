@@ -99,12 +99,16 @@ type AdminShellNavProps = {
 };
 
 const sectionIconByLabel = {
+  Analytics: ChartNoAxesCombined,
   Bookings: CalendarClock,
-  Command: FolderKanban,
-  Customers: UsersRound,
+  'Admin Control': UserRoundCog,
+  'Command Center': FolderKanban,
+  Communications: BellRing,
   Finance: Landmark,
   Partners: HeartHandshake,
-  System: Settings2,
+  'Policies & Setup': Settings2,
+  'Tax & Accounting': ReceiptText,
+  Users: UsersRound,
 } as const;
 
 function navIcon(label: string): LucideIcon {

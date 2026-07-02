@@ -1,0 +1,333 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
+
+import { adminGet, type AdminPartnerOverview } from '../../../lib/admin-api';
+import PartnerOverviewPage from './page';
+
+vi.mock('../../../lib/admin-api', async () => {
+  const actual = await vi.importActual<typeof import('../../../lib/admin-api')>('../../../lib/admin-api');
+
+  return {
+    ...actual,
+    adminGet: vi.fn(),
+  };
+});
+
+const mockedAdminGet = vi.mocked(adminGet);
+
+describe('PartnerOverviewPage', () => {
+  beforeEach(() => {
+    mockedAdminGet.mockReset();
+  });
+
+  it('renders operator action rows with descriptive open controls and forwards filters', async () => {
+    mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({
+        range: '7d',
+        riskStatus: 'high',
+        selectionIssue: 'availability',
+        selectionSort: 'response',
+        walletStatus: 'negative',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/overview?range=7d&riskStatus=high&walletStatus=negative&selectionIssue=availability&selectionSort=response',
+      expect.any(Object),
+    );
+    expect(markup).toContain('Risk and action queues');
+    expect(markup).toContain('aria-label="Remove Risk filter High"');
+    expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
+    expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');
+    expect(markup).toContain('aria-label="Remove Selection sort filter Response time"');
+    expect(markup).toContain('aria-label="Open Pending Verification"');
+    expect(markup).toContain('Fresh location');
+    expect(markup).toContain('Response');
+    expect(markup).toContain('1m 35s');
+    expect(markup).toContain('Ho Chi Minh City');
+    expect(markup).toContain('Completion');
+    expect(markup).toContain('Avg rating');
+    expect(markup).toContain('87%');
+    expect(markup).toContain('4.70');
+    expect(markup).toContain('aria-label="Review reports for Quality Partner"');
+    expect(markup).toContain('href="/partners/quality-partner?section=full"');
+    expect(markup).toContain('Available soon · Low rating reviews');
+    expect(markup).toContain('Smoke Partner');
+    expect(markup).toContain('+84900001111 · Ho Chi Minh City');
+    expect(markup).toContain('Online available · Last activity Jun 27, 03:39 AM');
+    expect(markup).toContain(
+      'aria-label="Smoke Partner, +84900001111, Ho Chi Minh City, Online available, last activity Jun 27, 03:39 AM, Verification incomplete, Finish KYC approval"',
+    );
+    expect(markup).toContain('Finish KYC approval');
+    expect(markup).toContain('Partner operating status');
+    expect(markup).toContain('Ready now');
+    expect(markup).toContain('Approved, online, fresh location, active services, and wallet eligible');
+    expect(markup).toContain('aria-label="Ready now, 0 Partners. Open filtered Partners list"');
+    expect(markup).toContain('Open filtered list');
+    expect(markup).toContain('Available soon');
+    expect(markup).toContain('Auto-offline follow-up queue for approved partners');
+    expect(markup).toContain('Partner operations priority');
+    expect(markup).toContain('Ready supply');
+    expect(markup).toContain('Selection drop-off');
+    expect(markup).toContain('2 issues');
+    expect(markup).toContain('Wallet risk');
+    expect(markup).toContain('0 partners');
+    expect(markup).toContain('Quality risk');
+    expect(markup).toContain('1 partner');
+    expect(markup).toContain('Review friction');
+    expect(markup).toContain('Review wallet');
+    expect(markup).toContain('Review quality');
+    expect(markup).toContain('href="/partners?review=unsettled"');
+    expect(markup).toContain('Selection friction');
+    expect(markup).toContain('Selection issue');
+    expect(markup).toContain('Availability (1)');
+    expect(markup).toContain('Profile (2)');
+    expect(markup).toContain('Service (0)');
+    expect(markup).toContain('href="/partners/overview?range=7d&amp;riskStatus=high&amp;walletStatus=negative&amp;selectionIssue=price&amp;selectionSort=response"');
+    expect(markup).toContain('<option value="response" selected="">Response time</option>');
+    expect(markup).toContain('Viewed Not Booked');
+    expect(markup).toContain('<small>Online available</small>');
+    expect(markup).toContain('18 views');
+    expect(markup).toContain('3 favorites');
+    expect(markup).toContain('0% selected');
+    expect(markup).toContain('550,000 VND');
+    expect(markup).toContain('3m');
+    expect(markup).toContain('Available soon');
+    expect(markup).toContain('Jun 27, 01:30 PM');
+    expect(markup).toContain('No approved profile image');
+    expect(markup).toContain('High partner price');
+    expect(markup).toContain('Review profile pricing and photos');
+    expect(markup).toContain('Partner segments');
+    expect(markup).not.toContain('ONLINE_AVAILABLE');
+  });
+
+  it('omits empty aggregate grids while keeping actionable empty-state sections', async () => {
+    mockedAdminGet.mockResolvedValue({
+      ...partnerOverviewFixture,
+      activityRetention: { cards: [] },
+      segments: [],
+      summaryKpis: [],
+    });
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({
+        range: 'today',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).not.toContain('aria-label="Partner supply summary"');
+    expect(markup).not.toContain('aria-label="Partner activity and retention"');
+    expect(markup).not.toContain('aria-label="Partner segments"');
+    expect(markup).toContain('Partner operations priority');
+    expect(markup).toContain('Partner operating status');
+    expect(markup).toContain('Risk and action queues');
+  });
+});
+
+const partnerOverviewFixture: AdminPartnerOverview = {
+  generatedAt: '2026-07-02T03:29:00.000Z',
+  refreshSeconds: 60,
+  source: 'stored-partner-supply-aggregates',
+  range: '7d',
+  rangeLabel: 'Last 7 days',
+  windowStartAt: '2026-06-26T00:00:00.000Z',
+  windowEndAt: '2026-07-02T00:00:00.000Z',
+  filters: {
+    city: null,
+    onlineStatus: null,
+    riskStatus: 'high',
+    selectionIssue: 'availability',
+    selectionSort: 'response',
+    serviceId: null,
+    verificationStatus: null,
+    walletStatus: null,
+  },
+  summaryKpis: [
+    {
+      key: 'eligibleToAccept',
+      label: 'Eligible To Accept',
+      value: 12,
+      detail: 'Can accept a booking now',
+      unit: 'count',
+      deltaPercent: null,
+    },
+  ],
+  operatingStatus: {
+    cards: [
+      {
+        key: 'ready-now',
+        label: 'Ready now',
+        count: 0,
+        detail: 'Approved, online, fresh location, active services, and wallet eligible',
+        href: '/partners?review=marketplace-ready&onlineStatus=available',
+        tone: 'success',
+      },
+      {
+        key: 'available-soon',
+        label: 'Available soon',
+        count: 1,
+        detail: 'Partner marked available soon instead of ready now',
+        href: '/partners?review=marketplace-ready&onlineStatus=soon',
+        tone: 'info',
+      },
+      {
+        key: 'inactive-7d',
+        label: 'Inactive 7D',
+        count: 0,
+        detail: 'Auto-offline follow-up queue for approved partners',
+        href: '/partners?review=marketplace-ready&activity=inactive-7d',
+        tone: 'danger',
+      },
+    ],
+  },
+  supplyHealth: {
+    areas: [
+      {
+        areaCode: 'hcm',
+        area: 'Ho Chi Minh City',
+        totalPartners: 20,
+        onlinePartners: 8,
+        locationFreshPartners: 6,
+        eligiblePartners: 4,
+        openRequests: 3,
+        failedRequests: 1,
+        matchingFailureRate: 25,
+        averageResponseSeconds: 95,
+        status: 'High Failure',
+        riskLevel: 'high',
+      },
+    ],
+    services: [
+      {
+        serviceId: 'service-1',
+        serviceName: 'Deep Tissue Massage · 90 min',
+        partnersOffering: 8,
+        onlinePartners: 4,
+        eligiblePartners: 3,
+        openRequests: 2,
+        completedBookings: 13,
+        completionRate: 87,
+        avgRating: 4.7,
+        status: 'Healthy',
+        riskLevel: 'low',
+      },
+    ],
+  },
+  funnel: {
+    steps: [],
+  },
+  activityRetention: {
+    cards: [],
+  },
+  bookingQuality: {
+    kpis: [],
+    riskPartners: [
+      {
+        partnerId: 'quality-partner',
+        partnerName: 'Quality Partner',
+        phone: '+84900002222',
+        area: 'Ho Chi Minh City',
+        status: 'ONLINE_AVAILABLE_SOON',
+        lastActivityAt: '2026-06-26T20:39:00.000Z',
+        mainReason: 'Low rating reviews',
+        recommendedAction: 'Review reports',
+        href: '/partners/quality-partner?section=full',
+        riskLevel: 'high',
+        lastOnlineAt: '2026-06-26T20:39:00.000Z',
+        lastBookingAt: '2026-06-26T20:39:00.000Z',
+        completedBookings: 4,
+        cancelledBookings: 2,
+        cancellationRate: 33,
+        noShowReports: 1,
+        lowReviewCount: 2,
+        rating: 3.2,
+        reviewCount: 4,
+        walletBalance: 0,
+      },
+    ],
+  },
+  financeWalletRisk: {
+    kpis: [],
+    negativeWalletPartners: [],
+    policyNote: 'Ledger-backed Partner wallet exposure.',
+  },
+  selectionFriction: {
+    issueCounts: [
+      { key: 'all', label: 'All', count: 2 },
+      { key: 'availability', label: 'Availability', count: 1 },
+      { key: 'profile', label: 'Profile', count: 2 },
+      { key: 'price', label: 'Price', count: 2 },
+      { key: 'response', label: 'Response', count: 1 },
+      { key: 'service', label: 'Service', count: 0 },
+    ],
+    rows: [
+      {
+        partnerId: 'provider-viewed-not-booked',
+        partnerName: 'Viewed Not Booked',
+        phone: '+84900003333',
+        area: 'Ho Chi Minh City',
+        status: 'ONLINE_AVAILABLE',
+        lastActivityAt: '2026-06-26T20:39:00.000Z',
+        mainReason: 'High views, no completed booking',
+        recommendedAction: 'Review profile pricing and photos',
+        href: '/partners/provider-viewed-not-booked?section=full',
+        riskLevel: 'medium',
+        activeServiceCount: 1,
+        availabilityStatus: 'Available soon',
+        averageResponseSeconds: 180,
+        completedBookings: 0,
+        favoriteCount: 3,
+        galleryImageCount: 0,
+        hasProfileImage: false,
+        lastIntentAt: '2026-06-26T20:39:00.000Z',
+        maxServicePrice: 550_000,
+        minServicePrice: 550_000,
+        nextAvailableAt: '2026-06-27T06:30:00.000Z',
+        profileViewCustomers: 4,
+        profileViews: 18,
+        rating: 4.7,
+        readinessFlags: ['No approved profile image', 'High partner price'],
+        reviewCount: 12,
+        selectionRate: 0,
+      },
+    ],
+  },
+  actionLists: [
+    {
+      key: 'pending-verification',
+      title: 'Pending Verification',
+      totalCount: 1,
+      viewAllHref: '/partners?review=unapproved',
+      rows: [
+        {
+          partnerId: 'partner-1',
+          partnerName: 'Smoke Partner',
+          phone: '+84900001111',
+          area: 'Ho Chi Minh City',
+          status: 'ONLINE_AVAILABLE',
+          lastActivityAt: '2026-06-26T20:39:00.000Z',
+          mainReason: 'Verification incomplete',
+          recommendedAction: 'Finish KYC approval',
+          href: '/partners/partner-1?section=full',
+          riskLevel: 'high',
+        },
+      ],
+    },
+  ],
+  segments: [
+    {
+      key: 'pending',
+      label: 'New Pending',
+      count: 1,
+      explanation: 'Needs admin review before marketplace exposure.',
+      recommendedAction: 'Review KYC and profile documents.',
+      href: '/partners?review=unapproved',
+      tone: 'warning',
+    },
+  ],
+  dataNotes: [],
+};

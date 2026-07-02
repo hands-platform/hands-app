@@ -1,37 +1,84 @@
 import { adminNavSections } from './admin-navigation';
 
 describe('admin navigation', () => {
-  it('keeps former shift-flow shortcuts inside the category navigation', () => {
+  it('organizes the sidebar into operation-focused categories', () => {
+    expect(adminNavSections.map((section) => section.label)).toEqual([
+      'Command Center',
+      'Analytics',
+      'Bookings',
+      'Users',
+      'Partners',
+      'Finance',
+      'Tax & Accounting',
+      'Communications',
+      'Policies & Setup',
+      'Admin Control',
+    ]);
+  });
+
+  it('keeps all former shortcuts while moving them into clearer categories', () => {
     const linksByHref = new Map(
       adminNavSections.flatMap((section) =>
         section.links.map((link) => [link.href, `${section.label}: ${link.label}`] as const),
       ),
     );
 
-    expect(linksByHref.get('/')).toBe('Command: Start Shift');
-    expect(linksByHref.get('/operations-handoff')).toBe('Command: Handoff');
-    expect(linksByHref.get('/vietnam-overview')).toBe('Command: Vietnam Overview');
-    expect(linksByHref.get('/usage-overview')).toBe('Command: Usage Overview');
-    expect(linksByHref.get('/marketing-analytics')).toBe('Command: Marketing Analytics');
+    expect(linksByHref.get('/')).toBe('Command Center: Start Shift');
+    expect(linksByHref.get('/calendar')).toBe('Command Center: Calendar');
+    expect(linksByHref.get('/app-sessions')).toBe('Command Center: App Presence');
+    expect(linksByHref.get('/operations-handoff')).toBe('Command Center: Handoff');
+
+    expect(linksByHref.get('/vietnam-overview')).toBe('Analytics: Vietnam Overview');
+    expect(linksByHref.get('/usage-overview')).toBe('Analytics: Usage Overview');
+    expect(linksByHref.get('/partners/overview')).toBe('Analytics: Partner Overview');
+    expect(linksByHref.get('/marketing-analytics')).toBe('Analytics: Marketing Analytics');
+
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
+    expect(linksByHref.get('/customers')).toBe('Users: Customers');
+    expect(linksByHref.get('/reviews')).toBe('Users: Customer Reviews');
+    expect(linksByHref.get('/reviews/partner-customer-evaluations')).toBe('Users: Partner Evaluations');
+    expect(linksByHref.get('/partners')).toBe('Partners: Partners');
+    expect(linksByHref.get('/files')).toBe('Partners: Files');
+
+    expect(linksByHref.get('/finance-overview')).toBe('Finance: Finance Overview');
     expect(linksByHref.get('/finance-closeout')).toBe('Finance: Finance Closeout');
+    expect(linksByHref.get('/payments')).toBe('Finance: Payments');
+    expect(linksByHref.get('/finance-tax/payment-clearing')).toBe('Finance: Payment Clearing');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
     expect(linksByHref.get('/wallet-adjustments')).toBe('Finance: Wallet Adjustments');
-    expect(linksByHref.get('/finance-tax')).toBe('Finance: Tax Overview');
-    expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe('Finance: Partner Withholding Tax');
-    expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe('Finance: Booking Settlement Audit');
-    expect(linksByHref.get('/finance-tax/settlement-reversals')).toBe('Finance: Settlement Reversals');
-    expect(linksByHref.get('/finance-tax/general-ledger')).toBe('Finance: General Ledger');
-    expect(linksByHref.get('/finance-tax/payment-clearing')).toBe('Finance: Payment Clearing');
-    expect(linksByHref.get('/finance-tax/bank-reconciliation')).toBe('Finance: Bank Reconciliation');
-    expect(linksByHref.get('/finance-tax/monthly-tax-closing')).toBe('Finance: Monthly Tax Closing');
-    expect(linksByHref.get('/finance-tax/platform-vat')).toBe('Finance: Platform VAT');
-    expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Finance: Payment Fees');
-    expect(linksByHref.get('/payments')).toBe('Finance: Payments');
     expect(linksByHref.get('/earnings')).toBe('Finance: Earnings');
     expect(linksByHref.get('/payouts')).toBe('Finance: Payouts');
     expect(linksByHref.get('/referrals/cashouts')).toBe('Finance: Referral Cashouts');
     expect(linksByHref.get('/refunds')).toBe('Finance: Refunds');
+
+    expect(linksByHref.get('/finance-tax')).toBe('Tax & Accounting: Tax Overview');
+    expect(linksByHref.get('/finance-tax/general-ledger')).toBe('Tax & Accounting: General Ledger');
+    expect(linksByHref.get('/finance-tax/bank-reconciliation')).toBe('Tax & Accounting: Bank Reconciliation');
+    expect(linksByHref.get('/finance-tax/booking-settlement-audit')).toBe(
+      'Tax & Accounting: Booking Settlement Audit',
+    );
+    expect(linksByHref.get('/finance-tax/settlement-reversals')).toBe(
+      'Tax & Accounting: Settlement Reversals',
+    );
+    expect(linksByHref.get('/finance-tax/monthly-tax-closing')).toBe('Tax & Accounting: Monthly Tax Closing');
+    expect(linksByHref.get('/finance-tax/platform-vat')).toBe('Tax & Accounting: Platform VAT');
+    expect(linksByHref.get('/finance-tax/partner-withholding-tax')).toBe(
+      'Tax & Accounting: Partner Withholding Tax',
+    );
+    expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Tax & Accounting: Payment Fees');
+    expect(linksByHref.get('/tax-policy')).toBe('Tax & Accounting: Tax Policy');
+
+    expect(linksByHref.get('/notifications')).toBe('Communications: Notifications');
+    expect(linksByHref.get('/notifications/templates')).toBe('Communications: Notification Templates');
+    expect(linksByHref.get('/notifications/push-send')).toBe('Communications: Push Send');
+
+    expect(linksByHref.get('/operations-policy')).toBe('Policies & Setup: Operations Policy');
+    expect(linksByHref.get('/services')).toBe('Policies & Setup: Service Catalog');
+    expect(linksByHref.get('/coupons')).toBe('Policies & Setup: Coupons');
+    expect(linksByHref.get('/setup')).toBe('Policies & Setup: Setup');
+
+    expect(linksByHref.get('/admin-operators')).toBe('Admin Control: Admin Operators');
+    expect(linksByHref.get('/audit-log')).toBe('Admin Control: Audit Log');
   });
 
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
@@ -67,51 +114,31 @@ describe('admin navigation', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('separates customer and partner operations into their own user categories', () => {
-    const customerSection = adminNavSections.find((section) => section.label === 'Customers');
+  it('separates user records, partner operations, finance flow, and tax accounting', () => {
+    const userSection = adminNavSections.find((section) => section.label === 'Users');
     const partnerSection = adminNavSections.find((section) => section.label === 'Partners');
+    const financeSection = adminNavSections.find((section) => section.label === 'Finance');
+    const taxSection = adminNavSections.find((section) => section.label === 'Tax & Accounting');
 
-    expect(adminNavSections.map((section) => section.label)).not.toContain('Users');
-    expect(customerSection?.links.map((link) => link.href)).toEqual(['/customers', '/referrals/customers']);
+    expect(userSection?.links.map((link) => link.href)).toEqual([
+      '/customers',
+      '/referrals/customers',
+      '/reviews',
+      '/reviews/partner-customer-evaluations',
+    ]);
     expect(partnerSection?.links.map((link) => link.href)).toEqual([
       '/partners',
       '/partners?review=unapproved',
       '/partners?review=unsettled',
       '/referrals/partners',
+      '/files',
     ]);
-    expect(partnerSection?.links.map((link) => link.label)).toEqual([
-      'Partners',
-      'Unapproved Partners',
-      'Unsettled Partners',
-      'Partner Referrals',
-    ]);
-    expect(customerSection?.links.map((link) => link.label)).toEqual(['Customers', 'Customer Referrals']);
-    expect(partnerSection?.links[1]?.description).toContain('registration, KYC, required documents');
-    expect(partnerSection?.links[1]?.description).not.toContain('bank, tax');
+    expect(financeSection?.links.map((link) => link.href)).toContain('/finance-tax/payment-clearing');
+    expect(financeSection?.links.map((link) => link.href)).not.toContain('/finance-tax/monthly-tax-closing');
+    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
+    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');
     expect(adminNavSections.flatMap((section) => section.links.map((link) => link.href))).not.toContain(
       '/app-sessions?role=CUSTOMER&state=live',
     );
-  });
-
-  it('keeps policy and retained evidence in one system category', () => {
-    const systemSection = adminNavSections.find((section) => section.label === 'System');
-
-    expect(adminNavSections.map((section) => section.label)).not.toContain('Policy');
-    expect(adminNavSections.map((section) => section.label)).not.toContain('Evidence and System');
-    expect(systemSection?.links.map((link) => link.href)).toEqual([
-      '/operations-policy',
-      '/services',
-      '/tax-policy',
-      '/coupons',
-      '/notifications',
-      '/notifications/templates',
-      '/notifications/push-send',
-      '/files',
-      '/reviews',
-      '/reviews/partner-customer-evaluations',
-      '/audit-log',
-      '/admin-operators',
-      '/setup',
-    ]);
   });
 });

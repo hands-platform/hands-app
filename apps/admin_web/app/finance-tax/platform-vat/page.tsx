@@ -1,3 +1,5 @@
+import { AlertTriangle, CircleDollarSign, ReceiptText, ShieldCheck } from 'lucide-react';
+
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -5,6 +7,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceListCommandCard } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPlatformVatMetrics,
@@ -52,6 +55,41 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
       metrics={buildPlatformVatMetrics(summary)}
       title="Platform VAT"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="VAT command board">
+        <FinanceListCommandCard
+          detail="Company output VAT payable from HANDS platform fee gross."
+          href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
+          icon={ReceiptText}
+          label="Output VAT"
+          tone={summary.companyOutputVatTotal > 0 ? 'warning' : 'neutral'}
+          value={formatMoney(summary.companyOutputVatTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Company revenue after removing output VAT from platform fee gross."
+          href="/finance-tax/booking-settlement-audit"
+          icon={CircleDollarSign}
+          label="Net revenue"
+          tone={summary.platformFeeNetRevenueTotal > 0 ? 'success' : 'neutral'}
+          value={formatMoney(summary.platformFeeNetRevenueTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Must be 0 before monthly closeout."
+          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
+          icon={AlertTriangle}
+          label="Formula delta"
+          tone={summary.netRevenueDelta === 0 ? 'success' : 'danger'}
+          value={formatMoney(summary.netRevenueDelta, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="VAT rate buckets from immutable booking settlement snapshots."
+          href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
+          icon={ShieldCheck}
+          label="VAT buckets"
+          tone={summary.rateBreakdown.length > 0 ? 'info' : 'neutral'}
+          value={`${summary.rateBreakdown.length} bucket(s)`}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Period ${summary.period}. Showing VAT rate buckets from immutable booking settlement snapshots.`}
@@ -60,7 +98,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         title="Platform VAT period"
       >
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
           <AdminFormControlButton className="btn btn-primary" type="submit">
             Apply period
           </AdminFormControlButton>

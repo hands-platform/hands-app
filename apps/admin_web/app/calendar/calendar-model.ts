@@ -170,6 +170,7 @@ export function buildCalendarMetrics(events: readonly CalendarEventRecord[], now
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfWeek = new Date(startOfToday);
   endOfWeek.setDate(endOfWeek.getDate() + 7);
+  const currentOrFutureEvents = events.filter((event) => new Date(event.end || event.start) >= now);
 
   const upcoming = events.filter((event) => {
     const start = new Date(event.start);
@@ -183,7 +184,7 @@ export function buildCalendarMetrics(events: readonly CalendarEventRecord[], now
     .find((event) => new Date(event.start) >= now);
 
   return {
-    total: events.length,
+    total: currentOrFutureEvents.length,
     today: today.length,
     upcoming: upcoming.length,
     nextLabel: nextEvent ? `${nextEvent.title} · ${formatDateTime(nextEvent.start)}` : 'No upcoming event',

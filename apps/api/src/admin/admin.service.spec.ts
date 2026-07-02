@@ -10,6 +10,7 @@ import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingStatus,
+  CompanyBankAccountStatus,
   EarningStatus,
   MonthlyTaxClosingStatus,
   ParticipantStatus,
@@ -32,6 +33,7 @@ import {
   ReferralAudience,
   ReferralRewardMode,
   ReferralRewardStatus,
+  ReviewStatus,
   Role,
 } from '@prisma/client';
 import {
@@ -40,7 +42,7 @@ import {
 } from '../notifications/notification-template-catalog';
 import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-selects';
 import { ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT } from './admin-booking-selects';
-import { AdminService } from './admin.service';
+import { AdminService, partnerOverviewCitySearchTerms } from './admin.service';
 
 const creditedReferralRewardStatus = 'CREDITED' as ReferralRewardStatus;
 const cashoutApprovedReferralRewardStatus = 'CASHOUT_APPROVED' as ReferralRewardStatus;
@@ -69,6 +71,745 @@ function createAdminService(
     (deps.referrals ?? {}) as never,
   );
 }
+
+function providerMapFixture(input: {
+  id: string;
+  status: ProviderStatus;
+  user: { appSessions: Array<{ lastSeenAt: Date }> };
+}) {
+  return {
+    city: 'Ha Noi',
+    currentLat: 21.0285,
+    currentLng: 105.8542,
+    currentLocationUpdatedAt: input.user.appSessions[0]?.lastSeenAt ?? new Date(),
+    displayName: input.id,
+    id: input.id,
+    residentialAddress: 'Cau Giay, Ha Noi',
+    serviceArea: null,
+    status: input.status,
+    user: input.user,
+  };
+}
+
+describe('partnerOverviewCitySearchTerms', () => {
+  it('expands common Vietnam city aliases used by Admin filters', () => {
+    expect(partnerOverviewCitySearchTerms('hcm')).toEqual([
+      'hcm',
+      'hcmc',
+      'ho chi minh',
+      'sai gon',
+      'saigon',
+    ]);
+    expect(partnerOverviewCitySearchTerms('Saigon')).toContain('ho chi minh');
+    expect(partnerOverviewCitySearchTerms('hn')).toEqual(['hn', 'hanoi', 'ha noi']);
+    expect(partnerOverviewCitySearchTerms('Da Nang')).toEqual(['Da Nang']);
+  });
+});
+
+describe('AdminService partner overview request events', () => {
+  it('keeps the required Partner Overview action queues and segments visible even when empty', async () => {
+    const prisma = {
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      review: {
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingParticipant: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      customerFavoriteProvider: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerReport: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerBookingRequestEvent: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      notification: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ avgSeconds: null }]),
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getPartnerOverview({ range: '7d' });
+
+    expect(overview.actionLists.map((list) => list.key)).toEqual([
+      'pending-verification',
+      'approved-never-online',
+      'approved-no-first-booking',
+      'inactive-7d',
+      'inactive-30d',
+      'high-cancellation',
+      'no-show-risk',
+      'low-rating',
+      'negative-wallet',
+      'payout-blocked',
+      'tax-info-missing',
+    ]);
+    expect(overview.segments.map((segment) => segment.key)).toEqual([
+      'pending',
+      'documents-missing',
+      'approved-inactive',
+      'first-job',
+      'high-activity',
+      'high-rating',
+      'low-rating',
+      'high-cancellation',
+      'no-show',
+      'negative-wallet',
+      'payout-blocked',
+      'churn-risk',
+      'overpriced',
+    ]);
+  });
+
+  it('applies riskStatus to derived Partner Overview queues and segments', async () => {
+    const oldDate = new Date('2026-05-01T00:00:00.000Z');
+    const providerRow = (id: string, name: string) => ({
+      id,
+      displayName: name,
+      city: 'Ho Chi Minh City',
+      residentialAddress: 'District 1, Ho Chi Minh City',
+      serviceArea: null,
+      status: ProviderStatus.OFFLINE,
+      ratingAvg: 4.8,
+      reviewCount: 4,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: oldDate,
+      blockedAt: null,
+      blockedReason: null,
+      updatedAt: oldDate,
+      user: {
+        createdAt: oldDate,
+        fullName: name,
+        phone: `+849${id}`,
+      },
+      verification: {
+        reviewedAt: oldDate,
+        status: 'APPROVED',
+        submittedAt: oldDate,
+      },
+      kyc: {
+        reviewedAt: oldDate,
+        status: ProviderKycStatus.APPROVED,
+        submittedAt: oldDate,
+      },
+      taxProfile: {
+        status: ProviderTaxProfileStatus.APPROVED,
+      },
+      services: [
+        {
+          serviceId: 'svc-foot-45',
+          service: {
+            active: true,
+            durationMin: 60,
+            id: 'svc-foot-45',
+            name: 'Foot Massage',
+          },
+        },
+      ],
+      sessions: [],
+      selectedBookings: [],
+    });
+    const prisma = {
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'critical-wallet',
+            _sum: { amount: -100_000 },
+          },
+        ]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn().mockResolvedValue([
+          providerRow('critical-wallet', 'Critical Wallet Partner'),
+          providerRow('high-inactive', 'High Inactive Partner'),
+        ]),
+      },
+      review: {
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingParticipant: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      customerFavoriteProvider: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerReport: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerBookingRequestEvent: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      notification: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ avgSeconds: null }]),
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getPartnerOverview({ range: '7d', riskStatus: 'high' });
+
+    expect(overview.filters.riskStatus).toBe('high');
+    expect(overview.actionLists.find((list) => list.key === 'negative-wallet')?.totalCount).toBe(0);
+    expect(overview.actionLists.find((list) => list.key === 'inactive-30d')?.totalCount).toBe(1);
+    expect(overview.segments.find((segment) => segment.key === 'negative-wallet')?.count).toBe(0);
+    expect(overview.segments.find((segment) => segment.key === 'churn-risk')?.count).toBe(1);
+  });
+
+  it('computes Partner Overview area response time from participant response records', async () => {
+    const prisma = {
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      review: {
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingParticipant: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            joinedAt: new Date('2026-06-27T03:00:00.000Z'),
+            respondedAt: new Date('2026-06-27T03:01:30.000Z'),
+            booking: {
+              address: 'District 1, Ho Chi Minh City',
+              addressSnapshot: {
+                address: 'District 1, Ho Chi Minh City',
+                addressText: 'District 1, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+              },
+              lat: 10.7769,
+              lng: 106.7009,
+            },
+          },
+          {
+            joinedAt: new Date('2026-06-27T04:00:00.000Z'),
+            respondedAt: new Date('2026-06-27T04:02:00.000Z'),
+            booking: {
+              address: 'District 3, Ho Chi Minh City',
+              addressSnapshot: {
+                address: 'District 3, Ho Chi Minh City',
+                addressText: 'District 3, Ho Chi Minh City',
+                latitude: 10.782,
+                longitude: 106.687,
+              },
+              lat: 10.782,
+              lng: 106.687,
+            },
+          },
+        ]),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      customerFavoriteProvider: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerReport: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerBookingRequestEvent: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      notification: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ avgSeconds: 105 }]),
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getPartnerOverview({ range: '7d' });
+
+    expect(overview.summaryKpis).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'averageResponseTime',
+          value: 105,
+        }),
+      ]),
+    );
+    expect(overview.supplyHealth.areas.find((row) => row.areaCode === 'hcm')).toEqual(
+      expect.objectContaining({
+        averageResponseSeconds: 105,
+      }),
+    );
+    expect(prisma.bookingParticipant.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: expect.any(Number),
+        where: expect.objectContaining({
+          respondedAt: { not: null },
+        }),
+      }),
+    );
+  });
+
+  it('surfaces Partner Overview selection friction from viewed and favorited providers without completed work', async () => {
+    const providerUpdatedAt = new Date('2026-06-27T03:00:00.000Z');
+    const prisma = {
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'provider-viewed-not-booked',
+            displayName: 'Viewed Not Booked',
+            city: 'Ho Chi Minh City',
+            residentialAddress: 'District 1, Ho Chi Minh City',
+            serviceArea: null,
+            status: ProviderStatus.ONLINE_AVAILABLE_SOON,
+            nextAvailableAt: new Date('2026-06-27T06:30:00.000Z'),
+            ratingAvg: 4.7,
+            reviewCount: 12,
+            currentLat: 10.7769,
+            currentLng: 106.7009,
+            currentLocationUpdatedAt: providerUpdatedAt,
+            blockedAt: null,
+            blockedReason: null,
+            updatedAt: providerUpdatedAt,
+            user: {
+              createdAt: providerUpdatedAt,
+              fileAssets: [],
+              fullName: 'Viewed Not Booked',
+              phone: '+84900003333',
+            },
+            verification: {
+              reviewedAt: providerUpdatedAt,
+              status: 'APPROVED',
+              submittedAt: providerUpdatedAt,
+            },
+            kyc: {
+              reviewedAt: providerUpdatedAt,
+              status: ProviderKycStatus.APPROVED,
+              submittedAt: providerUpdatedAt,
+            },
+            taxProfile: {
+              status: ProviderTaxProfileStatus.APPROVED,
+            },
+            services: [
+              {
+                serviceId: 'svc-foot-45',
+                service: {
+                  active: true,
+                  basePrice: 300_000,
+                  durationMin: 45,
+                  id: 'svc-foot-45',
+                  name: 'Foot Massage',
+                },
+                price: 550_000,
+              },
+            ],
+            sessions: [{ appVersion: '1.0.0', lastSeenAt: providerUpdatedAt }],
+            selectedBookings: [],
+          },
+          {
+            id: 'provider-price-only',
+            displayName: 'Price Only',
+            city: 'Ho Chi Minh City',
+            residentialAddress: 'District 3, Ho Chi Minh City',
+            serviceArea: null,
+            status: ProviderStatus.ONLINE_AVAILABLE,
+            nextAvailableAt: null,
+            ratingAvg: 4.8,
+            reviewCount: 8,
+            currentLat: 10.782,
+            currentLng: 106.687,
+            currentLocationUpdatedAt: providerUpdatedAt,
+            blockedAt: null,
+            blockedReason: null,
+            updatedAt: providerUpdatedAt,
+            user: {
+              createdAt: providerUpdatedAt,
+              fileAssets: [],
+              fullName: 'Price Only',
+              phone: '+84900004444',
+            },
+            verification: {
+              reviewedAt: providerUpdatedAt,
+              status: 'APPROVED',
+              submittedAt: providerUpdatedAt,
+            },
+            kyc: {
+              reviewedAt: providerUpdatedAt,
+              status: ProviderKycStatus.APPROVED,
+              submittedAt: providerUpdatedAt,
+            },
+            taxProfile: {
+              status: ProviderTaxProfileStatus.APPROVED,
+            },
+            services: [
+              {
+                serviceId: 'svc-foot-45',
+                service: {
+                  active: true,
+                  basePrice: 300_000,
+                  durationMin: 45,
+                  id: 'svc-foot-45',
+                  name: 'Foot Massage',
+                },
+                price: 650_000,
+              },
+            ],
+            sessions: [{ appVersion: '1.0.0', lastSeenAt: providerUpdatedAt }],
+            selectedBookings: [],
+          },
+        ]),
+      },
+      review: {
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingParticipant: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-viewed-not-booked',
+            joinedAt: new Date('2026-06-27T03:00:00.000Z'),
+            respondedAt: new Date('2026-06-27T03:03:00.000Z'),
+            booking: {
+              address: 'District 1, Ho Chi Minh City',
+              addressSnapshot: {
+                address: 'District 1, Ho Chi Minh City',
+                addressText: 'District 1, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+              },
+              lat: 10.7769,
+              lng: 106.7009,
+            },
+          },
+          {
+            providerProfileId: 'provider-price-only',
+            joinedAt: new Date('2026-06-27T03:00:00.000Z'),
+            respondedAt: new Date('2026-06-27T03:01:00.000Z'),
+            booking: {
+              address: 'District 3, Ho Chi Minh City',
+              addressSnapshot: {
+                address: 'District 3, Ho Chi Minh City',
+                addressText: 'District 3, Ho Chi Minh City',
+                latitude: 10.782,
+                longitude: 106.687,
+              },
+              lat: 10.782,
+              lng: 106.687,
+            },
+          },
+        ]),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-viewed-not-booked',
+            _count: { _all: 4 },
+            _sum: { viewCount: 18 },
+            _max: { lastViewedAt: providerUpdatedAt },
+          },
+          {
+            providerProfileId: 'provider-price-only',
+            _count: { _all: 2 },
+            _sum: { viewCount: 12 },
+            _max: { lastViewedAt: providerUpdatedAt },
+          },
+        ]),
+      },
+      customerFavoriteProvider: {
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            providerProfileId: 'provider-viewed-not-booked',
+            _count: { _all: 3 },
+            _max: { createdAt: providerUpdatedAt },
+          },
+        ]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerReport: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerBookingRequestEvent: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      notification: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ avgSeconds: null }]),
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getPartnerOverview({
+      range: '7d',
+      selectionIssue: 'availability',
+      selectionSort: 'response',
+    });
+
+    expect(overview.filters).toEqual(
+      expect.objectContaining({
+        selectionIssue: 'availability',
+        selectionSort: 'response',
+      }),
+    );
+    expect(overview.selectionFriction.rows.map((row) => row.partnerId)).toEqual(['provider-viewed-not-booked']);
+    expect(overview).toEqual(
+      expect.objectContaining({
+        selectionFriction: expect.objectContaining({
+          issueCounts: expect.arrayContaining([
+            expect.objectContaining({ count: 2, key: 'all', label: 'All' }),
+            expect.objectContaining({ count: 1, key: 'availability', label: 'Availability' }),
+            expect.objectContaining({ count: 2, key: 'price', label: 'Price' }),
+            expect.objectContaining({ count: 2, key: 'profile', label: 'Profile' }),
+            expect.objectContaining({ count: 1, key: 'response', label: 'Response' }),
+            expect.objectContaining({ count: 0, key: 'service', label: 'Service' }),
+          ]),
+          rows: [
+            expect.objectContaining({
+              completedBookings: 0,
+              activeServiceCount: 1,
+              availabilityStatus: 'Available soon',
+              averageResponseSeconds: 180,
+              favoriteCount: 3,
+              galleryImageCount: 0,
+              hasProfileImage: false,
+              mainReason: 'High views, no completed booking',
+              maxServicePrice: 550000,
+              minServicePrice: 550000,
+              partnerId: 'provider-viewed-not-booked',
+              partnerName: 'Viewed Not Booked',
+              nextAvailableAt: '2026-06-27T06:30:00.000Z',
+              profileViews: 18,
+              readinessFlags: expect.arrayContaining([
+                'Available soon',
+                'No approved profile image',
+                'High partner price',
+              ]),
+              recommendedAction: 'Review profile pricing and photos',
+              selectionRate: 0,
+            }),
+          ],
+        }),
+        operatingStatus: expect.objectContaining({
+          cards: expect.arrayContaining([
+            expect.objectContaining({
+              count: 0,
+              detail: 'Approved, online, fresh location, active services, and wallet eligible',
+              href: '/partners?review=marketplace-ready&onlineStatus=available',
+              key: 'ready-now',
+              label: 'Ready now',
+              tone: 'success',
+            }),
+            expect.objectContaining({
+              count: 1,
+              detail: 'Partner marked available soon instead of ready now',
+              href: '/partners?review=marketplace-ready&onlineStatus=soon',
+              key: 'available-soon',
+              label: 'Available soon',
+              tone: 'info',
+            }),
+            expect.objectContaining({
+              count: 0,
+              detail: 'Auto-offline follow-up queue for approved partners',
+              href: '/partners?review=marketplace-ready&activity=inactive-7d',
+              key: 'inactive-7d',
+              label: 'Inactive 7D',
+              tone: 'danger',
+            }),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('counts persisted partner request list and detail view events in the funnel', async () => {
+    const prisma = {
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        count: vi.fn().mockResolvedValue(0),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      review: {
+        aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingParticipant: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      customerProviderProfileView: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      customerFavoriteProvider: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerReport: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      providerBookingRequestEvent: {
+        groupBy: vi
+          .fn()
+          .mockResolvedValueOnce([{ providerProfileId: 'provider-list-viewer' }])
+          .mockResolvedValueOnce([{ providerProfileId: 'provider-detail-viewer' }]),
+        findMany: vi.fn().mockResolvedValue([
+          { metadata: { durationSeconds: 40 } },
+          { metadata: { durationSeconds: 80 } },
+          { metadata: { durationSeconds: 'invalid' } },
+        ]),
+      },
+      notification: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ avgSeconds: null }]),
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getPartnerOverview({ range: '7d' });
+
+    expect(overview.funnel.steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          count: 1,
+          dataStatus: 'available',
+          key: 'request-viewed',
+          label: 'Request Viewed',
+        }),
+        expect.objectContaining({
+          count: 1,
+          dataStatus: 'available',
+          key: 'request-detailed',
+          label: 'Request Detailed',
+        }),
+      ]),
+    );
+    expect(overview.summaryKpis).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          detail: 'Heartbeat/close telemetry',
+          key: 'averageDetailViewTime',
+          label: 'Average Detail View Time',
+          unit: 'seconds',
+          value: 60,
+        }),
+      ]),
+    );
+    expect(prisma.providerBookingRequestEvent.groupBy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        by: ['providerProfileId'],
+        where: expect.objectContaining({ eventType: 'OPEN_REQUEST_LIST_VIEWED' }),
+      }),
+    );
+    expect(prisma.providerBookingRequestEvent.groupBy).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        by: ['providerProfileId'],
+        where: expect.objectContaining({ eventType: 'OPEN_REQUEST_DETAIL_VIEWED' }),
+      }),
+    );
+    expect(prisma.providerBookingRequestEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        select: { metadata: true },
+        take: 2000,
+        where: expect.objectContaining({
+          eventType: { in: ['OPEN_REQUEST_DETAIL_HEARTBEAT', 'OPEN_REQUEST_DETAIL_CLOSED'] },
+        }),
+      }),
+    );
+  });
+});
 
 describe('AdminService query orchestration', () => {
   it('bounds the admin user list used by the operations dashboard', async () => {
@@ -999,19 +1740,204 @@ describe('AdminService query orchestration', () => {
       },
       customerProviderProfileView: {
         groupBy: vi.fn().mockResolvedValue([]),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { viewCount: 0 } }),
+      },
+      customerProfile: {
         count: vi.fn().mockResolvedValue(0),
       },
+      user: {
+        count: vi.fn().mockResolvedValue(0),
+      },
+      payment: {
+        groupBy: vi.fn().mockResolvedValue([]),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      refund: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
+      review: {
+        count: vi.fn().mockResolvedValue(0),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      bookingService: {
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      massageService: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ count: 0 }]),
     };
     const service = createAdminService(prisma);
 
     await expect(service.getUsageOverview('7d')).resolves.toMatchObject({
       source: 'stored-usage-aggregates',
       range: '7d',
+      customerLifecycle: {
+        newCustomerCount: 0,
+        activeCustomerCount: 0,
+        activeTodayCustomerCount: 0,
+        active7dCustomerCount: 0,
+        active30dCustomerCount: 0,
+        completedCustomerCount: 0,
+        repeatCustomerCount: 0,
+        churnRiskCustomerCount: 0,
+        neverBookedCustomerCount: 0,
+      },
+      bookingQuality: {
+        createdBookingCount: 0,
+        cancellationCount: 0,
+        refundCount: 0,
+        lowReviewCount: 0,
+      },
+      paymentAndCoupon: {
+        couponBookingCount: 0,
+        paymentFailureCount: 0,
+        refundAmount: 0,
+        paymentMethodMix: [],
+      },
+      behavior: {
+        popularServices: [],
+        hourlyActivity: expect.arrayContaining([
+          expect.objectContaining({
+            hour: 0,
+            label: '00:00',
+            customerSessionCount: 0,
+            bookingRequestCount: 0,
+          }),
+          expect.objectContaining({
+            hour: 23,
+            label: '23:00',
+            customerSessionCount: 0,
+            bookingRequestCount: 0,
+          }),
+        ]),
+      },
+      customerSegments: {
+        newUnbookedCustomerCount: 0,
+        firstCompletedCustomerCount: 0,
+        repeatCustomerCount: 0,
+        vipCustomerCount: 0,
+        churnRiskCustomerCount: 0,
+        issueCustomerCount: 0,
+      },
+      platformUsage: [],
+      customerUsage: {
+        qualityRiskCustomers: [],
+        lowReviewCustomers: [],
+      },
+      partnerUsage: {
+        discoveryConversion: [],
+      },
     });
 
+    expect(prisma.appSession.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['platform'],
+        where: expect.objectContaining({ role: Role.CUSTOMER }),
+        _count: { _all: true },
+        orderBy: { _count: { platform: 'desc' } },
+      }),
+    );
     expect(prisma.appSession.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 100 }));
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(2);
     expect(prisma.booking.findMany.mock.calls.map(([query]) => query.take)).toEqual([100, 100]);
+    expect(prisma.customerProviderProfileView.aggregate).toHaveBeenCalledWith({
+      where: expect.any(Object),
+      _sum: { viewCount: true },
+    });
+    expect(prisma.booking.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['customerProfileId'],
+        where: expect.objectContaining({
+          status: {
+            in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED, BookingStatus.REFUNDED],
+          },
+        }),
+        _count: { _all: true },
+        orderBy: { _count: { customerProfileId: 'desc' } },
+        take: 10,
+      }),
+    );
+    expect(prisma.review.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        rating: { lte: 2 },
+        status: ReviewStatus.PUBLISHED,
+        createdAt: expect.any(Object),
+      }),
+    });
+    expect(prisma.review.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['customerProfileId'],
+        where: expect.objectContaining({
+          rating: { lte: 2 },
+          status: ReviewStatus.PUBLISHED,
+          createdAt: expect.any(Object),
+        }),
+        _count: { _all: true },
+        _min: { rating: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { customerProfileId: 'desc' } },
+        take: 10,
+      }),
+    );
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        roles: { has: Role.CUSTOMER },
+        createdAt: expect.any(Object),
+      }),
+    });
+    expect(prisma.customerProfile.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        user: expect.objectContaining({
+          appSessions: {
+            some: expect.objectContaining({
+              role: Role.CUSTOMER,
+              lastSeenAt: expect.any(Object),
+            }),
+          },
+        }),
+      }),
+    });
+    expect(prisma.customerProfile.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        bookings: { none: {} },
+        user: expect.objectContaining({
+          createdAt: expect.any(Object),
+        }),
+      }),
+    });
+    expect(prisma.payment.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['method'],
+        where: expect.objectContaining({
+          booking: expect.objectContaining({
+            status: BookingStatus.COMPLETED,
+          }),
+        }),
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    );
+    expect(prisma.payment.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: PaymentStatus.FAILED,
+        booking: expect.objectContaining({
+          createdAt: expect.any(Object),
+        }),
+      }),
+    });
+    expect(prisma.refund.aggregate).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        createdAt: expect.any(Object),
+      }),
+      _sum: { amount: true },
+    });
+    expect((prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string })?.sql).toContain('::"Role"');
+    expect((prisma.$queryRaw.mock.calls[1]?.[0] as { sql?: string })?.sql).toContain('::"BookingStatus"');
+    expect((prisma.$queryRaw.mock.calls[2]?.[0] as { sql?: string })?.sql).toContain('::"BookingStatus"');
+    expect((prisma.$queryRaw.mock.calls[3]?.[0] as { sql?: string })?.sql).toContain('HAVING COUNT(*) = 1');
+    expect((prisma.$queryRaw.mock.calls[4]?.[0] as { sql?: string })?.sql).toContain('HAVING COUNT(*) >= 3');
+    expect((prisma.$queryRaw.mock.calls[5]?.[0] as { sql?: string })?.sql).toContain('COUNT(DISTINCT "customerProfileId")');
   });
 
   it('filters chat archive rows server-side and clamps requested limits', async () => {
@@ -3919,6 +4845,13 @@ describe('AdminService query orchestration', () => {
             currentLat: 10.7769,
             currentLng: 106.7009,
             currentLocationUpdatedAt: now,
+            user: {
+              appSessions: [
+                {
+                  lastSeenAt: now,
+                },
+              ],
+            },
           },
         ]),
       },
@@ -3998,6 +4931,12 @@ describe('AdminService query orchestration', () => {
     expect(overview.realtimePoints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          kind: 'customers',
+          latitude: 10.7769,
+          longitude: 106.7009,
+          customerProfileId: 'customer-1',
+        }),
+        expect.objectContaining({
           kind: 'active',
           latitude: 10.7769,
           longitude: 106.7009,
@@ -4022,6 +4961,7 @@ describe('AdminService query orchestration', () => {
     expect(overview.realtimePoints.map((point) => point.kind).sort()).toEqual([
       'active',
       'bookings',
+      'customers',
       'online',
     ]);
     expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
@@ -4074,6 +5014,13 @@ describe('AdminService query orchestration', () => {
             currentLat: 10.7769,
             currentLng: 106.7009,
             currentLocationUpdatedAt: now,
+            user: {
+              appSessions: [
+                {
+                  lastSeenAt: now,
+                },
+              ],
+            },
           },
         ]),
       },
@@ -4141,29 +5088,8 @@ describe('AdminService query orchestration', () => {
     });
     expect(pointFeed).not.toHaveProperty('totals');
     expect(pointFeed).not.toHaveProperty('regions');
-    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          user: {
-            appSessions: {
-              some: expect.objectContaining({
-                active: true,
-                lastSeenAt: { gte: expect.any(Date) },
-                role: Role.CUSTOMER,
-              }),
-            },
-          },
-        },
-      }),
-    );
-    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          currentLocationUpdatedAt: { gte: expect.any(Date) },
-          status: { not: ProviderStatus.OFFLINE },
-        },
-      }),
-    );
+    expect(prisma.customerProfile.findMany.mock.calls[0][0]).not.toHaveProperty('where');
+    expect(prisma.providerProfile.findMany.mock.calls[0][0]).not.toHaveProperty('where');
     expect(prisma.booking.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -4198,7 +5124,7 @@ describe('AdminService query orchestration', () => {
     expect(prisma.booking.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
   });
 
-  it('keeps Vietnam realtime customer points current even when the period range is all', async () => {
+  it('keeps all saved customer locations on the realtime map while only fresh sessions count as active', async () => {
     const now = new Date();
     const staleSeenAt = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     const prisma = {
@@ -4259,17 +5185,77 @@ describe('AdminService query orchestration', () => {
 
     const pointFeed = await service.getVietnamOverviewRealtimePoints('all');
 
-    expect(pointFeed.realtimePoints).toEqual([
-      expect.objectContaining({
-        customerProfileId: 'fresh-customer',
-        kind: 'active',
-      }),
-    ]);
+    expect(pointFeed.realtimePoints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          customerProfileId: 'fresh-customer',
+          kind: 'customers',
+        }),
+        expect.objectContaining({
+          customerProfileId: 'fresh-customer',
+          kind: 'active',
+        }),
+        expect.objectContaining({
+          customerProfileId: 'stale-customer',
+          kind: 'customers',
+        }),
+      ]),
+    );
     expect(pointFeed.realtimePoints).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           customerProfileId: 'stale-customer',
+          kind: 'active',
         }),
+      ]),
+    );
+  });
+
+  it('classifies partner map dots as ready, stale, or offline from stored status and last app session', async () => {
+    const now = new Date();
+    const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
+    const prisma = {
+      customerProfile: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          providerMapFixture({
+            id: 'ready-partner',
+            status: ProviderStatus.ONLINE_AVAILABLE,
+            user: { appSessions: [{ lastSeenAt: now }] },
+          }),
+          providerMapFixture({
+            id: 'stale-partner',
+            status: ProviderStatus.ONLINE_AVAILABLE,
+            user: { appSessions: [{ lastSeenAt: eightDaysAgo }] },
+          }),
+          providerMapFixture({
+            id: 'busy-partner',
+            status: ProviderStatus.ONLINE_BUSY,
+            user: { appSessions: [{ lastSeenAt: now }] },
+          }),
+          providerMapFixture({
+            id: 'manual-off-partner',
+            status: ProviderStatus.OFFLINE,
+            user: { appSessions: [{ lastSeenAt: now }] },
+          }),
+        ]),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const pointFeed = await service.getVietnamOverviewRealtimePoints('today');
+
+    expect(pointFeed.realtimePoints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'online', providerProfileId: 'ready-partner' }),
+        expect.objectContaining({ kind: 'stale-partners', providerProfileId: 'stale-partner' }),
+        expect.objectContaining({ kind: 'offline-partners', providerProfileId: 'busy-partner' }),
+        expect.objectContaining({ kind: 'offline-partners', providerProfileId: 'manual-off-partner' }),
       ]),
     );
   });
@@ -7566,6 +8552,29 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { postedAt: 'desc' },
+        select: expect.objectContaining({
+          booking: expect.objectContaining({
+            select: expect.objectContaining({
+              closedAt: true,
+              status: true,
+            }),
+          }),
+          customerProfile: expect.objectContaining({
+            select: expect.objectContaining({
+              user: expect.objectContaining({
+                select: expect.objectContaining({ fullName: true, phone: true }),
+              }),
+            }),
+          }),
+          providerProfile: expect.objectContaining({
+            select: expect.objectContaining({
+              displayName: true,
+              user: expect.objectContaining({
+                select: expect.objectContaining({ fullName: true, phone: true }),
+              }),
+            }),
+          }),
+        }),
         skip: 50,
         take: 75,
         where: expect.objectContaining({
@@ -7573,6 +8582,46 @@ describe('AdminService query orchestration', () => {
             expect.objectContaining({ postedAt: expect.objectContaining({ gte: expect.any(Date) }) }),
             { taxStatus: BookingSettlementTaxStatus.OPEN },
           ]),
+        }),
+      }),
+    );
+    const listSelect = prisma.bookingSettlementSnapshot.findMany.mock.calls[0]?.[0]?.select;
+    expect(listSelect.booking.select).not.toHaveProperty('createdAt');
+    expect(listSelect.booking.select).not.toHaveProperty('scheduledStartAt');
+    expect(listSelect.customerProfile.select.user.select).not.toHaveProperty('id');
+    expect(listSelect.providerProfile.select.user.select).not.toHaveProperty('id');
+    expect(listSelect).not.toHaveProperty('metadata');
+  });
+
+  it('loads one booking settlement snapshot with the finance audit select', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getBookingSettlementSnapshot('settlement-1')).resolves.toEqual({ id: 'settlement-1' });
+
+    expect(prisma.bookingSettlementSnapshot.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'settlement-1' },
+        select: expect.objectContaining({
+          accountingJournalBatches: expect.objectContaining({
+            take: 3,
+          }),
+          bookingId: true,
+          companyOutputVat: true,
+          customerPaymentAmount: true,
+          partnerWithholdingTotal: true,
+          paymentClearingEntries: expect.objectContaining({
+            take: 3,
+          }),
+          paymentProcessingFee: true,
+          platformFeeGross: true,
+          reversalEntries: expect.objectContaining({
+            take: 3,
+          }),
         }),
       }),
     );
@@ -7672,6 +8721,54 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+    const listSelect = prisma.bookingSettlementReversalEntry.findMany.mock.calls[0]?.[0]?.select;
+    expect(listSelect).not.toHaveProperty('metadata');
+    expect(listSelect).not.toHaveProperty('createdAt');
+    expect(listSelect).not.toHaveProperty('updatedAt');
+    expect(listSelect.originalSettlementSnapshot.select).not.toHaveProperty('booking');
+    expect(listSelect.originalSettlementSnapshot.select).not.toHaveProperty('postedAt');
+    expect(listSelect.originalSettlementSnapshot.select).not.toHaveProperty('settlementStatus');
+    expect(listSelect.originalSettlementSnapshot.select).not.toHaveProperty('taxStatus');
+  });
+
+  it('gets a booking settlement reversal detail with reversal evidence only', async () => {
+    const prisma = {
+      bookingSettlementReversalEntry: {
+        findUnique: vi.fn().mockResolvedValue({
+          bookingId: 'booking-1',
+          id: 'reversal-1',
+          originalSettlementSnapshotId: 'settlement-1',
+        }),
+      },
+    };
+    const service = createAdminService(prisma) as AdminService & {
+      getBookingSettlementReversal: (id: string) => unknown;
+    };
+
+    await expect(service.getBookingSettlementReversal('reversal-1')).resolves.toEqual({
+      bookingId: 'booking-1',
+      id: 'reversal-1',
+      originalSettlementSnapshotId: 'settlement-1',
+    });
+
+    expect(prisma.bookingSettlementReversalEntry.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          accountingJournalBatches: expect.objectContaining({ take: 1 }),
+          originalSettlementSnapshot: expect.objectContaining({
+            select: expect.objectContaining({
+              booking: expect.objectContaining({ select: expect.objectContaining({ status: true }) }),
+              id: true,
+              postedAt: true,
+              settlementStatus: true,
+              taxStatus: true,
+            }),
+          }),
+          paymentClearingEntries: expect.objectContaining({ take: 1 }),
+        }),
+        where: { id: 'reversal-1' },
+      }),
+    );
   });
 
   it('summarizes booking settlement reversal entries from reversal aggregates only', async () => {
@@ -7761,6 +8858,16 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+
+    const select = prisma.accountingJournalBatch.findMany.mock.calls[0]?.[0]?.select;
+    expect(select).not.toHaveProperty('metadata');
+    expect(select).not.toHaveProperty('createdAt');
+    expect(select).not.toHaveProperty('updatedAt');
+    expect(select?.booking?.select).toEqual({ status: true });
+    expect(select?.customerProfile?.select).not.toHaveProperty('id');
+    expect(select?.customerProfile?.select?.user?.select).not.toHaveProperty('id');
+    expect(select?.providerProfile?.select).not.toHaveProperty('id');
+    expect(select?.providerProfile?.select?.user?.select).not.toHaveProperty('id');
   });
 
   it('summarizes accounting journal batches from journal aggregates only', async () => {
@@ -7850,7 +8957,20 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingPaymentClearingEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { occurredAt: 'desc' },
-        select: expect.objectContaining({ booking: expect.any(Object), payment: expect.any(Object) }),
+        select: expect.objectContaining({
+          _count: { select: { bankReconciliationMatches: true } },
+          booking: expect.objectContaining({
+            select: expect.objectContaining({ status: true }),
+          }),
+          payment: expect.objectContaining({
+            select: expect.objectContaining({
+              amount: true,
+              currency: true,
+              method: true,
+              status: true,
+            }),
+          }),
+        }),
         skip: 25,
         take: 100,
         where: expect.objectContaining({
@@ -7861,6 +8981,14 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+    const listSelect = prisma.bookingPaymentClearingEntry.findMany.mock.calls[0]?.[0]?.select;
+    expect(listSelect).not.toHaveProperty('metadata');
+    expect(listSelect).not.toHaveProperty('createdAt');
+    expect(listSelect).not.toHaveProperty('updatedAt');
+    expect(listSelect.booking.select).not.toHaveProperty('id');
+    expect(listSelect.booking.select).not.toHaveProperty('createdAt');
+    expect(listSelect.booking.select).not.toHaveProperty('closedAt');
+    expect(listSelect.payment.select).not.toHaveProperty('id');
   });
 
   it('summarizes booking payment clearing without loading booking rows', async () => {
@@ -7935,6 +9063,34 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('lists active company bank accounts for manual reconciliation imports', async () => {
+    const prisma = {
+      companyBankAccount: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'bank-account-1', status: CompanyBankAccountStatus.ACTIVE }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCompanyBankAccounts()).resolves.toEqual([
+      { id: 'bank-account-1', status: CompanyBankAccountStatus.ACTIVE },
+    ]);
+
+    expect(prisma.companyBankAccount.findMany).toHaveBeenCalledWith({
+      where: { status: CompanyBankAccountStatus.ACTIVE },
+      orderBy: [{ status: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
+      take: 100,
+      select: expect.objectContaining({
+        accountNumberLast4: true,
+        accountNumberMasked: true,
+        bankName: true,
+        currency: true,
+        id: true,
+        name: true,
+        status: true,
+      }),
+    });
+  });
+
   it('lists bank reconciliation transactions with bounded occurrence filters and match counts only', async () => {
     const prisma = {
       companyBankTransaction: {
@@ -7966,6 +9122,20 @@ describe('AdminService query orchestration', () => {
             { status: BankReconciliationStatus.UNMATCHED },
           ]),
         }),
+      }),
+    );
+
+    const select = prisma.companyBankTransaction.findMany.mock.calls[0]?.[0]?.select;
+    expect(select).not.toHaveProperty('metadata');
+    expect(select).not.toHaveProperty('createdAt');
+    expect(select).not.toHaveProperty('updatedAt');
+    expect(select?.bankAccount?.select).toEqual(
+      expect.objectContaining({
+        accountNumberLast4: true,
+        accountNumberMasked: true,
+        bankName: true,
+        currency: true,
+        name: true,
       }),
     );
   });
@@ -11014,6 +12184,111 @@ describe('AdminService query orchestration', () => {
       expect.objectContaining({
         take: 50,
         where: expect.objectContaining({ providerProfileId: 'provider-1' }),
+      }),
+    );
+  });
+
+  it('builds Finance Overview summary from ledger balances and amount aggregates without write side effects', async () => {
+    const prisma = {
+      customerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([
+          { customerProfileId: 'customer-1', currency: 'VND', _sum: { amount: 100000 } },
+          { customerProfileId: 'customer-2', currency: 'VND', _sum: { amount: 30000 } },
+          { customerProfileId: 'customer-3', currency: 'VND', _sum: { amount: -5000 } },
+        ]),
+      },
+      providerWalletLedgerEntry: {
+        groupBy: vi.fn().mockResolvedValue([
+          { providerProfileId: 'provider-1', currency: 'VND', _sum: { amount: 200000 } },
+          { providerProfileId: 'provider-2', currency: 'VND', _sum: { amount: -70000 } },
+          { providerProfileId: 'provider-3', currency: 'VND', _sum: { amount: 0 } },
+        ]),
+      },
+      refund: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 40000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 60000 } }),
+      },
+      payment: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 75000 } }),
+      },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'bookingSettlementSnapshotSummary').mockResolvedValue({
+      count: 2,
+      currency: 'VND',
+      customerPaymentAmount: 1000000,
+      partnerPayoutAmount: 760000,
+      partnerWithholdingTotal: 30000,
+      platformFeeGross: 240000,
+      platformFeeNetRevenue: 220000,
+      companyOutputVat: 20000,
+      paymentProcessingFee: 10000,
+      openTaxCount: 1,
+      paidTaxCount: 1,
+    });
+    vi.spyOn(service, 'couponFinanceSummary').mockResolvedValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'partnerWithholdingTaxSummary').mockResolvedValue({ period: '2026-07', currency: 'VND' } as never);
+    vi.spyOn(service, 'providerWalletWithdrawalRequestSummary').mockResolvedValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'bookingPaymentClearingSummary').mockResolvedValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'bankReconciliationSummary').mockResolvedValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({ period: '2026-07', currency: 'VND' } as never);
+    vi.spyOn(service, 'earningsSummary').mockReturnValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'paymentSummary').mockResolvedValue({ totalCount: 3 } as never);
+    vi.spyOn(service, 'refundSummary').mockResolvedValue({ openCount: 1 } as never);
+    vi.spyOn(service, 'cashSettlementSummary').mockReturnValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'paymentFeeSummary').mockResolvedValue({ period: '2026-07', currency: 'VND' } as never);
+
+    const result = await (
+      service as unknown as {
+        financeOverviewSummary(options: { range?: string; period?: string }): Promise<{
+          amountSummary: {
+            paymentFailedAmount: number;
+            refundCompletedAmount: number;
+            refundPendingAmount: number;
+          };
+          settlementSummary: { platformFeeNetRevenue: number };
+          walletSummary: {
+            customerWalletAccountCount: number;
+            customerWalletLiabilityAmount: number;
+            negativePartnerWalletAmount: number;
+            partnerNegativeWalletAccountCount: number;
+            partnerPositiveWalletAccountCount: number;
+            partnerWalletLiabilityAmount: number;
+          };
+        }>;
+      }
+    ).financeOverviewSummary({ range: '7d', period: '2026-07' });
+
+    expect(result.walletSummary).toMatchObject({
+      customerWalletAccountCount: 2,
+      customerWalletLiabilityAmount: 130000,
+      negativePartnerWalletAmount: 70000,
+      partnerNegativeWalletAccountCount: 1,
+      partnerPositiveWalletAccountCount: 1,
+      partnerWalletLiabilityAmount: 200000,
+    });
+    expect(result.amountSummary).toEqual({
+      currency: 'VND',
+      paymentFailedAmount: 75000,
+      refundCompletedAmount: 60000,
+      refundPendingAmount: 40000,
+    });
+    expect(result.settlementSummary.platformFeeNetRevenue).toBe(220000);
+    expect(prisma.customerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
+      by: ['customerProfileId', 'currency'],
+      _sum: { amount: true },
+    });
+    expect(prisma.providerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
+      by: ['providerProfileId', 'currency'],
+      _sum: { amount: true },
+    });
+    expect(prisma.refund.aggregate).toHaveBeenCalledTimes(2);
+    expect(prisma.payment.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { amount: true },
+        where: expect.objectContaining({ status: PaymentStatus.FAILED }),
       }),
     );
   });

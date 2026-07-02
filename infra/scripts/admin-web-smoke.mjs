@@ -32,6 +32,13 @@ const budgetSmokePaths = [
   '/finance-tax/payment-clearing',
   '/finance-tax/general-ledger',
   '/finance-tax/bank-reconciliation',
+  '/finance-tax/booking-settlement-audit',
+  '/finance-tax/coupon-finance',
+  '/finance-tax/settlement-reversals',
+  '/finance-tax/monthly-tax-closing',
+  '/finance-tax/platform-vat',
+  '/finance-tax/payment-fees',
+  '/finance-tax/partner-withholding-tax',
   '/operations-policy',
   '/setup',
   '/cash-settlements',
@@ -556,6 +563,81 @@ const pages = [
       'Company bank transactions',
       'Transaction',
       'Match',
+    ],
+  },
+  {
+    path: '/finance-tax/booking-settlement-audit',
+    markers: [
+      'Booking Settlement Audit',
+      'Settlement audit filters',
+      'Booking settlement snapshot rows',
+      'Partner tax',
+      'HANDS fee',
+      'Status',
+    ],
+  },
+  {
+    path: '/finance-tax/coupon-finance',
+    markers: [
+      'Coupon Finance',
+      'Coupon finance filters',
+      'Coupon settlement rows',
+      'Coupon policy',
+      'Amounts',
+      'Review',
+    ],
+  },
+  {
+    path: '/finance-tax/settlement-reversals',
+    markers: [
+      'Settlement Reversals',
+      'Settlement reversal filters',
+      'Settlement reversal rows',
+      'Original',
+      'Evidence',
+      'Status',
+    ],
+  },
+  {
+    path: '/finance-tax/monthly-tax-closing',
+    markers: [
+      'Monthly Tax Closing',
+      'Monthly closing period',
+      'Monthly closing action',
+      'Closeout risk queue',
+      'Stored monthly closing rows',
+    ],
+  },
+  {
+    path: '/finance-tax/platform-vat',
+    markers: [
+      'Platform VAT',
+      'Platform VAT period',
+      'VAT rate breakdown',
+      'Platform fee gross',
+      'Company VAT',
+      'Net revenue',
+    ],
+  },
+  {
+    path: '/finance-tax/payment-fees',
+    markers: [
+      'Payment Fees',
+      'Payment fee period',
+      'Fees by payment method',
+      'Fees by payer',
+      'Fees by treatment',
+    ],
+  },
+  {
+    path: '/finance-tax/partner-withholding-tax',
+    markers: [
+      'Partner Withholding Tax',
+      'Withholding tax period',
+      'Partner monthly withholding rows',
+      'Gross revenue',
+      'VAT / PIT',
+      'Total withheld',
     ],
   },
   {
@@ -1396,12 +1478,24 @@ async function runFinanceDetailRouteSmoke() {
   const financeDetailSmokeTargets = [
     {
       listPath: '/finance-tax/payment-clearing',
-      markers: ['Payment Clearing Detail', 'Clearing overview', 'Source key', 'Bank reconciliation matches'],
+      markers: [
+        'Payment Clearing Detail',
+        'Clearing overview',
+        'Clearing evidence hub',
+        'Source key',
+        'Bank reconciliation matches',
+      ],
       routePrefix: 'finance-tax/payment-clearing',
     },
     {
       listPath: '/finance-tax/general-ledger',
-      markers: ['General Ledger Detail', 'Journal batch overview', 'Double-entry check', 'Journal entries'],
+      markers: [
+        'General Ledger Detail',
+        'Journal batch overview',
+        'Journal evidence hub',
+        'Double-entry check',
+        'Journal entries',
+      ],
       routePrefix: 'finance-tax/general-ledger',
     },
     {
@@ -1409,11 +1503,33 @@ async function runFinanceDetailRouteSmoke() {
       markers: [
         'Bank Reconciliation Detail',
         'Bank transaction overview',
+        'Bank evidence hub',
         'Transfer reference',
         'Manual reconciliation match',
         'Reconciliation matches',
       ],
       routePrefix: 'finance-tax/bank-reconciliation',
+    },
+    {
+      listPath: '/finance-tax/booking-settlement-audit',
+      markers: [
+        'Booking Settlement Audit Detail',
+        'Settlement snapshot overview',
+        'Settlement evidence hub',
+        'Accounting amount breakdown',
+        'Coupon and policy snapshot',
+      ],
+      routePrefix: 'finance-tax/booking-settlement-audit',
+    },
+    {
+      listPath: '/finance-tax/settlement-reversals',
+      markers: [
+        'Settlement Reversal Detail',
+        'Refund after payout evidence',
+        'Original settlement lock',
+        'Reversal accounting impact',
+      ],
+      routePrefix: 'finance-tax/settlement-reversals',
     },
   ];
 
@@ -1444,6 +1560,8 @@ async function runBudgetDetailRoutes() {
     firstDetailPath(pageBodies.get('/finance-tax/payment-clearing'), 'finance-tax/payment-clearing'),
     firstDetailPath(pageBodies.get('/finance-tax/general-ledger'), 'finance-tax/general-ledger'),
     firstDetailPath(pageBodies.get('/finance-tax/bank-reconciliation'), 'finance-tax/bank-reconciliation'),
+    firstDetailPath(pageBodies.get('/finance-tax/booking-settlement-audit'), 'finance-tax/booking-settlement-audit'),
+    firstDetailPath(pageBodies.get('/finance-tax/settlement-reversals'), 'finance-tax/settlement-reversals'),
   ].filter(Boolean)) {
     await fetchPage(path);
     console.log(`PASS ${path}`);

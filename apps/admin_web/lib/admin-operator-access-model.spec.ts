@@ -8,11 +8,12 @@ describe('admin operator access model', () => {
   it('maps Admin pages to operator permission categories', () => {
     expect(adminOperatorCategoryForPath('/bookings/post-match-cancellations')).toBe('BOOKINGS_DETAIL');
     expect(adminOperatorCategoryForPath('/customers/customer-1')).toBe('CUSTOMERS_DETAIL');
+    expect(adminOperatorCategoryForPath('/partners/overview')).toBe('PARTNERS_DIRECTORY');
     expect(adminOperatorCategoryForPath('/partners/provider-1')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForPath('/finance-tax/payment-clearing')).toBe('FINANCE_PAYMENT_CLEARING');
     expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
     expect(adminOperatorCategoryForPath('/admin-operators')).toBe('SYSTEM_ADMIN_OPERATORS');
-    expect(adminOperatorCategoryForPath('/vietnam-overview')).toBe('SYSTEM_SETUP');
+    expect(adminOperatorCategoryForPath('/vietnam-overview')).toBe('BOOKINGS_REALTIME');
   });
 
   it('maps write API calls to operator permission categories', () => {
@@ -28,5 +29,7 @@ describe('admin operator access model', () => {
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS_DETAIL'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'FINANCE')).toBe(false);
+    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'SYSTEM_SETUP')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(true);
   });
 });

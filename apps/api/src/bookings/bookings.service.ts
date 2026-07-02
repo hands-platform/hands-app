@@ -154,6 +154,11 @@ type OpenBookingListOptions = {
   take?: number | string | null;
 };
 
+type ProviderBookingDetailViewTelemetryInput = {
+  durationSeconds?: number | null;
+  eventType: 'heartbeat' | 'closed';
+};
+
 type FirstPickRejectedBookingResponse = Prisma.BookingGetPayload<{
   include: typeof firstPickRejectedBookingInclude;
 }>;
@@ -170,6 +175,10 @@ type BackupProviderNotificationInput = {
 
 const DEFAULT_PARTNER_OPEN_BOOKINGS_LIMIT = 20;
 const MAX_PARTNER_OPEN_BOOKINGS_LIMIT = 50;
+const PROVIDER_OPEN_REQUEST_LIST_VIEWED_EVENT = 'OPEN_REQUEST_LIST_VIEWED';
+const PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT = 'OPEN_REQUEST_DETAIL_VIEWED';
+const PROVIDER_OPEN_REQUEST_DETAIL_HEARTBEAT_EVENT = 'OPEN_REQUEST_DETAIL_HEARTBEAT';
+const PROVIDER_OPEN_REQUEST_DETAIL_CLOSED_EVENT = 'OPEN_REQUEST_DETAIL_CLOSED';
 
 const matchedBookingForClientInclude = {
   participants: true,
@@ -1180,13 +1189,112 @@ export class BookingsService {
     }
 
     const fallbackPolicy = await this.matching.getPolicy();
-    return partnerOpenBookingResponses(
-      bookings
-        .map((booking) => addProviderMatchingDistance(booking, provider))
-        .filter((booking) =>
-          this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
-        ),
+    const visibleBookings = bookings
+      .map((booking) => addProviderMatchingDistance(booking, provider))
+      .filter((booking) =>
+        this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
+      );
+    await this.recordProviderOpenRequestListView(provider.id, visibleBookings.map((booking) => booking.id));
+    return partnerOpenBookingResponses(visibleBookings);
+  }
+
+  async getProviderBooking(bookingId: string, providerUserId: string) {
+    const provider = await this.requireProvider(providerUserId);
+    const { booking, isOpenRequest } = await this.requireProviderAccessibleBookingDetail(bookingId, provider);
+    if (isOpenRequest) {
+      await this.recordProviderOpenRequestDetailView(provider.id, booking.id);
+    }
+
+    return partnerBookingResponse(booking, provider.id);
+  }
+
+  async recordProviderBookingDetailView(
+    bookingId: string,
+    providerUserId: string,
+    input: ProviderBookingDetailViewTelemetryInput,
+  ) {
+    const provider = await this.requireProvider(providerUserId);
+    const { booking } = await this.requireProviderAccessibleBookingDetail(bookingId, provider);
+    const eventType = providerBookingDetailViewTelemetryEvent(input.eventType);
+    const durationSeconds = normalizeProviderBookingDetailViewDurationSeconds(input.durationSeconds);
+    const metadata: Prisma.InputJsonObject =
+      durationSeconds === null
+        ? { statusAtEvent: booking.status }
+        : { durationSeconds, statusAtEvent: booking.status };
+
+    await this.prisma.providerBookingRequestEvent.create({
+      data: {
+        bookingId: booking.id,
+        eventType,
+        metadata,
+        providerProfileId: provider.id,
+      },
+    });
+
+    return {
+      durationSeconds,
+      eventType,
+      recorded: true,
+    };
+  }
+
+  private async recordProviderOpenRequestListView(providerProfileId: string, bookingIds: string[]) {
+    if (bookingIds.length === 0) {
+      return;
+    }
+
+    await this.prisma.providerBookingRequestEvent.create({
+      data: {
+        eventType: PROVIDER_OPEN_REQUEST_LIST_VIEWED_EVENT,
+        providerProfileId,
+        visibleBookingCount: bookingIds.length,
+        metadata: {
+          bookingIds: bookingIds.slice(0, MAX_PARTNER_OPEN_BOOKINGS_LIMIT),
+        },
+      },
+    });
+  }
+
+  private async recordProviderOpenRequestDetailView(providerProfileId: string, bookingId: string) {
+    await this.prisma.providerBookingRequestEvent.create(
+      {
+        data: {
+          bookingId,
+          eventType: PROVIDER_OPEN_REQUEST_DETAIL_VIEWED_EVENT,
+          providerProfileId,
+        },
+      },
     );
+  }
+
+  private async requireProviderAccessibleBookingDetail(
+    bookingId: string,
+    provider: {
+      currentLat: unknown;
+      currentLng: unknown;
+      currentLocationUpdatedAt?: Date | string | null;
+      id: string;
+    },
+  ) {
+    const booking = await this.prisma.booking.findFirstOrThrow({
+      where: {
+        id: bookingId,
+        OR: [openBookingWhereForProvider(provider.id), providerBookingHistoryWhere(provider.id)],
+      },
+      include: providerBookingHistoryInclude,
+    });
+
+    if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      return { booking, isOpenRequest: false };
+    }
+
+    const policy = this.bookingPolicy(booking, await this.matching.getPolicy());
+    const visibleBooking = addProviderMatchingDistance(booking, provider);
+    if (!this.canProviderSeeOpenBooking(visibleBooking, provider, policy)) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return { booking: visibleBooking, isOpenRequest: true };
   }
 
   async listProviderBookings(providerUserId: string) {
@@ -2385,6 +2493,19 @@ function normalizeBoundedTake(value: number | string | null | undefined, fallbac
 function normalizePaginationCursor(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized || undefined;
+}
+
+function providerBookingDetailViewTelemetryEvent(eventType: ProviderBookingDetailViewTelemetryInput['eventType']) {
+  return eventType === 'closed'
+    ? PROVIDER_OPEN_REQUEST_DETAIL_CLOSED_EVENT
+    : PROVIDER_OPEN_REQUEST_DETAIL_HEARTBEAT_EVENT;
+}
+
+function normalizeProviderBookingDetailViewDurationSeconds(value: number | null | undefined) {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.max(0, Math.min(7200, Math.trunc(value)));
 }
 
 function cleanProviderCancellationNote(value: string | null | undefined) {

@@ -39,7 +39,7 @@ describe('earnings policy', () => {
       withholdingAmount: 25000,
     });
 
-    expect(delta).toBe(-120000);
+    expect(delta).toBe(-145000);
   });
 
   it('splits gross platform fee into net revenue and company output VAT', () => {

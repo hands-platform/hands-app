@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3 } from 'lucide-react';
 
 import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
@@ -8,6 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   PAYMENT_CLEARING_REVIEW_LINKS,
@@ -51,6 +53,8 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
     adminGet<AdminBookingPaymentClearingEntry[]>(buildBookingPaymentClearingApiHref(filters), []),
   ]);
   const pagination = buildTaxSettlementServerPagination(entries, filters, summary.count);
+  const openRatio = formatFinancePercent(summary.openCount, summary.count);
+  const clearedRatio = formatFinancePercent(summary.clearedCount, summary.count);
 
   return (
     <AdminPageTemplate
@@ -74,6 +78,41 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       ]}
       title="Booking Payment Clearing"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Clearing command board">
+        <FinanceListCommandCard
+          detail={`${summary.openCount} row(s) still need payment, settlement, refund, fee, coupon, or bank evidence.`}
+          href={paymentClearingHref({ ...filters, page: 1, review: 'open' })}
+          icon={Clock3}
+          label="Open ratio"
+          tone={summary.openCount > 0 ? 'warning' : 'success'}
+          value={openRatio}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.clearedCount} row(s) already cleared against finance evidence in this scope.`}
+          href={paymentClearingHref({ ...filters, page: 1, review: 'cleared' })}
+          icon={CheckCircle2}
+          label="Cleared ratio"
+          tone={summary.clearedCount === summary.count && summary.count > 0 ? 'success' : 'info'}
+          value={clearedRatio}
+        />
+        <FinanceListCommandCard
+          detail="Total money value represented by the current payment clearing queue."
+          href={paymentClearingHref({ ...filters, page: 1 })}
+          icon={CircleDollarSign}
+          label="Evidence amount"
+          tone={summary.amount > 0 ? 'primary' : 'neutral'}
+          value={formatMoney(summary.amount, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Open detail from the table when source, payment, settlement, or bank evidence needs review."
+          href={summary.openCount > 0 ? paymentClearingHref({ ...filters, page: 1, review: 'open' }) : '/finance-overview'}
+          icon={AlertTriangle}
+          label="Review queue"
+          tone={summary.openCount > 0 ? 'danger' : 'success'}
+          value={summary.openCount > 0 ? 'Needs evidence' : 'Clear'}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, PAYMENT_CLEARING_REVIEW_LINKS)}.`}
@@ -166,6 +205,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                   <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
                     Open detail
                   </Link>
+                  <div className="muted">Bank matches {entry._count?.bankReconciliationMatches ?? 0}</div>
                   <div className="muted">{shortId(entry.id)}</div>
                 </td>
               </tr>

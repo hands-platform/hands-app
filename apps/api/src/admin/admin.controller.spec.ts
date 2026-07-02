@@ -12,6 +12,7 @@ describe('AdminController notification and push actions', () => {
     listFileReviewProviders: vi.fn(),
     fileReviewSummary: vi.fn(),
     getMarketingOverview: vi.fn(),
+    getPartnerOverview: vi.fn(),
     listMarketingDimensionRows: vi.fn(),
     getMarketingSummary: vi.fn(),
     getUsageOverview: vi.fn(),
@@ -59,6 +60,7 @@ describe('AdminController notification and push actions', () => {
     paymentSummary: vi.fn(),
     listRefunds: vi.fn(),
     refundSummary: vi.fn(),
+    financeOverviewSummary: vi.fn(),
     listEarnings: vi.fn(),
     earningsSummary: vi.fn(),
     listCashSettlementEarnings: vi.fn(),
@@ -71,8 +73,10 @@ describe('AdminController notification and push actions', () => {
     listProviderWalletWithdrawalRequests: vi.fn(),
     providerWalletWithdrawalRequestSummary: vi.fn(),
     listBookingSettlementSnapshots: vi.fn(),
+    getBookingSettlementSnapshot: vi.fn(),
     bookingSettlementSnapshotSummary: vi.fn(),
     listBookingSettlementReversals: vi.fn(),
+    getBookingSettlementReversal: vi.fn(),
     bookingSettlementReversalSummary: vi.fn(),
     listCouponFinanceSnapshots: vi.fn(),
     couponFinanceSummary: vi.fn(),
@@ -89,6 +93,7 @@ describe('AdminController notification and push actions', () => {
     listBookingPaymentClearingEntries: vi.fn(),
     bookingPaymentClearingSummary: vi.fn(),
     bookingPaymentClearingEntryDetail: vi.fn(),
+    listCompanyBankAccounts: vi.fn(),
     listBankReconciliationTransactions: vi.fn(),
     bankReconciliationSummary: vi.fn(),
     bankReconciliationTransactionDetail: vi.fn(),
@@ -245,6 +250,26 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.previewManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
     expect(admin.createManualWalletAdjustment).toHaveBeenCalledWith('admin-1', payload);
+  });
+
+  it('exposes Finance Overview as a bounded read-only summary endpoint', async () => {
+    admin.financeOverviewSummary.mockResolvedValue({
+      generatedAt: '2026-07-02T00:00:00.000Z',
+      range: '7d',
+      period: '2026-07',
+    });
+
+    await expect(controller.financeOverviewSummary('7d', '2026-07')).resolves.toEqual({
+      generatedAt: '2026-07-02T00:00:00.000Z',
+      range: '7d',
+      period: '2026-07',
+    });
+
+    expect(routeMetadata('financeOverviewSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'finance-overview',
+    });
+    expect(admin.financeOverviewSummary).toHaveBeenCalledWith({ period: '2026-07', range: '7d' });
   });
 
   it('exposes manual wallet adjustment history with owner filtering', async () => {
@@ -670,6 +695,24 @@ describe('AdminController notification and push actions', () => {
     });
   });
 
+  it('exposes a booking settlement snapshot detail for finance audit evidence', async () => {
+    admin.getBookingSettlementSnapshot.mockResolvedValue({
+      bookingId: 'booking-1',
+      id: 'settlement-1',
+    });
+
+    await expect(controller.bookingSettlementSnapshot('settlement-1')).resolves.toEqual({
+      bookingId: 'booking-1',
+      id: 'settlement-1',
+    });
+
+    expect(routeMetadata('bookingSettlementSnapshot')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-snapshots/:id',
+    });
+    expect(admin.getBookingSettlementSnapshot).toHaveBeenCalledWith('settlement-1');
+  });
+
   it('exposes booking settlement reversal entries as a bounded filtered finance list', async () => {
     admin.listBookingSettlementReversals.mockResolvedValue([{ id: 'reversal-1' }]);
 
@@ -687,6 +730,24 @@ describe('AdminController notification and push actions', () => {
       skip: '50',
       take: '25',
     });
+  });
+
+  it('exposes a single booking settlement reversal entry for finance evidence review', async () => {
+    admin.getBookingSettlementReversal.mockResolvedValue({
+      bookingId: 'booking-1',
+      id: 'reversal-1',
+    });
+
+    await expect(controller.bookingSettlementReversal('reversal-1')).resolves.toEqual({
+      bookingId: 'booking-1',
+      id: 'reversal-1',
+    });
+
+    expect(routeMetadata('bookingSettlementReversal')).toEqual({
+      method: RequestMethod.GET,
+      path: 'booking-settlement-reversals/:id',
+    });
+    expect(admin.getBookingSettlementReversal).toHaveBeenCalledWith('reversal-1');
   });
 
   it('exposes booking settlement reversal summary with the same filters', async () => {
@@ -979,6 +1040,20 @@ describe('AdminController notification and push actions', () => {
       path: 'booking-payment-clearing/:id',
     });
     expect(admin.bookingPaymentClearingEntryDetail).toHaveBeenCalledWith('clearing-1');
+  });
+
+  it('exposes company bank accounts for bank reconciliation import selection', async () => {
+    admin.listCompanyBankAccounts.mockResolvedValue([{ id: 'bank-account-1', status: 'ACTIVE' }]);
+
+    await expect(controller.companyBankAccounts('ACTIVE')).resolves.toEqual([
+      { id: 'bank-account-1', status: 'ACTIVE' },
+    ]);
+
+    expect(routeMetadata('companyBankAccounts')).toEqual({
+      method: RequestMethod.GET,
+      path: 'company-bank-accounts',
+    });
+    expect(admin.listCompanyBankAccounts).toHaveBeenCalledWith({ status: 'ACTIVE' });
   });
 
   it('exposes bank reconciliation transactions as a bounded finance list', async () => {
@@ -1690,6 +1765,31 @@ describe('AdminController notification and push actions', () => {
       path: 'usage-overview',
     });
     expect(admin.getUsageOverview).toHaveBeenCalledWith('month');
+  });
+
+  it('exposes partner overview as a bounded supply aggregate GET endpoint', async () => {
+    admin.getPartnerOverview.mockResolvedValue({ source: 'stored-partner-supply-aggregates', summaryKpis: [] });
+
+    await expect(
+      controller.partnerOverview('7d', 'hcm', 'service-1', 'APPROVED', 'online', 'negative', 'high'),
+    ).resolves.toEqual({
+      source: 'stored-partner-supply-aggregates',
+      summaryKpis: [],
+    });
+
+    expect(routeMetadata('partnerOverview')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partners/overview',
+    });
+    expect(admin.getPartnerOverview).toHaveBeenCalledWith({
+      city: 'hcm',
+      onlineStatus: 'online',
+      range: '7d',
+      riskStatus: 'high',
+      serviceId: 'service-1',
+      verificationStatus: 'APPROVED',
+      walletStatus: 'negative',
+    });
   });
 
   it('exposes marketing overview as a separate aggregate GET endpoint', async () => {

@@ -105,6 +105,7 @@ describe('partner export rows', () => {
 
 function filters(input: Partial<ProviderFilters> = {}): ProviderFilters {
   return {
+    activity: '',
     bookingFlow: '',
     kyc: '',
     location: '',

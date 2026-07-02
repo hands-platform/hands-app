@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2, Landmark, Scale } from 'lucide-react';
 
 import type {
   AdminMonthlyTaxClosing,
@@ -15,11 +16,13 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
+import { FinanceListCommandCard } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingAccountingJournalCsvHref,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxClosingRemittanceEvidenceState,
   buildMonthlyTaxClosingRiskLinks,
   buildMonthlyTaxClosingRowsCsvHref,
   buildMonthlyTaxClosingSummaryCsvHref,
@@ -59,6 +62,11 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
   const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(tableRows);
   const accountingJournalCsvHref = buildMonthlyTaxClosingAccountingJournalCsvHref(summary);
   const nextStatusOptions = monthlyTaxClosingNextStatusOptions(summary.status);
+  const closeoutRiskLinks = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters);
+  const formulaDelta = Math.abs(summary.reconciliationDelta) + Math.abs(summary.netRevenueDelta);
+  const remittanceEvidenceState = buildMonthlyTaxClosingRemittanceEvidenceState(summary);
+  const openCloseoutRiskCount =
+    summary.openTaxCount + summary.couponReviewFlagCount + (summary.cashDebtTotal > 0 ? 1 : 0) + (formulaDelta > 0 ? 1 : 0);
 
   return (
     <AdminPageTemplate
@@ -98,6 +106,41 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
       metrics={buildMonthlyTaxClosingMetrics(summary)}
       title="Monthly Tax Closing"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Closeout command board">
+        <FinanceListCommandCard
+          detail="Current stored closing status, or draft preview when no closing row exists yet."
+          href={monthlyTaxClosingHref(filters)}
+          icon={CheckCircle2}
+          label="Closeout status"
+          tone={closingStatusTone(summary.status)}
+          value={summary.status}
+        />
+        <FinanceListCommandCard
+          detail="Reconciliation and net revenue deltas must be 0 before declaration or final closeout."
+          href={monthlyTaxClosingHref(filters)}
+          icon={Scale}
+          label="Formula delta"
+          tone={formulaDelta === 0 ? 'success' : 'danger'}
+          value={formatMoney(formulaDelta, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Open tax rows, coupon review flags, cash debt, or formula mismatch still blocking closeout."
+          href={closeoutRiskLinks.find((link) => link.count || link.amountLabel !== '0 VND')?.href ?? monthlyTaxClosingHref(filters)}
+          icon={AlertTriangle}
+          label="Closeout gates"
+          tone={openCloseoutRiskCount > 0 ? 'warning' : 'success'}
+          value={String(openCloseoutRiskCount)}
+        />
+        <FinanceListCommandCard
+          detail={remittanceEvidenceState.detail}
+          href={monthlyTaxClosingHref(filters)}
+          icon={Landmark}
+          label="Remittance evidence"
+          tone={remittanceEvidenceState.tone}
+          value={remittanceEvidenceState.label}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Period ${summary.period}. The preview is calculated from immutable settlement snapshots; stored closing rows only add status and closeout timestamps.`}
@@ -106,10 +149,11 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         title="Monthly closing period"
       >
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
           <AdminFormSelect
             defaultValue={String(filters.take)}
             label="Rows"
+            labelVisibility="visible"
             name="take"
             options={[25, 50, 75, 100].map((take) => ({ label: String(take), value: String(take) }))}
           />
@@ -133,42 +177,49 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             <AdminFormSelect
               defaultValue={nextStatusOptions[0]?.value}
               label="Next status"
+              labelVisibility="visible"
               name="status"
               options={nextStatusOptions.map((option) => ({ label: option.label, value: option.value }))}
             />
             <AdminFormInput
               defaultValue={summary.notes ?? ''}
               label="Operator notes"
+              labelVisibility="visible"
               name="notes"
               placeholder="Tax portal reference, declaration note, or closeout memo"
             />
             <AdminFormInput
               defaultValue={summary.remittanceMetadata?.transferRef ?? ''}
               label="Remittance ref"
+              labelVisibility="visible"
               name="remittanceTransferRef"
               placeholder="Required when moving to PAID"
             />
             <AdminFormInput
               defaultValue={summary.remittanceMetadata?.approvedByAdminId ?? ''}
               label="Approving admin ID"
+              labelVisibility="visible"
               name="approvalAdminId"
               placeholder="Required when moving to PAID"
             />
             <AdminFormInput
               defaultValue={datetimeLocalValue(summary.remittanceMetadata?.paidAt ?? summary.paidAt)}
               label="Paid at"
+              labelVisibility="visible"
               name="paidAt"
               type="datetime-local"
             />
             <AdminFormInput
               defaultValue={summary.remittanceMetadata?.channel ?? ''}
               label="Channel"
+              labelVisibility="visible"
               name="remittanceChannel"
               placeholder="VCB manual transfer"
             />
             <AdminFormInput
               defaultValue={summary.remittanceMetadata?.evidenceUrl ?? ''}
               label="Evidence URL"
+              labelVisibility="visible"
               name="remittanceEvidenceUrl"
               placeholder="Tax portal receipt or retained evidence URL"
             />
@@ -192,7 +243,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         title="Closeout risk queue"
       >
         <div className="setup-stage-list admin-mt-12">
-          {buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters).map((link) => (
+          {closeoutRiskLinks.map((link) => (
             <Link className="setup-stage-item" href={link.href} key={link.key}>
               <span>{link.signal}</span>
               <div>
@@ -272,34 +323,47 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             headers={['Period', 'Status', 'Settlements', 'Platform VAT', 'Partner tax', 'Payment fees', 'Closeout']}
             rowCount={tableRows.length}
           >
-            {tableRows.map((closing) => (
-              <tr key={closing.id}>
-                <td>
-                  <strong>{closing.period}</strong>
-                  <div className="muted">{closing.currency}</div>
-                </td>
-                <td>
-                  <span className={`pill ${closingStatusPill(closing.status)}`}>{closing.status}</span>
-                </td>
-                <td>{closing.settlementCount}</td>
-                <td>
-                  <strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>
-                  <div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>
-                  <div className="muted">VAT {formatMoney(closing.partnerVatWithheldTotal, closing.currency)}</div>
-                  <div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>
-                </td>
-                <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
-                <td>
-                  <div className="muted">Declared {formatDateTime(closing.declaredAt)}</div>
-                  <div className="muted">Paid {formatDateTime(closing.paidAt)}</div>
-                  <div className="muted">Closed {formatDateTime(closing.closedAt)}</div>
-                  {closing.notes ? <div className="muted admin-mt-8">{closing.notes}</div> : null}
-                </td>
-              </tr>
-            ))}
+            {tableRows.map((closing) => {
+              const closingRemittanceState = buildMonthlyTaxClosingRemittanceEvidenceState(closing);
+
+              return (
+                <tr key={closing.id}>
+                  <td>
+                    <strong>{closing.period}</strong>
+                    <div className="muted">{closing.currency}</div>
+                  </td>
+                  <td>
+                    <span className={`pill ${closingStatusPill(closing.status)}`}>{closing.status}</span>
+                  </td>
+                  <td>{closing.settlementCount}</td>
+                  <td>
+                    <strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>
+                    <div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>
+                  </td>
+                  <td>
+                    <strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>
+                    <div className="muted">VAT {formatMoney(closing.partnerVatWithheldTotal, closing.currency)}</div>
+                    <div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>
+                  </td>
+                  <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
+                  <td>
+                    <span className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}>
+                      {closingRemittanceState.label}
+                    </span>
+                    <div className="muted admin-mt-8">Declared {formatDateTime(closing.declaredAt)}</div>
+                    <div className="muted">Paid {formatDateTime(closing.paidAt)}</div>
+                    <div className="muted">Closed {formatDateTime(closing.closedAt)}</div>
+                    <div className="muted">{closingRemittanceState.detail}</div>
+                    {closingRemittanceState.evidenceHref ? (
+                      <a className="text-link" href={closingRemittanceState.evidenceHref} rel="noreferrer" target="_blank">
+                        Open remittance evidence
+                      </a>
+                    ) : null}
+                    {closing.notes ? <div className="muted admin-mt-8">{closing.notes}</div> : null}
+                  </td>
+                </tr>
+              );
+            })}
           </AdminDataTable>
         </AdminTableScroll>
         <div className="vuexy-booking-table-footer">
@@ -331,6 +395,16 @@ function closingStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function remittanceEvidencePill(tone: 'neutral' | 'success' | 'warning') {
+  if (tone === 'success') {
+    return 'pill-success';
+  }
+  if (tone === 'warning') {
+    return 'pill-warn';
+  }
+  return 'pill-neutral';
 }
 
 function closingStatusTone(status: string) {

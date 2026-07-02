@@ -1,6 +1,7 @@
 import {
   buildPartnerDataHrefs,
   buildPartnerListHref,
+  buildProviderActiveFilters,
   buildProviderFilters,
   paginatePartnerRows,
   partnerRowsPagination,
@@ -36,6 +37,54 @@ describe('partner filters', () => {
     expect(buildPartnerListHref(filters, { review: 'unsettled' })).toBe(
       '/partners?providerStatus=ONLINE_AVAILABLE&review=unsettled&sort=wallet-debt&pageSize=25',
     );
+  });
+
+  it('accepts overview onlineStatus links as providerStatus aliases', () => {
+    const filters = buildProviderFilters({
+      onlineStatus: 'soon',
+      review: 'marketplace-ready',
+    });
+
+    expect(filters.providerStatus).toBe('ONLINE_AVAILABLE_SOON');
+    expect(buildPartnerListHref(filters)).toBe(
+      '/partners?providerStatus=ONLINE_AVAILABLE_SOON&review=marketplace-ready',
+    );
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=50&providerStatus=ONLINE_AVAILABLE_SOON',
+      listIsServerPaginated: false,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
+  });
+
+  it('labels overview status and activity drilldowns for operators without exposing raw enum copy', () => {
+    const filters = buildProviderFilters({
+      activity: 'inactive-7d',
+      onlineStatus: 'soon',
+      review: 'marketplace-ready',
+    });
+
+    const labels = buildProviderActiveFilters(filters).map((filter) => filter.label);
+
+    expect(labels).toContain('State: Available soon');
+    expect(labels).toContain('Activity: Inactive 7D');
+    expect(labels).not.toContain('Status: ONLINE_AVAILABLE_SOON');
+  });
+
+  it('keeps activity drilldown links as local bounded partner filters', () => {
+    const filters = buildProviderFilters({
+      activity: 'inactive-7d',
+      review: 'marketplace-ready',
+    });
+
+    expect(filters.activity).toBe('inactive-7d');
+    expect(buildPartnerListHref(filters)).toBe('/partners?activity=inactive-7d&review=marketplace-ready');
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=50',
+      listIsServerPaginated: false,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
   });
 
   it('keeps partner directory hydration bounded while summary count is loaded separately', () => {
@@ -92,7 +141,7 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({ location: 'stale' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=10',
+      listHref: '/admin/partners/list-providers?take=50',
       listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,

@@ -170,9 +170,13 @@ export function applyCashBookingDeductionToPartnerWallet(
 
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
+    const companyCouponExpense = nonNegativeWholeVnd(
+      input.companyCouponExpense ?? 0,
+      'Company coupon expense',
+    );
     return -Math.max(
       0,
-      input.platformFee - nonNegativeWholeVnd(input.companyCouponExpense ?? 0, 'Company coupon expense'),
+      input.platformFee + input.withholdingAmount - companyCouponExpense,
     );
   }
 

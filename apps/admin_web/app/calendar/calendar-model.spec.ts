@@ -59,7 +59,11 @@ describe('calendar-model', () => {
   });
 
   it('normalizes free-form hashtags for event drafts', () => {
-    expect(parseCalendarTags('#Finance #finance booking, 정산')).toEqual(['finance', 'booking', '정산']);
+    expect(parseCalendarTags('#Finance #finance booking, settlement')).toEqual([
+      'finance',
+      'booking',
+      'settlement',
+    ]);
   });
 
   it('migrates legacy stored category events into tag and author records', () => {
@@ -85,14 +89,45 @@ describe('calendar-model', () => {
     });
   });
 
-  it('builds summary metrics from the visible events', () => {
+  it('builds summary metrics from current and future visible events', () => {
     const events = createSeedEvents(new Date('2026-06-16T09:00:00.000Z'));
-    const metrics = buildCalendarMetrics(events, new Date('2026-06-16T09:15:00.000Z'));
+    const now = new Date('2026-06-16T09:15:00.000Z');
+    const metrics = buildCalendarMetrics(events, now);
+    const currentOrFutureCount = events.filter((event) => new Date(event.end || event.start) >= now).length;
 
-    expect(metrics.total).toBe(events.length);
+    expect(metrics.total).toBe(currentOrFutureCount);
     expect(metrics.today).toBeGreaterThan(0);
     expect(metrics.upcoming).toBeGreaterThan(0);
     expect(metrics.nextLabel).not.toBe('No upcoming event');
+  });
+
+  it('does not count past events in the visible event total', () => {
+    const [seed] = createSeedEvents(new Date('2026-07-01T09:00:00.000Z'));
+    const metrics = buildCalendarMetrics(
+      [
+        {
+          ...seed,
+          id: 'past',
+          start: '2026-06-30T08:00:00.000Z',
+          end: '2026-06-30T09:00:00.000Z',
+        },
+        {
+          ...seed,
+          id: 'ongoing',
+          start: '2026-07-01T08:00:00.000Z',
+          end: '2026-07-01T10:00:00.000Z',
+        },
+        {
+          ...seed,
+          id: 'future',
+          start: '2026-07-02T08:00:00.000Z',
+          end: '2026-07-02T09:00:00.000Z',
+        },
+      ],
+      new Date('2026-07-01T09:00:00.000Z'),
+    );
+
+    expect(metrics.total).toBe(2);
   });
 
   it('keeps event end date aligned after invalid edits', () => {

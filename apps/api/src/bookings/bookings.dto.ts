@@ -2,12 +2,16 @@ import {
   Allow,
   IsDefined,
   IsEnum,
+  IsIn,
+  IsInt,
   IsNotEmpty,
   IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -16,6 +20,16 @@ import { PaymentMethod, Prisma } from '@prisma/client';
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
 }
+
+function numberFromFormValue(value: unknown) {
+  if (typeof value === 'string' && value.trim()) {
+    return Number(value);
+  }
+  return value;
+}
+
+export const providerBookingDetailViewEventTypes = ['heartbeat', 'closed'] as const;
+export type ProviderBookingDetailViewEventType = (typeof providerBookingDetailViewEventTypes)[number];
 
 export class CreateCustomerBookingDto {
   @IsString()
@@ -100,4 +114,17 @@ export class CreateProviderCustomerReviewDto {
   @IsNotEmpty()
   @MaxLength(1000)
   comment!: string;
+}
+
+export class RecordProviderBookingDetailViewDto {
+  @Transform(({ value }) => trimString(value))
+  @IsIn(providerBookingDetailViewEventTypes)
+  eventType!: ProviderBookingDetailViewEventType;
+
+  @IsOptional()
+  @Transform(({ value }) => numberFromFormValue(value))
+  @IsInt()
+  @Min(0)
+  @Max(7200)
+  durationSeconds?: number;
 }

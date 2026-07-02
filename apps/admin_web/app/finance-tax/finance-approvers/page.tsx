@@ -1,3 +1,5 @@
+import { ShieldCheck, UserCheck, UserCog, UsersRound } from 'lucide-react';
+
 import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
@@ -5,6 +7,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildTaxFinanceWorkflowLinks,
@@ -27,6 +30,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
   const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
   const adminUsers = users.filter((user) => user.roles.includes(ADMIN_ROLE));
   const approverCount = adminUsers.filter((user) => isFinanceApprover(user)).length;
+  const nonApproverCount = Math.max(adminUsers.length - approverCount, 0);
   const settlementFilters = readBookingSettlementFilters(params);
   const accountingFilters = readFinanceAccountingFilters(params, 'all');
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
@@ -66,6 +70,41 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
       ]}
       title="Finance Approvers"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Approver command board">
+        <FinanceListCommandCard
+          detail="Share of admin users who can approve finance money actions after maker submission."
+          href="/finance-tax/finance-approvers"
+          icon={UserCheck}
+          label="Approver coverage"
+          tone={approverCount > 0 ? 'success' : 'danger'}
+          value={formatFinancePercent(approverCount, adminUsers.length)}
+        />
+        <FinanceListCommandCard
+          detail="Admin users returned by the bounded admin user API."
+          href="/admin-operators"
+          icon={UsersRound}
+          label="Admin operators"
+          tone={adminUsers.length > 0 ? 'info' : 'warning'}
+          value={String(adminUsers.length)}
+        />
+        <FinanceListCommandCard
+          detail="Admins without finance approval authority. Grant only when dual-control ownership is needed."
+          href="/finance-tax/finance-approvers"
+          icon={UserCog}
+          label="Non-approver admins"
+          tone={nonApproverCount > 0 ? 'warning' : 'success'}
+          value={String(nonApproverCount)}
+        />
+        <FinanceListCommandCard
+          detail="Self-change and final approver removal stay blocked by the API."
+          href="/finance-tax/finance-approvers"
+          icon={ShieldCheck}
+          label="Dual-control guard"
+          tone="success"
+          value="Protected"
+        />
+      </section>
+
       {roleNotice ? (
         <AdminFilterPanel
           className={`admin-mb-16 ${roleNotice === 'updated' ? 'surface-success' : 'surface-danger'}`}
@@ -167,6 +206,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                       <input name="returnTo" type="hidden" value="/finance-tax/finance-approvers" />
                       <AdminFormInput
                         label="Reason"
+                        labelVisibility="visible"
                         name="reason"
                         placeholder={enabled ? 'Rotation or access removal reason' : 'Finance approval owner reason'}
                         required

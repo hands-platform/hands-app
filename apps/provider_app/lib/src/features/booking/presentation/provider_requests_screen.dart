@@ -31,6 +31,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
   final loginPhoneController = TextEditingController(text: '+84900000002');
   final loginOtpController = TextEditingController(text: '123456');
   late final RealtimeSocket _socket;
+  late final ProviderBookingDetailViewTracker _detailViewTracker;
+  Timer? _detailViewHeartbeatTimer;
   List<dynamic> openBookings = [];
   Set<String> joinedBookingIds = {};
   bool isOnline = false;
@@ -49,6 +51,24 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       requestView = 'all';
     }
     _socket = ref.read(realtimeSocketProvider);
+    final providerRepository = ref.read(providerRepositoryProvider);
+    _detailViewTracker = ProviderBookingDetailViewTracker(
+      record: ({
+        required bookingId,
+        required eventType,
+        duration,
+      }) async {
+        await providerRepository.recordBookingDetailView(
+          bookingId,
+          eventType: eventType,
+          duration: duration,
+        );
+      },
+    );
+    _detailViewHeartbeatTimer = Timer.periodic(
+      ProviderBookingDetailViewTracker.heartbeatInterval,
+      (_) => unawaited(_detailViewTracker.recordHeartbeat()),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(restoreSessionAndLoad());
     });
@@ -58,6 +78,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
   void dispose() {
     loginPhoneController.dispose();
     loginOtpController.dispose();
+    _detailViewHeartbeatTimer?.cancel();
+    unawaited(_detailViewTracker.closeAll());
     detachRealtimeListeners();
     super.dispose();
   }
@@ -239,6 +261,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       final bookings =
           await ref.read(providerRepositoryProvider).requestBookings();
       setState(() => openBookings = bookings);
+      syncVisibleRequestDetailTelemetry();
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));
     } finally {
@@ -393,13 +416,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final auth = ref.watch(authControllerProvider);
-    final heartbeatSnapshot =
-        ref.watch(providerLocationHeartbeatStatusProvider).valueOrNull ??
-            ref.read(providerLocationHeartbeatProvider).snapshot;
-    final bookingItems = openBookings.whereType<Map<String, dynamic>>().toList()
+  List<Map<String, dynamic>> sortedBookingItems() {
+    final auth = ref.read(authControllerProvider);
+    return openBookings.whereType<Map<String, dynamic>>().toList()
       ..sort((left, right) {
         final leftTarget = left['id']?.toString() == widget.initialBookingId;
         final rightTarget = right['id']?.toString() == widget.initialBookingId;
@@ -414,7 +433,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         }
         return bookingTimestamp(right).compareTo(bookingTimestamp(left));
       });
-    final visibleBookings = bookingItems.where((booking) {
+  }
+
+  List<Map<String, dynamic>> visibleBookingsForRequestView(
+    List<Map<String, dynamic>> bookingItems,
+  ) {
+    return bookingItems.where((booking) {
       if (requestView == 'chat') {
         return isProviderAppChatVisible(booking);
       }
@@ -423,6 +447,25 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       }
       return !isProviderAppChatVisible(booking);
     }).toList();
+  }
+
+  void syncVisibleRequestDetailTelemetry() {
+    final visibleBookingIds =
+        visibleBookingsForRequestView(sortedBookingItems())
+            .map((booking) => booking['id']?.toString())
+            .whereType<String>()
+            .where((bookingId) => bookingId.isNotEmpty);
+    unawaited(_detailViewTracker.syncVisibleBookingIds(visibleBookingIds));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = ref.watch(authControllerProvider);
+    final heartbeatSnapshot =
+        ref.watch(providerLocationHeartbeatStatusProvider).valueOrNull ??
+            ref.read(providerLocationHeartbeatProvider).snapshot;
+    final bookingItems = sortedBookingItems();
+    final visibleBookings = visibleBookingsForRequestView(bookingItems);
 
     return SafeArea(
       child: ListView(
@@ -530,8 +573,10 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               joinedBookingIds: joinedBookingIds,
               loading: loading,
               walletBlocked: requestActionsWalletBlocked,
-              onRequestViewChanged: (value) =>
-                  setState(() => requestView = value),
+              onRequestViewChanged: (value) {
+                setState(() => requestView = value);
+                syncVisibleRequestDetailTelemetry();
+              },
               onJoin: joinBooking,
               onAccept: (booking) => respondToBooking(booking, true),
               onReject: (booking) => respondToBooking(booking, false),

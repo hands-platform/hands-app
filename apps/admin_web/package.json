@@ -17,6 +17,7 @@
     "@fullcalendar/react": "^6.1.21",
     "@fullcalendar/timegrid": "^6.1.21",
     "lucide-react": "^0.542.0",
+    "maplibre-gl": "^5.24.0",
     "next": "^16.2.9",
     "react": "^19.2.7",
     "react-datepicker": "^9.1.0",

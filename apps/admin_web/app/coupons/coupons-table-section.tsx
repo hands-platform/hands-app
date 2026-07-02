@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarDays, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
@@ -153,28 +153,22 @@ function CouponManagementCard({
           <input name="couponId" type="hidden" value={row.id} />
           <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
           <div>
-            <span>Starts</span>
-            <span className="coupon-date-input-shell">
-              <AdminFormInput
-                defaultValue={row.startsAtInputValue}
-                label="Starts"
-                name="startsAt"
-                type="datetime-local"
-              />
-              <CalendarDays aria-hidden="true" size={17} />
-            </span>
+            <AdminFormInput
+              defaultValue={row.startsAtInputValue}
+              label="Starts"
+              labelVisibility="visible"
+              name="startsAt"
+              type="datetime-local"
+            />
           </div>
           <div>
-            <span>Ends</span>
-            <span className="coupon-date-input-shell">
-              <AdminFormInput
-                defaultValue={row.endsAtInputValue}
-                label="Ends"
-                name="endsAt"
-                type="datetime-local"
-              />
-              <CalendarDays aria-hidden="true" size={17} />
-            </span>
+            <AdminFormInput
+              defaultValue={row.endsAtInputValue}
+              label="Ends"
+              labelVisibility="visible"
+              name="endsAt"
+              type="datetime-local"
+            />
           </div>
           <AdminFormCheckbox
             className="coupon-active-field"

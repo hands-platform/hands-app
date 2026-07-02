@@ -27,11 +27,16 @@ describe('PlatformVatPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Platform VAT period');
+    expect(markup).toContain('VAT command board');
+    expect(markup).toContain('Output VAT');
+    expect(markup).toContain('Net revenue');
     expect(markup).toContain('VAT rate breakdown');
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
     expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-control-labeled');
+    expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');

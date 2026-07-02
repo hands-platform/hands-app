@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { Landmark, ReceiptText, ShieldCheck, UsersRound, WalletCards } from 'lucide-react';
 
 import type {
+  AdminMonthlyTaxClosingSummary,
   AdminPartnerWithholdingTaxRow,
   AdminPartnerWithholdingTaxSummary,
 } from '../../../lib/admin-api';
@@ -15,13 +17,16 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceListCommandCard } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
+  buildMonthlyTaxClosingSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
   buildPartnerWithholdingTaxRowsCsvHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
+  emptyMonthlyTaxClosingSummary,
   emptyPartnerWithholdingTaxSummary,
   partnerWithholdingTaxHref,
   readBookingSettlementFilters,
@@ -38,12 +43,16 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   const filters = readPartnerWithholdingTaxFilters(params);
   const settlementFilters = readBookingSettlementFilters(params);
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
-  const [summary, rows] = await Promise.all([
+  const [summary, rows, monthlyClosingSummary] = await Promise.all([
     adminGet<AdminPartnerWithholdingTaxSummary>(
       buildPartnerWithholdingTaxSummaryApiHref(filters),
       emptyPartnerWithholdingTaxSummary(filters.period),
     ),
     adminGet<AdminPartnerWithholdingTaxRow[]>(buildPartnerWithholdingTaxApiHref(filters), []),
+    adminGet<AdminMonthlyTaxClosingSummary>(
+      buildMonthlyTaxClosingSummaryApiHref(monthlyFilters),
+      emptyMonthlyTaxClosingSummary(monthlyFilters.period),
+    ),
   ]);
   const pagination = buildTaxSettlementServerPagination(rows, filters, summary.partnerCountWithRevenue);
   const tableRows = pagination.rows;
@@ -104,6 +113,49 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
       ]}
       title="Partner Withholding Tax"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Withholding command board">
+        <FinanceListCommandCard
+          detail="Partner VAT plus PIT withholding payable for the selected month."
+          href={`/finance-tax/partner-withholding-tax?period=${encodeURIComponent(filters.period)}`}
+          icon={ReceiptText}
+          label="Partner tax payable"
+          tone={summary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
+          value={formatMoney(summary.totalPartnerTaxWithheld, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Partners with taxable completed booking revenue in this period."
+          href={partnerWithholdingTaxHref({ ...filters, page: 1 })}
+          icon={UsersRound}
+          label="Taxable partners"
+          tone={summary.partnerCountWithRevenue > 0 ? 'info' : 'neutral'}
+          value={String(summary.partnerCountWithRevenue)}
+        />
+        <FinanceListCommandCard
+          detail="Completed booking settlement rows included in withholding totals."
+          href="/finance-tax/booking-settlement-audit"
+          icon={Landmark}
+          label="Taxable bookings"
+          tone={summary.taxableBookingCount > 0 ? 'primary' : 'neutral'}
+          value={String(summary.taxableBookingCount)}
+        />
+        <FinanceListCommandCard
+          detail="Partner payout total before payout batch execution."
+          href="/earnings"
+          icon={WalletCards}
+          label="Partner payout base"
+          tone={summary.partnerPayoutTotal > 0 ? 'success' : 'neutral'}
+          value={formatMoney(summary.partnerPayoutTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail={withholdingRemittanceDetail(monthlyClosingSummary)}
+          href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
+          icon={ShieldCheck}
+          label="Remittance status"
+          tone={withholdingRemittanceTone(monthlyClosingSummary.status)}
+          value={monthlyClosingSummary.status}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Period ${filters.period}. Showing page ${pagination.page} of ${pagination.totalPages} from the monthly group API.`}
@@ -112,10 +164,11 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         title="Withholding tax period"
       >
         <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" name="period" type="month" />
+          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
           <AdminFormSelect
             defaultValue={String(filters.take)}
             label="Rows"
+            labelVisibility="visible"
             name="take"
             options={[25, 50, 75, 100].map((take) => ({ label: String(take), value: String(take) }))}
           />
@@ -178,4 +231,37 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
       </AdminFilterPanel>
     </AdminPageTemplate>
   );
+}
+
+function withholdingRemittanceTone(status: string): 'danger' | 'neutral' | 'success' | 'warning' {
+  if (status === 'PAID' || status === 'CLOSED') {
+    return 'success';
+  }
+  if (status === 'DECLARED' || status === 'REVIEWED') {
+    return 'warning';
+  }
+  if (status === 'REVERSED') {
+    return 'danger';
+  }
+  return 'neutral';
+}
+
+function withholdingRemittanceDetail(summary: AdminMonthlyTaxClosingSummary) {
+  const transferRef = summary.remittanceMetadata?.transferRef;
+
+  if (summary.status === 'PAID' || summary.status === 'CLOSED') {
+    return transferRef
+      ? `Tax payment evidence retained under ${transferRef}.`
+      : 'Tax payment evidence is recorded for this monthly closing.';
+  }
+  if (summary.status === 'DECLARED') {
+    return 'Tax declaration is submitted; payment evidence still needs to be recorded.';
+  }
+  if (summary.status === 'REVIEWED') {
+    return 'Monthly totals are reviewed; declare and remit withholding before closeout.';
+  }
+  if (summary.status === 'REVERSED') {
+    return 'This monthly closing was reversed. Review reversal evidence before remittance action.';
+  }
+  return 'Monthly withholding totals are still in draft preview.';
 }

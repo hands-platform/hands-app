@@ -30,10 +30,12 @@ export async function getCurrentAdminOperatorAccess() {
     return null;
   }
 
-  return adminGet<AdminOperatorAccess | null>(
+  const access = await adminGet<AdminOperatorAccess | null>(
     `/admin/users/admin-operator-access?identity=${encodeURIComponent(identity)}`,
     null,
   );
+
+  return access ?? envMasterAdminAccessForIdentity(identity);
 }
 
 export async function getAdminOperatorPageAccess(pathname: string): Promise<AdminOperatorPageAccess> {
@@ -85,4 +87,23 @@ async function currentAdminWebSessionIdentity() {
   } catch {
     return null;
   }
+}
+
+function envMasterAdminAccessForIdentity(identity: string): AdminOperatorAccess | null {
+  const configuredEmail = process.env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
+  const normalizedIdentity = identity.trim().toLowerCase();
+
+  if (!configuredEmail || normalizedIdentity !== configuredEmail) {
+    return null;
+  }
+
+  return {
+    categories: [],
+    email: configuredEmail,
+    fullName: 'Master Admin',
+    id: 'admin-web-env-master',
+    phone: null,
+    roles: ['ADMIN', 'MASTER_ADMIN'],
+    updatedAt: null,
+  };
 }

@@ -232,6 +232,31 @@ export class AdminController {
     return this.admin.getUsageOverview(range);
   }
 
+  @Get('partners/overview')
+  partnerOverview(
+    @Query('range') range?: string,
+    @Query('city') city?: string,
+    @Query('serviceId') serviceId?: string,
+    @Query('verificationStatus') verificationStatus?: string,
+    @Query('onlineStatus') onlineStatus?: string,
+    @Query('walletStatus') walletStatus?: string,
+    @Query('riskStatus') riskStatus?: string,
+    @Query('selectionIssue') selectionIssue?: string,
+    @Query('selectionSort') selectionSort?: string,
+  ) {
+    return this.admin.getPartnerOverview({
+      city,
+      onlineStatus,
+      range,
+      riskStatus,
+      selectionIssue,
+      selectionSort,
+      serviceId,
+      verificationStatus,
+      walletStatus,
+    });
+  }
+
   @Get('marketing/overview')
   marketingOverview(
     @Query('range') range?: string,
@@ -810,6 +835,11 @@ export class AdminController {
     return this.admin.refundSummary({ range, review });
   }
 
+  @Get('finance-overview')
+  financeOverviewSummary(@Query('range') range?: string, @Query('period') period?: string) {
+    return this.admin.financeOverviewSummary({ period, range });
+  }
+
   @Get('earnings')
   earnings(
     @Query('take') take?: string,
@@ -875,6 +905,11 @@ export class AdminController {
     return this.admin.bookingSettlementReversalSummary({ range, review });
   }
 
+  @Get('booking-settlement-reversals/:id')
+  bookingSettlementReversal(@Param('id') id: string) {
+    return this.admin.getBookingSettlementReversal(id);
+  }
+
   @Get('booking-settlement-snapshots/coupon-finance')
   couponFinanceSnapshots(
     @Query('take') take?: string,
@@ -888,6 +923,11 @@ export class AdminController {
   @Get('booking-settlement-snapshots/coupon-finance-summary')
   couponFinanceSummary(@Query('range') range?: string, @Query('review') review?: string) {
     return this.admin.couponFinanceSummary({ range, review });
+  }
+
+  @Get('booking-settlement-snapshots/:id')
+  bookingSettlementSnapshot(@Param('id') id: string) {
+    return this.admin.getBookingSettlementSnapshot(id);
   }
 
   @Get('partner-withholding-tax')
@@ -975,6 +1015,11 @@ export class AdminController {
   @Get('booking-payment-clearing/:id')
   bookingPaymentClearingEntryDetail(@Param('id') id: string) {
     return this.admin.bookingPaymentClearingEntryDetail(id);
+  }
+
+  @Get('company-bank-accounts')
+  companyBankAccounts(@Query('status') status?: string) {
+    return this.admin.listCompanyBankAccounts({ status });
   }
 
   @Get('bank-reconciliation')

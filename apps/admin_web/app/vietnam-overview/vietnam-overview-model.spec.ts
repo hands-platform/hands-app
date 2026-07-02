@@ -8,10 +8,10 @@ import {
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
   vietnamOverviewRealtimePointsApiHref,
-  vietnamOverviewGeoapifyTileGrid,
+  vietnamOverviewMapTilerTileGrid,
   vietnamOverviewMapZoomLevels,
   vietnamOverviewRangeOptions,
-  isVietnamOverviewGeoapifyTile,
+  isVietnamOverviewMapTilerTile,
 } from './vietnam-overview-model';
 
 describe('Vietnam overview page model', () => {
@@ -35,7 +35,7 @@ describe('Vietnam overview page model', () => {
 
   it('keeps realtime map point feed independent from period range filters', () => {
     expect(vietnamOverviewRealtimePointsApiHref()).toBe(
-      '/admin/vietnam-overview/realtime-points?take=20',
+      '/admin/vietnam-overview/realtime-points?take=50',
     );
   });
 
@@ -151,41 +151,53 @@ describe('Vietnam overview page model', () => {
       pointFixture({ id: 'active-customer', kind: 'active' }),
       pointFixture({ id: 'partner-profile-location', kind: 'partners' }),
       pointFixture({ id: 'online-partner', kind: 'online' }),
+      pointFixture({ id: 'stale-partner', kind: 'stale-partners' }),
+      pointFixture({ id: 'offline-partner', kind: 'offline-partners' }),
       pointFixture({ id: 'active-booking', kind: 'bookings' }),
       pointFixture({ id: 'completed-booking', kind: 'done' }),
       pointFixture({ id: 'cancelled-booking', kind: 'cancel' }),
     ]);
 
     expect(points.map((point) => point.id)).toEqual([
+      'customer-saved-location',
       'active-customer',
       'online-partner',
+      'stale-partner',
+      'offline-partner',
       'active-booking',
     ]);
     expect(vietnamOverviewRealtimePointCounts(points)).toMatchObject({
+      customers: 1,
       active: 1,
       online: 1,
+      'stale-partners': 1,
+      'offline-partners': 1,
       bookings: 1,
     });
   });
 
-  it('builds a bounded Geoapify tile grid for the Vietnam overview map only', () => {
-    const tileGrid = vietnamOverviewGeoapifyTileGrid();
+  it('builds a bounded MapTiler tile grid for the Vietnam overview map only', () => {
+    const tileGrid = vietnamOverviewMapTilerTileGrid();
 
     expect(tileGrid.zoom).toBe(7);
+    expect(tileGrid.style).toBe('streets-v2');
     expect(tileGrid.cols).toBe(4);
     expect(tileGrid.rows).toBe(7);
     expect(tileGrid.tiles).toHaveLength(28);
+    expect(tileGrid.tiles[0].src).toBe('/api/admin/maptiler-tiles/7/100/55.png');
     expect(tileGrid.viewAspectRatio).toBeGreaterThan(0.49);
     expect(tileGrid.viewAspectRatio).toBeLessThan(0.5);
     expect(tileGrid.layerLeftPercent).toBeLessThan(0);
     expect(tileGrid.layerTopPercent).toBeLessThan(0);
     expect(tileGrid.layerWidthPercent).toBeGreaterThan(100);
     expect(tileGrid.layerHeightPercent).toBeGreaterThan(100);
-    expect(tileGrid.tiles.every((tile) => isVietnamOverviewGeoapifyTile(tile.z, tile.x, tile.y))).toBe(
+    expect(tileGrid.tiles.every((tile) => isVietnamOverviewMapTilerTile(tile.z, tile.x, tile.y))).toBe(
       true,
     );
-    expect(isVietnamOverviewGeoapifyTile(7, 99, 55)).toBe(false);
-    expect(isVietnamOverviewGeoapifyTile(8, 100, 55)).toBe(false);
+    expect(isVietnamOverviewMapTilerTile(5, 25, 14)).toBe(true);
+    expect(isVietnamOverviewMapTilerTile(7, 99, 55)).toBe(false);
+    expect(isVietnamOverviewMapTilerTile(4, 12, 7)).toBe(false);
+    expect(isVietnamOverviewMapTilerTile(17, 3200, 1800)).toBe(false);
   });
 
   it('offers client-only map zoom steps without increasing tile requests', () => {

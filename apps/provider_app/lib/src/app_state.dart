@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/booking/domain/repositories/provider_booking_repository.dart';
+import 'features/booking/domain/services/provider_booking_detail_view_tracker.dart';
 import 'features/booking/presentation/providers/booking_providers.dart';
 import 'features/chat/domain/repositories/chat_repository.dart';
 import 'features/chat/presentation/providers/chat_providers.dart';
@@ -19,6 +20,7 @@ import 'features/verification/presentation/providers/verification_providers.dart
 export 'core/providers.dart';
 export 'features/auth/presentation/providers/auth_providers.dart';
 export 'features/booking/presentation/providers/booking_providers.dart';
+export 'features/booking/domain/services/provider_booking_detail_view_tracker.dart';
 export 'features/chat/presentation/providers/chat_providers.dart';
 export 'features/earnings/presentation/providers/earnings_providers.dart';
 export 'features/map/domain/services/provider_location_heartbeat.dart';
@@ -180,6 +182,18 @@ class ProviderRepository {
       lat: lat,
       lng: lng,
       addressText: addressText,
+    );
+  }
+
+  Future<Map<String, dynamic>> recordBookingDetailView(
+    String bookingId, {
+    required ProviderBookingDetailViewTelemetryEvent eventType,
+    Duration? duration,
+  }) async {
+    return _bookingRepository.recordDetailViewTelemetry(
+      bookingId,
+      eventType: eventType,
+      duration: duration,
     );
   }
 

@@ -52,21 +52,21 @@ const permissionCategories = [
     defaultOwner: 'Operations Admin',
   },
   {
-    group: 'Customers',
+    group: 'Users',
     key: 'CUSTOMERS_DIRECTORY',
     label: 'Customer directory',
     scope: 'Customer list, filters, customer summary',
     defaultOwner: 'Support Admin',
   },
   {
-    group: 'Customers',
+    group: 'Users',
     key: 'CUSTOMERS_DETAIL',
     label: 'Customer detail',
     scope: 'Customer profile, addresses, booking history, wallet evidence',
     defaultOwner: 'Support Admin',
   },
   {
-    group: 'Customers',
+    group: 'Users',
     key: 'CUSTOMERS_REVIEWS',
     label: 'Customer reviews',
     scope: 'Customer reviews and partner customer evaluations',
@@ -108,14 +108,14 @@ const permissionCategories = [
     defaultOwner: 'Finance Approver',
   },
   {
-    group: 'Finance',
+    group: 'Tax & Accounting',
     key: 'FINANCE_GENERAL_LEDGER',
     label: 'General ledger',
     scope: 'Journal batches, entries, accounting evidence',
     defaultOwner: 'Finance Approver',
   },
   {
-    group: 'Finance',
+    group: 'Tax & Accounting',
     key: 'FINANCE_BANK_RECONCILIATION',
     label: 'Bank reconciliation',
     scope: 'Bank transactions, matching, reconciliation delta review',
@@ -136,73 +136,73 @@ const permissionCategories = [
     defaultOwner: 'Finance Approver',
   },
   {
-    group: 'Finance',
+    group: 'Tax & Accounting',
     key: 'FINANCE_TAX',
     label: 'Tax and VAT',
     scope: 'Finance tax, platform VAT, withholding and monthly close',
     defaultOwner: 'Finance Approver',
   },
   {
-    group: 'Notifications',
+    group: 'Communications',
     key: 'NOTIFICATIONS_TEMPLATES',
     label: 'Notification templates',
     scope: 'Notification wording, language variants, template controls',
     defaultOwner: 'Support Admin',
   },
   {
-    group: 'Notifications',
+    group: 'Communications',
     key: 'NOTIFICATIONS_PUSH',
     label: 'Push send',
     scope: 'Push audience filters, campaign send and deep link targets',
     defaultOwner: 'Support Admin',
   },
   {
-    group: 'Notifications',
+    group: 'Communications',
     key: 'NOTIFICATIONS_DELIVERY',
     label: 'Delivery evidence',
     scope: 'Push delivery log, failed deliveries and notification history',
     defaultOwner: 'Support Admin',
   },
   {
-    group: 'System',
+    group: 'Policies & Setup',
     key: 'SYSTEM_SERVICES',
     label: 'Services',
     scope: 'Service catalog, duration options, pricing and payout defaults',
     defaultOwner: 'Master Admin',
   },
   {
-    group: 'System',
+    group: 'Policies & Setup',
     key: 'SYSTEM_COUPONS',
     label: 'Coupons',
     scope: 'Coupon creation, usage, edit and delete workflows',
     defaultOwner: 'Master Admin',
   },
   {
-    group: 'System',
+    group: 'Admin Control',
     key: 'SYSTEM_ADMIN_OPERATORS',
     label: 'Admin operators',
     scope: 'Operator creation, role assignment, category access and revocation',
     defaultOwner: 'Master Admin',
   },
   {
-    group: 'System',
+    group: 'Policies & Setup',
     key: 'SYSTEM_POLICY',
     label: 'Operations policy',
     scope: 'Operations policy, partner levels, wallet and bank policy settings',
     defaultOwner: 'Master Admin',
   },
   {
-    group: 'System',
+    group: 'Admin Control',
     key: 'SYSTEM_AUDIT',
     label: 'Audit log',
     scope: 'Admin action history, operator activity and retained evidence search',
     defaultOwner: 'Master Admin',
   },
   {
-    group: 'System',
+    group: 'Policies & Setup',
     key: 'SYSTEM_SETUP',
     label: 'Setup',
-    scope: 'Setup, usage overview, Vietnam overview and marketing analytics',
+    scope: 'Setup and production readiness',
     defaultOwner: 'Master Admin',
   },
 ] as const;
@@ -523,10 +523,10 @@ function operatorAccessLabels(user: AdminUser) {
     return permissionCategories.map((category) => category.label);
   }
   if (user.roles.includes(FINANCE_APPROVER_ROLE)) {
-    return ['Bookings', 'Finance', 'System'];
+    return ['Bookings', 'Finance', 'Tax & Accounting'];
   }
 
-  return ['Bookings', 'Customers', 'Partners'];
+  return ['Bookings', 'Users', 'Partners'];
 }
 
 function operatorPermissionCategoryKeys(user: AdminUser) {

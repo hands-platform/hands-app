@@ -126,8 +126,11 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('Realtime bookings');
     expect(markup).toContain('Booking cancellations');
     expect(markup).toContain('Finance');
+    expect(markup).toContain('Tax &amp; Accounting');
     expect(markup).toContain('Wallet adjustments');
-    expect(markup).toContain('Notifications');
+    expect(markup).toContain('Communications');
+    expect(markup).toContain('Policies &amp; Setup');
+    expect(markup).toContain('Admin Control');
     expect(markup).toContain('Admin operators');
     expect(markup).toContain('Master Admin');
     expect(markup).toContain('Booking Operator');

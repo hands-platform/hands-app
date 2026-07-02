@@ -425,6 +425,50 @@ export type AdminUsageOverviewRegionRow = {
   completedBookingCount: number;
 };
 
+export type AdminUsageOverviewPaymentMethodRow = {
+  method: string;
+  bookingCount: number;
+  amount: number;
+};
+
+export type AdminUsageOverviewPopularServiceRow = {
+  rank: number;
+  id: string;
+  label: string;
+  secondary?: string | null;
+  bookingCount: number;
+  quantity: number;
+  amount: number;
+};
+
+export type AdminUsageOverviewHourlyActivityRow = {
+  hour: number;
+  label: string;
+  customerSessionCount: number;
+  bookingRequestCount: number;
+  totalActivityCount: number;
+};
+
+export type AdminUsageOverviewPlatformRow = {
+  platform: 'android' | 'ios' | 'web' | 'unknown';
+  sessionCount: number;
+  lastActivityAt?: string | null;
+};
+
+export type AdminUsageOverviewPartnerDiscoveryRow = {
+  rank: number;
+  id: string;
+  label: string;
+  secondary?: string | null;
+  href?: string | null;
+  viewCount: number;
+  requestCount: number;
+  completedCount: number;
+  viewToRequestRate: number;
+  requestToCompleteRate: number;
+  lastActivityAt?: string | null;
+};
+
 export type AdminUsageOverview = {
   generatedAt: string;
   refreshSeconds: number;
@@ -439,16 +483,239 @@ export type AdminUsageOverview = {
     partnerProfileViewCount: number;
     partnerBookingRequestCount: number;
   };
+  customerLifecycle: {
+    newCustomerCount: number;
+    activeCustomerCount: number;
+    activeTodayCustomerCount: number;
+    active7dCustomerCount: number;
+    active30dCustomerCount: number;
+    completedCustomerCount: number;
+    repeatCustomerCount: number;
+    churnRiskCustomerCount: number;
+    neverBookedCustomerCount: number;
+  };
+    bookingQuality: {
+      createdBookingCount: number;
+      cancellationCount: number;
+      refundCount: number;
+      lowReviewCount: number;
+    };
+    paymentAndCoupon: {
+      couponBookingCount: number;
+      paymentFailureCount: number;
+      refundAmount: number;
+      paymentMethodMix: AdminUsageOverviewPaymentMethodRow[];
+    };
+  customerSegments: {
+    newUnbookedCustomerCount: number;
+    firstCompletedCustomerCount: number;
+    repeatCustomerCount: number;
+    vipCustomerCount: number;
+    churnRiskCustomerCount: number;
+    issueCustomerCount: number;
+  };
+  platformUsage: AdminUsageOverviewPlatformRow[];
+  behavior: {
+    popularServices: AdminUsageOverviewPopularServiceRow[];
+    hourlyActivity: AdminUsageOverviewHourlyActivityRow[];
+  };
   customerUsage: {
     mostActiveCustomers: AdminUsageOverviewRankRow[];
     completedBookingCustomers: AdminUsageOverviewRankRow[];
+    qualityRiskCustomers: AdminUsageOverviewRankRow[];
+    lowReviewCustomers: AdminUsageOverviewRankRow[];
   };
   regionUsage: AdminUsageOverviewRegionRow[];
   partnerUsage: {
+    discoveryConversion: AdminUsageOverviewPartnerDiscoveryRow[];
     mostViewedPartners: AdminUsageOverviewRankRow[];
     requestedPartners: AdminUsageOverviewRankRow[];
     completedPartners: AdminUsageOverviewRankRow[];
   };
+};
+
+export type AdminPartnerOverviewRange = 'today' | '7d' | '30d' | '90d';
+
+export type AdminPartnerOverviewKpi = {
+  key: string;
+  label: string;
+  value: number | null;
+  detail: string;
+  unit: 'count' | 'money' | 'percent' | 'seconds' | 'rating';
+  deltaPercent: number | null;
+};
+
+export type AdminPartnerOverviewRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export type AdminPartnerOverviewAreaRow = {
+  areaCode: string;
+  area: string;
+  totalPartners: number;
+  onlinePartners: number;
+  locationFreshPartners: number;
+  eligiblePartners: number;
+  openRequests: number;
+  failedRequests: number;
+  matchingFailureRate: number;
+  averageResponseSeconds: number | null;
+  status: string;
+  riskLevel: AdminPartnerOverviewRiskLevel;
+};
+
+export type AdminPartnerOverviewServiceRow = {
+  serviceId: string;
+  serviceName: string;
+  partnersOffering: number;
+  onlinePartners: number;
+  eligiblePartners: number;
+  openRequests: number;
+  completedBookings: number;
+  completionRate: number;
+  avgRating: number | null;
+  status: string;
+  riskLevel: AdminPartnerOverviewRiskLevel;
+};
+
+export type AdminPartnerOverviewFunnelStep = {
+  key: string;
+  label: string;
+  count: number | null;
+  conversionRate: number | null;
+  dropoffRate: number | null;
+  dataStatus: 'available' | 'not_enough_data';
+};
+
+export type AdminPartnerOverviewActionRow = {
+  partnerId: string;
+  partnerName: string;
+  phone: string | null;
+  area: string;
+  status: string;
+  lastActivityAt: string | null;
+  mainReason: string;
+  recommendedAction: string;
+  href: string;
+  riskLevel: AdminPartnerOverviewRiskLevel;
+};
+
+export type AdminPartnerOverviewActionList = {
+  key: string;
+  title: string;
+  totalCount: number;
+  viewAllHref: string;
+  rows: AdminPartnerOverviewActionRow[];
+};
+
+export type AdminPartnerOverviewRiskPartner = AdminPartnerOverviewActionRow & {
+  lastOnlineAt: string | null;
+  lastBookingAt: string | null;
+  completedBookings: number;
+  cancelledBookings: number;
+  cancellationRate: number;
+  noShowReports: number;
+  lowReviewCount: number;
+  rating: number;
+  reviewCount: number;
+  walletBalance: number;
+};
+
+export type AdminPartnerOverviewNegativeWalletPartner = AdminPartnerOverviewRiskPartner & {
+  eligibleToAccept: boolean;
+};
+
+export type AdminPartnerOverviewSelectionFrictionRow = AdminPartnerOverviewActionRow & {
+  activeServiceCount: number;
+  availabilityStatus: string;
+  averageResponseSeconds: number | null;
+  completedBookings: number;
+  favoriteCount: number;
+  galleryImageCount: number;
+  hasProfileImage: boolean;
+  lastIntentAt: string | null;
+  maxServicePrice: number | null;
+  minServicePrice: number | null;
+  nextAvailableAt: string | null;
+  profileViewCustomers: number;
+  profileViews: number;
+  rating: number;
+  readinessFlags: string[];
+  reviewCount: number;
+  selectionRate: number;
+};
+
+export type AdminPartnerOverviewSelectionIssueCount = {
+  key: string;
+  label: string;
+  count: number;
+};
+
+export type AdminPartnerOverviewOperatingStatusCard = {
+  key: string;
+  label: string;
+  count: number;
+  detail: string;
+  href: string;
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+};
+
+export type AdminPartnerOverviewSegment = {
+  key: string;
+  label: string;
+  count: number;
+  explanation: string;
+  recommendedAction: string;
+  href: string;
+  tone: 'success' | 'warning' | 'danger' | 'info';
+};
+
+export type AdminPartnerOverview = {
+  generatedAt: string;
+  refreshSeconds: number;
+  source: 'stored-partner-supply-aggregates';
+  range: AdminPartnerOverviewRange;
+  rangeLabel: string;
+  windowStartAt: string | null;
+  windowEndAt: string | null;
+  filters: {
+    city: string | null;
+    onlineStatus: string | null;
+    riskStatus: string | null;
+    selectionIssue: string | null;
+    selectionSort: string | null;
+    serviceId: string | null;
+    verificationStatus: string | null;
+    walletStatus: string | null;
+  };
+  summaryKpis: AdminPartnerOverviewKpi[];
+  operatingStatus: {
+    cards: AdminPartnerOverviewOperatingStatusCard[];
+  };
+  supplyHealth: {
+    areas: AdminPartnerOverviewAreaRow[];
+    services: AdminPartnerOverviewServiceRow[];
+  };
+  funnel: {
+    steps: AdminPartnerOverviewFunnelStep[];
+  };
+  activityRetention: {
+    cards: AdminPartnerOverviewKpi[];
+  };
+  bookingQuality: {
+    kpis: AdminPartnerOverviewKpi[];
+    riskPartners: AdminPartnerOverviewRiskPartner[];
+  };
+  financeWalletRisk: {
+    kpis: AdminPartnerOverviewKpi[];
+    negativeWalletPartners: AdminPartnerOverviewNegativeWalletPartner[];
+    policyNote: string;
+  };
+  selectionFriction: {
+    issueCounts: AdminPartnerOverviewSelectionIssueCount[];
+    rows: AdminPartnerOverviewSelectionFrictionRow[];
+  };
+  actionLists: AdminPartnerOverviewActionList[];
+  segments: AdminPartnerOverviewSegment[];
+  dataNotes: string[];
 };
 
 export type AdminMarketingOverviewRange = 'today' | 'yesterday' | '7d' | '30d';
@@ -1938,6 +2205,47 @@ export type AdminBookingSettlementSnapshot = {
     displayName?: string | null;
     user?: { id: string; fullName?: string | null; phone?: string | null } | null;
   } | null;
+  accountingJournalBatches?: Array<{
+    id: string;
+    sourceKey: string;
+    sourceType: AdminAccountingJournalSourceType;
+    status: AdminAccountingJournalBatchStatus;
+    totalDebit: number;
+    totalCredit: number;
+    postedAt: string;
+  }>;
+  paymentClearingEntries?: Array<{
+    id: string;
+    sourceKey: string;
+    status: AdminBookingPaymentClearingStatus;
+    type: AdminBookingPaymentClearingEntryType;
+    amount: number;
+    currency: string;
+    occurredAt: string;
+  }>;
+  reversalEntries?: Array<{
+    id: string;
+    sourceKey: string;
+    settlementStatus: AdminBookingSettlementStatus;
+    taxStatus: AdminBookingSettlementTaxStatus;
+    occurredAt: string;
+    reason?: string | null;
+    accountingJournalBatches?: Array<{
+      id: string;
+      sourceKey: string;
+      status: AdminAccountingJournalBatchStatus;
+      postedAt: string;
+    }>;
+    paymentClearingEntries?: Array<{
+      id: string;
+      sourceKey: string;
+      status: AdminBookingPaymentClearingStatus;
+      type: AdminBookingPaymentClearingEntryType;
+      amount: number;
+      currency: string;
+      occurredAt: string;
+    }>;
+  }>;
 };
 
 export type AdminBookingSettlementSnapshotSummary = {
@@ -2167,6 +2475,7 @@ export type AdminBookingPaymentClearingEntry = {
     amount: number;
     currency: string;
   } | null;
+  _count?: { bankReconciliationMatches?: number };
 };
 
 export type AdminBookingPaymentClearingEntryDetail = AdminBookingPaymentClearingEntry & {
@@ -2213,6 +2522,16 @@ export type AdminBookingPaymentClearingSummary = {
   openCount: number;
 };
 
+export type AdminCompanyBankAccount = {
+  id: string;
+  name: string;
+  bankName: string;
+  accountNumberMasked?: string | null;
+  accountNumberLast4?: string | null;
+  currency: string;
+  status: string;
+};
+
 export type AdminCompanyBankTransaction = {
   id: string;
   sourceKey: string;
@@ -2230,15 +2549,7 @@ export type AdminCompanyBankTransaction = {
   createdAt: string;
   updatedAt: string;
   _count?: { reconciliationMatches: number };
-  bankAccount?: {
-    id: string;
-    name: string;
-    bankName: string;
-    accountNumberMasked?: string | null;
-    accountNumberLast4?: string | null;
-    currency: string;
-    status: string;
-  } | null;
+  bankAccount?: AdminCompanyBankAccount | null;
 };
 
 export type AdminBankReconciliationMatch = {
@@ -2454,6 +2765,44 @@ export type AdminPaymentFeeSummary = {
   byTreatment: AdminPaymentFeeTreatmentBreakdown[];
 };
 
+export type AdminFinanceOverviewWalletSummary = {
+  currency: string;
+  customerWalletAccountCount: number;
+  customerWalletLiabilityAmount: number;
+  partnerPositiveWalletAccountCount: number;
+  partnerWalletLiabilityAmount: number;
+  partnerNegativeWalletAccountCount: number;
+  negativePartnerWalletAmount: number;
+};
+
+export type AdminFinanceOverviewAmountSummary = {
+  currency: string;
+  refundPendingAmount: number;
+  refundCompletedAmount: number;
+  paymentFailedAmount: number;
+};
+
+export type AdminFinanceOverviewSummary = {
+  generatedAt: string;
+  range: string;
+  period: string;
+  amountSummary: AdminFinanceOverviewAmountSummary;
+  bankSummary: AdminBankReconciliationSummary;
+  cashSummary: AdminCashSettlementSummary | null;
+  clearingSummary: AdminBookingPaymentClearingSummary;
+  couponSummary: AdminCouponFinanceSummary;
+  earningsSummary: AdminEarningSummary | null;
+  monthlyClosingSummary: AdminMonthlyTaxClosingSummary;
+  partnerWithholdingSummary: AdminPartnerWithholdingTaxSummary;
+  paymentFeeSummary: AdminPaymentFeeSummary | null;
+  paymentSummary: AdminPaymentSummary | null;
+  payoutSummary: AdminPayoutBatchSummary | null;
+  refundSummary: AdminRefundSummary | null;
+  settlementSummary: AdminBookingSettlementSnapshotSummary;
+  walletSummary: AdminFinanceOverviewWalletSummary;
+  withdrawalSummary: AdminProviderWalletWithdrawalRequestSummary;
+};
+
 export type AdminAuditLog = {
   id: string;
   action: string;
@@ -2659,13 +3008,15 @@ export type AdminVietnamOverviewPointKind =
   | 'active'
   | 'partners'
   | 'online'
+  | 'offline-partners'
+  | 'stale-partners'
   | 'bookings'
   | 'done'
   | 'cancel';
 
 export type AdminVietnamOverviewRealtimePointKind = Extract<
   AdminVietnamOverviewPointKind,
-  'active' | 'online' | 'bookings'
+  'customers' | 'active' | 'online' | 'offline-partners' | 'stale-partners' | 'bookings'
 >;
 
 export type AdminVietnamOverviewPoint = {

@@ -284,8 +284,13 @@ const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT = 20;
 const ADMIN_VIETNAM_REALTIME_POINT_MAX_LIMIT = 50;
+const ADMIN_VIETNAM_STALE_PARTNER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 100;
+const ADMIN_PARTNER_OVERVIEW_PARTNER_SCAN_LIMIT = 500;
+const ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT = 150;
+const ADMIN_PARTNER_OVERVIEW_SERVICE_LIMIT = 80;
+const ADMIN_PARTNER_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_MARKETING_REGION_LIMIT = 100;
 const ADMIN_MARKETING_CAMPAIGN_LIMIT = 50;
 const ADMIN_MARKETING_DIMENSION_PAGE_LIMIT = 10;
@@ -299,7 +304,6 @@ const ADMIN_MARKETING_DATA_GAPS = [
 
 type AdminMarketingDimensionKey = (typeof ADMIN_MARKETING_DIMENSIONS)[number];
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 25;
 const ADMIN_NOTIFICATION_BOARD_DEFAULT_LIMIT = 20;
 const ADMIN_NOTIFICATION_BOARD_MAX_LIMIT = 20;
@@ -311,6 +315,19 @@ const ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES = [
   'provider.payout_setup_required',
   'provider.payout_batch.updated',
 ] as const;
+const ADMIN_PARTNER_OVERVIEW_REQUEST_NOTIFICATION_TYPES = [
+  'booking.requested',
+  'booking.backup_available',
+] as const;
+const ADMIN_PARTNER_OVERVIEW_SERVICE_STARTED_NOTIFICATION_TYPE = 'service.started';
+const ADMIN_PARTNER_OVERVIEW_REQUEST_LIST_VIEWED_EVENT = 'OPEN_REQUEST_LIST_VIEWED';
+const ADMIN_PARTNER_OVERVIEW_REQUEST_DETAIL_VIEWED_EVENT = 'OPEN_REQUEST_DETAIL_VIEWED';
+const ADMIN_PARTNER_OVERVIEW_REQUEST_DETAIL_DURATION_EVENTS = [
+  'OPEN_REQUEST_DETAIL_HEARTBEAT',
+  'OPEN_REQUEST_DETAIL_CLOSED',
+] as const;
+const ADMIN_PARTNER_OVERVIEW_DETAIL_DURATION_EVENT_SCAN_LIMIT = 2000;
+const ADMIN_PARTNER_OVERVIEW_RESPONSE_EVENT_SCAN_LIMIT = 2000;
 const ADMIN_PUSH_CAMPAIGN_RECIPIENT_LIMIT = 100;
 const ADMIN_PUSH_SEGMENT_ALL = 'all';
 const ADMIN_PUSH_CUSTOMER_SEGMENTS = new Set([
@@ -448,6 +465,10 @@ type AdminMonthlyTaxClosingStatusInput = {
 };
 type AdminPaymentCallbackAttemptQuery = AdminPaymentOperationsQuery;
 type AdminRefundOperationsQuery = AdminPaymentOperationsQuery;
+type AdminFinanceOverviewQuery = {
+  readonly period?: string | null;
+  readonly range?: string | null;
+};
 const adminMonthlyTaxClosingListSelect = {
   id: true,
   period: true,
@@ -495,12 +516,9 @@ const adminBookingSettlementSnapshotListSelect = {
   monthlyPeriod: true,
   postedAt: true,
   closedAt: true,
-  metadata: true,
   booking: {
     select: {
       id: true,
-      createdAt: true,
-      scheduledStartAt: true,
       status: true,
       closedAt: true,
     },
@@ -508,16 +526,85 @@ const adminBookingSettlementSnapshotListSelect = {
   customerProfile: {
     select: {
       id: true,
-      user: { select: { id: true, fullName: true, phone: true } },
+      user: { select: { fullName: true, phone: true } },
     },
   },
   providerProfile: {
     select: {
       id: true,
       displayName: true,
-      user: { select: { id: true, fullName: true, phone: true } },
+      user: { select: { fullName: true, phone: true } },
     },
   },
+} satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminBookingSettlementSnapshotDetailSelect = {
+  ...adminBookingSettlementSnapshotListSelect,
+  metadata: true,
+  accountingJournalBatches: {
+    orderBy: { postedAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      sourceKey: true,
+      sourceType: true,
+      status: true,
+      totalDebit: true,
+      totalCredit: true,
+      postedAt: true,
+    },
+  },
+  paymentClearingEntries: {
+    orderBy: { occurredAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      sourceKey: true,
+      status: true,
+      type: true,
+      amount: true,
+      currency: true,
+      occurredAt: true,
+    },
+  },
+  reversalEntries: {
+    orderBy: { occurredAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      sourceKey: true,
+      settlementStatus: true,
+      taxStatus: true,
+      occurredAt: true,
+      reason: true,
+      accountingJournalBatches: {
+        orderBy: { postedAt: 'desc' },
+        take: 1,
+        select: {
+          id: true,
+          sourceKey: true,
+          status: true,
+          postedAt: true,
+        },
+      },
+      paymentClearingEntries: {
+        orderBy: { occurredAt: 'desc' },
+        take: 1,
+        select: {
+          id: true,
+          sourceKey: true,
+          status: true,
+          type: true,
+          amount: true,
+          currency: true,
+          occurredAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminCouponFinanceSnapshotListSelect = {
+  ...adminBookingSettlementSnapshotListSelect,
+  metadata: true,
 } satisfies Prisma.BookingSettlementSnapshotSelect;
 const adminBookingSettlementReversalEntryListSelect = {
   id: true,
@@ -547,9 +634,6 @@ const adminBookingSettlementReversalEntryListSelect = {
   originalMonthlyClosingId: true,
   occurredAt: true,
   reason: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
   accountingJournalBatches: {
     orderBy: { postedAt: 'desc' },
     take: 1,
@@ -573,6 +657,27 @@ const adminBookingSettlementReversalEntryListSelect = {
       occurredAt: true,
     },
   },
+  originalSettlementSnapshot: {
+    select: {
+      id: true,
+      customerProfile: {
+        select: {
+          id: true,
+          user: { select: { fullName: true, phone: true } },
+        },
+      },
+      providerProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          user: { select: { fullName: true, phone: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.BookingSettlementReversalEntrySelect;
+const adminBookingSettlementReversalEntryDetailSelect = {
+  ...adminBookingSettlementReversalEntryListSelect,
   originalSettlementSnapshot: {
     select: {
       id: true,
@@ -615,22 +720,17 @@ const adminAccountingJournalBatchListSelect = {
   totalCredit: true,
   postedAt: true,
   reversedAt: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
   _count: { select: { entries: true } },
-  booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
+  booking: { select: { status: true } },
   customerProfile: {
     select: {
-      id: true,
-      user: { select: { id: true, fullName: true, phone: true } },
+      user: { select: { fullName: true, phone: true } },
     },
   },
   providerProfile: {
     select: {
-      id: true,
       displayName: true,
-      user: { select: { id: true, fullName: true, phone: true } },
+      user: { select: { fullName: true, phone: true } },
     },
   },
 } satisfies Prisma.AccountingJournalBatchSelect;
@@ -713,11 +813,9 @@ const adminBookingPaymentClearingEntryListSelect = {
   currency: true,
   occurredAt: true,
   clearedAt: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
-  booking: { select: { id: true, status: true, createdAt: true, closedAt: true } },
-  payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
+  booking: { select: { status: true } },
+  payment: { select: { method: true, status: true, amount: true, currency: true } },
+  _count: { select: { bankReconciliationMatches: true } },
 } satisfies Prisma.BookingPaymentClearingEntrySelect;
 const adminBookingPaymentClearingEntryDetailSelect = {
   ...adminBookingPaymentClearingEntryListSelect,
@@ -792,6 +890,15 @@ const adminBookingPaymentClearingEntryDetailSelect = {
     },
   },
 } satisfies Prisma.BookingPaymentClearingEntrySelect;
+const adminCompanyBankAccountSelect = {
+  id: true,
+  name: true,
+  bankName: true,
+  accountNumberMasked: true,
+  accountNumberLast4: true,
+  currency: true,
+  status: true,
+} satisfies Prisma.CompanyBankAccountSelect;
 const adminCompanyBankTransactionListSelect = {
   id: true,
   sourceKey: true,
@@ -805,20 +912,9 @@ const adminCompanyBankTransactionListSelect = {
   counterpartyName: true,
   description: true,
   status: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
   _count: { select: { reconciliationMatches: true } },
   bankAccount: {
-    select: {
-      id: true,
-      name: true,
-      bankName: true,
-      accountNumberMasked: true,
-      accountNumberLast4: true,
-      currency: true,
-      status: true,
-    },
+    select: adminCompanyBankAccountSelect,
   },
 } satisfies Prisma.CompanyBankTransactionSelect;
 const adminCompanyBankTransactionDetailSelect = {
@@ -1350,13 +1446,15 @@ type AdminVietnamOverviewPointKind =
   | 'active'
   | 'partners'
   | 'online'
+  | 'offline-partners'
+  | 'stale-partners'
   | 'bookings'
   | 'done'
   | 'cancel';
 
 type AdminVietnamOverviewRealtimePointKind = Extract<
   AdminVietnamOverviewPointKind,
-  'active' | 'online' | 'bookings'
+  'customers' | 'active' | 'online' | 'offline-partners' | 'stale-partners' | 'bookings'
 >;
 
 type AdminVietnamOverviewPoint = {
@@ -1487,6 +1585,8 @@ function adminBookingListDateBounds(query: AdminBookingListQuery) {
       return { startMs: addLocalDays(todayStartMs, -6), endMs: todayEndMs };
     case '30d':
       return { startMs: addLocalDays(todayStartMs, -29), endMs: todayEndMs };
+    case '90d':
+      return { startMs: addLocalDays(todayStartMs, -89), endMs: todayEndMs };
     case 'custom':
       return adminBookingListCustomDateBounds(query.dateFrom, query.dateTo);
     default:
@@ -2917,29 +3017,12 @@ export class AdminService {
         }
       : {};
     const activeCustomerSince = new Date(now.getTime() - ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS);
-    const onlinePartnerSince = new Date(now.getTime() - ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS);
     const activeCustomerSessionWhere: Prisma.AppSessionWhereInput = {
       active: true,
       lastSeenAt: { gte: activeCustomerSince },
       role: Role.CUSTOMER,
     };
-    const realtimeOnlyCustomerWhere: Prisma.CustomerProfileWhereInput | undefined =
-      options.includePeriodMetrics
-        ? undefined
-        : {
-            user: {
-              appSessions: {
-                some: activeCustomerSessionWhere,
-              },
-            },
-          };
-    const realtimeOnlyProviderWhere: Prisma.ProviderProfileWhereInput | undefined =
-      options.includePeriodMetrics
-        ? undefined
-        : {
-            currentLocationUpdatedAt: { gte: onlinePartnerSince },
-            status: { not: ProviderStatus.OFFLINE },
-          };
+    const stalePartnerSince = new Date(now.getTime() - ADMIN_VIETNAM_STALE_PARTNER_WINDOW_MS);
     const regions = new Map<string, AdminVietnamOverviewRegion>(
       VIETNAM_REGION_BUCKETS.map((bucket) => [
         bucket.code,
@@ -2967,7 +3050,6 @@ export class AdminService {
       this.prisma.customerProfile.findMany({
         orderBy: { id: 'desc' },
         take: sourceListLimit,
-        ...(realtimeOnlyCustomerWhere ? { where: realtimeOnlyCustomerWhere } : {}),
         select: {
           id: true,
           addresses: true,
@@ -3002,7 +3084,6 @@ export class AdminService {
       this.prisma.providerProfile.findMany({
         orderBy: { updatedAt: 'desc' },
         take: sourceListLimit,
-        ...(realtimeOnlyProviderWhere ? { where: realtimeOnlyProviderWhere } : {}),
         select: {
           id: true,
           displayName: true,
@@ -3013,6 +3094,20 @@ export class AdminService {
           currentLat: true,
           currentLng: true,
           currentLocationUpdatedAt: true,
+          user: {
+            select: {
+              appSessions: {
+                where: {
+                  role: Role.PROVIDER,
+                },
+                orderBy: { lastSeenAt: 'desc' },
+                take: 1,
+                select: {
+                  lastSeenAt: true,
+                },
+              },
+            },
+          },
         },
       }),
       options.includePeriodMetrics
@@ -3097,6 +3192,28 @@ export class AdminService {
         region.customerCount += 1;
       }
 
+      if (options.includeRealtimePoints) {
+        const customerPointOccurredAt = latestDate(
+          selectedLocation?.createdAt,
+          customer.user.appSessions[0]?.lastSeenAt,
+          now,
+        );
+        const customerPoint = vietnamOverviewEventPoint({
+          id: `customer:${customer.id}:saved-location`,
+          kind: 'customers',
+          label: 'Customer saved address location',
+          latitude: selectedLocation?.latitude,
+          longitude: selectedLocation?.longitude,
+          occurredAt: customerPointOccurredAt,
+          source: 'customer-selected-location',
+          addressText: selectedLocation?.addressText ?? customer.user.appSessions[0]?.lastLoginAddress,
+          customerProfileId: customer.id,
+        });
+        if (customerPoint) {
+          realtimePoints.push(customerPoint);
+        }
+      }
+
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
       const isCustomerCurrentlyActive = Boolean(lastSeenAt && lastSeenAt >= activeCustomerSince);
       if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
@@ -3136,29 +3253,44 @@ export class AdminService {
         region.partnerCount += 1;
       }
 
-      if (
-        provider.status !== ProviderStatus.OFFLINE &&
-        provider.currentLocationUpdatedAt &&
-        provider.currentLocationUpdatedAt >= onlinePartnerSince
-      ) {
+      const lastProviderSeenAt = provider.user.appSessions[0]?.lastSeenAt ?? null;
+      const partnerPointOccurredAt = latestDate(
+        lastProviderSeenAt,
+        provider.currentLocationUpdatedAt,
+        now,
+      );
+      const isStalePartner = !lastProviderSeenAt || lastProviderSeenAt < stalePartnerSince;
+      const isReadyPartner = provider.status === ProviderStatus.ONLINE_AVAILABLE && !isStalePartner;
+      const partnerPointKind: AdminVietnamOverviewRealtimePointKind = isReadyPartner
+        ? 'online'
+        : isStalePartner
+          ? 'stale-partners'
+          : 'offline-partners';
+
+      if (isReadyPartner) {
         if (region) {
           region.onlinePartnerCount += 1;
         }
-        if (options.includeRealtimePoints) {
-          const onlinePoint = vietnamOverviewEventPoint({
-            id: `online-partner:${provider.id}:${provider.currentLocationUpdatedAt.toISOString()}`,
-            kind: 'online',
-            label: provider.displayName,
-            latitude: provider.currentLat,
-            longitude: provider.currentLng,
-            occurredAt: provider.currentLocationUpdatedAt,
-            source: 'partner-online-heartbeat-location',
-            addressText: provider.residentialAddress ?? provider.city,
-            providerProfileId: provider.id,
-          });
-          if (onlinePoint) {
-            realtimePoints.push(onlinePoint);
-          }
+      }
+
+      if (options.includeRealtimePoints) {
+        const partnerPoint = vietnamOverviewEventPoint({
+          id: `${partnerPointKind}:${provider.id}:${partnerPointOccurredAt?.toISOString() ?? 'unknown'}`,
+          kind: partnerPointKind,
+          label: provider.displayName,
+          latitude: provider.currentLat,
+          longitude: provider.currentLng,
+          occurredAt: partnerPointOccurredAt,
+          source: isReadyPartner
+            ? 'partner-ready-status-last-location'
+            : isStalePartner
+              ? 'partner-stale-app-session-last-location'
+              : 'partner-offline-status-last-location',
+          addressText: provider.residentialAddress ?? provider.city,
+          providerProfileId: provider.id,
+        });
+        if (partnerPoint) {
+          realtimePoints.push(partnerPoint);
         }
       }
     }
@@ -3260,13 +3392,50 @@ export class AdminService {
   async getUsageOverview(rangeInput?: string) {
     const window = adminUsageRangeWindow(normalizeAdminUsageRange(rangeInput));
     const dateWhere = adminUsageDateWhere(window);
+    const now = new Date();
+    const todayStart = usageOverviewUtcDayStart(now);
+    const tomorrowStart = usageOverviewAddUtcDays(todayStart, 1);
+    const active7dStart = usageOverviewAddUtcDays(todayStart, -6);
+    const active30dStart = usageOverviewAddUtcDays(todayStart, -29);
     const sessionWhere = {
       role: Role.CUSTOMER,
       ...(dateWhere ? { lastSeenAt: dateWhere } : {}),
     };
+    const activeTodaySessionWhere = {
+      role: Role.CUSTOMER,
+      lastSeenAt: { gte: todayStart, lt: tomorrowStart },
+    };
+    const active7dSessionWhere = {
+      role: Role.CUSTOMER,
+      lastSeenAt: { gte: active7dStart, lt: tomorrowStart },
+    };
+    const active30dSessionWhere = {
+      role: Role.CUSTOMER,
+      lastSeenAt: { gte: active30dStart, lt: tomorrowStart },
+    };
     const completedBookingWhere = {
       status: BookingStatus.COMPLETED,
       ...(dateWhere ? { closedAt: dateWhere } : {}),
+    };
+    const createdBookingWhere = {
+      ...(dateWhere ? { createdAt: dateWhere } : {}),
+    };
+    const cancellationBookingWhere = {
+      status: { in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED] },
+      ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
+    };
+    const refundedBookingWhere = {
+      status: BookingStatus.REFUNDED,
+      ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
+    };
+    const issueCustomerBookingWhere = {
+      status: { in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED, BookingStatus.REFUNDED] },
+      ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
+    };
+    const lowReviewWhere = {
+      rating: { lte: 2 },
+      status: ReviewStatus.PUBLISHED,
+      ...(dateWhere ? { createdAt: dateWhere } : {}),
     };
     const bookingRequestWhere = {
       preferredProviderId: { not: null },
@@ -3281,7 +3450,9 @@ export class AdminService {
 
     const [
       customerSessionRows,
+      platformUsageRows,
       completedCustomerRows,
+      qualityRiskCustomerRows,
       viewedPartnerRows,
       requestedPartnerRows,
       completedPartnerRows,
@@ -3290,8 +3461,32 @@ export class AdminService {
       regionCompletedBookingRows,
       customerSessionCount,
       completedBookingCount,
-      profileViewCount,
+      profileViewAggregate,
       bookingRequestCount,
+      newCustomerCount,
+      activeCustomerCount,
+      activeTodayCustomerCount,
+      active7dCustomerCount,
+      active30dCustomerCount,
+      completedCustomerCount,
+      churnRiskCustomerCount,
+      neverBookedCustomerCount,
+      newUnbookedCustomerCount,
+      createdBookingCount,
+      cancellationCount,
+      refundCount,
+      lowReviewCount,
+      paymentFailureCount,
+      refundAmount,
+      paymentMethodRows,
+      popularServiceRows,
+      hourlyActivityRows,
+      repeatCustomerRows,
+      couponBookingRows,
+      firstCompletedCustomerRows,
+      vipCustomerRows,
+      issueCustomerRows,
+      lowReviewCustomerRows,
     ] = await Promise.all([
       this.prisma.appSession.groupBy({
         by: ['userId'],
@@ -3301,9 +3496,24 @@ export class AdminService {
         orderBy: { _count: { userId: 'desc' } },
         take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
       }),
+      this.prisma.appSession.groupBy({
+        by: ['platform'],
+        where: sessionWhere,
+        _count: { _all: true },
+        _max: { lastSeenAt: true },
+        orderBy: { _count: { platform: 'desc' } },
+      }),
       this.prisma.booking.groupBy({
         by: ['customerProfileId'],
         where: completedBookingWhere,
+        _count: { _all: true },
+        _max: { closedAt: true, updatedAt: true },
+        orderBy: { _count: { customerProfileId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.booking.groupBy({
+        by: ['customerProfileId'],
+        where: issueCustomerBookingWhere,
         _count: { _all: true },
         _max: { closedAt: true, updatedAt: true },
         orderBy: { _count: { customerProfileId: 'desc' } },
@@ -3378,19 +3588,237 @@ export class AdminService {
       }),
       this.prisma.appSession.count({ where: sessionWhere }),
       this.prisma.booking.count({ where: completedBookingWhere }),
-      this.prisma.customerProviderProfileView.count({ where: profileViewWhere }),
+      this.prisma.customerProviderProfileView.aggregate({
+        where: profileViewWhere,
+        _sum: { viewCount: true },
+      }),
       this.prisma.booking.count({ where: bookingRequestWhere }),
+      this.prisma.user.count({
+        where: {
+          roles: { has: Role.CUSTOMER },
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          user: {
+            appSessions: {
+              some: sessionWhere,
+            },
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          user: {
+            appSessions: {
+              some: activeTodaySessionWhere,
+            },
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          user: {
+            appSessions: {
+              some: active7dSessionWhere,
+            },
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          user: {
+            appSessions: {
+              some: active30dSessionWhere,
+            },
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          bookings: {
+            some: completedBookingWhere,
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          bookings: {
+            some: {
+              status: BookingStatus.COMPLETED,
+              closedAt: { lt: active30dStart },
+            },
+          },
+          user: {
+            appSessions: {
+              none: {
+                role: Role.CUSTOMER,
+                lastSeenAt: { gte: active30dStart },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          bookings: { none: {} },
+        },
+      }),
+      this.prisma.customerProfile.count({
+        where: {
+          bookings: { none: {} },
+          user: {
+            ...(dateWhere ? { createdAt: dateWhere } : {}),
+          },
+        },
+      }),
+      this.prisma.booking.count({ where: createdBookingWhere }),
+      this.prisma.booking.count({ where: cancellationBookingWhere }),
+      this.prisma.booking.count({ where: refundedBookingWhere }),
+      this.prisma.review.count({ where: lowReviewWhere }),
+      this.prisma.payment.count({
+        where: {
+          status: PaymentStatus.FAILED,
+          booking: createdBookingWhere,
+        },
+      }),
+      this.prisma.refund.aggregate({
+        where: dateWhere ? { createdAt: dateWhere } : {},
+        _sum: { amount: true },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['method'],
+        where: {
+          booking: completedBookingWhere,
+        },
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+      this.prisma.bookingService.groupBy({
+        by: ['serviceId'],
+        where: {
+          booking: { is: createdBookingWhere },
+        },
+        _count: { _all: true },
+        _sum: { price: true, quantity: true },
+        orderBy: { _count: { serviceId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.$queryRaw<
+        Array<{
+          hour: bigint | number | null;
+          customerSessionCount: bigint | number | null;
+          bookingRequestCount: bigint | number | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          usage_hours."hour" AS "hour",
+          SUM(usage_hours."customerSessionCount")::bigint AS "customerSessionCount",
+          SUM(usage_hours."bookingRequestCount")::bigint AS "bookingRequestCount"
+        FROM (
+          SELECT
+            EXTRACT(HOUR FROM "lastSeenAt")::int AS "hour",
+            COUNT(*)::bigint AS "customerSessionCount",
+            0::bigint AS "bookingRequestCount"
+          FROM "AppSession"
+          WHERE "role" = ${Role.CUSTOMER}::"Role"
+          ${usageOverviewLastSeenAtSql(dateWhere)}
+          GROUP BY 1
+          UNION ALL
+          SELECT
+            EXTRACT(HOUR FROM "createdAt")::int AS "hour",
+            0::bigint AS "customerSessionCount",
+            COUNT(*)::bigint AS "bookingRequestCount"
+          FROM "Booking"
+          WHERE "preferredProviderId" IS NOT NULL
+          ${usageOverviewCreatedAtSql(dateWhere)}
+          GROUP BY 1
+        ) usage_hours
+        GROUP BY usage_hours."hour"
+        ORDER BY usage_hours."hour" ASC
+      `),
+      this.prisma.$queryRaw<Array<{ count: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS "count"
+        FROM (
+          SELECT "customerProfileId"
+          FROM "Booking"
+          WHERE "status" = ${BookingStatus.COMPLETED}::"BookingStatus"
+          ${usageOverviewClosedAtSql(dateWhere)}
+          GROUP BY "customerProfileId"
+          HAVING COUNT(*) >= 2
+        ) repeat_customers
+      `),
+      this.prisma.$queryRaw<Array<{ count: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS "count"
+        FROM "Payment" payment
+        INNER JOIN "Booking" booking ON booking."id" = payment."bookingId"
+        WHERE booking."status" = ${BookingStatus.COMPLETED}::"BookingStatus"
+        ${usageOverviewClosedAtSql(dateWhere, 'booking')}
+        AND (
+          payment."rawMeta" ? 'couponId'
+          OR payment."rawMeta" ? 'couponCode'
+          OR payment."rawMeta" ? 'couponCodeSnapshot'
+        )
+      `),
+      this.prisma.$queryRaw<Array<{ count: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS "count"
+        FROM (
+          SELECT "customerProfileId"
+          FROM "Booking"
+          WHERE "status" = ${BookingStatus.COMPLETED}::"BookingStatus"
+          ${usageOverviewClosedAtSql(dateWhere)}
+          GROUP BY "customerProfileId"
+          HAVING COUNT(*) = 1
+        ) first_completed_customers
+      `),
+      this.prisma.$queryRaw<Array<{ count: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(*)::bigint AS "count"
+        FROM (
+          SELECT "customerProfileId"
+          FROM "Booking"
+          WHERE "status" = ${BookingStatus.COMPLETED}::"BookingStatus"
+          ${usageOverviewClosedAtSql(dateWhere)}
+          GROUP BY "customerProfileId"
+          HAVING COUNT(*) >= 3
+        ) vip_customers
+      `),
+      this.prisma.$queryRaw<Array<{ count: bigint | number | null }>>(Prisma.sql`
+        SELECT COUNT(DISTINCT "customerProfileId")::bigint AS "count"
+        FROM "Booking"
+        WHERE "status" IN (
+          ${BookingStatus.CANCELLED}::"BookingStatus",
+          ${BookingStatus.NO_SHOW}::"BookingStatus",
+          ${BookingStatus.EXPIRED}::"BookingStatus",
+          ${BookingStatus.REFUNDED}::"BookingStatus"
+        )
+        ${usageOverviewClosedOrUpdatedAtSql(dateWhere)}
+      `),
+      this.prisma.review.groupBy({
+        by: ['customerProfileId'],
+        where: lowReviewWhere,
+        _count: { _all: true },
+        _min: { rating: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { customerProfileId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
     ]);
 
     const customerUserIds = customerSessionRows.map((row) => row.userId);
-    const customerProfileIds = completedCustomerRows.map((row) => row.customerProfileId);
+    const customerProfileIds = uniqueStrings([
+      ...completedCustomerRows.map((row) => row.customerProfileId),
+      ...qualityRiskCustomerRows.map((row) => row.customerProfileId),
+      ...lowReviewCustomerRows.map((row) => row.customerProfileId),
+    ]);
     const providerProfileIds = uniqueStrings([
       ...viewedPartnerRows.map((row) => row.providerProfileId),
       ...requestedPartnerRows.map((row) => row.preferredProviderId),
       ...completedPartnerRows.map((row) => row.selectedProviderId),
     ]);
+    const popularServiceIds = popularServiceRows.map((row) => row.serviceId);
 
-    const [customerUsers, customerProfiles, providers] = await Promise.all([
+    const [customerUsers, customerProfiles, providers, popularServices] = await Promise.all([
       customerUserIds.length
         ? this.prisma.user.findMany({
             where: { id: { in: customerUserIds } },
@@ -3431,11 +3859,88 @@ export class AdminService {
             },
           })
         : [],
+      popularServiceIds.length
+        ? this.prisma.massageService.findMany({
+            where: { id: { in: popularServiceIds } },
+            select: {
+              id: true,
+              active: true,
+              durationMin: true,
+              name: true,
+            },
+          })
+        : [],
     ]);
 
     const customerUserMap = new Map(customerUsers.map((user) => [user.id, user]));
     const customerProfileMap = new Map(customerProfiles.map((profile) => [profile.id, profile]));
     const providerMap = new Map(providers.map((provider) => [provider.id, provider]));
+    const popularServiceMap = new Map(popularServices.map((service) => [service.id, service]));
+    const viewedPartnerMap = new Map(
+      viewedPartnerRows.map((row) => [
+        row.providerProfileId,
+        {
+          count: row._sum.viewCount ?? row._count._all,
+          lastActivityAt: row._max.lastViewedAt,
+        },
+      ]),
+    );
+    const requestedPartnerMap = new Map(
+      requestedPartnerRows
+        .filter((row) => Boolean(row.preferredProviderId))
+        .map((row) => [
+          row.preferredProviderId as string,
+          {
+            count: row._count._all,
+            lastActivityAt: row._max.createdAt,
+          },
+        ]),
+    );
+    const completedPartnerMap = new Map(
+      completedPartnerRows
+        .filter((row) => Boolean(row.selectedProviderId))
+        .map((row) => [
+          row.selectedProviderId as string,
+          {
+            count: row._count._all,
+            lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt),
+          },
+        ]),
+    );
+    const partnerDiscoveryConversionRows = providerProfileIds
+      .map((providerProfileId) => {
+        const provider = providerMap.get(providerProfileId);
+        const viewCount = viewedPartnerMap.get(providerProfileId)?.count ?? 0;
+        const requestCount = requestedPartnerMap.get(providerProfileId)?.count ?? 0;
+        const completedCount = completedPartnerMap.get(providerProfileId)?.count ?? 0;
+
+        return {
+          rank: 0,
+          id: providerProfileId,
+          label: provider?.displayName ?? provider?.user.phone ?? 'Unknown partner',
+          secondary: provider?.city ?? provider?.user.phone ?? null,
+          href: `/partners/${providerProfileId}?section=full`,
+          viewCount,
+          requestCount,
+          completedCount,
+          viewToRequestRate: percentageValue(requestCount, viewCount),
+          requestToCompleteRate: percentageValue(completedCount, requestCount),
+          lastActivityAt: latestDate(
+            viewedPartnerMap.get(providerProfileId)?.lastActivityAt,
+            requestedPartnerMap.get(providerProfileId)?.lastActivityAt,
+            completedPartnerMap.get(providerProfileId)?.lastActivityAt,
+          )?.toISOString() ?? null,
+        };
+      })
+      .filter((row) => row.viewCount > 0 || row.requestCount > 0 || row.completedCount > 0)
+      .sort(
+        (left, right) =>
+          right.viewCount - left.viewCount ||
+          right.requestCount - left.requestCount ||
+          right.completedCount - left.completedCount,
+      )
+      .slice(0, ADMIN_USAGE_OVERVIEW_RANK_LIMIT)
+      .map((row, index) => ({ ...row, rank: index + 1 }));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -3448,8 +3953,68 @@ export class AdminService {
       totals: {
         customerSessionCount,
         completedBookingCount,
-        partnerProfileViewCount: profileViewCount,
+        partnerProfileViewCount: profileViewAggregate._sum.viewCount ?? 0,
         partnerBookingRequestCount: bookingRequestCount,
+      },
+      customerLifecycle: {
+        newCustomerCount,
+        activeCustomerCount,
+        activeTodayCustomerCount,
+        active7dCustomerCount,
+        active30dCustomerCount,
+        completedCustomerCount,
+        repeatCustomerCount: numberValue(repeatCustomerRows[0]?.count),
+        churnRiskCustomerCount,
+        neverBookedCustomerCount,
+      },
+      bookingQuality: {
+        createdBookingCount,
+        cancellationCount,
+        refundCount,
+        lowReviewCount,
+      },
+      paymentAndCoupon: {
+        couponBookingCount: numberValue(couponBookingRows[0]?.count),
+        paymentFailureCount,
+        refundAmount: numberValue(refundAmount._sum.amount),
+        paymentMethodMix: paymentMethodRows
+          .map((row) => ({
+            method: row.method,
+            bookingCount: row._count._all,
+            amount: row._sum.amount ?? 0,
+          }))
+          .sort((left, right) => right.amount - left.amount),
+      },
+      customerSegments: {
+        newUnbookedCustomerCount,
+        firstCompletedCustomerCount: numberValue(firstCompletedCustomerRows[0]?.count),
+        repeatCustomerCount: numberValue(repeatCustomerRows[0]?.count),
+        vipCustomerCount: numberValue(vipCustomerRows[0]?.count),
+        churnRiskCustomerCount,
+        issueCustomerCount: numberValue(issueCustomerRows[0]?.count),
+      },
+      platformUsage: platformUsageRows.map((row) => ({
+        platform: normalizeUsageOverviewPlatform(row.platform),
+        sessionCount: row._count._all,
+        lastActivityAt: row._max.lastSeenAt?.toISOString() ?? null,
+      })),
+      behavior: {
+        popularServices: popularServiceRows.map((row, index) => {
+          const service = popularServiceMap.get(row.serviceId);
+
+          return {
+            rank: index + 1,
+            id: row.serviceId,
+            label: service?.name ?? 'Unknown service',
+            secondary: service
+              ? `${service.durationMin} min${service.active ? '' : ' · inactive'}`
+              : null,
+            bookingCount: row._count._all,
+            quantity: row._sum.quantity ?? row._count._all,
+            amount: row._sum.price ?? 0,
+          };
+        }),
+        hourlyActivity: buildUsageOverviewHourlyActivity(hourlyActivityRows),
       },
       customerUsage: {
         mostActiveCustomers: customerSessionRows.map((row, index) => {
@@ -3479,6 +4044,38 @@ export class AdminService {
             value: row._count._all,
             valueLabel: 'completed',
             lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt)?.toISOString() ?? null,
+          };
+        }),
+        qualityRiskCustomers: qualityRiskCustomerRows.map((row, index) => {
+          const profile = customerProfileMap.get(row.customerProfileId);
+
+          return {
+            rank: index + 1,
+            id: row.customerProfileId,
+            label: profile?.user.fullName ?? profile?.user.phone ?? 'Unknown customer',
+            secondary: profile?.user.phone ?? null,
+            href: `/customers/${row.customerProfileId}`,
+            value: row._count._all,
+            valueLabel: 'signals',
+            lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt)?.toISOString() ?? null,
+          };
+        }),
+        lowReviewCustomers: lowReviewCustomerRows.map((row, index) => {
+          const profile = customerProfileMap.get(row.customerProfileId);
+          const lowestRating = row._min.rating ?? null;
+
+          return {
+            rank: index + 1,
+            id: row.customerProfileId,
+            label: profile?.user.fullName ?? profile?.user.phone ?? 'Unknown customer',
+            secondary: [
+              lowestRating ? `Lowest ${lowestRating}/5` : null,
+              profile?.user.phone ?? null,
+            ].filter(Boolean).join(' · ') || null,
+            href: `/customers/${row.customerProfileId}`,
+            value: row._count._all,
+            valueLabel: 'low reviews',
+            lastActivityAt: row._max.createdAt?.toISOString() ?? null,
           };
         }),
       },
@@ -3513,6 +4110,7 @@ export class AdminService {
         })),
       ]),
       partnerUsage: {
+        discoveryConversion: partnerDiscoveryConversionRows,
         mostViewedPartners: viewedPartnerRows.map((row, index) =>
           providerUsageRow(
             row.providerProfileId,
@@ -3548,6 +4146,854 @@ export class AdminService {
             ),
           ),
       },
+    };
+  }
+
+  async getPartnerOverview(
+    query: {
+      range?: string;
+      city?: string;
+      serviceId?: string;
+      verificationStatus?: string;
+      onlineStatus?: string;
+      walletStatus?: string;
+      riskStatus?: string;
+      selectionIssue?: string;
+      selectionSort?: string;
+    } = {},
+  ) {
+    const now = new Date();
+    const window = adminPartnerOverviewRangeWindow(normalizeAdminPartnerOverviewRange(query.range));
+    const dateWhere = adminPartnerOverviewDateWhere(window);
+    const active7dStart = partnerOverviewAddUtcDays(partnerOverviewUtcDayStart(now), -6);
+    const active30dStart = partnerOverviewAddUtcDays(partnerOverviewUtcDayStart(now), -29);
+    const locationFreshBoundary = new Date(now.getTime() - 30 * 60 * 1000);
+    const serviceIdFilter = normalizeOptionalText(query.serviceId);
+    const verificationStatusFilter = normalizeVerificationStatusFilter(query.verificationStatus);
+    const onlineStatusesFilter = normalizePartnerOnlineStatusFilter(query.onlineStatus);
+    const riskStatusFilter = normalizePartnerRiskStatusFilter(query.riskStatus);
+    const selectionIssueFilter = normalizePartnerSelectionIssueFilter(query.selectionIssue);
+    const selectionSort = normalizePartnerSelectionSort(query.selectionSort);
+
+    const walletRows = await this.prisma.providerWalletLedgerEntry.groupBy({
+      by: ['providerProfileId'],
+      _sum: { amount: true },
+    });
+    const walletBalanceByProvider = new Map(
+      walletRows.map((row) => [row.providerProfileId, numberValue(row._sum.amount)]),
+    );
+    const negativeWalletIds = Array.from(walletBalanceByProvider.entries())
+      .filter(([, amount]) => amount < 0)
+      .map(([providerProfileId]) => providerProfileId);
+    const positiveWalletIds = Array.from(walletBalanceByProvider.entries())
+      .filter(([, amount]) => amount > 0)
+      .map(([providerProfileId]) => providerProfileId);
+    const walletStatusFilter = normalizePartnerWalletStatusFilter(query.walletStatus);
+    const baseWhere = partnerOverviewProviderWhere({
+      city: query.city,
+      negativeWalletIds,
+      onlineStatuses: onlineStatusesFilter,
+      positiveWalletIds,
+      serviceId: serviceIdFilter,
+      verificationStatus: verificationStatusFilter,
+      walletStatus: walletStatusFilter,
+    });
+    const onlineStatuses = [
+      ProviderStatus.ONLINE_AVAILABLE,
+      ProviderStatus.ONLINE_BUSY,
+      ProviderStatus.ONLINE_AVAILABLE_SOON,
+    ];
+    const cancellationStatuses = [
+      BookingStatus.CANCELLED,
+      BookingStatus.NO_SHOW,
+      BookingStatus.EXPIRED,
+    ];
+    const completedBookingWhere = {
+      status: BookingStatus.COMPLETED,
+      ...(dateWhere ? { closedAt: dateWhere } : {}),
+    } satisfies Prisma.BookingWhereInput;
+    const bookingRequestWhere = {
+      preferredProviderId: { not: null },
+      ...(dateWhere ? { createdAt: dateWhere } : {}),
+      ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
+    } satisfies Prisma.BookingWhereInput;
+
+    const [
+      totalPartners,
+      approvedPartners,
+      pendingVerification,
+      onlineNow,
+      locationFreshPartners,
+      activePartners7d,
+      inactivePartners7d,
+      averageRating,
+      providerRows,
+      openBookingRows,
+      failedBookingRows,
+      serviceCatalogRows,
+      openServiceRows,
+      completedServiceRows,
+      completedByProviderRows,
+      cancelledByProviderRows,
+      lowReviewRows,
+      noShowReportRows,
+      grossEarnings,
+      pendingEarnings,
+      paidEarnings,
+      payoutReadyRows,
+      payoutPaidRows,
+      responseTimeRows,
+      areaResponseRows,
+      requestViewedProviderRows,
+      requestDetailedProviderRows,
+      requestDetailDurationRows,
+      requestNotificationUserRows,
+      serviceStartedUserRows,
+      profileViewRows,
+      favoriteProviderRows,
+    ] = await Promise.all([
+      this.prisma.providerProfile.count({ where: baseWhere }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          verification: { is: { status: VerificationStatus.APPROVED } },
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          OR: [
+            { verification: { is: { status: VerificationStatus.SUBMITTED } } },
+            { kyc: { is: { status: ProviderKycStatus.PENDING } } },
+            { documents: { some: { status: ProviderDocumentStatus.PENDING_REVIEW, deletedAt: null } } },
+          ],
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, { status: { in: onlineStatuses } }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          currentLocationUpdatedAt: { gte: locationFreshBoundary },
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          OR: [
+            { sessions: { some: { lastSeenAt: { gte: active7dStart } } } },
+            { participants: { some: { joinedAt: { gte: active7dStart } } } },
+            { selectedBookings: { some: { updatedAt: { gte: active7dStart } } } },
+          ],
+        }),
+      }),
+      this.prisma.providerProfile.count({
+        where: partnerOverviewAnd(baseWhere, {
+          verification: { is: { status: VerificationStatus.APPROVED } },
+          sessions: { none: { lastSeenAt: { gte: active7dStart } } },
+          participants: { none: { joinedAt: { gte: active7dStart } } },
+          selectedBookings: { none: { updatedAt: { gte: active7dStart } } },
+        }),
+      }),
+      this.prisma.review.aggregate({
+        where: {
+          status: ReviewStatus.PUBLISHED,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+        },
+        _avg: { rating: true },
+        _count: { rating: true },
+      }),
+      this.prisma.providerProfile.findMany({
+        where: baseWhere,
+        orderBy: { updatedAt: 'desc' },
+        take: ADMIN_PARTNER_OVERVIEW_PARTNER_SCAN_LIMIT,
+        select: {
+          id: true,
+          displayName: true,
+          city: true,
+          residentialAddress: true,
+          serviceArea: true,
+          status: true,
+          ratingAvg: true,
+          reviewCount: true,
+          currentLat: true,
+          currentLng: true,
+          currentLocationUpdatedAt: true,
+          nextAvailableAt: true,
+          blockedAt: true,
+          blockedReason: true,
+          updatedAt: true,
+          user: {
+            select: {
+              createdAt: true,
+              fileAssets: {
+                where: {
+                  purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+                  visibility: FileVisibility.PUBLIC,
+                  uploadStatus: FileUploadStatus.UPLOADED,
+                  reviewStatus: FileReviewStatus.APPROVED,
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 6,
+                select: {
+                  purpose: true,
+                  url: true,
+                },
+              },
+              fullName: true,
+              phone: true,
+            },
+          },
+          verification: {
+            select: {
+              reviewedAt: true,
+              status: true,
+              submittedAt: true,
+            },
+          },
+          kyc: {
+            select: {
+              reviewedAt: true,
+              status: true,
+              submittedAt: true,
+            },
+          },
+          taxProfile: {
+            select: {
+              status: true,
+            },
+          },
+          services: {
+            where: { active: true },
+            select: {
+              price: true,
+              serviceId: true,
+              service: {
+                select: {
+                  active: true,
+                  basePrice: true,
+                  durationMin: true,
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          sessions: {
+            orderBy: { lastSeenAt: 'desc' },
+            take: 1,
+            select: {
+              appVersion: true,
+              lastSeenAt: true,
+            },
+          },
+          selectedBookings: {
+            orderBy: { updatedAt: 'desc' },
+            take: 1,
+            select: {
+              closedAt: true,
+              id: true,
+              status: true,
+              updatedAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: { ...bookingRequestWhere, status: BookingStatus.OPEN_MATCHING },
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT,
+        select: {
+          address: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+          lat: true,
+          lng: true,
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: {
+          status: { in: cancellationStatuses },
+          ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
+          ...(serviceIdFilter ? { services: { some: { serviceId: serviceIdFilter } } } : {}),
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: ADMIN_PARTNER_OVERVIEW_BOOKING_SCAN_LIMIT,
+        select: {
+          address: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+          lat: true,
+          lng: true,
+        },
+      }),
+      this.prisma.massageService.findMany({
+        where: {
+          active: true,
+          ...(serviceIdFilter ? { id: serviceIdFilter } : {}),
+        },
+        orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+        take: ADMIN_PARTNER_OVERVIEW_SERVICE_LIMIT,
+        select: {
+          durationMin: true,
+          id: true,
+          name: true,
+        },
+      }),
+      this.prisma.bookingService.groupBy({
+        by: ['serviceId'],
+        where: {
+          ...(serviceIdFilter ? { serviceId: serviceIdFilter } : {}),
+          booking: { is: { ...bookingRequestWhere, status: BookingStatus.OPEN_MATCHING } },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.bookingService.groupBy({
+        by: ['serviceId'],
+        where: {
+          ...(serviceIdFilter ? { serviceId: serviceIdFilter } : {}),
+          booking: { is: completedBookingWhere },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.booking.groupBy({
+        by: ['selectedProviderId'],
+        where: {
+          selectedProviderId: { not: null },
+          ...completedBookingWhere,
+        },
+        _count: { _all: true },
+        _max: { closedAt: true, updatedAt: true },
+        orderBy: { _count: { selectedProviderId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.booking.groupBy({
+        by: ['selectedProviderId'],
+        where: {
+          selectedProviderId: { not: null },
+          status: { in: cancellationStatuses },
+          ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
+        },
+        _count: { _all: true },
+        _max: { closedAt: true, updatedAt: true },
+        orderBy: { _count: { selectedProviderId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.review.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          rating: { lte: 2 },
+          status: ReviewStatus.PUBLISHED,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+        },
+        _count: { _all: true },
+        _min: { rating: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { providerProfileId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.providerReport.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          status: ProviderReportStatus.OPEN,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          OR: [
+            { category: { contains: 'no-show', mode: 'insensitive' } },
+            { summary: { contains: 'no-show', mode: 'insensitive' } },
+            { details: { contains: 'no-show', mode: 'insensitive' } },
+          ],
+        },
+        _count: { _all: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { providerProfileId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.providerEarning.aggregate({
+        where: {
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        _sum: { grossAmount: true, platformFee: true, netAmount: true },
+      }),
+      this.prisma.providerEarning.aggregate({
+        where: {
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerEarning.aggregate({
+        where: {
+          status: EarningStatus.PAID,
+          ...(dateWhere ? { paidAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+        },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          status: EarningStatus.PAID,
+          ...(dateWhere ? { paidAt: dateWhere } : {}),
+        },
+      }),
+      this.prisma.$queryRaw<Array<{ avgSeconds: number | null }>>(Prisma.sql`
+        SELECT AVG(EXTRACT(EPOCH FROM ("respondedAt" - "joinedAt")))::float AS "avgSeconds"
+        FROM "BookingParticipant"
+        WHERE "respondedAt" IS NOT NULL
+        ${partnerOverviewJoinedAtSql(dateWhere)}
+      `),
+      this.prisma.bookingParticipant.findMany({
+        where: {
+          respondedAt: { not: null },
+          ...(dateWhere ? { joinedAt: dateWhere } : {}),
+          ...(serviceIdFilter
+            ? { booking: { is: { services: { some: { serviceId: serviceIdFilter } } } } }
+            : {}),
+          providerProfile: { is: baseWhere },
+        },
+        orderBy: { joinedAt: 'desc' },
+        take: ADMIN_PARTNER_OVERVIEW_RESPONSE_EVENT_SCAN_LIMIT,
+        select: {
+          providerProfileId: true,
+          joinedAt: true,
+          respondedAt: true,
+          booking: {
+            select: {
+              address: true,
+              addressSnapshot: {
+                select: {
+                  address: true,
+                  addressText: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
+              lat: true,
+              lng: true,
+            },
+          },
+        },
+      }),
+      this.prisma.providerBookingRequestEvent.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          eventType: ADMIN_PARTNER_OVERVIEW_REQUEST_LIST_VIEWED_EVENT,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+      }),
+      this.prisma.providerBookingRequestEvent.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          eventType: ADMIN_PARTNER_OVERVIEW_REQUEST_DETAIL_VIEWED_EVENT,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+      }),
+      this.prisma.providerBookingRequestEvent.findMany({
+        where: {
+          eventType: { in: [...ADMIN_PARTNER_OVERVIEW_REQUEST_DETAIL_DURATION_EVENTS] },
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_PARTNER_OVERVIEW_DETAIL_DURATION_EVENT_SCAN_LIMIT,
+        select: { metadata: true },
+      }),
+      this.prisma.notification.groupBy({
+        by: ['userId'],
+        where: {
+          type: { in: [...ADMIN_PARTNER_OVERVIEW_REQUEST_NOTIFICATION_TYPES] },
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          user: { is: { providerProfile: { is: baseWhere } } },
+        },
+      }),
+      this.prisma.notification.groupBy({
+        by: ['userId'],
+        where: {
+          type: ADMIN_PARTNER_OVERVIEW_SERVICE_STARTED_NOTIFICATION_TYPE,
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          user: { is: { providerProfile: { is: baseWhere } } },
+        },
+      }),
+      this.prisma.customerProviderProfileView.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...(dateWhere ? { lastViewedAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        _count: { _all: true },
+        _sum: { viewCount: true },
+        _max: { lastViewedAt: true },
+        orderBy: { _count: { providerProfileId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.customerFavoriteProvider.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...(dateWhere ? { createdAt: dateWhere } : {}),
+          providerProfile: { is: baseWhere },
+        },
+        _count: { _all: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { providerProfileId: 'desc' } },
+        take: ADMIN_PARTNER_OVERVIEW_RANK_LIMIT,
+      }),
+    ]);
+
+    const completedMap = new Map(
+      completedByProviderRows
+        .filter((row) => Boolean(row.selectedProviderId))
+        .map((row) => [
+          row.selectedProviderId as string,
+          {
+            count: row._count._all,
+            lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt),
+          },
+        ]),
+    );
+    const cancelledMap = new Map(
+      cancelledByProviderRows
+        .filter((row) => Boolean(row.selectedProviderId))
+        .map((row) => [
+          row.selectedProviderId as string,
+          {
+            count: row._count._all,
+            lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt),
+          },
+        ]),
+    );
+    const lowReviewMap = new Map(
+      lowReviewRows.map((row) => [
+        row.providerProfileId,
+        {
+          count: row._count._all,
+          lastActivityAt: row._max.createdAt,
+          rating: row._min.rating,
+        },
+      ]),
+    );
+    const noShowReportMap = new Map(
+      noShowReportRows.map((row) => [
+        row.providerProfileId,
+        {
+          count: row._count._all,
+          lastActivityAt: row._max.createdAt,
+        },
+      ]),
+    );
+    const payoutReadyProviderIds = new Set(payoutReadyRows.map((row) => row.providerProfileId));
+    const payoutPaidProviderIds = new Set(payoutPaidRows.map((row) => row.providerProfileId));
+    const eligibleProviderIds = new Set(
+      providerRows
+        .filter((provider) =>
+          partnerOverviewProviderEligible(provider, walletBalanceByProvider.get(provider.id), locationFreshBoundary),
+        )
+        .map((provider) => provider.id),
+    );
+    const documentsSubmittedCount = providerRows.filter(
+      (provider) => provider.verification?.submittedAt || provider.kyc?.submittedAt,
+    ).length;
+    const firstOnlineCount = providerRows.filter((provider) => provider.sessions[0]?.lastSeenAt).length;
+    const locationUpdatedCount = providerRows.filter((provider) => provider.currentLocationUpdatedAt).length;
+    const servicesSetCount = providerRows.filter((provider) => provider.services.length > 0).length;
+    const joinedRequestProviderCount = new Set([
+      ...completedByProviderRows.map((row) => row.selectedProviderId).filter(Boolean),
+      ...cancelledByProviderRows.map((row) => row.selectedProviderId).filter(Boolean),
+    ]).size;
+    const completedProviderCount = new Set(
+      completedByProviderRows.map((row) => row.selectedProviderId).filter(Boolean),
+    ).size;
+    const averageResponseSeconds = Math.round(numberValue(responseTimeRows[0]?.avgSeconds));
+    const averageDetailViewSeconds = partnerOverviewAverageDetailDurationSeconds(requestDetailDurationRows);
+    const requestViewedProviderCount = requestViewedProviderRows.length;
+    const requestDetailedProviderCount = requestDetailedProviderRows.length;
+    const requestNotificationProviderCount = requestNotificationUserRows.length;
+    const serviceStartedProviderCount = serviceStartedUserRows.length;
+    const averageResponseSecondsByRegion = partnerOverviewAreaAverageResponseSeconds(areaResponseRows);
+    const averageResponseSecondsByProvider = partnerOverviewAverageResponseSecondsByProvider(areaResponseRows);
+    const profileViewMap = partnerOverviewProfileViewMap(profileViewRows);
+    const favoriteMap = partnerOverviewFavoriteMap(favoriteProviderRows);
+
+    const areaRows = partnerOverviewAreaRows({
+      averageResponseSecondsByRegion,
+      eligibleProviderIds,
+      failedBookingRows,
+      locationFreshBoundary,
+      openBookingRows,
+      providerRows,
+    });
+    const serviceRows = partnerOverviewServiceRows({
+      completedServiceRows,
+      eligibleProviderIds,
+      openServiceRows,
+      providerRows,
+      serviceCatalogRows,
+    });
+    const partnerFacts = providerRows.map((provider) =>
+      partnerOverviewProviderFact({
+        active7dStart,
+        active30dStart,
+        cancelledMap,
+        completedMap,
+        locationFreshBoundary,
+        lowReviewMap,
+        noShowReportMap,
+        provider,
+        walletBalance: walletBalanceByProvider.get(provider.id) ?? 0,
+      }),
+    );
+    const displayPartnerFacts = riskStatusFilter
+      ? partnerFacts.filter((fact) => fact.riskLevel === riskStatusFilter)
+      : partnerFacts;
+    const negativeWalletFacts = displayPartnerFacts
+      .filter((fact) => fact.walletBalance < 0)
+      .sort((left, right) => left.walletBalance - right.walletBalance);
+    const qualityRiskFacts = displayPartnerFacts
+      .filter(
+        (fact) =>
+          fact.riskLevel === 'critical' ||
+          fact.riskLevel === 'high' ||
+          fact.cancellationRate >= 20 ||
+          fact.lowReviewCount > 0 ||
+          fact.noShowReports > 0,
+      )
+      .sort(
+        (left, right) =>
+          partnerOverviewRiskWeight(right.riskLevel) - partnerOverviewRiskWeight(left.riskLevel) ||
+          right.lowReviewCount - left.lowReviewCount ||
+          right.cancellationRate - left.cancellationRate,
+      );
+
+    const actionLists = partnerOverviewActionLists(displayPartnerFacts);
+    const selectionFriction = partnerOverviewSelectionFrictionRows({
+      averageResponseSecondsByProvider,
+      favoriteMap,
+      profileViewMap,
+      providerFacts: displayPartnerFacts,
+      selectionIssue: selectionIssueFilter,
+      selectionSort,
+    });
+    const grossBookingAmount = numberValue(grossEarnings._sum.grossAmount);
+    const platformFee = numberValue(grossEarnings._sum.platformFee);
+    const walletBalanceTotal = Array.from(walletBalanceByProvider.values()).reduce((sum, amount) => sum + amount, 0);
+    const negativeWalletTotal = Array.from(walletBalanceByProvider.values())
+      .filter((amount) => amount < 0)
+      .reduce((sum, amount) => sum + amount, 0);
+
+    return {
+      generatedAt: now.toISOString(),
+      refreshSeconds: 60,
+      source: 'stored-partner-supply-aggregates',
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt?.toISOString() ?? null,
+      windowEndAt: window.endAt?.toISOString() ?? null,
+      filters: {
+        city: normalizeOptionalText(query.city),
+        onlineStatus: normalizeOptionalText(query.onlineStatus),
+        riskStatus: riskStatusFilter,
+        selectionIssue: selectionIssueFilter,
+        selectionSort,
+        serviceId: serviceIdFilter,
+        verificationStatus: normalizeOptionalText(query.verificationStatus),
+        walletStatus: walletStatusFilter,
+      },
+      summaryKpis: [
+        partnerOverviewKpi('totalPartners', 'Total Partners', totalPartners, 'Registered Partner accounts'),
+        partnerOverviewKpi('approvedPartners', 'Approved Partners', approvedPartners, 'Admin-approved public supply'),
+        partnerOverviewKpi('pendingVerification', 'Pending Verification', pendingVerification, 'Needs approval work'),
+        partnerOverviewKpi('onlineNow', 'Online Now', onlineNow, 'Ready, busy, or soon-online Partners'),
+        partnerOverviewKpi('locationFreshPartners', 'Location Fresh Partners', locationFreshPartners, 'Updated in 30 min'),
+        partnerOverviewKpi('eligibleToAccept', 'Eligible To Accept', eligibleProviderIds.size, 'Can accept a booking now'),
+        partnerOverviewKpi('activePartners7D', 'Active Partners 7D', activePartners7d, 'Online or booking activity'),
+        partnerOverviewKpi('inactivePartners7D', 'Inactive Partners 7D', inactivePartners7d, 'Approved with no 7D signal'),
+        partnerOverviewKpi(
+          'averageResponseTime',
+          'Average Response Time',
+          averageResponseSeconds > 0 ? averageResponseSeconds : null,
+          'Joined/response proxy',
+          'seconds',
+        ),
+        partnerOverviewKpi(
+          'averageDetailViewTime',
+          'Average Detail View Time',
+          averageDetailViewSeconds,
+          'Heartbeat/close telemetry',
+          'seconds',
+        ),
+        partnerOverviewKpi(
+          'averageRating',
+          'Average Rating',
+          averageRating._count.rating > 0 ? Number(averageRating._avg.rating ?? 0) : null,
+          `${averageRating._count.rating} published reviews`,
+          'rating',
+        ),
+      ],
+      operatingStatus: {
+        cards: partnerOverviewOperatingStatusCards(displayPartnerFacts),
+      },
+      supplyHealth: {
+        areas: areaRows,
+        services: serviceRows,
+      },
+      funnel: {
+        steps: partnerOverviewFunnelSteps([
+          ['Signed Up', totalPartners],
+          ['Profile Completed', providerRows.filter((provider) => Boolean(provider.displayName && provider.city)).length],
+          ['Documents Submitted', documentsSubmittedCount],
+          ['Approved', approvedPartners],
+          ['First Online', firstOnlineCount],
+          ['Location Updated', locationUpdatedCount],
+          ['Services & Prices Set', servicesSetCount],
+          ['Request Notification Received', requestNotificationProviderCount],
+          ['Request Viewed', requestViewedProviderCount],
+          ['Request Detailed', requestDetailedProviderCount],
+          ['Joined / Accepted Request', joinedRequestProviderCount],
+          ['Customer Selected', completedProviderCount],
+          ['Service Started', serviceStartedProviderCount],
+          ['Service Completed', completedProviderCount],
+          ['Payout Ready', payoutReadyProviderIds.size],
+          ['Payout Completed', payoutPaidProviderIds.size],
+        ]),
+      },
+      activityRetention: {
+        cards: [
+          partnerOverviewKpi(
+            'approvedNeverOnline',
+            'Approved but never online',
+            partnerFacts.filter((fact) => fact.approved && !fact.lastOnlineAt).length,
+            'Needs activation follow-up',
+          ),
+          partnerOverviewKpi(
+            'approvedNoCompletedBooking',
+            'Approved but no completed booking',
+            partnerFacts.filter((fact) => fact.approved && fact.completedBookings === 0).length,
+            'First job pending',
+          ),
+          partnerOverviewKpi(
+            'inactive7d',
+            'No activity in last 7 days',
+            partnerFacts.filter((fact) => fact.approved && fact.inactive7d).length,
+            'Recently cold supply',
+          ),
+          partnerOverviewKpi(
+            'inactive30d',
+            'No activity in last 30 days',
+            partnerFacts.filter((fact) => fact.approved && fact.inactive30d).length,
+            'Churn risk supply',
+          ),
+          partnerOverviewKpi(
+            'highActivity',
+            'High activity partners',
+            partnerFacts.filter((fact) => fact.completedBookings >= 3 || fact.status !== ProviderStatus.OFFLINE).length,
+            'Active supply anchors',
+          ),
+        ],
+      },
+      bookingQuality: {
+        kpis: [
+          partnerOverviewKpi(
+            'completionRate',
+            'Completion Rate',
+            percentageValue(completedProviderCount, joinedRequestProviderCount || totalPartners),
+            'Completed Partner cohort',
+            'percent',
+          ),
+          partnerOverviewKpi(
+            'partnerCancellationRate',
+            'Partner Cancellation Rate',
+            percentageValue(
+              cancelledByProviderRows.reduce((sum, row) => sum + row._count._all, 0),
+              completedByProviderRows.reduce((sum, row) => sum + row._count._all, 0) +
+                cancelledByProviderRows.reduce((sum, row) => sum + row._count._all, 0),
+            ),
+            'Cancelled / completed + cancelled',
+            'percent',
+          ),
+          partnerOverviewKpi(
+            'noShowReports',
+            'No-show Reports',
+            noShowReportRows.reduce((sum, row) => sum + row._count._all, 0),
+            'Open report records',
+          ),
+          partnerOverviewKpi(
+            'lowRatingReviews',
+            'Low Rating Reviews',
+            lowReviewRows.reduce((sum, row) => sum + row._count._all, 0),
+            'Published <= 2 stars',
+          ),
+          partnerOverviewKpi(
+            'reviewCount',
+            'Review Count',
+            averageRating._count.rating,
+            'Published reviews in range',
+          ),
+        ],
+        riskPartners: qualityRiskFacts.slice(0, ADMIN_PARTNER_OVERVIEW_RANK_LIMIT),
+      },
+      financeWalletRisk: {
+        kpis: [
+          partnerOverviewKpi('grossBookingAmount', 'Partner Gross Booking Amount', grossBookingAmount, 'From earnings', 'money'),
+          partnerOverviewKpi('platformFee', 'Platform Fee', platformFee, 'Company revenue component', 'money'),
+          partnerOverviewKpi(
+            'partnerPayoutPending',
+            'Partner Payout Pending',
+            numberValue(pendingEarnings._sum.netAmount),
+            'Withdrawal payable exposure',
+            'money',
+          ),
+          partnerOverviewKpi(
+            'partnerPayoutCompleted',
+            'Partner Payout Completed',
+            numberValue(paidEarnings._sum.netAmount),
+            'Paid earning rows',
+            'money',
+          ),
+          partnerOverviewKpi('partnerWalletBalanceTotal', 'Partner Wallet Balance Total', walletBalanceTotal, 'Ledger sum', 'money'),
+          partnerOverviewKpi('negativeWalletTotal', 'Negative Wallet Total', negativeWalletTotal, 'Company receivable', 'money'),
+          partnerOverviewKpi('partnersWithNegativeWallet', 'Partners With Negative Wallet', negativeWalletFacts.length, 'Receivable partners'),
+          partnerOverviewKpi('payoutBlockedPartners', 'Payout Blocked Partners', negativeWalletFacts.length, 'Policy display only'),
+          partnerOverviewKpi(
+            'taxInfoMissingPartners',
+            'Tax Info Missing Partners',
+            partnerFacts.filter((fact) => fact.taxStatus !== ProviderTaxProfileStatus.APPROVED).length,
+            'Tax profile not approved',
+          ),
+        ],
+        negativeWalletPartners: negativeWalletFacts.slice(0, ADMIN_PARTNER_OVERVIEW_RANK_LIMIT),
+        policyNote:
+          'Negative wallet Partners can still join requests, but final booking acceptance may be blocked by wallet policy.',
+      },
+      selectionFriction: {
+        ...selectionFriction,
+      },
+      actionLists,
+      segments: partnerOverviewSegments(displayPartnerFacts),
+      dataNotes: [
+        'Request viewed and detailed are counted from persisted Partner request view events.',
+        'Detailed online duration uses bounded heartbeat/close telemetry when available.',
+        'Request notification received and service started are counted from persisted Partner notification records.',
+        'Eligible To Accept uses current approval, KYC, online status, fresh location, active services, block state, and wallet balance.',
+      ],
     };
   }
 
@@ -6407,6 +7853,132 @@ export class AdminService {
     };
   }
 
+  async financeOverviewSummary(options: AdminFinanceOverviewQuery = {}) {
+    const period = adminPartnerWithholdingTaxPeriod(options.period);
+    const rangeOptions = { range: options.range };
+    const periodOptions = { period };
+    const clearingOptions = { range: options.range, review: 'open' };
+    const bankOptions = { range: options.range, review: 'unmatched' };
+
+    const [
+      settlementSummary,
+      couponSummary,
+      partnerWithholdingSummary,
+      withdrawalSummary,
+      clearingSummary,
+      bankSummary,
+      monthlyClosingSummary,
+      earningsSummary,
+      paymentSummary,
+      refundSummary,
+      cashSummary,
+      paymentFeeSummary,
+      walletSummary,
+      amountSummary,
+    ] = await Promise.all([
+      this.bookingSettlementSnapshotSummary(rangeOptions),
+      this.couponFinanceSummary(rangeOptions),
+      this.partnerWithholdingTaxSummary(periodOptions),
+      this.providerWalletWithdrawalRequestSummary(rangeOptions),
+      this.bookingPaymentClearingSummary(clearingOptions),
+      this.bankReconciliationSummary(bankOptions),
+      this.monthlyTaxClosingSummary(periodOptions),
+      this.earningsSummary(rangeOptions),
+      this.paymentSummary(rangeOptions),
+      this.refundSummary(rangeOptions),
+      this.cashSettlementSummary(rangeOptions),
+      this.paymentFeeSummary(periodOptions),
+      this.financeOverviewWalletSummary(),
+      this.financeOverviewAmountSummary(rangeOptions),
+    ]);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      range: normalizeNullable(options.range) ?? 'today',
+      period,
+      amountSummary,
+      bankSummary,
+      cashSummary,
+      clearingSummary,
+      couponSummary,
+      earningsSummary,
+      monthlyClosingSummary,
+      partnerWithholdingSummary,
+      paymentFeeSummary,
+      paymentSummary,
+      payoutSummary: null,
+      refundSummary,
+      settlementSummary,
+      walletSummary,
+      withdrawalSummary,
+    };
+  }
+
+  private async financeOverviewWalletSummary() {
+    const [customerGroups, partnerGroups] = await Promise.all([
+      this.prisma.customerWalletLedgerEntry.groupBy({
+        by: ['customerProfileId', 'currency'],
+        _sum: { amount: true },
+      }),
+      this.prisma.providerWalletLedgerEntry.groupBy({
+        by: ['providerProfileId', 'currency'],
+        _sum: { amount: true },
+      }),
+    ]);
+    const customerPositiveBalances = customerGroups
+      .map((group) => group._sum.amount ?? 0)
+      .filter((amount) => amount > 0);
+    const partnerPositiveBalances = partnerGroups
+      .map((group) => group._sum.amount ?? 0)
+      .filter((amount) => amount > 0);
+    const partnerNegativeBalances = partnerGroups
+      .map((group) => group._sum.amount ?? 0)
+      .filter((amount) => amount < 0);
+
+    return {
+      currency: 'VND',
+      customerWalletAccountCount: customerPositiveBalances.length,
+      customerWalletLiabilityAmount: sumNumbers(customerPositiveBalances),
+      partnerPositiveWalletAccountCount: partnerPositiveBalances.length,
+      partnerWalletLiabilityAmount: sumNumbers(partnerPositiveBalances),
+      partnerNegativeWalletAccountCount: partnerNegativeBalances.length,
+      negativePartnerWalletAmount: Math.abs(sumNumbers(partnerNegativeBalances)),
+    };
+  }
+
+  private async financeOverviewAmountSummary(options: Pick<AdminPaymentOperationsQuery, 'range'>) {
+    const refundWhere = adminRefundOperationsWhere(options);
+    const pendingRefundWhere = refundWhere
+      ? { ...refundWhere, status: { not: 'COMPLETED' } }
+      : { status: { not: 'COMPLETED' } };
+    const completedRefundWhere = refundWhere ? { ...refundWhere, status: 'COMPLETED' } : { status: 'COMPLETED' };
+    const paymentWhere = adminPaymentOperationsWhere(options);
+    const failedPaymentWhere = paymentWhere
+      ? { ...paymentWhere, status: PaymentStatus.FAILED }
+      : { status: PaymentStatus.FAILED };
+    const [pendingRefunds, completedRefunds, failedPayments] = await Promise.all([
+      this.prisma.refund.aggregate({
+        where: pendingRefundWhere,
+        _sum: { amount: true },
+      }),
+      this.prisma.refund.aggregate({
+        where: completedRefundWhere,
+        _sum: { amount: true },
+      }),
+      this.prisma.payment.aggregate({
+        where: failedPaymentWhere,
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      currency: 'VND',
+      refundPendingAmount: pendingRefunds._sum.amount ?? 0,
+      refundCompletedAmount: completedRefunds._sum.amount ?? 0,
+      paymentFailedAmount: failedPayments._sum.amount ?? 0,
+    };
+  }
+
   listEarnings(options: AdminPaymentOperationsQuery = {}) {
     return this.earnings.listForAdmin(options);
   }
@@ -6436,6 +8008,13 @@ export class AdminService {
     });
   }
 
+  getBookingSettlementSnapshot(id: string) {
+    return this.prisma.bookingSettlementSnapshot.findUnique({
+      where: { id },
+      select: adminBookingSettlementSnapshotDetailSelect,
+    });
+  }
+
   async listCouponFinanceSnapshots(options: AdminPaymentOperationsQuery = {}) {
     const take = adminPaymentOperationsTake(options.take);
     const skip = boundedAdminListSkip(options.skip);
@@ -6454,7 +8033,7 @@ export class AdminService {
 
     const snapshots = await this.prisma.bookingSettlementSnapshot.findMany({
       where: { id: { in: ids } },
-      select: adminBookingSettlementSnapshotListSelect,
+      select: adminCouponFinanceSnapshotListSelect,
     });
     const order = new Map(ids.map((id, index) => [id, index]));
     return snapshots.sort((left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0));
@@ -6511,6 +8090,13 @@ export class AdminService {
       ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: adminBookingSettlementReversalEntryListSelect,
+    });
+  }
+
+  getBookingSettlementReversal(id: string) {
+    return this.prisma.bookingSettlementReversalEntry.findUnique({
+      select: adminBookingSettlementReversalEntryDetailSelect,
+      where: { id },
     });
   }
 
@@ -6654,6 +8240,20 @@ export class AdminService {
       throw new NotFoundException('Booking payment clearing entry not found');
     }
     return entry;
+  }
+
+  listCompanyBankAccounts(options: { status?: string | null } = {}) {
+    const status =
+      normalizeNullable(options.status)?.toUpperCase() === 'ALL'
+        ? undefined
+        : CompanyBankAccountStatus.ACTIVE;
+
+    return this.prisma.companyBankAccount.findMany({
+      ...(status ? { where: { status } } : {}),
+      orderBy: [{ status: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
+      take: 100,
+      select: adminCompanyBankAccountSelect,
+    });
   }
 
   listBankReconciliationTransactions(options: AdminPaymentOperationsQuery = {}) {
@@ -9815,6 +11415,16 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function sumNumbers(values: readonly number[]) {
+  return values.reduce((total, value) => total + value, 0);
+}
+
+function percentageValue(numerator: number, denominator: number) {
+  if (denominator <= 0) return 0;
+
+  return Math.round((numerator / denominator) * 100);
+}
+
 function normalizeMarketingSpendDate(value: unknown) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
     throw new BadRequestException('Marketing spend date must use YYYY-MM-DD');
@@ -11554,6 +13164,1382 @@ function latestDate(...values: Array<Date | string | null | undefined>) {
   }
 
   return latest;
+}
+
+type AdminPartnerOverviewRange = 'today' | '7d' | '30d' | '90d';
+type PartnerOverviewSelectionIssue = 'availability' | 'price' | 'profile' | 'response' | 'service';
+type PartnerOverviewSelectionSort = 'availability' | 'favorites' | 'price' | 'response' | 'views';
+
+const PARTNER_OVERVIEW_SELECTION_ISSUE_OPTIONS: Array<{
+  key: PartnerOverviewSelectionIssue | 'all';
+  label: string;
+  issue: PartnerOverviewSelectionIssue | null;
+}> = [
+  { key: 'all', label: 'All', issue: null },
+  { key: 'availability', label: 'Availability', issue: 'availability' },
+  { key: 'profile', label: 'Profile', issue: 'profile' },
+  { key: 'price', label: 'Price', issue: 'price' },
+  { key: 'response', label: 'Response', issue: 'response' },
+  { key: 'service', label: 'Service', issue: 'service' },
+];
+
+type AdminPartnerOverviewWindow = {
+  range: AdminPartnerOverviewRange;
+  label: string;
+  startAt: Date;
+  endAt: Date;
+};
+
+type PartnerOverviewProviderRow = {
+  id: string;
+  displayName: string;
+  city: string | null;
+  residentialAddress: string | null;
+  serviceArea: Prisma.JsonValue | null;
+  status: ProviderStatus;
+  ratingAvg: unknown;
+  reviewCount: number;
+  currentLat: unknown;
+  currentLng: unknown;
+  currentLocationUpdatedAt: Date | null;
+  nextAvailableAt: Date | null;
+  blockedAt: Date | null;
+  blockedReason: string | null;
+  updatedAt: Date;
+  user: {
+    createdAt: Date;
+    fileAssets: Array<{
+      purpose: FilePurpose;
+      url: string | null;
+    }>;
+    fullName: string | null;
+    phone: string;
+  };
+  verification: {
+    reviewedAt: Date | null;
+    status: VerificationStatus;
+    submittedAt: Date | null;
+  } | null;
+  kyc: {
+    reviewedAt: Date | null;
+    status: ProviderKycStatus;
+    submittedAt: Date | null;
+  } | null;
+  taxProfile: {
+    status: ProviderTaxProfileStatus;
+  } | null;
+  services: Array<{
+    price: number;
+    serviceId: string;
+    service: {
+      active: boolean;
+      basePrice: number;
+      durationMin: number;
+      id: string;
+      name: string;
+    };
+  }>;
+  sessions: Array<{
+    appVersion: string | null;
+    lastSeenAt: Date;
+  }>;
+  selectedBookings: Array<{
+    closedAt: Date | null;
+    id: string;
+    status: BookingStatus;
+    updatedAt: Date;
+  }>;
+};
+
+type PartnerOverviewBookingPointRow = {
+  address: unknown;
+  addressSnapshot: {
+    address: unknown;
+    addressText: string | null;
+    latitude: unknown;
+    longitude: unknown;
+  } | null;
+  lat: unknown;
+  lng: unknown;
+};
+
+type PartnerOverviewResponseParticipantRow = {
+  providerProfileId: string;
+  joinedAt: Date;
+  respondedAt: Date | null;
+  booking: PartnerOverviewBookingPointRow;
+};
+
+type PartnerOverviewServiceRow = {
+  durationMin: number;
+  id: string;
+  name: string;
+};
+
+type PartnerOverviewServiceCountRow = {
+  serviceId: string;
+  _count: {
+    _all: number;
+  };
+};
+
+type PartnerOverviewProfileViewRow = {
+  providerProfileId: string;
+  _count: {
+    _all: number;
+  };
+  _sum: {
+    viewCount: unknown;
+  };
+  _max: {
+    lastViewedAt: Date | null;
+  };
+};
+
+type PartnerOverviewFavoriteRow = {
+  providerProfileId: string;
+  _count: {
+    _all: number;
+  };
+  _max: {
+    createdAt: Date | null;
+  };
+};
+
+type PartnerOverviewSelectionSortableRow = {
+  readonly averageResponseSeconds: number | null;
+  readonly completedBookings: number;
+  readonly favoriteCount: number;
+  readonly lastIntentAt: string | null;
+  readonly maxServicePrice: number | null;
+  readonly profileViews: number;
+  readonly readinessFlags: readonly string[];
+};
+
+type PartnerOverviewProviderFact = {
+  partnerId: string;
+  partnerName: string;
+  phone: string | null;
+  area: string;
+  status: ProviderStatus;
+  verificationStatus: VerificationStatus | null;
+  kycStatus: ProviderKycStatus | null;
+  taxStatus: ProviderTaxProfileStatus | null;
+  approved: boolean;
+  activeServiceCount: number;
+  availabilityStatus: string;
+  lastOnlineAt: string | null;
+  lastActivityAt: string | null;
+  lastBookingAt: string | null;
+  nextAvailableAt: string | null;
+  completedBookings: number;
+  cancelledBookings: number;
+  cancellationRate: number;
+  galleryImageCount: number;
+  hasProfileImage: boolean;
+  maxServicePrice: number | null;
+  maxServicePriceRatio: number | null;
+  minServicePrice: number | null;
+  noShowReports: number;
+  lowReviewCount: number;
+  rating: number;
+  reviewCount: number;
+  walletBalance: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  mainReason: string;
+  recommendedAction: string;
+  href: string;
+  inactive7d: boolean;
+  inactive30d: boolean;
+  blocked: boolean;
+  eligibleToAccept: boolean;
+};
+
+type PartnerOverviewOperatingStatusCard = {
+  key: string;
+  label: string;
+  count: number;
+  detail: string;
+  href: string;
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+};
+
+const ADMIN_PARTNER_OVERVIEW_RANGE_LABELS: Record<AdminPartnerOverviewRange, string> = {
+  today: 'Today',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  '90d': 'Last 90 days',
+};
+
+function normalizeAdminPartnerOverviewRange(value: unknown): AdminPartnerOverviewRange {
+  return value === '7d' || value === '30d' || value === '90d' ? value : 'today';
+}
+
+function adminPartnerOverviewRangeWindow(rangeInput: AdminPartnerOverviewRange): AdminPartnerOverviewWindow {
+  const range = normalizeAdminPartnerOverviewRange(rangeInput);
+  const todayStart = partnerOverviewUtcDayStart(new Date());
+  const days = range === '90d' ? 90 : range === '30d' ? 30 : range === '7d' ? 7 : 1;
+
+  return {
+    range,
+    label: ADMIN_PARTNER_OVERVIEW_RANGE_LABELS[range],
+    startAt: partnerOverviewAddUtcDays(todayStart, -(days - 1)),
+    endAt: partnerOverviewAddUtcDays(todayStart, 1),
+  };
+}
+
+function adminPartnerOverviewDateWhere(window: AdminPartnerOverviewWindow) {
+  return {
+    gte: window.startAt,
+    lt: window.endAt,
+  };
+}
+
+function partnerOverviewUtcDayStart(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function partnerOverviewAddUtcDays(value: Date, days: number) {
+  const next = new Date(value);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function normalizeOptionalText(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeVerificationStatusFilter(value: unknown) {
+  const normalized = normalizeOptionalText(value)?.toUpperCase();
+  if (!normalized) return null;
+  return Object.values(VerificationStatus).includes(normalized as VerificationStatus)
+    ? (normalized as VerificationStatus)
+    : null;
+}
+
+function normalizePartnerOnlineStatusFilter(value: unknown): ProviderStatus[] | null {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  if (!normalized) return null;
+
+  if (normalized === 'online') {
+    return [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_BUSY, ProviderStatus.ONLINE_AVAILABLE_SOON];
+  }
+  if (normalized === 'available') return [ProviderStatus.ONLINE_AVAILABLE];
+  if (normalized === 'busy') return [ProviderStatus.ONLINE_BUSY];
+  if (normalized === 'soon') return [ProviderStatus.ONLINE_AVAILABLE_SOON];
+  if (normalized === 'offline') return [ProviderStatus.OFFLINE];
+
+  const enumValue = normalized.toUpperCase();
+  return Object.values(ProviderStatus).includes(enumValue as ProviderStatus) ? [enumValue as ProviderStatus] : null;
+}
+
+function normalizePartnerWalletStatusFilter(value: unknown) {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  return normalized === 'negative' || normalized === 'positive' || normalized === 'zero' ? normalized : null;
+}
+
+function normalizePartnerRiskStatusFilter(value: unknown): PartnerOverviewProviderFact['riskLevel'] | null {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  return normalized === 'low' || normalized === 'medium' || normalized === 'high' || normalized === 'critical'
+    ? normalized
+    : null;
+}
+
+function normalizePartnerSelectionIssueFilter(value: unknown): PartnerOverviewSelectionIssue | null {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  return normalized === 'availability' ||
+    normalized === 'price' ||
+    normalized === 'profile' ||
+    normalized === 'response' ||
+    normalized === 'service'
+    ? normalized
+    : null;
+}
+
+function normalizePartnerSelectionSort(value: unknown): PartnerOverviewSelectionSort {
+  const normalized = normalizeOptionalText(value)?.toLowerCase();
+  return normalized === 'availability' ||
+    normalized === 'favorites' ||
+    normalized === 'price' ||
+    normalized === 'response' ||
+    normalized === 'views'
+    ? normalized
+    : 'views';
+}
+
+function partnerOverviewProviderWhere(options: {
+  readonly city?: string;
+  readonly negativeWalletIds: readonly string[];
+  readonly onlineStatuses: readonly ProviderStatus[] | null;
+  readonly positiveWalletIds: readonly string[];
+  readonly serviceId: string | null;
+  readonly verificationStatus: VerificationStatus | null;
+  readonly walletStatus: 'negative' | 'positive' | 'zero' | null;
+}): Prisma.ProviderProfileWhereInput {
+  const filters: Prisma.ProviderProfileWhereInput[] = [{ deletedAt: null }];
+  const city = normalizeOptionalText(options.city);
+
+  if (city) {
+    const citySearchTerms = partnerOverviewCitySearchTerms(city);
+    filters.push({
+      OR: citySearchTerms.flatMap((term) => [
+        { city: { contains: term, mode: 'insensitive' } },
+        { residentialAddress: { contains: term, mode: 'insensitive' } },
+      ]),
+    });
+  }
+  if (options.serviceId) {
+    filters.push({ services: { some: { active: true, serviceId: options.serviceId } } });
+  }
+  if (options.verificationStatus) {
+    filters.push({ verification: { is: { status: options.verificationStatus } } });
+  }
+  if (options.onlineStatuses?.length) {
+    filters.push({ status: { in: [...options.onlineStatuses] } });
+  }
+  if (options.walletStatus === 'negative') {
+    filters.push({ id: options.negativeWalletIds.length ? { in: [...options.negativeWalletIds] } : '__none__' });
+  }
+  if (options.walletStatus === 'positive') {
+    filters.push({ id: options.positiveWalletIds.length ? { in: [...options.positiveWalletIds] } : '__none__' });
+  }
+  if (options.walletStatus === 'zero') {
+    filters.push({ id: { notIn: [...new Set([...options.negativeWalletIds, ...options.positiveWalletIds])] } });
+  }
+
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+export function partnerOverviewCitySearchTerms(city: string) {
+  const normalized = city.trim().toLowerCase();
+  if (['hcm', 'hcmc', 'ho chi minh', 'ho chi minh city', 'sai gon', 'saigon'].includes(normalized)) {
+    return ['hcm', 'hcmc', 'ho chi minh', 'sai gon', 'saigon'];
+  }
+  if (['hn', 'hanoi', 'ha noi'].includes(normalized)) {
+    return ['hn', 'hanoi', 'ha noi'];
+  }
+  return [city];
+}
+
+function partnerOverviewAnd(
+  baseWhere: Prisma.ProviderProfileWhereInput,
+  extraWhere: Prisma.ProviderProfileWhereInput,
+): Prisma.ProviderProfileWhereInput {
+  if (Object.keys(baseWhere).length === 0) return extraWhere;
+  if (Object.keys(extraWhere).length === 0) return baseWhere;
+  return { AND: [baseWhere, extraWhere] };
+}
+
+function partnerOverviewJoinedAtSql(dateWhere: ReturnType<typeof adminPartnerOverviewDateWhere> | undefined) {
+  if (!dateWhere) return Prisma.empty;
+
+  return Prisma.sql`AND "joinedAt" >= ${dateWhere.gte} AND "joinedAt" < ${dateWhere.lt}`;
+}
+
+function partnerOverviewProviderEligible(
+  provider: PartnerOverviewProviderRow,
+  walletBalance = 0,
+  locationFreshBoundary: Date,
+) {
+  return (
+    provider.verification?.status === VerificationStatus.APPROVED &&
+    provider.kyc?.status === ProviderKycStatus.APPROVED &&
+    provider.status === ProviderStatus.ONLINE_AVAILABLE &&
+    !provider.blockedAt &&
+    provider.services.length > 0 &&
+    walletBalance >= 0 &&
+    Boolean(
+      provider.currentLocationUpdatedAt &&
+        provider.currentLocationUpdatedAt.getTime() >= locationFreshBoundary.getTime(),
+    )
+  );
+}
+
+function partnerOverviewProviderMediaStats(provider: PartnerOverviewProviderRow) {
+  const publicMedia = provider.user.fileAssets ?? [];
+  return {
+    galleryImageCount: publicMedia.filter((file) => file.purpose === FilePurpose.PROVIDER_GALLERY && file.url)
+      .length,
+    hasProfileImage: publicMedia.some((file) => file.purpose === FilePurpose.PROFILE_IMAGE && file.url),
+  };
+}
+
+function partnerOverviewProviderPriceStats(provider: PartnerOverviewProviderRow) {
+  const prices = provider.services
+    .map((providerService) => providerService.price)
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const basePrices = provider.services
+    .map((providerService) => providerService.service.basePrice)
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const priceRatios = provider.services
+    .map((providerService) => {
+      const price = providerService.price;
+      const basePrice = providerService.service.basePrice;
+      return Number.isFinite(price) && Number.isFinite(basePrice) && basePrice > 0 ? price / basePrice : 0;
+    })
+    .filter((ratio) => ratio > 0);
+
+  return {
+    maxBasePrice: basePrices.length ? Math.max(...basePrices) : null,
+    maxPriceRatio: priceRatios.length ? Math.max(...priceRatios) : null,
+    maxServicePrice: prices.length ? Math.max(...prices) : null,
+    minServicePrice: prices.length ? Math.min(...prices) : null,
+  };
+}
+
+function partnerOverviewAvailabilityStatus(provider: PartnerOverviewProviderRow) {
+  switch (provider.status) {
+    case ProviderStatus.ONLINE_AVAILABLE:
+      return 'Available now';
+    case ProviderStatus.ONLINE_BUSY:
+      return 'Busy now';
+    case ProviderStatus.ONLINE_AVAILABLE_SOON:
+      return 'Available soon';
+    default:
+      return provider.nextAvailableAt ? 'Scheduled offline' : 'Offline now';
+  }
+}
+
+function partnerOverviewBookingRegion(row: PartnerOverviewBookingPointRow): VietnamRegionCode {
+  return vietnamRegionCodeFromValues(
+    [row.addressSnapshot?.address, row.addressSnapshot?.addressText, row.address],
+    {
+      latitude: row.addressSnapshot?.latitude ?? row.lat,
+      longitude: row.addressSnapshot?.longitude ?? row.lng,
+    },
+  );
+}
+
+function partnerOverviewAreaAverageResponseSeconds(rows: readonly PartnerOverviewResponseParticipantRow[]) {
+  const totals = new Map<VietnamRegionCode, { count: number; totalSeconds: number }>();
+
+  for (const row of rows) {
+    if (!row.respondedAt) continue;
+    const responseSeconds = Math.round((row.respondedAt.getTime() - row.joinedAt.getTime()) / 1000);
+    if (!Number.isFinite(responseSeconds) || responseSeconds < 0) continue;
+
+    const region = partnerOverviewBookingRegion(row.booking);
+    const total = totals.get(region) ?? { count: 0, totalSeconds: 0 };
+    total.count += 1;
+    total.totalSeconds += responseSeconds;
+    totals.set(region, total);
+  }
+
+  return new Map(
+    Array.from(totals.entries()).map(([region, total]) => [
+      region,
+      Math.round(total.totalSeconds / total.count),
+    ]),
+  );
+}
+
+function partnerOverviewAverageResponseSecondsByProvider(rows: readonly PartnerOverviewResponseParticipantRow[]) {
+  const totals = new Map<string, { count: number; totalSeconds: number }>();
+
+  for (const row of rows) {
+    if (!row.respondedAt) continue;
+    const responseSeconds = Math.round((row.respondedAt.getTime() - row.joinedAt.getTime()) / 1000);
+    if (!Number.isFinite(responseSeconds) || responseSeconds < 0) continue;
+
+    const total = totals.get(row.providerProfileId) ?? { count: 0, totalSeconds: 0 };
+    total.count += 1;
+    total.totalSeconds += responseSeconds;
+    totals.set(row.providerProfileId, total);
+  }
+
+  return new Map(
+    Array.from(totals.entries()).map(([providerProfileId, total]) => [
+      providerProfileId,
+      Math.round(total.totalSeconds / total.count),
+    ]),
+  );
+}
+
+function partnerOverviewProfileViewMap(rows: readonly PartnerOverviewProfileViewRow[]) {
+  return new Map(
+    rows.map((row) => [
+      row.providerProfileId,
+      {
+        profileViewCustomers: row._count._all,
+        profileViews: Math.max(row._count._all, numberValue(row._sum.viewCount)),
+        lastViewedAt: row._max.lastViewedAt,
+      },
+    ]),
+  );
+}
+
+function partnerOverviewFavoriteMap(rows: readonly PartnerOverviewFavoriteRow[]) {
+  return new Map(
+    rows.map((row) => [
+      row.providerProfileId,
+      {
+        favoriteCount: row._count._all,
+        lastFavoritedAt: row._max.createdAt,
+      },
+    ]),
+  );
+}
+
+function partnerOverviewAreaRows(options: {
+  readonly averageResponseSecondsByRegion: ReadonlyMap<VietnamRegionCode, number>;
+  readonly eligibleProviderIds: ReadonlySet<string>;
+  readonly failedBookingRows: readonly PartnerOverviewBookingPointRow[];
+  readonly locationFreshBoundary: Date;
+  readonly openBookingRows: readonly PartnerOverviewBookingPointRow[];
+  readonly providerRows: readonly PartnerOverviewProviderRow[];
+}) {
+  const rows = new Map(
+    VIETNAM_REGION_BUCKETS.map((bucket) => [
+      bucket.code,
+      {
+        areaCode: bucket.code,
+        area: bucket.name,
+        totalPartners: 0,
+        onlinePartners: 0,
+        locationFreshPartners: 0,
+        eligiblePartners: 0,
+        openRequests: 0,
+        failedRequests: 0,
+        matchingFailureRate: 0,
+        averageResponseSeconds: null as number | null,
+        status: 'No Supply',
+        riskLevel: 'medium',
+      },
+    ]),
+  );
+
+  for (const provider of options.providerRows) {
+    const code = vietnamRegionCodeFromValues(
+      [provider.city, provider.residentialAddress, provider.serviceArea],
+      { latitude: provider.currentLat, longitude: provider.currentLng },
+    );
+    const row = rows.get(code);
+    if (!row) continue;
+
+    row.totalPartners += 1;
+    if (provider.status !== ProviderStatus.OFFLINE) row.onlinePartners += 1;
+    if (
+      provider.currentLocationUpdatedAt &&
+      provider.currentLocationUpdatedAt.getTime() >= options.locationFreshBoundary.getTime()
+    ) {
+      row.locationFreshPartners += 1;
+    }
+    if (options.eligibleProviderIds.has(provider.id)) row.eligiblePartners += 1;
+  }
+
+  for (const booking of options.openBookingRows) {
+    const row = rows.get(partnerOverviewBookingRegion(booking));
+    if (row) row.openRequests += 1;
+  }
+  for (const booking of options.failedBookingRows) {
+    const row = rows.get(partnerOverviewBookingRegion(booking));
+    if (row) row.failedRequests += 1;
+  }
+
+  return VIETNAM_REGION_BUCKETS.map((bucket) => {
+    const row = rows.get(bucket.code);
+    if (!row) throw new Error(`Missing Vietnam region bucket ${bucket.code}`);
+    row.matchingFailureRate = percentageValue(row.failedRequests, row.openRequests + row.failedRequests);
+    row.averageResponseSeconds = options.averageResponseSecondsByRegion.get(bucket.code) ?? null;
+    if (row.eligiblePartners === 0 && row.openRequests > 0) {
+      row.status = 'No Eligible Partner';
+      row.riskLevel = 'critical';
+    } else if (row.onlinePartners > 0 && row.locationFreshPartners === 0) {
+      row.status = 'No Fresh Location';
+      row.riskLevel = 'high';
+    } else if (row.matchingFailureRate >= 20) {
+      row.status = 'High Failure';
+      row.riskLevel = 'high';
+    } else if (row.eligiblePartners < 3) {
+      row.status = 'Low Supply';
+      row.riskLevel = 'medium';
+    } else {
+      row.status = 'Healthy';
+      row.riskLevel = 'low';
+    }
+    return row;
+  });
+}
+
+function partnerOverviewServiceRows(options: {
+  readonly completedServiceRows: readonly PartnerOverviewServiceCountRow[];
+  readonly eligibleProviderIds: ReadonlySet<string>;
+  readonly openServiceRows: readonly PartnerOverviewServiceCountRow[];
+  readonly providerRows: readonly PartnerOverviewProviderRow[];
+  readonly serviceCatalogRows: readonly PartnerOverviewServiceRow[];
+}) {
+  const openMap = new Map(options.openServiceRows.map((row) => [row.serviceId, row._count._all]));
+  const completedMap = new Map(options.completedServiceRows.map((row) => [row.serviceId, row._count._all]));
+
+  return options.serviceCatalogRows.map((service) => {
+    const providers = options.providerRows.filter((provider) =>
+      provider.services.some((providerService) => providerService.serviceId === service.id),
+    );
+    const onlinePartners = providers.filter((provider) => provider.status !== ProviderStatus.OFFLINE).length;
+    const eligiblePartners = providers.filter((provider) => options.eligibleProviderIds.has(provider.id)).length;
+    const openRequests = openMap.get(service.id) ?? 0;
+    const completedBookings = completedMap.get(service.id) ?? 0;
+    const completionRate = percentageValue(completedBookings, openRequests + completedBookings);
+    const avgRatingSource = providers.filter((provider) => numberValue(provider.ratingAvg) > 0);
+    const avgRating =
+      avgRatingSource.length > 0
+        ? Number(
+            (
+              avgRatingSource.reduce((sum, provider) => sum + numberValue(provider.ratingAvg), 0) /
+              avgRatingSource.length
+            ).toFixed(2),
+          )
+        : null;
+
+    return {
+      serviceId: service.id,
+      serviceName: `${service.name} · ${service.durationMin} min`,
+      partnersOffering: providers.length,
+      onlinePartners,
+      eligiblePartners,
+      openRequests,
+      completedBookings,
+      completionRate,
+      avgRating,
+      status:
+        eligiblePartners === 0 && openRequests > 0
+          ? 'No Eligible Partner'
+          : onlinePartners === 0 && providers.length > 0
+            ? 'Offline Supply'
+            : providers.length === 0
+              ? 'No Partner'
+              : 'Healthy',
+      riskLevel:
+        eligiblePartners === 0 && openRequests > 0
+          ? 'critical'
+          : onlinePartners === 0 || completionRate < 50
+            ? 'medium'
+            : 'low',
+    };
+  });
+}
+
+function partnerOverviewProviderFact(options: {
+  readonly active7dStart: Date;
+  readonly active30dStart: Date;
+  readonly cancelledMap: Map<string, { count: number; lastActivityAt: Date | null }>;
+  readonly completedMap: Map<string, { count: number; lastActivityAt: Date | null }>;
+  readonly locationFreshBoundary: Date;
+  readonly lowReviewMap: Map<string, { count: number; lastActivityAt: Date | null; rating: number | null }>;
+  readonly noShowReportMap: Map<string, { count: number; lastActivityAt: Date | null }>;
+  readonly provider: PartnerOverviewProviderRow;
+  readonly walletBalance: number;
+}): PartnerOverviewProviderFact {
+  const provider = options.provider;
+  const completed = options.completedMap.get(provider.id);
+  const cancelled = options.cancelledMap.get(provider.id);
+  const lowReview = options.lowReviewMap.get(provider.id);
+  const noShow = options.noShowReportMap.get(provider.id);
+  const lastOnlineAt = provider.sessions[0]?.lastSeenAt ?? null;
+  const lastBookingAt = latestDate(provider.selectedBookings[0]?.closedAt, provider.selectedBookings[0]?.updatedAt);
+  const lastActivityAt = latestDate(lastOnlineAt, lastBookingAt, completed?.lastActivityAt, cancelled?.lastActivityAt, provider.updatedAt);
+  const approved = provider.verification?.status === VerificationStatus.APPROVED && provider.kyc?.status === ProviderKycStatus.APPROVED;
+  const completedBookings = completed?.count ?? 0;
+  const cancelledBookings = cancelled?.count ?? 0;
+  const cancellationRate = percentageValue(cancelledBookings, completedBookings + cancelledBookings);
+  const mediaStats = partnerOverviewProviderMediaStats(provider);
+  const priceStats = partnerOverviewProviderPriceStats(provider);
+  const inactive7d = !lastActivityAt || lastActivityAt.getTime() < options.active7dStart.getTime();
+  const inactive30d = !lastActivityAt || lastActivityAt.getTime() < options.active30dStart.getTime();
+  const eligibleToAccept = partnerOverviewProviderEligible(provider, options.walletBalance, options.locationFreshBoundary);
+  const blocked = Boolean(provider.blockedAt);
+  const riskLevel =
+    blocked || options.walletBalance < 0 || (noShow?.count ?? 0) >= 2
+      ? 'critical'
+      : cancellationRate >= 30 || (lowReview?.count ?? 0) >= 2 || inactive30d
+        ? 'high'
+        : !approved || inactive7d || cancelledBookings > 0
+          ? 'medium'
+          : 'low';
+  const mainReason = partnerOverviewProviderRiskReason({
+    approved,
+    blocked,
+    cancellationRate,
+    inactive30d,
+    inactive7d,
+    lowReviewCount: lowReview?.count ?? 0,
+    noShowReports: noShow?.count ?? 0,
+    walletBalance: options.walletBalance,
+  });
+
+  return {
+    partnerId: provider.id,
+    partnerName: provider.displayName || provider.user.fullName || 'Unknown Partner',
+    phone: provider.user.phone || null,
+    area: vietnamRegionLabel(
+      vietnamRegionCodeFromValues(
+        [provider.city, provider.residentialAddress, provider.serviceArea],
+        { latitude: provider.currentLat, longitude: provider.currentLng },
+      ),
+    ),
+    status: provider.status,
+    verificationStatus: provider.verification?.status ?? null,
+    kycStatus: provider.kyc?.status ?? null,
+    taxStatus: provider.taxProfile?.status ?? null,
+    approved,
+    activeServiceCount: provider.services.length,
+    availabilityStatus: partnerOverviewAvailabilityStatus(provider),
+    lastOnlineAt: lastOnlineAt?.toISOString() ?? null,
+    lastActivityAt: lastActivityAt?.toISOString() ?? null,
+    lastBookingAt: lastBookingAt?.toISOString() ?? null,
+    nextAvailableAt: provider.nextAvailableAt?.toISOString() ?? null,
+    completedBookings,
+    cancelledBookings,
+    cancellationRate,
+    galleryImageCount: mediaStats.galleryImageCount,
+    hasProfileImage: mediaStats.hasProfileImage,
+    maxServicePrice: priceStats.maxServicePrice,
+    maxServicePriceRatio: priceStats.maxPriceRatio,
+    minServicePrice: priceStats.minServicePrice,
+    noShowReports: noShow?.count ?? 0,
+    lowReviewCount: lowReview?.count ?? 0,
+    rating: Number(numberValue(provider.ratingAvg).toFixed(2)),
+    reviewCount: provider.reviewCount,
+    walletBalance: options.walletBalance,
+    riskLevel,
+    mainReason,
+    recommendedAction: partnerOverviewProviderAction(mainReason),
+    href: `/partners/${provider.id}?section=full`,
+    inactive7d,
+    inactive30d,
+    blocked,
+    eligibleToAccept,
+  };
+}
+
+function partnerOverviewProviderRiskReason(input: {
+  readonly approved: boolean;
+  readonly blocked: boolean;
+  readonly cancellationRate: number;
+  readonly inactive30d: boolean;
+  readonly inactive7d: boolean;
+  readonly lowReviewCount: number;
+  readonly noShowReports: number;
+  readonly walletBalance: number;
+}) {
+  if (input.blocked) return 'Account blocked';
+  if (input.walletBalance < 0) return 'Negative wallet';
+  if (input.noShowReports > 0) return 'No-show report';
+  if (input.lowReviewCount > 0) return 'Low review';
+  if (input.cancellationRate >= 20) return 'High cancellation';
+  if (!input.approved) return 'Verification incomplete';
+  if (input.inactive30d) return 'Inactive 30D';
+  if (input.inactive7d) return 'Inactive 7D';
+  return 'Healthy';
+}
+
+function partnerOverviewProviderAction(reason: string) {
+  switch (reason) {
+    case 'Account blocked':
+      return 'Review block reason';
+    case 'Negative wallet':
+      return 'Review wallet receivable';
+    case 'No-show report':
+      return 'Open quality investigation';
+    case 'Low review':
+      return 'Review recent feedback';
+    case 'High cancellation':
+      return 'Check scheduling and penalties';
+    case 'Verification incomplete':
+      return 'Finish KYC approval';
+    case 'Inactive 30D':
+    case 'Inactive 7D':
+      return 'Send reactivation push';
+    default:
+      return 'Monitor';
+  }
+}
+
+function partnerOverviewRiskWeight(riskLevel: PartnerOverviewProviderFact['riskLevel']) {
+  switch (riskLevel) {
+    case 'critical':
+      return 4;
+    case 'high':
+      return 3;
+    case 'medium':
+      return 2;
+    case 'low':
+    default:
+      return 1;
+  }
+}
+
+function partnerOverviewOperatingStatusCards(
+  facts: readonly PartnerOverviewProviderFact[],
+): PartnerOverviewOperatingStatusCard[] {
+  const approvedFacts = facts.filter((fact) => fact.approved);
+
+  return [
+    {
+      key: 'ready-now',
+      label: 'Ready now',
+      count: approvedFacts.filter((fact) => fact.status === ProviderStatus.ONLINE_AVAILABLE && fact.eligibleToAccept).length,
+      detail: 'Approved, online, fresh location, active services, and wallet eligible',
+      href: '/partners?review=marketplace-ready&onlineStatus=available',
+      tone: 'success',
+    },
+    {
+      key: 'available-soon',
+      label: 'Available soon',
+      count: approvedFacts.filter((fact) => fact.status === ProviderStatus.ONLINE_AVAILABLE_SOON).length,
+      detail: 'Partner marked available soon instead of ready now',
+      href: '/partners?review=marketplace-ready&onlineStatus=soon',
+      tone: 'info',
+    },
+    {
+      key: 'busy',
+      label: 'Busy / in service',
+      count: approvedFacts.filter((fact) => fact.status === ProviderStatus.ONLINE_BUSY).length,
+      detail: 'Booked, dispatch-locked, or otherwise cannot accept another request',
+      href: '/partners?review=marketplace-ready&onlineStatus=busy',
+      tone: 'warning',
+    },
+    {
+      key: 'offline',
+      label: 'Offline',
+      count: approvedFacts.filter((fact) => fact.status === ProviderStatus.OFFLINE).length,
+      detail: 'Manual off, outside schedule, app off, blocked, or not ready',
+      href: '/partners?review=marketplace-ready&onlineStatus=offline',
+      tone: 'neutral',
+    },
+    {
+      key: 'inactive-7d',
+      label: 'Inactive 7D',
+      count: approvedFacts.filter((fact) => fact.inactive7d).length,
+      detail: 'Auto-offline follow-up queue for approved partners',
+      href: '/partners?review=marketplace-ready&activity=inactive-7d',
+      tone: 'danger',
+    },
+  ];
+}
+
+function partnerOverviewActionLists(facts: readonly PartnerOverviewProviderFact[]) {
+  const ranked = [...facts].sort(
+    (left, right) =>
+      partnerOverviewRiskWeight(right.riskLevel) - partnerOverviewRiskWeight(left.riskLevel) ||
+      (right.lastActivityAt ?? '').localeCompare(left.lastActivityAt ?? ''),
+  );
+  const list = (
+    key: string,
+    title: string,
+    rows: PartnerOverviewProviderFact[],
+    viewAllHref: string,
+  ) => ({
+    key,
+    title,
+    totalCount: rows.length,
+    viewAllHref,
+    rows: rows.slice(0, ADMIN_PARTNER_OVERVIEW_RANK_LIMIT).map(partnerOverviewActionRow),
+  });
+
+  return [
+    list(
+      'pending-verification',
+      'Pending Verification',
+      ranked.filter((fact) => !fact.approved),
+      '/partners?review=unapproved',
+    ),
+    list(
+      'approved-never-online',
+      'Approved But Never Online',
+      ranked.filter((fact) => fact.approved && !fact.lastOnlineAt),
+      '/partners?review=marketplace-ready&activity=never-online',
+    ),
+    list(
+      'approved-no-first-booking',
+      'Approved With No Completed Booking',
+      ranked.filter((fact) => fact.approved && fact.completedBookings === 0),
+      '/partners?review=marketplace-ready&bookingFlow=first-job-pending',
+    ),
+    list(
+      'inactive-7d',
+      'Inactive 7D',
+      ranked.filter((fact) => fact.approved && fact.inactive7d),
+      '/partners?review=marketplace-ready&activity=inactive-7d',
+    ),
+    list(
+      'inactive-30d',
+      'Inactive 30D',
+      ranked.filter((fact) => fact.approved && fact.inactive30d),
+      '/partners?review=marketplace-ready&activity=inactive-30d',
+    ),
+    list(
+      'high-cancellation',
+      'High Cancellation',
+      ranked.filter((fact) => fact.cancellationRate >= 20),
+      '/partners?review=high-cancellation',
+    ),
+    list(
+      'no-show-risk',
+      'No-show Risk',
+      ranked.filter((fact) => fact.noShowReports > 0),
+      '/partners?review=no-show-risk',
+    ),
+    list(
+      'low-rating',
+      'Low Rating',
+      ranked.filter((fact) => fact.lowReviewCount > 0 || (fact.reviewCount > 0 && fact.rating < 3)),
+      '/partners?review=quality-risk',
+    ),
+    list(
+      'negative-wallet',
+      'Negative Wallet',
+      ranked.filter((fact) => fact.walletBalance < 0),
+      '/partners?review=unsettled',
+    ),
+    list(
+      'payout-blocked',
+      'Payout Blocked',
+      ranked.filter((fact) => fact.walletBalance < 0 || fact.taxStatus !== ProviderTaxProfileStatus.APPROVED),
+      '/partners?review=payout-blocked',
+    ),
+    list(
+      'tax-info-missing',
+      'Tax Info Missing',
+      ranked.filter((fact) => fact.taxStatus !== ProviderTaxProfileStatus.APPROVED),
+      '/partners?review=tax-info-missing',
+    ),
+  ];
+}
+
+function partnerOverviewActionRow(fact: PartnerOverviewProviderFact) {
+  return {
+    partnerId: fact.partnerId,
+    partnerName: fact.partnerName,
+    phone: fact.phone,
+    area: fact.area,
+    status: fact.status,
+    lastActivityAt: fact.lastActivityAt,
+    mainReason: fact.mainReason,
+    recommendedAction: fact.recommendedAction,
+    href: fact.href,
+    riskLevel: fact.riskLevel,
+  };
+}
+
+function partnerOverviewSelectionFrictionRows(options: {
+  readonly averageResponseSecondsByProvider: ReadonlyMap<string, number>;
+  readonly favoriteMap: ReadonlyMap<string, { favoriteCount: number; lastFavoritedAt: Date | null }>;
+  readonly profileViewMap: ReadonlyMap<
+    string,
+    { profileViewCustomers: number; profileViews: number; lastViewedAt: Date | null }
+  >;
+  readonly providerFacts: readonly PartnerOverviewProviderFact[];
+  readonly selectionIssue: PartnerOverviewSelectionIssue | null;
+  readonly selectionSort: PartnerOverviewSelectionSort;
+}) {
+  const rows = options.providerFacts
+    .map((fact) => {
+      const viewStats = options.profileViewMap.get(fact.partnerId);
+      const favoriteStats = options.favoriteMap.get(fact.partnerId);
+      const profileViews = viewStats?.profileViews ?? 0;
+      const favoriteCount = favoriteStats?.favoriteCount ?? 0;
+      if (profileViews <= 0 && favoriteCount <= 0) return null;
+
+      const selectionRate = percentageValue(fact.completedBookings, profileViews);
+      const lastIntentAt = latestDate(viewStats?.lastViewedAt, favoriteStats?.lastFavoritedAt);
+      const averageResponseSeconds = options.averageResponseSecondsByProvider.get(fact.partnerId) ?? null;
+      const readinessFlags = partnerOverviewSelectionReadinessFlags(fact, averageResponseSeconds);
+      const mainReason = partnerOverviewSelectionFrictionReason({
+        completedBookings: fact.completedBookings,
+        favoriteCount,
+        profileViews,
+        riskLevel: fact.riskLevel,
+      });
+
+      return {
+        ...partnerOverviewActionRow({
+          ...fact,
+          mainReason,
+          recommendedAction: partnerOverviewSelectionFrictionAction(mainReason),
+        }),
+        activeServiceCount: fact.activeServiceCount,
+        availabilityStatus: fact.availabilityStatus,
+        averageResponseSeconds,
+        completedBookings: fact.completedBookings,
+        favoriteCount,
+        galleryImageCount: fact.galleryImageCount,
+        hasProfileImage: fact.hasProfileImage,
+        lastIntentAt: lastIntentAt?.toISOString() ?? null,
+        maxServicePrice: fact.maxServicePrice,
+        minServicePrice: fact.minServicePrice,
+        nextAvailableAt: fact.nextAvailableAt,
+        profileViewCustomers: viewStats?.profileViewCustomers ?? 0,
+        profileViews,
+        rating: fact.rating,
+        readinessFlags,
+        reviewCount: fact.reviewCount,
+        selectionRate,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+  return {
+    issueCounts: partnerOverviewSelectionIssueCounts(rows),
+    rows: rows
+      .filter((row) => partnerOverviewSelectionIssueMatches(row.readinessFlags, options.selectionIssue))
+      .sort((left, right) => partnerOverviewSelectionSortRows(left, right, options.selectionSort))
+      .slice(0, ADMIN_PARTNER_OVERVIEW_RANK_LIMIT),
+  };
+}
+
+function partnerOverviewSelectionIssueCounts(rows: readonly PartnerOverviewSelectionSortableRow[]) {
+  return PARTNER_OVERVIEW_SELECTION_ISSUE_OPTIONS.map((option) => ({
+    key: option.key,
+    label: option.label,
+    count: rows.filter((row) => partnerOverviewSelectionIssueMatches(row.readinessFlags, option.issue)).length,
+  }));
+}
+
+function partnerOverviewSelectionIssueMatches(
+  flags: readonly string[],
+  issue: PartnerOverviewSelectionIssue | null,
+) {
+  if (!issue) return true;
+
+  switch (issue) {
+    case 'availability':
+      return flags.some((flag) =>
+        ['Available soon', 'Busy now', 'Offline now'].includes(flag),
+      );
+    case 'price':
+      return flags.includes('High partner price');
+    case 'profile':
+      return flags.includes('No approved profile image') || flags.includes('No approved gallery image');
+    case 'response':
+      return flags.includes('Slow response');
+    case 'service':
+      return flags.includes('No active service');
+  }
+}
+
+function partnerOverviewSelectionSortRows(
+  left: PartnerOverviewSelectionSortableRow,
+  right: PartnerOverviewSelectionSortableRow,
+  sort: PartnerOverviewSelectionSort,
+) {
+  const defaultSort =
+    right.profileViews - left.profileViews ||
+    right.favoriteCount - left.favoriteCount ||
+    right.completedBookings - left.completedBookings ||
+    (right.lastIntentAt ?? '').localeCompare(left.lastIntentAt ?? '');
+
+  switch (sort) {
+    case 'availability':
+      return partnerOverviewAvailabilityWeight(right.readinessFlags) -
+        partnerOverviewAvailabilityWeight(left.readinessFlags) ||
+        defaultSort;
+    case 'favorites':
+      return right.favoriteCount - left.favoriteCount || defaultSort;
+    case 'price':
+      return (right.maxServicePrice ?? -1) - (left.maxServicePrice ?? -1) || defaultSort;
+    case 'response':
+      return (right.averageResponseSeconds ?? -1) - (left.averageResponseSeconds ?? -1) || defaultSort;
+    default:
+      return defaultSort;
+  }
+}
+
+function partnerOverviewAvailabilityWeight(flags: readonly string[]) {
+  if (flags.includes('Offline now')) return 4;
+  if (flags.includes('Busy now')) return 3;
+  if (flags.includes('Available soon')) return 2;
+  if (flags.includes('Not eligible now')) return 1;
+  return 0;
+}
+
+function partnerOverviewSelectionReadinessFlags(
+  fact: PartnerOverviewProviderFact,
+  averageResponseSeconds: number | null,
+) {
+  const flags: string[] = [];
+
+  if (!fact.hasProfileImage) flags.push('No approved profile image');
+  if (fact.galleryImageCount === 0) flags.push('No approved gallery image');
+  if (fact.activeServiceCount === 0) flags.push('No active service');
+  if (fact.maxServicePriceRatio !== null && fact.maxServicePriceRatio >= 1.5) {
+    flags.push('High partner price');
+  }
+  if (fact.status === ProviderStatus.ONLINE_AVAILABLE_SOON) {
+    flags.push('Available soon');
+  } else if (fact.status === ProviderStatus.ONLINE_BUSY) {
+    flags.push('Busy now');
+  } else if (fact.status === ProviderStatus.OFFLINE) {
+    flags.push('Offline now');
+  }
+  if (averageResponseSeconds !== null && averageResponseSeconds >= 180) {
+    flags.push('Slow response');
+  }
+  if (!fact.eligibleToAccept) flags.push('Not eligible now');
+
+  return flags.length > 0 ? flags : ['No obvious blocker'];
+}
+
+function partnerOverviewSelectionFrictionReason(input: {
+  readonly completedBookings: number;
+  readonly favoriteCount: number;
+  readonly profileViews: number;
+  readonly riskLevel: PartnerOverviewProviderFact['riskLevel'];
+}) {
+  if (input.completedBookings === 0 && input.profileViews >= 5) return 'High views, no completed booking';
+  if (input.completedBookings === 0 && input.favoriteCount > 0) return 'Favorited but not selected';
+  if (input.riskLevel === 'critical' || input.riskLevel === 'high') return 'Risk blocking conversion';
+  return 'Monitor profile conversion';
+}
+
+function partnerOverviewSelectionFrictionAction(reason: string) {
+  switch (reason) {
+    case 'High views, no completed booking':
+      return 'Review profile pricing and photos';
+    case 'Favorited but not selected':
+      return 'Check availability and direct request readiness';
+    case 'Risk blocking conversion':
+      return 'Resolve operational risk first';
+    default:
+      return 'Monitor profile conversion';
+  }
+}
+
+function partnerOverviewSegments(facts: readonly PartnerOverviewProviderFact[]) {
+  const segment = (
+    key: string,
+    label: string,
+    rows: PartnerOverviewProviderFact[],
+    explanation: string,
+    recommendedAction: string,
+    href: string,
+    tone: 'success' | 'warning' | 'danger' | 'info' = 'info',
+  ) => ({
+    key,
+    label,
+    count: rows.length,
+    explanation,
+    recommendedAction,
+    href,
+    tone,
+  });
+
+  return [
+    segment('pending', 'New Pending', facts.filter((fact) => !fact.approved), 'Needs admin review before marketplace exposure.', 'Review KYC and profile documents.', '/partners?review=unapproved', 'warning'),
+    segment(
+      'documents-missing',
+      'Documents Missing',
+      facts.filter((fact) => fact.verificationStatus !== VerificationStatus.APPROVED || fact.kycStatus !== ProviderKycStatus.APPROVED),
+      'Partners that still need approval-ready KYC or profile evidence.',
+      'Request missing documents or review submitted files.',
+      '/partners?review=unapproved&documentStatus=missing',
+      'warning',
+    ),
+    segment(
+      'approved-inactive',
+      'Approved But Inactive',
+      facts.filter((fact) => fact.approved && fact.inactive7d),
+      'Approved Partners without recent online, booking, or request activity.',
+      'Send reactivation message or operator follow-up.',
+      '/partners?review=marketplace-ready&activity=inactive-7d',
+      'warning',
+    ),
+    segment('first-job', 'First Job Pending', facts.filter((fact) => fact.approved && fact.completedBookings === 0), 'Approved supply without a completed booking.', 'Check pricing, service coverage, and activation.', '/partners?review=marketplace-ready&bookingFlow=first-job-pending', 'info'),
+    segment('high-activity', 'High Activity', facts.filter((fact) => fact.completedBookings >= 3), 'Reliable supply anchors in the selected range.', 'Keep available and monitor payout readiness.', '/partners?sort=completed-work', 'success'),
+    segment('high-rating', 'High Rating', facts.filter((fact) => fact.rating >= 4.5 && fact.reviewCount >= 3), 'Partners with strong customer feedback.', 'Feature in marketplace and retention campaigns.', '/partners?sort=rating', 'success'),
+    segment(
+      'low-rating',
+      'Low Rating',
+      facts.filter((fact) => fact.lowReviewCount > 0 || (fact.reviewCount > 0 && fact.rating < 3)),
+      'Partners with recent low-quality signals.',
+      'Review service records and customer complaints.',
+      '/partners?review=quality-risk',
+      'danger',
+    ),
+    segment('high-cancellation', 'High Cancellation', facts.filter((fact) => fact.cancellationRate >= 20), 'Cancellation risk that can hurt matching.', 'Audit work schedule and cancellation reasons.', '/partners?review=high-cancellation', 'warning'),
+    segment('no-show', 'No-show Risk', facts.filter((fact) => fact.noShowReports > 0), 'Open no-show evidence needs operator attention.', 'Review no-show reports and possible sanctions.', '/partners?review=no-show-risk', 'danger'),
+    segment('negative-wallet', 'Negative Wallet', facts.filter((fact) => fact.walletBalance < 0), 'Company receivable exposure from partner wallet.', 'Resolve deposit or receivable workflow.', '/partners?review=unsettled', 'danger'),
+    segment(
+      'payout-blocked',
+      'Payout Blocked',
+      facts.filter((fact) => fact.walletBalance < 0 || fact.taxStatus !== ProviderTaxProfileStatus.APPROVED),
+      'Payout readiness is blocked by wallet debt or missing finance profile review.',
+      'Review wallet, withdrawal setup, and tax readiness.',
+      '/partners?review=payout-blocked',
+      'danger',
+    ),
+    segment('churn-risk', 'Churn Risk', facts.filter((fact) => fact.approved && fact.inactive30d), 'Approved supply without recent activity.', 'Send reactivation push or call.', '/partners?review=marketplace-ready&activity=inactive-30d', 'warning'),
+    segment(
+      'overpriced',
+      'Overpriced',
+      [],
+      'Requires partner pricing policy comparison before automated classification.',
+      'Review service pricing outliers once pricing telemetry is connected.',
+      '/partners?review=pricing-risk',
+      'info',
+    ),
+  ];
+}
+
+function partnerOverviewKpi(
+  key: string,
+  label: string,
+  value: number | null,
+  detail: string,
+  unit: 'count' | 'money' | 'percent' | 'seconds' | 'rating' = 'count',
+) {
+  return {
+    key,
+    label,
+    value,
+    detail,
+    unit,
+    deltaPercent: null,
+  };
+}
+
+function partnerOverviewAverageDetailDurationSeconds(
+  rows: Array<{ metadata: Prisma.JsonValue | null }>,
+) {
+  const values = rows
+    .map((row) => partnerOverviewDetailDurationSeconds(row.metadata))
+    .filter((value): value is number => typeof value === 'number');
+  if (values.length === 0) {
+    return null;
+  }
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function partnerOverviewDetailDurationSeconds(metadata: Prisma.JsonValue | null | undefined) {
+  if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') {
+    return null;
+  }
+  const durationSeconds = (metadata as Record<string, unknown>).durationSeconds;
+  if (typeof durationSeconds !== 'number' || !Number.isFinite(durationSeconds) || durationSeconds < 0) {
+    return null;
+  }
+  return Math.trunc(durationSeconds);
+}
+
+function partnerOverviewFunnelSteps(steps: Array<[string, number | null]>) {
+  const firstKnown = steps.find(([, count]) => typeof count === 'number')?.[1] ?? null;
+
+  return steps.map(([label, count], index) => {
+    const previousKnown = steps
+      .slice(0, index)
+      .reverse()
+      .find(([, previousCount]) => typeof previousCount === 'number')?.[1];
+    const conversionBase = typeof firstKnown === 'number' && firstKnown > 0 ? firstKnown : null;
+    const dropoffBase = typeof previousKnown === 'number' && previousKnown > 0 ? previousKnown : null;
+
+    return {
+      key: label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      label,
+      count,
+      conversionRate: typeof count === 'number' && conversionBase ? percentageValue(count, conversionBase) : null,
+      dropoffRate:
+        typeof count === 'number' && dropoffBase ? Math.max(0, 100 - percentageValue(count, dropoffBase)) : null,
+      dataStatus: typeof count === 'number' ? 'available' : 'not_enough_data',
+    };
+  });
+}
+
+function usageOverviewUtcDayStart(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function usageOverviewAddUtcDays(value: Date, days: number) {
+  const next = new Date(value);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function usageOverviewClosedAtSql(
+  dateWhere: ReturnType<typeof adminUsageDateWhere>,
+  tableAlias?: string,
+) {
+  if (!dateWhere) return Prisma.empty;
+
+  if (tableAlias === 'booking') {
+    return Prisma.sql`AND booking."closedAt" >= ${dateWhere.gte} AND booking."closedAt" < ${dateWhere.lt}`;
+  }
+
+  return Prisma.sql`AND "closedAt" >= ${dateWhere.gte} AND "closedAt" < ${dateWhere.lt}`;
+}
+
+function usageOverviewLastSeenAtSql(dateWhere: ReturnType<typeof adminUsageDateWhere>) {
+  if (!dateWhere) return Prisma.empty;
+
+  return Prisma.sql`AND "lastSeenAt" >= ${dateWhere.gte} AND "lastSeenAt" < ${dateWhere.lt}`;
+}
+
+function usageOverviewCreatedAtSql(dateWhere: ReturnType<typeof adminUsageDateWhere>) {
+  if (!dateWhere) return Prisma.empty;
+
+  return Prisma.sql`AND "createdAt" >= ${dateWhere.gte} AND "createdAt" < ${dateWhere.lt}`;
+}
+
+function usageOverviewClosedOrUpdatedAtSql(dateWhere: ReturnType<typeof adminUsageDateWhere>) {
+  if (!dateWhere) return Prisma.empty;
+
+  return Prisma.sql`
+    AND (
+      ("closedAt" >= ${dateWhere.gte} AND "closedAt" < ${dateWhere.lt})
+      OR ("updatedAt" >= ${dateWhere.gte} AND "updatedAt" < ${dateWhere.lt})
+    )
+  `;
+}
+
+function normalizeUsageOverviewPlatform(value: string | null | undefined) {
+  const normalized = value?.trim().toLowerCase();
+
+  if (normalized === 'android' || normalized === 'ios' || normalized === 'web') {
+    return normalized;
+  }
+
+  return 'unknown';
+}
+
+function buildUsageOverviewHourlyActivity(
+  rows: Array<{
+    hour: bigint | number | null;
+    customerSessionCount: bigint | number | null;
+    bookingRequestCount: bigint | number | null;
+  }>,
+) {
+  const hourlyMap = new Map(
+    rows
+      .map((row) => {
+        const hour = numberValue(row.hour);
+
+        if (hour < 0 || hour > 23) return null;
+
+        return [
+          hour,
+          {
+            bookingRequestCount: numberValue(row.bookingRequestCount),
+            customerSessionCount: numberValue(row.customerSessionCount),
+          },
+        ] as const;
+      })
+      .filter((row): row is NonNullable<typeof row> => Boolean(row)),
+  );
+
+  return Array.from({ length: 24 }, (_, hour) => {
+    const row = hourlyMap.get(hour);
+    const customerSessionCount = row?.customerSessionCount ?? 0;
+    const bookingRequestCount = row?.bookingRequestCount ?? 0;
+
+    return {
+      hour,
+      label: `${hour.toString().padStart(2, '0')}:00`,
+      customerSessionCount,
+      bookingRequestCount,
+      totalActivityCount: customerSessionCount + bookingRequestCount,
+    };
+  });
 }
 
 function adminReferralPolicyView(audience: ReferralAudience, policy: AdminReferralPolicyRecord | null) {

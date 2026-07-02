@@ -86,7 +86,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       ]),
     );
     expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(8);
-    expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(6);
+    expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(5);
     expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });

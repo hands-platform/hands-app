@@ -34,6 +34,10 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   }
 
   const matches = entry.bankReconciliationMatches ?? [];
+  const matchedAmount = matches.reduce((total, match) => {
+    return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
+  }, 0);
+  const remainingAmount = Math.max(0, Math.abs(entry.amount) - matchedAmount);
   const settlementTraceLinks = buildFinanceSettlementTraceLinks(entry);
 
   return (
@@ -99,6 +103,57 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
+          <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, entry.currency)} />
+          <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, entry.currency)} />
+        </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        description="Quick links from this clearing row to the payment source, settlement snapshot, journal, and bank match evidence."
+        resultLabel={remainingAmount > 0 ? 'Needs match' : 'Fully matched'}
+        resultTone={remainingAmount > 0 ? 'warning' : 'success'}
+        title="Clearing evidence hub"
+      >
+        <div className="detail-grid admin-mt-16">
+          <FinanceDetailInfoItem
+            label="Source payment"
+            value={
+              <div className="admin-table-substack">
+                {entry.paymentId ? (
+                  <Link className="text-link" href={`/payments/${entry.paymentId}`}>
+                    Payment {shortId(entry.paymentId)}
+                  </Link>
+                ) : (
+                  <span className="muted">No payment record</span>
+                )}
+                <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
+                  Booking {shortId(entry.bookingId)}
+                </Link>
+              </div>
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Linked settlement"
+            value={
+              settlementTraceLinks.length > 0 ? (
+                <div className="admin-table-substack">
+                  {settlementTraceLinks.map((link) => (
+                    <Link className="text-link" href={link.href} key={link.label}>
+                      {link.label} <span className="muted">{link.value}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                'No settlement link'
+              )
+            }
+          />
+          <FinanceDetailInfoItem label="Bank match status" value={`${matches.length} match(es) · ${formatMoney(remainingAmount, entry.currency)} remaining`} />
+          <FinanceDetailInfoItem
+            label="Latest bank match"
+            value={matches[0] ? <BankMatchSummary match={matches[0]} /> : 'No bank match'}
+          />
         </div>
       </AdminFilterPanel>
 
@@ -155,6 +210,32 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function BankMatchSummary({
+  match,
+}: {
+  readonly match: NonNullable<AdminBookingPaymentClearingEntryDetail['bankReconciliationMatches']>[number];
+}) {
+  return (
+    <div className="admin-table-substack">
+      {match.bankTransactionId ? (
+        <Link className="text-link" href={`/finance-tax/bank-reconciliation/${match.bankTransactionId}`}>
+          Bank {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
+        </Link>
+      ) : (
+        <span className="muted">No bank transaction</span>
+      )}
+      {match.accountingJournalEntry ? (
+        <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+          Journal {match.accountingJournalEntry.accountCode}
+        </Link>
+      ) : (
+        <span className="muted">No journal entry</span>
+      )}
+      <span className="muted">{match.status}</span>
+    </div>
   );
 }
 

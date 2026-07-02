@@ -27,6 +27,11 @@ describe('FinanceTaxPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(4);
+    expect(markup).toContain('Tax command board');
+    expect(markup).toContain('Open finance risk');
+    expect(markup).toContain('Platform VAT');
+    expect(markup).toContain('Partner withholding');
+    expect(markup).toContain('Monthly close');
     expect(markup).toContain('Tax finance operating model');
     expect(markup).toContain('Finance operations priority desk');
     expect(markup).toContain('Open full finance summary view');

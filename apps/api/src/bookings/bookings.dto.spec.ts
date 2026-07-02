@@ -40,6 +40,15 @@ describe('booking request DTO validation', () => {
     return paramTypes?.[2] as object | undefined;
   }
 
+  function recordProviderBookingDetailViewBodyMetatype() {
+    const paramTypes = Reflect.getMetadata(
+      'design:paramtypes',
+      BookingsController.prototype,
+      'recordProviderBookingDetailView',
+    ) as unknown[];
+    return paramTypes?.[2] as object | undefined;
+  }
+
   it('uses a concrete DTO for customer booking creation', () => {
     expect(createCustomerBookingBodyMetatype()?.constructor.name).toBe('Function');
     expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe(
@@ -59,6 +68,12 @@ describe('booking request DTO validation', () => {
   it('uses a concrete DTO for partner customer evaluations', () => {
     expect((createProviderCustomerReviewBodyMetatype() as { name?: string })?.name).toBe(
       'CreateProviderCustomerReviewDto',
+    );
+  });
+
+  it('uses a concrete DTO for partner booking detail view telemetry', () => {
+    expect((recordProviderBookingDetailViewBodyMetatype() as { name?: string })?.name).toBe(
+      'RecordProviderBookingDetailViewDto',
     );
   });
 
@@ -153,6 +168,38 @@ describe('booking request DTO validation', () => {
 
     expect(transformed).toEqual({
       comment: 'Polite customer and smooth service closeout.',
+    });
+  });
+
+  it('validates partner booking detail view telemetry without accepting arbitrary fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        { eventType: 'opened', durationSeconds: 20 },
+        { type: 'body', metatype: recordProviderBookingDetailViewBodyMetatype() as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { eventType: 'closed', durationSeconds: 999999 },
+        { type: 'body', metatype: recordProviderBookingDetailViewBodyMetatype() as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    const transformed = await pipe.transform(
+      {
+        durationSeconds: '95',
+        eventType: 'closed',
+        adminOnly: true,
+      },
+      { type: 'body', metatype: recordProviderBookingDetailViewBodyMetatype() as never, data: '' },
+    );
+
+    expect(transformed).toEqual({
+      durationSeconds: 95,
+      eventType: 'closed',
     });
   });
 });

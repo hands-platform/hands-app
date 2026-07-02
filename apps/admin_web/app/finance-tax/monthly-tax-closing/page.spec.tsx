@@ -27,16 +27,109 @@ describe('MonthlyTaxClosingPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Monthly closing period');
+    expect(markup).toContain('Closeout command board');
+    expect(markup).toContain('Formula delta');
+    expect(markup).toContain('Closeout status');
     expect(markup).toContain('Monthly closing action');
     expect(markup).toContain('Closeout risk queue');
     expect(markup).toContain('Monthly reconciliation');
     expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(4);
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
-    expect(markup).toContain('admin-form-input');
-    expect(markup).toContain('admin-form-select');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled');
+    expect(markup).toContain('admin-form-select admin-form-control-labeled');
+    expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
+  });
+
+  it('shows retained remittance evidence on the command board and stored closing row', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          cashDebtTotal: 0,
+          closedAt: null,
+          companyCouponExpenseTotal: 0,
+          companyOutputVatTotal: 10000,
+          couponDiscountAmountTotal: 0,
+          couponReviewFlagCount: 0,
+          couponSettlementCount: 0,
+          currency: 'VND',
+          customerPaymentAmountTotal: 500000,
+          declaredAt: '2026-07-01T08:00:00.000Z',
+          id: 'closing-1',
+          netRevenueDelta: 0,
+          nonCashPartnerPayoutTotal: 390000,
+          notes: 'Tax paid with retained portal receipt',
+          openTaxCount: 0,
+          paidAt: '2026-07-02T10:00:00.000Z',
+          paidTaxCount: 4,
+          partnerCountWithRevenue: 2,
+          partnerFundedCouponAmountTotal: 0,
+          partnerPitWithheldTotal: 30000,
+          partnerPayoutTotal: 390000,
+          partnerVatWithheldTotal: 50000,
+          partnerWithholdingTotal: 80000,
+          paymentProcessingFeeTotal: 12000,
+          period: '2026-06',
+          platformFeeDiscountAmountTotal: 0,
+          platformFeeGrossTotal: 100000,
+          platformFeeNetRevenueTotal: 90000,
+          reconciliationDelta: 0,
+          remittanceMetadata: {
+            channel: 'VCB manual transfer',
+            evidenceUrl: 'https://evidence.example/tax-receipt.pdf',
+            paidAt: '2026-07-02T10:00:00.000Z',
+            transferRef: 'TAX-PAID-001',
+          },
+          settlementCount: 4,
+          status: 'PAID',
+        };
+      }
+      if (href === '/admin/monthly-tax-closings?period=2026-06&take=25') {
+        return [
+          {
+            cashDebtTotal: 0,
+            closedAt: null,
+            companyOutputVatTotal: 10000,
+            createdAt: '2026-07-01T08:00:00.000Z',
+            currency: 'VND',
+            declaredAt: '2026-07-01T08:00:00.000Z',
+            id: 'closing-1',
+            nonCashPartnerPayoutTotal: 390000,
+            notes: 'Tax paid with retained portal receipt',
+            paidAt: '2026-07-02T10:00:00.000Z',
+            partnerPitWithheldTotal: 30000,
+            partnerVatWithheldTotal: 50000,
+            partnerWithholdingTotal: 80000,
+            paymentProcessingFeeTotal: 12000,
+            period: '2026-06',
+            platformFeeGrossTotal: 100000,
+            platformFeeNetRevenueTotal: 90000,
+            remittanceMetadata: {
+              channel: 'VCB manual transfer',
+              evidenceUrl: 'https://evidence.example/tax-receipt.pdf',
+              paidAt: '2026-07-02T10:00:00.000Z',
+              transferRef: 'TAX-PAID-001',
+            },
+            settlementCount: 4,
+            status: 'PAID',
+            updatedAt: '2026-07-02T10:00:00.000Z',
+          },
+        ];
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Evidence retained');
+    expect(markup).toContain('TAX-PAID-001');
+    expect(markup).toContain('VCB manual transfer');
+    expect(markup).toContain('https://evidence.example/tax-receipt.pdf');
   });
 });

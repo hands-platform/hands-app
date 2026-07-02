@@ -616,10 +616,14 @@ export class EarningsService {
         serviceTypes,
         occurredAt: booking.updatedAt ?? new Date(),
       });
+      const walletDeltaPlatformFee =
+        booking.payment?.method === PaymentMethod.CASH
+          ? Math.max(0, platformFee.platformFeeAmount - tax.withholdingAmount)
+          : platformFee.platformFeeAmount;
       const netAmount = calculateProviderWalletDelta({
         paymentMethod: booking.payment?.method,
         grossAmount,
-        platformFee: platformFee.platformFeeAmount,
+        platformFee: walletDeltaPlatformFee,
         withholdingAmount: tax.withholdingAmount,
         companyCouponExpense: couponSettlement.companyCouponExpense,
       });

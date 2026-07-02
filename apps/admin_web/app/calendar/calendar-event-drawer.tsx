@@ -247,7 +247,7 @@ export function CalendarEventDrawer({
 const CalendarDatePickerInput = forwardRef<HTMLInputElement, CalendarDatePickerInputProps>(
   function CalendarDatePickerInput({ disabled, label, onClick, value }, ref) {
     return (
-      <label className="admin-form-input calendar-datepicker-input">
+      <label className="admin-form-input admin-form-input-date-picker calendar-datepicker-input">
         <span className="sr-only">{label}</span>
         <input
           aria-label={label}

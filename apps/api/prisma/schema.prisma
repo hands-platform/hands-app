@@ -679,6 +679,7 @@ model ProviderProfile {
   devices                  ProviderDevice[]
   services                 ProviderService[]
   participants             BookingParticipant[]
+  bookingRequestEvents     ProviderBookingRequestEvent[]
   favoritedByCustomers     CustomerFavoriteProvider[]
   viewedByCustomers        CustomerProviderProfileView[]
   preferredBookings        Booking[]                         @relation("PreferredProvider")
@@ -1011,6 +1012,7 @@ model Booking {
   accountingJournalBatches    AccountingJournalBatch[]
   paymentClearingEntries      BookingPaymentClearingEntry[]
   referralRewards             ReferralReward[]
+  providerRequestEvents       ProviderBookingRequestEvent[]
 
   @@index([customerProfileId, createdAt])
   @@index([preferredProviderId, createdAt])
@@ -1214,6 +1216,22 @@ model BookingParticipant {
   @@unique([bookingId, providerProfileId])
   @@index([providerProfileId, joinedAt])
   @@index([status, joinedAt])
+}
+
+model ProviderBookingRequestEvent {
+  id                  String          @id @default(cuid())
+  providerProfileId   String
+  bookingId           String?
+  eventType           String
+  visibleBookingCount Int?
+  metadata            Json?
+  createdAt           DateTime        @default(now())
+  providerProfile     ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+  booking             Booking?        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([eventType, createdAt])
+  @@index([providerProfileId, eventType, createdAt])
+  @@index([bookingId, eventType, createdAt])
 }
 
 model ChatRoom {

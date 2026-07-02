@@ -1,4 +1,4 @@
-export type AdminDateRange = 'all' | 'today' | '7d' | '30d';
+export type AdminDateRange = 'all' | 'today' | '7d' | '30d' | '90d';
 
 const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const vietnamDateFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -13,7 +13,7 @@ export function readSearchParam(value: string | string[] | undefined) {
 }
 
 export function normalizeDateRange(value: string): AdminDateRange {
-  if (value === 'all' || value === 'today' || value === '7d' || value === '30d') {
+  if (value === 'all' || value === 'today' || value === '7d' || value === '30d' || value === '90d') {
     return value;
   }
   return 'today';
@@ -28,6 +28,9 @@ export function dateRangeLabel(range: AdminDateRange) {
   }
   if (range === '30d') {
     return 'Last 30 days';
+  }
+  if (range === '90d') {
+    return 'Last 90 days';
   }
   return 'All dates';
 }
@@ -60,6 +63,9 @@ function dateRangeStart(range: AdminDateRange) {
   }
   if (range === '30d') {
     return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '90d') {
+    return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
   }
   return null;
 }

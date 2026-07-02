@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2, ReceiptText, Scale } from 'lucide-react';
 
 import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
@@ -8,6 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   GENERAL_LEDGER_REVIEW_LINKS,
@@ -51,6 +53,8 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
     adminGet<AdminAccountingJournalBatch[]>(buildAccountingJournalBatchApiHref(filters), []),
   ]);
   const pagination = buildTaxSettlementServerPagination(batches, filters, summary.count);
+  const debitCreditDelta = summary.totalDebit - summary.totalCredit;
+  const isBalanced = debitCreditDelta === 0;
 
   return (
     <AdminPageTemplate
@@ -75,6 +79,44 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
       ]}
       title="General Ledger"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Ledger command board">
+        <FinanceListCommandCard
+          detail={`Debit ${formatMoney(summary.totalDebit, summary.currency)} / credit ${formatMoney(
+            summary.totalCredit,
+            summary.currency,
+          )}.`}
+          href={generalLedgerHref({ ...filters, page: 1 })}
+          icon={Scale}
+          label="Debit/Credit delta"
+          tone={isBalanced ? 'success' : 'danger'}
+          value={isBalanced ? 'Balanced' : formatMoney(Math.abs(debitCreditDelta), summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.postedCount} posted batch(es) in the selected range.`}
+          href={generalLedgerHref({ ...filters, page: 1, review: 'posted' })}
+          icon={CheckCircle2}
+          label="Posted ratio"
+          tone={summary.postedCount > 0 ? 'success' : 'neutral'}
+          value={formatFinancePercent(summary.postedCount, summary.count)}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.reversedCount} reversed batch(es) requiring source/reversal trace review.`}
+          href={generalLedgerHref({ ...filters, page: 1, review: 'reversed' })}
+          icon={AlertTriangle}
+          label="Reversal queue"
+          tone={summary.reversedCount > 0 ? 'warning' : 'success'}
+          value={String(summary.reversedCount)}
+        />
+        <FinanceListCommandCard
+          detail="Open detail only when debit/credit entries or source evidence are needed."
+          href={generalLedgerHref({ ...filters, page: 1 })}
+          icon={ReceiptText}
+          label="Journal evidence"
+          tone={summary.count > 0 ? 'info' : 'neutral'}
+          value={`${summary.count} batch(es)`}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${financeAccountingReviewLabel(filters.review, GENERAL_LEDGER_REVIEW_LINKS)}.`}
@@ -177,6 +219,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 <td>
                   <strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>
                   <div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>
+                  <div className="muted">
+                    Delta {formatMoney(Math.abs(batch.totalDebit - batch.totalCredit), batch.currency)}
+                  </div>
                 </td>
                 <td>
                   <span className={`pill ${statusPill(batch.status)}`}>{batch.status}</span>

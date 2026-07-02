@@ -1,6 +1,9 @@
 import {
   buildBookingSettlementSnapshotApiHref,
+  buildBookingSettlementSnapshotDetailApiHref,
   buildBookingSettlementReversalApiHref,
+  buildBookingSettlementReversalDetailApiHref,
+  buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalSummaryApiHref,
   buildBookingSettlementReversalTraceLinks,
   buildFinanceSettlementTraceLinks,
@@ -30,12 +33,15 @@ import {
   monthlyTaxClosingHref,
   monthlyTaxClosingNextStatusOptions,
   bookingSettlementAuditHref,
+  bookingSettlementAuditDetailHref,
+  bookingSettlementReversalDetailHref,
   bookingSettlementReversalHref,
   buildTaxSettlementServerPagination,
   couponFinanceHref,
   buildTaxFinanceMetrics,
   buildFinanceOperationsSummaryFilters,
   buildMonthlyTaxClosingMetrics,
+  buildMonthlyTaxClosingRemittanceEvidenceState,
   buildMonthlyTaxClosingRiskLinks,
   emptyMonthlyTaxClosingSummary,
   readBookingSettlementFilters,
@@ -57,6 +63,9 @@ describe('tax settlement page model', () => {
     expect(buildBookingSettlementSnapshotApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots?range=today&review=open&take=10',
     );
+    expect(buildBookingSettlementSnapshotDetailApiHref('settlement 1')).toBe(
+      '/admin/booking-settlement-snapshots/settlement%201',
+    );
     expect(buildBookingSettlementSnapshotSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/summary?range=today&review=open',
     );
@@ -66,11 +75,20 @@ describe('tax settlement page model', () => {
     expect(buildBookingSettlementReversalApiHref(filters)).toBe(
       '/admin/booking-settlement-reversals?range=today&take=10',
     );
+    expect(buildBookingSettlementReversalDetailApiHref('reversal 1')).toBe(
+      '/admin/booking-settlement-reversals/reversal%201',
+    );
     expect(buildCouponFinanceSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/coupon-finance-summary?range=today&review=open',
     );
     expect(buildCouponFinanceApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/coupon-finance?range=today&review=open&take=10',
+    );
+    expect(bookingSettlementAuditDetailHref('settlement 1')).toBe(
+      '/finance-tax/booking-settlement-audit/settlement%201',
+    );
+    expect(bookingSettlementReversalDetailHref('reversal 1')).toBe(
+      '/finance-tax/settlement-reversals/reversal%201',
     );
   });
 
@@ -250,7 +268,7 @@ describe('tax settlement page model', () => {
 
     expect(links).toEqual([
       {
-        href: '/finance-tax/booking-settlement-audit?range=all',
+        href: '/finance-tax/booking-settlement-audit/settlement-1',
         label: 'Original settlement',
         value: 'settleme',
       },
@@ -267,6 +285,61 @@ describe('tax settlement page model', () => {
     ]);
   });
 
+  it('summarizes settlement reversal evidence readiness for operations', () => {
+    expect(
+      buildBookingSettlementReversalEvidenceState({
+        accountingJournalBatches: [{ id: 'journal-1', sourceKey: 'journal:1', status: 'POSTED', postedAt: '2026-07-01' }],
+        paymentClearingEntries: [
+          {
+            amount: 100000,
+            currency: 'VND',
+            id: 'clearing-1',
+            occurredAt: '2026-07-01',
+            sourceKey: 'clearing:1',
+            status: 'CLEARED',
+            type: 'REFUND_REVERSAL',
+          },
+        ],
+      }),
+    ).toEqual({
+      detail: 'Journal POSTED · Clearing CLEARED',
+      label: 'Evidence complete',
+      tone: 'success',
+    });
+
+    expect(
+      buildBookingSettlementReversalEvidenceState({
+        accountingJournalBatches: [{ id: 'journal-1', sourceKey: 'journal:1', status: 'POSTED', postedAt: '2026-07-01' }],
+        paymentClearingEntries: [
+          {
+            amount: 100000,
+            currency: 'VND',
+            id: 'clearing-1',
+            occurredAt: '2026-07-01',
+            sourceKey: 'clearing:1',
+            status: 'OPEN',
+            type: 'REFUND_REVERSAL',
+          },
+        ],
+      }),
+    ).toEqual({
+      detail: 'Journal POSTED · Clearing OPEN',
+      label: 'Clearing open',
+      tone: 'warning',
+    });
+
+    expect(
+      buildBookingSettlementReversalEvidenceState({
+        accountingJournalBatches: [],
+        paymentClearingEntries: [],
+      }),
+    ).toEqual({
+      detail: 'Journal missing · Clearing missing',
+      label: 'Evidence missing',
+      tone: 'danger',
+    });
+  });
+
   it('builds finance detail trace links back to settlement and reversal queues', () => {
     const links = buildFinanceSettlementTraceLinks({
       settlementSnapshotId: 'settlement-1',
@@ -275,7 +348,7 @@ describe('tax settlement page model', () => {
 
     expect(links).toEqual([
       {
-        href: '/finance-tax/booking-settlement-audit?range=all',
+        href: '/finance-tax/booking-settlement-audit/settlement-1',
         label: 'Settlement snapshot',
         value: 'settleme',
       },
@@ -473,6 +546,52 @@ describe('tax settlement page model', () => {
       ['Formula delta', '0 VND'],
       ['Net revenue delta', '0 VND'],
     ]);
+  });
+
+  it('summarizes monthly tax remittance evidence readiness', () => {
+    expect(
+      buildMonthlyTaxClosingRemittanceEvidenceState({
+        paidAt: '2026-07-02T10:00:00.000Z',
+        remittanceMetadata: {
+          channel: 'VCB manual transfer',
+          evidenceUrl: 'https://evidence.example/tax-receipt.pdf',
+          paidAt: '2026-07-02T10:00:00.000Z',
+          transferRef: 'TAX-PAID-001',
+        },
+        status: 'PAID',
+      }),
+    ).toEqual({
+      detail: 'TAX-PAID-001 · VCB manual transfer',
+      evidenceHref: 'https://evidence.example/tax-receipt.pdf',
+      label: 'Evidence retained',
+      tone: 'success',
+    });
+
+    expect(
+      buildMonthlyTaxClosingRemittanceEvidenceState({
+        paidAt: '2026-07-02T10:00:00.000Z',
+        remittanceMetadata: { transferRef: 'TAX-PAID-002' },
+        status: 'PAID',
+      }),
+    ).toEqual({
+      detail: 'Missing evidence URL',
+      evidenceHref: null,
+      label: 'Evidence incomplete',
+      tone: 'warning',
+    });
+
+    expect(
+      buildMonthlyTaxClosingRemittanceEvidenceState({
+        paidAt: null,
+        remittanceMetadata: null,
+        status: 'DECLARED',
+      }),
+    ).toEqual({
+      detail: 'Tax declaration is not paid yet.',
+      evidenceHref: null,
+      label: 'Pending remittance',
+      tone: 'neutral',
+    });
   });
 
   it('builds monthly closing risk links from the summary without loading row lists', () => {

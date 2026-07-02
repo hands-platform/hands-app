@@ -24,6 +24,7 @@ import {
   partnerGrossRevenue,
   partnerLastActivityAt,
   partnerLastCompletedWorkAt,
+  partnerLastSessionAt,
   partnerPendingPayout,
   partnerUnsettledWalletBalance,
 } from './partner-activity-facts';
@@ -37,6 +38,8 @@ const ACTIVE_PARTNER_BOOKING_STATUSES = [
   'ARRIVED',
   'IN_SERVICE',
 ];
+const PARTNER_INACTIVE_7D_MS = 7 * 24 * 60 * 60_000;
+const PARTNER_INACTIVE_30D_MS = 30 * 24 * 60 * 60_000;
 
 export type PartnerListQueryDeps = {
   canAcceptBookingNow: (provider: AdminProvider, opsPolicy: ProviderOpsPolicy) => boolean;
@@ -160,6 +163,9 @@ export function filterPartners(
     if (filters.readiness && partnerReadiness(provider, opsPolicy, deps) !== filters.readiness) {
       return false;
     }
+    if (filters.activity && !partnerMatchesActivity(provider, filters.activity)) {
+      return false;
+    }
     if (filters.bookingFlow && !partnerMatchesBookingFlow(provider, filters.bookingFlow)) {
       return false;
     }
@@ -168,6 +174,22 @@ export function filterPartners(
     }
     return true;
   });
+}
+
+export function partnerMatchesActivity(provider: AdminProvider, activity: string) {
+  if (activity === 'never-online') {
+    return !partnerLastSessionAt(provider);
+  }
+
+  const lastActivityMs = dateMs(partnerLastActivityAt(provider));
+  if (activity === 'inactive-7d') {
+    return lastActivityMs === 0 || Date.now() - lastActivityMs >= PARTNER_INACTIVE_7D_MS;
+  }
+  if (activity === 'inactive-30d') {
+    return lastActivityMs === 0 || Date.now() - lastActivityMs >= PARTNER_INACTIVE_30D_MS;
+  }
+
+  return true;
 }
 
 export function partnerMatchesBookingFlow(provider: AdminProvider, flow: string) {

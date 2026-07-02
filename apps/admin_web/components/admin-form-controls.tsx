@@ -14,12 +14,15 @@ type AdminFormSelectOption = {
   readonly value: string;
 };
 
+type AdminFormLabelVisibility = 'hidden' | 'visible';
+
 type AdminFormSelectProps = {
   readonly className?: string;
   readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
   readonly options: readonly AdminFormSelectOption[];
-} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'onChange' | 'required' | 'value'>;
+} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
 
 type AdminFormSearchProps = {
   readonly className?: string;
@@ -30,12 +33,14 @@ type AdminFormSearchProps = {
 type AdminFormDateProps = {
   readonly className?: string;
   readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'value'>;
 
 type AdminFormInputProps = {
   readonly className?: string;
   readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
@@ -56,6 +61,7 @@ type AdminFormInputProps = {
 type AdminFormTextareaProps = {
   readonly className?: string;
   readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
   readonly textareaClassName?: string;
 } & Pick<
@@ -96,7 +102,9 @@ type AdminFormControlButtonProps = {
 export function AdminFormSelect({
   className,
   defaultValue,
+  disabled,
   label,
+  labelVisibility = 'hidden',
   name,
   onChange,
   options,
@@ -104,9 +112,16 @@ export function AdminFormSelect({
   value,
 }: AdminFormSelectProps) {
   return (
-    <label className={joinClassNames('admin-form-select', className)}>
-      <span className="sr-only">{label}</span>
-      <select defaultValue={defaultValue} name={name} onChange={onChange} required={required} value={value}>
+    <label className={joinClassNames('admin-form-select', visibleLabelClass(labelVisibility), className)}>
+      <span className={labelClassName(labelVisibility)}>{label}</span>
+      <select
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+        onChange={onChange}
+        required={required}
+        value={value}
+      >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -147,13 +162,14 @@ export function AdminFormDate({
   defaultValue,
   disabled,
   label,
+  labelVisibility = 'hidden',
   name,
   onChange,
   value,
 }: AdminFormDateProps) {
   return (
-    <label className={joinClassNames('admin-form-date', className)}>
-      <span className="sr-only">{label}</span>
+    <label className={joinClassNames('admin-form-date', 'admin-form-date-picker', visibleLabelClass(labelVisibility), className)}>
+      <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
         defaultValue={defaultValue}
         disabled={disabled}
@@ -171,6 +187,7 @@ export function AdminFormInput({
   defaultValue,
   disabled,
   label,
+  labelVisibility = 'hidden',
   max,
   maxLength,
   min,
@@ -184,8 +201,15 @@ export function AdminFormInput({
   value,
 }: AdminFormInputProps) {
   return (
-    <label className={joinClassNames('admin-form-input', className)}>
-      <span className="sr-only">{label}</span>
+    <label
+      className={joinClassNames(
+        'admin-form-input',
+        dateTimeInputClass(type),
+        visibleLabelClass(labelVisibility),
+        className,
+      )}
+    >
+      <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
         defaultValue={defaultValue}
         disabled={disabled}
@@ -210,6 +234,7 @@ export function AdminFormTextarea({
   defaultValue,
   disabled,
   label,
+  labelVisibility = 'hidden',
   maxLength,
   minLength,
   name,
@@ -221,8 +246,8 @@ export function AdminFormTextarea({
   value,
 }: AdminFormTextareaProps) {
   return (
-    <label className={joinClassNames('admin-form-textarea', className)}>
-      <span className="sr-only">{label}</span>
+    <label className={joinClassNames('admin-form-textarea', visibleLabelClass(labelVisibility), className)}>
+      <span className={labelClassName(labelVisibility)}>{label}</span>
       <textarea
         className={textareaClassName}
         defaultValue={defaultValue}
@@ -310,4 +335,18 @@ export function AdminFormControlButton({
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
+}
+
+function labelClassName(visibility: AdminFormLabelVisibility) {
+  return visibility === 'visible' ? 'admin-form-label' : 'sr-only';
+}
+
+function visibleLabelClass(visibility: AdminFormLabelVisibility) {
+  return visibility === 'visible' ? 'admin-form-control-labeled' : undefined;
+}
+
+function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {
+  return type === 'date' || type === 'datetime-local' || type === 'month' || type === 'time'
+    ? 'admin-form-input-date-picker'
+    : undefined;
 }

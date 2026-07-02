@@ -44,7 +44,8 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Location freshness: 30m');
     expect(rendered).toContain('Search: linh');
-    expect(rendered).toContain('Status: ONLINE_AVAILABLE');
+    expect(rendered).toContain('State: Online available');
+    expect(rendered).not.toContain('Status: ONLINE_AVAILABLE');
     expect(rendered).toContain('Review: Unapproved Partners');
     expect(rendered).toContain('Sort: booking count');
     expect(rendered).toContain('Active partner filters');
@@ -106,6 +107,8 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('More filters');
     expect(rendered).toContain('Location');
     expect(rendered).toContain('Device/session');
+    expect(rendered).toContain('Activity');
+    expect(rendered).toContain('Inactive 7D');
     expect(rendered).toContain('Booking flow');
     expect(rendered).toContain('Review lane');
     expect(rendered).toContain('Review: Marketplace ready');

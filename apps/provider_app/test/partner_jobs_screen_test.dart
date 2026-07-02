@@ -12,6 +12,7 @@ import 'package:provider_app/src/features/auth/domain/usecases/sign_in_with_otp.
 import 'package:provider_app/src/features/auth/domain/usecases/sign_out.dart';
 import 'package:provider_app/src/features/booking/domain/repositories/provider_booking_repository.dart';
 import 'package:provider_app/src/features/booking/presentation/partner_jobs_screen.dart';
+import 'package:provider_app/src/features/booking/presentation/provider_requests_screen.dart';
 import 'package:provider_app/src/features/chat/presentation/provider_chat_screen.dart';
 import 'package:provider_app/src/features/chat/domain/repositories/chat_repository.dart';
 import 'package:provider_app/src/features/earnings/domain/repositories/provider_earnings_repository.dart';
@@ -50,6 +51,59 @@ void main() {
 
     expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
     expect(find.textContaining('ApiException'), findsNothing);
+  });
+
+  testWidgets('records request detail view telemetry for visible request cards',
+      (tester) async {
+    final bookingRepository = _RequestTelemetryBookingRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              _FakeProviderProfileRepository(),
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          pushNotificationRepositoryProvider.overrideWithValue(
+            _FakePushNotificationRepository(),
+          ),
+          pushTokenRefreshRegistrationProvider.overrideWithValue(null),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: RequestsScreen())),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.login).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('HANDS Massage / 60 min'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    expect(bookingRepository.detailViewTelemetryRecords, hasLength(1));
+    expect(bookingRepository.detailViewTelemetryRecords.single, {
+      'bookingId': 'booking-request-1',
+      'eventType': ProviderBookingDetailViewTelemetryEvent.closed,
+      'durationSeconds': 0,
+    });
   });
 
   testWidgets('formats partner chat location API errors with partner-safe copy',
@@ -422,6 +476,14 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
     String? addressText,
   }) async =>
       {};
+
+  @override
+  Future<Map<String, dynamic>> recordDetailViewTelemetry(
+    String bookingId, {
+    required ProviderBookingDetailViewTelemetryEvent eventType,
+    Duration? duration,
+  }) async =>
+      {};
 }
 
 class _FakeProviderProfileRepository implements ProviderProfileRepository {
@@ -534,6 +596,64 @@ class _ChatReadyBookingRepository implements ProviderBookingRepository {
     String? addressText,
   }) async =>
       {};
+
+  @override
+  Future<Map<String, dynamic>> recordDetailViewTelemetry(
+    String bookingId, {
+    required ProviderBookingDetailViewTelemetryEvent eventType,
+    Duration? duration,
+  }) async =>
+      {};
+}
+
+class _RequestTelemetryBookingRepository extends _ChatReadyBookingRepository {
+  final detailViewTelemetryRecords = <Map<String, dynamic>>[];
+
+  @override
+  Future<List<dynamic>> listBookings() async => const [];
+
+  @override
+  Future<List<dynamic>> requestBookings() async => [
+        {
+          'id': 'booking-request-1',
+          'status': 'OPEN_MATCHING',
+          'createdAt': '2026-07-02T01:00:00.000Z',
+          'openedAt': '2026-07-02T01:00:00.000Z',
+          'address': {'addressPreview': 'District 1'},
+          'services': [
+            {
+              'service': {
+                'name': 'HANDS Massage',
+                'durationMin': 60,
+                'basePrice': 500000,
+              },
+              'price': 500000,
+            },
+          ],
+          'payment': {
+            'amount': 500000,
+            'method': 'CASH',
+            'status': 'AUTHORIZED',
+          },
+          'participants': const [],
+          'preferredProvider': null,
+          'selectedProvider': null,
+        },
+      ];
+
+  @override
+  Future<Map<String, dynamic>> recordDetailViewTelemetry(
+    String bookingId, {
+    required ProviderBookingDetailViewTelemetryEvent eventType,
+    Duration? duration,
+  }) async {
+    detailViewTelemetryRecords.add({
+      'bookingId': bookingId,
+      'eventType': eventType,
+      if (duration != null) 'durationSeconds': duration.inSeconds,
+    });
+    return {'recorded': true};
+  }
 }
 
 class _CompletableBookingRepository extends _ChatReadyBookingRepository {

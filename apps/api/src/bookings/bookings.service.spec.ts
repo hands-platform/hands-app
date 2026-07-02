@@ -1538,6 +1538,9 @@ describe('BookingsService marketplace participation', () => {
       booking: {
         findMany: vi.fn().mockResolvedValue([openBooking]),
       },
+      providerBookingRequestEvent: {
+        create: vi.fn(),
+      },
       providerEarning: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
       },
@@ -1586,6 +1589,9 @@ describe('BookingsService marketplace participation', () => {
       booking: {
         findMany: vi.fn().mockResolvedValue([openBooking]),
       },
+      providerBookingRequestEvent: {
+        create: vi.fn(),
+      },
     };
     const matching = {
       getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
@@ -1613,6 +1619,58 @@ describe('BookingsService marketplace participation', () => {
         take: 20,
       }),
     );
+  });
+
+  it('records a partner open request list view event after visible requests are returned', async () => {
+    const openBooking = {
+      ...openMarketplaceBooking(),
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: approvedPartner({ id: 'first-pick-partner' }),
+      selectedProvider: null,
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValue([openBooking]),
+      },
+      providerBookingRequestEvent: {
+        create: vi.fn(),
+      },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await service.getOpenBookings('partner-user-1');
+
+    expect(prisma.providerBookingRequestEvent.create).toHaveBeenCalledWith({
+      data: {
+        eventType: 'OPEN_REQUEST_LIST_VIEWED',
+        providerProfileId: 'partner-1',
+        visibleBookingCount: 1,
+        metadata: {
+          bookingIds: ['booking-1'],
+        },
+      },
+    });
   });
 
   it('clamps partner open request take and applies cursor paging without changing response shape', async () => {
@@ -1647,6 +1705,121 @@ describe('BookingsService marketplace participation', () => {
         take: 50,
       }),
     );
+  });
+
+  it('records a partner open request detail view event for visible booking details', async () => {
+    const openBooking = {
+      ...openMarketplaceBooking(),
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: approvedPartner({ id: 'first-pick-partner' }),
+      selectedProvider: null,
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findFirstOrThrow: vi.fn().mockResolvedValue(openBooking),
+      },
+      providerBookingRequestEvent: {
+        create: vi.fn(),
+      },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.getProviderBooking('booking-1', 'partner-user-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: BookingStatus.OPEN_MATCHING,
+      }),
+    );
+    expect(prisma.providerBookingRequestEvent.create).toHaveBeenCalledWith({
+      data: {
+        bookingId: 'booking-1',
+        eventType: 'OPEN_REQUEST_DETAIL_VIEWED',
+        providerProfileId: 'partner-1',
+      },
+    });
+  });
+
+  it('records partner open request detail close duration for visible booking details', async () => {
+    const openBooking = {
+      ...openMarketplaceBooking(),
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: approvedPartner({ id: 'first-pick-partner' }),
+      selectedProvider: null,
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findFirstOrThrow: vi.fn().mockResolvedValue(openBooking),
+      },
+      providerBookingRequestEvent: {
+        create: vi.fn(),
+      },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.recordProviderBookingDetailView('booking-1', 'partner-user-1', {
+        durationSeconds: 95,
+        eventType: 'closed',
+      }),
+    ).resolves.toEqual({
+      durationSeconds: 95,
+      eventType: 'OPEN_REQUEST_DETAIL_CLOSED',
+      recorded: true,
+    });
+
+    expect(prisma.providerBookingRequestEvent.create).toHaveBeenCalledWith({
+      data: {
+        bookingId: 'booking-1',
+        eventType: 'OPEN_REQUEST_DETAIL_CLOSED',
+        metadata: {
+          durationSeconds: 95,
+          statusAtEvent: BookingStatus.OPEN_MATCHING,
+        },
+        providerProfileId: 'partner-1',
+      },
+    });
   });
 
   it('hides new open requests while the partner has unfinished selected work', async () => {

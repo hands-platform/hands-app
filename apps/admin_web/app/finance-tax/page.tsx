@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AlertTriangle, Landmark, ReceiptText, Scale } from 'lucide-react';
 
 import type {
   AdminBankReconciliationSummary,
@@ -14,6 +15,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
+import { FinanceListCommandCard } from './finance-list-command-card';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
@@ -106,6 +108,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
     ]);
 
   const currency = settlementSummary.currency || withholdingSummary.currency || 'VND';
+  const monthlyFormulaIssueCount =
+    (monthlyClosingSummary.reconciliationDelta !== 0 ? 1 : 0) +
+    (monthlyClosingSummary.netRevenueDelta !== 0 ? 1 : 0);
+  const openFinanceRiskCount =
+    settlementSummary.openTaxCount +
+    clearingSummary.openCount +
+    bankSummary.unmatchedCount +
+    monthlyClosingSummary.couponReviewFlagCount +
+    monthlyFormulaIssueCount;
 
   return (
     <AdminPageTemplate
@@ -124,6 +135,41 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
       metrics={buildTaxFinanceMetrics(settlementSummary, withholdingSummary)}
       title="Tax Overview"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Tax command board">
+        <FinanceListCommandCard
+          detail="Open tax, payment clearing, bank reconciliation, coupon, and monthly formula signals."
+          href={paymentClearingHref({ ...clearingFilters, page: 1, review: 'open' })}
+          icon={AlertTriangle}
+          label="Open finance risk"
+          tone={openFinanceRiskCount > 0 ? 'danger' : 'success'}
+          value={String(openFinanceRiskCount)}
+        />
+        <FinanceListCommandCard
+          detail="Company output VAT from HANDS platform fee snapshots."
+          href={platformVatHref(monthlyClosingFilters)}
+          icon={ReceiptText}
+          label="Platform VAT"
+          tone={settlementSummary.companyOutputVat > 0 ? 'warning' : 'neutral'}
+          value={formatMoney(settlementSummary.companyOutputVat, currency)}
+        />
+        <FinanceListCommandCard
+          detail="Partner VAT/PIT withholding payable for the active monthly period."
+          href={partnerWithholdingTaxHref(withholdingFilters)}
+          icon={Landmark}
+          label="Partner withholding"
+          tone={withholdingSummary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
+          value={formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Monthly tax closing state and formula readiness."
+          href={monthlyTaxClosingHref(monthlyClosingFilters)}
+          icon={Scale}
+          label="Monthly close"
+          tone={monthlyClosingSummary.status === 'CLOSED' ? 'success' : openFinanceRiskCount > 0 ? 'warning' : 'info'}
+          value={monthlyClosingSummary.status}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description="Use the summary APIs first. Open the bounded audit lists only when a finance operator needs booking-level evidence."

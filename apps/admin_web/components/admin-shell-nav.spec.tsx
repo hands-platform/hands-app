@@ -30,6 +30,8 @@ describe('admin shell navigation', () => {
       ),
     ).toBe(true);
     expect(hrefMatchesPath('/partners', '/partners', 'review=kyc')).toBe(false);
+    expect(hrefMatchesPath('/partners/overview', '/partners/overview', 'range=7d')).toBe(true);
+    expect(hrefMatchesPath('/partners', '/partners/overview', 'range=7d')).toBe(false);
     expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unapproved')).toBe(true);
     expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unsettled')).toBe(false);
   });

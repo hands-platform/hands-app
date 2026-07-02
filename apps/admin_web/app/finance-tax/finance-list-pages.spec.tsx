@@ -45,11 +45,55 @@ describe('finance list pages', () => {
 
   it.each([
     [
+      'booking settlement audit',
+      BookingSettlementAuditPage,
+      '/finance-tax/booking-settlement-audit/snapshot-1',
+      [
+        {
+          booking: { status: 'COMPLETED' },
+          bookingId: 'booking-1',
+          companyOutputVat: 5000,
+          currency: 'VND',
+          customerPaymentAmount: 500000,
+          customerProfile: { user: { fullName: 'Demo Customer', phone: '+84900000001' } },
+          customerProfileId: 'customer-1',
+          id: 'snapshot-1',
+          metadata: { companyCouponExpense: 0, couponCodeSnapshot: 'WELCOME10', couponDiscountAmount: 10000 },
+          monthlyPeriod: '2026-06',
+          partnerPitAmount: 15000,
+          partnerVatAmount: 0,
+          partnerWithholdingTotal: 15000,
+          paymentMethod: 'CARD',
+          paymentProcessingFee: 12000,
+          platformFeeGross: 50000,
+          platformFeeNetRevenue: 45000,
+          postedAt: '2026-06-20T09:10:00.000Z',
+          providerProfile: {
+            displayName: 'Linh Wellness',
+            user: { fullName: 'Demo Partner', phone: '+84900000002' },
+          },
+          providerProfileId: 'provider-1',
+          settlementStatus: 'POSTED',
+          taxStatus: 'OPEN',
+        },
+      ],
+      {
+        companyOutputVat: 5000,
+        count: 1,
+        currency: 'VND',
+        openTaxCount: 1,
+        paidTaxCount: 0,
+        partnerWithholdingTotal: 15000,
+        paymentProcessingFee: 12000,
+      },
+    ],
+    [
       'payment clearing',
       PaymentClearingPage,
       '/finance-tax/payment-clearing/clearing-1',
       [
         {
+          _count: { bankReconciliationMatches: 0 },
           amount: 500000,
           booking: { status: 'COMPLETED' },
           bookingId: 'booking-1',
@@ -150,6 +194,81 @@ describe('finance list pages', () => {
         unmatchedCount: 1,
       },
     ],
+    [
+      'settlement reversals',
+      SettlementReversalsPage,
+      '/finance-tax/general-ledger/reversal-journal-1',
+      [
+        {
+          accountingJournalBatches: [
+            {
+              id: 'reversal-journal-1',
+              postedAt: '2026-06-20T11:00:00.000Z',
+              sourceKey: 'journal:reversal:1',
+              status: 'POSTED',
+            },
+          ],
+          bookingId: 'booking-1',
+          companyOutputVat: 5000,
+          currency: 'VND',
+          customerPaymentAmount: 500000,
+          customerProfileId: 'customer-1',
+          id: 'reversal-1',
+          monthlyPeriod: '2026-07',
+          occurredAt: '2026-07-01T11:00:00.000Z',
+          originalMonthlyClosingId: 'closing-1',
+          originalMonthlyPeriod: '2026-06',
+          originalSettlementSnapshot: {
+            customerProfile: { user: { fullName: 'Demo Customer', phone: '+84900000001' } },
+            providerProfile: {
+              displayName: 'Linh Wellness',
+              user: { fullName: 'Demo Partner', phone: '+84900000002' },
+            },
+          },
+          originalSettlementSnapshotId: 'snapshot-1',
+          partnerPitAmount: 15000,
+          partnerPayoutAmount: 390000,
+          partnerTaxableRevenue: 400000,
+          partnerVatAmount: 0,
+          partnerWithholdingTotal: 15000,
+          paymentClearingEntries: [
+            {
+              amount: 500000,
+              currency: 'VND',
+              id: 'clearing-1',
+              occurredAt: '2026-07-01T11:00:00.000Z',
+              sourceKey: 'clearing:reversal:1',
+              status: 'OPEN',
+              type: 'REFUND_REVERSAL',
+            },
+          ],
+          paymentId: 'payment-1',
+          paymentMethod: 'CARD',
+          paymentProcessingFee: 12000,
+          platformFeeGross: 50000,
+          platformFeeNetRevenue: 45000,
+          providerProfileId: 'provider-1',
+          providerEarningId: 'earning-1',
+          reason: 'Refund after payout',
+          settlementStatus: 'REVERSED',
+          sourceKey: 'seed-finance-smoke-reversal',
+          taxStatus: 'REVERSED',
+        },
+      ],
+      {
+        cashCount: 0,
+        companyOutputVat: 5000,
+        count: 1,
+        currency: 'VND',
+        customerPaymentAmount: 500000,
+        nonCashCount: 1,
+        partnerPayoutAmount: 390000,
+        partnerWithholdingTotal: 15000,
+        paymentProcessingFee: 12000,
+        platformFeeGross: 50000,
+        platformFeeNetRevenue: 45000,
+      },
+    ],
   ] as const)('renders %s rows with a dedicated Evidence action column', async (_name, Page, detailHref, rows, summary) => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (String(href).includes('/summary')) {
@@ -164,9 +283,50 @@ describe('finance list pages', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Evidence');
-    expect(markup).toContain('Open detail');
+    if (_name !== 'settlement reversals') {
+      expect(markup).toContain('Open detail');
+    }
     expect(markup).toContain(detailHref);
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(markup).toContain('vuexy-booking-table-footer');
+
+    if (_name === 'payment clearing') {
+      expect(markup).toContain('Clearing command board');
+      expect(markup).toContain('Open ratio');
+      expect(markup).toContain('Evidence amount');
+      expect(markup).toContain('Needs evidence');
+      expect(markup).toContain('Bank matches 0');
+    }
+
+    if (_name === 'booking settlement audit') {
+      expect(markup).toContain('10 rows');
+      expect(markup).toContain('/finance-tax/booking-settlement-audit?range=today&amp;review=open&amp;take=10');
+    }
+
+    if (_name === 'general ledger') {
+      expect(markup).toContain('Ledger command board');
+      expect(markup).toContain('Debit/Credit delta');
+      expect(markup).toContain('Balanced');
+      expect(markup).toContain('Delta 0 VND');
+    }
+
+    if (_name === 'bank reconciliation') {
+      expect(markup).toContain('Bank command board');
+      expect(markup).toContain('Unmatched ratio');
+      expect(markup).toContain('Needs match');
+    }
+
+    if (_name === 'settlement reversals') {
+      expect(markup).toContain('Reversal command board');
+      expect(markup).toContain('Non-cash share');
+      expect(markup).toContain('Tax reversal impact');
+      expect(markup).toContain('10 rows');
+      expect(markup).toContain('/finance-tax/settlement-reversals?range=today&amp;take=10');
+      expect(markup).toContain('Refund after payout');
+      expect(markup).toContain('Clearing open');
+      expect(markup).toContain('Journal POSTED · Clearing OPEN');
+      expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
+      expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
+    }
   });
 });

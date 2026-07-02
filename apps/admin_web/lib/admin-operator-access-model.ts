@@ -35,6 +35,7 @@ export type AdminOperatorPermissionCategory =
 
 export type AdminOperatorAccessLike = {
   readonly categories: readonly string[];
+  readonly roles?: readonly string[];
 } | null;
 
 const pageCategoryRules: Array<{
@@ -47,7 +48,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'BOOKINGS_REALTIME',
-    prefixes: ['/bookings'],
+    prefixes: ['/bookings', '/vietnam-overview'],
   },
   {
     category: 'CUSTOMERS_DETAIL',
@@ -64,6 +65,10 @@ const pageCategoryRules: Array<{
   {
     category: 'PARTNERS_UNAPPROVED',
     prefixes: ['/partners?review=unapproved'],
+  },
+  {
+    category: 'PARTNERS_DIRECTORY',
+    prefixes: ['/partners/overview'],
   },
   {
     category: 'PARTNERS_DETAIL',
@@ -127,7 +132,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_SETUP',
-    prefixes: ['/setup', '/usage-overview', '/vietnam-overview', '/marketing-analytics'],
+    prefixes: ['/setup', '/usage-overview', '/marketing-analytics'],
   },
 ];
 
@@ -259,6 +264,10 @@ export function hasAdminOperatorCategory(
   access: AdminOperatorAccessLike,
   category: AdminOperatorPermissionCategory,
 ) {
+  if (access?.roles?.includes('MASTER_ADMIN')) {
+    return true;
+  }
+
   const parentCategory = parentCategories[category];
   return Boolean(access?.categories.includes(category) || (parentCategory && access?.categories.includes(parentCategory)));
 }

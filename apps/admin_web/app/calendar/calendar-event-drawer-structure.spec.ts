@@ -11,6 +11,7 @@ describe('calendar event drawer structure', () => {
     expect(drawerSource).toContain('Author:');
     expect(drawerSource).toContain('Hashtags');
     expect(drawerSource).toContain('DatePicker');
+    expect(drawerSource).toContain('admin-form-input-date-picker calendar-datepicker-input');
     expect(drawerSource).toContain('showTimeSelect={!draft.allDay}');
     expect(drawerSource).toContain('calendar-vuexy-datepicker-popper');
     expect(drawerSource).toContain('Only ${draft.authorName} can update or delete this event.');

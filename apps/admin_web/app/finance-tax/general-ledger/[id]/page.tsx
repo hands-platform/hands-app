@@ -34,6 +34,8 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
     notFound();
   }
   const settlementTraceLinks = buildFinanceSettlementTraceLinks(batch);
+  const balanceDelta = Math.abs(batch.totalDebit - batch.totalCredit);
+  const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
 
   return (
     <AdminPageTemplate
@@ -61,6 +63,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
           <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
+          <FinanceDetailInfoItem label="Debit total" value={formatMoney(batch.totalDebit, batch.currency)} />
+          <FinanceDetailInfoItem label="Credit total" value={formatMoney(batch.totalCredit, batch.currency)} />
+          <FinanceDetailInfoItem label="Balance delta" value={formatMoney(balanceDelta, batch.currency)} />
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -90,6 +95,47 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                 '-'
               )
             }
+          />
+        </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        description="Quick route from this journal batch back to the source record, settlement snapshot, clearing row, and bank evidence."
+        resultLabel={balanceDelta === 0 ? 'Balanced' : 'Unbalanced'}
+        resultTone={balanceDelta === 0 ? 'success' : 'danger'}
+        title="Journal evidence hub"
+      >
+        <div className="detail-grid admin-mt-16">
+          <FinanceDetailInfoItem
+            label="Source record"
+            value={
+              <div className="admin-table-substack">
+                <strong>{batch.sourceType}</strong>
+                <span className="muted">{batch.sourceKey}</span>
+              </div>
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Linked settlement"
+            value={
+              settlementTraceLinks.length > 0 ? (
+                <div className="admin-table-substack">
+                  {settlementTraceLinks.map((link) => (
+                    <Link className="text-link" href={link.href} key={link.label}>
+                      {link.label} <span className="muted">{link.value}</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                'No settlement link'
+              )
+            }
+          />
+          <FinanceDetailInfoItem label="Bank reconciliation evidence" value={`${bankMatches.length} match(es)`} />
+          <FinanceDetailInfoItem
+            label="Latest bank evidence"
+            value={bankMatches[0] ? <BankMatchEvidence matches={[bankMatches[0]]} /> : 'No bank match'}
           />
         </div>
       </AdminFilterPanel>

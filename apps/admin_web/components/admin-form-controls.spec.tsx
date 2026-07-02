@@ -46,7 +46,7 @@ describe('Admin form controls', () => {
       name: 'from',
     });
 
-    expect(date.props.className).toBe('admin-form-date partner-date-filter');
+    expect(date.props.className).toBe('admin-form-date admin-form-date-picker partner-date-filter');
     expect(textContent(date)).toContain('From date');
   });
 
@@ -75,6 +75,62 @@ describe('Admin form controls', () => {
       step: 1000,
       type: 'text',
     });
+  });
+
+  it('marks native date and time inputs with the shared Vuexy date picker shell', () => {
+    const input = AdminFormInput({
+      label: 'Starts',
+      labelVisibility: 'visible',
+      name: 'startsAt',
+      type: 'datetime-local',
+    });
+
+    expect(input.props.className).toBe(
+      'admin-form-input admin-form-input-date-picker admin-form-control-labeled',
+    );
+    expect(input.props.children[1].props.type).toBe('datetime-local');
+
+    const monthInput = AdminFormInput({
+      label: 'Monthly tax period',
+      labelVisibility: 'visible',
+      name: 'period',
+      type: 'month',
+    });
+
+    expect(monthInput.props.className).toBe(
+      'admin-form-input admin-form-input-date-picker admin-form-control-labeled',
+    );
+    expect(monthInput.props.children[1].props.type).toBe('month');
+  });
+
+  it('can render visible field labels for operator data-entry forms', () => {
+    const input = AdminFormInput({
+      label: 'Approving admin ID',
+      labelVisibility: 'visible',
+      name: 'approvalAdminId',
+      required: true,
+    });
+    const select = AdminFormSelect({
+      label: 'Bank transaction type',
+      labelVisibility: 'visible',
+      name: 'type',
+      options: [
+        { label: 'Inflow', value: 'INFLOW' },
+        { label: 'Outflow', value: 'OUTFLOW' },
+      ],
+    });
+    const textarea = AdminFormTextarea({
+      label: 'Description',
+      labelVisibility: 'visible',
+      name: 'description',
+    });
+
+    expect(input.props.className).toBe('admin-form-input admin-form-control-labeled');
+    expect(input.props.children[0].props.className).toBe('admin-form-label');
+    expect(select.props.className).toBe('admin-form-select admin-form-control-labeled');
+    expect(select.props.children[0].props.className).toBe('admin-form-label');
+    expect(textarea.props.className).toBe('admin-form-textarea admin-form-control-labeled');
+    expect(textarea.props.children[0].props.className).toBe('admin-form-label');
   });
 
   it('renders textarea controls with the same field contract', () => {
