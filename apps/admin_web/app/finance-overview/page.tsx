@@ -13,9 +13,9 @@ import {
 import type {
   AdminFinanceOverviewSummary,
 } from '../../lib/admin-api';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
+import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
   buildFinanceOverviewActionItems,
   buildFinanceOverviewApiHrefs,
@@ -103,19 +103,13 @@ export default async function FinanceOverviewPage({
             </a>
           ))}
         </div>
-        <form className="finance-overview-period-form" action="/finance-overview">
-          <input name="range" type="hidden" value={filters.range} />
-          <AdminFormInput
-            defaultValue={filters.period}
-            label="Monthly tax period"
-            labelVisibility="visible"
-            name="period"
-            type="month"
-          />
-          <AdminFormControlButton className="button button-primary" type="submit">
-            Apply period
-          </AdminFormControlButton>
-        </form>
+        <FinancePeriodFilterForm
+          action="/finance-overview"
+          className="finance-overview-period-form"
+          hiddenFields={[{ name: 'range', value: filters.range }]}
+          period={filters.period}
+          periodLabel="Monthly tax period"
+        />
       </section>
 
       <section className="card finance-overview-priority-board" aria-label="Finance priority desk">
