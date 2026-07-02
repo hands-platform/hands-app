@@ -15,8 +15,13 @@ This checkpoint records the verified Finance/Tax work and the current commit-spl
 
 ## Verification Evidence
 
+- `just local-stop; just local-start`
+  - Restarted API/Admin without DB reset, migration, seed, or Docker volume changes.
+  - API dist freshness returned to `fresh`.
 - `npm.cmd run test --workspace @massage-vn/api -- admin.controller.spec.ts admin.service.spec.ts prisma-seed-contract.spec.ts`
   - Passed: 3 files, 345 tests.
+- `npm.cmd run test --workspace @massage-vn/api -- settlements.service.spec.ts settlement-journal.spec.ts payments.service.spec.ts payment-refund-audit.spec.ts wallet-adjustments.accounting.spec.ts earnings.service.spec.ts earnings.policy.spec.ts api-smoke-contract.spec.ts`
+  - Passed: 9 files, 117 tests.
 - `npm.cmd run test --workspace @massage-vn/admin-web -- app/finance-tax/finance-detail-pages.spec.tsx app/finance-tax/finance-list-pages.spec.tsx app/finance-tax/finance-smoke-contract.spec.ts app/finance-tax/tax-settlement-page-model.spec.ts`
   - Passed: 4 files, 42 tests.
 - `npm.cmd run test --workspace @massage-vn/admin-web -- app/finance-tax/tax-settlement-page-model.spec.ts app/finance-tax/finance-list-pages.spec.tsx`
@@ -41,11 +46,18 @@ This checkpoint records the verified Finance/Tax work and the current commit-spl
   - Bank Reconciliation detail: 358ms / 100KB
   - Booking Settlement Audit detail: 345ms / 87KB
   - Settlement Reversal detail: 340ms / 89KB
+- Fresh API cold-ish Finance detail smoke after restart also passed:
+  - Booking Settlement Audit detail: 2612ms / 88KB
+  - Settlement Reversal detail: 2135ms / 89KB
+  - Payment Clearing detail: 2066ms / 82KB
+  - General Ledger detail: 1949ms / 85KB
+  - Bank Reconciliation detail: 2347ms / 100KB
 - `just status`
   - Docker services healthy.
   - API and Admin Web running.
   - API dist reported fresh.
 - Commit `6aaeba73 perf(admin): reduce finance list default page size` was pushed to `origin/develop`.
+- Commit `9afc2b68 docs(finance): record smoke checkpoint` was pushed to `origin/develop`.
 
 ## Do Not Commit Blindly
 
