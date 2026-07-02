@@ -3383,7 +3383,8 @@ async function fetchAdminOperatorAccess(identity: string) {
     return envMasterAdminAccessForIdentity(identity);
   }
 
-  const access = (await response.json()) as AdminOperatorAccess | null;
+  const responseText = await response.text();
+  const access = responseText.trim() ? (JSON.parse(responseText) as AdminOperatorAccess | null) : null;
   return access ?? envMasterAdminAccessForIdentity(identity);
 }
 

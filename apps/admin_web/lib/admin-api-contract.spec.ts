@@ -117,6 +117,52 @@ describe('admin api auth guard', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   });
+
+  it('treats an empty admin operator access response as no stored setup for env master writes', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}`,
+      }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        return new Response('', {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        });
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      if (url.endsWith('/admin/bank-reconciliation/bank-1/matches/match-1/reverse')) {
+        return Response.json({ ok: true, path: url, method: init?.method });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    await expect(
+      adminPostOrThrow('/admin/bank-reconciliation/bank-1/matches/match-1/reverse', {
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).resolves.toMatchObject({ method: 'POST' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/bank-reconciliation/bank-1/matches/match-1/reverse'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
 });
 
 function testJwt(exp: number) {

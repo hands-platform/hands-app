@@ -5,7 +5,12 @@ import type {
   AdminBankReconciliationTransactionDetail,
   AdminBookingPaymentClearingEntry,
 } from '../../../../lib/admin-api';
-import { adminGet, adminPostOrThrow } from '../../../../lib/admin-api';
+import {
+  AdminApiRequestError,
+  AdminOperatorAccessDeniedError,
+  adminGet,
+  adminPostOrThrow,
+} from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import {
@@ -439,8 +444,9 @@ async function createBankReconciliationMatchAction(formData: FormData) {
       ...(notes ? { notes } : {}),
       [sourceField]: sourceId,
     });
-  } catch {
-    redirect(`${returnHref}?matchError=failed`);
+  } catch (error) {
+    logBankReconciliationActionError('create match', error);
+    redirect(`${returnHref}?matchError=${bankReconciliationActionErrorCode(error)}`);
   }
 
   redirect(`${returnHref}?matched=1`);
@@ -468,8 +474,9 @@ async function reverseBankReconciliationMatchAction(formData: FormData) {
       )}/reverse`,
       { approvalAdminId, ...(reason ? { reason } : {}) },
     );
-  } catch {
-    redirect(`${returnHref}?reverseError=failed`);
+  } catch (error) {
+    logBankReconciliationActionError('reverse match', error);
+    redirect(`${returnHref}?reverseError=${bankReconciliationActionErrorCode(error)}`);
   }
 
   redirect(`${returnHref}?matchReversed=1`);
@@ -620,6 +627,34 @@ function bankReconciliationSourceField(sourceType: string) {
     return 'payoutBatchId';
   }
   return null;
+}
+
+function bankReconciliationActionErrorCode(error: unknown) {
+  if (error instanceof AdminOperatorAccessDeniedError) {
+    return 'access-denied';
+  }
+  if (error instanceof AdminApiRequestError) {
+    return `api-${error.status}`;
+  }
+  if (error instanceof Error && error.message.startsWith('ADMIN_ACCESS_TOKEN')) {
+    return 'admin-token';
+  }
+  if (error instanceof TypeError) {
+    return 'request';
+  }
+  return 'failed';
+}
+
+function logBankReconciliationActionError(action: string, error: unknown) {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  const details =
+    error instanceof Error
+      ? { message: error.message, name: error.name }
+      : { message: String(error), name: typeof error };
+  console.warn(`[bank-reconciliation] ${action} failed`, details);
 }
 
 function readParam(params: Record<string, string | string[] | undefined>, key: string) {
