@@ -29,6 +29,7 @@ const budgetSmokePaths = [
   '/partners',
   '/reviews',
   '/notifications',
+  '/finance-overview',
   '/finance-tax/payment-clearing',
   '/finance-tax/general-ledger',
   '/finance-tax/bank-reconciliation',
@@ -39,6 +40,7 @@ const budgetSmokePaths = [
   '/finance-tax/platform-vat',
   '/finance-tax/payment-fees',
   '/finance-tax/partner-withholding-tax',
+  '/finance-tax/finance-approvers',
   '/operations-policy',
   '/setup',
   '/cash-settlements',
@@ -534,6 +536,16 @@ const pages = [
     ],
   },
   {
+    path: '/finance-overview',
+    markers: [
+      'Finance Overview',
+      'Finance range',
+      'Finance Priority Desk',
+      'Core Finance KPI',
+      'Finance Action Lists',
+    ],
+  },
+  {
     path: '/finance-tax/payment-clearing',
     markers: [
       'Booking Payment Clearing',
@@ -638,6 +650,16 @@ const pages = [
       'Gross revenue',
       'VAT / PIT',
       'Total withheld',
+    ],
+  },
+  {
+    path: '/finance-tax/finance-approvers',
+    markers: [
+      'Finance Approvers',
+      'Approver command board',
+      'Finance approver operating rule',
+      'Finance approver directory',
+      'Dual-control guard',
     ],
   },
   {

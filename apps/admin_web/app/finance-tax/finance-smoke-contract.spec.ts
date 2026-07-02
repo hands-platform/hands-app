@@ -11,6 +11,9 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('/cash-settlements?view=full');
     expect(scriptSource).toContain('Open full operations view');
     expect(scriptSource).toContain('Cash settlement execution desk');
+    expect(scriptSource).toContain('/finance-overview');
+    expect(scriptSource).toContain('Finance Priority Desk');
+    expect(scriptSource).toContain('Core Finance KPI');
     expect(scriptSource).toContain('/finance-tax/payment-clearing');
     expect(scriptSource).toContain('/finance-tax/general-ledger');
     expect(scriptSource).toContain('/finance-tax/bank-reconciliation');
@@ -21,6 +24,9 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('/finance-tax/platform-vat');
     expect(scriptSource).toContain('/finance-tax/payment-fees');
     expect(scriptSource).toContain('/finance-tax/partner-withholding-tax');
+    expect(scriptSource).toContain('/finance-tax/finance-approvers');
+    expect(scriptSource).toContain('Finance approver directory');
+    expect(scriptSource).toContain('Dual-control guard');
     expect(scriptSource).toContain('Booking settlement snapshot rows');
     expect(scriptSource).toContain('Coupon settlement rows');
     expect(scriptSource).toContain('Settlement reversal rows');
