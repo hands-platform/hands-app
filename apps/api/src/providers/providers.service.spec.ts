@@ -89,6 +89,30 @@ describe('ProvidersService nearby discovery', () => {
     );
   });
 
+  it('prioritizes recently updated locations before applying the public discovery limit', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: vi.fn().mockResolvedValue([nearbyProviderFixture()]),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      {} as never,
+      {
+        get: vi.fn(),
+      } as never,
+    );
+
+    await service.findNearby(10.7769, 106.7009);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ currentLocationUpdatedAt: 'desc' }, { updatedAt: 'desc' }],
+        take: 20,
+      }),
+    );
+  });
+
   it('requests only published review ratings in public nearby discovery', async () => {
     const prisma = {
       providerProfile: {

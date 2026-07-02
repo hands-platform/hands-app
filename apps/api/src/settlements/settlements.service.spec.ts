@@ -368,6 +368,10 @@ describe('SettlementsService', () => {
         totalDebit: 610_000,
       }),
     });
+    expect(Object.keys(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update?.entries ?? {})).toEqual([
+      'deleteMany',
+      'create',
+    ]);
   });
 
   it('posts customer wallet payments to the customer wallet ledger instead of payment clearing', async () => {
@@ -559,6 +563,10 @@ describe('SettlementsService', () => {
         totalDebit: 600_000,
       }),
     });
+    expect(Object.keys(prisma.accountingJournalBatch.upsert.mock.calls[0]?.[0]?.update?.entries ?? {})).toEqual([
+      'deleteMany',
+      'create',
+    ]);
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
       where: { sourceKey: 'booking-payment-clearing:booking-coupon-1:refund-reversal' },
       update: expect.objectContaining({

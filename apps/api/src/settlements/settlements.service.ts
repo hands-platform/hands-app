@@ -360,8 +360,8 @@ export class SettlementsService {
         currency: snapshot.currency,
         customerProfileId: snapshot.customerProfileId,
         entries: {
-          create: journalEntries,
           deleteMany: {},
+          create: journalEntries,
         },
         metadata: journalMetadata,
         monthlyPeriod: settlementMonthlyPeriod(input.occurredAt),
@@ -496,8 +496,8 @@ export class SettlementsService {
         currency,
         customerProfileId: input.customerProfileId,
         entries: {
-          create: journalEntries,
           deleteMany: {},
+          create: journalEntries,
         },
         metadata: journalMetadata,
         monthlyPeriod: snapshot.monthlyPeriod,

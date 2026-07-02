@@ -1038,6 +1038,52 @@ for (const [label, auth] of [
     throw new Error(`${label} provider service price was not updated: ${JSON.stringify(updatedService)}`);
   }
 }
+
+function accountingJournalEntryTotal(entries, side) {
+  return entries
+    .filter((entry) => entry.side === side)
+    .reduce((total, entry) => total + Number(entry.amount ?? 0), 0);
+}
+
+function assertBalancedAccountingJournal(label, journal) {
+  if (!journal?.entries?.length) {
+    throw new Error(`${label} did not include journal entries: ${JSON.stringify(journal)}`);
+  }
+  const totalDebitFromEntries = accountingJournalEntryTotal(journal.entries, 'DEBIT');
+  const totalCreditFromEntries = accountingJournalEntryTotal(journal.entries, 'CREDIT');
+  if (
+    journal.totalDebit !== journal.totalCredit ||
+    journal.totalDebit !== totalDebitFromEntries ||
+    journal.totalCredit !== totalCreditFromEntries
+  ) {
+    throw new Error(
+      `${label} is not balanced: ${JSON.stringify({
+        batchDebit: journal.totalDebit,
+        batchCredit: journal.totalCredit,
+        entryDebit: totalDebitFromEntries,
+        entryCredit: totalCreditFromEntries,
+        entries: journal.entries,
+      })}`,
+    );
+  }
+}
+
+function assertJournalEntry(label, journal, expected) {
+  const found = journal.entries?.some(
+    (entry) =>
+      entry.accountCode === expected.accountCode &&
+      entry.side === expected.side &&
+      Number(entry.amount ?? 0) === expected.amount,
+  );
+  if (!found) {
+    throw new Error(
+      `${label} is missing expected journal entry: ${JSON.stringify({
+        expected,
+        entries: journal.entries,
+      })}`,
+    );
+  }
+}
 const adminServiceCatalogAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
   (item) => item.id === service.id,
 );
@@ -3150,6 +3196,66 @@ if (
     })}`,
   );
 }
+const completedSettlementSnapshot = (
+  await getJson('/admin/booking-settlement-snapshots?range=all&review=posted&take=100', adminAuth.accessToken)
+).find((snapshot) => snapshot.bookingId === booking.id);
+if (
+  !completedSettlementSnapshot ||
+  completedSettlementSnapshot.customerPaymentAmount !== completedCloseout.payment.amount ||
+  completedSettlementSnapshot.partnerPayoutAmount !== completedEarning.netAmount ||
+  completedSettlementSnapshot.partnerWithholdingTotal !== completedEarning.withholdingAmount ||
+  completedSettlementSnapshot.paymentProcessingFee < 0 ||
+  completedSettlementSnapshot.platformFeeNetRevenue <= 0 ||
+  completedSettlementSnapshot.companyOutputVat < 0 ||
+  completedSettlementSnapshot.platformFeeGross !==
+    completedSettlementSnapshot.platformFeeNetRevenue + completedSettlementSnapshot.companyOutputVat
+) {
+  throw new Error(
+    `Completed booking settlement snapshot did not preserve finance split: ${JSON.stringify({
+      completedSettlementSnapshot,
+      completedEarning,
+      payment: completedCloseout.payment,
+    })}`,
+  );
+}
+const completedSettlementSnapshotDetail = await getJson(
+  `/admin/booking-settlement-snapshots/${completedSettlementSnapshot.id}`,
+  adminAuth.accessToken,
+);
+const completedSettlementJournalSummary =
+  completedSettlementSnapshotDetail.accountingJournalBatches?.find(
+    (journal) => journal.sourceType === 'BOOKING_SETTLEMENT' && journal.status === 'POSTED',
+  );
+if (
+  !completedSettlementJournalSummary ||
+  completedSettlementJournalSummary.totalDebit !== completedSettlementJournalSummary.totalCredit
+) {
+  throw new Error(
+    `Completed settlement snapshot detail did not expose a balanced booking journal: ${JSON.stringify(
+      completedSettlementSnapshotDetail,
+    )}`,
+  );
+}
+const completedSettlementJournal = await getJson(
+  `/admin/accounting-journal-batches/${completedSettlementJournalSummary.id}`,
+  adminAuth.accessToken,
+);
+assertBalancedAccountingJournal('Completed booking settlement journal', completedSettlementJournal);
+assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+  accountCode: 'booking_payment_clearing',
+  amount: completedCloseout.payment.amount,
+  side: 'DEBIT',
+});
+assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+  accountCode: 'partner_wallet_liability',
+  amount: completedEarning.netAmount,
+  side: 'CREDIT',
+});
+assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+  accountCode: 'partner_vat_pit_payable',
+  amount: completedEarning.withholdingAmount,
+  side: 'CREDIT',
+});
 const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
 const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
 const smokeBankTransaction = await postJson(
@@ -3755,6 +3861,54 @@ const refund = payment
     })
   : null;
 const adminRefunds = await getJson('/admin/refunds', adminAuth.accessToken);
+if (refund) {
+  const refundReversalJournalSummary = (
+    await getJson('/admin/accounting-journal-batches?range=all&review=posted&take=100', adminAuth.accessToken)
+  ).find(
+    (journal) =>
+      journal.bookingId === booking.id &&
+      journal.sourceType === 'BOOKING_SETTLEMENT_REVERSAL' &&
+      journal.status === 'POSTED',
+  );
+  const refundPaymentClearingEntry = (
+    await getJson('/admin/booking-payment-clearing?range=all&review=reversed&take=100', adminAuth.accessToken)
+  ).find(
+    (entry) =>
+      entry.bookingId === booking.id &&
+      entry.type === 'REFUND_REVERSAL' &&
+      entry.status === 'REVERSED',
+  );
+  if (
+    !refundReversalJournalSummary ||
+    refundReversalJournalSummary.totalDebit !== refundReversalJournalSummary.totalCredit ||
+    !refundPaymentClearingEntry ||
+    refundPaymentClearingEntry.amount !== -completedCloseout.payment.amount
+  ) {
+    throw new Error(
+      `Refund did not expose settlement reversal journal and clearing evidence: ${JSON.stringify({
+        refundPaymentClearingEntry,
+        refundReversalJournalSummary,
+        payment,
+        refund,
+      })}`,
+    );
+  }
+  const refundReversalJournal = await getJson(
+    `/admin/accounting-journal-batches/${refundReversalJournalSummary.id}`,
+    adminAuth.accessToken,
+  );
+  assertBalancedAccountingJournal('Refund settlement reversal journal', refundReversalJournal);
+  assertJournalEntry('Refund settlement reversal journal', refundReversalJournal, {
+    accountCode: 'partner_receivable_negative_wallet',
+    amount: completedEarning.netAmount,
+    side: 'DEBIT',
+  });
+  assertJournalEntry('Refund settlement reversal journal', refundReversalJournal, {
+    accountCode: 'booking_payment_clearing',
+    amount: completedCloseout.payment.amount,
+    side: 'CREDIT',
+  });
+}
 const notifications = await getJson('/notifications', customerAuth.accessToken);
 const notificationToRetry = notifications[0];
 let retryBeforeDeliveryCount = 0;

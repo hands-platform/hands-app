@@ -134,6 +134,7 @@ export class ProvidersService {
           orderBy: { createdAt: 'desc' },
         },
       },
+      orderBy: [{ currentLocationUpdatedAt: 'desc' }, { updatedAt: 'desc' }],
       take,
     });
 
