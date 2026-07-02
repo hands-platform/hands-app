@@ -34,6 +34,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   }
 
   const matches = entry.bankReconciliationMatches ?? [];
+  const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
   const matchedAmount = matches.reduce((total, match) => {
     return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
   }, 0);
@@ -141,6 +142,37 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Clearing evidence hub"
       >
+        <div className="finance-reconciliation-path admin-mt-16" aria-label="Payment clearing operating path">
+          <div className="finance-reconciliation-path-node">
+            <span>Payment source</span>
+            <strong>{entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : entry.type}</strong>
+            <small>Booking {shortId(entry.bookingId)}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Clearing row</span>
+            <strong>{formatMoney(entry.amount, entry.currency)}</strong>
+            <small>{entry.status}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Settlement evidence</span>
+            <strong>{paymentClearingSettlementLabel(entry, settlementTraceLinks.length)}</strong>
+            <small>{settlementPaymentFee.policyVersionId}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Bank closeout</span>
+            <strong>{paymentClearingBankMatchLabel(latestActiveMatch, remainingAmount, entry.currency)}</strong>
+            <small>{paymentClearingNextAction(entry.status, remainingAmount, latestActiveMatch)}</small>
+          </div>
+        </div>
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Source payment"
@@ -289,6 +321,47 @@ function bankStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function paymentClearingSettlementLabel(entry: AdminBookingPaymentClearingEntryDetail, settlementTraceCount: number) {
+  if (entry.settlementSnapshot) {
+    return `Settlement ${shortId(entry.settlementSnapshot.id)}`;
+  }
+  if (entry.settlementReversalEntry) {
+    return `Reversal ${shortId(entry.settlementReversalEntry.id)}`;
+  }
+  if (settlementTraceCount > 0) {
+    return `${settlementTraceCount} linked trace(s)`;
+  }
+  return 'No settlement trace';
+}
+
+function paymentClearingBankMatchLabel(
+  match: NonNullable<AdminBookingPaymentClearingEntryDetail['bankReconciliationMatches']>[number] | null,
+  remainingAmount: number,
+  currency: string,
+) {
+  if (match?.bankTransaction) {
+    return match.bankTransaction.transferRef ?? `Bank ${shortId(match.bankTransaction.id)}`;
+  }
+  if (remainingAmount <= 0) {
+    return 'Fully matched';
+  }
+  return formatMoney(remainingAmount, currency);
+}
+
+function paymentClearingNextAction(
+  status: string,
+  remainingAmount: number,
+  match: NonNullable<AdminBookingPaymentClearingEntryDetail['bankReconciliationMatches']>[number] | null,
+) {
+  if (remainingAmount <= 0 || status === 'CLEARED') {
+    return 'Ready for closeout';
+  }
+  if (match?.status === 'PARTIALLY_MATCHED') {
+    return 'Match remaining amount';
+  }
+  return 'Match bank transaction';
 }
 
 function paymentFeePolicyInfo(

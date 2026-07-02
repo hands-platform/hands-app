@@ -366,6 +366,12 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Payment Clearing Detail');
     expect(markup).toContain('Clearing overview');
     expect(markup).toContain('Clearing evidence hub');
+    expect(markup).toContain('Payment clearing operating path');
+    expect(markup).toContain('Payment source');
+    expect(markup).toContain('Clearing row');
+    expect(markup).toContain('Settlement evidence');
+    expect(markup).toContain('Bank closeout');
+    expect(markup).toContain('Ready for closeout');
     expect(markup).toContain('Source payment');
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Bank match status');
@@ -446,6 +452,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('CARD · legacy/manual fee evidence');
     expect(markup).toContain('Policy snapshot missing');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
+    expect(markup).toContain('Payment clearing operating path');
+    expect(markup).toContain('Match bank transaction');
     expect(markup).not.toContain('CARD · 0 bps + 0 VND');
   });
 
