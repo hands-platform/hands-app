@@ -585,4 +585,86 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Create match');
     expect(markup).not.toContain('This bank transaction is already fully reconciled.');
   });
+
+  it('separates active bank reconciliation evidence from reversed match history', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/bank-reconciliation/bank-transaction-1') {
+        return {
+          amount: 650000,
+          bankAccount: {
+            accountNumberMasked: '****1234',
+            bankName: 'Vietcombank',
+            currency: 'VND',
+            id: 'bank-account-1',
+            name: 'HANDS Operating',
+            status: 'ACTIVE',
+          },
+          bankAccountId: 'bank-account-1',
+          counterpartyName: 'Demo Customer',
+          createdAt: '2026-06-20T10:00:00.000Z',
+          currency: 'VND',
+          description: 'Card payout clearing',
+          id: 'bank-transaction-1',
+          occurredAt: '2026-06-20T10:00:00.000Z',
+          reconciliationMatches: [
+            {
+              amount: 650000,
+              currency: 'VND',
+              id: 'match-1',
+              matchedAt: '2026-06-20T10:05:00.000Z',
+              metadata: { reversalReason: 'Incorrect bank evidence selected.' },
+              paymentClearingEntry: {
+                amount: 650000,
+                bookingId: 'booking-1',
+                currency: 'VND',
+                id: 'clearing-1',
+                occurredAt: '2026-06-20T09:10:00.000Z',
+                sourceKey: 'payment:payment-1:capture',
+                status: 'OPEN',
+                type: 'CUSTOMER_PAYMENT_CAPTURED',
+              },
+              paymentClearingEntryId: 'clearing-1',
+              sourceKey: 'bank-match:bank-transaction-1',
+              status: 'REVERSED',
+            },
+          ],
+          sourceKey: 'bank:transaction:1',
+          status: 'UNMATCHED',
+          transferRef: 'BANK-IN-001',
+          type: 'INFLOW',
+          updatedAt: '2026-06-20T10:05:00.000Z',
+          valueDate: '2026-06-20T00:00:00.000Z',
+        };
+      }
+      if (href === '/admin/booking-payment-clearing?range=30d&take=50&review=open') {
+        return [
+          {
+            amount: 650000,
+            bookingId: 'booking-1',
+            currency: 'VND',
+            id: 'clearing-1',
+            occurredAt: '2026-06-20T09:10:00.000Z',
+            sourceKey: 'payment:payment-1:capture',
+            status: 'OPEN',
+            type: 'CUSTOMER_PAYMENT_CAPTURED',
+          },
+        ];
+      }
+      return fallback;
+    });
+
+    const page = await BankReconciliationDetailPage({
+      params: Promise.resolve({ id: 'bank-transaction-1' }),
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Matched finance source');
+    expect(markup).toContain('No active matched source');
+    expect(markup).toContain('Last reversed source');
+    expect(markup).toContain('REVERSED · bank-mat');
+    expect(markup).toContain('Reversal reason');
+    expect(markup).toContain('Incorrect bank evidence selected.');
+    expect(markup).toContain('Create match');
+  });
 });

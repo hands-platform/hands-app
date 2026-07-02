@@ -60,7 +60,8 @@ export default async function BankReconciliationDetailPage({
   }
 
   const matches = transaction.reconciliationMatches ?? [];
-  const latestMatch = matches[0] ?? null;
+  const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
+  const latestReversedMatch = matches.find((match) => match.status === 'REVERSED') ?? null;
   const matchedAmount = matches.reduce((total, match) => {
     return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
   }, 0);
@@ -125,37 +126,53 @@ export default async function BankReconciliationDetailPage({
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Matched finance source"
-            value={latestMatch ? `${latestMatch.status} · ${shortId(latestMatch.sourceKey)}` : 'No matched source'}
+            value={
+              latestActiveMatch
+                ? `${latestActiveMatch.status} · ${shortId(latestActiveMatch.sourceKey)}`
+                : 'No active matched source'
+            }
           />
           <FinanceDetailInfoItem
             label="Payment clearing evidence"
             value={
-              latestMatch?.paymentClearingEntry ? (
+              latestActiveMatch?.paymentClearingEntry ? (
                 <div className="admin-table-substack">
-                  <Link className="text-link" href={paymentClearingDetailHref(latestMatch.paymentClearingEntry.id)}>
-                    {latestMatch.paymentClearingEntry.type}
+                  <Link className="text-link" href={paymentClearingDetailHref(latestActiveMatch.paymentClearingEntry.id)}>
+                    {latestActiveMatch.paymentClearingEntry.type}
                   </Link>
-                  <span className="muted">{latestMatch.paymentClearingEntry.status}</span>
+                  <span className="muted">{latestActiveMatch.paymentClearingEntry.status}</span>
                 </div>
               ) : (
-                'No payment clearing link'
+                'No active payment clearing link'
               )
             }
           />
           <FinanceDetailInfoItem
             label="Journal evidence"
             value={
-              latestMatch?.accountingJournalEntry ? (
+              latestActiveMatch?.accountingJournalEntry ? (
                 <div className="admin-table-substack">
-                  <Link className="text-link" href={generalLedgerDetailHref(latestMatch.accountingJournalEntry.batchId)}>
-                    {latestMatch.accountingJournalEntry.accountCode}
+                  <Link className="text-link" href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}>
+                    {latestActiveMatch.accountingJournalEntry.accountCode}
                   </Link>
-                  <span className="muted">{latestMatch.accountingJournalEntry.accountName}</span>
+                  <span className="muted">{latestActiveMatch.accountingJournalEntry.accountName}</span>
                 </div>
               ) : (
-                'No journal link'
+                'No active journal link'
               )
             }
+          />
+          <FinanceDetailInfoItem
+            label="Last reversed source"
+            value={
+              latestReversedMatch
+                ? `${latestReversedMatch.status} · ${shortId(latestReversedMatch.sourceKey)}`
+                : 'No reversed match'
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Reversal reason"
+            value={latestReversedMatch ? (reversalReasonFromMatch(latestReversedMatch) ?? '-') : '-'}
           />
           <FinanceDetailInfoItem label="Unmatched remainder" value={formatMoney(remainingAmount, transaction.currency)} />
         </div>
@@ -566,6 +583,11 @@ function canCreateBankReconciliationMatch(status: string) {
 function readRecordString(record: Record<string, unknown> | null, key: string) {
   const value = record?.[key];
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function reversalReasonFromMatch(match: { readonly metadata?: unknown }) {
+  const record = readPlainRecord(match.metadata);
+  return readRecordString(record, 'reversalReason') ?? readRecordString(record, 'reason');
 }
 
 function bankReconciliationSourceField(sourceType: string) {
