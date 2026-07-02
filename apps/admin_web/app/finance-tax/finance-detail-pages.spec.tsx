@@ -634,6 +634,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Bank Reconciliation Detail');
     expect(markup).toContain('Bank transaction overview');
     expect(markup).toContain('Bank evidence hub');
+    expect(markup).toContain('Bank reconciliation operating path');
+    expect(markup).toContain('Finance source');
+    expect(markup).toContain('Ledger evidence');
+    expect(markup).toContain('Ready for closeout');
     expect(markup).toContain('Matched finance source');
     expect(markup).toContain('Payment clearing evidence');
     expect(markup).toContain('Journal evidence');
@@ -740,6 +744,8 @@ describe('finance detail pages', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-payment-clearing?range=30d&take=50&review=open', []);
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('Payment clearing candidate');
+    expect(markup).toContain('Create explicit match');
+    expect(markup).toContain('Pending journal evidence');
     expect(markup).toContain('Exact amount - CUSTOMER_PAYMENT_CAPTURED - 650.000 VND - booking');
     expect(markup.indexOf('Exact amount - CUSTOMER_PAYMENT_CAPTURED')).toBeLessThan(
       markup.indexOf('SETTLEMENT_POSTED - 400.000 VND'),
@@ -827,6 +833,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('No active matched source');
     expect(markup).toContain('Last reversed source');
     expect(markup).toContain('REVERSED · bank-mat');
+    expect(markup).toContain('Review reversed evidence');
     expect(markup).toContain('Reversal reason');
     expect(markup).toContain('Incorrect bank evidence selected.');
     expect(markup).toContain('Create match');

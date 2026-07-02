@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import type {
+  AdminBankReconciliationMatch,
   AdminBankReconciliationTransactionDetail,
   AdminBookingPaymentClearingEntry,
 } from '../../../../lib/admin-api';
@@ -129,6 +130,37 @@ export default async function BankReconciliationDetailPage({
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Bank evidence hub"
       >
+        <div className="finance-reconciliation-path admin-mt-16" aria-label="Bank reconciliation operating path">
+          <div className="finance-reconciliation-path-node">
+            <span>Bank row</span>
+            <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
+            <small>{transaction.status}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Finance source</span>
+            <strong>{reconciliationSourceLabel(latestActiveMatch)}</strong>
+            <small>{latestActiveMatch ? latestActiveMatch.status : 'Waiting for match'}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Ledger evidence</span>
+            <strong>{reconciliationLedgerLabel(latestActiveMatch)}</strong>
+            <small>{latestActiveMatch?.accountingJournalEntry ? 'GL linked' : 'No active GL link'}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Closeout state</span>
+            <strong>{remainingAmount > 0 ? formatMoney(remainingAmount, transaction.currency) : 'Clear'}</strong>
+            <small>{bankReconciliationNextAction(transaction.status, remainingAmount, latestReversedMatch)}</small>
+          </div>
+        </div>
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Matched finance source"
@@ -597,6 +629,49 @@ function paymentClearingCandidateLabel(entry: AdminBookingPaymentClearingEntry, 
     return `Exact amount - ${baseLabel}`;
   }
   return baseLabel;
+}
+
+function reconciliationSourceLabel(match: AdminBankReconciliationMatch | null) {
+  if (!match) {
+    return 'No active source';
+  }
+  if (match.paymentClearingEntry) {
+    return `Payment clearing ${shortId(match.paymentClearingEntry.id)}`;
+  }
+  if (match.accountingJournalEntry) {
+    return `Journal ${match.accountingJournalEntry.accountCode}`;
+  }
+  if (match.withdrawalRequest) {
+    return `Withdrawal ${shortId(match.withdrawalRequest.id)}`;
+  }
+  if (match.payoutBatch) {
+    return `Payout ${shortId(match.payoutBatch.id)}`;
+  }
+  return shortId(match.sourceKey);
+}
+
+function reconciliationLedgerLabel(match: AdminBankReconciliationMatch | null) {
+  if (!match?.accountingJournalEntry) {
+    return 'Pending journal evidence';
+  }
+  return `${match.accountingJournalEntry.accountCode} · ${match.accountingJournalEntry.accountName}`;
+}
+
+function bankReconciliationNextAction(
+  status: string,
+  remainingAmount: number,
+  latestReversedMatch: AdminBankReconciliationMatch | null,
+) {
+  if (remainingAmount <= 0 || status === 'MATCHED') {
+    return 'Ready for closeout';
+  }
+  if (latestReversedMatch) {
+    return 'Review reversed evidence';
+  }
+  if (status === 'PARTIALLY_MATCHED') {
+    return 'Match remaining amount';
+  }
+  return 'Create explicit match';
 }
 
 function canCreateBankReconciliationMatch(status: string) {

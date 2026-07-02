@@ -11982,6 +11982,54 @@ a.action-button-card:hover {
   overflow-wrap: anywhere;
 }
 
+.finance-reconciliation-path {
+  align-items: stretch;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.finance-reconciliation-path-node {
+  background: color-mix(in srgb, var(--admin-surface-soft) 88%, transparent);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.finance-reconciliation-path-node span,
+.finance-reconciliation-path-node small {
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.finance-reconciliation-path-node strong {
+  color: var(--admin-text);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.finance-reconciliation-path-connector {
+  align-self: center;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .finance-reconciliation-path {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-reconciliation-path-connector {
+    display: none;
+  }
+}
+
 .booking-detail-page {
   display: grid;
   gap: 16px;
