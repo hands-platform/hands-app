@@ -299,6 +299,10 @@ describe('finance list pages', () => {
     }
 
     if (_name === 'booking settlement audit') {
+      expect(markup).toContain('Settlement audit command board');
+      expect(markup).toContain('Open tax ratio');
+      expect(markup).toContain('Withholding evidence');
+      expect(markup).toContain('Needs review');
       expect(markup).toContain('10 rows');
       expect(markup).toContain('/finance-tax/booking-settlement-audit?range=today&amp;review=open&amp;take=10');
     }

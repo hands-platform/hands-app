@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2, ReceiptText, ShieldCheck } from 'lucide-react';
 
 import type {
   AdminBookingSettlementSnapshot,
@@ -12,6 +13,7 @@ import { AdminRoundedPagination } from '../../../components/admin-rounded-pagina
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
+import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
@@ -55,6 +57,8 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
   const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.count);
   const tableRows = pagination.rows;
   const csvHref = buildBookingSettlementSnapshotRowsCsvHref(tableRows);
+  const openTaxRatio = formatFinancePercent(summary.openTaxCount, summary.count);
+  const paidTaxRatio = formatFinancePercent(summary.paidTaxCount, summary.count);
 
   return (
     <AdminPageTemplate
@@ -99,6 +103,41 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
       ]}
       title="Booking Settlement Audit"
     >
+      <section className="finance-list-command-board admin-mb-16" aria-label="Settlement audit command board">
+        <FinanceListCommandCard
+          detail={`${summary.openTaxCount} snapshot row(s) still need declaration, payment, closeout, or reversal review.`}
+          href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' })}
+          icon={AlertTriangle}
+          label="Open tax ratio"
+          tone={summary.openTaxCount > 0 ? 'warning' : 'success'}
+          value={openTaxRatio}
+        />
+        <FinanceListCommandCard
+          detail={`${summary.paidTaxCount} snapshot row(s) already marked paid or closed for the selected range.`}
+          href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'paid' })}
+          icon={CheckCircle2}
+          label="Paid tax ratio"
+          tone={summary.paidTaxCount > 0 ? 'success' : 'neutral'}
+          value={paidTaxRatio}
+        />
+        <FinanceListCommandCard
+          detail="Partner VAT/PIT withheld by posted settlement snapshots in this audit scope."
+          href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'posted' })}
+          icon={ShieldCheck}
+          label="Withholding evidence"
+          tone={summary.partnerWithholdingTotal > 0 ? 'primary' : 'neutral'}
+          value={formatMoney(summary.partnerWithholdingTotal, summary.currency)}
+        />
+        <FinanceListCommandCard
+          detail="Open detail rows when payment fee, coupon, VAT/PIT, or journal evidence must be checked."
+          href={summary.openTaxCount > 0 ? bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' }) : '/finance-overview'}
+          icon={ReceiptText}
+          label="Audit queue"
+          tone={summary.openTaxCount > 0 ? 'danger' : 'success'}
+          value={summary.openTaxCount > 0 ? 'Needs review' : 'Clear'}
+        />
+      </section>
+
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
