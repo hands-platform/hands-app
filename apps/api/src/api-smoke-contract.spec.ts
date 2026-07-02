@@ -59,6 +59,21 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('approvalAdminId: financeApproverAuth.user.id');
   });
 
+  it('covers live bank reconciliation create, match, and reverse operations', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('ensureSmokeCompanyBankAccount');
+    expect(scriptSource).toContain("'/admin/bank-reconciliation/transactions'");
+    expect(scriptSource).toContain('`/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`');
+    expect(scriptSource).toContain("paymentClearingEntry?.status !== 'CLEARED'");
+    expect(scriptSource).toContain(
+      'matches/${smokeBankReconciliationMatch.match.id}/reverse',
+    );
+    expect(scriptSource).toContain("paymentClearingEntry?.status !== 'OPEN'");
+    expect(scriptSource).toContain('bankReconciliationTransactionId');
+    expect(scriptSource).toContain('bankReconciliationPaymentClearingReopened');
+  });
+
   it('waits long enough for asynchronous FCM delivery smoke diagnostics', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 

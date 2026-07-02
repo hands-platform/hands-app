@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient, Role } from '@prisma/client';
+import { CompanyBankAccountStatus, PrismaClient, Role } from '@prisma/client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 
@@ -55,6 +55,38 @@ async function createSmokeAdminAuth(phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADM
         { expiresIn: '30m' },
       ),
     };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function ensureSmokeCompanyBankAccount() {
+  const prisma = new PrismaClient();
+
+  try {
+    const existing = await prisma.companyBankAccount.findFirst({
+      where: {
+        currency: 'VND',
+        name: 'HANDS Smoke VND Account',
+        status: CompanyBankAccountStatus.ACTIVE,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (existing) {
+      return existing;
+    }
+
+    return prisma.companyBankAccount.create({
+      data: {
+        accountNumberLast4: '0001',
+        accountNumberMasked: '****0001',
+        bankName: 'Smoke Bank',
+        currency: 'VND',
+        metadata: { smoke: true },
+        name: 'HANDS Smoke VND Account',
+        status: CompanyBankAccountStatus.ACTIVE,
+      },
+    });
   } finally {
     await prisma.$disconnect();
   }
@@ -3103,6 +3135,106 @@ if (partnerAliasEarningsSummary.providerProfileId !== providerEarningsSummary.pr
 const adminCompletedEarning = (await getJson('/admin/earnings', adminAuth.accessToken)).find(
   (earning) => earning.bookingId === booking.id,
 );
+const completedPaymentClearingEntry = (
+  await getJson('/admin/booking-payment-clearing?review=open&take=50', adminAuth.accessToken)
+).find((entry) => entry.bookingId === booking.id);
+if (
+  !completedPaymentClearingEntry ||
+  completedPaymentClearingEntry.status !== 'OPEN' ||
+  completedPaymentClearingEntry.amount !== completedCloseout.payment.amount
+) {
+  throw new Error(
+    `Completed booking did not create an open payment clearing entry: ${JSON.stringify({
+      completedPaymentClearingEntry,
+      payment: completedCloseout.payment,
+    })}`,
+  );
+}
+const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
+const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
+const smokeBankTransaction = await postJson(
+  '/admin/bank-reconciliation/transactions',
+  adminAuth.accessToken,
+  {
+    approvalAdminId: financeApproverAuth.user.id,
+    amount: completedPaymentClearingEntry.amount,
+    bankAccountId: smokeCompanyBankAccount.id,
+    counterpartyName: 'HANDS API smoke customer',
+    currency: completedPaymentClearingEntry.currency ?? 'VND',
+    description: 'API smoke manual bank import for payment clearing reconciliation.',
+    occurredAt: new Date().toISOString(),
+    transferRef: bankReconciliationTransferRef,
+    type: 'INFLOW',
+    valueDate: new Date().toISOString(),
+  },
+);
+if (
+  smokeBankTransaction.status !== 'UNMATCHED' ||
+  smokeBankTransaction.amount !== completedPaymentClearingEntry.amount ||
+  smokeBankTransaction.transferRef !== bankReconciliationTransferRef
+) {
+  throw new Error(`Manual bank transaction import did not return an unmatched row: ${JSON.stringify(smokeBankTransaction)}`);
+}
+const smokeBankReconciliationMatch = await postJson(
+  `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`,
+  adminAuth.accessToken,
+  {
+    approvalAdminId: financeApproverAuth.user.id,
+    amount: completedPaymentClearingEntry.amount,
+    currency: completedPaymentClearingEntry.currency ?? 'VND',
+    notes: 'API smoke payment clearing match.',
+    paymentClearingEntryId: completedPaymentClearingEntry.id,
+  },
+);
+if (
+  smokeBankReconciliationMatch.bankTransaction?.status !== 'MATCHED' ||
+  smokeBankReconciliationMatch.paymentClearingEntry?.status !== 'CLEARED' ||
+  smokeBankReconciliationMatch.match?.status !== 'MATCHED' ||
+  smokeBankReconciliationMatch.match?.paymentClearingEntryId !== completedPaymentClearingEntry.id
+) {
+  throw new Error(
+    `Bank reconciliation match did not close the bank and payment clearing rows: ${JSON.stringify(
+      smokeBankReconciliationMatch,
+    )}`,
+  );
+}
+const smokeBankTransactionDetailAfterMatch = await getJson(
+  `/admin/bank-reconciliation/${smokeBankTransaction.id}`,
+  adminAuth.accessToken,
+);
+if (
+  smokeBankTransactionDetailAfterMatch.status !== 'MATCHED' ||
+  !smokeBankTransactionDetailAfterMatch.reconciliationMatches?.some(
+    (match) =>
+      match.id === smokeBankReconciliationMatch.match.id &&
+      match.paymentClearingEntry?.id === completedPaymentClearingEntry.id,
+  )
+) {
+  throw new Error(
+    `Bank reconciliation detail does not expose the linked payment clearing match: ${JSON.stringify(
+      smokeBankTransactionDetailAfterMatch,
+    )}`,
+  );
+}
+const smokeBankReconciliationReverse = await postJson(
+  `/admin/bank-reconciliation/${smokeBankTransaction.id}/matches/${smokeBankReconciliationMatch.match.id}/reverse`,
+  adminAuth.accessToken,
+  {
+    approvalAdminId: financeApproverAuth.user.id,
+    reason: 'API smoke reversal after confirming reconciliation match.',
+  },
+);
+if (
+  smokeBankReconciliationReverse.match?.status !== 'REVERSED' ||
+  smokeBankReconciliationReverse.bankTransaction?.status !== 'UNMATCHED' ||
+  smokeBankReconciliationReverse.paymentClearingEntry?.status !== 'OPEN'
+) {
+  throw new Error(
+    `Bank reconciliation reversal did not reopen the bank and payment clearing rows: ${JSON.stringify(
+      smokeBankReconciliationReverse,
+    )}`,
+  );
+}
 const expectedBasePlatformFee = service.basePrice - basePayoutRule.providerPayoutAmount;
 if (
   completedEarning.grossAmount !== service.basePrice ||
@@ -3700,6 +3832,12 @@ console.log({
   providerNetAmount: providerEarningsSummary.netAmount,
   payoutBatchId: payoutBatch.id,
   payoutBatchCount: adminPayoutBatches.length,
+  bankReconciliationTransactionId: smokeBankTransaction.id,
+  bankReconciliationMatchId: smokeBankReconciliationMatch.match.id,
+  bankReconciliationMatchedStatus: smokeBankReconciliationMatch.bankTransaction.status,
+  bankReconciliationReversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
+  bankReconciliationPaymentClearingReopened:
+    smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
   adminBookingMonitorReady: true,
   adminBookingDetailReady: true,
   customerAppSessionId: customerAppSession.id,
