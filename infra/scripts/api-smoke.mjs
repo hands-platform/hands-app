@@ -157,6 +157,135 @@ async function assertMonthlyCloseBlocksOpenJournalDelta(adminAccessToken) {
   }
 }
 
+async function assertWithholdingRemittanceLifecycle({
+  adminAccessToken,
+  bookingId,
+  customerProfileId,
+  financeApproverId,
+  providerProfileId,
+  remittedByAdminId,
+}) {
+  const prisma = new PrismaClient();
+  const period = '2099-11';
+  const currency = 'VND';
+  const snapshotSourceKey = 'api-smoke:withholding-remittance:settlement-snapshot';
+  const remittanceJournalSourceKey = `accounting-journal:withholding-remittance:${period}:${currency}`;
+  const remittanceTransferRef = `SMOKE-WHT-${Date.now()}`;
+  const remittanceEvidenceUrl = 'https://evidence.example.test/api-smoke/withholding-remittance.pdf';
+  const partnerWithholdingTotal = 105000;
+
+  try {
+    await prisma.accountingJournalBatch.deleteMany({
+      where: { OR: [{ sourceKey: remittanceJournalSourceKey }, { monthlyPeriod: period }] },
+    });
+    await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
+    await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
+    await prisma.bookingSettlementSnapshot.create({
+      data: {
+        sourceKey: snapshotSourceKey,
+        bookingId,
+        customerProfileId,
+        providerProfileId,
+        paymentMethod: 'CARD',
+        currency,
+        customerPaymentAmount: 1000000,
+        partnerPayoutAmount: 700000,
+        partnerTaxableRevenue: 700000,
+        partnerVatRateBps: 1000,
+        partnerVatAmount: 70000,
+        partnerPitRateBps: 500,
+        partnerPitAmount: 35000,
+        partnerWithholdingTotal,
+        platformFeeGross: 195000,
+        platformVatRateBps: 1000,
+        platformFeeNetRevenue: 177273,
+        companyOutputVat: 17727,
+        monthlyPeriod: period,
+        metadata: {
+          smoke: true,
+          purpose: 'withholding-remittance-paid-lifecycle',
+        },
+      },
+    });
+
+    await patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+      status: 'REVIEWED',
+      notes: 'API smoke withholding remittance reviewed lifecycle.',
+    });
+    await patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+      status: 'DECLARED',
+      notes: 'API smoke withholding remittance declared lifecycle.',
+    });
+    const closing = await patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+      status: 'PAID',
+      approvalAdminId: financeApproverId,
+      notes: 'API smoke withholding remittance paid lifecycle.',
+      paidAt: '2099-11-30T10:00:00.000Z',
+      remittanceChannel: 'MANUAL_BANK_TRANSFER',
+      remittanceEvidenceUrl,
+      remittanceTransferRef,
+    });
+
+    if (
+      closing.status !== 'PAID' ||
+      closing.period !== period ||
+      closing.partnerWithholdingTotal !== partnerWithholdingTotal ||
+      closing.remittanceMetadata?.transferRef !== remittanceTransferRef ||
+      closing.remittanceMetadata?.evidenceUrl !== remittanceEvidenceUrl ||
+      closing.remittanceMetadata?.approvedByAdminId !== financeApproverId ||
+      closing.remittanceMetadata?.remittedByAdminId !== remittedByAdminId
+    ) {
+      throw new Error(`Withholding remittance paid closeout response is incomplete: ${JSON.stringify(closing)}`);
+    }
+
+    const remittanceJournalSummary = (
+      await getJson('/admin/accounting-journal-batches?range=all&review=posted&take=100', adminAccessToken)
+    ).find(
+      (journal) =>
+        journal.sourceKey === remittanceJournalSourceKey &&
+        journal.sourceType === 'WITHHOLDING_REMITTANCE' &&
+        journal.status === 'POSTED',
+    );
+    if (
+      !remittanceJournalSummary ||
+      remittanceJournalSummary.totalDebit !== partnerWithholdingTotal ||
+      remittanceJournalSummary.totalCredit !== partnerWithholdingTotal
+    ) {
+      throw new Error(
+        `Withholding remittance journal was not posted with balanced totals: ${JSON.stringify({
+          remittanceJournalSummary,
+          closing,
+        })}`,
+      );
+    }
+
+    const remittanceJournal = await getJson(
+      `/admin/accounting-journal-batches/${remittanceJournalSummary.id}`,
+      adminAccessToken,
+    );
+    assertBalancedAccountingJournal('Withholding remittance journal', remittanceJournal);
+    assertJournalEntry('Withholding remittance journal', remittanceJournal, {
+      accountCode: 'partner_vat_pit_payable',
+      amount: partnerWithholdingTotal,
+      side: 'DEBIT',
+    });
+    assertJournalEntry('Withholding remittance journal', remittanceJournal, {
+      accountCode: 'company_bank_cash',
+      amount: partnerWithholdingTotal,
+      side: 'CREDIT',
+    });
+
+    return true;
+  } finally {
+    await prisma.accountingJournalBatch.deleteMany({
+      where: { OR: [{ sourceKey: remittanceJournalSourceKey }, { monthlyPeriod: period }] },
+    });
+    await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
+    await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
+    await prisma.$disconnect();
+  }
+}
+
 let smokePhoneSequence = 0;
 function uniqueSmokePhone(prefix = '+849') {
   smokePhoneSequence += 1;
@@ -1933,6 +2062,14 @@ const hybridBooking = await postJson('/customer/bookings', customerAuth.accessTo
   lat: 10.7783,
   lng: 106.6994,
   paymentMethod: 'CASH',
+});
+const withholdingRemittancePaidLifecycleReady = await assertWithholdingRemittanceLifecycle({
+  adminAccessToken: adminAuth.accessToken,
+  bookingId: hybridBooking.id,
+  customerProfileId: customerAuth.user.customerProfile.id,
+  financeApproverId: financeApproverAuth.user.id,
+  providerProfileId: providerAuth.user.providerProfile.id,
+  remittedByAdminId: adminAuth.user.id,
 });
 const hybridBookingDetail = await getJson(`/customer/bookings/${hybridBooking.id}`, customerAuth.accessToken);
 assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
@@ -4200,6 +4337,7 @@ console.log({
   bankReconciliationPaymentClearingReopened:
     smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
   monthlyCloseOpenJournalDeltaBlocked,
+  withholdingRemittancePaidLifecycleReady,
   adminBookingMonitorReady: true,
   adminBookingDetailReady: true,
   customerAppSessionId: customerAppSession.id,

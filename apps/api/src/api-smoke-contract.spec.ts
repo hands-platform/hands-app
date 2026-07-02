@@ -115,6 +115,20 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('monthlyCloseOpenJournalDeltaBlocked');
   });
 
+  it('asserts partner withholding remittance paid lifecycle in live smoke', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('assertWithholdingRemittanceLifecycle');
+    expect(scriptSource).toContain("status: 'PAID'");
+    expect(scriptSource).toContain('remittanceTransferRef');
+    expect(scriptSource).toContain('remittanceEvidenceUrl');
+    expect(scriptSource).toContain("sourceType === 'WITHHOLDING_REMITTANCE'");
+    expect(scriptSource).toContain("assertBalancedAccountingJournal('Withholding remittance journal'");
+    expect(scriptSource).toContain("accountCode: 'partner_vat_pit_payable'");
+    expect(scriptSource).toContain("accountCode: 'company_bank_cash'");
+    expect(scriptSource).toContain('withholdingRemittancePaidLifecycleReady');
+  });
+
   it('waits long enough for asynchronous FCM delivery smoke diagnostics', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 
