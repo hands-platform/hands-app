@@ -12830,8 +12830,8 @@ async function upsertManualWalletAdjustmentJournal(
     update: {
       ...batchData,
       entries: {
-        create: journalEntries,
         deleteMany: {},
+        create: journalEntries,
       },
     },
     create: {
@@ -16807,8 +16807,8 @@ async function upsertWithholdingRemittanceJournal(
     update: {
       ...batchData,
       entries: {
-        create: entries,
         deleteMany: {},
+        create: entries,
       },
     },
     create: {

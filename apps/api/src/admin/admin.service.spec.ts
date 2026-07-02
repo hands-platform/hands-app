@@ -7765,6 +7765,9 @@ describe('AdminService query orchestration', () => {
         totalDebit: 200000,
       }),
     });
+    const journalUpdateEntries = vi.mocked(tx.accountingJournalBatch.upsert).mock.calls[0]?.[0]
+      .update.entries;
+    expect(Object.keys(journalUpdateEntries)).toEqual(['deleteMany', 'create']);
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: 'admin-user-1',
@@ -10596,6 +10599,8 @@ describe('AdminService query orchestration', () => {
         totalDebit: 84000,
       }),
     });
+    const remittanceJournalUpdateEntries = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].update.entries;
+    expect(Object.keys(remittanceJournalUpdateEntries)).toEqual(['deleteMany', 'create']);
     expect(tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].create.entries.create).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

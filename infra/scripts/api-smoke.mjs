@@ -3256,6 +3256,111 @@ assertJournalEntry('Completed booking settlement journal', completedSettlementJo
   amount: completedEarning.withholdingAmount,
   side: 'CREDIT',
 });
+const manualWalletAdjustmentApprovalId = `SMOKE-MANUAL-WALLET-${Date.now()}`;
+const manualWalletAdjustmentAmount = 10000;
+const manualWalletAdjustmentPayload = {
+  ownerType: 'CUSTOMER',
+  ownerId: customerAuth.user.customerProfile.id,
+  direction: 'CREDIT',
+  adjustmentType: 'CUSTOMER_COMPENSATION',
+  amount: manualWalletAdjustmentAmount,
+  reason: 'API smoke customer compensation credit without bank cash, revenue, or output VAT.',
+  approvalId: manualWalletAdjustmentApprovalId,
+  approvalAdminId: financeApproverAuth.user.id,
+};
+const manualWalletAdjustmentPreview = await postJson(
+  '/admin/wallet-adjustments/preview',
+  adminAuth.accessToken,
+  manualWalletAdjustmentPayload,
+);
+if (
+  manualWalletAdjustmentPreview.walletDelta !== manualWalletAdjustmentAmount ||
+  manualWalletAdjustmentPreview.bankCashAmount !== 0 ||
+  manualWalletAdjustmentPreview.companyOutputVat !== 0 ||
+  manualWalletAdjustmentPreview.platformRevenueAmount !== 0 ||
+  manualWalletAdjustmentPreview.affects?.bankCash !== false ||
+  manualWalletAdjustmentPreview.affects?.revenue !== false ||
+  manualWalletAdjustmentPreview.affects?.taxPayable !== false
+) {
+  throw new Error(
+    `Manual wallet adjustment preview should affect wallet/expense only: ${JSON.stringify(
+      manualWalletAdjustmentPreview,
+    )}`,
+  );
+}
+const manualWalletAdjustmentResult = await postJson(
+  '/admin/wallet-adjustments',
+  adminAuth.accessToken,
+  manualWalletAdjustmentPayload,
+);
+if (
+  manualWalletAdjustmentResult.ledger?.amount !== manualWalletAdjustmentAmount ||
+  manualWalletAdjustmentResult.preview?.afterBalance !== manualWalletAdjustmentPreview.afterBalance ||
+  manualWalletAdjustmentResult.preview?.bankCashAmount !== 0 ||
+  manualWalletAdjustmentResult.preview?.companyOutputVat !== 0 ||
+  manualWalletAdjustmentResult.preview?.platformRevenueAmount !== 0
+) {
+  throw new Error(
+    `Manual wallet adjustment create did not preserve preview accounting: ${JSON.stringify({
+      manualWalletAdjustmentPreview,
+      manualWalletAdjustmentResult,
+    })}`,
+  );
+}
+const manualWalletAdjustmentRows = await getJson(
+  `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
+    customerAuth.user.customerProfile.id,
+  )}&take=25`,
+  adminAuth.accessToken,
+);
+const manualWalletAdjustmentRow = manualWalletAdjustmentRows.find(
+  (row) =>
+    row.id === manualWalletAdjustmentResult.ledger.id &&
+    row.approvalId === manualWalletAdjustmentApprovalId,
+);
+if (
+  !manualWalletAdjustmentRow ||
+  manualWalletAdjustmentRow.walletDelta !== manualWalletAdjustmentAmount ||
+  manualWalletAdjustmentRow.ownerType !== 'CUSTOMER'
+) {
+  throw new Error(
+    `Manual wallet adjustment list did not expose the created ledger row: ${JSON.stringify({
+      manualWalletAdjustmentRow,
+      manualWalletAdjustmentRows,
+    })}`,
+  );
+}
+const manualWalletAdjustmentJournalSummary = (
+  await getJson('/admin/accounting-journal-batches?range=all&review=posted&take=100', adminAuth.accessToken)
+).find(
+  (journal) =>
+    journal.sourceType === 'MANUAL_WALLET_ADJUSTMENT' &&
+    journal.sourceKey ===
+      `accounting-journal:manual-wallet-adjustment:CUSTOMER:${customerAuth.user.customerProfile.id}:${manualWalletAdjustmentApprovalId}`,
+);
+if (!manualWalletAdjustmentJournalSummary) {
+  throw new Error(
+    `Manual wallet adjustment did not create a posted journal batch: ${JSON.stringify({
+      manualWalletAdjustmentApprovalId,
+      manualWalletAdjustmentResult,
+    })}`,
+  );
+}
+const manualWalletAdjustmentJournal = await getJson(
+  `/admin/accounting-journal-batches/${manualWalletAdjustmentJournalSummary.id}`,
+  adminAuth.accessToken,
+);
+assertBalancedAccountingJournal('Manual wallet adjustment journal', manualWalletAdjustmentJournal);
+assertJournalEntry('Manual wallet adjustment journal', manualWalletAdjustmentJournal, {
+  accountCode: 'customer_compensation_expense',
+  amount: manualWalletAdjustmentAmount,
+  side: 'DEBIT',
+});
+assertJournalEntry('Manual wallet adjustment journal', manualWalletAdjustmentJournal, {
+  accountCode: 'customer_wallet_liability',
+  amount: manualWalletAdjustmentAmount,
+  side: 'CREDIT',
+});
 const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
 const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
 const smokeBankTransaction = await postJson(
