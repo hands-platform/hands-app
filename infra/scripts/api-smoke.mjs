@@ -3363,6 +3363,7 @@ assertJournalEntry('Manual wallet adjustment journal', manualWalletAdjustmentJou
 });
 const smokeCompanyBankAccount = await ensureSmokeCompanyBankAccount();
 const bankReconciliationTransferRef = `SMOKE-BANK-${Date.now()}`;
+const completedPaymentClearingCurrency = completedPaymentClearingEntry.currency ?? 'VND';
 const smokeBankTransaction = await postJson(
   '/admin/bank-reconciliation/transactions',
   adminAuth.accessToken,
@@ -3371,7 +3372,7 @@ const smokeBankTransaction = await postJson(
     amount: completedPaymentClearingEntry.amount,
     bankAccountId: smokeCompanyBankAccount.id,
     counterpartyName: 'HANDS API smoke customer',
-    currency: completedPaymentClearingEntry.currency ?? 'VND',
+    currency: completedPaymentClearingCurrency,
     description: 'API smoke manual bank import for payment clearing reconciliation.',
     occurredAt: new Date().toISOString(),
     transferRef: bankReconciliationTransferRef,
@@ -3392,7 +3393,7 @@ const smokeBankReconciliationMatch = await postJson(
   {
     approvalAdminId: financeApproverAuth.user.id,
     amount: completedPaymentClearingEntry.amount,
-    currency: completedPaymentClearingEntry.currency ?? 'VND',
+    currency: completedPaymentClearingCurrency,
     notes: 'API smoke payment clearing match.',
     paymentClearingEntryId: completedPaymentClearingEntry.id,
   },
@@ -3401,7 +3402,9 @@ if (
   smokeBankReconciliationMatch.bankTransaction?.status !== 'MATCHED' ||
   smokeBankReconciliationMatch.paymentClearingEntry?.status !== 'CLEARED' ||
   smokeBankReconciliationMatch.match?.status !== 'MATCHED' ||
-  smokeBankReconciliationMatch.match?.paymentClearingEntryId !== completedPaymentClearingEntry.id
+  smokeBankReconciliationMatch.match?.paymentClearingEntryId !== completedPaymentClearingEntry.id ||
+  smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount ||
+  smokeBankReconciliationMatch.match?.currency !== completedPaymentClearingCurrency
 ) {
   throw new Error(
     `Bank reconciliation match did not close the bank and payment clearing rows: ${JSON.stringify(
@@ -3418,7 +3421,9 @@ if (
   !smokeBankTransactionDetailAfterMatch.reconciliationMatches?.some(
     (match) =>
       match.id === smokeBankReconciliationMatch.match.id &&
-      match.paymentClearingEntry?.id === completedPaymentClearingEntry.id,
+      match.paymentClearingEntry?.id === completedPaymentClearingEntry.id &&
+      match.amount === completedPaymentClearingEntry.amount &&
+      match.currency === completedPaymentClearingCurrency,
   )
 ) {
   throw new Error(
@@ -3437,6 +3442,8 @@ const smokeBankReconciliationReverse = await postJson(
 );
 if (
   smokeBankReconciliationReverse.match?.status !== 'REVERSED' ||
+  smokeBankReconciliationReverse.match?.amount !== completedPaymentClearingEntry.amount ||
+  smokeBankReconciliationReverse.match?.currency !== completedPaymentClearingCurrency ||
   smokeBankReconciliationReverse.bankTransaction?.status !== 'UNMATCHED' ||
   smokeBankReconciliationReverse.paymentClearingEntry?.status !== 'OPEN'
 ) {
@@ -4093,6 +4100,8 @@ console.log({
   payoutBatchCount: adminPayoutBatches.length,
   bankReconciliationTransactionId: smokeBankTransaction.id,
   bankReconciliationMatchId: smokeBankReconciliationMatch.match.id,
+  bankReconciliationMatchAmount: smokeBankReconciliationMatch.match.amount,
+  bankReconciliationMatchCurrency: smokeBankReconciliationMatch.match.currency,
   bankReconciliationMatchedStatus: smokeBankReconciliationMatch.bankTransaction.status,
   bankReconciliationReversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
   bankReconciliationPaymentClearingReopened:

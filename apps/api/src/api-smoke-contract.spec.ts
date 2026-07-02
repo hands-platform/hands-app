@@ -66,10 +66,14 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain("'/admin/bank-reconciliation/transactions'");
     expect(scriptSource).toContain('`/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`');
     expect(scriptSource).toContain("paymentClearingEntry?.status !== 'CLEARED'");
+    expect(scriptSource).toContain('smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount');
+    expect(scriptSource).toContain('smokeBankReconciliationMatch.match?.currency !== completedPaymentClearingCurrency');
     expect(scriptSource).toContain(
       'matches/${smokeBankReconciliationMatch.match.id}/reverse',
     );
     expect(scriptSource).toContain("paymentClearingEntry?.status !== 'OPEN'");
+    expect(scriptSource).toContain('bankReconciliationMatchAmount');
+    expect(scriptSource).toContain('bankReconciliationMatchCurrency');
     expect(scriptSource).toContain('bankReconciliationTransactionId');
     expect(scriptSource).toContain('bankReconciliationPaymentClearingReopened');
   });
