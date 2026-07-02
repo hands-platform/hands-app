@@ -392,6 +392,63 @@ describe('finance detail pages', () => {
     expect(markup).toContain('vuexy-booking-table');
   });
 
+  it('renders legacy payment fee evidence without a misleading zero-rate formula', async () => {
+    mockedAdminGet.mockResolvedValue({
+      amount: 500000,
+      bankReconciliationMatches: [],
+      bookingId: 'booking-1',
+      createdAt: '2026-06-20T09:00:00.000Z',
+      currency: 'VND',
+      id: 'clearing-legacy-1',
+      occurredAt: '2026-06-20T09:10:00.000Z',
+      payment: {
+        amount: 500000,
+        currency: 'VND',
+        id: 'payment-1',
+        method: 'CARD',
+        status: 'CAPTURED',
+      },
+      paymentId: 'payment-1',
+      settlementSnapshot: {
+        closedAt: null,
+        companyOutputVat: 8000,
+        currency: 'VND',
+        customerPaymentAmount: 500000,
+        id: 'settlement-legacy-1',
+        monthlyPeriod: '2026-06',
+        partnerPayoutAmount: 350000,
+        partnerWithholdingTotal: 30000,
+        paymentFeeFixedAmount: 0,
+        paymentFeePayer: 'HANDS',
+        paymentFeePolicyVersionId: null,
+        paymentFeeRateBps: 0,
+        paymentFeeRuleSnapshot: null,
+        paymentFeeTreatment: 'OPERATING_EXPENSE',
+        paymentMethod: 'CARD',
+        paymentProcessingFee: 12000,
+        platformFeeNetRevenue: 112000,
+        postedAt: '2026-06-20T10:05:00.000Z',
+        settlementStatus: 'POSTED',
+        taxStatus: 'OPEN',
+      },
+      settlementSnapshotId: 'settlement-legacy-1',
+      sourceKey: 'payment:payment-1:capture',
+      status: 'OPEN',
+      type: 'CUSTOMER_PAYMENT_CAPTURED',
+      updatedAt: '2026-06-20T10:05:00.000Z',
+    });
+
+    const page = await PaymentClearingDetailPage({ params: Promise.resolve({ id: 'clearing-legacy-1' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Settlement payment fee');
+    expect(markup).toContain('12.000 VND');
+    expect(markup).toContain('CARD · legacy/manual fee evidence');
+    expect(markup).toContain('Policy snapshot missing');
+    expect(markup).toContain('HANDS / OPERATING_EXPENSE');
+    expect(markup).not.toContain('CARD · 0 bps + 0 VND');
+  });
+
   it('renders general ledger detail journal rows and evidence links', async () => {
     mockedAdminGet.mockResolvedValue({
       _count: { entries: 2 },

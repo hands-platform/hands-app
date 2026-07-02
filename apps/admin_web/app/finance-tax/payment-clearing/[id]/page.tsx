@@ -82,8 +82,14 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 <>
                   {formatMoney(entry.settlementSnapshot.paymentProcessingFee, entry.settlementSnapshot.currency ?? entry.currency)}
                   <span className="muted admin-block">
-                    {settlementPaymentFee.method} · {settlementPaymentFee.rateBps} bps +{' '}
-                    {formatMoney(settlementPaymentFee.fixedAmount, entry.settlementSnapshot.currency ?? entry.currency)}
+                    {paymentFeeBasisLabel(
+                      settlementPaymentFee,
+                      entry.settlementSnapshot.currency ?? entry.currency,
+                      entry.settlementSnapshot.paymentProcessingFee,
+                    )}
+                  </span>
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.policyVersionId}
                   </span>
                   <span className="muted admin-block">
                     {settlementPaymentFee.payer} / {settlementPaymentFee.treatment}
@@ -290,15 +296,32 @@ function paymentFeePolicyInfo(
   fallbackCurrency: string,
 ) {
   const ruleSnapshot = jsonRecord(settlement?.paymentFeeRuleSnapshot);
+  const hasPolicySnapshot = Boolean(
+    settlement?.paymentFeePolicyVersionId ||
+      stringValue(ruleSnapshot?.policyName) ||
+      stringValue(ruleSnapshot?.feeType),
+  );
   return {
     fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
     method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
     payer: settlement?.paymentFeePayer ?? '-',
-    policyName: stringValue(ruleSnapshot?.policyName) ?? '-',
+    policyName: stringValue(ruleSnapshot?.policyName) ?? (hasPolicySnapshot ? '-' : 'Legacy/manual fee evidence'),
+    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
     rateBps: settlement?.paymentFeeRateBps ?? 0,
     treatment: settlement?.paymentFeeTreatment ?? '-',
     currency: settlement?.currency ?? fallbackCurrency,
   };
+}
+
+function paymentFeeBasisLabel(
+  paymentFee: ReturnType<typeof paymentFeePolicyInfo>,
+  currency: string,
+  recordedFee: number,
+) {
+  if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
+    return `${paymentFee.method} · legacy/manual fee evidence`;
+  }
+  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
 }
 
 function jsonRecord(value: unknown) {

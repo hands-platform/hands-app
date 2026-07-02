@@ -145,8 +145,14 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                 <>
                   {formatMoney(batch.settlementSnapshot.paymentProcessingFee, batch.settlementSnapshot.currency)}
                   <span className="muted admin-block">
-                    {settlementPaymentFee.method} · {settlementPaymentFee.rateBps} bps +{' '}
-                    {formatMoney(settlementPaymentFee.fixedAmount, batch.settlementSnapshot.currency)}
+                    {paymentFeeBasisLabel(
+                      settlementPaymentFee,
+                      batch.settlementSnapshot.currency,
+                      batch.settlementSnapshot.paymentProcessingFee,
+                    )}
+                  </span>
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.policyVersionId}
                   </span>
                   <span className="muted admin-block">
                     {settlementPaymentFee.payer} / {settlementPaymentFee.treatment}
@@ -305,14 +311,31 @@ function paymentFeePolicyInfo(
   fallbackCurrency: string,
 ) {
   const ruleSnapshot = readPlainRecord(settlement?.paymentFeeRuleSnapshot);
+  const hasPolicySnapshot = Boolean(
+    settlement?.paymentFeePolicyVersionId ||
+      stringValue(ruleSnapshot?.policyName) ||
+      stringValue(ruleSnapshot?.feeType),
+  );
   return {
     fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
     method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
     payer: settlement?.paymentFeePayer ?? '-',
+    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
     rateBps: settlement?.paymentFeeRateBps ?? 0,
     treatment: settlement?.paymentFeeTreatment ?? '-',
     currency: settlement?.currency ?? fallbackCurrency,
   };
+}
+
+function paymentFeeBasisLabel(
+  paymentFee: ReturnType<typeof paymentFeePolicyInfo>,
+  currency: string,
+  recordedFee: number,
+) {
+  if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
+    return `${paymentFee.method} · legacy/manual fee evidence`;
+  }
+  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
 }
 
 function stringValue(value: unknown) {

@@ -204,7 +204,7 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem label="Method" value={paymentFee.method} />
           <FinanceDetailInfoItem
             label="Rate / fixed fee"
-            value={`${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, snapshot.currency)}`}
+            value={paymentFeeBasisLabel(paymentFee, snapshot.currency, snapshot.paymentProcessingFee)}
           />
           <FinanceDetailInfoItem label="Payer / treatment" value={`${paymentFee.payer} / ${paymentFee.treatment}`} />
           <FinanceDetailInfoItem label="Rule type" value={paymentFee.feeType} />
@@ -379,16 +379,32 @@ function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
 
 function paymentFeePolicyInfo(snapshot: AdminBookingSettlementSnapshot) {
   const ruleSnapshot = jsonRecord(snapshot.paymentFeeRuleSnapshot);
+  const hasPolicySnapshot = Boolean(
+    snapshot.paymentFeePolicyVersionId ||
+      stringValue(ruleSnapshot?.policyName) ||
+      stringValue(ruleSnapshot?.feeType),
+  );
   return {
-    feeType: stringValue(ruleSnapshot?.feeType) ?? '-',
+    feeType: stringValue(ruleSnapshot?.feeType) ?? (hasPolicySnapshot ? '-' : 'Legacy/manual'),
     fixedAmount: snapshot.paymentFeeFixedAmount ?? 0,
     method: stringValue(ruleSnapshot?.method) ?? snapshot.paymentMethod,
     payer: snapshot.paymentFeePayer ?? '-',
-    policyName: stringValue(ruleSnapshot?.policyName) ?? '-',
-    policyVersionId: snapshot.paymentFeePolicyVersionId ?? '-',
+    policyName: stringValue(ruleSnapshot?.policyName) ?? (hasPolicySnapshot ? '-' : 'Legacy/manual fee evidence'),
+    policyVersionId: snapshot.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
     rateBps: snapshot.paymentFeeRateBps ?? 0,
     treatment: snapshot.paymentFeeTreatment ?? '-',
   };
+}
+
+function paymentFeeBasisLabel(
+  paymentFee: ReturnType<typeof paymentFeePolicyInfo>,
+  currency: string,
+  recordedFee: number,
+) {
+  if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
+    return `${paymentFee.method} · legacy/manual fee evidence`;
+  }
+  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
 }
 
 function jsonRecord(value: unknown) {
