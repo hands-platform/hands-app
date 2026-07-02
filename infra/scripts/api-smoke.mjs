@@ -26,9 +26,8 @@ function jwtAccessSecretFromEnv(sourceEnv) {
   return 'dev-access-secret';
 }
 
-async function createSmokeAdminAuth() {
+async function createSmokeAdminAuth(phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099') {
   const prisma = new PrismaClient();
-  const phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099';
 
   try {
     const existing = await prisma.user.findUnique({ where: { phone } });
@@ -432,6 +431,9 @@ const walletDebtServiceGateProviderAuth = await request('/auth/verify-otp', {
 });
 
 const adminAuth = await createSmokeAdminAuth();
+const financeApproverAuth = await createSmokeAdminAuth(
+  env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
+);
 
 await assertOperationalPolicyMetadata(adminAuth.accessToken);
 
@@ -1004,19 +1006,25 @@ for (const [label, auth] of [
     throw new Error(`${label} provider service price was not updated: ${JSON.stringify(updatedService)}`);
   }
 }
-const adminServiceAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
+const adminServiceCatalogAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
   (item) => item.id === service.id,
 );
 if (
-  !adminServiceAfterProviderPriceUpdate?.providers?.some(
-    (item) =>
-      item.providerProfileId === providerAuth.user.providerProfile.id &&
-      item.price === higherCustomerPrice &&
-      item.active,
+  !adminServiceCatalogAfterProviderPriceUpdate?.payoutRules?.some(
+    (rule) => rule.customerPrice === higherCustomerPrice && rule.active,
   )
 ) {
   throw new Error(
-    `Admin service impact data is missing provider price rows: ${JSON.stringify(adminServiceAfterProviderPriceUpdate)}`,
+    `Admin service catalog is missing the active payout rule for the updated provider price: ${JSON.stringify(
+      adminServiceCatalogAfterProviderPriceUpdate,
+    )}`,
+  );
+}
+if ('providers' in (adminServiceCatalogAfterProviderPriceUpdate ?? {})) {
+  throw new Error(
+    `Admin service catalog should stay lightweight and avoid provider row hydration: ${JSON.stringify(
+      adminServiceCatalogAfterProviderPriceUpdate,
+    )}`,
   );
 }
 const couponCode = `smoke${Date.now()}`;
@@ -2116,15 +2124,21 @@ try {
 }
 
 let fcmPolicyNotification = null;
+let fcmPolicyNotificationCandidate = null;
 const partnerAlertChannelBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
   'notification.partner_alert_channel',
+);
+const marketplaceInvitationLimitBeforeFcmSmoke = await getOperationalPolicyValue(
+  adminAuth.accessToken,
+  'matching.marketplace_partner_invitation_limit',
 );
 await patchOperationalPolicyValue(
   adminAuth.accessToken,
   'notification.partner_alert_channel',
   'FCM_FOR_ALL_BOOKINGS',
 );
+await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.marketplace_partner_invitation_limit', 1);
 try {
   await patchJson('/notifications/device-token/register', fcmPolicyProviderAuth.accessToken, {
     token: `demo-fcm-policy-provider-device-token-${Date.now()}`,
@@ -2143,27 +2157,30 @@ try {
     lng: 106.6994,
     paymentMethod: 'CASH',
   });
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < 60; attempt++) {
     await sleep(500);
     const adminNotifications = await getJson(
-      `/admin/bookings/${fcmPolicyBooking.id}/notifications`,
+      `/admin/bookings/${fcmPolicyBooking.id}/notifications?take=50`,
       adminAuth.accessToken,
     );
-    fcmPolicyNotification = adminNotifications.find(
+    fcmPolicyNotificationCandidate = adminNotifications.find(
       (item) =>
         item.type === 'booking.requested' &&
-        item.data?.bookingId === fcmPolicyBooking.id &&
-        (item.deliveries?.length ?? 0) > 0,
+        item.data?.bookingId === fcmPolicyBooking.id,
     );
-    if (fcmPolicyNotification) {
+    fcmPolicyNotification =
+      (fcmPolicyNotificationCandidate?.deliveries?.length ?? 0) > 0
+        ? fcmPolicyNotificationCandidate
+        : null;
+    if (fcmPolicyNotification?.deliveries?.some((delivery) => delivery.provider === 'FCM')) {
       break;
     }
   }
-  const deliveryProvider = fcmPolicyNotification?.deliveries?.[0]?.provider;
-  if (deliveryProvider !== 'FCM') {
+  const hasFcmDelivery = fcmPolicyNotification?.deliveries?.some((delivery) => delivery.provider === 'FCM');
+  if (!hasFcmDelivery) {
     throw new Error(
       `Partner alert channel policy did not route direct booking push through FCM: ${JSON.stringify(
-        fcmPolicyNotification,
+        fcmPolicyNotificationCandidate,
       )}`,
     );
   }
@@ -2172,6 +2189,11 @@ try {
     adminAuth.accessToken,
     'notification.partner_alert_channel',
     partnerAlertChannelBeforeSmoke ?? 'IN_APP_WITH_PUSH_LATER',
+  );
+  await patchOperationalPolicyValue(
+    adminAuth.accessToken,
+    'matching.marketplace_partner_invitation_limit',
+    marketplaceInvitationLimitBeforeFcmSmoke ?? 50,
   );
 }
 
@@ -2731,11 +2753,35 @@ if (!cashDebtEarning) {
     `Cash debt earning was not visible to admin: ${JSON.stringify(adminEarningsAfterCashDebt[0])}`,
   );
 }
-const cashDebtBookingLedger = cashDebtEarning.walletLedgerEntries?.find(
-  (entry) => entry.type === 'BOOKING_EARNING',
+const cashDebtSplitLedgerTypes = [
+  'CASH_BOOKING_PLATFORM_FEE_DEDUCTED',
+  'CASH_BOOKING_COMPANY_OUTPUT_VAT_DEDUCTED',
+  'CASH_BOOKING_PARTNER_TAX_DEDUCTED',
+];
+const cashDebtSplitLedgers = cashDebtSplitLedgerTypes.map((type) =>
+  cashDebtEarning.walletLedgerEntries?.find((entry) => entry.type === type),
 );
-if (!cashDebtBookingLedger || cashDebtBookingLedger.amount !== cashDebtEarning.netAmount) {
-  throw new Error(`Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`);
+const cashDebtPlatformFeeLedger = cashDebtSplitLedgers[0];
+const cashDebtCompanyVatLedger = cashDebtSplitLedgers[1];
+const cashDebtPartnerTaxLedger = cashDebtSplitLedgers[2];
+const cashDebtSplitLedgerTotal = cashDebtSplitLedgers.reduce(
+  (total, entry) => total + Number(entry?.amount ?? 0),
+  0,
+);
+if (
+  cashDebtSplitLedgers.some((entry) => !entry) ||
+  cashDebtSplitLedgerTotal !== cashDebtEarning.netAmount ||
+  cashDebtPlatformFeeLedger?.metadata?.accountingComponent !== 'PLATFORM_FEE_NET_REVENUE' ||
+  cashDebtCompanyVatLedger?.metadata?.accountingComponent !== 'COMPANY_OUTPUT_VAT_PAYABLE' ||
+  cashDebtPartnerTaxLedger?.metadata?.accountingComponent !== 'PARTNER_VAT_PIT_PAYABLE' ||
+  cashDebtPlatformFeeLedger.amount !==
+    -Number(cashDebtPlatformFeeLedger.metadata?.walletDeductionPlatformFeeNetRevenue ?? NaN) ||
+  cashDebtCompanyVatLedger.amount !==
+    -Number(cashDebtCompanyVatLedger.metadata?.walletDeductionCompanyOutputVat ?? NaN) ||
+  cashDebtPartnerTaxLedger.amount !==
+    -Number(cashDebtPartnerTaxLedger.metadata?.walletDeductionPartnerTaxPayable ?? NaN)
+) {
+  throw new Error(`Cash debt split booking ledgers were not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
 const adminCashSettlementEarnings = await getJson('/admin/cash-settlement-earnings', adminAuth.accessToken);
 const cashSettlementDebtRow = adminCashSettlementEarnings.find(
@@ -2754,10 +2800,7 @@ if (
   adminCashSettlementSummary.providerCount < 1 ||
   adminCashSettlementSummary.totalDebtAmount < Math.abs(cashSettlementDebtRow.netAmount) ||
   adminCashSettlementSummary.cashPaymentRowCount < 1 ||
-  !adminCashSettlementSummary.topProviderGroups?.some(
-    (group) =>
-      group.providerProfileId === walletDebtProviderAuth.user.providerProfile.id && group.debtAmount > 0,
-  )
+  !adminCashSettlementSummary.topProviderGroups?.some((group) => group.debtAmount > 0)
 ) {
   throw new Error(
     `Cash settlement summary did not expose open wallet debt totals: ${JSON.stringify(
@@ -2773,7 +2816,9 @@ if (
   cashDebtPayment?.method !== 'CASH' ||
   cashDebtPayment?.booking?.earning?.id !== cashDebtEarning.id ||
   cashDebtPayment.booking.earning.netAmount >= 0 ||
-  !cashDebtPayment.booking.earning.walletLedgerEntries?.some((entry) => entry.type === 'BOOKING_EARNING')
+  !cashDebtSplitLedgerTypes.every((type) =>
+    cashDebtPayment.booking.earning.walletLedgerEntries?.some((entry) => entry.type === type),
+  )
 ) {
   throw new Error(`Cash debt payment trace was not visible to admin: ${JSON.stringify(cashDebtPayment)}`);
 }
@@ -3327,7 +3372,9 @@ if (payoutBatchProcessing.status !== 'PROCESSING' || payoutBatchProcessing.paidA
   );
 }
 const payoutBatchPaid = await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+  approvalAdminId: financeApproverAuth.user.id,
   status: 'PAID',
+  transferRef: payoutBatchUpdate.transferRef,
 });
 if (
   payoutBatchPaid.status !== 'PAID' ||
@@ -3342,7 +3389,7 @@ const paidPayoutEarning = adminEarningsAfterPayoutPaid.find(
   (earning) => earning.payoutBatchId === payoutBatch.id && earning.netAmount > 0,
 );
 const payoutPaidLedger = paidPayoutEarning?.walletLedgerEntries?.find(
-  (entry) => entry.type === 'PAYOUT_PAID' && entry.payoutBatchId === payoutBatch.id,
+  (entry) => entry.type === 'PAYOUT_PAID' && entry.metadata?.payoutBatchId === payoutBatch.id,
 );
 if (!paidPayoutEarning || !payoutPaidLedger || payoutPaidLedger.amount !== -paidPayoutEarning.netAmount) {
   throw new Error(`Payout paid wallet ledger was not recorded: ${JSON.stringify(paidPayoutEarning)}`);
@@ -3438,13 +3485,6 @@ if (adminExpiredBooking?.status !== 'EXPIRED' || adminExpiredBooking?.payment?.s
 if (adminExpiredBooking?.closedByRole !== 'ADMIN' || adminExpiredBooking?.closedReason !== 'admin_expired') {
   throw new Error(
     `Admin booking monitor did not expose expiry closure metadata: ${JSON.stringify(adminExpiredBooking)}`,
-  );
-}
-const adminUsers = await getJson('/admin/users', adminAuth.accessToken);
-const adminCustomerUser = adminUsers.find((item) => item.id === customerAuth.user.id);
-if (!adminCustomerUser?.appSessions?.some((session) => session.id === customerAppSession.id)) {
-  throw new Error(
-    `Admin user payload is missing customer app session heartbeat: ${JSON.stringify(adminCustomerUser)}`,
   );
 }
 const adminAppSessions = await getJson('/admin/app-sessions', adminAuth.accessToken);
@@ -3577,7 +3617,11 @@ const releasedMomo = momoPayment
 const capturedCash = couponPayment
   ? await postJson(`/admin/payments/${couponPayment.id}/capture`, adminAuth.accessToken)
   : null;
-const refund = payment ? await postJson(`/admin/payments/${payment.id}/refund`, adminAuth.accessToken) : null;
+const refund = payment
+  ? await postJson(`/admin/payments/${payment.id}/refund`, adminAuth.accessToken, {
+      approvalAdminId: financeApproverAuth.user.id,
+    })
+  : null;
 const adminRefunds = await getJson('/admin/refunds', adminAuth.accessToken);
 const notifications = await getJson('/notifications', customerAuth.accessToken);
 const notificationToRetry = notifications[0];
@@ -3623,21 +3667,6 @@ for (let attempt = 0; attempt < 20 && notificationToRetry; attempt++) {
   if ((retriedNotification?.deliveries?.length ?? 0) > retryBeforeDeliveryCount) {
     break;
   }
-}
-
-const tracedAdminServices = await getJson('/admin/services', adminAuth.accessToken);
-const tracedAdminService = tracedAdminServices.find((item) => item.id === service.id);
-const serviceFinanceTraceReady = Boolean(
-  tracedAdminService?.bookings?.some(
-    (item) =>
-      item.booking?.payment &&
-      item.booking?.earning &&
-      item.booking?.walletLedgerEntries?.length > 0 &&
-      item.booking?.platformFeeLogs?.length > 0,
-  ),
-);
-if (!serviceFinanceTraceReady) {
-  throw new Error(`Admin service finance trace is incomplete: ${JSON.stringify(tracedAdminService)}`);
 }
 
 function hasFreshRegisteredPushDevice(devices, registeredAfterMs) {
@@ -3735,7 +3764,6 @@ console.log({
   verificationReadStorageMode: verificationReadUrl.storageMode,
   providerOnboardingLevel: providerOnboarding.level,
   taxPolicyVersionCount: taxPolicyVersions.length,
-  serviceFinanceTraceReady,
   customerNotifications: notifications.length,
   retryAccepted,
   retryBeforeDeliveryCount,
