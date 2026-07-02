@@ -24,7 +24,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { providerBankCorrectionRequest } from '../provider-onboarding/provider-bank-correction';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { bookingServiceAmount, buildCouponSettlementContext } from '../settlements/coupon-settlement';
-import { bpsAmount } from '../settlements/settlement-calculator';
 import { SettlementsService } from '../settlements/settlements.service';
 import {
   allocatePartnerBankDeposit,
@@ -668,14 +667,9 @@ export class EarningsService {
         occurredAt: booking.updatedAt ?? new Date(),
         paymentMethod,
       });
-      const paymentProcessingFee =
-        bpsAmount(couponSettlement.customerPaymentAmount, paymentFee.rateBps) + paymentFee.fixedAmount;
       const platformFeeGross = Math.max(
         0,
-        grossAmount -
-          partnerPayoutAmount -
-          tax.withholdingAmount -
-          paymentFeePlatformFeeOffset(paymentFee, paymentProcessingFee),
+        grossAmount - partnerPayoutAmount - tax.withholdingAmount,
       );
 
       await this.settlements?.upsertBookingSettlementSnapshot(
@@ -2498,19 +2492,6 @@ function paymentFeeRuleAmounts(rule: PaymentFeeRuleRecord) {
     fixedAmount: rule.fixedAmount ?? 0,
     rateBps: rule.rateBps ?? 0,
   };
-}
-
-function paymentFeePlatformFeeOffset(
-  paymentFee: { payer: PaymentFeePayer; treatment: PaymentFeeTreatment },
-  paymentProcessingFee: number,
-) {
-  if (
-    paymentFee.payer === PaymentFeePayer.HANDS &&
-    paymentFee.treatment === PaymentFeeTreatment.OPERATING_EXPENSE
-  ) {
-    return paymentProcessingFee;
-  }
-  return 0;
 }
 
 function providerWalletLedgerType(value: string): ProviderWalletLedgerType {

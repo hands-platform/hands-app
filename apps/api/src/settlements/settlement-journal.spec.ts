@@ -6,7 +6,7 @@ describe('buildBookingSettlementJournal', () => {
       bookingId: 'booking-1',
       currency: 'VND',
       customerPaymentAmount: 600_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       partnerWithholdingTotal: 42_000,
       platformFeeNetRevenue: 118_519,
       companyOutputVat: 9_481,
@@ -30,9 +30,9 @@ describe('buildBookingSettlementJournal', () => {
         side: 'DEBIT',
       }),
       expect.objectContaining({
-        accountCode: 'partner_wallet_liability',
-        amount: 430_000,
-        side: 'CREDIT',
+          accountCode: 'partner_wallet_liability',
+          amount: 430_000,
+          side: 'CREDIT',
       }),
       expect.objectContaining({
         accountCode: 'partner_vat_pit_payable',
@@ -62,7 +62,7 @@ describe('buildBookingSettlementJournal', () => {
       bookingId: 'booking-coupon-1',
       currency: 'VND',
       customerPaymentAmount: 540_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       partnerWithholdingTotal: 42_000,
       platformFeeNetRevenue: 118_519,
       companyOutputVat: 9_481,
@@ -73,6 +73,9 @@ describe('buildBookingSettlementJournal', () => {
       },
     });
 
+    expect(journal.totalDebit).toBe(600_000);
+    expect(journal.totalCredit).toBe(600_000);
+    expect(journal.reconciliationDelta).toBe(0);
     expect(journal.entries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -80,10 +83,12 @@ describe('buildBookingSettlementJournal', () => {
           amount: 60_000,
           side: 'DEBIT',
         }),
+      ]),
+    );
+    expect(journal.entries).not.toEqual(
+      expect.arrayContaining([
         expect.objectContaining({
           accountCode: 'coupon_discount_clearing',
-          amount: 60_000,
-          side: 'CREDIT',
         }),
       ]),
     );
@@ -94,7 +99,7 @@ describe('buildBookingSettlementJournal', () => {
       bookingId: 'booking-cash-1',
       currency: 'VND',
       customerPaymentAmount: 600_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       partnerWithholdingTotal: 42_000,
       platformFeeNetRevenue: 118_519,
       companyOutputVat: 9_481,

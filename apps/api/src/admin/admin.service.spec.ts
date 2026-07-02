@@ -9970,7 +9970,7 @@ describe('AdminService query orchestration', () => {
               partnerVatAmount: 60000,
               partnerPitAmount: 24000,
               partnerWithholdingTotal: 84000,
-              paymentProcessingFee: 0,
+              paymentProcessingFee: 10000,
             },
           })
           .mockResolvedValueOnce({
@@ -10004,7 +10004,7 @@ describe('AdminService query orchestration', () => {
       partnerVatWithheldTotal: 60000,
       partnerPitWithheldTotal: 24000,
       partnerWithholdingTotal: 84000,
-      paymentProcessingFeeTotal: 0,
+      paymentProcessingFeeTotal: 10000,
       couponSettlementCount: 1,
       couponDiscountAmountTotal: 60000,
       companyCouponExpenseTotal: 60000,

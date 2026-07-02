@@ -64,11 +64,11 @@ partner_vat_amount = round(partner_taxable_revenue * partner_vat_bps / 10000)
 partner_pit_amount = round(partner_taxable_revenue * partner_pit_bps / 10000)
 partner_withholding_total = partner_vat_amount + partner_pit_amount
 
-platform_fee_gross = customer_payment_amount - partner_payout_amount
+platform_fee_gross = customer_payment_amount - partner_payout_amount - partner_withholding_total
 platform_fee_net_revenue = round(platform_fee_gross / (1 + platform_vat_bps / 10000))
 company_output_vat = platform_fee_gross - platform_fee_net_revenue
 
-payment_processing_fee = configured processor fee for the payment method
+payment_processing_fee = configured processor fee for the payment method, tracked separately as an operating cost
 ```
 
 Example:
@@ -116,11 +116,11 @@ partner_wallet_delta = -(platform_fee_gross + partner_withholding_total)
 For card, bank transfer, MoMo, VNPay, and similar non-cash methods:
 
 ```text
-partner_wallet_delta = partner_payout_amount - partner_withholding_total
+partner_wallet_delta = partner_payout_amount
 ```
 
 - HANDS receives customer funds.
-- Partner payout becomes a wallet credit after withholding.
+- Partner payout is the actual wallet credit; partner withholding is tracked as a separate tax payable.
 - Payment processing fee is snapshotted separately and never mixed into tax.
 
 ### Customer Wallet

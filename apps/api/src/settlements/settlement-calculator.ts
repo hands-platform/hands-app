@@ -36,7 +36,7 @@ export function calculateBookingSettlementAmounts(input: BookingSettlementCalcul
   const partnerWalletDelta =
     input.paymentMethod === 'CASH'
       ? -(input.platformFeeGross + partnerWithholdingTotal)
-      : input.partnerPayoutAmount - partnerWithholdingTotal;
+      : input.partnerPayoutAmount;
   const customerWalletDebitAmount =
     input.paymentMethod === 'CUSTOMER_WALLET' ? input.customerPaymentAmount : 0;
 

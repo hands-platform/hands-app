@@ -26,7 +26,7 @@ describe('calculateBookingSettlementAmounts', () => {
       platformFeeNetRevenue: 118_519,
       companyOutputVat: 9_481,
       paymentProcessingFee: 0,
-      partnerWalletDelta: 388_000,
+      partnerWalletDelta: 430_000,
     });
   });
 
@@ -39,7 +39,7 @@ describe('calculateBookingSettlementAmounts', () => {
     ).toBe(-170_000);
   });
 
-  it('keeps customer wallet settlement out of customer wallet credits while paying the partner net of withholding', () => {
+  it('keeps customer wallet settlement out of customer wallet credits while tracking partner tax payable separately', () => {
     expect(
       calculateBookingSettlementAmounts({
         ...baseInput,
@@ -48,7 +48,7 @@ describe('calculateBookingSettlementAmounts', () => {
     ).toMatchObject({
       customerWalletCreditAmount: 0,
       customerWalletDebitAmount: 600_000,
-      partnerWalletDelta: 388_000,
+      partnerWalletDelta: 430_000,
     });
   });
 
@@ -81,7 +81,7 @@ describe('calculateBookingSettlementAmounts', () => {
       partnerVatAmount: 30_000,
       partnerPitAmount: 12_000,
       partnerWithholdingTotal: 42_000,
-      partnerWalletDelta: 388_000,
+      partnerWalletDelta: 430_000,
     });
   });
 });

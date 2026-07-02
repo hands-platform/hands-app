@@ -86,9 +86,9 @@ export function buildBookingSettlementJournal(input: BookingSettlementJournalInp
     addEntry(entries, {
       accountCode: 'partner_wallet_liability',
       accountName: 'Partner wallet liability',
-      amount: Math.max(0, input.partnerPayoutAmount - input.partnerWithholdingTotal),
+      amount: input.partnerPayoutAmount,
       currency,
-      memo: 'Partner wallet liability credited after withholding.',
+      memo: 'Partner wallet liability credited for the actual partner payout; withholding is tracked separately.',
       side: 'CREDIT',
     });
   }
@@ -123,14 +123,6 @@ export function buildBookingSettlementJournal(input: BookingSettlementJournalInp
     amount: input.paymentProcessingFee,
     currency,
     memo: 'Payment processing fee settlement clearing.',
-    side: 'CREDIT',
-  });
-  addEntry(entries, {
-    accountCode: 'coupon_discount_clearing',
-    accountName: 'Coupon discount clearing',
-    amount: companyCouponExpense,
-    currency,
-    memo: 'Offset for company-funded coupon discount.',
     side: 'CREDIT',
   });
 

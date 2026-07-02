@@ -819,7 +819,7 @@ describe('EarningsService payout batches', () => {
       grossAmount: 600_000,
       platformFee: 170_000,
       withholdingAmount: 42_000,
-      netAmount: 388_000,
+      netAmount: 430_000,
       currency: 'VND',
     };
     const tx = {
@@ -956,7 +956,7 @@ describe('EarningsService payout batches', () => {
       grossAmount: 600_000,
       platformFee: 170_000,
       withholdingAmount: 42_000,
-      netAmount: 388_000,
+      netAmount: 430_000,
       currency: 'VND',
     };
     const tx = {
@@ -1084,7 +1084,7 @@ describe('EarningsService payout batches', () => {
           ruleId: 'payment-fee-rule-1',
         }),
         paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
-        platformFeeGross: 118_000,
+        platformFeeGross: 128_000,
       }),
       tx,
     );
@@ -1092,7 +1092,7 @@ describe('EarningsService payout batches', () => {
 
   for (const scenario of [
     {
-      expectedPlatformFeeGross: 114_500,
+      expectedPlatformFeeGross: 128_000,
       fixedAmount: 1_500,
       paymentMethod: PaymentMethod.MOMO,
       policyName: 'Momo processing fee',
@@ -1100,7 +1100,7 @@ describe('EarningsService payout batches', () => {
       ruleId: 'payment-fee-rule-momo',
     },
     {
-      expectedPlatformFeeGross: 118_800,
+      expectedPlatformFeeGross: 128_000,
       fixedAmount: 2_000,
       paymentMethod: PaymentMethod.VNPAY,
       policyName: 'VNPAY processing fee',
@@ -1139,7 +1139,7 @@ describe('EarningsService payout batches', () => {
         grossAmount: 600_000,
         platformFee: 170_000,
         withholdingAmount: 42_000,
-        netAmount: 388_000,
+        netAmount: 430_000,
         currency: 'VND',
       };
       const tx = {
@@ -1313,7 +1313,7 @@ describe('EarningsService payout batches', () => {
       grossAmount: 600_000,
       platformFee: 170_000,
       withholdingAmount: 42_000,
-      netAmount: 388_000,
+      netAmount: 430_000,
       currency: 'VND',
     };
     const tx = {
@@ -1404,7 +1404,7 @@ describe('EarningsService payout batches', () => {
           grossAmount: 600_000,
           platformFee: 170_000,
           withholdingAmount: 42_000,
-          netAmount: 388_000,
+          netAmount: 430_000,
         }),
       }),
     );
@@ -1412,6 +1412,7 @@ describe('EarningsService payout batches', () => {
       expect.objectContaining({
         customerPaymentAmount: 540_000,
         partnerTaxableRevenueAmount: 600_000,
+        platformFeeGross: 128_000,
         metadata: expect.objectContaining({
           couponId: 'coupon-1',
           couponCodeSnapshot: 'WELCOME10',

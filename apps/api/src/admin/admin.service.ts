@@ -8994,7 +8994,6 @@ export class AdminService {
         customerPaymentAmountTotal -
         partnerPayoutTotal -
         partnerWithholdingTotal -
-        paymentProcessingFeeTotal -
         platformFeeGrossTotal,
       netRevenueDelta: platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal,
       declaredAt: closing?.declaredAt ?? null,

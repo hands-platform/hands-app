@@ -20,7 +20,7 @@ import {
 } from './earnings.policy';
 
 describe('earnings policy', () => {
-  it('credits non-cash bookings after platform fee and withholding', () => {
+  it('credits non-cash bookings with the actual partner payout while withholding is payable separately', () => {
     const delta = calculateProviderWalletDelta({
       paymentMethod: PaymentMethod.MOMO,
       grossAmount: 500000,
@@ -28,7 +28,7 @@ describe('earnings policy', () => {
       withholdingAmount: 25000,
     });
 
-    expect(delta).toBe(355000);
+    expect(delta).toBe(380000);
   });
 
   it('creates negative wallet debt for cash bookings from the total amount due to HANDS', () => {

@@ -277,7 +277,7 @@ describe('SettlementsService', () => {
       paymentMethod: 'CARD',
       currency: 'VND',
       customerPaymentAmount: 600_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       platformFeeGross: 128_000,
       partnerVatRateBps: 500,
       partnerPitRateBps: 200,
@@ -404,7 +404,7 @@ describe('SettlementsService', () => {
       paymentMethod: 'CUSTOMER_WALLET',
       currency: 'VND',
       customerPaymentAmount: 600_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       platformFeeGross: 128_000,
       partnerVatRateBps: 500,
       partnerPitRateBps: 200,
@@ -534,8 +534,8 @@ describe('SettlementsService', () => {
       where: { sourceKey: 'accounting-journal:booking-settlement-reversal:settlement-coupon-1' },
       update: expect.objectContaining({
         sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-        totalCredit: 618_000,
-        totalDebit: 618_000,
+        totalCredit: 600_000,
+        totalDebit: 600_000,
       }),
       create: expect.objectContaining({
         bookingId: 'booking-coupon-1',
@@ -555,8 +555,8 @@ describe('SettlementsService', () => {
         },
         settlementSnapshotId: 'settlement-coupon-1',
         sourceType: 'BOOKING_SETTLEMENT_REVERSAL',
-        totalCredit: 618_000,
-        totalDebit: 618_000,
+        totalCredit: 600_000,
+        totalDebit: 600_000,
       }),
     });
     expect(prisma.bookingPaymentClearingEntry.upsert).toHaveBeenCalledWith({
@@ -589,7 +589,7 @@ describe('SettlementsService', () => {
       monthlyClosingId: null,
       monthlyPeriod: '2026-06',
       partnerPitAmount: 12_000,
-      partnerPayoutAmount: 472_000,
+      partnerPayoutAmount: 430_000,
       partnerTaxableRevenue: 600_000,
       partnerVatAmount: 30_000,
       partnerWithholdingTotal: 42_000,
