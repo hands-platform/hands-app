@@ -52,10 +52,10 @@ describe('tax settlement page model', () => {
       page: 1,
       range: 'today',
       review: 'open',
-      take: 25,
+      take: 10,
     });
     expect(buildBookingSettlementSnapshotApiHref(filters)).toBe(
-      '/admin/booking-settlement-snapshots?range=today&review=open&take=25',
+      '/admin/booking-settlement-snapshots?range=today&review=open&take=10',
     );
     expect(buildBookingSettlementSnapshotSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/summary?range=today&review=open',
@@ -64,13 +64,13 @@ describe('tax settlement page model', () => {
       '/admin/booking-settlement-reversals/summary?range=today',
     );
     expect(buildBookingSettlementReversalApiHref(filters)).toBe(
-      '/admin/booking-settlement-reversals?range=today&take=25',
+      '/admin/booking-settlement-reversals?range=today&take=10',
     );
     expect(buildCouponFinanceSummaryApiHref(filters)).toBe(
       '/admin/booking-settlement-snapshots/coupon-finance-summary?range=today&review=open',
     );
     expect(buildCouponFinanceApiHref(filters)).toBe(
-      '/admin/booking-settlement-snapshots/coupon-finance?range=today&review=open&take=25',
+      '/admin/booking-settlement-snapshots/coupon-finance?range=today&review=open&take=10',
     );
   });
 
@@ -90,9 +90,9 @@ describe('tax settlement page model', () => {
       '/admin/booking-settlement-snapshots/coupon-finance?range=7d&review=posted&take=25&skip=50',
     );
     expect(bookingSettlementAuditHref(filters)).toBe(
-      '/finance-tax/booking-settlement-audit?range=7d&review=posted&page=3',
+      '/finance-tax/booking-settlement-audit?range=7d&review=posted&take=25&page=3',
     );
-    expect(couponFinanceHref(filters)).toBe('/finance-tax/coupon-finance?range=7d&review=posted&page=3');
+    expect(couponFinanceHref(filters)).toBe('/finance-tax/coupon-finance?range=7d&review=posted&take=25&page=3');
     expect(buildTaxSettlementServerPagination(['row-a', 'row-b'], filters, 57)).toEqual({
       from: 51,
       page: 3,
@@ -132,7 +132,7 @@ describe('tax settlement page model', () => {
       '/admin/partner-withholding-tax?period=2026-06&take=25&skip=50',
     );
     expect(partnerWithholdingTaxHref(filters)).toBe(
-      '/finance-tax/partner-withholding-tax?period=2026-06&page=3',
+      '/finance-tax/partner-withholding-tax?period=2026-06&take=25&page=3',
     );
     expect(buildTaxSettlementServerPagination(['partner-a'], filters, 51)).toEqual({
       from: 51,
@@ -170,7 +170,7 @@ describe('tax settlement page model', () => {
     expect(buildMonthlyTaxClosingApiHref(filters)).toBe(
       '/admin/monthly-tax-closings?period=2026-06&take=25&skip=25',
     );
-    expect(monthlyTaxClosingHref(filters)).toBe('/finance-tax/monthly-tax-closing?period=2026-06&page=2');
+    expect(monthlyTaxClosingHref(filters)).toBe('/finance-tax/monthly-tax-closing?period=2026-06&take=25&page=2');
   });
 
   it('builds platform VAT and payment fee summary API hrefs from the same monthly period filter', () => {

@@ -116,7 +116,7 @@ export type FinancePayoutPriorityLink = {
   readonly signal: string;
 };
 
-export const TAX_SETTLEMENT_DEFAULT_TAKE = 25;
+export const TAX_SETTLEMENT_DEFAULT_TAKE = 10;
 export const FINANCE_ACCOUNTING_PAGE_SIZE_LINKS = [10, 25, 50, 100] as const;
 export const TAX_SETTLEMENT_MAX_TAKE = 100;
 
