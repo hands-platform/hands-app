@@ -14,6 +14,10 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('/finance-overview');
     expect(scriptSource).toContain('Finance Priority Desk');
     expect(scriptSource).toContain('Core Finance KPI');
+    expect(scriptSource).toContain("'/finance-tax',");
+    expect(scriptSource).toContain('Tax finance operating model');
+    expect(scriptSource).toContain('Finance operations priority desk');
+    expect(scriptSource).toContain('Finance tax workspaces');
     expect(scriptSource).toContain('/finance-tax/payment-clearing');
     expect(scriptSource).toContain('/finance-tax/general-ledger');
     expect(scriptSource).toContain('/finance-tax/bank-reconciliation');

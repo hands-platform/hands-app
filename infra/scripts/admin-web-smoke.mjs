@@ -30,6 +30,7 @@ const budgetSmokePaths = [
   '/reviews',
   '/notifications',
   '/finance-overview',
+  '/finance-tax',
   '/finance-tax/payment-clearing',
   '/finance-tax/general-ledger',
   '/finance-tax/bank-reconciliation',
@@ -44,6 +45,7 @@ const budgetSmokePaths = [
   '/operations-policy',
   '/setup',
   '/cash-settlements',
+  '/finance-closeout',
   '/wallet-adjustments',
 ];
 const runCriticalSmoke =
@@ -543,6 +545,16 @@ const pages = [
       'Finance Priority Desk',
       'Core Finance KPI',
       'Finance Action Lists',
+    ],
+  },
+  {
+    path: '/finance-tax',
+    markers: [
+      'Tax Overview',
+      'Tax finance operating model',
+      'Finance operations priority desk',
+      'Finance tax workspaces',
+      'Summary API',
     ],
   },
   {
