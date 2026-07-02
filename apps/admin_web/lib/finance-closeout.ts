@@ -368,17 +368,21 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
     range: filters.range,
     take: String(FINANCE_CLOSEOUT_API_LIMIT),
   });
+  const paymentQuery = new URLSearchParams(query);
+  paymentQuery.set('review', 'needs-action');
   const payoutBatchQuery = new URLSearchParams(query);
   payoutBatchQuery.set('review', 'needs-review');
+  const refundQuery = new URLSearchParams(query);
+  refundQuery.set('review', 'open');
 
   return {
     cashSettlementSummaryHref: `/admin/cash-settlement-summary?range=${filters.range}`,
     earningsHref: `/admin/earnings?${query.toString()}`,
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
     payoutBatchesHref: `/admin/payout-batches?${payoutBatchQuery.toString()}`,
-    paymentsHref: `/admin/payments?${query.toString()}`,
+    paymentsHref: `/admin/payments?${paymentQuery.toString()}`,
     paymentSummaryHref: `/admin/payments/summary?range=${filters.range}`,
-    refundsHref: `/admin/refunds?${query.toString()}`,
+    refundsHref: `/admin/refunds?${refundQuery.toString()}`,
     refundSummaryHref: `/admin/refunds/summary?range=${filters.range}`,
   };
 }

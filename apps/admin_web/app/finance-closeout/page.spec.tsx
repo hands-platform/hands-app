@@ -52,10 +52,10 @@ describe('FinanceCloseoutPage', () => {
     } as AdminRefund;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10') {
+      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
         return [] as AdminPayment[];
       }
-      if (href === '/admin/refunds?range=today&take=10') {
+      if (href === '/admin/refunds?range=today&take=10&review=open') {
         return [refund];
       }
       if (href === '/admin/earnings/summary?range=today') {
@@ -64,7 +64,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/payout-batches?range=today&take=10') {
+      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
         return [] as AdminPayoutBatch[];
       }
       if (href === '/admin/cash-settlement-summary?range=today') {
@@ -96,10 +96,10 @@ describe('FinanceCloseoutPage', () => {
     };
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10') {
+      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
         return [] as AdminPayment[];
       }
-      if (href === '/admin/refunds?range=today&take=10') {
+      if (href === '/admin/refunds?range=today&take=10&review=open') {
         return [] as AdminRefund[];
       }
       if (href === '/admin/earnings/summary?range=today') {
@@ -108,7 +108,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/payout-batches?range=today&take=10') {
+      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
         return [] as AdminPayoutBatch[];
       }
       if (href === '/admin/cash-settlement-summary?range=today') {
@@ -161,13 +161,13 @@ describe('FinanceCloseoutPage', () => {
     };
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/payments?range=today&take=10') {
+      if (href === '/admin/payments?range=today&take=10&review=needs-action') {
         return [] as AdminPayment[];
       }
       if (href === '/admin/payments/summary?range=today') {
         return paymentSummary;
       }
-      if (href === '/admin/refunds?range=today&take=10') {
+      if (href === '/admin/refunds?range=today&take=10&review=open') {
         return [] as AdminRefund[];
       }
       if (href === '/admin/refunds/summary?range=today') {
@@ -179,7 +179,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings?range=today&take=10') {
         return [] as AdminEarning[];
       }
-      if (href === '/admin/payout-batches?range=today&take=10') {
+      if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
         return [] as AdminPayoutBatch[];
       }
       if (href === '/admin/cash-settlement-summary?range=today') {
