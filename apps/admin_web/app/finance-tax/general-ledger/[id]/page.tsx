@@ -6,7 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
-import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
   bankReconciliationDetailHref,
@@ -35,6 +35,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   }
   const settlementTraceLinks = buildFinanceSettlementTraceLinks(batch);
   const balanceDelta = Math.abs(batch.totalDebit - batch.totalCredit);
+  const formulaDelta = journalFormulaDelta(batch);
   const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
 
   return (
@@ -63,6 +64,10 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
           <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
+          <FinanceDetailInfoItem
+            label="Monthly close blocker"
+            value={formulaDelta === 0 ? 'No formula delta' : `Formula delta ${formatMoney(formulaDelta, batch.currency)}`}
+          />
           <FinanceDetailInfoItem label="Debit total" value={formatMoney(batch.totalDebit, batch.currency)} />
           <FinanceDetailInfoItem label="Credit total" value={formatMoney(batch.totalCredit, batch.currency)} />
           <FinanceDetailInfoItem label="Balance delta" value={formatMoney(balanceDelta, batch.currency)} />
@@ -133,6 +138,10 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             }
           />
           <FinanceDetailInfoItem label="Bank reconciliation evidence" value={`${bankMatches.length} match(es)`} />
+          <FinanceDetailInfoItem
+            label="Closeout readiness"
+            value={formulaDelta === 0 ? 'Ready for monthly close checks' : 'Resolve formula delta before monthly close'}
+          />
           <FinanceDetailInfoItem
             label="Latest bank evidence"
             value={bankMatches[0] ? <BankMatchEvidence matches={[bankMatches[0]]} /> : 'No bank match'}
@@ -231,4 +240,42 @@ function journalBalanceLabel(batch: AdminAccountingJournalBatchDetail) {
   }
 
   return `Delta ${formatMoney(Math.abs(delta), batch.currency)}`;
+}
+
+function journalFormulaDelta(batch: AdminAccountingJournalBatchDetail) {
+  const metadata = readPlainRecord(batch.metadata);
+  const delta = metadata?.reconciliationDelta;
+  if (typeof delta === 'number' && Number.isFinite(delta)) {
+    return Math.abs(delta);
+  }
+
+  const settlementDelta = batch.settlementSnapshot
+    ? settlementFormulaDelta(batch.settlementSnapshot)
+    : batch.settlementReversalEntry
+      ? settlementFormulaDelta(batch.settlementReversalEntry)
+      : 0;
+
+  return Math.abs(settlementDelta);
+}
+
+function settlementFormulaDelta(
+  settlement: Pick<
+    NonNullable<AdminAccountingJournalBatchDetail['settlementSnapshot']>,
+    | 'companyOutputVat'
+    | 'customerPaymentAmount'
+    | 'partnerPayoutAmount'
+    | 'partnerWithholdingTotal'
+    | 'paymentProcessingFee'
+    | 'platformFeeNetRevenue'
+  >,
+) {
+  const platformFeeGross = settlement.platformFeeNetRevenue + settlement.companyOutputVat;
+
+  return (
+    settlement.customerPaymentAmount -
+    settlement.partnerPayoutAmount -
+    settlement.partnerWithholdingTotal -
+    settlement.paymentProcessingFee -
+    platformFeeGross
+  );
 }

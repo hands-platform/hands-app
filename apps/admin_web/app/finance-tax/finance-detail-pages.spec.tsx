@@ -369,6 +369,7 @@ describe('finance detail pages', () => {
         },
       ],
       id: 'journal-batch-1',
+      metadata: { reconciliationDelta: 42000 },
       monthlyPeriod: '2026-06',
       payment: {
         amount: 650000,
@@ -402,6 +403,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Bank reconciliation evidence');
     expect(markup).toContain('Double-entry check');
     expect(markup).toContain('Balanced');
+    expect(markup).toContain('Monthly close blocker');
+    expect(markup).toContain('Formula delta 42.000 VND');
+    expect(markup).toContain('Closeout readiness');
+    expect(markup).toContain('Resolve formula delta before monthly close');
     expect(markup).toContain('Debit total');
     expect(markup).toContain('Credit total');
     expect(markup).toContain('Balance delta');

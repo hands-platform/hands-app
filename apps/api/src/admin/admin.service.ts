@@ -736,6 +736,7 @@ const adminAccountingJournalBatchListSelect = {
 } satisfies Prisma.AccountingJournalBatchSelect;
 const adminAccountingJournalBatchDetailSelect = {
   ...adminAccountingJournalBatchListSelect,
+  metadata: true,
   payment: { select: { id: true, method: true, status: true, amount: true, currency: true } },
   settlementSnapshot: {
     select: {
