@@ -143,6 +143,12 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Booking Settlement Audit Detail');
     expect(markup).toContain('Settlement snapshot overview');
     expect(markup).toContain('Settlement evidence hub');
+    expect(markup).toContain('Booking settlement operating path');
+    expect(markup).toContain('Customer payment');
+    expect(markup).toContain('Settlement split');
+    expect(markup).toContain('Journal / clearing');
+    expect(markup).toContain('Tax closeout');
+    expect(markup).toContain('Resolve reversal clearing');
     expect(markup).toContain('Accounting amount breakdown');
     expect(markup).toContain('Payment fee policy evidence');
     expect(markup).toContain('Card processing fee');

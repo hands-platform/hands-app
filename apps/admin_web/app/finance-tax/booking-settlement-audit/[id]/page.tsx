@@ -122,6 +122,37 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone={evidenceStatus.tone}
         title="Settlement evidence hub"
       >
+        <div className="finance-reconciliation-path admin-mt-16" aria-label="Booking settlement operating path">
+          <div className="finance-reconciliation-path-node">
+            <span>Customer payment</span>
+            <strong>{formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}</strong>
+            <small>{snapshot.paymentMethod}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Settlement split</span>
+            <strong>{allocationDelta === 0 ? 'Balanced' : 'Review required'}</strong>
+            <small>Delta {formatMoney(allocationDelta, snapshot.currency)}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Journal / clearing</span>
+            <strong>{settlementEvidenceCountLabel(snapshot)}</strong>
+            <small>{evidenceStatus.label}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Tax closeout</span>
+            <strong>{snapshot.taxStatus}</strong>
+            <small>{settlementNextAction(snapshot, allocationDelta, evidenceStatus.label)}</small>
+          </div>
+        </div>
         <div className="detail-grid admin-mt-16">
           <SettlementJournalEvidence snapshot={snapshot} />
           <PaymentClearingEvidence snapshot={snapshot} />
@@ -353,6 +384,33 @@ function taxStatusTone(status: string): 'danger' | 'info' | 'success' | 'warning
     return 'danger';
   }
   return 'warning';
+}
+
+function settlementEvidenceCountLabel(snapshot: AdminBookingSettlementSnapshot) {
+  const journalCount = snapshot.accountingJournalBatches?.length ?? 0;
+  const clearingCount = snapshot.paymentClearingEntries?.length ?? 0;
+  const reversalCount = snapshot.reversalEntries?.length ?? 0;
+  return `${journalCount} journal · ${clearingCount} clearing · ${reversalCount} reversal`;
+}
+
+function settlementNextAction(
+  snapshot: AdminBookingSettlementSnapshot,
+  allocationDelta: number,
+  evidenceLabel: string,
+) {
+  if (allocationDelta !== 0) {
+    return 'Review allocation delta';
+  }
+  if (evidenceLabel === 'Evidence missing') {
+    return 'Attach missing evidence';
+  }
+  if (evidenceLabel === 'Reversal clearing open') {
+    return 'Resolve reversal clearing';
+  }
+  if (snapshot.taxStatus === 'PAID' || snapshot.taxStatus === 'CLOSED') {
+    return 'Closed for period';
+  }
+  return 'Ready for tax review';
 }
 
 function settlementAllocationDelta(snapshot: AdminBookingSettlementSnapshot) {
