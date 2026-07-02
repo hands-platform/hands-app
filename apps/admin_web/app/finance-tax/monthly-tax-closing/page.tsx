@@ -18,6 +18,7 @@ import { AdminRoundedPagination } from '../../../components/admin-rounded-pagina
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
+import { FinanceStageList } from '../finance-stage-list';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
@@ -231,20 +232,16 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         resultTone="warning"
         title="Closeout risk queue"
       >
-        <div className="setup-stage-list admin-mt-12">
-          {closeoutRiskLinks.map((link) => (
-            <Link className="setup-stage-item" href={link.href} key={link.key}>
-              <span>{link.signal}</span>
-              <div>
-                <strong>{link.label}</strong>
-                <p className="muted">{link.helper}</p>
-              </div>
-              <small>
-                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
-              </small>
-            </Link>
-          ))}
-        </div>
+        <FinanceStageList
+          items={closeoutRiskLinks.map((link) => ({
+            helper: link.helper,
+            href: link.href,
+            key: link.key,
+            label: link.label,
+            signal: link.signal,
+            value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+          }))}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -252,50 +249,48 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         description="Both formulas should show 0 VND delta before an operator declares or closes the period."
         title="Monthly reconciliation"
       >
-        <div className="setup-stage-list admin-mt-12">
-          <div className="setup-stage-item">
-            <span>1</span>
-            <div>
-              <strong>Customer payment reconciliation</strong>
-              <p className="muted">
-                Customer payment - Partner payout - Partner withholding - payment fees = platform fee gross.
-              </p>
-            </div>
-            <small>{formatMoney(summary.reconciliationDelta, summary.currency)}</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>2</span>
-            <div>
-              <strong>Platform VAT split</strong>
-              <p className="muted">
-                Platform fee gross - company output VAT = platform fee net revenue.
-              </p>
-            </div>
-            <small>{formatMoney(summary.netRevenueDelta, summary.currency)}</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>3</span>
-            <div>
-              <strong>Coupon expense closeout</strong>
-              <p className="muted">
-                {summary.couponSettlementCount} coupon settlement row(s), {summary.couponReviewFlagCount} review flag(s).
-                Company-funded coupons stay outside platform revenue and VAT.
-              </p>
-            </div>
-            <small>{formatMoney(summary.companyCouponExpenseTotal, summary.currency)}</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>4</span>
-            <div>
-              <strong>Partner withholding closeout</strong>
-              <p className="muted">
-                {summary.partnerCountWithRevenue} Partner(s), {summary.openTaxCount} open tax rows,{' '}
-                {summary.paidTaxCount} paid tax rows.
-              </p>
-            </div>
-            <small>{formatMoney(summary.partnerWithholdingTotal, summary.currency)}</small>
-          </div>
-        </div>
+        <FinanceStageList
+          items={[
+            {
+              helper: 'Customer payment - Partner payout - Partner withholding - payment fees = platform fee gross.',
+              key: 'customer-payment-reconciliation',
+              label: 'Customer payment reconciliation',
+              signal: '1',
+              value: formatMoney(summary.reconciliationDelta, summary.currency),
+            },
+            {
+              helper: 'Platform fee gross - company output VAT = platform fee net revenue.',
+              key: 'platform-vat-split',
+              label: 'Platform VAT split',
+              signal: '2',
+              value: formatMoney(summary.netRevenueDelta, summary.currency),
+            },
+            {
+              helper: (
+                <>
+                  {summary.couponSettlementCount} coupon settlement row(s), {summary.couponReviewFlagCount} review
+                  flag(s). Company-funded coupons stay outside platform revenue and VAT.
+                </>
+              ),
+              key: 'coupon-expense-closeout',
+              label: 'Coupon expense closeout',
+              signal: '3',
+              value: formatMoney(summary.companyCouponExpenseTotal, summary.currency),
+            },
+            {
+              helper: (
+                <>
+                  {summary.partnerCountWithRevenue} Partner(s), {summary.openTaxCount} open tax rows,{' '}
+                  {summary.paidTaxCount} paid tax rows.
+                </>
+              ),
+              key: 'partner-withholding-closeout',
+              label: 'Partner withholding closeout',
+              signal: '4',
+              value: formatMoney(summary.partnerWithholdingTotal, summary.currency),
+            },
+          ]}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel
