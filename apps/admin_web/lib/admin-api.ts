@@ -2295,6 +2295,7 @@ export type AdminBookingSettlementReversalEntry = {
   updatedAt: string;
   accountingJournalBatches?: Array<{
     id: string;
+    metadata?: unknown;
     sourceKey: string;
     status: AdminAccountingJournalBatchStatus;
     postedAt: string;

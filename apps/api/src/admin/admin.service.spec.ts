@@ -8772,6 +8772,15 @@ describe('AdminService query orchestration', () => {
         where: { id: 'reversal-1' },
       }),
     );
+    const detailSelect = prisma.bookingSettlementReversalEntry.findUnique.mock.calls[0]?.[0]?.select;
+    expect(detailSelect.accountingJournalBatches.select).toEqual(
+      expect.objectContaining({
+        id: true,
+        metadata: true,
+        sourceKey: true,
+        status: true,
+      }),
+    );
   });
 
   it('summarizes booking settlement reversal entries from reversal aggregates only', async () => {

@@ -6,7 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
-import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import {
   bookingSettlementAuditDetailHref,
@@ -38,6 +38,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const traceLinks = buildBookingSettlementReversalTraceLinks(reversal);
   const originalSettlement = reversal.originalSettlementSnapshot ?? null;
   const allocationDelta = reversalAllocationDelta(reversal);
+  const payoutRefundEvidence = payoutRefundReceivableEvidence(reversal);
 
   return (
     <AdminPageTemplate
@@ -117,6 +118,18 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             }
           />
           <FinanceDetailInfoItem label="Evidence state" value={evidenceState.detail} />
+          <FinanceDetailInfoItem
+            label="Paid payout refund"
+            value={payoutRefundEvidence.refundAfterPaidPayout ? 'Yes' : 'No'}
+          />
+          <FinanceDetailInfoItem
+            label="Partner receivable treatment"
+            value={payoutRefundEvidence.treatment}
+          />
+          <FinanceDetailInfoItem
+            label="Receivable amount"
+            value={formatMoney(payoutRefundEvidence.receivableAmount, reversal.currency)}
+          />
           <FinanceDetailInfoItem label="Reason" value={reversal.reason ?? 'Payment refund'} />
           <FinanceDetailInfoItem label="Source key" value={reversal.sourceKey} />
         </div>
@@ -262,4 +275,35 @@ function evidenceSourceForLink(label: string, reversal: AdminBookingSettlementRe
     return reversal.paymentClearingEntries?.[0]?.sourceKey ?? '-';
   }
   return reversal.originalSettlementSnapshotId;
+}
+
+function payoutRefundReceivableEvidence(reversal: AdminBookingSettlementReversalEntry) {
+  const reversalMetadata = readPlainRecord(reversal.metadata);
+  const journalMetadata = readPlainRecord(reversal.accountingJournalBatches?.[0]?.metadata);
+  const refundAfterPaidPayout =
+    booleanMetadata(journalMetadata, 'refundAfterPartnerPayout') ||
+    booleanMetadata(reversalMetadata, 'refundAfterPartnerPayout') ||
+    booleanMetadata(reversalMetadata, 'refundAfterPayout') ||
+    booleanMetadata(reversalMetadata, 'reversalAffectsPartnerReceivable');
+  const receivableAmount =
+    numberMetadata(journalMetadata, 'partnerRefundReceivableAmount') ??
+    numberMetadata(reversalMetadata, 'partnerRefundReceivableAmount') ??
+    (refundAfterPaidPayout ? Math.abs(reversal.partnerPayoutAmount) : 0);
+
+  return {
+    receivableAmount,
+    refundAfterPaidPayout,
+    treatment: refundAfterPaidPayout
+      ? 'Partner receivable / negative wallet'
+      : 'Partner wallet liability reversal',
+  };
+}
+
+function booleanMetadata(record: Record<string, unknown> | null, key: string) {
+  return record?.[key] === true;
+}
+
+function numberMetadata(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }

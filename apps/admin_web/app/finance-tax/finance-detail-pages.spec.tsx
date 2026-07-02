@@ -163,6 +163,10 @@ describe('finance detail pages', () => {
       accountingJournalBatches: [
         {
           id: 'reversal-journal-1',
+          metadata: {
+            partnerRefundReceivableAmount: 430000,
+            refundAfterPartnerPayout: true,
+          },
           postedAt: '2026-07-01T11:05:00.000Z',
           sourceKey: 'journal:reversal:1',
           status: 'POSTED',
@@ -239,6 +243,11 @@ describe('finance detail pages', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-settlement-reversals/reversal-1', null);
     expect(markup).toContain('Settlement Reversal Detail');
     expect(markup).toContain('Refund after payout evidence');
+    expect(markup).toContain('Paid payout refund');
+    expect(markup).toContain('Partner receivable treatment');
+    expect(markup).toContain('Partner receivable / negative wallet');
+    expect(markup).toContain('Receivable amount');
+    expect(markup).toContain('430.000 VND');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');

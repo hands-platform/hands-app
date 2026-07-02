@@ -678,6 +678,17 @@ const adminBookingSettlementReversalEntryListSelect = {
 } satisfies Prisma.BookingSettlementReversalEntrySelect;
 const adminBookingSettlementReversalEntryDetailSelect = {
   ...adminBookingSettlementReversalEntryListSelect,
+  accountingJournalBatches: {
+    orderBy: { postedAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      metadata: true,
+      postedAt: true,
+      sourceKey: true,
+      status: true,
+    },
+  },
   originalSettlementSnapshot: {
     select: {
       id: true,
