@@ -4,10 +4,10 @@ import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandCard } from '../finance-list-command-card';
+import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPlatformVatMetrics,
@@ -97,12 +97,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         resultTone="info"
         title="Platform VAT period"
       >
-        <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
-          <AdminFormControlButton className="btn btn-primary" type="submit">
-            Apply period
-          </AdminFormControlButton>
-        </form>
+        <FinancePeriodFilterForm period={filters.period} />
       </AdminFilterPanel>
 
       <AdminFilterPanel

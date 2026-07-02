@@ -17,6 +17,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandCard } from '../finance-list-command-card';
+import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
@@ -148,19 +149,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         resultTone={closingStatusTone(summary.status)}
         title="Monthly closing period"
       >
-        <form className="form-grid compact-form admin-mt-12" method="get">
-          <AdminFormInput defaultValue={filters.period} label="Month" labelVisibility="visible" name="period" type="month" />
-          <AdminFormSelect
-            defaultValue={String(filters.take)}
-            label="Rows"
-            labelVisibility="visible"
-            name="take"
-            options={[25, 50, 75, 100].map((take) => ({ label: String(take), value: String(take) }))}
-          />
-          <AdminFormControlButton className="btn btn-primary" type="submit">
-            Apply period
-          </AdminFormControlButton>
-        </form>
+        <FinancePeriodFilterForm period={filters.period} rows={{ value: filters.take }} />
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -223,7 +212,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               name="remittanceEvidenceUrl"
               placeholder="Tax portal receipt or retained evidence URL"
             />
-            <AdminFormControlButton className="btn btn-primary" type="submit">
+            <AdminFormControlButton className="button button-primary" type="submit">
               Save closing status
             </AdminFormControlButton>
             <p className="muted">{nextStatusOptions[0]?.helper}</p>
