@@ -8,6 +8,7 @@ import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   buildBookingPaymentClearingDetailApiHref,
   buildFinanceSettlementTraceLinks,
@@ -142,37 +143,31 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Clearing evidence hub"
       >
-        <div className="finance-reconciliation-path admin-mt-16" aria-label="Payment clearing operating path">
-          <div className="finance-reconciliation-path-node">
-            <span>Payment source</span>
-            <strong>{entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : entry.type}</strong>
-            <small>Booking {shortId(entry.bookingId)}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Clearing row</span>
-            <strong>{formatMoney(entry.amount, entry.currency)}</strong>
-            <small>{entry.status}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Settlement evidence</span>
-            <strong>{paymentClearingSettlementLabel(entry, settlementTraceLinks.length)}</strong>
-            <small>{settlementPaymentFee.policyVersionId}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Bank closeout</span>
-            <strong>{paymentClearingBankMatchLabel(latestActiveMatch, remainingAmount, entry.currency)}</strong>
-            <small>{paymentClearingNextAction(entry.status, remainingAmount, latestActiveMatch)}</small>
-          </div>
-        </div>
+        <FinanceOperatingPath
+          ariaLabel="Payment clearing operating path"
+          steps={[
+            {
+              detail: `Booking ${shortId(entry.bookingId)}`,
+              label: 'Payment source',
+              value: entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : entry.type,
+            },
+            {
+              detail: entry.status,
+              label: 'Clearing row',
+              value: formatMoney(entry.amount, entry.currency),
+            },
+            {
+              detail: settlementPaymentFee.policyVersionId,
+              label: 'Settlement evidence',
+              value: paymentClearingSettlementLabel(entry, settlementTraceLinks.length),
+            },
+            {
+              detail: paymentClearingNextAction(entry.status, remainingAmount, latestActiveMatch),
+              label: 'Bank closeout',
+              value: paymentClearingBankMatchLabel(latestActiveMatch, remainingAmount, entry.currency),
+            },
+          ]}
+        />
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Source payment"

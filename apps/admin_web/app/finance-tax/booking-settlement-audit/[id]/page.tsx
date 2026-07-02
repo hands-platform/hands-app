@@ -7,6 +7,7 @@ import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   bookingSettlementAuditHref,
   bookingSettlementReversalDetailHref,
@@ -122,37 +123,31 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone={evidenceStatus.tone}
         title="Settlement evidence hub"
       >
-        <div className="finance-reconciliation-path admin-mt-16" aria-label="Booking settlement operating path">
-          <div className="finance-reconciliation-path-node">
-            <span>Customer payment</span>
-            <strong>{formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}</strong>
-            <small>{snapshot.paymentMethod}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Settlement split</span>
-            <strong>{allocationDelta === 0 ? 'Balanced' : 'Review required'}</strong>
-            <small>Delta {formatMoney(allocationDelta, snapshot.currency)}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Journal / clearing</span>
-            <strong>{settlementEvidenceCountLabel(snapshot)}</strong>
-            <small>{evidenceStatus.label}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Tax closeout</span>
-            <strong>{snapshot.taxStatus}</strong>
-            <small>{settlementNextAction(snapshot, allocationDelta, evidenceStatus.label)}</small>
-          </div>
-        </div>
+        <FinanceOperatingPath
+          ariaLabel="Booking settlement operating path"
+          steps={[
+            {
+              detail: snapshot.paymentMethod,
+              label: 'Customer payment',
+              value: formatMoney(snapshot.customerPaymentAmount, snapshot.currency),
+            },
+            {
+              detail: `Delta ${formatMoney(allocationDelta, snapshot.currency)}`,
+              label: 'Settlement split',
+              value: allocationDelta === 0 ? 'Balanced' : 'Review required',
+            },
+            {
+              detail: evidenceStatus.label,
+              label: 'Journal / clearing',
+              value: settlementEvidenceCountLabel(snapshot),
+            },
+            {
+              detail: settlementNextAction(snapshot, allocationDelta, evidenceStatus.label),
+              label: 'Tax closeout',
+              value: snapshot.taxStatus,
+            },
+          ]}
+        />
         <div className="detail-grid admin-mt-16">
           <SettlementJournalEvidence snapshot={snapshot} />
           <PaymentClearingEvidence snapshot={snapshot} />

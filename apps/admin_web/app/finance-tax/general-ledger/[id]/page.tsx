@@ -8,6 +8,7 @@ import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
@@ -112,37 +113,31 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         resultTone={balanceDelta === 0 ? 'success' : 'danger'}
         title="Journal evidence hub"
       >
-        <div className="finance-reconciliation-path admin-mt-16" aria-label="General ledger operating path">
-          <div className="finance-reconciliation-path-node">
-            <span>Finance source</span>
-            <strong>{journalSourceLabel(batch, settlementTraceLinks.length)}</strong>
-            <small>{batch.sourceType}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Journal batch</span>
-            <strong>{batch.status}</strong>
-            <small>{batch.monthlyPeriod ?? 'No monthly period'}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Double-entry</span>
-            <strong>{journalBalanceLabel(batch)}</strong>
-            <small>{batch.entries.length} journal row(s)</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Monthly close</span>
-            <strong>{journalCloseoutLabel(balanceDelta, formulaDelta, batch.currency)}</strong>
-            <small>{journalNextAction(balanceDelta, formulaDelta)}</small>
-          </div>
-        </div>
+        <FinanceOperatingPath
+          ariaLabel="General ledger operating path"
+          steps={[
+            {
+              detail: batch.sourceType,
+              label: 'Finance source',
+              value: journalSourceLabel(batch, settlementTraceLinks.length),
+            },
+            {
+              detail: batch.monthlyPeriod ?? 'No monthly period',
+              label: 'Journal batch',
+              value: batch.status,
+            },
+            {
+              detail: `${batch.entries.length} journal row(s)`,
+              label: 'Double-entry',
+              value: journalBalanceLabel(batch),
+            },
+            {
+              detail: journalNextAction(balanceDelta, formulaDelta),
+              label: 'Monthly close',
+              value: journalCloseoutLabel(balanceDelta, formulaDelta, batch.currency),
+            },
+          ]}
+        />
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Source record"

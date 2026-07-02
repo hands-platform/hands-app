@@ -23,6 +23,7 @@ import {
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   bankReconciliationHref,
   buildBankReconciliationDetailApiHref,
@@ -130,37 +131,31 @@ export default async function BankReconciliationDetailPage({
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Bank evidence hub"
       >
-        <div className="finance-reconciliation-path admin-mt-16" aria-label="Bank reconciliation operating path">
-          <div className="finance-reconciliation-path-node">
-            <span>Bank row</span>
-            <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
-            <small>{transaction.status}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Finance source</span>
-            <strong>{reconciliationSourceLabel(latestActiveMatch)}</strong>
-            <small>{latestActiveMatch ? latestActiveMatch.status : 'Waiting for match'}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Ledger evidence</span>
-            <strong>{reconciliationLedgerLabel(latestActiveMatch)}</strong>
-            <small>{latestActiveMatch?.accountingJournalEntry ? 'GL linked' : 'No active GL link'}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Closeout state</span>
-            <strong>{remainingAmount > 0 ? formatMoney(remainingAmount, transaction.currency) : 'Clear'}</strong>
-            <small>{bankReconciliationNextAction(transaction.status, remainingAmount, latestReversedMatch)}</small>
-          </div>
-        </div>
+        <FinanceOperatingPath
+          ariaLabel="Bank reconciliation operating path"
+          steps={[
+            {
+              detail: transaction.status,
+              label: 'Bank row',
+              value: formatMoney(transaction.amount, transaction.currency),
+            },
+            {
+              detail: latestActiveMatch ? latestActiveMatch.status : 'Waiting for match',
+              label: 'Finance source',
+              value: reconciliationSourceLabel(latestActiveMatch),
+            },
+            {
+              detail: latestActiveMatch?.accountingJournalEntry ? 'GL linked' : 'No active GL link',
+              label: 'Ledger evidence',
+              value: reconciliationLedgerLabel(latestActiveMatch),
+            },
+            {
+              detail: bankReconciliationNextAction(transaction.status, remainingAmount, latestReversedMatch),
+              label: 'Closeout state',
+              value: remainingAmount > 0 ? formatMoney(remainingAmount, transaction.currency) : 'Clear',
+            },
+          ]}
+        />
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Matched finance source"

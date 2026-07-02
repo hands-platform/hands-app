@@ -8,6 +8,7 @@ import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
   bookingSettlementAuditDetailHref,
   bookingSettlementReversalHref,
@@ -74,37 +75,31 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         resultTone={evidenceState.tone}
         title="Refund after payout evidence"
       >
-        <div className="finance-reconciliation-path admin-mt-16" aria-label="Settlement reversal operating path">
-          <div className="finance-reconciliation-path-node">
-            <span>Original settlement</span>
-            <strong>{shortId(reversal.originalSettlementSnapshotId)}</strong>
-            <small>{originalSettlement?.settlementStatus ?? 'Snapshot retained'}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Reversal impact</span>
-            <strong>{allocationDelta === 0 ? 'Balanced' : 'Review required'}</strong>
-            <small>Delta {formatMoney(allocationDelta, reversal.currency)}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Journal / clearing</span>
-            <strong>{evidenceState.label}</strong>
-            <small>{evidenceState.detail}</small>
-          </div>
-          <span className="finance-reconciliation-path-connector" aria-hidden="true">
-            -&gt;
-          </span>
-          <div className="finance-reconciliation-path-node">
-            <span>Closeout action</span>
-            <strong>{reversalCloseoutLabel(reversal, allocationDelta, evidenceState.label)}</strong>
-            <small>{payoutRefundEvidence.treatment}</small>
-          </div>
-        </div>
+        <FinanceOperatingPath
+          ariaLabel="Settlement reversal operating path"
+          steps={[
+            {
+              detail: originalSettlement?.settlementStatus ?? 'Snapshot retained',
+              label: 'Original settlement',
+              value: shortId(reversal.originalSettlementSnapshotId),
+            },
+            {
+              detail: `Delta ${formatMoney(allocationDelta, reversal.currency)}`,
+              label: 'Reversal impact',
+              value: allocationDelta === 0 ? 'Balanced' : 'Review required',
+            },
+            {
+              detail: evidenceState.detail,
+              label: 'Journal / clearing',
+              value: evidenceState.label,
+            },
+            {
+              detail: payoutRefundEvidence.treatment,
+              label: 'Closeout action',
+              value: reversalCloseoutLabel(reversal, allocationDelta, evidenceState.label),
+            },
+          ]}
+        />
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Booking"
