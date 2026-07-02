@@ -74,6 +74,37 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         resultTone={evidenceState.tone}
         title="Refund after payout evidence"
       >
+        <div className="finance-reconciliation-path admin-mt-16" aria-label="Settlement reversal operating path">
+          <div className="finance-reconciliation-path-node">
+            <span>Original settlement</span>
+            <strong>{shortId(reversal.originalSettlementSnapshotId)}</strong>
+            <small>{originalSettlement?.settlementStatus ?? 'Snapshot retained'}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Reversal impact</span>
+            <strong>{allocationDelta === 0 ? 'Balanced' : 'Review required'}</strong>
+            <small>Delta {formatMoney(allocationDelta, reversal.currency)}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Journal / clearing</span>
+            <strong>{evidenceState.label}</strong>
+            <small>{evidenceState.detail}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Closeout action</span>
+            <strong>{reversalCloseoutLabel(reversal, allocationDelta, evidenceState.label)}</strong>
+            <small>{payoutRefundEvidence.treatment}</small>
+          </div>
+        </div>
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Booking"
@@ -275,6 +306,23 @@ function evidenceSourceForLink(label: string, reversal: AdminBookingSettlementRe
     return reversal.paymentClearingEntries?.[0]?.sourceKey ?? '-';
   }
   return reversal.originalSettlementSnapshotId;
+}
+
+function reversalCloseoutLabel(
+  reversal: AdminBookingSettlementReversalEntry,
+  allocationDelta: number,
+  evidenceLabel: string,
+) {
+  if (allocationDelta !== 0) {
+    return 'Review allocation delta';
+  }
+  if (evidenceLabel !== 'Evidence complete') {
+    return evidenceLabel;
+  }
+  if (reversal.taxStatus === 'PAID' || reversal.taxStatus === 'CLOSED') {
+    return 'Closed for period';
+  }
+  return 'Ready for closeout review';
 }
 
 function payoutRefundReceivableEvidence(reversal: AdminBookingSettlementReversalEntry) {
