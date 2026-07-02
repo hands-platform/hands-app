@@ -209,7 +209,11 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           </div>
         </AdminFilterPanel>
       )}
-      <CashSettlementOpenDebtTableSection filters={filters} pagination={openDebtPagination} />
+      <CashSettlementOpenDebtTableSection
+        filters={filters}
+        pagination={openDebtPagination}
+        showOperationsEvidence={showFullOperationsView}
+      />
     </AdminPageTemplate>
   );
 }

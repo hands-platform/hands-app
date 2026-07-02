@@ -5,10 +5,35 @@ import {
 import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('CashSettlementOpenDebtTableSection', () => {
-  it('renders open cash debt rows with settlement form defaults', () => {
+  it('renders compact open cash debt rows without per-row operations evidence by default', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([buildRow()], { totalRows: 12 }),
       filters: { page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' },
+    });
+
+    const rendered = textContent(section);
+
+    expect(rendered).toContain('Open cash fee debt rows');
+    expect(rendered).toContain('Partner One');
+    expect(rendered).toContain('Final acceptance blocked');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Company coupon offset: 60.000 VND');
+    expect(rendered).toContain('Review settlement');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 12 entries');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1', '/bookings/booking-1']));
+    expect(hrefsIn(section)).toContain('/cash-settlements?page=2');
+    expect(inputDefaultsIn(section)).toEqual(expect.arrayContaining(['earning-1', 'HANDS-CASH-BOOKIN']));
+    expect(rendered).not.toContain('Cash settlement action execution map');
+    expect(rendered).not.toContain('Accounting preview');
+    expect(rendered).not.toContain('Platform net wallet deduction 58.519 VND');
+    expect(rendered).not.toContain('Record bank deposit');
+    expect(rendered).not.toContain('Finance approver id');
+  });
+
+  it('renders full operations evidence when requested', () => {
+    const section = CashSettlementOpenDebtTableSection({
+      pagination: pagination([buildRow()], { totalRows: 12 }),
+      filters: { page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' },
+      showOperationsEvidence: true,
     });
 
     const rendered = textContent(section);

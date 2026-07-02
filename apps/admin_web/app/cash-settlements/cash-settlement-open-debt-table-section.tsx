@@ -53,11 +53,13 @@ export type CashSettlementOpenDebtTableRow = {
 type CashSettlementOpenDebtTableSectionProps = {
   readonly filters: CashSettlementFilters;
   readonly pagination: CashSettlementPagination<CashSettlementOpenDebtTableRow>;
+  readonly showOperationsEvidence?: boolean;
 };
 
 export function CashSettlementOpenDebtTableSection({
   filters,
   pagination,
+  showOperationsEvidence = false,
 }: CashSettlementOpenDebtTableSectionProps) {
   const rows = pagination.rows;
 
@@ -107,7 +109,7 @@ export function CashSettlementOpenDebtTableSection({
                   <div className="muted">Company coupon offset: {row.cashCouponOffsetLabel}</div>
                 ) : null}
                 <div className="muted">{row.debtOrigin}</div>
-                {row.cashAccountingPreview.length ? (
+                {showOperationsEvidence && row.cashAccountingPreview.length ? (
                   <div
                     className="admin-mini-ledger"
                     aria-label={`Cash accounting preview for ${row.earningId}`}
@@ -122,7 +124,7 @@ export function CashSettlementOpenDebtTableSection({
               <td>
                 <div>HANDS fee {row.platformFeeLabel}</div>
                 <div className="muted">Tax {row.taxAmountLabel}</div>
-                {row.walletDeductionBreakdown.length ? (
+                {showOperationsEvidence && row.walletDeductionBreakdown.length ? (
                   <div className="service-matrix-cell admin-mt-8">
                     {row.walletDeductionBreakdown.map((item) => (
                       <small key={`${row.earningId}-${item}`}>{item}</small>
@@ -139,69 +141,75 @@ export function CashSettlementOpenDebtTableSection({
                   {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
                   <small>{row.nextAction}</small>
                 </div>
-                <div className="ops-task-note admin-mt-10">
-                  <strong>Cash settlement action execution map</strong>
-                  <div className="setup-stage-list admin-mt-8">
-                    {row.actionRows.map((item) => (
-                      <div className="setup-stage-item" key={`${row.earningId}-${item.action}`}>
-                        <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                        <div>
-                          <strong>{item.action}</strong>
-                          <p className="muted">{item.reason}</p>
-                          <small>{item.operatorRule}</small>
+                {showOperationsEvidence ? (
+                  <div className="ops-task-note admin-mt-10">
+                    <strong>Cash settlement action execution map</strong>
+                    <div className="setup-stage-list admin-mt-8">
+                      {row.actionRows.map((item) => (
+                        <div className="setup-stage-item" key={`${row.earningId}-${item.action}`}>
+                          <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                          <div>
+                            <strong>{item.action}</strong>
+                            <p className="muted">{item.reason}</p>
+                            <small>{item.operatorRule}</small>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </td>
               <td>
-                <form action={recordPartnerBankDeposit} className="inline-form">
-                  <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
-                  <AdminFormInput
-                    defaultValue={row.depositAmountDefault}
-                    label="Deposit amount"
-                    min="1"
-                    name="amount"
-                    required
-                    step="1"
-                    type="number"
-                  />
-                  <AdminFormInput
-                    defaultValue={row.settlementReference}
-                    label="Bank transaction id"
-                    name="bankTransactionId"
-                    placeholder="Bank transaction id"
-                    required
-                  />
-                  <AdminFormInput label="Deposit date" name="depositDate" required type="datetime-local" />
-                  <AdminFormInput label="Bank account" name="bankAccount" placeholder="Bank account" />
-                  <AdminFormInput
-                    label="Attachment evidence"
-                    name="attachmentUrl"
-                    placeholder="Evidence file URL"
-                    required
-                  />
-                  <AdminFormInput
-                    defaultValue={row.settlementNotesDefault}
-                    label="Deposit notes"
-                    name="notes"
-                    placeholder="Deposit notes"
-                  />
-                  <AdminFormInput
-                    label="Finance approver id"
-                    name="approvalAdminId"
-                    placeholder="Finance approver admin id"
-                    required
-                  />
-                  <AdminFormControlButton className="btn btn-primary" type="submit">
-                    Record bank deposit
-                  </AdminFormControlButton>
-                </form>
-                <p className="muted admin-mt-8">
-                  Partner deposit is not platform revenue. It first settles negative wallet receivable, then
-                  becomes partner wallet liability.
-                </p>
+                {showOperationsEvidence ? (
+                  <>
+                    <form action={recordPartnerBankDeposit} className="inline-form">
+                      <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
+                      <AdminFormInput
+                        defaultValue={row.depositAmountDefault}
+                        label="Deposit amount"
+                        min="1"
+                        name="amount"
+                        required
+                        step="1"
+                        type="number"
+                      />
+                      <AdminFormInput
+                        defaultValue={row.settlementReference}
+                        label="Bank transaction id"
+                        name="bankTransactionId"
+                        placeholder="Bank transaction id"
+                        required
+                      />
+                      <AdminFormInput label="Deposit date" name="depositDate" required type="datetime-local" />
+                      <AdminFormInput label="Bank account" name="bankAccount" placeholder="Bank account" />
+                      <AdminFormInput
+                        label="Attachment evidence"
+                        name="attachmentUrl"
+                        placeholder="Evidence file URL"
+                        required
+                      />
+                      <AdminFormInput
+                        defaultValue={row.settlementNotesDefault}
+                        label="Deposit notes"
+                        name="notes"
+                        placeholder="Deposit notes"
+                      />
+                      <AdminFormInput
+                        label="Finance approver id"
+                        name="approvalAdminId"
+                        placeholder="Finance approver admin id"
+                        required
+                      />
+                      <AdminFormControlButton className="btn btn-primary" type="submit">
+                        Record bank deposit
+                      </AdminFormControlButton>
+                    </form>
+                    <p className="muted admin-mt-8">
+                      Partner deposit is not platform revenue. It first settles negative wallet receivable,
+                      then becomes partner wallet liability.
+                    </p>
+                  </>
+                ) : null}
                 <form action="/cash-settlements" className="inline-form">
                   <input type="hidden" name="confirm" value="settle" />
                   <input type="hidden" name="earningId" value={row.earningId} />
