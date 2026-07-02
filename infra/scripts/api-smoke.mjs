@@ -4203,6 +4203,7 @@ const refund = payment
     })
   : null;
 const adminRefunds = await getJson('/admin/refunds', adminAuth.accessToken);
+let refundAfterPayoutReceivableReady = false;
 if (refund) {
   const refundReversalJournalSummary = (
     await getJson('/admin/accounting-journal-batches?range=all&review=posted&take=100', adminAuth.accessToken)
@@ -4250,6 +4251,38 @@ if (refund) {
     amount: completedCloseout.payment.amount,
     side: 'CREDIT',
   });
+
+  const adminEarningsAfterRefund = await getJson('/admin/earnings?take=50', adminAuth.accessToken);
+  const refundedPaidEarning = adminEarningsAfterRefund.find((earning) => earning.id === completedEarning.id);
+  const refundAfterPayoutReceivableLedger = refundedPaidEarning?.walletLedgerEntries?.find(
+    (entry) => entry.sourceKey === `earning:${completedEarning.id}:paid-refund-receivable`,
+  );
+  const metadata = refundAfterPayoutReceivableLedger?.metadata;
+  if (
+    !refundedPaidEarning ||
+    !refundAfterPayoutReceivableLedger ||
+    refundAfterPayoutReceivableLedger.type !== 'REFUND_REVERSAL' ||
+    refundAfterPayoutReceivableLedger.amount !== -completedEarning.netAmount ||
+    refundAfterPayoutReceivableLedger.reference !== payoutBatchUpdate.transferRef ||
+    metadata?.refundAfterPayout !== true ||
+    metadata?.partnerReceivableAmount !== completedEarning.netAmount ||
+    metadata?.payoutBatchId !== payoutBatch.id ||
+    metadata?.payoutBatchStatus !== 'PAID' ||
+    metadata?.payoutTransferRef !== payoutBatchUpdate.transferRef
+  ) {
+    throw new Error(
+      `Refund after paid payout did not create partner receivable ledger evidence: ${JSON.stringify({
+        completedEarning,
+        payoutBatchId: payoutBatch.id,
+        refundAfterPayoutReceivableLedger,
+        refundedPaidEarning,
+      })}`,
+    );
+  }
+  refundAfterPayoutReceivableReady = true;
+}
+if (!refundAfterPayoutReceivableReady) {
+  throw new Error(`Refund after paid payout receivable smoke did not run: ${JSON.stringify({ payment, refund })}`);
 }
 const notifications = await getJson('/notifications', customerAuth.accessToken);
 const notificationToRetry = notifications[0];
@@ -4397,6 +4430,7 @@ console.log({
   capturedCashStatus: capturedCash?.status ?? null,
   refundId: refund?.refunds?.at(-1)?.id ?? null,
   refundCount: adminRefunds.length,
+  refundAfterPayoutReceivableReady,
   verificationFileId: verificationUpload.file.id,
   verificationUploadStatus: completedVerificationUpload.uploadStatus,
   verificationReadStorageMode: verificationReadUrl.storageMode,

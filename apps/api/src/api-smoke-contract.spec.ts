@@ -97,6 +97,11 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain("assertBalancedAccountingJournal('Refund settlement reversal journal'");
     expect(scriptSource).toContain("accountCode: 'partner_receivable_negative_wallet'");
     expect(scriptSource).toContain("accountCode: 'booking_payment_clearing'");
+    expect(scriptSource).toContain('refundAfterPayoutReceivableLedger');
+    expect(scriptSource).toContain("sourceKey === `earning:${completedEarning.id}:paid-refund-receivable`");
+    expect(scriptSource).toContain('metadata?.refundAfterPayout !== true');
+    expect(scriptSource).toContain('metadata?.payoutBatchId !== payoutBatch.id');
+    expect(scriptSource).toContain('refundAfterPayoutReceivableReady');
     expect(scriptSource).toContain("assertBalancedAccountingJournal('Manual wallet adjustment journal'");
     expect(scriptSource).toContain("accountCode: 'customer_compensation_expense'");
     expect(scriptSource).toContain("accountCode: 'customer_wallet_liability'");
