@@ -180,7 +180,7 @@ export function calculateProviderWalletDelta(input: WalletDeltaInput) {
     );
   }
 
-  return input.grossAmount - input.platformFee;
+  return input.grossAmount - input.platformFee - input.withholdingAmount;
 }
 
 export function normalizeCashFeeDebtSettlementInput(input: CashFeeDebtSettlementInput) {

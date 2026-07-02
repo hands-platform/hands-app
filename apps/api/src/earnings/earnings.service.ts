@@ -660,8 +660,11 @@ export class EarningsService {
         platformFee.vatRateBps,
         { companyCouponExpense: couponSettlement.companyCouponExpense },
       );
-      const partnerPayoutAmount = Math.max(0, grossAmount - platformFee.platformFeeAmount);
       const paymentMethod = booking.payment?.method ?? PaymentMethod.MANUAL;
+      const partnerPayoutAmount =
+        paymentMethod === PaymentMethod.CASH
+          ? Math.max(0, grossAmount - platformFee.platformFeeAmount)
+          : Math.max(0, netAmount);
       const paymentFee = await this.calculatePaymentFee(tx, {
         customerPaymentAmount: couponSettlement.customerPaymentAmount,
         occurredAt: booking.updatedAt ?? new Date(),

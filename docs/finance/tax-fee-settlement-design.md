@@ -55,7 +55,7 @@ to the nearest VND:
 rounded_bps_amount = round(base_amount * rate_bps / 10000)
 ```
 
-For a completed booking:
+For a completed non-cash booking:
 
 ```text
 customer_payment_amount = captured payment amount or booking service total
@@ -75,7 +75,7 @@ Example:
 
 ```text
 customer_payment_amount = 600000
-partner_payout_amount = 430000
+partner_payout_amount = 388000
 partner_vat_bps = 500
 partner_pit_bps = 200
 platform_vat_bps = 800
@@ -83,15 +83,15 @@ platform_vat_bps = 800
 partner_vat_amount = 30000
 partner_pit_amount = 12000
 partner_withholding_total = 42000
-platform_fee_gross = 128000
-platform_fee_net_revenue = 118519
-company_output_vat = 9481
+platform_fee_gross = 170000
+platform_fee_net_revenue = 157407
+company_output_vat = 12593
 payment_processing_fee = 0
 ```
 
-The example keeps a 128000 gross platform fee after service payout/tax policy
-selection. The settlement snapshot must store the selected rules and final
-amounts, not recalculate them from future policy changes.
+The example keeps a 170000 gross platform fee and stores the partner payout
+after withholding. The settlement snapshot must store the selected rules and
+final amounts, not recalculate them from future policy changes.
 
 ## Payment Method Rules
 
@@ -120,7 +120,7 @@ partner_wallet_delta = partner_payout_amount
 ```
 
 - HANDS receives customer funds.
-- Partner payout is the actual wallet credit; partner withholding is tracked as a separate tax payable.
+- Partner payout is the actual wallet credit after withholding; partner withholding is tracked as a separate tax payable.
 - Payment processing fee is snapshotted separately and never mixed into tax.
 
 ### Customer Wallet
