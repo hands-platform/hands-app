@@ -52,7 +52,7 @@ describe('earnings page model', () => {
     ).toBe('/admin/earnings?range=today&take=10&review=paid');
     expect(
       buildEarningOperationsApiHrefs(buildEarningFilters({ batchState: 'closeout-review' })).earningsHref,
-    ).toBe('/admin/earnings?range=today&take=10');
+    ).toBe('/admin/earnings?range=today&take=10&review=closeout-review');
   });
 
   it('summarizes, prioritizes, and filters earning rows without changing statuses', () => {

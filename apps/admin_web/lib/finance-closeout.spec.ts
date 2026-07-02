@@ -26,7 +26,7 @@ describe('finance closeout helpers', () => {
     expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
       cashSettlementSummaryHref: '/admin/cash-settlement-summary?range=30d',
-      earningsHref: '/admin/earnings?range=30d&take=10',
+      earningsHref: '/admin/earnings?range=30d&take=10&review=closeout-review',
       earningsSummaryHref: '/admin/earnings/summary?range=30d',
       paymentSummaryHref: '/admin/payments/summary?range=30d',
       paymentsHref: '/admin/payments?range=30d&take=10&review=needs-action',

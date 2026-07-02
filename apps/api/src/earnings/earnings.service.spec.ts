@@ -105,12 +105,44 @@ describe('EarningsService payout batches', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          booking: { is: { status: BookingStatus.COMPLETED } },
           netAmount: { gt: 0 },
           payoutBatchId: null,
           status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
         }),
         skip: 25,
         take: 100,
+      }),
+    );
+  });
+
+  it('filters admin closeout review earnings without hydrating non-action rows', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listForAdmin({ range: 'today', review: 'closeout-review', take: '10' })).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { netAmount: { lte: 0 } },
+                { booking: { is: { status: { not: BookingStatus.COMPLETED } } } },
+              ]),
+            }),
+            expect.objectContaining({ NOT: expect.any(Object) }),
+          ]),
+          createdAt: expect.objectContaining({ gte: expect.any(Date), lte: expect.any(Date) }),
+          payoutBatchId: null,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        }),
+        take: 10,
       }),
     );
   });

@@ -252,7 +252,13 @@ export function buildEarningOperationsApiHrefs(filters: ReturnType<typeof buildE
 }
 
 function earningBatchStateApiReview(state: EarningBatchState) {
-  if (state === 'ready' || state === 'cash-debt' || state === 'batched' || state === 'paid') {
+  if (
+    state === 'ready' ||
+    state === 'cash-debt' ||
+    state === 'closeout-review' ||
+    state === 'batched' ||
+    state === 'paid'
+  ) {
     return state;
   }
   return null;

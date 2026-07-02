@@ -61,7 +61,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings/summary?range=today') {
         return summary;
       }
-      if (href === '/admin/earnings?range=today&take=10') {
+      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
         return [] as AdminEarning[];
       }
       if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
@@ -105,7 +105,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings/summary?range=today') {
         return summary;
       }
-      if (href === '/admin/earnings?range=today&take=10') {
+      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
         return [] as AdminEarning[];
       }
       if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {
@@ -176,7 +176,7 @@ describe('FinanceCloseoutPage', () => {
       if (href === '/admin/earnings/summary?range=today') {
         return earningsSummary;
       }
-      if (href === '/admin/earnings?range=today&take=10') {
+      if (href === '/admin/earnings?range=today&take=10&review=closeout-review') {
         return [] as AdminEarning[];
       }
       if (href === '/admin/payout-batches?range=today&take=10&review=needs-review') {

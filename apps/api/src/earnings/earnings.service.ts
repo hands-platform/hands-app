@@ -289,11 +289,9 @@ function adminEarningReviewWhere(
 ): Prisma.ProviderEarningWhereInput | undefined {
   switch (normalizeOptionalQuery(review)) {
     case 'ready':
-      return {
-        netAmount: { gt: 0 },
-        payoutBatchId: null,
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-      };
+      return adminEarningReadyWhere();
+    case 'closeout-review':
+      return adminEarningCloseoutReviewWhere();
     case 'cash-debt':
       return cashSettlementDebtWhere();
     case 'batched':
@@ -309,6 +307,31 @@ function adminEarningReviewWhere(
     default:
       return undefined;
   }
+}
+
+function adminEarningReadyWhere(): Prisma.ProviderEarningWhereInput {
+  return {
+    booking: { is: { status: BookingStatus.COMPLETED } },
+    netAmount: { gt: 0 },
+    payoutBatchId: null,
+    status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+  };
+}
+
+function adminEarningCloseoutReviewWhere(): Prisma.ProviderEarningWhereInput {
+  return {
+    AND: [
+      {
+        OR: [
+          { netAmount: { lte: 0 } },
+          { booking: { is: { status: { not: BookingStatus.COMPLETED } } } },
+        ],
+      },
+      { NOT: cashSettlementDebtWhere() },
+    ],
+    payoutBatchId: null,
+    status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+  };
 }
 
 function adminPayoutBatchReviewWhere(
