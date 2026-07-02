@@ -1239,6 +1239,8 @@ describe('ReferralsService', () => {
         totalDebit: 25_000,
       }),
     });
+    const journalUpdateEntries = tx.accountingJournalBatch.upsert.mock.calls[0]?.[0].update.entries;
+    expect(Object.keys(journalUpdateEntries)).toEqual(['deleteMany', 'create']);
   });
 
   it('credits an available Partner referral reward to the Partner wallet ledger once', async () => {

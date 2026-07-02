@@ -1,11 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import jwt from 'jsonwebtoken';
 import {
   CustomerWalletLedgerType,
   PrismaClient,
   ProviderWalletLedgerType,
   ReferralRewardStatus,
+  Role,
 } from '@prisma/client';
 import { loadMergedEnv } from './lib/env-file.mjs';
 
@@ -22,7 +24,6 @@ const adminWebBaseUrl = trimTrailingSlash(
   env.REFERRAL_SMOKE_ADMIN_WEB_BASE_URL ?? env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101',
 );
 const adminPhone = nonEmptyString(env.REFERRAL_SMOKE_ADMIN_PHONE) ?? nonEmptyString(env.ADMIN_DEMO_PHONE) ?? '+84900000099';
-const adminOtp = nonEmptyString(env.REFERRAL_SMOKE_ADMIN_OTP) ?? nonEmptyString(env.ADMIN_DEMO_OTP) ?? '123456';
 
 const ids = {
   customerCreditReward: 'smoke_referral_customer_available_reward',
@@ -45,7 +46,7 @@ const actionPlan = [
   },
   {
     action: 'referral_reward.credit',
-    expectedStatus: ReferralRewardStatus.REWARDED,
+    expectedStatus: ReferralRewardStatus.CREDITED,
     reason: 'Smoke credit referral reward candidate.',
     rewardId: ids.customerCreditReward,
     route: '/admin/referrals/rewards/smoke_referral_customer_available_reward/credit',
@@ -54,7 +55,7 @@ const actionPlan = [
   },
   {
     action: 'referral_reward.credit',
-    expectedStatus: ReferralRewardStatus.REWARDED,
+    expectedStatus: ReferralRewardStatus.CREDITED,
     reason: 'Smoke credit Partner referral reward candidate.',
     rewardId: ids.partnerCreditReward,
     route: '/admin/referrals/rewards/smoke_referral_partner_available_reward/credit',
@@ -111,10 +112,7 @@ const prisma = new PrismaClient();
 try {
   runSeedScript();
 
-  const adminAuth = await request('/auth/verify-otp', {
-    method: 'POST',
-    body: JSON.stringify({ phone: adminPhone, otp: adminOtp, role: 'ADMIN' }),
-  });
+  const adminAuth = await createSmokeAdminAuth(adminPhone);
   const accessToken = adminAuth.accessToken;
   assertCondition(Boolean(accessToken), 'Admin auth did not return an access token.');
 
@@ -132,7 +130,8 @@ try {
   }
 
   const verification = await verifyRewardActions();
-  const adminWebEvidence = await verifyAdminWebDecisionEvidence();
+  const adminWebCookieHeader = await loadAdminWebSmokeCookieHeader();
+  const adminWebEvidence = await verifyAdminWebDecisionEvidence(adminWebCookieHeader);
   console.log(
     JSON.stringify(
       {
@@ -187,11 +186,52 @@ function runSeedScript() {
   }
 }
 
+async function createSmokeAdminAuth(phone) {
+  const existing = await prisma.user.findUnique({ where: { phone } });
+  const user = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          fullName: existing.fullName ?? 'HANDS Referral Smoke Admin',
+          roles: { set: Array.from(new Set([...existing.roles, Role.ADMIN, Role.FINANCE_APPROVER])) },
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          phone,
+          fullName: 'HANDS Referral Smoke Admin',
+          roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+        },
+      });
+
+  return {
+    user,
+    accessToken: jwt.sign(
+      { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
+      jwtAccessSecretFromEnv(env),
+      { expiresIn: '30m' },
+    ),
+  };
+}
+
+function jwtAccessSecretFromEnv(sourceEnv) {
+  const trimmed = sourceEnv.JWT_ACCESS_SECRET?.trim();
+  if (trimmed && !['change-me', 'changeme', 'secret', 'password'].includes(trimmed.toLowerCase())) {
+    return trimmed;
+  }
+  if (sourceEnv.NODE_ENV === 'production') {
+    throw new Error('JWT_ACCESS_SECRET must be configured before running referral reward action smoke in production.');
+  }
+  return 'dev-access-secret';
+}
+
 async function verifyRewardActions() {
   const rewards = await prisma.referralReward.findMany({
     where: { id: { in: actionPlan.map((action) => action.rewardId) } },
     select: {
       id: true,
+      amount: true,
+      currency: true,
       status: true,
       walletLedgerReference: true,
     },
@@ -208,6 +248,7 @@ async function verifyRewardActions() {
     select: {
       amount: true,
       customerProfileId: true,
+      currency: true,
       id: true,
       referralRewardId: true,
       sourceKey: true,
@@ -227,6 +268,8 @@ async function verifyRewardActions() {
     },
     select: {
       id: true,
+      amount: true,
+      currency: true,
       metadata: true,
       providerProfileId: true,
       sourceKey: true,
@@ -273,7 +316,7 @@ async function verifyRewardActions() {
           `Reward ${expected.rewardId} wallet ledger reference mismatch.`,
         );
         assertCondition(
-          customerWalletLedger.type === CustomerWalletLedgerType.REFERRAL_REWARD,
+          customerWalletLedger.type === CustomerWalletLedgerType.CUSTOMER_REFERRAL_EARNED,
           `Reward ${expected.rewardId} ledger type mismatch.`,
         );
         assertCondition(
@@ -291,7 +334,7 @@ async function verifyRewardActions() {
           `Reward ${expected.rewardId} wallet ledger reference mismatch.`,
         );
         assertCondition(
-          providerWalletLedger.type === ProviderWalletLedgerType.REFERRAL_REWARD,
+          providerWalletLedger.type === ProviderWalletLedgerType.PARTNER_REFERRAL_EARNED,
           `Reward ${expected.rewardId} ledger type mismatch.`,
         );
         assertCondition(
@@ -337,10 +380,132 @@ async function verifyRewardActions() {
     };
   });
 
-  return { verified };
+  const journals = await verifyReferralRewardJournals({
+    customerWalletLedgersBySourceKey,
+    providerWalletLedgersBySourceKey,
+    rewardsById,
+  });
+
+  return { journals, verified };
 }
 
-async function verifyAdminWebDecisionEvidence() {
+async function verifyReferralRewardJournals({
+  customerWalletLedgersBySourceKey,
+  providerWalletLedgersBySourceKey,
+  rewardsById,
+}) {
+  const walletCreditActions = actionPlan.filter((action) => action.walletCreditCreated);
+  const journalSourceKeys = walletCreditActions.map((action) =>
+    referralRewardJournalSourceKey(action.rewardId, 'wallet-credit'),
+  );
+  const journals = await prisma.accountingJournalBatch.findMany({
+    where: { sourceKey: { in: journalSourceKeys } },
+    select: {
+      entries: {
+        select: {
+          accountCode: true,
+          amount: true,
+          side: true,
+        },
+      },
+      id: true,
+      sourceKey: true,
+      sourceType: true,
+      status: true,
+      totalCredit: true,
+      totalDebit: true,
+    },
+  });
+  const journalsBySourceKey = new Map(journals.map((journal) => [journal.sourceKey, journal]));
+
+  return walletCreditActions.map((action) => {
+    const reward = rewardsById.get(action.rewardId);
+    assertCondition(Boolean(reward), `Missing reward while verifying referral journal: ${action.rewardId}`);
+
+    const ledgerSourceKey = referralWalletCreditSourceKey(action.rewardId);
+    const walletLedger =
+      action.walletOwner === 'CUSTOMER'
+        ? customerWalletLedgersBySourceKey.get(ledgerSourceKey)
+        : providerWalletLedgersBySourceKey.get(ledgerSourceKey);
+    assertCondition(Boolean(walletLedger), `Missing wallet ledger while verifying referral journal: ${ledgerSourceKey}`);
+
+    const journalSourceKey = referralRewardJournalSourceKey(action.rewardId, 'wallet-credit');
+    const journal = journalsBySourceKey.get(journalSourceKey);
+    assertCondition(Boolean(journal), `Missing referral reward journal: ${journalSourceKey}`);
+    assertCondition(journal.sourceType === 'REFERRAL_REWARD', `Referral journal ${journalSourceKey} sourceType mismatch.`);
+    assertCondition(journal.status === 'POSTED', `Referral journal ${journalSourceKey} must be POSTED.`);
+    assertBalancedAccountingJournal(`Referral reward journal ${action.rewardId}`, journal);
+
+    const ownerAccountPrefix = action.walletOwner.toLowerCase();
+    assertJournalEntry(`Referral reward journal ${action.rewardId}`, journal, {
+      accountCode: `${ownerAccountPrefix}_referral_reward_expense`,
+      amount: reward.amount,
+      side: 'DEBIT',
+    });
+    assertJournalEntry(`Referral reward journal ${action.rewardId}`, journal, {
+      accountCode: `${ownerAccountPrefix}_wallet_liability`,
+      amount: walletLedger.amount,
+      side: 'CREDIT',
+    });
+
+    return {
+      entryCount: journal.entries.length,
+      journalId: journal.id,
+      rewardId: action.rewardId,
+      sourceKey: journal.sourceKey,
+      totalCredit: journal.totalCredit,
+      totalDebit: journal.totalDebit,
+    };
+  });
+}
+
+function assertBalancedAccountingJournal(label, journal) {
+  if (!journal?.entries?.length) {
+    throw new Error(`${label} did not include journal entries: ${JSON.stringify(journal)}`);
+  }
+  const totalDebitFromEntries = accountingJournalEntryTotal(journal.entries, 'DEBIT');
+  const totalCreditFromEntries = accountingJournalEntryTotal(journal.entries, 'CREDIT');
+  if (
+    journal.totalDebit !== journal.totalCredit ||
+    journal.totalDebit !== totalDebitFromEntries ||
+    journal.totalCredit !== totalCreditFromEntries
+  ) {
+    throw new Error(
+      `${label} is not balanced: ${JSON.stringify({
+        batchCredit: journal.totalCredit,
+        batchDebit: journal.totalDebit,
+        entryCredit: totalCreditFromEntries,
+        entryDebit: totalDebitFromEntries,
+        entries: journal.entries,
+      })}`,
+    );
+  }
+}
+
+function assertJournalEntry(label, journal, expected) {
+  const found = journal.entries?.some(
+    (entry) =>
+      entry.accountCode === expected.accountCode &&
+      entry.amount === expected.amount &&
+      entry.side === expected.side,
+  );
+  if (!found) {
+    throw new Error(
+      `${label} is missing expected journal entry: ${JSON.stringify({
+        expected,
+        entries: journal.entries,
+      })}`,
+    );
+  }
+}
+
+function accountingJournalEntryTotal(entries, side) {
+  return entries
+    .filter((entry) => entry.side === side)
+    .reduce((total, entry) => total + Number(entry.amount ?? 0), 0);
+}
+
+async function verifyAdminWebDecisionEvidence(adminWebCookieHeader) {
   const customerParentDetail = `/referrals/customers/${ids.customerParentProfile}`;
   const partnerParentDetail = `/referrals/partners/${ids.partnerParentProfile}`;
   const pages = [
@@ -368,7 +533,7 @@ async function verifyAdminWebDecisionEvidence() {
 
   const verified = [];
   for (const page of pages) {
-    const html = await requestAdminWebHtml(page.path);
+    const html = await requestAdminWebHtml(page.path, adminWebCookieHeader);
     for (const expectedText of page.expected) {
       assertCondition(
         html.includes(expectedText),
@@ -381,13 +546,49 @@ async function verifyAdminWebDecisionEvidence() {
   return { verified };
 }
 
-async function requestAdminWebHtml(path) {
-  const response = await fetch(`${adminWebBaseUrl}${path}`);
+async function requestAdminWebHtml(path, adminWebCookieHeader) {
+  const response = await fetch(`${adminWebBaseUrl}${path}`, {
+    headers: adminWebCookieHeader ? { cookie: adminWebCookieHeader } : {},
+    redirect: 'manual',
+  });
   const body = await response.text().catch(() => '');
   if (!response.ok) {
     throw new Error(`GET ${path} failed from Admin Web: ${response.status} ${body.slice(0, 500)}`);
   }
   return body;
+}
+
+async function loadAdminWebSmokeCookieHeader() {
+  if (env.ADMIN_WEB_SMOKE_COOKIE?.trim()) {
+    return env.ADMIN_WEB_SMOKE_COOKIE.trim();
+  }
+
+  const email = env.ADMIN_WEB_LOGIN_EMAIL?.trim();
+  const password = env.ADMIN_WEB_LOGIN_PASSWORD;
+  if (!email || !password) {
+    return null;
+  }
+
+  const response = await fetch(`${adminWebBaseUrl}/api/admin/session/login`, {
+    body: JSON.stringify({ email, password }),
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    method: 'POST',
+    redirect: 'manual',
+  });
+  const body = await response.text().catch(() => '');
+  if (!response.ok) {
+    throw new Error(`Admin Web smoke login failed with ${response.status}: ${body.slice(0, 160)}`);
+  }
+
+  const setCookie = response.headers.get('set-cookie');
+  const sessionCookie = setCookie?.split(';')[0]?.trim();
+  if (!sessionCookie) {
+    throw new Error('Admin Web smoke login did not return a session cookie.');
+  }
+  return sessionCookie;
 }
 
 async function postJson(path, accessToken, body = {}) {
@@ -421,6 +622,10 @@ function assertCondition(condition, message) {
 
 function referralWalletCreditSourceKey(rewardId) {
   return `referral:wallet-credit:${rewardId}`;
+}
+
+function referralRewardJournalSourceKey(rewardId, action) {
+  return `accounting-journal:referral-${action}:${rewardId}`;
 }
 
 function fail(message) {

@@ -1419,8 +1419,8 @@ async function upsertReferralRewardJournal(
     update: {
       ...batchData,
       entries: {
-        create: entries,
         deleteMany: {},
+        create: entries,
       },
     },
     create: {

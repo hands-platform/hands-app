@@ -12,6 +12,8 @@ describe('referral reward action smoke contract', () => {
       'node infra/scripts/referral-reward-action-smoke.mjs',
     );
     expect(scriptSource).toContain('referral-smoke-seed.mjs');
+    expect(scriptSource).toContain('createSmokeAdminAuth');
+    expect(scriptSource).toContain('JWT_ACCESS_SECRET');
     expect(scriptSource).toContain('/admin/referrals/rewards/smoke_referral_customer_pending_reward/hold');
     expect(scriptSource).toContain('/admin/referrals/rewards/smoke_referral_customer_available_reward/credit');
     expect(scriptSource).toContain('/admin/referrals/rewards/smoke_referral_partner_available_reward/credit');
@@ -21,9 +23,18 @@ describe('referral reward action smoke contract', () => {
     expect(scriptSource).toContain('referral_reward.reverse');
     expect(scriptSource).toContain('customerWalletLedgerEntry');
     expect(scriptSource).toContain('providerWalletLedgerEntry');
-    expect(scriptSource).toContain('ReferralRewardStatus.REWARDED');
+    expect(scriptSource).toContain('CustomerWalletLedgerType.CUSTOMER_REFERRAL_EARNED');
+    expect(scriptSource).toContain('ProviderWalletLedgerType.PARTNER_REFERRAL_EARNED');
+    expect(scriptSource).toContain('accountingJournalBatch');
+    expect(scriptSource).toContain('verifyReferralRewardJournals');
+    expect(scriptSource).toContain('assertBalancedAccountingJournal');
+    expect(scriptSource).toContain('ReferralRewardStatus.CREDITED');
     expect(scriptSource).toContain('walletCreditCreated');
     expect(scriptSource).toContain('REFERRAL_SMOKE_ADMIN_WEB_BASE_URL');
+    expect(scriptSource).toContain('loadAdminWebSmokeCookieHeader');
+    expect(scriptSource).toContain('ADMIN_WEB_SMOKE_COOKIE');
+    expect(scriptSource).toContain('ADMIN_WEB_LOGIN_EMAIL');
+    expect(scriptSource).toContain('cookie: adminWebCookieHeader');
     expect(scriptSource).toContain('verifyAdminWebDecisionEvidence');
     expect(scriptSource).toContain('Latest decision Credit by');
     expect(scriptSource).toContain('Smoke credit Partner referral reward candidate.');
