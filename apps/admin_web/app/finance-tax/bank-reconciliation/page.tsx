@@ -20,6 +20,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -42,13 +43,6 @@ import {
 type BankReconciliationPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-const DATE_RANGE_LINKS = [
-  ['Today', 'today'],
-  ['Last 7 days', '7d'],
-  ['Last 30 days', '30d'],
-  ['All dates', 'all'],
-] as const;
 
 export default async function BankReconciliationPage({ searchParams }: BankReconciliationPageProps) {
   const params = searchParams ? await searchParams : {};
@@ -159,39 +153,40 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         resultTone="success"
         title="Bank reconciliation filters"
       >
-        <div className="participant-list">
-          {DATE_RANGE_LINKS.map(([label, range]) => (
-            <Link
-              className={`pill ${filters.range === range ? 'pill-info' : 'pill-neutral'}`}
-              href={bankReconciliationHref({ ...filters, page: 1, range })}
-              key={range}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-        <div className="participant-list admin-mt-10">
-          {BANK_RECONCILIATION_REVIEW_LINKS.map((item) => (
-            <Link
-              className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-              href={bankReconciliationHref({ ...filters, page: 1, review: item.review })}
-              key={item.review}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div className="participant-list admin-mt-10">
-          {FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => (
-            <Link
-              className={`pill ${filters.take === take ? 'pill-success' : 'pill-neutral'}`}
-              href={bankReconciliationHref({ ...filters, page: 1, take })}
-              key={take}
-            >
-              {take} rows
-            </Link>
-          ))}
-        </div>
+        <FinanceListFilterLinks
+          groups={[
+            {
+              id: 'range',
+              links: FINANCE_LIST_DATE_RANGE_LINKS.map(([label, range]) => ({
+                active: filters.range === range,
+                activePillClassName: 'pill-info',
+                href: bankReconciliationHref({ ...filters, page: 1, range }),
+                id: range,
+                label,
+              })),
+            },
+            {
+              id: 'review',
+              links: BANK_RECONCILIATION_REVIEW_LINKS.map((item) => ({
+                active: filters.review === item.review,
+                activePillClassName: 'pill-warn',
+                href: bankReconciliationHref({ ...filters, page: 1, review: item.review }),
+                id: item.review,
+                label: item.label,
+              })),
+            },
+            {
+              id: 'take',
+              links: FINANCE_ACCOUNTING_PAGE_SIZE_LINKS.map((take) => ({
+                active: filters.take === take,
+                activePillClassName: 'pill-success',
+                href: bankReconciliationHref({ ...filters, page: 1, take }),
+                id: take,
+                label: `${take} rows`,
+              })),
+            },
+          ]}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel
