@@ -16,6 +16,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { FinanceListCommandCard } from './finance-list-command-card';
+import { FinanceStageList } from './finance-stage-list';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
   bookingSettlementAuditHref,
@@ -177,41 +178,37 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         resultTone="success"
         title="Tax finance operating model"
       >
-        <div className="setup-stage-list admin-mt-12">
-          <div className="setup-stage-item">
-            <span>1</span>
-            <div>
-              <strong>Booking snapshot is immutable</strong>
-              <p className="muted">
-                Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee,
-                and company VAT values at posting time.
-              </p>
-            </div>
-            <small>{settlementSummary.count} rows</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>2</span>
-            <div>
-              <strong>Partner tax is monthly</strong>
-              <p className="muted">
-                Partner withholding is grouped by month and Partner. Current period:{' '}
-                {withholdingSummary.period}.
-              </p>
-            </div>
-            <small>{withholdingSummary.partnerCountWithRevenue} partners</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>3</span>
-            <div>
-              <strong>Finance uses snapshot totals</strong>
-              <p className="muted">
-                Company net fee is {formatMoney(settlementSummary.platformFeeNetRevenue, currency)} before
-                payment processing cost of {formatMoney(settlementSummary.paymentProcessingFee, currency)}.
-              </p>
-            </div>
-            <small>{formatMoney(settlementSummary.companyOutputVat, currency)} VAT</small>
-          </div>
-        </div>
+        <FinanceStageList
+          items={[
+            {
+              helper:
+                'Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee, and company VAT values at posting time.',
+              key: 'booking-snapshot',
+              label: 'Booking snapshot is immutable',
+              signal: '1',
+              value: `${settlementSummary.count} rows`,
+            },
+            {
+              helper: `Partner withholding is grouped by month and Partner. Current period: ${withholdingSummary.period}.`,
+              key: 'partner-tax-monthly',
+              label: 'Partner tax is monthly',
+              signal: '2',
+              value: `${withholdingSummary.partnerCountWithRevenue} partners`,
+            },
+            {
+              helper: (
+                <>
+                  Company net fee is {formatMoney(settlementSummary.platformFeeNetRevenue, currency)} before
+                  payment processing cost of {formatMoney(settlementSummary.paymentProcessingFee, currency)}.
+                </>
+              ),
+              key: 'snapshot-totals',
+              label: 'Finance uses snapshot totals',
+              signal: '3',
+              value: `${formatMoney(settlementSummary.companyOutputVat, currency)} VAT`,
+            },
+          ]}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -221,8 +218,8 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         resultTone="warning"
         title="Finance operations priority desk"
       >
-        <div className="setup-stage-list admin-mt-12">
-          {buildFinanceOperationsPriorityLinks({
+        <FinanceStageList
+          items={buildFinanceOperationsPriorityLinks({
             accountingFilters,
             bankSummary,
             clearingSummary,
@@ -230,19 +227,15 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             monthlyClosingSummary,
             settlementFilters,
             settlementSummary,
-          }).map((link) => (
-            <Link className="setup-stage-item" href={link.href} key={link.key}>
-              <span>{link.signal}</span>
-              <div>
-                <strong>{link.label}</strong>
-                <p className="muted">{link.helper}</p>
-              </div>
-              <small>
-                {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
-              </small>
-            </Link>
-          ))}
-        </div>
+          }).map((link) => ({
+            helper: link.helper,
+            href: link.href,
+            key: link.key,
+            label: link.label,
+            signal: link.signal,
+            value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+          }))}
+        />
       </AdminFilterPanel>
 
       {showFullSummaryView ? (
@@ -254,81 +247,66 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             resultTone="info"
             title="Coupon finance summary"
           >
-            <div className="setup-stage-list admin-mt-12">
-              <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
-                <span>COUPON</span>
-                <div>
-                  <strong>Coupon settlement rows</strong>
-                  <p className="muted">Bookings with coupon metadata in the current finance range and queue.</p>
-                </div>
-                <small>{couponFinanceSummary.couponSettlementCount} rows</small>
-              </Link>
-              <div className="setup-stage-item">
-                <span>DISC</span>
-                <div>
-                  <strong>Customer discount</strong>
-                  <p className="muted">
-                    Discount applied to customer payment while settlement keeps the pre-coupon service amount.
-                  </p>
-                </div>
-                <small>{formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency)}</small>
-              </div>
-              <div className="setup-stage-item">
-                <span>PAID</span>
-                <div>
-                  <strong>Customer paid amount</strong>
-                  <p className="muted">
-                    Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.
-                  </p>
-                </div>
-                <small>{formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency)}</small>
-              </div>
-              <div className="setup-stage-item">
-                <span>BASE</span>
-                <div>
-                  <strong>Settlement base</strong>
-                  <p className="muted">
-                    Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.
-                  </p>
-                </div>
-                <small>
-                  {formatMoney(
+            <FinanceStageList
+              items={[
+                {
+                  helper: 'Bookings with coupon metadata in the current finance range and queue.',
+                  href: bookingSettlementAuditHref(settlementFilters),
+                  key: 'coupon-settlement-rows',
+                  label: 'Coupon settlement rows',
+                  signal: 'COUPON',
+                  value: `${couponFinanceSummary.couponSettlementCount} rows`,
+                },
+                {
+                  helper: 'Discount applied to customer payment while settlement keeps the pre-coupon service amount.',
+                  key: 'customer-discount',
+                  label: 'Customer discount',
+                  signal: 'DISC',
+                  value: formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency),
+                },
+                {
+                  helper: 'Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.',
+                  key: 'customer-paid',
+                  label: 'Customer paid amount',
+                  signal: 'PAID',
+                  value: formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency),
+                },
+                {
+                  helper: 'Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.',
+                  key: 'settlement-base',
+                  label: 'Settlement base',
+                  signal: 'BASE',
+                  value: formatMoney(
                     couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount,
                     couponFinanceSummary.currency,
-                  )}
-                </small>
-              </div>
-              <div className="setup-stage-item">
-                <span>EXP</span>
-                <div>
-                  <strong>Company coupon expense</strong>
-                  <p className="muted">
-                    Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.
-                  </p>
-                </div>
-                <small>{formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency)}</small>
-              </div>
-              <div className="setup-stage-item">
-                <span>FLAG</span>
-                <div>
-                  <strong>Coupon review flags</strong>
-                  <p className="muted">Rows where coupon metadata needs finance review before closing.</p>
-                </div>
-                <small>{couponFinanceSummary.couponReviewFlagCount} flags</small>
-              </div>
-              <div className="setup-stage-item">
-                <span>REV</span>
-                <div>
-                  <strong>Reversed coupon amount</strong>
-                  <p className="muted">
-                    Refund or reversal metadata for coupon discount and company coupon expense recovery.
-                  </p>
-                </div>
-                <small>
-                  {formatMoney(couponFinanceSummary.reversedCouponDiscountAmount, couponFinanceSummary.currency)}
-                </small>
-              </div>
-            </div>
+                  ),
+                },
+                {
+                  helper: 'Company-funded coupon amount to review as marketing expense, separate from revenue and VAT.',
+                  key: 'company-coupon-expense',
+                  label: 'Company coupon expense',
+                  signal: 'EXP',
+                  value: formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency),
+                },
+                {
+                  helper: 'Rows where coupon metadata needs finance review before closing.',
+                  key: 'coupon-review-flags',
+                  label: 'Coupon review flags',
+                  signal: 'FLAG',
+                  value: `${couponFinanceSummary.couponReviewFlagCount} flags`,
+                },
+                {
+                  helper: 'Refund or reversal metadata for coupon discount and company coupon expense recovery.',
+                  key: 'reversed-coupon-amount',
+                  label: 'Reversed coupon amount',
+                  signal: 'REV',
+                  value: formatMoney(
+                    couponFinanceSummary.reversedCouponDiscountAmount,
+                    couponFinanceSummary.currency,
+                  ),
+                },
+              ]}
+            />
           </AdminFilterPanel>
 
           <AdminFilterPanel
@@ -338,20 +316,16 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             resultTone="info"
             title="Payout and wallet priority desk"
           >
-            <div className="setup-stage-list admin-mt-12">
-              {buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => (
-                <Link className="setup-stage-item" href={link.href} key={link.key}>
-                  <span>{link.signal}</span>
-                  <div>
-                    <strong>{link.label}</strong>
-                    <p className="muted">{link.helper}</p>
-                  </div>
-                  <small>
-                    {link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue')}
-                  </small>
-                </Link>
-              ))}
-            </div>
+            <FinanceStageList
+              items={buildFinancePayoutPriorityLinks(settlementFilters, withdrawalRequestSummary).map((link) => ({
+                helper: link.helper,
+                href: link.href,
+                key: link.key,
+                label: link.label,
+                signal: link.signal,
+                value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+              }))}
+            />
           </AdminFilterPanel>
         </>
       ) : (
@@ -372,94 +346,85 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description="Keep these two workspaces separate: one reviews booking-level immutable evidence, the other reviews Partner monthly withholding totals."
+        description="Keep summary, evidence, tax, reconciliation, and policy workspaces separate so operators open row-level data only when needed."
         title="Finance tax workspaces"
       >
-        <div className="setup-stage-list admin-mt-12">
-          <Link className="setup-stage-item" href={bookingSettlementAuditHref(settlementFilters)}>
-            <span>AUDIT</span>
-            <div>
-              <strong>Booking Settlement Audit</strong>
-              <p className="muted">
-                Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed
-                snapshots.
-              </p>
-            </div>
-            <small>{settlementSummary.openTaxCount} open</small>
-          </Link>
-          <Link className="setup-stage-item" href={generalLedgerHref(accountingFilters)}>
-            <span>GL</span>
-            <div>
-              <strong>General Ledger</strong>
-              <p className="muted">Bounded journal batch lookup for posting, reversal, refund, and adjustment evidence.</p>
-            </div>
-            <small>Journal</small>
-          </Link>
-          <Link className="setup-stage-item" href={paymentClearingHref(accountingFilters)}>
-            <span>CLEAR</span>
-            <div>
-              <strong>Payment Clearing</strong>
-              <p className="muted">Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.</p>
-            </div>
-            <small>Clearing</small>
-          </Link>
-          <Link className="setup-stage-item" href={bankReconciliationHref(accountingFilters)}>
-            <span>BANK</span>
-            <div>
-              <strong>Bank Reconciliation</strong>
-              <p className="muted">Company bank transaction lookup for manual matching against accounting evidence.</p>
-            </div>
-            <small>Reconcile</small>
-          </Link>
-          <Link className="setup-stage-item" href={partnerWithholdingTaxHref(withholdingFilters)}>
-            <span>TAX</span>
-            <div>
-              <strong>Partner Withholding Tax</strong>
-              <p className="muted">
-                Monthly Partner VAT/PIT totals for manual tax and payout closeout review.
-              </p>
-            </div>
-            <small>
-              {formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}
-            </small>
-          </Link>
-          <Link className="setup-stage-item" href={monthlyTaxClosingHref(monthlyClosingFilters)}>
-            <span>CLOSE</span>
-            <div>
-              <strong>Monthly Tax Closing</strong>
-              <p className="muted">
-                Preview platform VAT, Partner withholding, payment fee, cash debt, and reconciliation deltas.
-              </p>
-            </div>
-            <small>{monthlyClosingFilters.period}</small>
-          </Link>
-          <Link className="setup-stage-item" href={platformVatHref(monthlyClosingFilters)}>
-            <span>VAT</span>
-            <div>
-              <strong>Platform VAT</strong>
-              <p className="muted">Review company output VAT by platform fee rate bucket.</p>
-            </div>
-            <small>{formatMoney(settlementSummary.companyOutputVat, currency)}</small>
-          </Link>
-          <Link className="setup-stage-item" href={paymentFeeHref(monthlyClosingFilters)}>
-            <span>FEE</span>
-            <div>
-              <strong>Payment Fees</strong>
-              <p className="muted">Review processing fee totals by method, payer, and treatment.</p>
-            </div>
-            <small>{formatMoney(settlementSummary.paymentProcessingFee, currency)}</small>
-          </Link>
-          <Link className="setup-stage-item" href="/tax-policy">
-            <span>RULES</span>
-            <div>
-              <strong>Tax Policy</strong>
-              <p className="muted">
-                Configure versioned tax rules. Historical settlement snapshots keep their own tax values.
-              </p>
-            </div>
-            <small>Policy</small>
-          </Link>
-        </div>
+        <FinanceStageList
+          items={[
+            {
+              helper: 'Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed snapshots.',
+              href: bookingSettlementAuditHref(settlementFilters),
+              key: 'booking-settlement-audit',
+              label: 'Booking Settlement Audit',
+              signal: 'AUDIT',
+              value: `${settlementSummary.openTaxCount} open`,
+            },
+            {
+              helper: 'Bounded journal batch lookup for posting, reversal, refund, and adjustment evidence.',
+              href: generalLedgerHref(accountingFilters),
+              key: 'general-ledger',
+              label: 'General Ledger',
+              signal: 'GL',
+              value: 'Journal',
+            },
+            {
+              helper: 'Customer payment capture, settlement posting, refund, payment fee, and coupon offset queue.',
+              href: paymentClearingHref(accountingFilters),
+              key: 'payment-clearing',
+              label: 'Payment Clearing',
+              signal: 'CLEAR',
+              value: 'Clearing',
+            },
+            {
+              helper: 'Company bank transaction lookup for manual matching against accounting evidence.',
+              href: bankReconciliationHref(accountingFilters),
+              key: 'bank-reconciliation',
+              label: 'Bank Reconciliation',
+              signal: 'BANK',
+              value: 'Reconcile',
+            },
+            {
+              helper: 'Monthly Partner VAT/PIT totals for manual tax and payout closeout review.',
+              href: partnerWithholdingTaxHref(withholdingFilters),
+              key: 'partner-withholding-tax',
+              label: 'Partner Withholding Tax',
+              signal: 'TAX',
+              value: formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency),
+            },
+            {
+              helper: 'Preview platform VAT, Partner withholding, payment fee, cash debt, and reconciliation deltas.',
+              href: monthlyTaxClosingHref(monthlyClosingFilters),
+              key: 'monthly-tax-closing',
+              label: 'Monthly Tax Closing',
+              signal: 'CLOSE',
+              value: monthlyClosingFilters.period,
+            },
+            {
+              helper: 'Review company output VAT by platform fee rate bucket.',
+              href: platformVatHref(monthlyClosingFilters),
+              key: 'platform-vat',
+              label: 'Platform VAT',
+              signal: 'VAT',
+              value: formatMoney(settlementSummary.companyOutputVat, currency),
+            },
+            {
+              helper: 'Review processing fee totals by method, payer, and treatment.',
+              href: paymentFeeHref(monthlyClosingFilters),
+              key: 'payment-fees',
+              label: 'Payment Fees',
+              signal: 'FEE',
+              value: formatMoney(settlementSummary.paymentProcessingFee, currency),
+            },
+            {
+              helper: 'Configure versioned tax rules. Historical settlement snapshots keep their own tax values.',
+              href: '/tax-policy',
+              key: 'tax-policy',
+              label: 'Tax Policy',
+              signal: 'RULES',
+              value: 'Policy',
+            },
+          ]}
+        />
       </AdminFilterPanel>
     </AdminPageTemplate>
   );
