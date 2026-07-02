@@ -59,6 +59,24 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('approvalAdminId: financeApproverAuth.user.id');
   });
 
+  it('asserts finance dual approval and role separation guards in live smoke', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('createSmokeAdminOnlyAuth');
+    expect(scriptSource).toContain('const nonFinanceAdminAuth = await createSmokeAdminOnlyAuth');
+    expect(scriptSource).toContain('Manual wallet adjustment requires approval from a different admin');
+    expect(scriptSource).toContain('Manual wallet adjustment requires approval from a finance approver');
+    expect(scriptSource).toContain('Payout batch paid closeout requires approval from a different admin');
+    expect(scriptSource).toContain('Payout batch paid closeout requires approval from a finance approver');
+    expect(scriptSource).toContain(
+      'Partner withholding remittance paid closeout requires approval from a different admin',
+    );
+    expect(scriptSource).toContain(
+      'Partner withholding remittance paid closeout requires approval from a finance approver',
+    );
+    expect(scriptSource).toContain('financeDualApprovalRoleSeparationReady');
+  });
+
   it('covers live bank reconciliation create, match, and reverse operations', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 

@@ -66,6 +66,40 @@ async function createSmokeAdminAuth(phone = env.API_SMOKE_ADMIN_PHONE ?? env.ADM
   }
 }
 
+async function createSmokeAdminOnlyAuth(phone = env.API_SMOKE_ADMIN_ONLY_PHONE ?? '+84900000097') {
+  const prisma = new PrismaClient();
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { phone } });
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            fullName: existing.fullName ?? 'HANDS Smoke Admin Without Finance Approver',
+            roles: { set: [Role.ADMIN] },
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            phone,
+            fullName: 'HANDS Smoke Admin Without Finance Approver',
+            roles: [Role.ADMIN],
+          },
+        });
+
+    return {
+      user,
+      accessToken: jwt.sign(
+        { sub: user.id, activeRole: Role.ADMIN, roles: user.roles },
+        jwtAccessSecretFromEnv(env),
+        { expiresIn: '30m' },
+      ),
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 async function ensureSmokeCompanyBankAccount() {
   const prisma = new PrismaClient();
 
@@ -162,6 +196,7 @@ async function assertWithholdingRemittanceLifecycle({
   bookingId,
   customerProfileId,
   financeApproverId,
+  nonFinanceApprovalAdminId,
   providerProfileId,
   remittedByAdminId,
 }) {
@@ -216,6 +251,48 @@ async function assertWithholdingRemittanceLifecycle({
       status: 'DECLARED',
       notes: 'API smoke withholding remittance declared lifecycle.',
     });
+    const sameAdminFailure = await expectRequestFailure(
+      'Withholding remittance paid closeout rejects same-admin approval',
+      () =>
+        patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+          status: 'PAID',
+          approvalAdminId: remittedByAdminId,
+          notes: 'API smoke same-admin withholding remittance guard.',
+          paidAt: '2099-11-30T10:00:00.000Z',
+          remittanceChannel: 'MANUAL_BANK_TRANSFER',
+          remittanceEvidenceUrl,
+          remittanceTransferRef,
+        }),
+      400,
+    );
+    if (
+      !sameAdminFailure.includes(
+        'Partner withholding remittance paid closeout requires approval from a different admin',
+      )
+    ) {
+      throw new Error(`Withholding remittance same-admin guard returned unexpected message: ${sameAdminFailure}`);
+    }
+    const nonFinanceFailure = await expectRequestFailure(
+      'Withholding remittance paid closeout rejects non-finance approver',
+      () =>
+        patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+          status: 'PAID',
+          approvalAdminId: nonFinanceApprovalAdminId,
+          notes: 'API smoke non-finance withholding remittance guard.',
+          paidAt: '2099-11-30T10:00:00.000Z',
+          remittanceChannel: 'MANUAL_BANK_TRANSFER',
+          remittanceEvidenceUrl,
+          remittanceTransferRef,
+        }),
+      400,
+    );
+    if (
+      !nonFinanceFailure.includes(
+        'Partner withholding remittance paid closeout requires approval from a finance approver',
+      )
+    ) {
+      throw new Error(`Withholding remittance non-finance guard returned unexpected message: ${nonFinanceFailure}`);
+    }
     const closing = await patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
       status: 'PAID',
       approvalAdminId: financeApproverId,
@@ -660,6 +737,7 @@ const adminAuth = await createSmokeAdminAuth();
 const financeApproverAuth = await createSmokeAdminAuth(
   env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
 );
+const nonFinanceAdminAuth = await createSmokeAdminOnlyAuth();
 
 const monthlyCloseOpenJournalDeltaBlocked = await assertMonthlyCloseBlocksOpenJournalDelta(
   adminAuth.accessToken,
@@ -2068,6 +2146,7 @@ const withholdingRemittancePaidLifecycleReady = await assertWithholdingRemittanc
   bookingId: hybridBooking.id,
   customerProfileId: customerAuth.user.customerProfile.id,
   financeApproverId: financeApproverAuth.user.id,
+  nonFinanceApprovalAdminId: nonFinanceAdminAuth.user.id,
   providerProfileId: providerAuth.user.providerProfile.id,
   remittedByAdminId: adminAuth.user.id,
 });
@@ -3498,6 +3577,38 @@ const manualWalletAdjustmentPayload = {
   approvalId: manualWalletAdjustmentApprovalId,
   approvalAdminId: financeApproverAuth.user.id,
 };
+let manualWalletDualApprovalGuardsReady = false;
+const manualWalletSameAdminFailure = await expectRequestFailure(
+  'Manual wallet adjustment rejects same-admin approval',
+  () =>
+    postJson('/admin/wallet-adjustments', adminAuth.accessToken, {
+      ...manualWalletAdjustmentPayload,
+      approvalId: `${manualWalletAdjustmentApprovalId}-SAME-ADMIN`,
+      approvalAdminId: adminAuth.user.id,
+    }),
+  400,
+);
+if (!manualWalletSameAdminFailure.includes('Manual wallet adjustment requires approval from a different admin')) {
+  throw new Error(
+    `Manual wallet adjustment same-admin guard returned unexpected message: ${manualWalletSameAdminFailure}`,
+  );
+}
+const manualWalletNonFinanceFailure = await expectRequestFailure(
+  'Manual wallet adjustment rejects non-finance approver',
+  () =>
+    postJson('/admin/wallet-adjustments', adminAuth.accessToken, {
+      ...manualWalletAdjustmentPayload,
+      approvalId: `${manualWalletAdjustmentApprovalId}-NON-FINANCE`,
+      approvalAdminId: nonFinanceAdminAuth.user.id,
+    }),
+  400,
+);
+if (!manualWalletNonFinanceFailure.includes('Manual wallet adjustment requires approval from a finance approver')) {
+  throw new Error(
+    `Manual wallet adjustment non-finance guard returned unexpected message: ${manualWalletNonFinanceFailure}`,
+  );
+}
+manualWalletDualApprovalGuardsReady = true;
 const manualWalletAdjustmentPreview = await postJson(
   '/admin/wallet-adjustments/preview',
   adminAuth.accessToken,
@@ -3939,6 +4050,34 @@ await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken
   transferRef: payoutBatchUpdate.transferRef,
   notes: 'Updated by smoke test',
 });
+let payoutBatchDualApprovalGuardsReady = false;
+const payoutBatchSameAdminFailure = await expectRequestFailure(
+  'Payout batch paid closeout rejects same-admin approval',
+  () =>
+    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+      approvalAdminId: adminAuth.user.id,
+      status: 'PAID',
+      transferRef: payoutBatchUpdate.transferRef,
+    }),
+  400,
+);
+if (!payoutBatchSameAdminFailure.includes('Payout batch paid closeout requires approval from a different admin')) {
+  throw new Error(`Payout batch same-admin guard returned unexpected message: ${payoutBatchSameAdminFailure}`);
+}
+const payoutBatchNonFinanceFailure = await expectRequestFailure(
+  'Payout batch paid closeout rejects non-finance approver',
+  () =>
+    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+      approvalAdminId: nonFinanceAdminAuth.user.id,
+      status: 'PAID',
+      transferRef: payoutBatchUpdate.transferRef,
+    }),
+  400,
+);
+if (!payoutBatchNonFinanceFailure.includes('Payout batch paid closeout requires approval from a finance approver')) {
+  throw new Error(`Payout batch non-finance guard returned unexpected message: ${payoutBatchNonFinanceFailure}`);
+}
+payoutBatchDualApprovalGuardsReady = true;
 const payoutBatchProcessing = await patchJson(
   `/admin/payout-batches/${payoutBatch.id}`,
   adminAuth.accessToken,
@@ -4343,6 +4482,20 @@ function hasFreshRegisteredPushDevice(devices, registeredAfterMs) {
   );
 }
 
+const financeDualApprovalRoleSeparationReady =
+  manualWalletDualApprovalGuardsReady &&
+  payoutBatchDualApprovalGuardsReady &&
+  withholdingRemittancePaidLifecycleReady;
+if (!financeDualApprovalRoleSeparationReady) {
+  throw new Error(
+    `Finance dual approval role separation smoke did not complete: ${JSON.stringify({
+      manualWalletDualApprovalGuardsReady,
+      payoutBatchDualApprovalGuardsReady,
+      withholdingRemittancePaidLifecycleReady,
+    })}`,
+  );
+}
+
 console.log({
   ok: true,
   bookingId: booking.id,
@@ -4371,6 +4524,7 @@ console.log({
     smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
   monthlyCloseOpenJournalDeltaBlocked,
   withholdingRemittancePaidLifecycleReady,
+  financeDualApprovalRoleSeparationReady,
   adminBookingMonitorReady: true,
   adminBookingDetailReady: true,
   customerAppSessionId: customerAppSession.id,
