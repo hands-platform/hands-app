@@ -13,6 +13,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format'
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   buildBookingSettlementSnapshotRowsCsvHref,
@@ -154,8 +155,8 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Coupon policy values are historical settlement snapshots. Changing coupon settings later must not rewrite these rows."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -236,7 +237,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           hrefForPage={(page) => couponFinanceHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

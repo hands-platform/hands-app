@@ -11,6 +11,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   GENERAL_LEDGER_REVIEW_LINKS,
@@ -154,8 +155,8 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="This list intentionally shows journal batches and entry counts only. Open source records when entry-level evidence is required."
         resultLabel={`${pagination.totalRows} batch(es)`}
         resultTone="info"
@@ -237,7 +238,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           hrefForPage={(page) => generalLedgerHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

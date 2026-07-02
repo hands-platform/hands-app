@@ -22,6 +22,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BANK_RECONCILIATION_REVIEW_LINKS,
@@ -248,8 +249,8 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </details>
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="The list keeps match details collapsed. Use transfer reference, bank account, and source key to open the related evidence only when needed."
         resultLabel={`${pagination.totalRows} transaction(s)`}
         resultTone="info"
@@ -327,7 +328,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           hrefForPage={(page) => bankReconciliationHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

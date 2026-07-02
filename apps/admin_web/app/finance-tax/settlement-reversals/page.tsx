@@ -14,6 +14,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
@@ -160,8 +161,8 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="The original settlement remains immutable; this list shows the reversal row and its accounting impact."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -256,7 +257,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           hrefForPage={(page) => bookingSettlementReversalHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

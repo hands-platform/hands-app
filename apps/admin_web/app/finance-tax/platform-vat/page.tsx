@@ -8,6 +8,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPlatformVatMetrics,
@@ -100,8 +101,8 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         <FinancePeriodFilterForm period={filters.period} />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Use this breakdown for company VAT review. The net revenue formula delta should be 0 VND before monthly closeout."
         resultLabel={`${summary.rateBreakdown.length} row(s)`}
         resultTone="info"
@@ -130,7 +131,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

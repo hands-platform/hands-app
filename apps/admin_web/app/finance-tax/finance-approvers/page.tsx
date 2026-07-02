@@ -9,6 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceStageList } from '../finance-stage-list';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildTaxFinanceWorkflowLinks,
@@ -153,8 +154,8 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Use a reason for every role change. The API writes an immutable admin audit log with previous and next role sets."
         resultLabel={`${adminUsers.length} admin(s)`}
         resultTone="info"
@@ -218,7 +219,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
             })}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

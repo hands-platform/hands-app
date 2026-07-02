@@ -15,6 +15,7 @@ import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
@@ -176,8 +177,8 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Open the booking detail only when evidence is needed; the list stays intentionally compact."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -259,7 +260,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           hrefForPage={(page) => bookingSettlementAuditHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

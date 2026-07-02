@@ -11,6 +11,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   PAYMENT_CLEARING_REVIEW_LINKS,
@@ -150,8 +151,8 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Use this queue to compare captured customer money, settlement postings, refunds, payment fees, and coupon offsets before closeout."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -212,7 +213,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           hrefForPage={(page) => paymentClearingHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

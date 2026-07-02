@@ -14,6 +14,7 @@ import { formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingSummaryApiHref,
@@ -162,8 +163,8 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         <FinancePeriodFilterForm period={filters.period} rows={{ value: filters.take }} />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Use this list for monthly tax declaration preparation. Booking-level evidence stays in Booking Settlement Audit."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -204,7 +205,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

@@ -19,6 +19,7 @@ import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceStageList } from '../finance-stage-list';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
@@ -293,8 +294,8 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement snapshots."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
@@ -355,7 +356,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}
           pagination={pagination}
         />
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

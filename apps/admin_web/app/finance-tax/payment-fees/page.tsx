@@ -8,6 +8,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
+import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildPaymentFeeMetrics,
@@ -153,8 +154,8 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
   readonly title: string;
 }) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <FinanceTablePanel
+      grouped
       description="Amounts are aggregate totals only; open booking detail when settlement evidence is needed."
       resultLabel={`${rows.length} row(s)`}
       resultTone="info"
@@ -182,6 +183,6 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </FinanceTablePanel>
   );
 }
