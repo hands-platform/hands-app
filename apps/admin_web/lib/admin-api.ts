@@ -2183,6 +2183,12 @@ export type AdminBookingSettlementSnapshot = {
   platformFeeNetRevenue: number;
   companyOutputVat: number;
   paymentProcessingFee: number;
+  paymentFeePolicyVersionId?: string | null;
+  paymentFeeRateBps?: number | null;
+  paymentFeeFixedAmount?: number | null;
+  paymentFeePayer?: 'HANDS' | 'CUSTOMER' | 'PARTNER' | 'SHARED' | null;
+  paymentFeeTreatment?: 'OPERATING_EXPENSE' | 'PASS_THROUGH' | 'MANUAL_REVIEW' | null;
+  paymentFeeRuleSnapshot?: unknown;
   settlementStatus: AdminBookingSettlementStatus;
   taxStatus: AdminBookingSettlementTaxStatus;
   monthlyPeriod: string;
@@ -2412,12 +2418,19 @@ export type AdminAccountingJournalBatchDetail = AdminAccountingJournalBatch & {
   settlementSnapshot?: Pick<
     AdminBookingSettlementSnapshot,
     | 'id'
+    | 'currency'
     | 'paymentMethod'
     | 'customerPaymentAmount'
     | 'partnerPayoutAmount'
     | 'platformFeeNetRevenue'
     | 'companyOutputVat'
     | 'partnerWithholdingTotal'
+    | 'paymentFeePolicyVersionId'
+    | 'paymentFeeRateBps'
+    | 'paymentFeeFixedAmount'
+    | 'paymentFeePayer'
+    | 'paymentFeeTreatment'
+    | 'paymentFeeRuleSnapshot'
     | 'paymentProcessingFee'
     | 'settlementStatus'
     | 'taxStatus'

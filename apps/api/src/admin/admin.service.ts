@@ -540,6 +540,12 @@ const adminBookingSettlementSnapshotListSelect = {
 const adminBookingSettlementSnapshotDetailSelect = {
   ...adminBookingSettlementSnapshotListSelect,
   metadata: true,
+  paymentFeeFixedAmount: true,
+  paymentFeePayer: true,
+  paymentFeePolicyVersionId: true,
+  paymentFeeRateBps: true,
+  paymentFeeRuleSnapshot: true,
+  paymentFeeTreatment: true,
   accountingJournalBatches: {
     orderBy: { postedAt: 'desc' },
     take: 3,
@@ -752,12 +758,19 @@ const adminAccountingJournalBatchDetailSelect = {
   settlementSnapshot: {
     select: {
       id: true,
+      currency: true,
       paymentMethod: true,
       customerPaymentAmount: true,
       partnerPayoutAmount: true,
       platformFeeNetRevenue: true,
       companyOutputVat: true,
       partnerWithholdingTotal: true,
+      paymentFeeFixedAmount: true,
+      paymentFeePayer: true,
+      paymentFeePolicyVersionId: true,
+      paymentFeeRateBps: true,
+      paymentFeeRuleSnapshot: true,
+      paymentFeeTreatment: true,
       paymentProcessingFee: true,
       settlementStatus: true,
       taxStatus: true,
@@ -769,6 +782,7 @@ const adminAccountingJournalBatchDetailSelect = {
   settlementReversalEntry: {
     select: {
       id: true,
+      currency: true,
       paymentMethod: true,
       customerPaymentAmount: true,
       partnerPayoutAmount: true,
@@ -834,12 +848,19 @@ const adminBookingPaymentClearingEntryDetailSelect = {
   settlementSnapshot: {
     select: {
       id: true,
+      currency: true,
       paymentMethod: true,
       customerPaymentAmount: true,
       partnerPayoutAmount: true,
       platformFeeNetRevenue: true,
       companyOutputVat: true,
       partnerWithholdingTotal: true,
+      paymentFeeFixedAmount: true,
+      paymentFeePayer: true,
+      paymentFeePolicyVersionId: true,
+      paymentFeeRateBps: true,
+      paymentFeeRuleSnapshot: true,
+      paymentFeeTreatment: true,
       paymentProcessingFee: true,
       settlementStatus: true,
       taxStatus: true,

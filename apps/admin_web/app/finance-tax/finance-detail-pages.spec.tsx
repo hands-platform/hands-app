@@ -80,6 +80,16 @@ describe('finance detail pages', () => {
         },
       ],
       paymentId: 'payment-1',
+      paymentFeeFixedAmount: 1000,
+      paymentFeePayer: 'HANDS',
+      paymentFeePolicyVersionId: 'payment-fee-policy-card-2026',
+      paymentFeeRateBps: 150,
+      paymentFeeRuleSnapshot: {
+        feeType: 'RATE_PLUS_FIXED',
+        method: 'CARD',
+        policyName: 'Card processing fee',
+      },
+      paymentFeeTreatment: 'OPERATING_EXPENSE',
       paymentMethod: 'CARD',
       paymentProcessingFee: 10000,
       platformFeeGross: 128000,
@@ -134,6 +144,14 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Settlement snapshot overview');
     expect(markup).toContain('Settlement evidence hub');
     expect(markup).toContain('Accounting amount breakdown');
+    expect(markup).toContain('Payment fee policy evidence');
+    expect(markup).toContain('Card processing fee');
+    expect(markup).toContain('Policy version');
+    expect(markup).toContain('payment-fee-policy-card-2026');
+    expect(markup).toContain('Rate / fixed fee');
+    expect(markup).toContain('150 bps + 1.000 VND');
+    expect(markup).toContain('Payer / treatment');
+    expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('Allocation check');
     expect(markup).toContain('Balanced');
     expect(markup).toContain('Delta 0 VND');
@@ -309,6 +327,31 @@ describe('finance detail pages', () => {
         status: 'CAPTURED',
       },
       paymentId: 'payment-1',
+      settlementSnapshot: {
+        closedAt: null,
+        companyOutputVat: 9481,
+        customerPaymentAmount: 600000,
+        id: 'settlement-1',
+        monthlyPeriod: '2026-06',
+        partnerPayoutAmount: 430000,
+        partnerWithholdingTotal: 42000,
+        paymentFeeFixedAmount: 1000,
+        paymentFeePayer: 'HANDS',
+        paymentFeePolicyVersionId: 'payment-fee-policy-card-2026',
+        paymentFeeRateBps: 150,
+        paymentFeeRuleSnapshot: {
+          feeType: 'RATE_PLUS_FIXED',
+          method: 'CARD',
+          policyName: 'Card processing fee',
+        },
+        paymentFeeTreatment: 'OPERATING_EXPENSE',
+        paymentMethod: 'CARD',
+        paymentProcessingFee: 10000,
+        platformFeeNetRevenue: 118519,
+        postedAt: '2026-06-20T10:05:00.000Z',
+        settlementStatus: 'POSTED',
+        taxStatus: 'OPEN',
+      },
       settlementSnapshotId: 'settlement-1',
       sourceKey: 'payment:payment-1:capture',
       status: 'CLEARED',
@@ -328,6 +371,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Bank match status');
     expect(markup).toContain('Source key');
     expect(markup).toContain('payment:payment-1:capture');
+    expect(markup).toContain('Settlement payment fee');
+    expect(markup).toContain('10.000 VND');
+    expect(markup).toContain('CARD · 150 bps + 1.000 VND');
+    expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('/payments/payment-1');
     expect(markup).toContain('/bookings/booking-1');
     expect(markup).toContain('/finance-tax/booking-settlement-audit/settlement-1');
@@ -390,6 +437,32 @@ describe('finance detail pages', () => {
       },
       paymentId: 'payment-1',
       postedAt: '2026-06-20T09:10:00.000Z',
+      settlementSnapshot: {
+        closedAt: null,
+        companyOutputVat: 9481,
+        currency: 'VND',
+        customerPaymentAmount: 600000,
+        id: 'settlement-1',
+        monthlyPeriod: '2026-06',
+        partnerPayoutAmount: 430000,
+        partnerWithholdingTotal: 42000,
+        paymentFeeFixedAmount: 1000,
+        paymentFeePayer: 'HANDS',
+        paymentFeePolicyVersionId: 'payment-fee-policy-card-2026',
+        paymentFeeRateBps: 150,
+        paymentFeeRuleSnapshot: {
+          feeType: 'RATE_PLUS_FIXED',
+          method: 'CARD',
+          policyName: 'Card processing fee',
+        },
+        paymentFeeTreatment: 'OPERATING_EXPENSE',
+        paymentMethod: 'CARD',
+        paymentProcessingFee: 10000,
+        platformFeeNetRevenue: 118519,
+        postedAt: '2026-06-20T10:05:00.000Z',
+        settlementStatus: 'POSTED',
+        taxStatus: 'OPEN',
+      },
       settlementSnapshotId: 'settlement-1',
       sourceId: 'payment-1',
       sourceKey: 'journal:payment-1',
@@ -409,6 +482,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Journal evidence hub');
     expect(markup).toContain('Source record');
     expect(markup).toContain('Linked settlement');
+    expect(markup).toContain('Settlement payment fee');
+    expect(markup).toContain('10.000 VND');
+    expect(markup).toContain('CARD · 150 bps + 1.000 VND');
+    expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('Bank reconciliation evidence');
     expect(markup).toContain('Double-entry check');
     expect(markup).toContain('Balanced');

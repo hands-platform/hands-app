@@ -39,6 +39,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   }, 0);
   const remainingAmount = Math.max(0, Math.abs(entry.amount) - matchedAmount);
   const settlementTraceLinks = buildFinanceSettlementTraceLinks(entry);
+  const settlementPaymentFee = paymentFeePolicyInfo(entry.settlementSnapshot, entry.currency);
 
   return (
     <AdminPageTemplate
@@ -74,6 +75,25 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           />
           <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
           <FinanceDetailInfoItem label="Source key" value={entry.sourceKey} />
+          <FinanceDetailInfoItem
+            label="Settlement payment fee"
+            value={
+              entry.settlementSnapshot ? (
+                <>
+                  {formatMoney(entry.settlementSnapshot.paymentProcessingFee, entry.settlementSnapshot.currency ?? entry.currency)}
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.method} · {settlementPaymentFee.rateBps} bps +{' '}
+                    {formatMoney(settlementPaymentFee.fixedAmount, entry.settlementSnapshot.currency ?? entry.currency)}
+                  </span>
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.payer} / {settlementPaymentFee.treatment}
+                  </span>
+                </>
+              ) : (
+                '-'
+              )
+            }
+          />
           <FinanceDetailInfoItem
             label="Payment record"
             value={
@@ -263,4 +283,31 @@ function bankStatusPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function paymentFeePolicyInfo(
+  settlement: AdminBookingPaymentClearingEntryDetail['settlementSnapshot'] | null | undefined,
+  fallbackCurrency: string,
+) {
+  const ruleSnapshot = jsonRecord(settlement?.paymentFeeRuleSnapshot);
+  return {
+    fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
+    method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
+    payer: settlement?.paymentFeePayer ?? '-',
+    policyName: stringValue(ruleSnapshot?.policyName) ?? '-',
+    rateBps: settlement?.paymentFeeRateBps ?? 0,
+    treatment: settlement?.paymentFeeTreatment ?? '-',
+    currency: settlement?.currency ?? fallbackCurrency,
+  };
+}
+
+function jsonRecord(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

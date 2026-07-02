@@ -8620,6 +8620,12 @@ describe('AdminService query orchestration', () => {
           paymentClearingEntries: expect.objectContaining({
             take: 3,
           }),
+          paymentFeeFixedAmount: true,
+          paymentFeePayer: true,
+          paymentFeePolicyVersionId: true,
+          paymentFeeRateBps: true,
+          paymentFeeRuleSnapshot: true,
+          paymentFeeTreatment: true,
           paymentProcessingFee: true,
           platformFeeGross: true,
           reversalEntries: expect.objectContaining({
@@ -9068,6 +9074,17 @@ describe('AdminService query orchestration', () => {
               amount: true,
               bankTransaction: expect.any(Object),
               status: true,
+            }),
+          }),
+          settlementSnapshot: expect.objectContaining({
+            select: expect.objectContaining({
+              paymentFeeFixedAmount: true,
+              paymentFeePayer: true,
+              paymentFeePolicyVersionId: true,
+              paymentFeeRateBps: true,
+              paymentFeeRuleSnapshot: true,
+              paymentFeeTreatment: true,
+              paymentProcessingFee: true,
             }),
           }),
         }),

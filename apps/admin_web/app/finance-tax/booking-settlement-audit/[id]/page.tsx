@@ -36,6 +36,7 @@ export default async function BookingSettlementAuditDetailPage({
   }
 
   const coupon = couponSettlementInfo(snapshot);
+  const paymentFee = paymentFeePolicyInfo(snapshot);
   const evidenceStatus = settlementEvidenceStatus(snapshot);
   const allocationDelta = settlementAllocationDelta(snapshot);
 
@@ -187,6 +188,26 @@ export default async function BookingSettlementAuditDetailPage({
               </>
             }
           />
+        </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        description="Payment provider fee evidence is copied to the settlement snapshot so method-specific CARD, MOMO, or VNPAY rules can be audited later."
+        resultLabel={formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}
+        resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
+        title="Payment fee policy evidence"
+      >
+        <div className="detail-grid admin-mt-16">
+          <FinanceDetailInfoItem label="Policy name" value={paymentFee.policyName} />
+          <FinanceDetailInfoItem label="Policy version" value={paymentFee.policyVersionId} />
+          <FinanceDetailInfoItem label="Method" value={paymentFee.method} />
+          <FinanceDetailInfoItem
+            label="Rate / fixed fee"
+            value={`${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, snapshot.currency)}`}
+          />
+          <FinanceDetailInfoItem label="Payer / treatment" value={`${paymentFee.payer} / ${paymentFee.treatment}`} />
+          <FinanceDetailInfoItem label="Rule type" value={paymentFee.feeType} />
         </div>
       </AdminFilterPanel>
 
@@ -353,6 +374,20 @@ function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
     fundingSource: stringValue(metadata?.couponFundingSourceSnapshot) ?? '-',
     reviewFlag: stringValue(metadata?.couponReviewFlag),
     settlementBasePolicy: stringValue(metadata?.couponSettlementBasePolicySnapshot) ?? '-',
+  };
+}
+
+function paymentFeePolicyInfo(snapshot: AdminBookingSettlementSnapshot) {
+  const ruleSnapshot = jsonRecord(snapshot.paymentFeeRuleSnapshot);
+  return {
+    feeType: stringValue(ruleSnapshot?.feeType) ?? '-',
+    fixedAmount: snapshot.paymentFeeFixedAmount ?? 0,
+    method: stringValue(ruleSnapshot?.method) ?? snapshot.paymentMethod,
+    payer: snapshot.paymentFeePayer ?? '-',
+    policyName: stringValue(ruleSnapshot?.policyName) ?? '-',
+    policyVersionId: snapshot.paymentFeePolicyVersionId ?? '-',
+    rateBps: snapshot.paymentFeeRateBps ?? 0,
+    treatment: snapshot.paymentFeeTreatment ?? '-',
   };
 }
 

@@ -37,6 +37,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   const balanceDelta = Math.abs(batch.totalDebit - batch.totalCredit);
   const formulaDelta = journalFormulaDelta(batch);
   const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
+  const settlementPaymentFee = paymentFeePolicyInfo(batch.settlementSnapshot, batch.currency);
 
   return (
     <AdminPageTemplate
@@ -134,6 +135,25 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                 </div>
               ) : (
                 'No settlement link'
+              )
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Settlement payment fee"
+            value={
+              batch.settlementSnapshot ? (
+                <>
+                  {formatMoney(batch.settlementSnapshot.paymentProcessingFee, batch.settlementSnapshot.currency)}
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.method} · {settlementPaymentFee.rateBps} bps +{' '}
+                    {formatMoney(settlementPaymentFee.fixedAmount, batch.settlementSnapshot.currency)}
+                  </span>
+                  <span className="muted admin-block">
+                    {settlementPaymentFee.payer} / {settlementPaymentFee.treatment}
+                  </span>
+                </>
+              ) : (
+                '-'
               )
             }
           />
@@ -278,4 +298,23 @@ function settlementFormulaDelta(
     settlement.paymentProcessingFee -
     platformFeeGross
   );
+}
+
+function paymentFeePolicyInfo(
+  settlement: AdminAccountingJournalBatchDetail['settlementSnapshot'] | null | undefined,
+  fallbackCurrency: string,
+) {
+  const ruleSnapshot = readPlainRecord(settlement?.paymentFeeRuleSnapshot);
+  return {
+    fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
+    method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
+    payer: settlement?.paymentFeePayer ?? '-',
+    rateBps: settlement?.paymentFeeRateBps ?? 0,
+    treatment: settlement?.paymentFeeTreatment ?? '-',
+    currency: settlement?.currency ?? fallbackCurrency,
+  };
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
