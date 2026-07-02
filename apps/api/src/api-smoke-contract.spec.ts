@@ -102,6 +102,19 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain("accountCode: 'customer_wallet_liability'");
   });
 
+  it('asserts monthly close is blocked when posted journal reconciliation deltas remain open', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('assertMonthlyCloseBlocksOpenJournalDelta');
+    expect(scriptSource).toContain("const sourceKey = 'api-smoke:monthly-close:blocking-journal-delta'");
+    expect(scriptSource).toContain("metadata: { reconciliationDelta: 42000");
+    expect(scriptSource).toContain("`/admin/monthly-tax-closings/${period}/status`");
+    expect(scriptSource).toContain(
+      'Monthly close requires posted journal reconciliation deltas to be cleared before status can advance.',
+    );
+    expect(scriptSource).toContain('monthlyCloseOpenJournalDeltaBlocked');
+  });
+
   it('waits long enough for asynchronous FCM delivery smoke diagnostics', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 

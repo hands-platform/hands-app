@@ -1,5 +1,11 @@
 import jwt from 'jsonwebtoken';
-import { CompanyBankAccountStatus, PrismaClient, Role } from '@prisma/client';
+import {
+  AccountingJournalBatchStatus,
+  AccountingJournalSourceType,
+  CompanyBankAccountStatus,
+  PrismaClient,
+  Role,
+} from '@prisma/client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 
@@ -88,6 +94,65 @@ async function ensureSmokeCompanyBankAccount() {
       },
     });
   } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function assertMonthlyCloseBlocksOpenJournalDelta(adminAccessToken) {
+  const prisma = new PrismaClient();
+  const period = '2099-12';
+  const sourceKey = 'api-smoke:monthly-close:blocking-journal-delta';
+
+  try {
+    await prisma.accountingJournalBatch.deleteMany({ where: { sourceKey } });
+    await prisma.accountingJournalBatch.create({
+      data: {
+        currency: 'VND',
+        entries: {
+          create: [
+            {
+              accountCode: 'settlement_reconciliation_delta',
+              accountName: 'Settlement reconciliation delta',
+              amount: 42000,
+              currency: 'VND',
+              memo: 'API smoke journal delta that must block monthly close.',
+              side: 'DEBIT',
+              sourceId: sourceKey,
+              sourceType: AccountingJournalSourceType.MANUAL_WALLET_ADJUSTMENT,
+            },
+          ],
+        },
+        metadata: { reconciliationDelta: 42000, smoke: true },
+        monthlyPeriod: period,
+        sourceId: sourceKey,
+        sourceKey,
+        sourceType: AccountingJournalSourceType.MANUAL_WALLET_ADJUSTMENT,
+        status: AccountingJournalBatchStatus.POSTED,
+        totalCredit: 0,
+        totalDebit: 42000,
+      },
+    });
+
+    const failureMessage = await expectRequestFailure(
+      'Monthly close should reject posted journal reconciliation delta',
+      () =>
+        patchJson(`/admin/monthly-tax-closings/${period}/status`, adminAccessToken, {
+          status: 'REVIEWED',
+          notes: 'API smoke should be blocked while a posted journal delta remains open.',
+        }),
+      400,
+    );
+    if (
+      !failureMessage.includes(
+        'Monthly close requires posted journal reconciliation deltas to be cleared before status can advance.',
+      )
+    ) {
+      throw new Error(`Monthly close journal delta failure used an unexpected message: ${failureMessage}`);
+    }
+
+    return true;
+  } finally {
+    await prisma.accountingJournalBatch.deleteMany({ where: { sourceKey } });
     await prisma.$disconnect();
   }
 }
@@ -465,6 +530,10 @@ const walletDebtServiceGateProviderAuth = await request('/auth/verify-otp', {
 const adminAuth = await createSmokeAdminAuth();
 const financeApproverAuth = await createSmokeAdminAuth(
   env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
+);
+
+const monthlyCloseOpenJournalDeltaBlocked = await assertMonthlyCloseBlocksOpenJournalDelta(
+  adminAuth.accessToken,
 );
 
 await assertOperationalPolicyMetadata(adminAuth.accessToken);
@@ -4130,6 +4199,7 @@ console.log({
   bankReconciliationReversedStatus: smokeBankReconciliationReverse.bankTransaction.status,
   bankReconciliationPaymentClearingReopened:
     smokeBankReconciliationReverse.paymentClearingEntry.status === 'OPEN',
+  monthlyCloseOpenJournalDeltaBlocked,
   adminBookingMonitorReady: true,
   adminBookingDetailReady: true,
   customerAppSessionId: customerAppSession.id,
