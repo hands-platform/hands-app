@@ -134,6 +134,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Settlement snapshot overview');
     expect(markup).toContain('Settlement evidence hub');
     expect(markup).toContain('Accounting amount breakdown');
+    expect(markup).toContain('Allocation check');
+    expect(markup).toContain('Balanced');
+    expect(markup).toContain('Delta 0 VND');
     expect(markup).toContain('Coupon and policy snapshot');
     expect(markup).toContain('Settlement journal');
     expect(markup).toContain('Payment clearing');

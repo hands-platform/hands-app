@@ -37,6 +37,7 @@ export default async function BookingSettlementAuditDetailPage({
 
   const coupon = couponSettlementInfo(snapshot);
   const evidenceStatus = settlementEvidenceStatus(snapshot);
+  const allocationDelta = settlementAllocationDelta(snapshot);
 
   return (
     <AdminPageTemplate
@@ -174,6 +175,17 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem
             label="Payment processing fee"
             value={formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}
+          />
+          <FinanceDetailInfoItem
+            label="Allocation check"
+            value={
+              <>
+                {allocationDelta === 0 ? 'Balanced' : 'Review required'}
+                <span className="muted admin-block">
+                  Delta {formatMoney(allocationDelta, snapshot.currency)}
+                </span>
+              </>
+            }
           />
         </div>
       </AdminFilterPanel>
@@ -320,6 +332,15 @@ function taxStatusTone(status: string): 'danger' | 'info' | 'success' | 'warning
     return 'danger';
   }
   return 'warning';
+}
+
+function settlementAllocationDelta(snapshot: AdminBookingSettlementSnapshot) {
+  return (
+    snapshot.customerPaymentAmount -
+    snapshot.partnerPayoutAmount -
+    snapshot.partnerWithholdingTotal -
+    snapshot.platformFeeGross
+  );
 }
 
 function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
