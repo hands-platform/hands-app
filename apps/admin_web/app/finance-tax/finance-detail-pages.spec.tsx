@@ -241,6 +241,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Refund after payout evidence');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Reversal accounting impact');
+    expect(markup).toContain('Reversal allocation check');
+    expect(markup).toContain('Balanced');
+    expect(markup).toContain('Delta 0 VND');
     expect(markup).toContain('/finance-tax/booking-settlement-audit/settlement-1');
     expect(markup).toContain('/finance-tax/general-ledger/reversal-journal-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');

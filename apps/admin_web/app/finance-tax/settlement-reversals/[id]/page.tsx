@@ -37,6 +37,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const evidenceState = buildBookingSettlementReversalEvidenceState(reversal);
   const traceLinks = buildBookingSettlementReversalTraceLinks(reversal);
   const originalSettlement = reversal.originalSettlementSnapshot ?? null;
+  const allocationDelta = reversalAllocationDelta(reversal);
 
   return (
     <AdminPageTemplate
@@ -163,6 +164,17 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             label="Payment processing fee"
             value={formatMoney(reversal.paymentProcessingFee, reversal.currency)}
           />
+          <FinanceDetailInfoItem
+            label="Reversal allocation check"
+            value={
+              <>
+                {allocationDelta === 0 ? 'Balanced' : 'Review required'}
+                <span className="muted admin-block">
+                  Delta {formatMoney(allocationDelta, reversal.currency)}
+                </span>
+              </>
+            }
+          />
         </div>
       </AdminFilterPanel>
 
@@ -221,6 +233,15 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
 function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? fallback;
+}
+
+function reversalAllocationDelta(reversal: AdminBookingSettlementReversalEntry) {
+  return (
+    reversal.customerPaymentAmount -
+    reversal.partnerPayoutAmount -
+    reversal.partnerWithholdingTotal -
+    reversal.platformFeeGross
+  );
 }
 
 function evidenceStatusForLink(label: string, reversal: AdminBookingSettlementReversalEntry) {
