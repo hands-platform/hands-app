@@ -152,6 +152,26 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('withholdingRemittancePaidLifecycleReady');
   });
 
+  it('asserts provider wallet withdrawal paid lifecycle in live smoke', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain('ensureSmokeProviderWalletWithdrawalPrerequisites');
+    expect(scriptSource).toContain("'/partner/earnings/wallet-withdrawal-requests'");
+    expect(scriptSource).toContain("'/admin/provider-wallet/withdrawal-requests'");
+    expect(scriptSource).toContain(
+      'Provider wallet withdrawal paid closeout requires approval from a different admin',
+    );
+    expect(scriptSource).toContain(
+      'Provider wallet withdrawal paid closeout requires approval from a finance approver',
+    );
+    expect(scriptSource).toContain('Transfer reference is required before marking a withdrawal request paid');
+    expect(scriptSource).toContain('Bank transfer evidence is required before marking a withdrawal request paid');
+    expect(scriptSource).toContain('PARTNER_WALLET_WITHDRAWAL_PAID');
+    expect(scriptSource).toContain('`partner-wallet-withdrawal:${providerWalletWithdrawalRequest.id}:paid`');
+    expect(scriptSource).toContain('providerWalletWithdrawalLedger');
+    expect(scriptSource).toContain('providerWalletWithdrawalPaidLifecycleReady');
+  });
+
   it('waits long enough for asynchronous FCM delivery smoke diagnostics', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 

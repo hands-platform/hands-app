@@ -4,6 +4,8 @@ import {
   AccountingJournalSourceType,
   CompanyBankAccountStatus,
   PrismaClient,
+  ProviderBankAccountStatus,
+  ProviderWalletLedgerType,
   Role,
 } from '@prisma/client';
 
@@ -127,6 +129,62 @@ async function ensureSmokeCompanyBankAccount() {
         status: CompanyBankAccountStatus.ACTIVE,
       },
     });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function ensureSmokeProviderWalletWithdrawalPrerequisites(providerProfileId, walletCreditAmount) {
+  const prisma = new PrismaClient();
+  const sourceKey = `api-smoke:provider-wallet-withdrawal-credit:${providerProfileId}`;
+
+  try {
+    const bankAccount = await prisma.providerBankAccount.create({
+      data: {
+        accountHolderName: 'HANDS Smoke Provider',
+        accountNumberLast4: '7711',
+        accountNumberMasked: '****7711',
+        bankName: 'Smoke Bank',
+        isPrimary: true,
+        providerProfileId,
+        qrBankingInfo: { smoke: true, purpose: 'provider-wallet-withdrawal-paid-lifecycle' },
+        reviewedAt: new Date(),
+        status: ProviderBankAccountStatus.APPROVED,
+      },
+    });
+    const walletLedger = await prisma.providerWalletLedgerEntry.upsert({
+      where: { sourceKey },
+      update: {
+        amount: walletCreditAmount,
+        currency: 'VND',
+        metadata: { smoke: true, purpose: 'provider-wallet-withdrawal-paid-lifecycle' },
+        notes: 'API smoke partner wallet withdrawal available balance.',
+        reference: `SMOKE-WITHDRAWAL-SEED-${providerProfileId.slice(-6)}`,
+        type: ProviderWalletLedgerType.PARTNER_BANK_DEPOSIT_RECEIVED,
+      },
+      create: {
+        amount: walletCreditAmount,
+        currency: 'VND',
+        metadata: { smoke: true, purpose: 'provider-wallet-withdrawal-paid-lifecycle' },
+        notes: 'API smoke partner wallet withdrawal available balance.',
+        providerProfileId,
+        reference: `SMOKE-WITHDRAWAL-SEED-${providerProfileId.slice(-6)}`,
+        sourceKey,
+        type: ProviderWalletLedgerType.PARTNER_BANK_DEPOSIT_RECEIVED,
+      },
+    });
+
+    return { bankAccount, walletLedger };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function findProviderWalletLedgerEntryBySourceKey(sourceKey) {
+  const prisma = new PrismaClient();
+
+  try {
+    return prisma.providerWalletLedgerEntry.findUnique({ where: { sourceKey } });
   } finally {
     await prisma.$disconnect();
   }
@@ -733,6 +791,12 @@ const walletDebtServiceGateProviderAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: walletDebtServiceGateProviderPhone, otp: '123456', role: 'PROVIDER' }),
 });
 
+const withdrawalProviderPhone = uniqueSmokePhone('+840');
+const withdrawalProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: withdrawalProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
 const adminAuth = await createSmokeAdminAuth();
 const financeApproverAuth = await createSmokeAdminAuth(
   env.API_SMOKE_FINANCE_APPROVER_PHONE ?? '+84900000098',
@@ -744,6 +808,247 @@ const monthlyCloseOpenJournalDeltaBlocked = await assertMonthlyCloseBlocksOpenJo
 );
 
 await assertOperationalPolicyMetadata(adminAuth.accessToken);
+
+const providerWalletWithdrawalAmount = 120000;
+const adminProviderWalletWithdrawalRequestsPath = '/admin/provider-wallet/withdrawal-requests';
+const providerWalletWithdrawalSeed = await ensureSmokeProviderWalletWithdrawalPrerequisites(
+  withdrawalProviderAuth.user.providerProfile.id,
+  providerWalletWithdrawalAmount * 2,
+);
+const providerWalletWithdrawalRequest = await postJson(
+  '/partner/earnings/wallet-withdrawal-requests',
+  withdrawalProviderAuth.accessToken,
+  {
+    amount: providerWalletWithdrawalAmount,
+    bankAccountId: providerWalletWithdrawalSeed.bankAccount.id,
+    requestNote: 'API smoke partner wallet withdrawal paid lifecycle.',
+  },
+);
+if (
+  providerWalletWithdrawalRequest.status !== 'REQUESTED' ||
+  providerWalletWithdrawalRequest.amount !== providerWalletWithdrawalAmount ||
+  providerWalletWithdrawalRequest.bankAccountId !== providerWalletWithdrawalSeed.bankAccount.id
+) {
+  throw new Error(
+    `Provider wallet withdrawal request was not created from partner API: ${JSON.stringify({
+      providerWalletWithdrawalRequest,
+      providerWalletWithdrawalSeed,
+    })}`,
+  );
+}
+let providerWalletWithdrawalDualApprovalGuardsReady = false;
+const providerWalletWithdrawalApproved = await patchJson(
+  `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+  adminAuth.accessToken,
+  {
+    adminNote: 'API smoke approved partner wallet withdrawal.',
+    status: 'APPROVED',
+  },
+);
+if (providerWalletWithdrawalApproved.status !== 'APPROVED') {
+  throw new Error(
+    `Provider wallet withdrawal request was not approved: ${JSON.stringify(providerWalletWithdrawalApproved)}`,
+  );
+}
+const providerWalletWithdrawalTransferRef = `SMOKE-WITHDRAWAL-${Date.now()}`;
+const providerWalletWithdrawalBankTransferDate = new Date().toISOString();
+const providerWalletWithdrawalEvidenceUrl =
+  'https://evidence.example.test/api-smoke/provider-wallet-withdrawal.pdf';
+const providerWalletWithdrawalSameAdminFailure = await expectRequestFailure(
+  'Provider wallet withdrawal paid closeout rejects same-admin approval',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      {
+        approvalAdminId: adminAuth.user.id,
+        attachmentUrl: providerWalletWithdrawalEvidenceUrl,
+        bankTransferDate: providerWalletWithdrawalBankTransferDate,
+        status: 'PAID',
+        transferRef: providerWalletWithdrawalTransferRef,
+      },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalSameAdminFailure.includes(
+    'Provider wallet withdrawal paid closeout requires approval from a different admin',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal same-admin guard returned unexpected message: ${providerWalletWithdrawalSameAdminFailure}`,
+  );
+}
+const providerWalletWithdrawalNonFinanceFailure = await expectRequestFailure(
+  'Provider wallet withdrawal paid closeout rejects non-finance approver',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      {
+        approvalAdminId: nonFinanceAdminAuth.user.id,
+        attachmentUrl: providerWalletWithdrawalEvidenceUrl,
+        bankTransferDate: providerWalletWithdrawalBankTransferDate,
+        status: 'PAID',
+        transferRef: providerWalletWithdrawalTransferRef,
+      },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalNonFinanceFailure.includes(
+    'Provider wallet withdrawal paid closeout requires approval from a finance approver',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal non-finance guard returned unexpected message: ${providerWalletWithdrawalNonFinanceFailure}`,
+  );
+}
+providerWalletWithdrawalDualApprovalGuardsReady = true;
+const providerWalletWithdrawalMissingTransferFailure = await expectRequestFailure(
+  'Provider wallet withdrawal paid closeout requires transfer ref',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      {
+        approvalAdminId: financeApproverAuth.user.id,
+        attachmentUrl: providerWalletWithdrawalEvidenceUrl,
+        bankTransferDate: providerWalletWithdrawalBankTransferDate,
+        status: 'PAID',
+      },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalMissingTransferFailure.includes(
+    'Transfer reference is required before marking a withdrawal request paid',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal missing transfer guard returned unexpected message: ${providerWalletWithdrawalMissingTransferFailure}`,
+  );
+}
+const providerWalletWithdrawalMissingEvidenceFailure = await expectRequestFailure(
+  'Provider wallet withdrawal paid closeout requires bank transfer evidence',
+  () =>
+    patchJson(
+      `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+      adminAuth.accessToken,
+      {
+        approvalAdminId: financeApproverAuth.user.id,
+        bankTransferDate: providerWalletWithdrawalBankTransferDate,
+        status: 'PAID',
+        transferRef: providerWalletWithdrawalTransferRef,
+      },
+    ),
+  400,
+);
+if (
+  !providerWalletWithdrawalMissingEvidenceFailure.includes(
+    'Bank transfer evidence is required before marking a withdrawal request paid',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal missing evidence guard returned unexpected message: ${providerWalletWithdrawalMissingEvidenceFailure}`,
+  );
+}
+const providerWalletWithdrawalPending = await patchJson(
+  `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+  adminAuth.accessToken,
+  {
+    adminNote: 'API smoke withdrawal bank transfer pending.',
+    status: 'BANK_TRANSFER_PENDING',
+    transferRef: providerWalletWithdrawalTransferRef,
+  },
+);
+if (providerWalletWithdrawalPending.status !== 'BANK_TRANSFER_PENDING') {
+  throw new Error(
+    `Provider wallet withdrawal request was not moved to bank-transfer pending: ${JSON.stringify(
+      providerWalletWithdrawalPending,
+    )}`,
+  );
+}
+const providerWalletWithdrawalPaid = await patchJson(
+  `${adminProviderWalletWithdrawalRequestsPath}/${providerWalletWithdrawalRequest.id}`,
+  adminAuth.accessToken,
+  {
+    adminNote: 'API smoke withdrawal paid after manual bank evidence.',
+    approvalAdminId: financeApproverAuth.user.id,
+    attachmentUrl: providerWalletWithdrawalEvidenceUrl,
+    bankTransferDate: providerWalletWithdrawalBankTransferDate,
+    status: 'PAID',
+    transferRef: providerWalletWithdrawalTransferRef,
+  },
+);
+if (
+  providerWalletWithdrawalPaid.status !== 'PAID' ||
+  providerWalletWithdrawalPaid.transferRef !== providerWalletWithdrawalTransferRef ||
+  providerWalletWithdrawalPaid.metadata?.bankPayout?.attachmentUrl !== providerWalletWithdrawalEvidenceUrl ||
+  providerWalletWithdrawalPaid.metadata?.bankPayout?.completedByAdminId !== adminAuth.user.id
+) {
+  throw new Error(
+    `Provider wallet withdrawal paid closeout response is incomplete: ${JSON.stringify(
+      providerWalletWithdrawalPaid,
+    )}`,
+  );
+}
+const providerWalletWithdrawalProviderList = await getJson(
+  '/partner/earnings/wallet-withdrawal-requests',
+  withdrawalProviderAuth.accessToken,
+);
+const providerWalletWithdrawalAdminList = await getJson(
+  `${adminProviderWalletWithdrawalRequestsPath}?providerProfileId=${withdrawalProviderAuth.user.providerProfile.id}&status=PAID&take=20`,
+  adminAuth.accessToken,
+);
+if (
+  !providerWalletWithdrawalProviderList.some(
+    (request) => request.id === providerWalletWithdrawalRequest.id && request.status === 'PAID',
+  ) ||
+  !providerWalletWithdrawalAdminList.some(
+    (request) => request.id === providerWalletWithdrawalRequest.id && request.status === 'PAID',
+  )
+) {
+  throw new Error(
+    `Provider wallet withdrawal paid request is missing from provider/admin lists: ${JSON.stringify({
+      providerWalletWithdrawalAdminList,
+      providerWalletWithdrawalProviderList,
+      providerWalletWithdrawalRequest,
+    })}`,
+  );
+}
+const providerWalletWithdrawalLedgerSourceKey = `partner-wallet-withdrawal:${providerWalletWithdrawalRequest.id}:paid`;
+const providerWalletWithdrawalLedger = await findProviderWalletLedgerEntryBySourceKey(
+  providerWalletWithdrawalLedgerSourceKey,
+);
+if (
+  providerWalletWithdrawalLedger?.type !== 'PARTNER_WALLET_WITHDRAWAL_PAID' ||
+  providerWalletWithdrawalLedger.amount !== -providerWalletWithdrawalAmount ||
+  providerWalletWithdrawalLedger.reference !== providerWalletWithdrawalTransferRef ||
+  providerWalletWithdrawalLedger.metadata?.withdrawalRequestId !== providerWalletWithdrawalRequest.id ||
+  providerWalletWithdrawalLedger.metadata?.bankPayout?.attachmentUrl !== providerWalletWithdrawalEvidenceUrl
+) {
+  throw new Error(
+    `Provider wallet withdrawal paid ledger is incomplete: ${JSON.stringify({
+      providerWalletWithdrawalLedger,
+      providerWalletWithdrawalLedgerSourceKey,
+      providerWalletWithdrawalPaid,
+    })}`,
+  );
+}
+const providerWalletWithdrawalPaidLifecycleReady =
+  providerWalletWithdrawalDualApprovalGuardsReady &&
+  providerWalletWithdrawalPaid.status === 'PAID' &&
+  providerWalletWithdrawalLedger.type === 'PARTNER_WALLET_WITHDRAWAL_PAID';
+if (!providerWalletWithdrawalPaidLifecycleReady) {
+  throw new Error(
+    `Provider wallet withdrawal paid lifecycle smoke did not complete: ${JSON.stringify({
+      providerWalletWithdrawalDualApprovalGuardsReady,
+      providerWalletWithdrawalLedger,
+      providerWalletWithdrawalPaid,
+    })}`,
+  );
+}
 
 const customerAppSession = await postJson('/app/session', customerAuth.accessToken, {
   role: 'CUSTOMER',
@@ -4485,12 +4790,14 @@ function hasFreshRegisteredPushDevice(devices, registeredAfterMs) {
 const financeDualApprovalRoleSeparationReady =
   manualWalletDualApprovalGuardsReady &&
   payoutBatchDualApprovalGuardsReady &&
+  providerWalletWithdrawalDualApprovalGuardsReady &&
   withholdingRemittancePaidLifecycleReady;
 if (!financeDualApprovalRoleSeparationReady) {
   throw new Error(
     `Finance dual approval role separation smoke did not complete: ${JSON.stringify({
       manualWalletDualApprovalGuardsReady,
       payoutBatchDualApprovalGuardsReady,
+      providerWalletWithdrawalDualApprovalGuardsReady,
       withholdingRemittancePaidLifecycleReady,
     })}`,
   );
@@ -4514,6 +4821,9 @@ console.log({
   providerNetAmount: providerEarningsSummary.netAmount,
   payoutBatchId: payoutBatch.id,
   payoutBatchCount: adminPayoutBatches.length,
+  providerWalletWithdrawalRequestId: providerWalletWithdrawalRequest.id,
+  providerWalletWithdrawalLedgerId: providerWalletWithdrawalLedger.id,
+  providerWalletWithdrawalPaidLifecycleReady,
   bankReconciliationTransactionId: smokeBankTransaction.id,
   bankReconciliationMatchId: smokeBankReconciliationMatch.match.id,
   bankReconciliationMatchAmount: smokeBankReconciliationMatch.match.amount,
