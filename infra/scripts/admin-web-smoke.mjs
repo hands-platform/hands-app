@@ -1522,7 +1522,7 @@ async function runFinanceDetailRouteSmoke() {
       routePrefix: 'finance-tax/booking-settlement-audit',
     },
     {
-      listPath: '/finance-tax/settlement-reversals',
+      listPath: '/finance-tax/settlement-reversals?range=all',
       markers: [
         'Settlement Reversal Detail',
         'Refund after payout evidence',
@@ -1530,11 +1530,12 @@ async function runFinanceDetailRouteSmoke() {
         'Reversal accounting impact',
       ],
       routePrefix: 'finance-tax/settlement-reversals',
+      smokePath: '/finance-tax/settlement-reversals',
     },
   ];
 
   for (const target of financeDetailSmokeTargets) {
-    if (!shouldRunDeepSection(target.listPath)) continue;
+    if (!shouldRunDeepSection(target.smokePath ?? target.listPath)) continue;
 
     const listBody = pageBodies.get(target.listPath) ?? (await fetchPage(target.listPath));
     const detailPath = firstDetailPath(listBody, target.routePrefix);

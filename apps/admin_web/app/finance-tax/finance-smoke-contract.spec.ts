@@ -37,6 +37,9 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('Bank evidence hub');
     expect(scriptSource).toContain('Booking Settlement Audit Detail');
     expect(scriptSource).toContain('Settlement Reversal Detail');
+    expect(scriptSource).toContain("smokePath: '/finance-tax/settlement-reversals'");
+    expect(scriptSource).toContain("listPath: '/finance-tax/settlement-reversals?range=all'");
+    expect(scriptSource).toContain('shouldRunDeepSection(target.smokePath ?? target.listPath)');
     expect(scriptSource).toContain('Settlement snapshot overview');
     expect(scriptSource).toContain('Settlement evidence hub');
     expect(scriptSource).toContain('Accounting amount breakdown');
@@ -44,6 +47,6 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/general-ledger'), 'finance-tax/general-ledger')");
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/bank-reconciliation'), 'finance-tax/bank-reconciliation')");
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/booking-settlement-audit'), 'finance-tax/booking-settlement-audit')");
-    expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/settlement-reversals'), 'finance-tax/settlement-reversals')");
+    expect(scriptSource).toContain("routePrefix: 'finance-tax/settlement-reversals'");
   });
 });
