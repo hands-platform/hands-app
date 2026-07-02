@@ -463,6 +463,20 @@ const adminEarningListInclude = {
   ...adminEarningRelationInclude,
 } satisfies Prisma.ProviderEarningInclude;
 
+const adminCashSettlementEarningListInclude = {
+  booking: { select: adminEarningBookingSelect },
+  providerProfile: {
+    include: {
+      user: { select: { fullName: true, id: true, phone: true } },
+    },
+  },
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' as const },
+    select: adminEarningWalletLedgerSelect,
+    take: 5,
+  },
+} satisfies Prisma.ProviderEarningInclude;
+
 function adminProviderPayoutInclude() {
   return {
     bankAccounts: {
@@ -811,7 +825,7 @@ export class EarningsService {
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       take: adminFinanceListTake(options.take),
       ...(skip > 0 ? { skip } : {}),
-      include: adminEarningListInclude,
+      include: adminCashSettlementEarningListInclude,
     });
   }
 

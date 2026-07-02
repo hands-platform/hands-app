@@ -389,6 +389,31 @@ describe('EarningsService payout batches', () => {
     );
   });
 
+  it('uses a compact include for cash settlement debt lists', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listCashSettlementDebtForAdmin()).resolves.toEqual([]);
+
+    const include = prisma.providerEarning.findMany.mock.calls[0][0].include;
+    expect(include).toEqual(
+      expect.objectContaining({
+        booking: expect.objectContaining({ select: expect.any(Object) }),
+        providerProfile: expect.objectContaining({ include: expect.any(Object) }),
+        walletLedgerEntries: expect.objectContaining({
+          select: expect.objectContaining({ metadata: true, reference: true, type: true }),
+          take: 5,
+        }),
+      }),
+    );
+    expect(include).not.toHaveProperty('platformFeeLogs');
+    expect(include).not.toHaveProperty('taxLogs');
+  });
+
   it('filters cash settlement debt by range and clamps requested limits', async () => {
     const prisma = {
       providerEarning: {
