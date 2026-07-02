@@ -112,6 +112,37 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         resultTone={balanceDelta === 0 ? 'success' : 'danger'}
         title="Journal evidence hub"
       >
+        <div className="finance-reconciliation-path admin-mt-16" aria-label="General ledger operating path">
+          <div className="finance-reconciliation-path-node">
+            <span>Finance source</span>
+            <strong>{journalSourceLabel(batch, settlementTraceLinks.length)}</strong>
+            <small>{batch.sourceType}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Journal batch</span>
+            <strong>{batch.status}</strong>
+            <small>{batch.monthlyPeriod ?? 'No monthly period'}</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Double-entry</span>
+            <strong>{journalBalanceLabel(batch)}</strong>
+            <small>{batch.entries.length} journal row(s)</small>
+          </div>
+          <span className="finance-reconciliation-path-connector" aria-hidden="true">
+            -&gt;
+          </span>
+          <div className="finance-reconciliation-path-node">
+            <span>Monthly close</span>
+            <strong>{journalCloseoutLabel(balanceDelta, formulaDelta, batch.currency)}</strong>
+            <small>{journalNextAction(balanceDelta, formulaDelta)}</small>
+          </div>
+        </div>
         <div className="detail-grid admin-mt-16">
           <FinanceDetailInfoItem
             label="Source record"
@@ -257,6 +288,42 @@ function statusTone(status: string): 'danger' | 'success' | 'warning' {
     return 'danger';
   }
   return 'warning';
+}
+
+function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlementTraceCount: number) {
+  if (batch.settlementSnapshot) {
+    return `Settlement ${shortId(batch.settlementSnapshot.id)}`;
+  }
+  if (batch.settlementReversalEntry) {
+    return `Reversal ${shortId(batch.settlementReversalEntry.id)}`;
+  }
+  if (batch.payment) {
+    return `Payment ${batch.payment.method} · ${batch.payment.status}`;
+  }
+  if (settlementTraceCount > 0) {
+    return `${settlementTraceCount} linked trace(s)`;
+  }
+  return shortId(batch.sourceId);
+}
+
+function journalCloseoutLabel(balanceDelta: number, formulaDelta: number, currency: string) {
+  if (balanceDelta > 0) {
+    return `Balance delta ${formatMoney(balanceDelta, currency)}`;
+  }
+  if (formulaDelta > 0) {
+    return `Formula delta ${formatMoney(formulaDelta, currency)}`;
+  }
+  return 'Clear';
+}
+
+function journalNextAction(balanceDelta: number, formulaDelta: number) {
+  if (balanceDelta > 0) {
+    return 'Fix debit/credit delta';
+  }
+  if (formulaDelta > 0) {
+    return 'Resolve formula delta';
+  }
+  return 'Ready for monthly close checks';
 }
 
 function journalBalanceLabel(batch: AdminAccountingJournalBatchDetail) {

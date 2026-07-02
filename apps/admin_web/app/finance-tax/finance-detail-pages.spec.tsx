@@ -545,6 +545,12 @@ describe('finance detail pages', () => {
     expect(markup).toContain('General Ledger Detail');
     expect(markup).toContain('Journal batch overview');
     expect(markup).toContain('Journal evidence hub');
+    expect(markup).toContain('General ledger operating path');
+    expect(markup).toContain('Finance source');
+    expect(markup).toContain('Journal batch');
+    expect(markup).toContain('Double-entry');
+    expect(markup).toContain('Monthly close');
+    expect(markup).toContain('Resolve formula delta');
     expect(markup).toContain('Source record');
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Settlement payment fee');
