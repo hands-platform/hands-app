@@ -10,10 +10,10 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
+import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingSummaryApiHref,
@@ -199,19 +199,11 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <div className="vuexy-booking-table-footer">
-          <span>
-            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={pagination.page}
-            ariaLabel="Partner withholding tax pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={pagination.totalPages}
-          />
-        </div>
+        <FinanceTablePaginationFooter
+          ariaLabel="Partner withholding tax pages"
+          hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}
+          pagination={pagination}
+        />
       </AdminFilterPanel>
     </AdminPageTemplate>
   );

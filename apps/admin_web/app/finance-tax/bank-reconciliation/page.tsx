@@ -17,11 +17,11 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   BANK_RECONCILIATION_REVIEW_LINKS,
@@ -322,19 +322,11 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <div className="vuexy-booking-table-footer">
-          <span>
-            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={pagination.page}
-            ariaLabel="Bank reconciliation pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => bankReconciliationHref({ ...filters, page })}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={pagination.totalPages}
-          />
-        </div>
+        <FinanceTablePaginationFooter
+          ariaLabel="Bank reconciliation pages"
+          hrefForPage={(page) => bankReconciliationHref({ ...filters, page })}
+          pagination={pagination}
+        />
       </AdminFilterPanel>
     </AdminPageTemplate>
   );

@@ -14,11 +14,11 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceStageList } from '../finance-stage-list';
+import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
@@ -350,19 +350,11 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             })}
           </AdminDataTable>
         </AdminTableScroll>
-        <div className="vuexy-booking-table-footer">
-          <span>
-            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={pagination.page}
-            ariaLabel="Monthly tax closing pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={pagination.totalPages}
-          />
-        </div>
+        <FinanceTablePaginationFooter
+          ariaLabel="Monthly tax closing pages"
+          hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}
+          pagination={pagination}
+        />
       </AdminFilterPanel>
     </AdminPageTemplate>
   );
