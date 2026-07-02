@@ -3256,6 +3256,30 @@ assertJournalEntry('Completed booking settlement journal', completedSettlementJo
   amount: completedEarning.withholdingAmount,
   side: 'CREDIT',
 });
+assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+  accountCode: 'platform_fee_net_revenue',
+  amount: completedSettlementSnapshot.platformFeeNetRevenue,
+  side: 'CREDIT',
+});
+if (completedSettlementSnapshot.companyOutputVat > 0) {
+  assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+    accountCode: 'company_output_vat_payable',
+    amount: completedSettlementSnapshot.companyOutputVat,
+    side: 'CREDIT',
+  });
+}
+if (completedSettlementSnapshot.paymentProcessingFee > 0) {
+  assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+    accountCode: 'payment_processing_fee_expense',
+    amount: completedSettlementSnapshot.paymentProcessingFee,
+    side: 'DEBIT',
+  });
+  assertJournalEntry('Completed booking settlement journal', completedSettlementJournal, {
+    accountCode: 'payment_processing_fee_clearing',
+    amount: completedSettlementSnapshot.paymentProcessingFee,
+    side: 'CREDIT',
+  });
+}
 const manualWalletAdjustmentApprovalId = `SMOKE-MANUAL-WALLET-${Date.now()}`;
 const manualWalletAdjustmentAmount = 10000;
 const manualWalletAdjustmentPayload = {

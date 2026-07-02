@@ -78,6 +78,30 @@ describe('API smoke contract', () => {
     expect(scriptSource).toContain('bankReconciliationPaymentClearingReopened');
   });
 
+  it('asserts completed booking settlement journal revenue, VAT, and payment fee lines in smoke', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain("assertJournalEntry('Completed booking settlement journal', completedSettlementJournal");
+    expect(scriptSource).toContain("accountCode: 'platform_fee_net_revenue'");
+    expect(scriptSource).toContain("amount: completedSettlementSnapshot.platformFeeNetRevenue");
+    expect(scriptSource).toContain("accountCode: 'company_output_vat_payable'");
+    expect(scriptSource).toContain("amount: completedSettlementSnapshot.companyOutputVat");
+    expect(scriptSource).toContain("accountCode: 'payment_processing_fee_expense'");
+    expect(scriptSource).toContain("accountCode: 'payment_processing_fee_clearing'");
+    expect(scriptSource).toContain("amount: completedSettlementSnapshot.paymentProcessingFee");
+  });
+
+  it('asserts refund reversal and manual wallet adjustment journal evidence in smoke', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
+
+    expect(scriptSource).toContain("assertBalancedAccountingJournal('Refund settlement reversal journal'");
+    expect(scriptSource).toContain("accountCode: 'partner_receivable_negative_wallet'");
+    expect(scriptSource).toContain("accountCode: 'booking_payment_clearing'");
+    expect(scriptSource).toContain("assertBalancedAccountingJournal('Manual wallet adjustment journal'");
+    expect(scriptSource).toContain("accountCode: 'customer_compensation_expense'");
+    expect(scriptSource).toContain("accountCode: 'customer_wallet_liability'");
+  });
+
   it('waits long enough for asynchronous FCM delivery smoke diagnostics', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/api-smoke.mjs'), 'utf8');
 
