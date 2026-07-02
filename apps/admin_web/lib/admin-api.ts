@@ -3380,10 +3380,11 @@ async function fetchAdminOperatorAccess(identity: string) {
   );
 
   if (!response.ok) {
-    return null;
+    return envMasterAdminAccessForIdentity(identity);
   }
 
-  return (await response.json()) as AdminOperatorAccess | null;
+  const access = (await response.json()) as AdminOperatorAccess | null;
+  return access ?? envMasterAdminAccessForIdentity(identity);
 }
 
 async function recordAdminOperatorActivityForIdentity(
@@ -3429,4 +3430,23 @@ function readJwtExpiry(token: string) {
   } catch {
     return null;
   }
+}
+
+function envMasterAdminAccessForIdentity(identity: string): AdminOperatorAccess | null {
+  const configuredEmail = process.env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
+  const normalizedIdentity = identity.trim().toLowerCase();
+
+  if (!configuredEmail || normalizedIdentity !== configuredEmail) {
+    return null;
+  }
+
+  return {
+    categories: [],
+    email: configuredEmail,
+    fullName: 'Master Admin',
+    id: 'admin-web-env-master',
+    phone: null,
+    roles: ['ADMIN', 'MASTER_ADMIN'],
+    updatedAt: null,
+  };
 }

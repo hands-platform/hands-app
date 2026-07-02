@@ -3,7 +3,13 @@ import type {
   AdminBookingMatchSource,
   AdminBookingMatchingEvidence,
 } from './admin-api';
-import { getAdminAccessToken } from './admin-api';
+import { adminPostOrThrow, getAdminAccessToken } from './admin-api';
+import { ADMIN_WEB_SESSION_COOKIE_NAME, createAdminWebSessionCookieValue } from './admin-session';
+import { headers } from 'next/headers';
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(),
+}));
 
 describe('admin api contract types', () => {
   it('keeps persisted booking match source closed to the API enum values', () => {
@@ -63,6 +69,53 @@ describe('admin api auth guard', () => {
 
     await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is expired');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('allows env master admin sessions to perform categorized write actions without stored category setup', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}`,
+      }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        return new Response('null', {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        });
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      if (url.endsWith('/admin/bank-reconciliation/bank-1/matches')) {
+        return Response.json({ ok: true, path: url, method: init?.method });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    await expect(
+      adminPostOrThrow('/admin/bank-reconciliation/bank-1/matches', {
+        amount: 500000,
+        paymentClearingEntryId: 'clearing-1',
+      }),
+    ).resolves.toMatchObject({ method: 'POST' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/bank-reconciliation/bank-1/matches'),
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });
 
