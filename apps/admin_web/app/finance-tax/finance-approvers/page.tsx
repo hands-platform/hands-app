@@ -8,6 +8,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
 import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceStageList } from '../finance-stage-list';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildTaxFinanceWorkflowLinks,
@@ -122,41 +123,34 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
         resultTone="warning"
         title="Finance approver operating rule"
       >
-        <div className="setup-stage-list admin-mt-12">
-          <div className="setup-stage-item">
-            <span>1</span>
-            <div>
-              <strong>Admin role remains the base permission</strong>
-              <p className="muted">
-                Only admin users can receive the finance approver role. Customer or Partner accounts are
-                rejected by the API.
-              </p>
-            </div>
-            <small>{adminUsers.length} admins</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>2</span>
-            <div>
-              <strong>Finance approver is required for money approval</strong>
-              <p className="muted">
-                Payout, withdrawal, manual wallet, bank reconciliation, and tax closeout approvals require
-                this role in addition to Admin.
-              </p>
-            </div>
-            <small>{approverCount} approvers</small>
-          </div>
-          <div className="setup-stage-item">
-            <span>3</span>
-            <div>
-              <strong>Self-change and last-approver removal are blocked</strong>
-              <p className="muted">
-                The API prevents an acting admin from changing their own finance role and prevents removing
-                the final approver.
-              </p>
-            </div>
-            <small>Safe guard</small>
-          </div>
-        </div>
+        <FinanceStageList
+          items={[
+            {
+              helper:
+                'Only admin users can receive the finance approver role. Customer or Partner accounts are rejected by the API.',
+              key: 'admin-base-permission',
+              label: 'Admin role remains the base permission',
+              signal: '1',
+              value: `${adminUsers.length} admins`,
+            },
+            {
+              helper:
+                'Payout, withdrawal, manual wallet, bank reconciliation, and tax closeout approvals require this role in addition to Admin.',
+              key: 'money-approval-role',
+              label: 'Finance approver is required for money approval',
+              signal: '2',
+              value: `${approverCount} approvers`,
+            },
+            {
+              helper:
+                'The API prevents an acting admin from changing their own finance role and prevents removing the final approver.',
+              key: 'self-change-last-approver-guard',
+              label: 'Self-change and last-approver removal are blocked',
+              signal: '3',
+              value: 'Safe guard',
+            },
+          ]}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel
