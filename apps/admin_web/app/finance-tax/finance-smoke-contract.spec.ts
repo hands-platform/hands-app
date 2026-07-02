@@ -7,6 +7,10 @@ describe('finance admin smoke contract', () => {
   it('checks Finance list pages and their first detail routes', () => {
     const scriptSource = readFileSync(resolve(root, 'infra/scripts/admin-web-smoke.mjs'), 'utf8');
 
+    expect(scriptSource).toContain('/cash-settlements');
+    expect(scriptSource).toContain('/cash-settlements?view=full');
+    expect(scriptSource).toContain('Open full operations view');
+    expect(scriptSource).toContain('Cash settlement execution desk');
     expect(scriptSource).toContain('/finance-tax/payment-clearing');
     expect(scriptSource).toContain('/finance-tax/general-ledger');
     expect(scriptSource).toContain('/finance-tax/bank-reconciliation');
