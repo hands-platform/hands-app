@@ -691,20 +691,38 @@ describe('finance detail pages', () => {
       if (href === '/admin/booking-payment-clearing?range=30d&take=50&review=open') {
         return [
           {
-            amount: 650000,
-            bookingId: 'booking-1',
+            amount: 400000,
+            bookingId: 'booking-mismatch',
             currency: 'VND',
-            id: 'clearing-1',
+            id: 'clearing-mismatch',
+            occurredAt: '2026-06-20T09:15:00.000Z',
+            payment: {
+              amount: 400000,
+              currency: 'VND',
+              id: 'payment-mismatch',
+              method: 'CARD',
+              status: 'CAPTURED',
+            },
+            paymentId: 'payment-mismatch',
+            sourceKey: 'payment:payment-mismatch:capture',
+            status: 'OPEN',
+            type: 'SETTLEMENT_POSTED',
+          },
+          {
+            amount: 650000,
+            bookingId: 'booking-exact',
+            currency: 'VND',
+            id: 'clearing-exact',
             occurredAt: '2026-06-20T09:10:00.000Z',
             payment: {
               amount: 650000,
               currency: 'VND',
-              id: 'payment-1',
+              id: 'payment-exact',
               method: 'CARD',
               status: 'CAPTURED',
             },
-            paymentId: 'payment-1',
-            sourceKey: 'payment:payment-1:capture',
+            paymentId: 'payment-exact',
+            sourceKey: 'payment:payment-exact:capture',
             status: 'OPEN',
             type: 'CUSTOMER_PAYMENT_CAPTURED',
           },
@@ -722,7 +740,10 @@ describe('finance detail pages', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-payment-clearing?range=30d&take=50&review=open', []);
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('Payment clearing candidate');
-    expect(markup).toContain('CUSTOMER_PAYMENT_CAPTURED - 650.000 VND - booking');
+    expect(markup).toContain('Exact amount - CUSTOMER_PAYMENT_CAPTURED - 650.000 VND - booking');
+    expect(markup.indexOf('Exact amount - CUSTOMER_PAYMENT_CAPTURED')).toBeLessThan(
+      markup.indexOf('SETTLEMENT_POSTED - 400.000 VND'),
+    );
     expect(markup).toContain('type="hidden" name="sourceType" value="payment-clearing"');
     expect(markup).toContain('name="sourceId"');
     expect(markup).toContain('Create match');

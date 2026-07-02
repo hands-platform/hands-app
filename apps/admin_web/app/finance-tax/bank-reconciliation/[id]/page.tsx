@@ -75,8 +75,9 @@ export default async function BankReconciliationDetailPage({
     : [];
   const paymentClearingOptions = paymentClearingCandidates
     .filter((entry) => entry.currency === transaction.currency)
+    .sort(paymentClearingCandidateComparator(remainingAmount || Math.abs(transaction.amount)))
     .map((entry) => ({
-      label: paymentClearingCandidateLabel(entry),
+      label: paymentClearingCandidateLabel(entry, remainingAmount || Math.abs(transaction.amount)),
       value: entry.id,
     }));
 
@@ -572,8 +573,23 @@ function statusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
   return 'warning';
 }
 
-function paymentClearingCandidateLabel(entry: AdminBookingPaymentClearingEntry) {
-  return `${entry.type} - ${formatMoney(entry.amount, entry.currency)} - booking ${shortId(entry.bookingId)}`;
+function paymentClearingCandidateComparator(targetAmount: number) {
+  return (left: AdminBookingPaymentClearingEntry, right: AdminBookingPaymentClearingEntry) => {
+    const leftDelta = Math.abs(Math.abs(left.amount) - targetAmount);
+    const rightDelta = Math.abs(Math.abs(right.amount) - targetAmount);
+    if (leftDelta !== rightDelta) {
+      return leftDelta - rightDelta;
+    }
+    return new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime();
+  };
+}
+
+function paymentClearingCandidateLabel(entry: AdminBookingPaymentClearingEntry, targetAmount: number) {
+  const baseLabel = `${entry.type} - ${formatMoney(entry.amount, entry.currency)} - booking ${shortId(entry.bookingId)}`;
+  if (Math.abs(Math.abs(entry.amount) - targetAmount) === 0) {
+    return `Exact amount - ${baseLabel}`;
+  }
+  return baseLabel;
 }
 
 function canCreateBankReconciliationMatch(status: string) {
