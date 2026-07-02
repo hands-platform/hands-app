@@ -9,7 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -73,7 +73,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
       ]}
       title="General Ledger"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Ledger command board">
+      <FinanceListCommandBoard ariaLabel="Ledger command board">
         <FinanceListCommandCard
           detail={`Debit ${formatMoney(summary.totalDebit, summary.currency)} / credit ${formatMoney(
             summary.totalCredit,
@@ -109,7 +109,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           tone={summary.count > 0 ? 'info' : 'neutral'}
           value={`${summary.count} batch(es)`}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

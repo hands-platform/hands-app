@@ -15,7 +15,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
-import { FinanceListCommandCard } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceStageList } from '../finance-stage-list';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
@@ -108,7 +108,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
       metrics={buildMonthlyTaxClosingMetrics(summary)}
       title="Monthly Tax Closing"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Closeout command board">
+      <FinanceListCommandBoard ariaLabel="Closeout command board">
         <FinanceListCommandCard
           detail="Current stored closing status, or draft preview when no closing row exists yet."
           href={monthlyTaxClosingHref(filters)}
@@ -141,7 +141,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           tone={remittanceEvidenceState.tone}
           value={remittanceEvidenceState.label}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

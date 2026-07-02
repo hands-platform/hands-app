@@ -7,7 +7,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceStageList } from '../finance-stage-list';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -71,7 +71,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
       ]}
       title="Finance Approvers"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Approver command board">
+      <FinanceListCommandBoard ariaLabel="Approver command board">
         <FinanceListCommandCard
           detail="Share of admin users who can approve finance money actions after maker submission."
           href="/finance-tax/finance-approvers"
@@ -104,7 +104,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
           tone="success"
           value="Protected"
         />
-      </section>
+      </FinanceListCommandBoard>
 
       {roleNotice ? (
         <AdminFilterPanel

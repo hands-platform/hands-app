@@ -1,7 +1,22 @@
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
+
+export function FinanceListCommandBoard({
+  ariaLabel,
+  children,
+}: {
+  readonly ariaLabel: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <section className="finance-list-command-board admin-mb-16" aria-label={ariaLabel}>
+      {children}
+    </section>
+  );
+}
 
 export function FinanceListCommandCard({
   detail,

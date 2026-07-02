@@ -13,7 +13,7 @@ import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
@@ -97,7 +97,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
       ]}
       title="Booking Settlement Audit"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Settlement audit command board">
+      <FinanceListCommandBoard ariaLabel="Settlement audit command board">
         <FinanceListCommandCard
           detail={`${summary.openTaxCount} snapshot row(s) still need declaration, payment, closeout, or reversal review.`}
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' })}
@@ -130,7 +130,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           tone={summary.openTaxCount > 0 ? 'danger' : 'success'}
           value={summary.openTaxCount > 0 ? 'Needs review' : 'Clear'}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

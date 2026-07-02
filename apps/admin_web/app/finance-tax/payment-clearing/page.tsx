@@ -9,7 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -72,7 +72,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       ]}
       title="Booking Payment Clearing"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Clearing command board">
+      <FinanceListCommandBoard ariaLabel="Clearing command board">
         <FinanceListCommandCard
           detail={`${summary.openCount} row(s) still need payment, settlement, refund, fee, coupon, or bank evidence.`}
           href={paymentClearingHref({ ...filters, page: 1, review: 'open' })}
@@ -105,7 +105,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           tone={summary.openCount > 0 ? 'danger' : 'success'}
           value={summary.openCount > 0 ? 'Needs evidence' : 'Clear'}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

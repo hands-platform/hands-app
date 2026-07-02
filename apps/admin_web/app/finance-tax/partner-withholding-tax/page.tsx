@@ -11,7 +11,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
-import { FinanceListCommandCard } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -109,7 +109,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
       ]}
       title="Partner Withholding Tax"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Withholding command board">
+      <FinanceListCommandBoard ariaLabel="Withholding command board">
         <FinanceListCommandCard
           detail="Partner VAT plus PIT withholding payable for the selected month."
           href={`/finance-tax/partner-withholding-tax?period=${encodeURIComponent(filters.period)}`}
@@ -150,7 +150,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           tone={withholdingRemittanceTone(monthlyClosingSummary.status)}
           value={monthlyClosingSummary.status}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

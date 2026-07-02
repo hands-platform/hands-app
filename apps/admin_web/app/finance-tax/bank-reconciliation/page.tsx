@@ -20,7 +20,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -107,7 +107,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
       ]}
       title="Bank Reconciliation"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Bank command board">
+      <FinanceListCommandBoard ariaLabel="Bank command board">
         <FinanceListCommandCard
           detail={`${summary.unmatchedCount} bank transaction(s) still need source evidence matching.`}
           href={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
@@ -144,7 +144,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           tone={summary.unmatchedCount > 0 ? 'warning' : 'success'}
           value={summary.unmatchedCount > 0 ? 'Needs match' : 'Matched'}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

@@ -6,7 +6,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -56,7 +56,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
       metrics={buildPaymentFeeMetrics(summary)}
       title="Payment Fees"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Fee command board">
+      <FinanceListCommandBoard ariaLabel="Fee command board">
         <FinanceListCommandCard
           detail="Payment processing fee cost from immutable settlement snapshots."
           href={paymentFeeHref(filters)}
@@ -97,7 +97,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
           tone={summary.byTreatment.length > 0 ? 'success' : 'neutral'}
           value={`${summary.byTreatment.length} treatment(s)`}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

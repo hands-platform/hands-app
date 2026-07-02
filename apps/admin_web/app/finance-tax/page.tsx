@@ -15,7 +15,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
-import { FinanceListCommandCard } from './finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard } from './finance-list-command-card';
 import { FinanceStageList } from './finance-stage-list';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 import {
@@ -136,7 +136,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
       metrics={buildTaxFinanceMetrics(settlementSummary, withholdingSummary)}
       title="Tax Overview"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Tax command board">
+      <FinanceListCommandBoard ariaLabel="Tax command board">
         <FinanceListCommandCard
           detail="Open tax, payment clearing, bank reconciliation, coupon, and monthly formula signals."
           href={paymentClearingHref({ ...clearingFilters, page: 1, review: 'open' })}
@@ -169,7 +169,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           tone={monthlyClosingSummary.status === 'CLOSED' ? 'success' : openFinanceRiskCount > 0 ? 'warning' : 'info'}
           value={monthlyClosingSummary.status}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

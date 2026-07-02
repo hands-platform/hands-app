@@ -12,7 +12,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
-import { FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -81,7 +81,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
       ]}
       title="Settlement Reversals"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="Reversal command board">
+      <FinanceListCommandBoard ariaLabel="Reversal command board">
         <FinanceListCommandCard
           detail={`${summary.count} closed-period reversal row(s) preserve the original settlement and post correction evidence.`}
           href={bookingSettlementReversalHref({ ...filters, page: 1 })}
@@ -114,7 +114,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           tone={taxReversalImpact > 0 ? 'danger' : 'success'}
           value={formatMoney(taxReversalImpact, summary.currency)}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"

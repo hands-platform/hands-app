@@ -6,7 +6,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
-import { FinanceListCommandCard } from '../finance-list-command-card';
+import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
@@ -55,7 +55,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
       metrics={buildPlatformVatMetrics(summary)}
       title="Platform VAT"
     >
-      <section className="finance-list-command-board admin-mb-16" aria-label="VAT command board">
+      <FinanceListCommandBoard ariaLabel="VAT command board">
         <FinanceListCommandCard
           detail="Company output VAT payable from HANDS platform fee gross."
           href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
@@ -88,7 +88,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           tone={summary.rateBreakdown.length > 0 ? 'info' : 'neutral'}
           value={`${summary.rateBreakdown.length} bucket(s)`}
         />
-      </section>
+      </FinanceListCommandBoard>
 
       <AdminFilterPanel
         className="admin-mb-16"
