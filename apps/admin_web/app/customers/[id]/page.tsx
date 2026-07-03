@@ -21,6 +21,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
+import { AdminSection } from '../../../components/admin-surface';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -426,16 +427,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         title="Customer review records"
       />
 
-      <section className="card admin-mb-16" id="customer-booking-create-gates">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer blocked create attempts</h2>
-            <p className="muted">
-              Booking creation attempts stopped before payment and matching. These rows show factual gate
-              evidence for customer support and setup checks.
-            </p>
-          </div>
-          <div className="participant-list">
+      <AdminSection
+        actions={
+          <>
             <span
               className={`pill ${
                 filteredBookingCreateGateAttempts.length > 0 ? 'pill-warn' : 'pill-neutral'
@@ -447,8 +441,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <Link className="text-link" href="/bookings?view=blocked-create">
               Open gate queue
             </Link>
-          </div>
-        </div>
+          </>
+        }
+        className="admin-mb-16"
+        description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support and setup checks."
+        id="customer-booking-create-gates"
+        title="Customer blocked create attempts"
+      >
         {filteredBookingCreateGateAttempts.length === 0 ? (
           <p className="muted admin-mt-12">
             No booking create gate attempt matched this date filter.
@@ -482,21 +481,19 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="customer-operator-command-queue">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer operator command queue</h2>
-            <p className="muted">
-              Next factual actions for the customer desk. This queue only points operators to live bookings,
-              chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up.
-            </p>
-          </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
+        id="customer-operator-command-queue"
+        status={
           <span className={`pill ${customerSupportPillClass(customerOperatorCommandQueue.tone)}`}>
             {customerOperatorCommandQueue.status}
           </span>
-        </div>
+        }
+        title="Customer operator command queue"
+      >
         <div className="setup-stage-list admin-mt-14">
           {customerOperatorCommandQueue.commands.map((command) => (
             <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
@@ -512,25 +509,23 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="record-date-filter">
-        <div className="ops-section-header">
-          <div>
-            <h2>Record date filter</h2>
-            <p className="muted">
-              Narrow booking, chat, notification, audit, and activity records without changing the saved
-              customer data.
-            </p>
-          </div>
-          <div className="participant-list">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{dateFilters.label}</span>
             <span className="pill pill-neutral">
               {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}
             </span>
             <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
-          </div>
-        </div>
+          </>
+        }
+        className="admin-mb-16"
+        description="Narrow booking, chat, notification, audit, and activity records without changing the saved customer data."
+        id="record-date-filter"
+        title="Record date filter"
+      >
         <form className="form-grid admin-mt-14" action={`/customers/${customer.id}`}>
           <AdminFormSelect
             className="customer-detail-filter-select"
@@ -585,19 +580,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </AdminFormControlLink>
           </div>
         </form>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer activity action panel</h2>
-            <p className="muted">
-              Facts-only operator view for booking progress, completed work, archived chats, payment records,
-              addresses, and customer contact.
-            </p>
-          </div>
-          <span className={`pill ${customerSupportPillClass(activityPlan.tone)}`}>{activityPlan.status}</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
+        status={<span className={`pill ${customerSupportPillClass(activityPlan.tone)}`}>{activityPlan.status}</span>}
+        title="Customer activity action panel"
+      >
         <div className="ops-task-note ops-task-pending admin-mt-14">
           <div className="ops-row">
             <div>
@@ -652,7 +642,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             Save customer activity note
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminSection>
 
       <CustomerDetailSectionBand
         eyebrow="Account"
@@ -660,24 +650,22 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
         status={<span className="pill pill-info">Profile and wallet</span>}
       >
-      <section className="card admin-mb-16" id="customer-account-evidence">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer contact and evidence</h2>
-            <p className="muted">
-              Contact, device, booking, payment, and support evidence that is not already repeated in the
-              profile overview. Missing values are shown plainly instead of guessed.
-            </p>
-          </div>
-          <div className="participant-list">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{accountFacts.length} field(s)</span>
             <span
               className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}
             >
               {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
             </span>
-          </div>
-        </div>
+          </>
+        }
+        className="admin-mb-16"
+        description="Contact, device, booking, payment, and support evidence that is not already repeated in the profile overview. Missing values are shown plainly instead of guessed."
+        id="customer-account-evidence"
+        title="Customer contact and evidence"
+      >
         <div className="service-trace-summary admin-mt-12">
           {accountFacts.map((fact) => (
             <div key={fact.label}>
@@ -687,25 +675,23 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="customer-account-operations">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer account operations</h2>
-            <p className="muted">
-              Payment ledger and saved address evidence in one operator readout. Partner cash-fee debt is
-              never carried on the customer account.
-            </p>
-          </div>
-          <div className="participant-list">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
             <span className="pill pill-neutral">{addresses.length} saved address(es)</span>
             <Link className="text-link" href={customerWalletAdjustmentHref}>
               Review or create adjustment
             </Link>
-          </div>
-        </div>
+          </>
+        }
+        className="admin-mb-16"
+        description="Payment ledger and saved address evidence in one operator readout. Partner cash-fee debt is never carried on the customer account."
+        id="customer-account-operations"
+        title="Customer account operations"
+      >
         <div className="setup-stage-list admin-mt-12">
           <div className="ops-task-note ops-task-info">
             <div className="ops-section-header">
@@ -756,7 +742,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             )}
           </div>
         </div>
-      </section>
+      </AdminSection>
       <AdminManualWalletAdjustmentHistory
         rows={customerManualAdjustmentRows}
         walletAdjustmentsHref={customerWalletAdjustmentHref}
@@ -818,19 +804,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </AdminFilterPanel>
 
-      <section className="card" id="notifications">
-        <div className="ops-section-header">
-          <div>
-            <h2>Notification and audit trace</h2>
-            <p className="muted">
-              Customer notification delivery and audit rows for support review.
-            </p>
-          </div>
-          <div className="participant-list">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{filteredNotifications.length} notification row(s)</span>
             <span className="pill pill-info">{filteredAuditLogs.length} audit log(s)</span>
-          </div>
-        </div>
+          </>
+        }
+        description="Customer notification delivery and audit rows for support review."
+        id="notifications"
+        title="Notification and audit trace"
+      >
 
         <div className="ops-section-header admin-mt-16">
           <div>
@@ -884,7 +868,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminSection>
       </CustomerDetailSectionBand>
     </div>
   );
