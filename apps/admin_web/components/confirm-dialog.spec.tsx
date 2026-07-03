@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { ConfirmDialog, confirmDialogButtonClassName, confirmDialogButtonState } from './confirm-dialog';
 
 describe('ConfirmDialog', () => {
@@ -111,18 +113,14 @@ describe('ConfirmDialog', () => {
       title: 'Reject Partner?',
     });
 
-    const actions = dialog.props.children[1];
-    const form = actions.props.children[0];
-    const textInputLabels = form.props.children[1];
-    const input = textInputLabels[0].props.children[1];
+    const markup = renderToStaticMarkup(dialog);
 
-    expect(textInputLabels[0].props.className).toBe('confirm-dialog-label');
-    expect(input.props).toMatchObject({
-      maxLength: 500,
-      minLength: 12,
-      name: 'reason',
-      placeholder: 'Partner rejection reason',
-      required: true,
-    });
+    expect(markup).toContain('class="admin-form-input admin-form-control-labeled confirm-dialog-label"');
+    expect(markup).toContain('class="admin-form-label">Reason</span>');
+    expect(markup).toContain('maxLength="500"');
+    expect(markup).toContain('minLength="12"');
+    expect(markup).toContain('name="reason"');
+    expect(markup).toContain('placeholder="Partner rejection reason"');
+    expect(markup).toContain('required=""');
   });
 });

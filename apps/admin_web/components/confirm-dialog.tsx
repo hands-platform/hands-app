@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminFormInput } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
 import { statusBadgeClassName } from './status-badge';
 
@@ -115,17 +116,18 @@ export function ConfirmDialog({
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
           ))}
           {textInputs.map((input) => (
-            <label className="confirm-dialog-label" key={input.name}>
-              {input.label}
-              <input
-                defaultValue={input.defaultValue}
-                maxLength={input.maxLength}
-                minLength={input.minLength}
-                name={input.name}
-                placeholder={input.placeholder}
-                required={input.required}
-              />
-            </label>
+            <AdminFormInput
+              className="confirm-dialog-label"
+              defaultValue={input.defaultValue}
+              key={input.name}
+              label={input.label}
+              labelVisibility="visible"
+              maxLength={input.maxLength}
+              minLength={input.minLength}
+              name={input.name}
+              placeholder={input.placeholder}
+              required={input.required}
+            />
           ))}
           <button
             className={confirmDialogButtonClassName(tone, { disabled, loading })}
