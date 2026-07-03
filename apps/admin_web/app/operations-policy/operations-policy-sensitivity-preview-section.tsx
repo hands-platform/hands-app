@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
 
@@ -24,18 +25,13 @@ export function OperationsPolicySensitivityPreviewSection({
   sensitivity,
 }: OperationsPolicySensitivityPreviewSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Policy sensitivity preview</h2>
-          <p className="muted">
-            Before changing radius or location freshness, compare how many Partners would remain usable
-            around the latest customer coordinate. This keeps policy choices tied to real supply instead of
-            guesswork.
-          </p>
-        </div>
-        <span className="pill pill-info">{sensitivity.currentPolicyLabel}</span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Before changing radius or location freshness, compare how many Partners would remain usable around the latest customer coordinate. This keeps policy choices tied to real supply instead of guesswork."
+      statusLabel={sensitivity.currentPolicyLabel}
+      statusTone="info"
+      title="Policy sensitivity preview"
+    >
       <div className="service-trace-summary admin-mt-12">
         {sensitivity.summary.map((item) => (
           <div key={item.label}>
@@ -96,6 +92,6 @@ export function OperationsPolicySensitivityPreviewSection({
           </AdminDataTable>
         </div>
       </div>
-    </section>
+    </AdminSection>
   );
 }

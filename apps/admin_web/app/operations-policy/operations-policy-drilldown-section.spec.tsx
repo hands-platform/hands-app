@@ -1,5 +1,6 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { OperationsPolicyDrilldownSection } from './operations-policy-drilldown-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyDrilldownSection', () => {
   it('renders drill-down lists with record links and empty guidance', () => {
@@ -38,19 +39,16 @@ describe('OperationsPolicyDrilldownSection', () => {
       },
     });
 
-    const rendered = normalizedTextContent(section);
-    const children = Array.isArray(section.props.children) ? section.props.children : [];
-    const grid = children[1];
-    const lists = Array.isArray(grid.props.children) ? grid.props.children : [];
+    const rendered = renderToStaticMarkup(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy impact drill-down');
     expect(rendered).toContain('Partner records');
     expect(rendered).toContain('1 item(s) to review');
-    expect(lists).toHaveLength(2);
-    expect(lists[0].props.list.title).toBe('Open matching records');
-    expect(lists[0].props.list.rows[0].href).toBe('/bookings/booking-1');
-    expect(lists[1].props.list.emptyText).toBe('No saved policy drift is currently loaded.');
+    expect(rendered).toContain('Open matching records');
+    expect(rendered).toContain('Saved policy drift records');
+    expect(rendered).toContain('No saved policy drift is currently loaded.');
+    expect(rendered).toContain('/bookings/booking-1');
   });
 
   it('does not duplicate the base pill class for list and row pill badges', () => {

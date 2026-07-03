@@ -38,7 +38,7 @@ describe('OperationsPolicySensitivityPreviewSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy sensitivity preview');
     expect(rendered).toContain('10 km / 30m fresh');
     expect(rendered).toContain('Marketplace supply sensitivity');

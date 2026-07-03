@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
@@ -34,23 +35,19 @@ type OperationsPolicyDrilldownSectionProps = {
 
 export function OperationsPolicyDrilldownSection({ drilldown }: OperationsPolicyDrilldownSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Policy impact drill-down</h2>
-          <p className="muted">
-            Click into the exact bookings and Partner records operators should review before changing live
-            matching, wallet, or response-window policy.
-          </p>
-        </div>
-        <span className="pill pill-info">{drilldown.totalCount} item(s) to review</span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Click into the exact bookings and Partner records operators should review before changing live matching, wallet, or response-window policy."
+      statusLabel={`${drilldown.totalCount} item(s) to review`}
+      statusTone="info"
+      title="Policy impact drill-down"
+    >
       <div className="ops-task-grid admin-mt-14">
         {drilldown.lists.map((list) => (
           <PolicyDrilldownList key={list.key} list={list} />
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
