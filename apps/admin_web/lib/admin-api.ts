@@ -2304,6 +2304,8 @@ export type AdminBookingSettlementReversalEntry = {
     metadata?: unknown;
     sourceKey: string;
     status: AdminAccountingJournalBatchStatus;
+    totalCredit: number;
+    totalDebit: number;
     postedAt: string;
   }>;
   paymentClearingEntries?: Array<{

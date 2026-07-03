@@ -288,7 +288,16 @@ describe('tax settlement page model', () => {
   it('summarizes settlement reversal evidence readiness for operations', () => {
     expect(
       buildBookingSettlementReversalEvidenceState({
-        accountingJournalBatches: [{ id: 'journal-1', sourceKey: 'journal:1', status: 'POSTED', postedAt: '2026-07-01' }],
+        accountingJournalBatches: [
+          {
+            id: 'journal-1',
+            sourceKey: 'journal:1',
+            status: 'POSTED',
+            totalCredit: 100000,
+            totalDebit: 100000,
+            postedAt: '2026-07-01',
+          },
+        ],
         paymentClearingEntries: [
           {
             amount: 100000,
@@ -309,7 +318,16 @@ describe('tax settlement page model', () => {
 
     expect(
       buildBookingSettlementReversalEvidenceState({
-        accountingJournalBatches: [{ id: 'journal-1', sourceKey: 'journal:1', status: 'POSTED', postedAt: '2026-07-01' }],
+        accountingJournalBatches: [
+          {
+            id: 'journal-1',
+            sourceKey: 'journal:1',
+            status: 'POSTED',
+            totalCredit: 100000,
+            totalDebit: 100000,
+            postedAt: '2026-07-01',
+          },
+        ],
         paymentClearingEntries: [
           {
             amount: 100000,

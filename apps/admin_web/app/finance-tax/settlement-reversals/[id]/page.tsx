@@ -38,6 +38,10 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const evidenceState = buildBookingSettlementReversalEvidenceState(reversal);
   const traceLinks = buildBookingSettlementReversalTraceLinks(reversal);
   const originalSettlement = reversal.originalSettlementSnapshot ?? null;
+  const reversalJournal = reversal.accountingJournalBatches?.[0] ?? null;
+  const journalBalanceDelta = reversalJournal
+    ? Math.abs(reversalJournal.totalDebit - reversalJournal.totalCredit)
+    : null;
   const allocationDelta = reversalAllocationDelta(reversal);
   const payoutRefundEvidence = payoutRefundReceivableEvidence(reversal);
 
@@ -210,6 +214,29 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                   Delta {formatMoney(allocationDelta, reversal.currency)}
                 </span>
               </>
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Journal balance check"
+            value={
+              reversalJournal ? (
+                <>
+                  {journalBalanceDelta === 0 ? 'Balanced' : 'Review required'}
+                  <span className="muted admin-block">
+                    Debit {formatMoney(reversalJournal.totalDebit, reversal.currency)}
+                  </span>
+                  <span className="muted admin-block">
+                    Credit {formatMoney(reversalJournal.totalCredit, reversal.currency)}
+                  </span>
+                  {journalBalanceDelta ? (
+                    <span className="muted admin-block">
+                      Delta {formatMoney(journalBalanceDelta, reversal.currency)}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                'No journal'
+              )
             }
           />
         </FinanceDetailGrid>

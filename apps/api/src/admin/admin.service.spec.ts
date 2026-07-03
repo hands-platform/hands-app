@@ -8890,6 +8890,8 @@ describe('AdminService query orchestration', () => {
         metadata: true,
         sourceKey: true,
         status: true,
+        totalCredit: true,
+        totalDebit: true,
       }),
     );
   });

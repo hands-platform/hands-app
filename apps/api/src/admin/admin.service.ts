@@ -651,6 +651,8 @@ const adminBookingSettlementReversalEntryListSelect = {
       id: true,
       sourceKey: true,
       status: true,
+      totalCredit: true,
+      totalDebit: true,
       postedAt: true,
     },
   },
@@ -697,6 +699,8 @@ const adminBookingSettlementReversalEntryDetailSelect = {
       postedAt: true,
       sourceKey: true,
       status: true,
+      totalCredit: true,
+      totalDebit: true,
     },
   },
   originalSettlementSnapshot: {

@@ -194,6 +194,8 @@ describe('finance detail pages', () => {
           postedAt: '2026-07-01T11:05:00.000Z',
           sourceKey: 'journal:reversal:1',
           status: 'POSTED',
+          totalCredit: 600000,
+          totalDebit: 600000,
         },
       ],
       bookingId: 'booking-1',
@@ -278,6 +280,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Partner receivable / negative wallet');
     expect(markup).toContain('Receivable amount');
     expect(markup).toContain('430.000 VND');
+    expect(markup).toContain('Journal balance check');
+    expect(markup).toContain('Debit 600.000 VND');
+    expect(markup).toContain('Credit 600.000 VND');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
