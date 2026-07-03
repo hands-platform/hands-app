@@ -19,6 +19,11 @@ import {
   UserX,
   WalletCards,
 } from 'lucide-react';
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+  AdminFormSelect,
+} from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
 import {
   AdminPartnerOverview,
@@ -116,56 +121,51 @@ export default async function PartnerOverviewPage({
           <input type="hidden" name="range" value={range} />
           {filters.selectionIssue ? <input type="hidden" name="selectionIssue" value={filters.selectionIssue} /> : null}
           {filters.selectionSort ? <input type="hidden" name="selectionSort" value={filters.selectionSort} /> : null}
-          <label className="admin-form-control">
-            <span>City / area</span>
-            <input name="city" defaultValue={filters.city ?? ''} placeholder="hcm, hanoi, cau giay" />
-          </label>
-          <label className="admin-form-control">
-            <span>Service</span>
-            <input name="serviceId" defaultValue={filters.serviceId ?? ''} placeholder="service id" />
-          </label>
-          <label className="admin-form-control">
-            <span>Verification</span>
-            <select name="verificationStatus" defaultValue={filters.verificationStatus ?? ''}>
-              <option value="">All</option>
-              <option value="SUBMITTED">Submitted</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="DRAFT">Draft</option>
-            </select>
-          </label>
-          <label className="admin-form-control">
-            <span>Online status</span>
-            <select name="onlineStatus" defaultValue={filters.onlineStatus ?? ''}>
-              <option value="">All</option>
-              <option value="online">Online</option>
-              <option value="available">Available</option>
-              <option value="busy">Busy</option>
-              <option value="offline">Offline</option>
-            </select>
-          </label>
-          <label className="admin-form-control">
-            <span>Wallet</span>
-            <select name="walletStatus" defaultValue={filters.walletStatus ?? ''}>
-              <option value="">All</option>
-              <option value="negative">Negative</option>
-              <option value="positive">Positive</option>
-              <option value="zero">Zero</option>
-            </select>
-          </label>
-          <label className="admin-form-control">
-            <span>Risk</span>
-            <select name="riskStatus" defaultValue={filters.riskStatus ?? ''}>
-              <option value="">All</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </label>
-          <button className="button button-primary" type="submit">
+          <AdminFormInput
+            defaultValue={filters.city ?? ''}
+            label="City / area"
+            labelVisibility="visible"
+            name="city"
+            placeholder="hcm, hanoi, cau giay"
+          />
+          <AdminFormInput
+            defaultValue={filters.serviceId ?? ''}
+            label="Service"
+            labelVisibility="visible"
+            name="serviceId"
+            placeholder="service id"
+          />
+          <AdminFormSelect
+            defaultValue={filters.verificationStatus ?? ''}
+            label="Verification"
+            labelVisibility="visible"
+            name="verificationStatus"
+            options={verificationStatusOptions}
+          />
+          <AdminFormSelect
+            defaultValue={filters.onlineStatus ?? ''}
+            label="Online status"
+            labelVisibility="visible"
+            name="onlineStatus"
+            options={onlineStatusOptions}
+          />
+          <AdminFormSelect
+            defaultValue={filters.walletStatus ?? ''}
+            label="Wallet"
+            labelVisibility="visible"
+            name="walletStatus"
+            options={walletStatusOptions}
+          />
+          <AdminFormSelect
+            defaultValue={filters.riskStatus ?? ''}
+            label="Risk"
+            labelVisibility="visible"
+            name="riskStatus"
+            options={riskStatusOptions}
+          />
+          <AdminFormControlButton className="button button-primary" type="submit">
             Apply filters
-          </button>
+          </AdminFormControlButton>
         </form>
         {activeFilters.length > 0 ? (
           <div className="partner-overview-active-filters" aria-label="Active partner overview filters">
@@ -277,6 +277,37 @@ export default async function PartnerOverviewPage({
 
 const summaryIcons = [Users, BadgeCheck, ClipboardCheck, RadioTower, MapPinned, UserCheck, Activity, AlertTriangle];
 const activityIcons = [ShieldAlert, Activity, RadioTower, AlertTriangle, Star];
+
+const verificationStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Submitted', value: 'SUBMITTED' },
+  { label: 'Approved', value: 'APPROVED' },
+  { label: 'Rejected', value: 'REJECTED' },
+  { label: 'Draft', value: 'DRAFT' },
+];
+
+const onlineStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Online', value: 'online' },
+  { label: 'Available', value: 'available' },
+  { label: 'Busy', value: 'busy' },
+  { label: 'Offline', value: 'offline' },
+];
+
+const walletStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Negative', value: 'negative' },
+  { label: 'Positive', value: 'positive' },
+  { label: 'Zero', value: 'zero' },
+];
+
+const riskStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Critical', value: 'critical' },
+  { label: 'High', value: 'high' },
+  { label: 'Medium', value: 'medium' },
+  { label: 'Low', value: 'low' },
+];
 
 const selectionIssueOptions = [
   { label: 'All', value: '' },
@@ -763,19 +794,16 @@ function SelectionFrictionCard({
           {filters.verificationStatus ? (
             <input type="hidden" name="verificationStatus" value={filters.verificationStatus} />
           ) : null}
-          <label className="admin-form-control">
-            <span>Sort selection rows</span>
-            <select name="selectionSort" defaultValue={activeSort}>
-              {selectionSortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="button button-secondary" type="submit">
+          <AdminFormSelect
+            defaultValue={activeSort}
+            label="Sort selection rows"
+            labelVisibility="visible"
+            name="selectionSort"
+            options={selectionSortOptions}
+          />
+          <AdminFormControlButton className="button button-secondary" type="submit">
             Apply
-          </button>
+          </AdminFormControlButton>
         </form>
       </div>
       <div className="table-responsive">

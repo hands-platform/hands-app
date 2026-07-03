@@ -41,6 +41,10 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Risk and action queues');
     expect(markup).toContain('card admin-section usage-overview-filter-panel partner-overview-filter-panel');
     expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel partner-overview-filter-panel');
+    expect(markup).not.toContain('class="admin-form-control"');
+    expect(markup).toContain('class="admin-form-input admin-form-control-labeled"');
+    expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
+    expect(markup).toContain('class="admin-form-control-button button button-primary"');
     expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-operating-board');
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
     expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-priority-board');
