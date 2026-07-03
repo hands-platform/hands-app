@@ -343,6 +343,9 @@ function evidenceStatusForLink(label: string, reversal: AdminBookingSettlementRe
   if (label === 'Payment clearing') {
     return reversal.paymentClearingEntries?.[0]?.status ?? '-';
   }
+  if (label === 'Bank match') {
+    return latestActiveBankMatch(reversal)?.status ?? '-';
+  }
   return reversal.originalSettlementSnapshot?.settlementStatus ?? reversal.settlementStatus;
 }
 
@@ -352,6 +355,9 @@ function evidenceSourceForLink(label: string, reversal: AdminBookingSettlementRe
   }
   if (label === 'Payment clearing') {
     return reversal.paymentClearingEntries?.[0]?.sourceKey ?? '-';
+  }
+  if (label === 'Bank match') {
+    return latestActiveBankMatch(reversal)?.sourceKey ?? '-';
   }
   return reversal.originalSettlementSnapshotId;
 }
@@ -399,7 +405,7 @@ type ReversalClearingEntry = NonNullable<AdminBookingSettlementReversalEntry['pa
 
 function bankClearingEvidence(clearing: ReversalClearingEntry | null, fallbackCurrency: string) {
   const matches = clearing?.bankReconciliationMatches ?? [];
-  const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
+  const latestActiveMatch = latestActiveClearingMatch(clearing);
   const matchedAmount = matches.reduce((total, match) => {
     return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
   }, 0);
@@ -418,6 +424,14 @@ function bankClearingEvidence(clearing: ReversalClearingEntry | null, fallbackCu
     matchedAmount,
     remainingAmount,
   };
+}
+
+function latestActiveBankMatch(reversal: AdminBookingSettlementReversalEntry) {
+  return latestActiveClearingMatch(reversal.paymentClearingEntries?.[0] ?? null);
+}
+
+function latestActiveClearingMatch(clearing: ReversalClearingEntry | null) {
+  return clearing?.bankReconciliationMatches?.find((match) => match.status !== 'REVERSED') ?? null;
 }
 
 function booleanMetadata(record: Record<string, unknown> | null, key: string) {

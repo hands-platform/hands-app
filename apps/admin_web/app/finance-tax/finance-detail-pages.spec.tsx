@@ -310,6 +310,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Remaining 350.000 VND');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
     expect(markup).toContain('REFUND-001');
+    expect(markup).toContain('PARTIALLY_MATCHED');
+    expect(markup).toContain('bank-match:refund:1');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
