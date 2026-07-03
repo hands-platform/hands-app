@@ -6,6 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -86,7 +87,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         </div>
         <div className="booking-radar admin-mt-12">
           {relatedBookings.rows.map((row) => (
-            <Link className="card admin-card insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
+            <AdminLinkCard className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
               <strong>{row.title}</strong>
               <p className="muted">{row.subtitle}</p>
               <div className="participant-list">
@@ -96,13 +97,13 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
                   </span>
                 ))}
               </div>
-            </Link>
+            </AdminLinkCard>
           ))}
           {relatedBookings.rows.length === 0 ? (
-            <div className="card admin-card insight-card">
+            <AdminCard className="insight-card">
               <strong>No sampled record</strong>
               <p className="muted">{relatedBookings.emptyText}</p>
-            </div>
+            </AdminCard>
           ) : null}
         </div>
       </div>
@@ -114,10 +115,10 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         </p>
         <div className="booking-radar admin-mt-12">
           {impact.saveChecks.map((check) => (
-            <Link className="card admin-card insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
+            <AdminLinkCard className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
               <strong>{check.label}</strong>
               <p className="muted">{check.detail}</p>
-            </Link>
+            </AdminLinkCard>
           ))}
         </div>
       </div>
@@ -137,10 +138,10 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           </div>
           <div className="booking-radar admin-mt-12">
             {setting.options.map((option) => (
-              <div key={option.value} className="card admin-card insight-card">
+              <AdminCard key={option.value} className="insight-card">
                 <strong>{displayOperationalWording(option.label)}</strong>
                 <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-              </div>
+              </AdminCard>
             ))}
           </div>
         </>

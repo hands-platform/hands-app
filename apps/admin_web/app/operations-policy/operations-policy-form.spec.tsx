@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 import { OperationsPolicyForm } from './operations-policy-form';
+
+const sectionSource = readFileSync(new URL('./operations-policy-form.tsx', import.meta.url), 'utf8');
 
 describe('OperationsPolicyForm', () => {
   it('renders policy status, related booking guidance, and save checks', () => {
@@ -55,6 +59,10 @@ describe('OperationsPolicyForm', () => {
     expect(classNames).toContain('card admin-card insight-card');
     expect(classNames).toContain('admin-form-control-button button button-primary admin-mt-12');
     expect(classNames).not.toContain('field');
+    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminLinkCard');
+    expect(sectionSource).not.toContain('className="card admin-card insight-card"');
+    expect(sectionSource).not.toContain('className="card admin-card insight-card" href=');
   });
 });
 
