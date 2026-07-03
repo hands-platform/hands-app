@@ -458,52 +458,46 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
   const maxSessions = Math.max(1, ...rows.map((row) => row.sessionCount));
 
   return (
-    <section className="card usage-overview-platform-card" aria-labelledby="usage-platform-title">
-      <div className="ops-section-header">
-        <div>
-          <h2 id="usage-platform-title">Platform usage</h2>
-          <p className="muted">
-            Customer app sessions by platform in this range. Use this to spot Android/iOS/Web usage
-            imbalance before checking acquisition or product issues.
-          </p>
-        </div>
-        <Activity size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<Activity size={18} aria-hidden="true" />}
+      bodyClassName={rows.length > 0 ? 'usage-overview-platform-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-platform-card"
+      description="Customer app sessions by platform in this range. Use this to spot Android/iOS/Web usage imbalance before checking acquisition or product issues."
+      title="Platform usage"
+    >
       {rows.length > 0 ? (
-        <div className="usage-overview-platform-list">
-          {rows.map((row) => {
-            const widthPercent = Math.max(6, Math.round((row.sessionCount / maxSessions) * 100));
+        rows.map((row) => {
+          const widthPercent = Math.max(6, Math.round((row.sessionCount / maxSessions) * 100));
 
-            return (
-              <article key={row.platform} className="usage-overview-platform-row">
-                <div className="usage-overview-platform-main">
-                  <span className={`usage-overview-platform-dot is-${row.platform}`} aria-hidden="true" />
-                  <div>
-                    <strong>{platformLabel(row.platform)}</strong>
-                    <small>
-                      {row.lastActivityAt ? `Last active ${formatDateTime(row.lastActivityAt)}` : 'No last activity'}
-                    </small>
-                  </div>
+          return (
+            <article key={row.platform} className="usage-overview-platform-row">
+              <div className="usage-overview-platform-main">
+                <span className={`usage-overview-platform-dot is-${row.platform}`} aria-hidden="true" />
+                <div>
+                  <strong>{platformLabel(row.platform)}</strong>
+                  <small>
+                    {row.lastActivityAt ? `Last active ${formatDateTime(row.lastActivityAt)}` : 'No last activity'}
+                  </small>
                 </div>
-                <div className="usage-overview-platform-value">
-                  <strong>{formatNumber(row.sessionCount)}</strong>
-                  <span>sessions</span>
-                </div>
-                <div className="usage-overview-region-bar" aria-hidden="true">
-                  <i style={{ width: `${widthPercent}%` }} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
+              </div>
+              <div className="usage-overview-platform-value">
+                <strong>{formatNumber(row.sessionCount)}</strong>
+                <span>sessions</span>
+              </div>
+              <div className="usage-overview-region-bar" aria-hidden="true">
+                <i style={{ width: `${widthPercent}%` }} />
+              </div>
+            </article>
+          );
+        })
       ) : (
-        <div className="empty-state usage-overview-empty-state">
+        <>
           <Activity size={20} aria-hidden="true" />
           <strong>No platform session pattern loaded.</strong>
           <p className="muted">Try another range after customer app sessions exist.</p>
-        </div>
+        </>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -513,63 +507,55 @@ function PartnerDiscoveryConversionCard({
   readonly rows: readonly AdminUsageOverviewPartnerDiscoveryRow[];
 }) {
   return (
-    <section
-      className="card usage-overview-discovery-card"
-      aria-labelledby="usage-partner-discovery-title"
+    <AdminSection
+      actions={<Eye size={18} aria-hidden="true" />}
+      bodyClassName={rows.length > 0 ? 'usage-overview-discovery-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-discovery-card"
+      description="Partner profile views, preferred requests, and completed-work conversion in this range."
+      title="Partner discovery conversion"
     >
-      <div className="ops-section-header">
-        <div>
-          <h2 id="usage-partner-discovery-title">Partner discovery conversion</h2>
-          <p className="muted">
-            Partner profile views, preferred requests, and completed-work conversion in this range.
-          </p>
-        </div>
-        <Eye size={18} aria-hidden="true" />
-      </div>
       {rows.length > 0 ? (
-        <div className="usage-overview-discovery-list">
-          {rows.map((row) => (
-            <article key={row.id} className="usage-overview-discovery-row">
-              <span className="usage-overview-rank">#{row.rank}</span>
-              <div className="usage-overview-name-cell">
-                <span className="usage-overview-avatar">
-                  <Users size={15} aria-hidden="true" />
-                </span>
-                <div>
-                  {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
-                  {row.secondary ? <small>{row.secondary}</small> : null}
-                </div>
+        rows.map((row) => (
+          <article key={row.id} className="usage-overview-discovery-row">
+            <span className="usage-overview-rank">#{row.rank}</span>
+            <div className="usage-overview-name-cell">
+              <span className="usage-overview-avatar">
+                <Users size={15} aria-hidden="true" />
+              </span>
+              <div>
+                {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
+                {row.secondary ? <small>{row.secondary}</small> : null}
               </div>
-              <div className="usage-overview-discovery-metrics">
-                <span>
-                  <strong>{formatNumber(row.viewCount)}</strong>
-                  Views
-                </span>
-                <span>
-                  <strong>{formatNumber(row.requestCount)}</strong>
-                  Requests
-                </span>
-                <span>
-                  <strong>{formatNumber(row.completedCount)}</strong>
-                  Done
-                </span>
-              </div>
-              <div className="usage-overview-discovery-rates">
-                <span>{formatNumber(row.viewToRequestRate)}% view to request</span>
-                <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
-              </div>
-              <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
-            </article>
-          ))}
-        </div>
+            </div>
+            <div className="usage-overview-discovery-metrics">
+              <span>
+                <strong>{formatNumber(row.viewCount)}</strong>
+                Views
+              </span>
+              <span>
+                <strong>{formatNumber(row.requestCount)}</strong>
+                Requests
+              </span>
+              <span>
+                <strong>{formatNumber(row.completedCount)}</strong>
+                Done
+              </span>
+            </div>
+            <div className="usage-overview-discovery-rates">
+              <span>{formatNumber(row.viewToRequestRate)}% view to request</span>
+              <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
+            </div>
+            <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
+          </article>
+        ))
       ) : (
-        <div className="empty-state usage-overview-empty-state">
+        <>
           <Eye size={20} aria-hidden="true" />
           <strong>No Partner discovery conversion loaded.</strong>
           <p className="muted">Try another range after Partner profile views or requests exist.</p>
-        </div>
+        </>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -598,57 +584,54 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
   const maxBookings = Math.max(1, ...rows.map((row) => row.bookingCount));
 
   return (
-    <article className="card usage-overview-behavior-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Popular services</h2>
-          <p className="muted">Service choices from bookings created in this usage range.</p>
-        </div>
-        <Trophy size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<Trophy size={18} aria-hidden="true" />}
+      bodyClassName={rows.length > 0 ? 'usage-overview-service-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-behavior-card"
+      description="Service choices from bookings created in this usage range."
+      title="Popular services"
+    >
       {rows.length > 0 ? (
-        <div className="usage-overview-service-list">
-          {rows.map((row) => {
-            const widthPercent = Math.max(6, Math.round((row.bookingCount / maxBookings) * 100));
+        rows.map((row) => {
+          const widthPercent = Math.max(6, Math.round((row.bookingCount / maxBookings) * 100));
 
-            return (
-              <article key={row.id} className="usage-overview-service-row">
-                <div className="usage-overview-service-main">
-                  <span className="usage-overview-rank">#{row.rank}</span>
-                  <div>
-                    <strong>{row.label}</strong>
-                    {row.secondary ? <small>{row.secondary}</small> : null}
-                  </div>
+          return (
+            <article key={row.id} className="usage-overview-service-row">
+              <div className="usage-overview-service-main">
+                <span className="usage-overview-rank">#{row.rank}</span>
+                <div>
+                  <strong>{row.label}</strong>
+                  {row.secondary ? <small>{row.secondary}</small> : null}
                 </div>
-                <div className="usage-overview-service-metrics">
-                  <span>
-                    <strong>{formatNumber(row.bookingCount)}</strong>
-                    bookings
-                  </span>
-                  <span>
-                    <strong>{formatNumber(row.quantity)}</strong>
-                    quantity
-                  </span>
-                  <span>
-                    <strong>{money(row.amount)}</strong>
-                    booked value
-                  </span>
-                </div>
-                <div className="usage-overview-region-bar" aria-hidden="true">
-                  <i style={{ width: `${widthPercent}%` }} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
+              </div>
+              <div className="usage-overview-service-metrics">
+                <span>
+                  <strong>{formatNumber(row.bookingCount)}</strong>
+                  bookings
+                </span>
+                <span>
+                  <strong>{formatNumber(row.quantity)}</strong>
+                  quantity
+                </span>
+                <span>
+                  <strong>{money(row.amount)}</strong>
+                  booked value
+                </span>
+              </div>
+              <div className="usage-overview-region-bar" aria-hidden="true">
+                <i style={{ width: `${widthPercent}%` }} />
+              </div>
+            </article>
+          );
+        })
       ) : (
-        <div className="empty-state usage-overview-empty-state">
+        <>
           <Trophy size={20} aria-hidden="true" />
           <strong>No service booking pattern loaded.</strong>
           <p className="muted">Try another range after bookings exist.</p>
-        </div>
+        </>
       )}
-    </article>
+    </AdminSection>
   );
 }
 
@@ -660,44 +643,41 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
   const maxActivity = Math.max(1, ...activeRows.map((row) => row.totalActivityCount));
 
   return (
-    <article className="card usage-overview-behavior-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Hourly activity</h2>
-          <p className="muted">Busiest hours from customer sessions and preferred-Partner requests.</p>
-        </div>
-        <Activity size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<Activity size={18} aria-hidden="true" />}
+      bodyClassName={activeRows.length > 0 ? 'usage-overview-hour-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-behavior-card"
+      description="Busiest hours from customer sessions and preferred-Partner requests."
+      title="Hourly activity"
+    >
       {activeRows.length > 0 ? (
-        <div className="usage-overview-hour-list">
-          {activeRows.map((row) => {
-            const widthPercent = Math.max(6, Math.round((row.totalActivityCount / maxActivity) * 100));
+        activeRows.map((row) => {
+          const widthPercent = Math.max(6, Math.round((row.totalActivityCount / maxActivity) * 100));
 
-            return (
-              <article key={row.hour} className="usage-overview-hour-row">
-                <div>
-                  <strong>{row.label}</strong>
-                  <span>{formatNumber(row.totalActivityCount)} signals</span>
-                </div>
-                <div className="usage-overview-region-bar" aria-hidden="true">
-                  <i style={{ width: `${widthPercent}%` }} />
-                </div>
-                <div className="usage-overview-hour-metrics">
-                  <span>{formatNumber(row.customerSessionCount)} sessions</span>
-                  <span>{formatNumber(row.bookingRequestCount)} requests</span>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+          return (
+            <article key={row.hour} className="usage-overview-hour-row">
+              <div>
+                <strong>{row.label}</strong>
+                <span>{formatNumber(row.totalActivityCount)} signals</span>
+              </div>
+              <div className="usage-overview-region-bar" aria-hidden="true">
+                <i style={{ width: `${widthPercent}%` }} />
+              </div>
+              <div className="usage-overview-hour-metrics">
+                <span>{formatNumber(row.customerSessionCount)} sessions</span>
+                <span>{formatNumber(row.bookingRequestCount)} requests</span>
+              </div>
+            </article>
+          );
+        })
       ) : (
-        <div className="empty-state usage-overview-empty-state">
+        <>
           <Activity size={20} aria-hidden="true" />
           <strong>No hourly usage pattern loaded.</strong>
           <p className="muted">Try another range after customer app activity exists.</p>
-        </div>
+        </>
       )}
-    </article>
+    </AdminSection>
   );
 }
 
@@ -763,23 +743,20 @@ function UsageInsightCard({
   readonly title: string;
 }) {
   return (
-    <article className="card usage-overview-insight-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
+    <AdminSection
+      actions={<Icon size={18} aria-hidden="true" />}
+      bodyClassName="usage-overview-mini-metric-list"
+      className="usage-overview-insight-card"
+      description={description}
+      title={title}
+    >
+      {rows.map((row) => (
+        <div key={row.label} className={`usage-overview-mini-metric is-${row.tone}`}>
+          <span>{row.label}</span>
+          <strong>{formatNumber(row.value)}</strong>
         </div>
-        <Icon size={18} aria-hidden="true" />
-      </div>
-      <div className="usage-overview-mini-metric-list">
-        {rows.map((row) => (
-          <div key={row.label} className={`usage-overview-mini-metric is-${row.tone}`}>
-            <span>{row.label}</span>
-            <strong>{formatNumber(row.value)}</strong>
-          </div>
-        ))}
-      </div>
-    </article>
+      ))}
+    </AdminSection>
   );
 }
 
@@ -797,30 +774,29 @@ function PaymentCouponInsightCard({
   const maxAmount = Math.max(1, ...rows.map((row) => row.amount));
 
   return (
-    <article className="card usage-overview-insight-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payment & coupon</h2>
-          <p className="muted">Completed-booking payment mix and coupon usage signal.</p>
-        </div>
-        <WalletCards size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<WalletCards size={18} aria-hidden="true" />}
+      bodyClassName="usage-overview-payment-card-body"
+      className="usage-overview-insight-card"
+      description="Completed-booking payment mix and coupon usage signal."
+      title="Payment & coupon"
+    >
       <div className="usage-overview-payment-summary">
-          <div className="usage-overview-mini-metric is-info">
-            <span>Coupon bookings</span>
-            <strong>{formatNumber(couponBookingCount)}</strong>
-          </div>
-          <div className="usage-overview-mini-metric is-danger">
-            <span>Failed payments</span>
-            <strong>{formatNumber(paymentFailureCount)}</strong>
-          </div>
-          <div className="usage-overview-mini-metric is-warning">
-            <span>Refund amount</span>
-            <strong>{money(refundAmount)}</strong>
-          </div>
-          <div className="usage-overview-mini-metric is-primary">
-            <span>Methods</span>
-            <strong>{formatNumber(rows.length)}</strong>
+        <div className="usage-overview-mini-metric is-info">
+          <span>Coupon bookings</span>
+          <strong>{formatNumber(couponBookingCount)}</strong>
+        </div>
+        <div className="usage-overview-mini-metric is-danger">
+          <span>Failed payments</span>
+          <strong>{formatNumber(paymentFailureCount)}</strong>
+        </div>
+        <div className="usage-overview-mini-metric is-warning">
+          <span>Refund amount</span>
+          <strong>{money(refundAmount)}</strong>
+        </div>
+        <div className="usage-overview-mini-metric is-primary">
+          <span>Methods</span>
+          <strong>{formatNumber(rows.length)}</strong>
         </div>
       </div>
       {rows.length > 0 ? (
@@ -852,7 +828,7 @@ function PaymentCouponInsightCard({
           <p className="muted">Try another usage range after completed payments exist.</p>
         </div>
       )}
-    </article>
+    </AdminSection>
   );
 }
 
@@ -869,58 +845,52 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
   );
 
   return (
-    <article className="card usage-overview-ranking-card usage-overview-region-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Region usage</h2>
-          <p className="muted">
-            RegionCode aggregate from stored customer login address and booking address snapshots. It
-            intentionally excludes individual location points.
-          </p>
-        </div>
-        <MapPinned size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<MapPinned size={18} aria-hidden="true" />}
+      bodyClassName={activeRows.length > 0 ? 'usage-overview-region-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-ranking-card usage-overview-region-card"
+      description="RegionCode aggregate from stored customer login address and booking address snapshots. It intentionally excludes individual location points."
+      title="Region usage"
+    >
       {activeRows.length > 0 ? (
-        <div className="usage-overview-region-list">
-          {activeRows.map((row) => {
-            const activity = row.customerSessionCount + row.bookingRequestCount + row.completedBookingCount;
-            const widthPercent = Math.max(6, Math.round((activity / maxRegionActivity) * 100));
+        activeRows.map((row) => {
+          const activity = row.customerSessionCount + row.bookingRequestCount + row.completedBookingCount;
+          const widthPercent = Math.max(6, Math.round((activity / maxRegionActivity) * 100));
 
-            return (
-              <article key={row.regionCode} className="usage-overview-region-row">
-                <div className="vietnam-region-name">
-                  <span>{row.shortName}</span>
-                  <strong>{row.regionName}</strong>
-                </div>
-                <div className="usage-overview-region-metrics">
-                  <span>
-                    <strong>{formatNumber(row.customerSessionCount)}</strong>
-                    Sessions
-                  </span>
-                  <span>
-                    <strong>{formatNumber(row.bookingRequestCount)}</strong>
-                    Requests
-                  </span>
-                  <span>
-                    <strong>{formatNumber(row.completedBookingCount)}</strong>
-                    Completed
-                  </span>
-                </div>
-                <div className="usage-overview-region-bar" aria-hidden="true">
-                  <i style={{ width: `${widthPercent}%` }} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
+          return (
+            <article key={row.regionCode} className="usage-overview-region-row">
+              <div className="vietnam-region-name">
+                <span>{row.shortName}</span>
+                <strong>{row.regionName}</strong>
+              </div>
+              <div className="usage-overview-region-metrics">
+                <span>
+                  <strong>{formatNumber(row.customerSessionCount)}</strong>
+                  Sessions
+                </span>
+                <span>
+                  <strong>{formatNumber(row.bookingRequestCount)}</strong>
+                  Requests
+                </span>
+                <span>
+                  <strong>{formatNumber(row.completedBookingCount)}</strong>
+                  Completed
+                </span>
+              </div>
+              <div className="usage-overview-region-bar" aria-hidden="true">
+                <i style={{ width: `${widthPercent}%` }} />
+              </div>
+            </article>
+          );
+        })
       ) : (
-        <div className="empty-state">
+        <>
           <MapPinned size={20} aria-hidden="true" />
           <strong>No region usage loaded.</strong>
           <p className="muted">Try another stored usage range.</p>
-        </div>
+        </>
       )}
-    </article>
+    </AdminSection>
   );
 }
 
@@ -938,44 +908,41 @@ function UsageRankingCard({
   valueHeading: string;
 }) {
   return (
-    <article className="card usage-overview-ranking-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <Trophy size={18} aria-hidden="true" />
-      </div>
+    <AdminSection
+      actions={<Trophy size={18} aria-hidden="true" />}
+      bodyClassName={rows.length > 0 ? 'usage-overview-ranking-list' : 'empty-state usage-overview-empty-state'}
+      className="usage-overview-ranking-card"
+      description={description}
+      title={title}
+    >
       {rows.length > 0 ? (
-        <div className="usage-overview-ranking-list" aria-label={title}>
-          {rows.map((row) => (
-            <article key={`${title}-${row.id}`} className="usage-overview-ranking-row">
-              <span className="usage-overview-rank">#{row.rank}</span>
-              <div className="usage-overview-name-cell">
-                <span className="usage-overview-avatar">
-                  <Users size={15} aria-hidden="true" />
-                </span>
-                <div>
-                  {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
-                  {row.secondary ? <small>{row.secondary}</small> : null}
-                </div>
+        rows.map((row) => (
+          <article key={`${title}-${row.id}`} className="usage-overview-ranking-row">
+            <span className="usage-overview-rank">#{row.rank}</span>
+            <div className="usage-overview-name-cell">
+              <span className="usage-overview-avatar">
+                <Users size={15} aria-hidden="true" />
+              </span>
+              <div>
+                {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
+                {row.secondary ? <small>{row.secondary}</small> : null}
               </div>
-              <div className="usage-overview-row-value">
-                <strong>{formatNumber(row.value)}</strong>
-                <span>{valueHeading}</span>
-              </div>
-              <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
-            </article>
-          ))}
-        </div>
+            </div>
+            <div className="usage-overview-row-value">
+              <strong>{formatNumber(row.value)}</strong>
+              <span>{valueHeading}</span>
+            </div>
+            <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
+          </article>
+        ))
       ) : (
-        <div className="empty-state usage-overview-empty-state">
+        <>
           <MapPinned size={20} aria-hidden="true" />
           <strong>{emptyMessage}</strong>
           <p className="muted">Try another stored usage range.</p>
-        </div>
+        </>
       )}
-    </article>
+    </AdminSection>
   );
 }
 
