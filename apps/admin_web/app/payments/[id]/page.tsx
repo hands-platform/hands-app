@@ -4,6 +4,7 @@ import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MetricCard } from '../../../components/metric-card';
 import {
   compactValue,
@@ -76,20 +77,12 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
   );
 
   return (
-    <>
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/payments">
-              Back to payments
-            </Link>
-          </p>
-          <h1>Payment operation detail</h1>
-          <p className="muted">
-            Payment {shortId(payment.id)} - {payment.method} - {payment.status}
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
+          <Link className="button button-secondary" href="/payments">
+            Back to payments
+          </Link>
           {booking?.id ? (
             <Link className="text-link" href={`/bookings/${booking.id}`}>
               Open booking
@@ -110,9 +103,11 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
               Open chat archive
             </Link>
           ) : null}
-        </div>
-      </section>
-
+        </>
+      }
+      description={`Payment ${shortId(payment.id)} - ${payment.method} - ${payment.status}`}
+      title="Payment operation detail"
+    >
       <section className="grid admin-mb-16">
         <MetricCard label="Payment status" value={payment.status} helper={paymentStatusHint(payment)} />
         <MetricCard label="Method" value={payment.method} helper={gatewayReferenceLabel(payment)} />
@@ -242,7 +237,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
           ))}
         </AdminDataTable>
       </AdminFilterPanel>
-    </>
+    </AdminPageTemplate>
   );
 }
 

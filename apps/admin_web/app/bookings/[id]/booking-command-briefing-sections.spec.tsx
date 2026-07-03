@@ -1,5 +1,8 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import {
+  BookingDetailToolbar,
   BookingCommandDecisionStripSection,
   BookingMatchingRuleSnapshotSection,
   BookingMvpAuthorityContractSection,
@@ -38,7 +41,7 @@ describe('BookingMvpAuthorityContractSection', () => {
       expect.arrayContaining([
         'card admin-section admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
         'button button-secondary admin-inline-action',
         'pill pill-success',
       ]),
@@ -47,6 +50,24 @@ describe('BookingMvpAuthorityContractSection', () => {
 });
 
 describe('BookingCommandBriefingSections', () => {
+  it('renders the booking detail header on the shared Vuexy page header surface', () => {
+    const toolbar = BookingDetailToolbar({
+      bookingId: 'booking-detail-1',
+      serviceLabel: 'Massage',
+      status: 'COMPLETED',
+      customerProfileId: 'customer-1',
+      finalPartnerId: 'partner-1',
+      chatRoomId: 'room-1',
+      paymentId: 'payment-1',
+      refundId: 'refund-1',
+    });
+    const markup = renderToStaticMarkup(toolbar);
+
+    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('Booking booking-');
+    expect(markup).toContain('Back to booking monitor');
+  });
+
   it('renders booking command briefing cards with the shared Vuexy admin section surface', () => {
     const linkRows = [
       {

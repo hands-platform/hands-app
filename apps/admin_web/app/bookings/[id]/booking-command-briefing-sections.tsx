@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -133,20 +134,13 @@ export function BookingDetailToolbar({
   refundId,
 }: BookingDetailToolbarProps) {
   return (
-    <section className="toolbar">
-      <div>
-        <p className="muted">
+    <AdminPageTemplate
+      actions={
+        <>
           <Link className="button button-secondary admin-inline-action" href="/bookings">
             <ArrowLeft aria-hidden="true" size={14} />
             Back to booking monitor
           </Link>
-        </p>
-        <h1>Booking {shortId(bookingId)}</h1>
-        <p className="muted">
-          {serviceLabel} - {status}
-        </p>
-      </div>
-      <div className="actions">
         {customerProfileId && (
           <Link className="button button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
             <User aria-hidden="true" size={14} />
@@ -196,8 +190,13 @@ export function BookingDetailToolbar({
             Open refund
           </Link>
         )}
-      </div>
-    </section>
+        </>
+      }
+      description={`${serviceLabel} - ${status}`}
+      title={`Booking ${shortId(bookingId)}`}
+    >
+      {null}
+    </AdminPageTemplate>
   );
 }
 

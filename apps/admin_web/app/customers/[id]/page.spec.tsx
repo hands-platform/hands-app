@@ -34,6 +34,7 @@ describe('CustomerDetailPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('id="customer-booking-create-gates"');
     expect(markup).toContain('id="customer-operator-command-queue"');
     expect(markup).toContain('id="record-date-filter"');

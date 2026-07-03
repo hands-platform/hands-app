@@ -21,6 +21,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import {
   AdminAppSession,
@@ -364,20 +365,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
   ];
   return (
-    <div className="customer-detail-page">
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/customers">
-              Back to customers
-            </Link>
-          </p>
-          <h1>Customer detail</h1>
-          <p className="muted">
-            {customer.user?.fullName ?? 'Unnamed customer'} / {customer.user?.phone ?? 'No phone'}
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
+          <Link className="button button-secondary" href="/customers">
+            Back to customers
+          </Link>
           {latestBooking?.id && (
             <Link className="text-link" href={`/bookings/${latestBooking.id}`}>
               Open latest booking
@@ -389,9 +382,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
             All customer chats
           </Link>
-        </div>
-      </section>
-
+        </>
+      }
+      contentClassName="customer-detail-page"
+      description={`${customer.user?.fullName ?? 'Unnamed customer'} / ${customer.user?.phone ?? 'No phone'}`}
+      title="Customer detail"
+    >
       <CustomerDetailSectionBand
         eyebrow="Operations"
         title="Customer operating picture"
@@ -870,7 +866,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </AdminSection>
       </CustomerDetailSectionBand>
-    </div>
+    </AdminPageTemplate>
   );
 }
 
