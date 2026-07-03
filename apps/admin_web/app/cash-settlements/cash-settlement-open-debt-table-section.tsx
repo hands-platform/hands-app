@@ -8,6 +8,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { PillClassBadge } from '../../components/status-badge';
 import { recordPartnerBankDeposit } from './actions';
 import { cashSettlementHref } from './cash-settlement-page-filters';
 import type { CashSettlementFilters, CashSettlementPagination } from './cash-settlement-page-types';
@@ -147,7 +148,7 @@ export function CashSettlementOpenDebtTableSection({
                     <div className="setup-stage-list admin-mt-8">
                       {row.actionRows.map((item) => (
                         <div className="setup-stage-item" key={`${row.earningId}-${item.action}`}>
-                          <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                          <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                           <div>
                             <strong>{item.action}</strong>
                             <p className="muted">{item.reason}</p>

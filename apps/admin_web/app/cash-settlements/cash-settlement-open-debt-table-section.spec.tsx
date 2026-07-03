@@ -69,6 +69,19 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(markup).not.toContain('class="form-input"');
   });
 
+  it('normalizes legacy action pill classes without duplicating the pill prefix', () => {
+    const section = CashSettlementOpenDebtTableSection({
+      pagination: pagination([buildRow({ actionPillClass: 'pill pill-danger' })]),
+      filters: { page: 1, pageSize: 10, q: '', queue: 'all', range: 'today' },
+      showOperationsEvidence: true,
+    });
+
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('class="pill pill-danger"');
+    expect(markup).not.toContain('pill pill pill-danger');
+  });
+
   it('renders empty state when no open cash debt rows exist', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([]),
@@ -98,13 +111,13 @@ function pagination(
   };
 }
 
-function buildRow(): CashSettlementOpenDebtTableRow {
+function buildRow(input: { actionPillClass?: string } = {}): CashSettlementOpenDebtTableRow {
   return {
     actionRows: [
       {
         action: 'Settle wallet debt',
         operatorRule: 'Settle only after deposit evidence or approved offset.',
-        pillClass: 'pill-danger',
+        pillClass: input.actionPillClass ?? 'pill-danger',
         reason: '500.000 VND remains as HANDS fee/tax wallet debt.',
         status: 'Debt open',
       },
