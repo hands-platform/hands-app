@@ -4337,11 +4337,6 @@ a.action-button-card:hover {
   scrollbar-gutter: auto;
 }
 
-.partners-page > .vuexy-partner-page-header {
-  margin-bottom: 0;
-  margin-top: 0;
-}
-
 .partner-primary-list-tabs {
   align-items: center;
   background: var(--admin-surface);

@@ -94,6 +94,8 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('card admin-section admin-mb-16 tax-policy-withholding-preview-card');
     expect(markup).toContain('card admin-section admin-mb-16 tax-policy-create-policy-card');
     expect(markup).toContain('card admin-card tax-policy-version-card');
+    expect(markup).toContain('ops-section-header');
+    expect(markup).not.toContain('toolbar admin-mb-12');
     expect(markup).toContain('card admin-section admin-mt-16 tax-policy-audit-summary-card');
     expect(markup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
   });

@@ -7,7 +7,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
@@ -222,18 +222,20 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <section className="grid tax-policy-version-grid">
         {policies.map((policy) => (
           <AdminCard className="tax-policy-version-card" key={policy.id}>
-            <div className="toolbar admin-mb-12">
-              <div>
-                <h2>{policy.name}</h2>
-                <p className="muted">
+            <AdminSectionHeader
+              description={
+                <>
                   {formatDateTime(policy.effectiveFrom, 'No date')}
                   {policy.effectiveTo ? ` - ${formatDateTime(policy.effectiveTo, 'No date')}` : ''}
-                </p>
-              </div>
-              <span className={`pill ${policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}`}>
-                {policy.status}
-              </span>
-            </div>
+                </>
+              }
+              status={
+                <span className={`pill ${policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}`}>
+                  {policy.status}
+                </span>
+              }
+              title={policy.name}
+            />
             {policy.notes ? <p className="muted">{policy.notes}</p> : null}
 
             <form action={updateTaxPolicyVersion} className="form-grid compact-form">

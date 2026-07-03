@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
@@ -246,7 +247,14 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
 
   return (
-    <div className="partners-page">
+    <AdminPageTemplate
+      contentClassName="partners-page"
+      description={
+        partnerReviewContent?.description ??
+        'Partner directory aligned to the Vuexy management table using live onboarding, wallet, app session, location, and booking data.'
+      }
+      title={partnerPageTitle}
+    >
       {accountConfirmation ? (
         <ConfirmDialog
           action={partnerAccountServerAction(accountConfirmation.action)}
@@ -288,15 +296,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           tone={pushDeviceConfirmation.tone}
         />
       ) : null}
-      <div className="toolbar admin-page-header vuexy-partner-page-header">
-        <div>
-          <h1>{partnerPageTitle}</h1>
-          <p className="muted">
-            {partnerReviewContent?.description ??
-              'Partner directory aligned to the Vuexy management table using live onboarding, wallet, app session, location, and booking data.'}
-          </p>
-        </div>
-      </div>
       <PartnerPrimaryListTabs activeMode={partnerListMode} />
       <PartnerFilterBoard
         activeFilters={activeFilters}
@@ -422,6 +421,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           />
         </>
       ) : null}
-    </div>
+    </AdminPageTemplate>
   );
 }
