@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PillClassBadge } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
 type OperationsPolicyActionGateChecklistSectionProps = {
@@ -38,7 +39,7 @@ export function OperationsPolicyActionGateChecklistSection({
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((item) => (
           <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-            <span className={`pill ${item.pillClass}`}>{item.status}</span>
+            <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <small>Current: {item.current}</small>
