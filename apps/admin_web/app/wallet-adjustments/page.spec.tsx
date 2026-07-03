@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -16,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedAdminPost = vi.mocked(adminPost);
+const pageSource = readFileSync('app/wallet-adjustments/page.tsx', 'utf8');
 
 describe('WalletAdjustmentsPage', () => {
   beforeEach(() => {
@@ -298,6 +300,12 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-partner-1');
     expect(markup).toContain('Launch bonus');
+  });
+
+  it('uses the shared FinanceDataTable shell for wallet ledger tables', () => {
+    expect(pageSource).toContain('FinanceDataTable');
+    expect(pageSource).not.toContain('AdminTableScroll');
+    expect(pageSource).not.toContain('className="vuexy-booking-table"');
   });
 
   it('uses server pagination for manual wallet adjustment history', async () => {

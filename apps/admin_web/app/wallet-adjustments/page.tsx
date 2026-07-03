@@ -1,6 +1,5 @@
 import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
 
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -21,6 +20,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGet, adminPost } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { createManualWalletAdjustment } from './actions';
 
 type WalletAdjustmentsPageProps = {
@@ -203,51 +203,48 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         resultTone={adjustmentTotal > 0 ? 'info' : 'warning'}
         title="Manual adjustment history"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No manual wallet adjustment ledger rows found for this filter."
-            headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
-            rowCount={historyPagination.rows.length}
-          >
-            {historyPagination.rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{formatDateTime(row.createdAt)}</strong>
-                  <p className="muted">{row.ledgerType}</p>
-                </td>
-                <td>
-                  <strong>{row.ownerLabel}</strong>
-                  <p className="muted">
-                    {row.ownerType} / {row.ownerPhone}
-                  </p>
-                </td>
-                <td>
-                  <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
-                    {row.direction}
-                  </StatusBadge>
-                  <p className="muted admin-mt-6">{row.adjustmentType}</p>
-                </td>
-                <td>
-                  <strong>{formatMoney(row.amount, row.currency)}</strong>
-                  <p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>
-                </td>
-                <td>
-                  <strong>{row.approvalId ?? 'Missing approval'}</strong>
-                  <p className="muted">
-                    {row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}
-                  </p>
-                  <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
-                </td>
-                <td>
-                  <strong>{formatBalanceChange(row)}</strong>
-                  <p className="muted">{walletImpactLabel(row)}</p>
-                </td>
-                <td>{row.reason ?? 'No reason stored'}</td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+        <FinanceDataTable
+          emptyMessage="No manual wallet adjustment ledger rows found for this filter."
+          headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
+          rowCount={historyPagination.rows.length}
+        >
+          {historyPagination.rows.map((row) => (
+            <tr key={row.id}>
+              <td>
+                <strong>{formatDateTime(row.createdAt)}</strong>
+                <p className="muted">{row.ledgerType}</p>
+              </td>
+              <td>
+                <strong>{row.ownerLabel}</strong>
+                <p className="muted">
+                  {row.ownerType} / {row.ownerPhone}
+                </p>
+              </td>
+              <td>
+                <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
+                  {row.direction}
+                </StatusBadge>
+                <p className="muted admin-mt-6">{row.adjustmentType}</p>
+              </td>
+              <td>
+                <strong>{formatMoney(row.amount, row.currency)}</strong>
+                <p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>
+              </td>
+              <td>
+                <strong>{row.approvalId ?? 'Missing approval'}</strong>
+                <p className="muted">
+                  {row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}
+                </p>
+                <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
+              </td>
+              <td>
+                <strong>{formatBalanceChange(row)}</strong>
+                <p className="muted">{walletImpactLabel(row)}</p>
+              </td>
+              <td>{row.reason ?? 'No reason stored'}</td>
+            </tr>
+          ))}
+        </FinanceDataTable>
         <div className="vuexy-booking-table-footer">
           <span>
             Showing {historyPagination.from} to {historyPagination.to} of {historyPagination.totalRows} entries
@@ -319,28 +316,25 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           resultTone="warning"
           title="Accounting entries"
         >
-          <AdminTableScroll>
-            <AdminDataTable
-              className="vuexy-booking-table"
-              emptyMessage="No accounting entries returned."
-              headers={['Debit account', 'Credit account', 'Amount']}
-              rowCount={preview.accountingEntries.length}
-            >
-              {preview.accountingEntries.map((entry) => (
-                <tr key={`${entry.accountDebit}:${entry.accountCredit}:${entry.amount}`}>
-                  <td>
-                    <strong>{formatAccountName(entry.accountDebit)}</strong>
-                    <p className="muted">{entry.accountDebit}</p>
-                  </td>
-                  <td>
-                    <strong>{formatAccountName(entry.accountCredit)}</strong>
-                    <p className="muted">{entry.accountCredit}</p>
-                  </td>
-                  <td>{formatMoney(entry.amount, currency)}</td>
-                </tr>
-              ))}
-            </AdminDataTable>
-          </AdminTableScroll>
+          <FinanceDataTable
+            emptyMessage="No accounting entries returned."
+            headers={['Debit account', 'Credit account', 'Amount']}
+            rowCount={preview.accountingEntries.length}
+          >
+            {preview.accountingEntries.map((entry) => (
+              <tr key={`${entry.accountDebit}:${entry.accountCredit}:${entry.amount}`}>
+                <td>
+                  <strong>{formatAccountName(entry.accountDebit)}</strong>
+                  <p className="muted">{entry.accountDebit}</p>
+                </td>
+                <td>
+                  <strong>{formatAccountName(entry.accountCredit)}</strong>
+                  <p className="muted">{entry.accountCredit}</p>
+                </td>
+                <td>{formatMoney(entry.amount, currency)}</td>
+              </tr>
+            ))}
+          </FinanceDataTable>
         </AdminFilterPanel>
       ) : null}
     </AdminPageTemplate>
