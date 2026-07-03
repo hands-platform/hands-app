@@ -1,3 +1,5 @@
+import { AdminSection } from '../../components/admin-surface';
+
 const COMPLETED_CLOSEOUT_FLOW = [
   {
     helper:
@@ -21,17 +23,11 @@ const COMPLETED_CLOSEOUT_FLOW = [
 
 export function BookingCompletedCloseoutSection() {
   return (
-    <section className="card booking-completed-closeout-card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Completed closeout flow</h2>
-          <p>
-            Completed bookings stay here until service evidence, closeout records, retained chat, and
-            audit trail are aligned.
-          </p>
-        </div>
-      </div>
-
+    <AdminSection
+      className="booking-completed-closeout-card admin-mt-16"
+      description="Completed bookings stay here until service evidence, closeout records, retained chat, and audit trail are aligned."
+      title="Completed closeout flow"
+    >
       <div className="booking-post-match-decision-flow admin-mt-14" aria-label="Completed closeout flow">
         {COMPLETED_CLOSEOUT_FLOW.map((item) => (
           <div className="booking-post-match-decision-step" key={item.label}>
@@ -49,6 +45,6 @@ export function BookingCompletedCloseoutSection() {
           only when customer, matched Partner, finance, or system evidence needs deeper inspection.
         </span>
       </div>
-    </section>
+    </AdminSection>
   );
 }

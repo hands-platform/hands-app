@@ -18,6 +18,7 @@ describe('BookingCompletedCloseoutSection', () => {
     expect(rendered).toContain('Completed detail');
     expect(rendered).toContain('Admin handling rule');
     expect(rendered).toContain('normal closeout review');
+    expect(markup).toContain('admin-section');
     expect(markup).toContain('booking-completed-closeout-card');
     expect(markup).toContain('aria-label="Completed closeout flow"');
     expect(markup).toContain('booking-post-match-decision-flow');
