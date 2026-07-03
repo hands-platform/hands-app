@@ -1,5 +1,5 @@
 import { OperationsPolicyOwnerDecisionBacklogSection } from './operations-policy-owner-decision-backlog-section';
-import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
   it('renders owner pressure, backlog choices, and review links', () => {
@@ -51,5 +51,46 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/bookings?view=matching', '/operations-policy#policy-matching']),
     );
+  });
+
+  it('does not duplicate the base pill class for pressure and backlog badges', () => {
+    const section = OperationsPolicyOwnerDecisionBacklogSection({
+      pressure: {
+        alertCount: 1,
+        cards: [
+          {
+            className: 'ops-task-pending',
+            detail: 'First-pick response rate needs review.',
+            href: '/bookings?view=matching',
+            operatorAction: 'Review matching records.',
+            pillClass: 'pill pill-warn',
+            status: 'Needs review',
+            title: 'Matching pressure',
+          },
+        ],
+        summary: [],
+      },
+      backlog: [
+        {
+          className: 'ops-task-pending',
+          decisionTrigger: 'Revisit when response rate drops.',
+          evidence: 'Review open matching wait time.',
+          href: '/operations-policy#policy-matching',
+          options: [],
+          owner: 'Dispatch',
+          pillClass: 'pill pill-info',
+          question: 'Should the first-pick Partner keep the full response window?',
+          recommendation: 'Keep the launch policy until real data is stable.',
+          title: 'First-pick Partner timer',
+        },
+      ],
+    });
+
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toContain('pill pill-warn');
+    expect(classNames).toContain('pill pill-info');
+    expect(classNames).not.toContain('pill pill pill-warn');
+    expect(classNames).not.toContain('pill pill pill-info');
   });
 });

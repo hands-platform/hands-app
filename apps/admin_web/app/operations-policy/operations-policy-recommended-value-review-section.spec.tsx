@@ -1,5 +1,5 @@
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyRecommendedValueReviewSection', () => {
   it('renders owner choice warning cards', () => {
@@ -59,5 +59,28 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
 
     expect(rendered).toContain('Aligned');
     expect(rendered).toContain('Recommended values are aligned');
+  });
+
+  it('does not duplicate the base pill class for owner choice cards', () => {
+    const section = OperationsPolicyRecommendedValueReviewSection({
+      review: {
+        cards: [
+          {
+            className: 'ops-task-warning',
+            detail: 'Current value differs from recommended baseline.',
+            key: 'matching.provider_response_window_minutes',
+            label: 'Provider response window',
+            operatorAction: 'Monitor open matching bookings before changing this value.',
+            pillClass: 'pill pill-warn',
+            status: 'Owner choice',
+          },
+        ],
+        summary: [],
+        warningCount: 1,
+      },
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
   });
 });

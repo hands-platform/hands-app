@@ -1,3 +1,4 @@
+import { PillClassBadge } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
@@ -19,9 +20,9 @@ export function OperationsPolicyRecommendedValueReviewSection({
             operators should know the likely tradeoff before keeping them.
           </p>
         </div>
-        <span className={`pill ${review.warningCount ? 'pill-warn' : 'pill-success'}`}>
+        <PillClassBadge pillClass={review.warningCount ? 'pill-warn' : 'pill-success'}>
           {review.warningCount ? `${review.warningCount} owner choice(s)` : 'Aligned'}
-        </span>
+        </PillClassBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {review.summary.map((item) => (
@@ -35,7 +36,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.key}>
-            <span className={`pill ${card.pillClass}`}>{card.status}</span>
+            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
             <h3>{card.label}</h3>
             <p>{card.detail}</p>
             <small>{card.operatorAction}</small>

@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
 
 type OperationsPolicySensitivityPreviewSectionProps = {
@@ -60,7 +61,7 @@ export function OperationsPolicySensitivityPreviewSection({
             {sensitivity.radiusRows.map((row) => (
               <tr key={row.radiusLabel}>
                 <td>
-                  <span className={`pill ${row.pillClass}`}>{row.radiusLabel}</span>
+                  <PillClassBadge pillClass={row.pillClass}>{row.radiusLabel}</PillClassBadge>
                 </td>
                 <td>{row.eligible}</td>
                 <td>{row.fresh}</td>
@@ -85,7 +86,7 @@ export function OperationsPolicySensitivityPreviewSection({
             {sensitivity.freshnessRows.map((row) => (
               <tr key={row.freshnessLabel}>
                 <td>
-                  <span className={`pill ${row.pillClass}`}>{row.freshnessLabel}</span>
+                  <PillClassBadge pillClass={row.pillClass}>{row.freshnessLabel}</PillClassBadge>
                 </td>
                 <td>{row.eligible}</td>
                 <td>{row.staleExcluded}</td>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
+import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
 import type { OwnerDecisionPressure } from './owner-decision-pressure';
@@ -34,9 +35,9 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
               keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence.
             </p>
           </div>
-          <span className={`pill ${pressure.alertCount ? 'pill-warn' : 'pill-success'}`}>
+          <PillClassBadge pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
             {pressure.alertCount} active record(s)
-          </span>
+          </PillClassBadge>
         </div>
         <div className="service-trace-summary admin-mt-12">
           {pressure.summary.map((item) => (
@@ -50,7 +51,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
         <div className="ops-task-grid admin-mt-14">
           {pressure.cards.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
               <small>{item.operatorAction}</small>
@@ -61,7 +62,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
       <div className="ops-task-grid admin-mt-14">
         {backlog.map((item) => (
           <div className={`ops-task-card ${item.className}`} key={item.title}>
-            <span className={`pill ${item.pillClass}`}>{item.owner}</span>
+            <PillClassBadge pillClass={item.pillClass}>{item.owner}</PillClassBadge>
             <h3>{item.title}</h3>
             <p>{item.question}</p>
             <small>{item.evidence}</small>

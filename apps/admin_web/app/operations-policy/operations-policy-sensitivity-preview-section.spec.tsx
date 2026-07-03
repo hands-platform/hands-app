@@ -1,5 +1,5 @@
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicySensitivityPreviewSection', () => {
   it('renders radius and freshness sensitivity tables', () => {
@@ -45,5 +45,41 @@ describe('OperationsPolicySensitivityPreviewSection', () => {
     expect(rendered).toContain('Visible Partners');
     expect(rendered).toContain('Location freshness sensitivity');
     expect(rendered).toContain('Eligible Partners');
+  });
+
+  it('does not duplicate the base pill class for radius and freshness badges', () => {
+    const section = OperationsPolicySensitivityPreviewSection({
+      sensitivity: {
+        currentPolicyLabel: '10 km / 30m fresh',
+        freshnessRows: [
+          {
+            eligible: 4,
+            freshnessLabel: '30 min',
+            operatorRead: 'Current live freshness.',
+            pillClass: 'pill pill-warn',
+            staleExcluded: 1,
+          },
+        ],
+        radiusRows: [
+          {
+            eligible: 3,
+            finalGateHeld: 1,
+            fresh: 5,
+            operatorRead: 'Current live radius.',
+            pillClass: 'pill pill-info',
+            radiusLabel: '10 km',
+          },
+        ],
+        referenceLabel: 'Booking cmqbcwop...oqle',
+        summary: [],
+      },
+    });
+
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toContain('pill pill-info');
+    expect(classNames).toContain('pill pill-warn');
+    expect(classNames).not.toContain('pill pill pill-info');
+    expect(classNames).not.toContain('pill pill pill-warn');
   });
 });
