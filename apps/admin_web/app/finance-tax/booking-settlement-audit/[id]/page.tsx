@@ -7,6 +7,7 @@ import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { financeTaxCloseoutStatusTone } from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bookingSettlementAuditHref,
@@ -71,7 +72,7 @@ export default async function BookingSettlementAuditDetailPage({
       <FinanceTablePanel
         description={`Snapshot ${shortId(snapshot.id)} · Posted ${formatDateTime(snapshot.postedAt)} · Period ${snapshot.monthlyPeriod}`}
         resultLabel={snapshot.taxStatus}
-        resultTone={taxStatusTone(snapshot.taxStatus)}
+        resultTone={financeTaxCloseoutStatusTone(snapshot.taxStatus)}
         title="Settlement snapshot overview"
       >
         <FinanceDetailGrid>
@@ -361,19 +362,6 @@ function settlementEvidenceStatus(snapshot: AdminBookingSettlementSnapshot): {
 
 function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? fallback;
-}
-
-function taxStatusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
-  if (status === 'PAID' || status === 'CLOSED') {
-    return 'success';
-  }
-  if (status === 'DECLARED') {
-    return 'info';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'warning';
 }
 
 function settlementEvidenceCountLabel(snapshot: AdminBookingSettlementSnapshot) {

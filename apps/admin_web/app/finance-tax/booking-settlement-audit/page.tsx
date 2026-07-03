@@ -9,11 +9,13 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { financeTaxCloseoutStatusPill } from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
 import {
@@ -240,7 +242,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted">VAT {formatMoney(snapshot.companyOutputVat, snapshot.currency)}</div>
                   </td>
                   <td>
-                    <span className={`pill ${taxStatusPill(snapshot.taxStatus)}`}>{snapshot.taxStatus}</span>
+                    <PillClassBadge pillClass={financeTaxCloseoutStatusPill(snapshot.taxStatus)}>
+                      {snapshot.taxStatus}
+                    </PillClassBadge>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
@@ -267,17 +271,4 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
 
 function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? fallback;
-}
-
-function taxStatusPill(status: string) {
-  if (status === 'PAID' || status === 'CLOSED') {
-    return 'pill-success';
-  }
-  if (status === 'DECLARED') {
-    return 'pill-info';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }

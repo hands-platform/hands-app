@@ -24,6 +24,10 @@ import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import {
+  financeBankReconciliationStatusPill,
+  financeBankReconciliationStatusTone,
+} from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bankReconciliationHref,
@@ -109,7 +113,7 @@ export default async function BankReconciliationDetailPage({
       <FinanceTablePanel
         description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
         resultLabel={transaction.status}
-        resultTone={statusTone(transaction.status)}
+        resultTone={financeBankReconciliationStatusTone(transaction.status)}
         title="Bank transaction overview"
       >
         <FinanceDetailGrid>
@@ -404,7 +408,9 @@ export default async function BankReconciliationDetailPage({
                   <strong>{formatMoney(match.amount, match.currency)}</strong>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={statusPill(match.status)}>{match.status}</PillClassBadge>
+                  <PillClassBadge pillClass={financeBankReconciliationStatusPill(match.status)}>
+                    {match.status}
+                  </PillClassBadge>
                 </td>
                 <td>
                   <ReconciliationAuditTrail metadata={match.metadata} />
@@ -645,32 +651,6 @@ function manualMatchResultTone({
     return 'danger';
   }
   return 'info';
-}
-
-function statusPill(status: string) {
-  if (status === 'MATCHED' || status === 'CLEARED') {
-    return 'pill-success';
-  }
-  if (status === 'PARTIALLY_MATCHED' || status === 'PARTIALLY_CLEARED') {
-    return 'pill-info';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
-}
-
-function statusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
-  if (status === 'MATCHED' || status === 'CLEARED') {
-    return 'success';
-  }
-  if (status === 'PARTIALLY_MATCHED' || status === 'PARTIALLY_CLEARED') {
-    return 'info';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'warning';
 }
 
 function paymentClearingCandidateComparator(targetAmount: number) {

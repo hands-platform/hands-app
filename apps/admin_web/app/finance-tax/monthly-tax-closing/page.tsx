@@ -18,6 +18,11 @@ import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceStageList } from '../finance-stage-list';
+import {
+  financeEvidenceTonePill,
+  financeMonthlyTaxClosingStatusPill,
+  financeMonthlyTaxClosingStatusTone,
+} from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -115,7 +120,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           href={monthlyTaxClosingHref(filters)}
           icon={CheckCircle2}
           label="Closeout status"
-          tone={closingStatusTone(summary.status)}
+          tone={financeMonthlyTaxClosingStatusTone(summary.status)}
           value={summary.status}
         />
         <FinanceListCommandCard
@@ -148,7 +153,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         className="admin-mb-16"
         description={`Period ${summary.period}. The preview is calculated from immutable settlement snapshots; stored closing rows only add status and closeout timestamps.`}
         resultLabel={summary.status}
-        resultTone={closingStatusTone(summary.status)}
+        resultTone={financeMonthlyTaxClosingStatusTone(summary.status)}
         title="Monthly closing period"
       >
         <FinancePeriodFilterForm period={filters.period} rows={{ value: filters.take }} />
@@ -158,7 +163,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         className="admin-mb-16"
         description="Save the reviewed monthly totals into the closing row before declaration, payment, or final closeout. Closed periods require reversal entries, not direct edits."
         resultLabel={summary.status}
-        resultTone={closingStatusTone(summary.status)}
+        resultTone={financeMonthlyTaxClosingStatusTone(summary.status)}
         title="Monthly closing action"
       >
         {nextStatusOptions.length ? (
@@ -318,7 +323,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <div className="muted">{closing.currency}</div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={closingStatusPill(closing.status)}>{closing.status}</PillClassBadge>
+                    <PillClassBadge pillClass={financeMonthlyTaxClosingStatusPill(closing.status)}>
+                      {closing.status}
+                    </PillClassBadge>
                   </td>
                   <td>{closing.settlementCount}</td>
                   <td>
@@ -332,7 +339,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                   </td>
                   <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
                   <td>
-                    <PillClassBadge pillClass={remittanceEvidencePill(closingRemittanceState.tone)}>
+                    <PillClassBadge pillClass={financeEvidenceTonePill(closingRemittanceState.tone)}>
                       {closingRemittanceState.label}
                     </PillClassBadge>
                     <div className="muted admin-mt-8">Declared {formatDateTime(closing.declaredAt)}</div>
@@ -359,42 +366,6 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
-}
-
-function closingStatusPill(status: string) {
-  if (status === 'PAID' || status === 'CLOSED') {
-    return 'pill-success';
-  }
-  if (status === 'DECLARED' || status === 'REVIEWED') {
-    return 'pill-info';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
-}
-
-function remittanceEvidencePill(tone: 'neutral' | 'success' | 'warning') {
-  if (tone === 'success') {
-    return 'pill-success';
-  }
-  if (tone === 'warning') {
-    return 'pill-warn';
-  }
-  return 'pill-neutral';
-}
-
-function closingStatusTone(status: string) {
-  if (status === 'PAID' || status === 'CLOSED') {
-    return 'success';
-  }
-  if (status === 'DECLARED' || status === 'REVIEWED') {
-    return 'info';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'warning';
 }
 
 function datetimeLocalValue(value?: string | null) {

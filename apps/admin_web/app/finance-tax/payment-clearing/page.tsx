@@ -9,6 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { financePaymentClearingStatusPill } from '../finance-status-badge-model';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
@@ -196,7 +197,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                   {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
                 </td>
                 <td>
-                  <PillClassBadge pillClass={statusPill(entry.status)}>{entry.status}</PillClassBadge>
+                  <PillClassBadge pillClass={financePaymentClearingStatusPill(entry.status)}>
+                    {entry.status}
+                  </PillClassBadge>
                 </td>
                 <td>
                   <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
@@ -217,17 +220,4 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
-}
-
-function statusPill(status: string) {
-  if (status === 'CLEARED') {
-    return 'pill-success';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  if (status === 'PARTIALLY_CLEARED') {
-    return 'pill-info';
-  }
-  return 'pill-warn';
 }

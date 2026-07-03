@@ -14,6 +14,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format'
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { financeEvidenceTonePill, financeSettlementReversalTaxStatusPill } from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -231,7 +232,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   </td>
                   <td>
                     <div className="admin-table-substack">
-                      <PillClassBadge pillClass={evidencePill(evidenceState.tone)}>{evidenceState.label}</PillClassBadge>
+                      <PillClassBadge pillClass={financeEvidenceTonePill(evidenceState.tone)}>
+                        {evidenceState.label}
+                      </PillClassBadge>
                       <div className="muted">{evidenceState.detail}</div>
                       <Link className="text-link" href={bookingSettlementReversalDetailHref(reversal.id)}>
                         Open reversal <span className="muted">{shortId(reversal.id)}</span>
@@ -244,7 +247,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     </div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={statusPill(reversal.taxStatus)}>{reversal.taxStatus}</PillClassBadge>
+                    <PillClassBadge pillClass={financeSettlementReversalTaxStatusPill(reversal.taxStatus)}>
+                      {reversal.taxStatus}
+                    </PillClassBadge>
                     <div className="muted admin-mt-8">{reversal.settlementStatus}</div>
                     <div className="muted">{reversal.reason ?? 'Payment refund'}</div>
                   </td>
@@ -269,18 +274,4 @@ function personName(user: { fullName?: string | null; phone?: string | null } | 
 
 function reversalReviewLabel(review: string) {
   return SETTLEMENT_REVERSAL_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'All';
-}
-
-function statusPill(status: string) {
-  return status === 'REVERSED' ? 'pill-danger' : 'pill-warn';
-}
-
-function evidencePill(tone: 'danger' | 'success' | 'warning') {
-  if (tone === 'success') {
-    return 'pill-success';
-  }
-  if (tone === 'danger') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }

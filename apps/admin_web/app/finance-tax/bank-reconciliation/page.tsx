@@ -22,6 +22,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format'
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { financeBankReconciliationStatusPill } from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -312,7 +313,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                   <div className="muted">{shortId(transaction.sourceKey)}</div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={statusPill(transaction.status)}>{transaction.status}</PillClassBadge>
+                  <PillClassBadge pillClass={financeBankReconciliationStatusPill(transaction.status)}>
+                    {transaction.status}
+                  </PillClassBadge>
                 </td>
                 <td>
                   <Link className="pill pill-info" href={bankReconciliationDetailHref(transaction.id)}>
@@ -382,19 +385,6 @@ function formDateTimeToIso(value: FormDataEntryValue | null) {
   }
   const date = new Date(input);
   return Number.isNaN(date.getTime()) ? '' : date.toISOString();
-}
-
-function statusPill(status: string) {
-  if (status === 'MATCHED') {
-    return 'pill-success';
-  }
-  if (status === 'PARTIALLY_MATCHED') {
-    return 'pill-info';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }
 
 function companyBankAccountOptionLabel(account: AdminCompanyBankAccount) {

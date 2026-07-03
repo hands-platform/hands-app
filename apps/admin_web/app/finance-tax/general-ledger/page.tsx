@@ -11,6 +11,7 @@ import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format'
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
+import { financeJournalBatchStatusPill } from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -221,7 +222,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                   </div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={statusPill(batch.status)}>{batch.status}</PillClassBadge>
+                  <PillClassBadge pillClass={financeJournalBatchStatusPill(batch.status)}>{batch.status}</PillClassBadge>
                   {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
                 </td>
                 <td>
@@ -246,14 +247,4 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
 
 function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
   return user?.fullName ?? user?.phone ?? fallback;
-}
-
-function statusPill(status: string) {
-  if (status === 'POSTED') {
-    return 'pill-success';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }

@@ -10,6 +10,7 @@ import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { financeJournalBatchStatusTone } from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   buildAccountingJournalBatchDetailApiHref,
@@ -59,7 +60,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       <FinanceTablePanel
         description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
         resultLabel={batch.status}
-        resultTone={statusTone(batch.status)}
+        resultTone={financeJournalBatchStatusTone(batch.status)}
         title="Journal batch overview"
       >
         <FinanceDetailGrid>
@@ -243,16 +244,6 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
-}
-
-function statusTone(status: string): 'danger' | 'success' | 'warning' {
-  if (status === 'POSTED') {
-    return 'success';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'warning';
 }
 
 function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlementTraceCount: number) {

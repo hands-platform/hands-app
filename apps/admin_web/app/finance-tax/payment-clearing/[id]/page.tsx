@@ -10,6 +10,10 @@ import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-form
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import {
+  financeBankReconciliationStatusPill,
+  financePaymentClearingStatusTone,
+} from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   buildBookingPaymentClearingDetailApiHref,
@@ -64,7 +68,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       <FinanceTablePanel
         description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
         resultLabel={entry.status}
-        resultTone={statusTone(entry.status)}
+        resultTone={financePaymentClearingStatusTone(entry.status)}
         title="Clearing overview"
       >
         <FinanceDetailGrid>
@@ -262,7 +266,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 </td>
                 <td>{formatDateTime(match.matchedAt)}</td>
                 <td>
-                  <PillClassBadge pillClass={bankStatusPill(match.status)}>{match.status}</PillClassBadge>
+                  <PillClassBadge pillClass={financeBankReconciliationStatusPill(match.status)}>
+                    {match.status}
+                  </PillClassBadge>
                 </td>
               </tr>
             ))}
@@ -271,32 +277,6 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
-}
-
-function statusTone(status: string): 'danger' | 'info' | 'success' | 'warning' {
-  if (status === 'CLEARED') {
-    return 'success';
-  }
-  if (status === 'PARTIALLY_CLEARED') {
-    return 'info';
-  }
-  if (status === 'REVERSED') {
-    return 'danger';
-  }
-  return 'warning';
-}
-
-function bankStatusPill(status: string) {
-  if (status === 'MATCHED') {
-    return 'pill-success';
-  }
-  if (status === 'PARTIALLY_MATCHED') {
-    return 'pill-info';
-  }
-  if (status === 'REVERSED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }
 
 function paymentClearingSettlementLabel(entry: AdminBookingPaymentClearingEntryDetail, settlementTraceCount: number) {
