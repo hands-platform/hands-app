@@ -7,6 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
@@ -88,27 +89,27 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             withholdingFilters,
           })}
         >
-          <a
+          <AdminFormControlLink
             className="pill pill-info"
             download={`hands-monthly-tax-closing-${filters.period}-summary.csv`}
             href={summaryCsvHref}
           >
             Export summary CSV
-          </a>
-          <a
+          </AdminFormControlLink>
+          <AdminFormControlLink
             className="pill pill-info"
             download={`hands-monthly-tax-closing-${filters.period}-rows.csv`}
             href={closingRowsCsvHref}
           >
             Export rows CSV
-          </a>
-          <a
+          </AdminFormControlLink>
+          <AdminFormControlLink
             className="pill pill-success"
             download={`hands-accounting-journal-${filters.period}.csv`}
             href={accountingJournalCsvHref}
           >
             Export accounting journal CSV
-          </a>
+          </AdminFormControlLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."

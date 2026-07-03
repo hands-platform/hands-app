@@ -7,6 +7,7 @@ import type {
   AdminPartnerWithholdingTaxSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
@@ -66,13 +67,13 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             withholdingFilters: filters,
           })}
         >
-          <a
+          <AdminFormControlLink
             className="pill pill-success"
             download={`hands-partner-withholding-tax-${filters.period}.csv`}
             href={csvHref}
           >
             Export partner tax CSV
-          </a>
+          </AdminFormControlLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."

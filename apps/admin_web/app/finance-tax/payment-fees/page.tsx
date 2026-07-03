@@ -2,6 +2,7 @@ import { CreditCard, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react'
 
 import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
@@ -48,9 +49,13 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
             withholdingFilters,
           })}
         >
-          <a className="pill pill-success" download={`hands-payment-fees-${filters.period}.csv`} href={csvHref}>
+          <AdminFormControlLink
+            className="pill pill-success"
+            download={`hands-payment-fees-${filters.period}.csv`}
+            href={csvHref}
+          >
             Export payment fee CSV
-          </a>
+          </AdminFormControlLink>
         </TaxFinanceWorkflowActions>
       }
       description="Payment processing fees are tracked separately from Partner VAT/PIT and company output VAT."

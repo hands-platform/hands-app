@@ -5,6 +5,7 @@ import type {
   AdminCouponFinanceSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -62,13 +63,13 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             withholdingFilters,
           })}
         >
-          <a
+          <AdminFormControlLink
             className="pill pill-success"
             download={`hands-coupon-finance-${filters.range}-${filters.review}.csv`}
             href={csvHref}
           >
             Export visible CSV
-          </a>
+          </AdminFormControlLink>
         </TaxFinanceWorkflowActions>
       }
       description="Company-funded coupon expense and coupon settlement policy snapshots from immutable booking settlements."

@@ -7,6 +7,7 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -70,13 +71,13 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             withholdingFilters,
           })}
         >
-          <a
+          <AdminFormControlLink
             className="pill pill-success"
             download={`hands-booking-settlement-audit-${filters.range}-${filters.review}.csv`}
             href={csvHref}
           >
             Export settlement CSV
-          </a>
+          </AdminFormControlLink>
         </TaxFinanceWorkflowActions>
       }
       description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."

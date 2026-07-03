@@ -393,6 +393,20 @@ describe('finance list pages', () => {
   });
 
   it.each([
+    ['booking settlement audit CSV', 'app/finance-tax/booking-settlement-audit/page.tsx'],
+    ['coupon finance CSV', 'app/finance-tax/coupon-finance/page.tsx'],
+    ['monthly tax closing CSV', 'app/finance-tax/monthly-tax-closing/page.tsx'],
+    ['partner withholding tax CSV', 'app/finance-tax/partner-withholding-tax/page.tsx'],
+    ['payment fees CSV', 'app/finance-tax/payment-fees/page.tsx'],
+    ['platform VAT CSV', 'app/finance-tax/platform-vat/page.tsx'],
+  ] as const)('uses shared AdminFormControlLink for %s downloads', (_name, sourcePath) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toMatch(/<a\s+className="pill [^"]+"\s+download/s);
+  });
+
+  it.each([
     ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx'],
     ['coupon finance', 'app/finance-tax/coupon-finance/page.tsx'],
     ['finance approvers', 'app/finance-tax/finance-approvers/page.tsx'],
