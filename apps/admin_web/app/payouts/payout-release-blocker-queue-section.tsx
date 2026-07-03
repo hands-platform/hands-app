@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
@@ -61,11 +62,10 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
           <div className="setup-stage-item">
             <span>OK</span>
             <div>
-              <strong>No payout release blocker</strong>
-              <p className="muted">
-                Transfer refs, withholding logs, payout holds, and earning attachments are clean for the
-                current queue.
-              </p>
+              <AdminEmptyState
+                message="Transfer refs, withholding logs, payout holds, and earning attachments are clean for the current queue."
+                title="No payout release blocker"
+              />
             </div>
             <small>Clear</small>
           </div>

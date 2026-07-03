@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { PayoutReleaseBlockerQueueSection } from './payout-release-blocker-queue-section';
 
 describe('PayoutReleaseBlockerQueueSection', () => {
+  it('uses the shared Vuexy empty-state atom for clear release queues', () => {
+    const source = readFileSync('app/payouts/payout-release-blocker-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No payout release blocker</strong>');
+  });
+
   it('renders release blockers with provider, reason, amount, and row link', () => {
     const section = PayoutReleaseBlockerQueueSection({
       items: [
@@ -27,7 +36,7 @@ describe('PayoutReleaseBlockerQueueSection', () => {
     expect(hrefsIn(section)).toContain('#batch-1');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
   });

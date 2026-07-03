@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type PayoutInclusionAuditCard = {
@@ -62,8 +63,10 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
           <div className="setup-stage-item">
             <span>OK</span>
             <div>
-              <strong>No unbatched earning in this range</strong>
-              <p className="muted">All visible earning rows are already batched, paid, cancelled, or absent.</p>
+              <AdminEmptyState
+                message="All visible earning rows are already batched, paid, cancelled, or absent."
+                title="No unbatched earning in this range"
+              />
             </div>
             <small>Clear</small>
           </div>

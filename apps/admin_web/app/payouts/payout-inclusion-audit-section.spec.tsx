@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { PayoutInclusionAuditSection } from './payout-inclusion-audit-section';
 
 describe('PayoutInclusionAuditSection', () => {
+  it('uses the shared Vuexy empty-state atom for empty audit ranges', () => {
+    const source = readFileSync('app/payouts/payout-inclusion-audit-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No unbatched earning in this range</strong>');
+  });
+
   it('renders inclusion summary cards and audit rows', () => {
     const section = PayoutInclusionAuditSection({
       audit: {
@@ -36,7 +45,7 @@ describe('PayoutInclusionAuditSection', () => {
     expect(hrefsIn(section)).toContain('/earnings');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
   });
