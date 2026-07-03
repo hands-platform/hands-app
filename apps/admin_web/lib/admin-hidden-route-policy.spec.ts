@@ -1,29 +1,39 @@
 import {
   adminHiddenRoutePolicy,
+  adminHiddenRoutePolicyDetails,
   adminHiddenRouteRoutes,
-  intentionallyUnlistedPageRoutes,
 } from './admin-hidden-route-policy';
-import { adminNavSections } from './admin-navigation';
 
 describe('admin hidden route policy', () => {
-  it('documents intentionally hidden operational pages with stable reasons', () => {
-    expect(adminHiddenRoutePolicy('/chat-archive')).toContain('Audit search');
-    expect(adminHiddenRoutePolicy('/partner-controls')).toContain('deep operational evidence');
-    expect(adminHiddenRoutePolicy('/providers')).toContain('Legacy provider alias');
-    expect(adminHiddenRoutePolicy('/providers/[id]')).toContain('Legacy provider detail alias');
-    expect(adminHiddenRoutePolicy('/referrals')).toContain('Referral hub');
+  it('keeps intentionally unlisted routes classified by operating purpose', () => {
+    expect(adminHiddenRoutePolicyDetails('/chat-archive')).toMatchObject({
+      kind: 'AUDIT_SEARCH',
+      primaryRoutes: ['/bookings/[id]', '/customers/[id]', '/partners/[id]'],
+    });
+    expect(adminHiddenRoutePolicyDetails('/partner-controls')).toMatchObject({
+      kind: 'DEEP_OPERATIONAL_EVIDENCE',
+      primaryRoutes: ['/partners/[id]', '/cash-settlements', '/payouts'],
+    });
+    expect(adminHiddenRoutePolicyDetails('/providers')).toMatchObject({
+      kind: 'LEGACY_ALIAS',
+      primaryRoutes: ['/partners'],
+    });
+    expect(adminHiddenRoutePolicyDetails('/referrals')).toMatchObject({
+      kind: 'HIDDEN_HUB',
+      primaryRoutes: ['/referrals/customers', '/referrals/partners', '/referrals/cashouts'],
+    });
   });
 
-  it('keeps legacy providers aliases hidden while primary partner pages stay in navigation', () => {
-    const menuRoutes = new Set(adminNavSections.flatMap((section) => section.links.map((link) => link.href)));
+  it('keeps every hidden route policy explainable without changing existing reason lookups', () => {
+    const routes = adminHiddenRouteRoutes();
 
-    expect(menuRoutes.has('/partners')).toBe(true);
-    expect(menuRoutes.has('/providers')).toBe(false);
-    expect(menuRoutes.has('/providers/[id]')).toBe(false);
-    expect(adminHiddenRoutePolicy('/providers')).toBe(intentionallyUnlistedPageRoutes['/providers']);
-  });
+    expect(routes.length).toBeGreaterThan(10);
+    for (const route of routes) {
+      const details = adminHiddenRoutePolicyDetails(route);
 
-  it('returns sorted hidden route keys for inventory checks', () => {
-    expect(adminHiddenRouteRoutes()).toEqual(Object.keys(intentionallyUnlistedPageRoutes).sort());
+      expect(details?.reason).toEqual(adminHiddenRoutePolicy(route));
+      expect(details?.kind).toMatch(/^[A-Z_]+$/u);
+      expect(details?.primaryRoutes.length).toBeGreaterThan(0);
+    }
   });
 });
