@@ -45,6 +45,7 @@ type AdminFormInputProps = {
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
   | 'defaultValue'
+  | 'autoComplete'
   | 'disabled'
   | 'max'
   | 'maxLength'
@@ -183,6 +184,7 @@ export function AdminFormDate({
 }
 
 export function AdminFormInput({
+  autoComplete,
   className,
   defaultValue,
   disabled,
@@ -211,6 +213,7 @@ export function AdminFormInput({
     >
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
+        autoComplete={autoComplete}
         defaultValue={defaultValue}
         disabled={disabled}
         max={max}

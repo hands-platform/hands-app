@@ -1,3 +1,8 @@
+import {
+  AdminFormControlButton,
+  AdminFormInput,
+} from '../../components/admin-form-controls';
+
 type LoginPageProps = {
   searchParams?: Promise<{
     error?: string;
@@ -31,17 +36,27 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         ) : null}
         <form action={action} className="admin-auth-form" method="post">
-          <label className="admin-auth-field">
-            <span>Email</span>
-            <input autoComplete="username" name="email" required type="email" />
-          </label>
-          <label className="admin-auth-field">
-            <span>Password</span>
-            <input autoComplete="current-password" name="password" required type="password" />
-          </label>
-          <button className="button button-primary admin-auth-submit" type="submit">
+          <AdminFormInput
+            autoComplete="username"
+            className="admin-auth-field"
+            label="Email"
+            labelVisibility="visible"
+            name="email"
+            required
+            type="email"
+          />
+          <AdminFormInput
+            autoComplete="current-password"
+            className="admin-auth-field"
+            label="Password"
+            labelVisibility="visible"
+            name="password"
+            required
+            type="password"
+          />
+          <AdminFormControlButton className="button button-primary admin-auth-submit" type="submit">
             Sign in
-          </button>
+          </AdminFormControlButton>
         </form>
       </section>
     </main>
