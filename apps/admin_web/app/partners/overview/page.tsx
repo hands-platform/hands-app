@@ -25,7 +25,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
   AdminPartnerOverview,
@@ -359,9 +359,9 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
     >
         {cards.length > 0 ? (
           cards.map((card) => (
-            <a
-              aria-label={`${card.label}, ${formatNumber(card.count)} Partners. Open filtered Partners list`}
-              className={`card admin-card partner-overview-operating-card is-${card.tone}`}
+            <AdminLinkCard
+              ariaLabel={`${card.label}, ${formatNumber(card.count)} Partners. Open filtered Partners list`}
+              className={`partner-overview-operating-card is-${card.tone}`}
               href={card.href}
               key={card.key}
             >
@@ -372,7 +372,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
                 Open filtered list
                 <ChevronRight size={14} aria-hidden="true" />
               </em>
-            </a>
+            </AdminLinkCard>
           ))
         ) : (
           <p className="muted">No operating status data is available yet.</p>
@@ -467,9 +467,9 @@ function PartnerPriorityBoard({
           const Icon = card.icon;
 
           return (
-            <a
-              aria-label={`${card.label}, ${card.value}. ${card.action}`}
-              className={`card admin-card usage-overview-command-card partner-overview-priority-card is-${card.tone}`}
+            <AdminLinkCard
+              ariaLabel={`${card.label}, ${card.value}. ${card.action}`}
+              className={`usage-overview-command-card partner-overview-priority-card is-${card.tone}`}
               href={card.href}
               key={card.key}
             >
@@ -485,7 +485,7 @@ function PartnerPriorityBoard({
                   <ChevronRight size={14} aria-hidden="true" />
                 </em>
               </div>
-            </a>
+            </AdminLinkCard>
           );
         })}
     </AdminSection>
