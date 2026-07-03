@@ -1,5 +1,5 @@
 export const partnerDetailReviewCardClassName =
-  'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card';
+  'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card';
 
 export const partnerDetailReviewTableClassName =
   'vuexy-booking-table vuexy-partner-detail-review-table';

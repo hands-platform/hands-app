@@ -38,8 +38,11 @@ describe('PartnerDetailFastOverviewSection', () => {
       expect.arrayContaining(['/partners', '/partners/partner-1?section=full', '#booking-gates', '#wallet', '#kyc']),
     );
     expect(classNames.filter((className) => className === 'metric-card')).toHaveLength(2);
-    expect(classNames.filter((className) => className === 'card')).toHaveLength(2);
-    expect(classNames.filter((className) => className.includes('partner-fast-overview-panel'))).toHaveLength(4);
+    expect(
+      classNames.filter(
+        (className) => className.split(' ').includes('card') && className.includes('partner-fast-overview-panel'),
+      ),
+    ).toHaveLength(4);
   });
 });
 

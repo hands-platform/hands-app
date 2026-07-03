@@ -50,7 +50,7 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(rendered).toContain('Cash service platform fee collected.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
         'service-trace-summary admin-mt-12 partner-wallet-summary-grid',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
