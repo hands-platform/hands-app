@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 type PartnerChecklistLaneTone = 'blocked' | 'done' | 'pending';
 
@@ -21,16 +21,16 @@ type PartnerChecklistLaneSectionProps = {
 
 export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChecklistLaneSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Suggested operator order for fixing factual blockers from profile, KYC, required documents, public media, wallet settlement, location, and push readiness."
-        status={
-          <span className={`pill ${blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
-            {blockedCount} blocked
-          </span>
-        }
-        title="Partner checklist lane"
-      />
+    <AdminSection
+      actions={
+        <span className={`pill ${blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
+          {blockedCount} blocked
+        </span>
+      }
+      className="admin-mb-16 partner-checklist-lane-card"
+      description="Suggested operator order for fixing factual blockers from profile, KYC, required documents, public media, wallet settlement, location, and push readiness."
+      title="Partner checklist lane"
+    >
       <div className="setup-stage-list">
         {items.map((item) => (
           <div className="setup-stage-item" key={item.partnerId}>
@@ -58,7 +58,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
           </div>
         ) : null}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

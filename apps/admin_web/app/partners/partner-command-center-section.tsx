@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 export type PartnerCommandCenterSectionTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -19,12 +19,12 @@ type PartnerCommandCenterSectionProps = {
 
 export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
-        status={<span className="pill pill-info">Daily control view</span>}
-        title="Partner command center"
-      />
+    <AdminSection
+      actions={<span className="pill pill-info">Daily control view</span>}
+      className="admin-mb-16 partner-command-center-card"
+      description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
+      title="Partner command center"
+    >
       <div className="grid admin-mt-12">
         {lanes.map((lane) => (
           <Link className="card" href={lane.href} key={lane.title}>
@@ -46,7 +46,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

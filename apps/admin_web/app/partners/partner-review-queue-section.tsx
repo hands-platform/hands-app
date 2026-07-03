@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 type PartnerReviewQueueSectionItem = {
   readonly count: number;
@@ -20,16 +20,16 @@ type PartnerReviewQueueSectionProps = {
 
 export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch location freshness."
-        status={
-          <span className={`pill ${queue.totalOpen === 0 ? 'pill-success' : 'pill-warn'}`}>
-            {queue.totalOpen} open item(s)
-          </span>
-        }
-        title="Review queue"
-      />
+    <AdminSection
+      actions={
+        <span className={`pill ${queue.totalOpen === 0 ? 'pill-success' : 'pill-warn'}`}>
+          {queue.totalOpen} open item(s)
+        </span>
+      }
+      className="admin-mb-16 partner-review-queue-card"
+      description="Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch location freshness."
+      title="Review queue"
+    >
       <div className="setup-stage-list">
         {queue.items.map((item) => (
           <div className="setup-stage-item" key={item.label}>
@@ -44,6 +44,6 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

@@ -20,7 +20,13 @@ describe('PartnerReviewQueueSection', () => {
     expect(rendered).toContain('Push alert readiness');
     expect(rendered).toContain('OK');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners?review=kyc']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'text-link']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-review-queue-card',
+        'pill pill-warn',
+        'text-link',
+      ]),
+    );
   });
 
   it('renders a clear status when no review work is open', () => {

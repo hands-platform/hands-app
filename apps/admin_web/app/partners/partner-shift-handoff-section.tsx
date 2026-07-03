@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import type { PartnerCommandLane } from './partner-command-center';
 import {
   partnerShiftCardClass,
@@ -16,12 +16,12 @@ type PartnerShiftHandoffSectionProps = {
 
 export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
-        status={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}
-        title="Partner shift handoff"
-      />
+    <AdminSection
+      actions={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}
+      className="admin-mb-16 partner-shift-handoff-card"
+      description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
+      title="Partner shift handoff"
+    >
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
@@ -72,7 +72,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import type { PartnerCommandLane } from './partner-command-center';
 import type { PartnerDispatchHandoff } from './partner-dispatch-handoff';
 
@@ -14,23 +14,23 @@ type PartnerDispatchHandoffSectionProps = {
 
 export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandoffSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        actions={
-          <AdminFormControlLink className="button button-secondary" href="/operations-policy">
-            <SlidersHorizontal aria-hidden="true" size={16} />
-            {handoff.policyLabel}
-          </AdminFormControlLink>
-        }
-        description={
-          <>
-            <span>{handoff.headline}</span>
-            <br />
-            <span>{handoff.detail}</span>
-          </>
-        }
-        title="Dispatch handoff links"
-      />
+    <AdminSection
+      actions={
+        <AdminFormControlLink className="button button-secondary" href="/operations-policy">
+          <SlidersHorizontal aria-hidden="true" size={16} />
+          {handoff.policyLabel}
+        </AdminFormControlLink>
+      }
+      className="admin-mb-16 partner-dispatch-handoff-card"
+      description={
+        <>
+          <span>{handoff.headline}</span>
+          <br />
+          <span>{handoff.detail}</span>
+        </>
+      }
+      title="Dispatch handoff links"
+    >
       <div className="service-trace-summary admin-mt-14">
         {handoff.links.map((item) => (
           <Link
@@ -44,7 +44,7 @@ export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandof
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

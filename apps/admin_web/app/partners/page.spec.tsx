@@ -68,4 +68,28 @@ describe('ProvidersPage', () => {
       'matching.provider_response_window_minutes',
     ]);
   });
+
+  it('renders deep operations filter summary on a shared Vuexy surface', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
+      }
+
+      if (href.startsWith('/admin/partners/list-providers')) {
+        return [];
+      }
+
+      if (href.startsWith('/admin/operational-policy?keys=')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'kyc' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Current filter summary');
+    expect(markup).toContain('card admin-section admin-mb-16 partner-current-filter-summary-card');
+  });
 });

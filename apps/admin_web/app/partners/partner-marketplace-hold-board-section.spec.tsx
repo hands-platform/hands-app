@@ -22,7 +22,12 @@ describe('PartnerMarketplaceHoldBoardSection', () => {
     expect(rendered).toContain('No immediate queue');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners?review=cash-debt']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'signal signal-warn']),
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-marketplace-hold-board-card',
+        'pill pill-danger',
+        'pill pill-warn',
+        'signal signal-warn',
+      ]),
     );
   });
 });

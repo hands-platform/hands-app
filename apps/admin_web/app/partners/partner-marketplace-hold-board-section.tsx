@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 type PartnerMarketplaceHoldBoardTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -28,22 +28,22 @@ type PartnerMarketplaceHoldBoardSectionProps = {
 
 export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplaceHoldBoardSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Shows why partners need dispatch repair before operators rely on booking participation. Viewing marketplace requests is not treated as a partner action."
-        status={
-          <>
-            <span className={`pill ${board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
-              {board.hardBlocked} direct request held
-            </span>
-            <span className="pill pill-info">{board.eligibleNow} direct-ready</span>
-            <span className={`pill ${board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}`}>
-              {board.marketplaceBlocked} dispatch repair
-            </span>
-          </>
-        }
-        title="Partner dispatch repair board"
-      />
+    <AdminSection
+      actions={
+        <>
+          <span className={`pill ${board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
+            {board.hardBlocked} direct request held
+          </span>
+          <span className="pill pill-info">{board.eligibleNow} direct-ready</span>
+          <span className={`pill ${board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}`}>
+            {board.marketplaceBlocked} dispatch repair
+          </span>
+        </>
+      }
+      className="admin-mb-16 partner-marketplace-hold-board-card"
+      description="Shows why partners need dispatch repair before operators rely on booking participation. Viewing marketplace requests is not treated as a partner action."
+      title="Partner dispatch repair board"
+    >
       <div className="grid admin-mt-12">
         {board.cards.map((card) => (
           <Link className="card" href={card.href} key={card.title}>
@@ -70,7 +70,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 type PartnerKycReviewTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -38,20 +38,20 @@ type PartnerKycReviewBoardSectionProps = {
 
 export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Tracks identity records, CCCD front/back, and selfie evidence before a partner can become dispatch-ready."
-        status={
-          <>
-            <span className={`pill ${board.openCount > 0 ? 'pill-warn' : 'pill-success'}`}>
-              {board.openCount} KYC item(s)
-            </span>
-            <span className="pill pill-success">{board.readyToApprove} ready to approve</span>
-            <span className="pill pill-danger">{board.blockedByDocuments} blocked by docs</span>
-          </>
-        }
-        title="KYC review board"
-      />
+    <AdminSection
+      actions={
+        <>
+          <span className={`pill ${board.openCount > 0 ? 'pill-warn' : 'pill-success'}`}>
+            {board.openCount} KYC item(s)
+          </span>
+          <span className="pill pill-success">{board.readyToApprove} ready to approve</span>
+          <span className="pill pill-danger">{board.blockedByDocuments} blocked by docs</span>
+        </>
+      }
+      className="admin-mb-16 partner-kyc-review-board-card"
+      description="Tracks identity records, CCCD front/back, and selfie evidence before a partner can become dispatch-ready."
+      title="KYC review board"
+    >
       <div className="grid admin-mt-12">
         {board.cards.map((card) => (
           <Link className="card" href={card.href} key={card.title}>
@@ -93,7 +93,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

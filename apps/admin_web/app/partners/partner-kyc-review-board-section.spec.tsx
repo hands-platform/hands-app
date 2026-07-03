@@ -22,7 +22,13 @@ describe('PartnerKycReviewBoardSection', () => {
     expect(rendered).toContain('Review uploaded identity files first');
     expect(rendered).toContain('1ST');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners?review=kyc']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'signal signal-info']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-kyc-review-board-card',
+        'pill pill-warn',
+        'signal signal-info',
+      ]),
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { AdminSection } from '../../components/admin-surface';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -309,17 +310,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       />
       {deepPartnerOps ? (
         <>
-          <section className="card admin-mb-16">
-            <div className="ops-section-header">
-              <div>
-                <h2>Current filter summary</h2>
-                <p className="muted">
-                  A factual snapshot of the partner rows currently loaded on this page before export, review,
-                  dispatch checks, or account follow-up.
-                </p>
-              </div>
-              <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
-            </div>
+          <AdminSection
+            actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}
+            className="admin-mb-16 partner-current-filter-summary-card"
+            description="A factual snapshot of the partner rows currently loaded on this page before export, review, dispatch checks, or account follow-up."
+            title="Current filter summary"
+          >
             <div className="service-trace-summary admin-mt-14">
               {deepPartnerOps.filterSummary.map((item) => (
                 <div key={item.label}>
@@ -335,7 +331,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 </div>
               ))}
             </div>
-          </section>
+          </AdminSection>
           <div className="grid admin-mb-16">
             {deepPartnerOps.summary.map(([label, value]) => (
               <div className="card" key={label}>

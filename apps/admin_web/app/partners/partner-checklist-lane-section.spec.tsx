@@ -21,7 +21,13 @@ describe('PartnerChecklistLaneSection', () => {
     expect(rendered).toContain('Approve or reject KYC with a clear reason.');
     expect(rendered).toContain('Fix');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-danger', 'text-link']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-checklist-lane-card',
+        'pill pill-danger',
+        'text-link',
+      ]),
+    );
   });
 
   it('renders a clear fallback when no item needs attention', () => {

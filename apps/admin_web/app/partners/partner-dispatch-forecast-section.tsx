@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -47,17 +47,17 @@ export function PartnerDispatchForecastSection({
   staleLocationMinutes,
 }: PartnerDispatchForecastSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        actions={
-          <AdminFormControlLink className="button button-secondary" href="/operations-policy">
-            <SlidersHorizontal aria-hidden="true" size={16} />
-            Policy: fresh location {'<='} {staleLocationMinutes}m
-          </AdminFormControlLink>
-        }
-        description="Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply records for direct requests and marketplace matching."
-        title="Dispatch capacity forecast"
-      />
+    <AdminSection
+      actions={
+        <AdminFormControlLink className="button button-secondary" href="/operations-policy">
+          <SlidersHorizontal aria-hidden="true" size={16} />
+          Policy: fresh location {'<='} {staleLocationMinutes}m
+        </AdminFormControlLink>
+      }
+      className="admin-mb-16 partner-dispatch-forecast-card"
+      description="Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply records for direct requests and marketplace matching."
+      title="Dispatch capacity forecast"
+    >
       <div className="grid admin-mt-12">
         {forecast.totals.map((item) => (
           <Link className="card" href={item.href} key={item.label}>
@@ -130,7 +130,7 @@ export function PartnerDispatchForecastSection({
           </div>
         </div>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

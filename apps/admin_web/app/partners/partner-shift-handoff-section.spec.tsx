@@ -26,7 +26,12 @@ describe('PartnerShiftHandoffSection', () => {
       expect.arrayContaining(['/partners?review=cash-debt', '/cash-settlements']),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['signal signal-warn', 'pill pill-danger', 'ops-task-card ops-task-blocked']),
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-shift-handoff-card',
+        'signal signal-warn',
+        'pill pill-danger',
+        'ops-task-card ops-task-blocked',
+      ]),
     );
   });
 

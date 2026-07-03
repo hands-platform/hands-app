@@ -23,6 +23,7 @@ describe('PartnerDispatchHandoffSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-section admin-mb-16 partner-dispatch-handoff-card',
         'admin-form-control-link button button-secondary',
         'ops-task-breakdown-item ops-task-breakdown-ok',
       ]),
