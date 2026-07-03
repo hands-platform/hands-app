@@ -95,14 +95,12 @@ export default async function PartnerOverviewPage({
         </div>
       </section>
 
-      <section className="card admin-filter-panel usage-overview-filter-panel partner-overview-filter-panel">
-        <div className="admin-filter-panel-header">
-          <div>
-            <h2>Partner supply range</h2>
-            <p className="muted">Default view stays focused on current supply and bounded operating windows.</p>
-          </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
-        </div>
+      <AdminSection
+        className="usage-overview-filter-panel partner-overview-filter-panel"
+        description="Default view stays focused on current supply and bounded operating windows."
+        statusLabel={overview.rangeLabel}
+        title="Partner supply range"
+      >
         <div className="booking-date-filter-buttons usage-overview-range-buttons">
           {partnerOverviewRangeOptions.map((option) => (
             <a
@@ -184,7 +182,7 @@ export default async function PartnerOverviewPage({
             </a>
           </div>
         ) : null}
-      </section>
+      </AdminSection>
 
       {overview.summaryKpis.length > 0 ? (
         <section className="usage-overview-command-grid" aria-label="Partner supply summary">
@@ -261,19 +259,17 @@ export default async function PartnerOverviewPage({
       ) : null}
 
       {overview.dataNotes.length > 0 ? (
-        <section className="card admin-filter-panel">
-          <div className="admin-filter-panel-header">
-            <div>
-              <h2>Data notes</h2>
-              <p className="muted">Signals that need additional mobile event logging before they become exact.</p>
-            </div>
-          </div>
+        <AdminSection
+          className="partner-overview-notes-card"
+          description="Signals that need additional mobile event logging before they become exact."
+          title="Data notes"
+        >
           <ul className="partner-overview-notes">
             {overview.dataNotes.map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
-        </section>
+        </AdminSection>
       ) : null}
     </div>
   );
