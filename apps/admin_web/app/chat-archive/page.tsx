@@ -167,62 +167,64 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
 
       <AdminSection className="admin-mb-16" title="Chat evidence filters">
         <form className="form-grid" action="/chat-archive">
-          <div className="calendar-field">
-            <span>Search</span>
-            <AdminFormInput
-              defaultValue={filters.q}
-              label="Search"
-              name="q"
-              placeholder="Booking, room, customer, Partner, message"
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Booking status</span>
-            <AdminFormSelect
-              defaultValue={filters.status}
-              label="Booking status"
-              name="status"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Active or matching', value: 'active' },
-                { label: 'Completed', value: 'completed' },
-                { label: 'Cancelled / expired / refunded', value: 'closed' },
-                { label: 'Room without messages', value: 'no-message' },
-                { label: 'Matched without room', value: 'missing-room' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Sender</span>
-            <AdminFormSelect
-              defaultValue={filters.sender}
-              label="Sender"
-              name="sender"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Customer messages', value: 'customer' },
-                { label: 'Partner messages', value: 'partner' },
-                { label: 'Admin/system messages', value: 'admin' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Preset</span>
-            <AdminFormSelect
-              defaultValue={dateFilters.range}
-              label="Preset"
-              name="range"
-              options={detailDateRangeOptions}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>From</span>
-            <AdminFormDate defaultValue={dateFilters.from} label="From" name="from" />
-          </div>
-          <div className="calendar-field">
-            <span>To</span>
-            <AdminFormDate defaultValue={dateFilters.to} label="To" name="to" />
-          </div>
+          <AdminFormInput
+            className="calendar-field"
+            defaultValue={filters.q}
+            label="Search"
+            labelVisibility="visible"
+            name="q"
+            placeholder="Booking, room, customer, Partner, message"
+          />
+          <AdminFormSelect
+            className="calendar-field"
+            defaultValue={filters.status}
+            label="Booking status"
+            labelVisibility="visible"
+            name="status"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Active or matching', value: 'active' },
+              { label: 'Completed', value: 'completed' },
+              { label: 'Cancelled / expired / refunded', value: 'closed' },
+              { label: 'Room without messages', value: 'no-message' },
+              { label: 'Matched without room', value: 'missing-room' },
+            ]}
+          />
+          <AdminFormSelect
+            className="calendar-field"
+            defaultValue={filters.sender}
+            label="Sender"
+            labelVisibility="visible"
+            name="sender"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Customer messages', value: 'customer' },
+              { label: 'Partner messages', value: 'partner' },
+              { label: 'Admin/system messages', value: 'admin' },
+            ]}
+          />
+          <AdminFormSelect
+            className="calendar-field"
+            defaultValue={dateFilters.range}
+            label="Preset"
+            labelVisibility="visible"
+            name="range"
+            options={detailDateRangeOptions}
+          />
+          <AdminFormDate
+            className="calendar-field"
+            defaultValue={dateFilters.from}
+            label="From"
+            labelVisibility="visible"
+            name="from"
+          />
+          <AdminFormDate
+            className="calendar-field"
+            defaultValue={dateFilters.to}
+            label="To"
+            labelVisibility="visible"
+            name="to"
+          />
           <div className="actions full-span">
             <AdminFormControlButton className="button button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
