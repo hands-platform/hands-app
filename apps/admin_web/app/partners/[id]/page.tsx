@@ -17,6 +17,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
 } from '../../../components/admin-review-records-section';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import {
@@ -779,7 +780,27 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
 
   return (
-    <div className="partners-page partner-detail-page">
+    <AdminPageTemplate
+      actions={
+        <>
+          <Link className="button button-secondary" href="/partners">
+            Back to partners
+          </Link>
+          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
+            All Partner chats
+          </Link>
+          <ActionMenu
+            actions={partnerDetailAccountActionMenuItems(provider)}
+            label={`Partner detail account actions for ${partnerDisplayLabel}`}
+          />
+        </>
+      }
+      contentClassName="partners-page partner-detail-page"
+      description={`${marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} / ${
+        provider.user?.phone ?? 'No phone'
+      } / ${provider.city ?? 'No city'}`}
+      title={partnerDisplayLabel}
+    >
       {accountConfirmation ? (
         <ConfirmDialog
           action={partnerDetailAccountServerAction(accountConfirmation.action)}
@@ -835,31 +856,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           tone={reviewConfirmation.tone}
         />
       ) : null}
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/partners">
-              Back to partners
-            </Link>
-          </p>
-          <h1>
-            {partnerDisplayLabel}
-          </h1>
-          <p className="muted">
-            {marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} /{' '}
-            {provider.user?.phone ?? 'No phone'} / {provider.city ?? 'No city'}
-          </p>
-        </div>
-        <div className="actions">
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
-            All Partner chats
-          </Link>
-          <ActionMenu
-            actions={partnerDetailAccountActionMenuItems(provider)}
-            label={`Partner detail account actions for ${partnerDisplayLabel}`}
-          />
-        </div>
-      </section>
 
       <PartnerDetailSummaryRailSection
         description="The first facts an operator checks before opening the full partner record."
@@ -1156,7 +1152,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </section>
         </PartnerDetailReferenceDetails>
       </PartnerDetailSectionGroup>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

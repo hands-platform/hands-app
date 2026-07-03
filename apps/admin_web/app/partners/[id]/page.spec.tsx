@@ -1,5 +1,7 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
+import type { AdminProvider } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import ProviderDetailPage from './page';
 
@@ -40,4 +42,79 @@ describe('ProviderDetailPage data loading', () => {
     );
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
+
+  it('renders the full partner detail header on the shared Vuexy page surface', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-1') {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) {
+        return [];
+      }
+      return fallback;
+    });
+
+    const page = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-1' }),
+      searchParams: Promise.resolve({ section: 'full' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('Partner One');
+    expect(markup).toContain('All Partner chats');
+  });
 });
+
+function partnerDetail(): AdminProvider {
+  return {
+    activitySummary: {
+      availablePayout: 0,
+      completedWorkCount: 0,
+      grossRevenue: 0,
+      pendingPayout: 0,
+      platformFee: 0,
+      walletBalance: 0,
+    },
+    agreements: [],
+    auditLogs: [],
+    bankAccounts: [],
+    bookingSummary: {
+      activeBookingCount: 0,
+      cancelledBookingCount: 0,
+      completedBookingCount: 0,
+      noShowBookingCount: 0,
+      participatingBookingCount: 0,
+      partnerClosedBookingCount: 0,
+      preferredBookingCount: 0,
+      selectedBookingCount: 0,
+      workingBookingCount: 0,
+    },
+    devices: [],
+    displayName: 'Partner One',
+    documents: [],
+    earnings: [],
+    id: 'partner-1',
+    legalName: 'Partner One Legal',
+    participants: [],
+    payoutBatches: [],
+    preferredBookings: [],
+    reports: [],
+    sanctions: [],
+    selectedBookings: [],
+    services: [],
+    sessions: [],
+    sharedDeviceMatches: [],
+    status: 'ONLINE_AVAILABLE',
+    user: {
+      fileAssets: [],
+      fullName: 'Partner One',
+      id: 'user-1',
+      phone: '+84900000002',
+      pushDevices: [],
+    },
+    userId: 'user-1',
+    verificationLogs: [],
+    walletWithdrawalRequests: [],
+  } as unknown as AdminProvider;
+}
