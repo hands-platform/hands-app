@@ -2,6 +2,7 @@ import type { AdminAuditLog } from '../../../lib/admin-api';
 import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
 import { auditLogNoteText } from './partner-detail-record-helpers';
 import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
+import { partnerOpsPillClass, type PartnerOpsTone } from './partner-detail-tone';
 
 const PARTNER_OPS_NOTE_ACTION = 'provider.ops_note.add';
 
@@ -27,7 +28,7 @@ type PartnerConnectedRecordPayoutOps = {
   readonly blockers: readonly string[];
   readonly hold?: { readonly reason?: string | null } | null;
   readonly status: string;
-  readonly tone: 'done' | 'pending' | 'blocked';
+  readonly tone: PartnerOpsTone;
 };
 
 type PartnerConnectedRecordKycEvidence = {
@@ -115,7 +116,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       value: payoutOps.status,
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
       href: '#payout',
-      tone: pillClass(payoutOps.tone),
+      tone: partnerOpsPillClass(payoutOps.tone),
     },
     {
       label: 'Operator notes',
@@ -142,10 +143,4 @@ function bookingServiceLabel(booking: PartnerBookingArchiveBooking) {
     })
     .filter(Boolean);
   return labels.length ? labels.join(', ') : 'No service';
-}
-
-function pillClass(tone: PartnerConnectedRecordPayoutOps['tone']) {
-  if (tone === 'done') return 'pill-success';
-  if (tone === 'blocked') return 'pill-danger';
-  return 'pill-warn';
 }

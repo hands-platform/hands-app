@@ -2,7 +2,6 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
 
 import {
   partnerOperatorCommandActionHref,
@@ -13,8 +12,7 @@ import {
   partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
-
-type PartnerOpsTone = 'done' | 'pending' | 'blocked';
+import { partnerOpsStatusBadgeTone, type PartnerOpsTone } from './partner-detail-tone';
 
 export type PartnerOperatorCommand = {
   readonly action: PartnerOperatorCommandActionConfig;
@@ -62,7 +60,7 @@ export function PartnerDetailOperatorCommandQueueSection({
       description="Same-shift approval queue for account holds, KYC, public profile review, and service setup. Settlement, location, and app reachability evidence stays in the dedicated sections below."
       id="partner-operator-command-queue"
       resultLabel={queue.status}
-      resultTone={statusBadgeToneForPartnerOps(queue.tone)}
+      resultTone={partnerOpsStatusBadgeTone(queue.tone)}
       title="Partner operator command queue"
     >
       <div className="service-trace-summary admin-mt-12">
@@ -149,12 +147,6 @@ export function PartnerDetailOperatorCommandQueueSection({
       </div>
     </AdminFilterPanel>
   );
-}
-
-function statusBadgeToneForPartnerOps(tone: PartnerOpsTone): StatusBadgeTone {
-  if (tone === 'done') return 'success';
-  if (tone === 'pending') return 'warning';
-  return 'danger';
 }
 
 function PartnerCommandQueueEmptyState() {

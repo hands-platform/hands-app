@@ -2,15 +2,21 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
+import {
+  partnerOpsCardClass,
+  partnerOpsPillClass,
+  partnerOpsStatusBadgeTone,
+  partnerOpsStepLabel,
+  type PartnerOpsTone,
+} from './partner-detail-tone';
 
-export type PartnerOpsTone = 'blocked' | 'done' | 'pending';
+export type { PartnerOpsTone };
 
 export type PartnerReadinessSnapshotBadge = {
   readonly detail: string;
@@ -69,12 +75,12 @@ export function PartnerDetailReadinessSnapshotSection({
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
       description="Fast active-work checks for direct first-pick, marketplace matching, KYC, service pricing, location, and app reachability. Wallet evidence stays in finance sections."
       resultLabel={snapshot.status}
-      resultTone={statusBadgeToneForPartnerOps(snapshot.tone)}
+      resultTone={partnerOpsStatusBadgeTone(snapshot.tone)}
       title="Partner readiness snapshot"
     >
       <div className="participant-list admin-mt-12">
         {snapshot.badges.map((badge) => (
-          <span className={`pill ${pillClassForTone(badge.tone)}`} key={badge.label} title={badge.detail}>
+          <span className={`pill ${partnerOpsPillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
             {badge.label}
           </span>
         ))}
@@ -89,7 +95,7 @@ export function PartnerDetailReadinessSnapshotSection({
           >
             <tr>
               <td>
-                <span className={`pill ${pillClassForTone(snapshot.tone)}`}>{snapshot.gate.label}</span>
+                <span className={`pill ${partnerOpsPillClass(snapshot.tone)}`}>{snapshot.gate.label}</span>
               </td>
               <td>
                 <strong>{snapshot.gate.title}</strong>
@@ -112,10 +118,10 @@ export function PartnerAcceptanceRepairCommandSection({
 }: PartnerAcceptanceRepairCommandSectionProps) {
   return (
     <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} ${cardClassForTone(command.tone)} admin-mb-16`}
+      className={`${partnerDetailReviewCardClassName} ${partnerOpsCardClass(command.tone)} admin-mb-16`}
       description="Exact operator diagnosis for dispatch participation, customer handoff, app message, and finance repair."
       resultLabel={command.status}
-      resultTone={statusBadgeToneForPartnerOps(command.tone)}
+      resultTone={partnerOpsStatusBadgeTone(command.tone)}
       title="Dispatch repair command"
     >
       <div className="service-trace-summary admin-mt-12">
@@ -165,7 +171,7 @@ export function PartnerAcceptanceRepairCommandSection({
                   <p className="muted">{step.operatorAction}</p>
                 </td>
                 <td>
-                  <span className={`pill ${pillClassForTone(step.tone)}`}>{stepToneLabel(step.tone)}</span>
+                  <span className={`pill ${partnerOpsPillClass(step.tone)}`}>{partnerOpsStepLabel(step.tone)}</span>
                 </td>
                 <td>
                   <Link className="text-link" href={step.href}>
@@ -207,40 +213,4 @@ function PartnerReadinessEmptyState({ message }: { readonly message: string }) {
       <p className="muted">{message}</p>
     </div>
   );
-}
-
-function statusBadgeToneForPartnerOps(tone: PartnerOpsTone): StatusBadgeTone {
-  if (tone === 'done') return 'success';
-  if (tone === 'blocked') return 'danger';
-  return 'warning';
-}
-
-function stepToneLabel(tone: PartnerOpsTone) {
-  if (tone === 'done') {
-    return 'Clear';
-  }
-  if (tone === 'blocked') {
-    return 'Blocks booking';
-  }
-  return 'Operator check';
-}
-
-function pillClassForTone(tone: PartnerOpsTone) {
-  if (tone === 'done') {
-    return 'pill-success';
-  }
-  if (tone === 'blocked') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
-}
-
-function cardClassForTone(tone: PartnerOpsTone) {
-  if (tone === 'done') {
-    return 'ops-task-done';
-  }
-  if (tone === 'blocked') {
-    return 'ops-task-blocked';
-  }
-  return 'ops-task-pending';
 }

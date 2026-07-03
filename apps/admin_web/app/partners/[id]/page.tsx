@@ -274,10 +274,14 @@ import {
   PartnerAcceptanceRepairCommandSection,
   PartnerDetailReadinessSnapshotSection,
   type PartnerAcceptanceRepairCommandView,
-  type PartnerOpsTone,
   type PartnerReadinessSnapshotBadge,
   type PartnerReadinessSnapshotView,
 } from './partner-detail-readiness-command-section';
+import {
+  partnerOpsCardClass,
+  partnerOpsPillClass,
+  type PartnerOpsTone,
+} from './partner-detail-tone';
 import {
   PartnerDetailStatusCardsSection,
   type PartnerStatusCard,
@@ -886,7 +890,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner control workspace"
       >
         <PartnerDetailOperatorCommandQueueSection
-          pillClassForTone={pillClass}
+          pillClassForTone={partnerOpsPillClass}
           providerId={provider.id}
           queue={partnerOperatorCommandQueue}
         />
@@ -934,7 +938,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             missingKycDocumentCount={missingKycDocumentCount}
           />
           <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
-          <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
+          <PartnerDetailOperatingChecklistSection pillClassForTone={partnerOpsPillClass} rows={partnerOperatingChecklist} />
           <PartnerDetailRecordDateFilterSection
             activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
             activityOrder={activityOrder}
@@ -1006,20 +1010,20 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} formatDate={formatDate} />
         <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
         <PartnerDetailBookingGateDecisionSection
-          cardClassForTone={cardClass}
+          cardClassForTone={partnerOpsCardClass}
           decision={bookingGateDecision}
-          pillClassForTone={pillClass}
+          pillClassForTone={partnerOpsPillClass}
         />
         <PartnerAcceptanceRepairCommandSection command={acceptanceRepairCommand} />
         <PartnerDetailAcceptanceUnblockPlaybookSection
-          pillClassForTone={pillClass}
+          pillClassForTone={partnerOpsPillClass}
           steps={acceptanceUnblockPlaybook}
         />
         <PartnerDetailDeviceSessionActivitySection
-          cardClassForTone={cardClass}
+          cardClassForTone={partnerOpsCardClass}
           deviceRows={partnerDeviceRows}
           followUpNeeded={securitySummary.followUpNeeded}
-          pillClassForTone={pillClass}
+          pillClassForTone={partnerOpsPillClass}
           securityCards={securitySummary.cards}
           sessionRows={partnerSessionRows}
           sharedDeviceRows={partnerSharedDeviceRows}
@@ -1131,13 +1135,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             updateWithdrawalRequestAction={updatePartnerWalletWithdrawalRequest}
           />
           <PartnerDetailPayoutOperationsSection
-            cardClassForTone={cardClass}
+            cardClassForTone={partnerOpsCardClass}
             earningsRows={payoutEarningRows}
             hasCashFeeDebt={hasCashFeeDebt}
             operations={payoutOperationsView}
             partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
             payoutBatchRows={payoutBatchRows}
-            pillClassForTone={pillClass}
+            pillClassForTone={partnerOpsPillClass}
           />
           <section className="detail-grid partner-detail-dossier-grid">
             <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
@@ -1384,7 +1388,7 @@ function PartnerDetailFastOverview({
       value: payoutOps.status,
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
       href: fullSectionHref('#payout'),
-      tone: pillClass(payoutOps.tone),
+      tone: partnerOpsPillClass(payoutOps.tone),
     },
     {
       label: 'Bookings',
@@ -3597,18 +3601,6 @@ function nextProviderAction(
     action: 'Monitor direct booking performance.',
     tone: 'done',
   };
-}
-
-function pillClass(tone: ProviderOpsCard['tone']) {
-  if (tone === 'done') return 'pill-success';
-  if (tone === 'blocked') return 'pill-danger';
-  return 'pill-warn';
-}
-
-function cardClass(tone: ProviderOpsCard['tone']) {
-  if (tone === 'done') return 'ops-task-done';
-  if (tone === 'blocked') return 'ops-task-blocked';
-  return 'ops-task-pending';
 }
 
 function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY) {

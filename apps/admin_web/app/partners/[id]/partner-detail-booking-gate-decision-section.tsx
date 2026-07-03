@@ -2,14 +2,12 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
-
-type PartnerOpsTone = 'done' | 'pending' | 'blocked';
+import { partnerOpsStatusBadgeTone, type PartnerOpsTone } from './partner-detail-tone';
 
 export type PartnerBookingGateDecisionGate = {
   readonly action: string;
@@ -51,7 +49,7 @@ export function PartnerDetailBookingGateDecisionSection({
       description="Operator-facing decision for whether this partner can join marketplace bookings or continue marketplace/payout operations right now."
       id="partner-booking-gate-decision"
       resultLabel={decision.status}
-      resultTone={statusBadgeToneForPartnerOps(decision.tone)}
+      resultTone={partnerOpsStatusBadgeTone(decision.tone)}
       title="Marketplace booking gate decision"
     >
       <div className="service-trace-summary admin-mt-12">
@@ -133,12 +131,6 @@ function bookingGateStatusLabel(gate: PartnerBookingGateDecisionGate) {
     return 'WARN';
   }
   return gate.ok ? 'OK' : 'BLOCK';
-}
-
-function statusBadgeToneForPartnerOps(tone: PartnerOpsTone): StatusBadgeTone {
-  if (tone === 'done') return 'success';
-  if (tone === 'pending') return 'warning';
-  return 'danger';
 }
 
 function PartnerBookingGateDecisionEmptyState({ message }: { readonly message: string }) {
