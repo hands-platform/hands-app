@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import { CouponsTableSection, type CouponTableRow } from './coupons-table-section';
+
+const sectionSource = readFileSync(new URL('./coupons-table-section.tsx', import.meta.url), 'utf8');
 
 describe('CouponsTableSection', () => {
   it('renders coupon cards with edit fields and booking usage', () => {
@@ -38,6 +42,8 @@ describe('CouponsTableSection', () => {
     );
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
+    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });
 

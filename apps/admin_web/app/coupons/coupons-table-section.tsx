@@ -10,6 +10,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminCard } from '../../components/admin-surface';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
 
@@ -122,7 +123,7 @@ function CouponManagementCard({
   const usageCount = row.usageBookingCount;
 
   return (
-    <section className={`card admin-card coupon-management-section coupon-management-section-${row.windowState}`}>
+    <AdminCard className={`coupon-management-section coupon-management-section-${row.windowState}`}>
       <div className="coupon-management-section-header">
         <div>
           <div className="coupon-code-line">
@@ -194,7 +195,7 @@ function CouponManagementCard({
           totalCount={row.usageBookingCount}
         />
       </details>
-    </section>
+    </AdminCard>
   );
 }
 
