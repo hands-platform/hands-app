@@ -41,6 +41,13 @@ import {
   readPartnerControlDeskConfirmationAction,
   type PartnerControlDeskConfirmationAction,
 } from './partner-control-desk-action-confirmation';
+import {
+  buildPartnerControlActiveFilters,
+  buildPartnerControlFilters,
+  isPartnerControlCashDebtReview,
+  partnerControlListHref,
+  type PartnerControlPageFilters,
+} from './partner-control-page-filters';
 import { buildPartnerControlPageLoadPlan } from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 import {
@@ -87,7 +94,7 @@ export default async function PartnerControlsPage({
   searchParams?: PartnerControlsSearchParams;
 }) {
   const params = searchParams ? await searchParams : {};
-  const filters = buildFilters(params);
+  const filters = buildPartnerControlFilters(params);
   const loadPlan = buildPartnerControlPageLoadPlan(params);
   const [providers, reports, sanctions, summaryResponse, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>(loadPlan.providersHref, []),
@@ -110,7 +117,8 @@ export default async function PartnerControlsPage({
     buildPartnerControlSummaryFromServer(summaryResponse) ??
     buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
   const pageMetrics = buildPartnerControlPageMetrics(summary);
-  const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
+  const rawProviderWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
+  const providerWatchlist = filterPartnerControlWatchlist(rawProviderWatchlist, filters);
   const commandCenter = buildPartnerControlCommandCenter({
     reports,
     sanctions,
@@ -461,6 +469,7 @@ export default async function PartnerControlsPage({
           </span>
         </div>
         <form className="form-grid" action="/partner-controls">
+          {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
           <div className="calendar-field">
             <span>Search</span>
             <AdminFormInput
@@ -1786,74 +1795,6 @@ function buildPartnerControlNextActions(input: {
   return actions.sort((left, right) => right.priority - left.priority).slice(0, 10);
 }
 
-function buildFilters(params: Record<string, string | string[] | undefined>) {
-  return {
-    q: readParam(params.q).toLowerCase(),
-    status: readParam(params.status),
-    severity: readParam(params.severity),
-    sanction: readParam(params.sanction),
-  };
-}
-
-function buildPartnerControlActiveFilters(filters: ReturnType<typeof buildFilters>) {
-  return [
-    filters.q
-      ? {
-          kind: 'search',
-          value: filters.q,
-          label: `Search: ${filters.q}`,
-          description: 'Control rows are narrowed by partner, phone, category, reason, or report text.',
-        }
-      : null,
-    filters.status
-      ? {
-          kind: 'status',
-          value: filters.status,
-          label: `Report: ${filters.status}`,
-          description: controlFilterDescription('status', filters.status),
-        }
-      : null,
-    filters.severity
-      ? {
-          kind: 'severity',
-          value: filters.severity,
-          label: `Report level: ${filters.severity === 'HIGH_PLUS' ? 'CRITICAL + HIGH' : filters.severity}`,
-          description: controlFilterDescription('severity', filters.severity),
-        }
-      : null,
-    filters.sanction
-      ? {
-          kind: 'sanction',
-          value: filters.sanction,
-          label: `Control: ${filters.sanction}`,
-          description: controlFilterDescription('sanction', filters.sanction),
-        }
-      : null,
-  ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
-}
-
-function controlFilterDescription(kind: string, value: string) {
-  if (kind === 'status' && value === 'OPEN') {
-    return 'Open reports need triage before profile review or payout decisions.';
-  }
-  if (kind === 'status' && value === 'INVESTIGATING') {
-    return 'Investigating reports need evidence, customer notes, or staff follow-up.';
-  }
-  if (kind === 'severity') {
-    if (value === 'HIGH_PLUS') {
-      return 'Urgent and major reports are prioritized together for safety review.';
-    }
-    return `${value.toLowerCase()} level reports are prioritized for operator review.`;
-  }
-  if (kind === 'sanction' && value === 'ACTIVE') {
-    return 'Active account controls restrict work or payout and should be lifted only with a clear audit trail.';
-  }
-  if (kind === 'sanction') {
-    return 'Account controls are narrowed to the selected lifecycle state.';
-  }
-  return 'Control board is narrowed by the active filter.';
-}
-
 function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
   const subject = kind === 'report' ? 'Partner reports' : 'Partner account controls';
   if (activeFilters.length === 0) {
@@ -1884,35 +1825,7 @@ function partnerControlEstimatedTotalPages(rowCount: number, activePage: number,
   return Math.max(1, rowCount >= pageSize ? activePage + 1 : activePage);
 }
 
-function partnerControlListHref(
-  params: Record<string, string | string[] | undefined>,
-  pageParam: 'reportPage' | 'sanctionPage',
-  page: number,
-) {
-  const searchParams = new URLSearchParams();
-
-  for (const key of ['q', 'status', 'severity', 'sanction', 'reportPage', 'sanctionPage'] as const) {
-    const value = readParam(params[key]);
-    if (value) {
-      searchParams.set(key, value);
-    }
-  }
-
-  if (page > 1) {
-    searchParams.set(pageParam, String(page));
-  } else {
-    searchParams.delete(pageParam);
-  }
-
-  const query = searchParams.toString();
-  return query ? `/partner-controls?${query}` : '/partner-controls';
-}
-
-function readParam(value: string | string[] | undefined) {
-  return readSearchParam(value);
-}
-
-function filterReports(reports: AdminProviderReport[], filters: ReturnType<typeof buildFilters>) {
+function filterReports(reports: AdminProviderReport[], filters: PartnerControlPageFilters) {
   return reports.filter((report) => {
     if (filters.status && report.status !== filters.status) return false;
     if (filters.severity === 'HIGH_PLUS' && !['CRITICAL', 'HIGH'].includes(report.severity)) return false;
@@ -1924,7 +1837,7 @@ function filterReports(reports: AdminProviderReport[], filters: ReturnType<typeo
   });
 }
 
-function filterSanctions(sanctions: AdminProviderSanction[], filters: ReturnType<typeof buildFilters>) {
+function filterSanctions(sanctions: AdminProviderSanction[], filters: PartnerControlPageFilters) {
   return sanctions.filter((sanction) => {
     if (filters.sanction && sanction.status !== filters.sanction) return false;
     if (filters.q && !sanctionSearchText(sanction).includes(filters.q)) return false;
@@ -1988,6 +1901,16 @@ function buildPartnerControlWatchlist(
     .map((provider) => buildPartnerControlWatchItem(provider, deviceUsage, controlPolicy))
     .filter((item): item is PartnerControlWatchItem => Boolean(item))
     .sort((left, right) => watchSeverityRank(right.severity) - watchSeverityRank(left.severity));
+}
+
+function filterPartnerControlWatchlist(
+  watchlist: PartnerControlWatchItem[],
+  filters: PartnerControlPageFilters,
+) {
+  if (isPartnerControlCashDebtReview(filters)) {
+    return watchlist.filter((item) => item.walletBalance < 0);
+  }
+  return watchlist;
 }
 
 function buildPartnerControlWatchItem(
