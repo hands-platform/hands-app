@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
   readonly action: string;
@@ -88,7 +89,7 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((item) => (
                       <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
-                        <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                        <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                         <div>
                           <strong>{item.action}</strong>
                           <p className="muted">{item.reason}</p>

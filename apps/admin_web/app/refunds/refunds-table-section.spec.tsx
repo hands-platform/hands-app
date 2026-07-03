@@ -31,6 +31,27 @@ describe('RefundsTableSection', () => {
 
     expect(textContent(section)).toContain('No refunds currently match this queue.');
   });
+
+  it('does not duplicate the base pill class for refund execution badges', () => {
+    const row = buildRow();
+    const section = RefundsTableSection({
+      emptyMessage: 'No refunds loaded.',
+      pagination: pagination([
+        {
+          ...row,
+          executionRows: [
+            {
+              ...row.executionRows[0],
+              pillClass: 'pill pill-danger',
+            },
+          ],
+        },
+      ]),
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-danger');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-danger');
+  });
 });
 
 function pagination(

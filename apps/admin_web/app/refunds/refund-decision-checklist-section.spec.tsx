@@ -26,6 +26,18 @@ describe('RefundDecisionChecklistSection', () => {
       ]),
     );
   });
+
+  it('does not duplicate the base pill class for decision checklist badges', () => {
+    const section = RefundDecisionChecklistSection({
+      items: buildItems().map((item) => ({
+        ...item,
+        pillClass: 'pill pill-warn',
+      })),
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function buildItems(): RefundDecisionChecklistItem[] {

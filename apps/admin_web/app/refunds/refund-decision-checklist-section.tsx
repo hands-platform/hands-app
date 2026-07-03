@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type RefundDecisionChecklistItem = {
   readonly className: string;
@@ -34,7 +35,7 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
         {items.map((item) => (
           <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
             <div>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
               <h3>{item.title}</h3>
               <p className="muted">{item.detail}</p>
             </div>
