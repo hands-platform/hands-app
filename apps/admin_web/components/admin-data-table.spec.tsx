@@ -15,7 +15,7 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.type).toBe('table');
-    expect(table.props).toMatchObject({ className: 'table vuexy-data-table' });
+    expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-booking-table' });
     expect(table.props.children[0].props.children.props.children).toHaveLength(2);
     expect(table.props.children[1].props.children[1]).toBeNull();
   });
@@ -29,7 +29,9 @@ describe('AdminDataTable', () => {
       rowCount: 0,
     });
 
-    expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-customer-table' });
+    expect(table.props).toMatchObject({
+      className: 'table vuexy-data-table vuexy-booking-table vuexy-customer-table',
+    });
     const emptyRow = table.props.children[1].props.children[1];
     expect(emptyRow.props.children.props).toMatchObject({
       className: 'admin-data-table-empty-cell',
@@ -50,6 +52,20 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.props.children[1].props.children[1]).toBeNull();
+  });
+
+  it('does not duplicate Vuexy table classes passed by existing callers', () => {
+    const table = AdminDataTable({
+      children: null,
+      className: 'vuexy-booking-table compact-table',
+      emptyMessage: null,
+      headers: ['Role'],
+      rowCount: 0,
+    });
+
+    expect(table.props).toMatchObject({
+      className: 'table vuexy-data-table vuexy-booking-table compact-table',
+    });
   });
 
   it('renders a reusable scroll wrapper for wide admin tables', () => {

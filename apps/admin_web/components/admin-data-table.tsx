@@ -23,7 +23,7 @@ export function AdminDataTable({
   headers,
   rowCount,
 }: AdminDataTableProps) {
-  const tableClassName = className ? `table vuexy-data-table ${className}` : 'table vuexy-data-table';
+  const tableClassName = joinClassNames('table vuexy-data-table vuexy-booking-table', className);
 
   return (
     <table className={tableClassName}>
@@ -46,4 +46,18 @@ export function AdminDataTable({
       </tbody>
     </table>
   );
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  const tokens = new Set<string>();
+
+  for (const className of classNames) {
+    for (const token of className?.split(/\s+/) ?? []) {
+      if (token) {
+        tokens.add(token);
+      }
+    }
+  }
+
+  return Array.from(tokens).join(' ');
 }
