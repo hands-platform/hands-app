@@ -317,7 +317,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-07');
     expect(markup).toContain('Original monthly close');
     expect(markup).toContain('Reversal monthly close');
-    expect(markup).toContain('closing-1');
+    expect(markup).toContain('Original tax PAID');
+    expect(markup).toContain('Reversal tax REVERSED');
+    expect(markup).toContain('Monthly closing closing-1');
+    expect(markup).toContain('Reversal source seed-finance-smoke-reversal');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
     expect(markup).toContain('Balanced');

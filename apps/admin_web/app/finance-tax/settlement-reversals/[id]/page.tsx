@@ -371,10 +371,10 @@ function reversalAllocationDelta(reversal: AdminBookingSettlementReversalEntry) 
 
 function evidenceStatusForLink(label: string, reversal: AdminBookingSettlementReversalEntry) {
   if (label === 'Original monthly close') {
-    return reversal.originalSettlementSnapshot?.taxStatus ?? '-';
+    return `Original tax ${reversal.originalSettlementSnapshot?.taxStatus ?? '-'}`;
   }
   if (label === 'Reversal monthly close') {
-    return reversal.taxStatus;
+    return `Reversal tax ${reversal.taxStatus}`;
   }
   if (label === 'Reversal journal') {
     return reversal.accountingJournalBatches?.[0]?.status ?? '-';
@@ -390,10 +390,10 @@ function evidenceStatusForLink(label: string, reversal: AdminBookingSettlementRe
 
 function evidenceSourceForLink(label: string, reversal: AdminBookingSettlementReversalEntry) {
   if (label === 'Original monthly close') {
-    return reversal.originalMonthlyClosingId;
+    return `Monthly closing ${reversal.originalMonthlyClosingId}`;
   }
   if (label === 'Reversal monthly close') {
-    return reversal.sourceKey;
+    return `Reversal source ${reversal.sourceKey}`;
   }
   if (label === 'Reversal journal') {
     return reversal.accountingJournalBatches?.[0]?.sourceKey ?? '-';
