@@ -32,8 +32,8 @@ describe('OperationsPolicyMatchingStageImpactSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
     expect(section.props.id).toBe('matching-stage-impact');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Matching stage impact preview');
     expect(rendered).toContain('10m / 10 km / 30m fresh');
     expect(rendered).toContain('Stage 2 marketplace');

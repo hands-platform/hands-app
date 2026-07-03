@@ -45,7 +45,7 @@ describe('OperationsPolicyOutcomeEffectSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy outcome effect');
     expect(rendered).toContain('3 booking(s) with saved policy');
     expect(rendered).toContain('Matched rate');

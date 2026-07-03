@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
@@ -20,19 +21,13 @@ export function OperationsPolicyOutcomeEffectSection({
   analysis,
 }: OperationsPolicyOutcomeEffectSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Policy outcome effect</h2>
-          <p className="muted">
-            Groups real bookings by the policy snapshot saved at booking open. Use this before changing the 10
-            minute response window, marketplace policy, invite cap, or marketplace opening mode.
-          </p>
-        </div>
-        <PillClassBadge pillClass={analysis.sampleCount ? 'pill-info' : 'pill-warn'}>
-          {analysis.sampleCount} booking(s) with saved policy
-        </PillClassBadge>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Groups real bookings by the policy snapshot saved at booking open. Use this before changing the 10 minute response window, marketplace policy, invite cap, or marketplace opening mode."
+      statusLabel={`${analysis.sampleCount} booking(s) with saved policy`}
+      statusTone={analysis.sampleCount ? 'info' : 'warning'}
+      title="Policy outcome effect"
+    >
       <div className="service-trace-summary admin-mt-12">
         {analysis.metrics.map((metric) => (
           <div key={metric.label}>
@@ -87,6 +82,6 @@ export function OperationsPolicyOutcomeEffectSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

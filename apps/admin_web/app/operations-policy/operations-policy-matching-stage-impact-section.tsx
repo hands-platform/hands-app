@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { MatchingStageImpactPreview } from './matching-stage-impact-preview';
 
@@ -22,18 +23,14 @@ export function OperationsPolicyMatchingStageImpactSection({
   preview,
 }: OperationsPolicyMatchingStageImpactSectionProps) {
   return (
-    <section className="card admin-mb-16" id="matching-stage-impact">
-      <div className="ops-section-header">
-        <div>
-          <h2>Matching stage impact preview</h2>
-          <p className="muted">
-            Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km
-            radius, or location freshness policy changed. This is a planning preview; saved booking snapshots
-            still protect live requests.
-          </p>
-        </div>
-        <span className="pill pill-info">{preview.currentPolicyLabel}</span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km radius, or location freshness policy changed. This is a planning preview; saved booking snapshots still protect live requests."
+      id="matching-stage-impact"
+      statusLabel={preview.currentPolicyLabel}
+      statusTone="info"
+      title="Matching stage impact preview"
+    >
       <div className="service-trace-summary admin-mt-12">
         {preview.summary.map((item) => (
           <div key={item.label}>
@@ -75,6 +72,6 @@ export function OperationsPolicyMatchingStageImpactSection({
           location freshness, push delivery, or city supply before changing policy.
         </p>
       </div>
-    </section>
+    </AdminSection>
   );
 }
