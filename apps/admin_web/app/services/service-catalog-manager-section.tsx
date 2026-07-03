@@ -7,6 +7,7 @@ import {
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
@@ -60,10 +61,12 @@ export function ServiceCatalogManagerSection({
           {groups.length ? (
             groups.map((group) => <ServiceCatalogCard group={group} key={group.key} />)
           ) : (
-            <div className="service-menu-empty-state">
-              <strong>No service menu items are registered.</strong>
-              <span className="muted">Add a new service menu item to make it available for Partners.</span>
-            </div>
+            <AdminEmptyState
+              className="service-menu-empty-state"
+              framed
+              message="Add a new service menu item to make it available for Partners."
+              title="No service menu items are registered."
+            />
           )}
         </div>
       </AdminSection>

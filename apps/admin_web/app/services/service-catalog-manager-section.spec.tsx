@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import { ServiceCatalogManagerSection } from './service-catalog-manager-section';
+
+const sectionSource = readFileSync(new URL('./service-catalog-manager-section.tsx', import.meta.url), 'utf8');
 
 describe('ServiceCatalogManagerSection', () => {
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {
@@ -48,6 +52,20 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).toContain('card admin-card service-menu-duration-panel');
     expect(classNames).toContain('card admin-card service-menu-duration-panel is-empty');
     expect(classNames).toContain('admin-form-control-button button button-primary');
+  });
+
+  it('uses the shared empty-state atom when no service menus are registered', () => {
+    const section = ServiceCatalogManagerSection({
+      dialogMode: null,
+      editGroup: null,
+      groups: [],
+      totalGroupCount: 0,
+    });
+
+    expect(textContent(section)).toContain('No service menu items are registered.');
+    expect(classNamesIn(section)).toContain('empty-state service-menu-empty-state');
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="service-menu-empty-state">');
   });
 });
 
