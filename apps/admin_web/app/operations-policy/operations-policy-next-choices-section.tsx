@@ -1,3 +1,5 @@
+import { AdminSection } from '../../components/admin-surface';
+
 type DecisionHintProps = {
   readonly title: string;
   readonly recommendation: string;
@@ -60,8 +62,7 @@ function DecisionHint({ title, recommendation, detail }: DecisionHintProps) {
 
 export function OperationsPolicyNextChoicesSection() {
   return (
-    <section className="card">
-      <h2>Recommended next choices</h2>
+    <AdminSection title="Recommended next choices">
       <div className="booking-radar">
         {decisionHints.map((hint) => (
           <DecisionHint
@@ -72,6 +73,6 @@ export function OperationsPolicyNextChoicesSection() {
           />
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
@@ -39,19 +40,13 @@ export function OperationsPolicyLiveSimulatorSection({
   simulation,
 }: OperationsPolicyLiveSimulatorSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Live policy simulator</h2>
-          <p className="muted">
-            Uses the current policy values, the latest booking/customer coordinate, and current Partner
-            locations to preview who would see or participate in a new direct booking request.
-          </p>
-        </div>
-        <PillClassBadge pillClass={simulation.ready ? 'pill-success' : 'pill-warn'}>
-          {simulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
-        </PillClassBadge>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Uses the current policy values, the latest booking/customer coordinate, and current Partner locations to preview who would see or participate in a new direct booking request."
+      statusLabel={simulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
+      statusTone={simulation.ready ? 'success' : 'warning'}
+      title="Live policy simulator"
+    >
       <div className="service-trace-summary admin-mt-12">
         {simulation.metrics.map((metric) => (
           <div key={metric.label}>
@@ -129,6 +124,6 @@ export function OperationsPolicyLiveSimulatorSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

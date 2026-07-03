@@ -47,7 +47,7 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Live policy simulator');
     expect(rendered).toContain('Ready for dispatch check');
     expect(rendered).toContain('Simulated booking path');
