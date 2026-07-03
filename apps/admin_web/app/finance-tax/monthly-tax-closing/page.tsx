@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, Landmark, Scale } from 'lucide-react';
 
 import type {
