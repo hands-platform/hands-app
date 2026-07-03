@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDispatchForecastSection,
   type PartnerDispatchForecastSectionForecast,
 } from './partner-dispatch-forecast-section';
 
 describe('PartnerDispatchForecastSection', () => {
+  it('uses the shared Vuexy admin card surface for dispatch panels', () => {
+    const source = readFileSync('app/partners/partner-dispatch-forecast-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-card ops-task-note partner-dispatch-panel"');
+  });
+
   it('renders dispatch totals, blockers, and city supply lanes', () => {
     const section = PartnerDispatchForecastSection({
       forecast: buildForecast(),
