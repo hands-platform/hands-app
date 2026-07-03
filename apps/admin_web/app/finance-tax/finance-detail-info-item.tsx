@@ -13,3 +13,7 @@ export function FinanceDetailInfoItem({ label, value }: FinanceDetailInfoItemPro
     </div>
   );
 }
+
+export function FinanceDetailGrid({ children }: { readonly children: ReactNode }) {
+  return <div className="detail-grid admin-mt-16">{children}</div>;
+}

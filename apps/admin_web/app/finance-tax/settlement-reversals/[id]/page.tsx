@@ -6,7 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
-import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -99,7 +99,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             },
           ]}
         />
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -157,7 +157,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem label="Reason" value={reversal.reason ?? 'Payment refund'} />
           <FinanceDetailInfoItem label="Source key" value={reversal.sourceKey} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -166,7 +166,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         resultTone="warning"
         title="Reversal accounting impact"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Customer payment reversal"
             value={formatMoney(reversal.customerPaymentAmount, reversal.currency)}
@@ -212,7 +212,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
               </>
             }
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -221,7 +221,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         resultTone={originalSettlement?.settlementStatus === 'POSTED' ? 'success' : 'info'}
         title="Original settlement lock"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Original period" value={reversal.originalMonthlyPeriod} />
           <FinanceDetailInfoItem label="Reversal period" value={reversal.monthlyPeriod} />
           <FinanceDetailInfoItem label="Original closing" value={shortId(reversal.originalMonthlyClosingId)} />
@@ -231,7 +231,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem label="Original tax status" value={originalSettlement?.taxStatus ?? '-'} />
           <FinanceDetailInfoItem label="Original booking status" value={originalSettlement?.booking?.status ?? '-'} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel

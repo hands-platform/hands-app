@@ -6,7 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
-import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -62,7 +62,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         resultTone={statusTone(batch.status)}
         title="Journal batch overview"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
           <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
           <FinanceDetailInfoItem
@@ -102,7 +102,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
               )
             }
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -136,7 +136,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             },
           ]}
         />
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Source record"
             value={
@@ -196,7 +196,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             label="Latest bank evidence"
             value={bankMatches[0] ? <BankMatchEvidence matches={[bankMatches[0]]} /> : 'No bank match'}
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel

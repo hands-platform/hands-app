@@ -21,7 +21,7 @@ import {
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
-import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -110,7 +110,7 @@ export default async function BankReconciliationDetailPage({
         resultTone={statusTone(transaction.status)}
         title="Bank transaction overview"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
           <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
           <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
@@ -120,7 +120,7 @@ export default async function BankReconciliationDetailPage({
           <FinanceDetailInfoItem label="Description" value={transaction.description ?? '-'} />
           <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, transaction.currency)} />
           <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, transaction.currency)} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -154,7 +154,7 @@ export default async function BankReconciliationDetailPage({
             },
           ]}
         />
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Matched finance source"
             value={
@@ -206,7 +206,7 @@ export default async function BankReconciliationDetailPage({
             value={latestReversedMatch ? (reversalReasonFromMatch(latestReversedMatch) ?? '-') : '-'}
           />
           <FinanceDetailInfoItem label="Unmatched remainder" value={formatMoney(remainingAmount, transaction.currency)} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel

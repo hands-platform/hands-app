@@ -5,7 +5,7 @@ import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
-import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -74,7 +74,7 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone={taxStatusTone(snapshot.taxStatus)}
         title="Settlement snapshot overview"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -112,7 +112,7 @@ export default async function BookingSettlementAuditDetailPage({
           />
           <FinanceDetailInfoItem label="Monthly period" value={snapshot.monthlyPeriod} />
           <FinanceDetailInfoItem label="Closed at" value={snapshot.closedAt ? formatDateTime(snapshot.closedAt) : 'Open'} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -146,11 +146,11 @@ export default async function BookingSettlementAuditDetailPage({
             },
           ]}
         />
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <SettlementJournalEvidence snapshot={snapshot} />
           <PaymentClearingEvidence snapshot={snapshot} />
           <SettlementReversalEvidence snapshot={snapshot} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -159,7 +159,7 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone="info"
         title="Accounting amount breakdown"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Customer payment"
             value={formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
@@ -211,7 +211,7 @@ export default async function BookingSettlementAuditDetailPage({
               </>
             }
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -220,7 +220,7 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
         title="Payment fee policy evidence"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Policy name" value={paymentFee.policyName} />
           <FinanceDetailInfoItem label="Policy version" value={paymentFee.policyVersionId} />
           <FinanceDetailInfoItem label="Method" value={paymentFee.method} />
@@ -230,7 +230,7 @@ export default async function BookingSettlementAuditDetailPage({
           />
           <FinanceDetailInfoItem label="Payer / treatment" value={`${paymentFee.payer} / ${paymentFee.treatment}`} />
           <FinanceDetailInfoItem label="Rule type" value={paymentFee.feeType} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -239,7 +239,7 @@ export default async function BookingSettlementAuditDetailPage({
         resultTone={coupon.reviewFlag ? 'warning' : 'success'}
         title="Coupon and policy snapshot"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Coupon code" value={coupon.code} />
           <FinanceDetailInfoItem label="Funding source" value={coupon.fundingSource} />
           <FinanceDetailInfoItem label="Accounting treatment" value={coupon.accountingTreatment} />
@@ -249,7 +249,7 @@ export default async function BookingSettlementAuditDetailPage({
             label="Company expense"
             value={formatMoney(coupon.companyExpense, snapshot.currency)}
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

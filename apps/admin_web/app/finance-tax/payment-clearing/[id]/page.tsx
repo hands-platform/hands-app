@@ -6,7 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
-import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
+import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -65,7 +65,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         resultTone={statusTone(entry.status)}
         title="Clearing overview"
       >
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -132,7 +132,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
           <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, entry.currency)} />
           <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, entry.currency)} />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
@@ -166,7 +166,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             },
           ]}
         />
-        <div className="detail-grid admin-mt-16">
+        <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Source payment"
             value={
@@ -205,7 +205,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             label="Latest bank match"
             value={matches[0] ? <BankMatchSummary match={matches[0]} /> : 'No bank match'}
           />
-        </div>
+        </FinanceDetailGrid>
       </FinanceTablePanel>
 
       <FinanceTablePanel
