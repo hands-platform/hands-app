@@ -11,6 +11,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminCard } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
 
@@ -243,12 +244,12 @@ function CouponUsageBookingTable({
               <td>{booking.amountLabel}</td>
               <td>{booking.discountLabel}</td>
               <td>
-                <span className="pill pill-neutral">{booking.statusLabel}</span>
+                <StatusBadge tone="neutral">{booking.statusLabel}</StatusBadge>
               </td>
               <td>
-                <span className={booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'}>
+                <StatusBadge tone={booking.reversalStatusLabel === 'REVERSED' ? 'warning' : 'neutral'}>
                   {booking.reversalStatusLabel}
-                </span>
+                </StatusBadge>
               </td>
             </tr>
           ))}

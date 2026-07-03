@@ -43,7 +43,10 @@ describe('CouponsTableSection', () => {
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
     expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');
+    expect(sectionSource).not.toContain('<span className="pill pill-neutral">{booking.statusLabel}</span>');
+    expect(sectionSource).not.toContain("booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'");
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });
 
