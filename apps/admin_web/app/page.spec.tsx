@@ -375,5 +375,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-service-payment-mix-title">Service and payment mix</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-booking-status-control"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-booking-status-control-title">Booking status control</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-customer-app-presence"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-customer-app-presence-title">Customer app presence</h2>',
+    );
   });
 });

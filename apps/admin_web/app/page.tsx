@@ -1593,19 +1593,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </section>
 
           <section className="detail-grid admin-mt-20">
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Booking status control</h2>
-                  <p className="muted">
-                    Total, matching, completion, cancellation, and no-show proxy for the selected dashboard
-                    date range.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="text-link" href="/bookings">
                   Open bookings
                 </Link>
-              </div>
+              }
+              description="Total, matching, completion, cancellation, and no-show proxy for the selected dashboard date range."
+              id="dashboard-booking-status-control"
+              title="Booking status control"
+            >
               <div className="service-trace-summary">
                 <div>
                   <span>Total</span>
@@ -1648,18 +1645,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <small>Finance records</small>
                 </div>
               </div>
-            </div>
+            </AdminSection>
 
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Customer app presence</h2>
-                  <p className="muted">
-                    Current customer activity proxy until dedicated customer session tracking is added.
-                  </p>
-                </div>
-                <span className="pill pill-info">Presence proxy</span>
-              </div>
+            <AdminSection
+              actions={<span className="pill pill-info">Presence proxy</span>}
+              description="Current customer activity proxy until dedicated customer session tracking is added."
+              id="dashboard-customer-app-presence"
+              title="Customer app presence"
+            >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={10}>
                 <InfoRow
                   label="Live app customers"
@@ -1712,7 +1705,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail="Total users with a customer profile in the latest admin snapshot."
                 />
               </AdminDataTable>
-            </div>
+            </AdminSection>
           </section>
 
           <section className="detail-grid admin-mt-20">
