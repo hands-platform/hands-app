@@ -1,4 +1,4 @@
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 export type SessionCommandCard = {
   readonly action: string;
@@ -19,17 +19,17 @@ export function AppSessionsCommandBoardSection({
   checkCount,
 }: AppSessionsCommandBoardSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Live demand, Partner supply, push reachability, and shared-device checks for the current shift."
-        status={
-          <span className={`pill ${checkCount ? 'pill-warn' : 'pill-success'}`}>
-            {checkCount ? `${checkCount} check item(s)` : 'Clear'}
-          </span>
-        }
-        title="Session command board"
-      />
-      <div className="ops-task-grid admin-mt-12">
+    <AdminSection
+      bodyClassName="ops-task-grid admin-mt-12"
+      className="admin-mb-16"
+      description="Live demand, Partner supply, push reachability, and shared-device checks for the current shift."
+      status={
+        <span className={`pill ${checkCount ? 'pill-warn' : 'pill-success'}`}>
+          {checkCount ? `${checkCount} check item(s)` : 'Clear'}
+        </span>
+      }
+      title="Session command board"
+    >
         {cards.map((card) => (
           <div className={`ops-task-card ${card.tone}`} key={card.title}>
             <small>{card.status}</small>
@@ -39,7 +39,6 @@ export function AppSessionsCommandBoardSection({
             <span className="ops-task-card-action">{card.action}</span>
           </div>
         ))}
-      </div>
-    </section>
+    </AdminSection>
   );
 }

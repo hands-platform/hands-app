@@ -1,4 +1,7 @@
 import Link from 'next/link';
+
+import { AdminSection } from '../../components/admin-surface';
+
 import type { HandoffReadinessChecklistRow } from './operations-handoff-readiness-checklist';
 
 type OperationsHandoffReadinessChecklistSectionProps = {
@@ -17,20 +20,17 @@ export function OperationsHandoffReadinessChecklistSection({
   }
 
   return (
-    <section className="card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h2>Shift handoff checklist</h2>
-          <p className="muted">
-            A factual close-of-shift list for the next operator: live bookings, chat continuity, cash
-            settlement, alerts, app presence, customer context, and written notes.
-          </p>
-        </div>
+    <AdminSection
+      bodyClassName="ops-task-grid"
+      className="admin-mb-16"
+      description="A factual close-of-shift list for the next operator: live bookings, chat continuity, cash settlement, alerts, app presence, customer context, and written notes."
+      status={
         <span className={openCount ? 'pill pill-warn' : 'pill pill-success'}>
           {openCount ? `${openCount} check(s) open` : 'Ready to hand over'}
         </span>
-      </div>
-      <div className="ops-task-grid">
+      }
+      title="Shift handoff checklist"
+    >
         {visibleRows.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.id}>
             <span className={item.badgeClass}>{item.status}</span>
@@ -43,7 +43,6 @@ export function OperationsHandoffReadinessChecklistSection({
             <small>{item.operatorAction}</small>
           </Link>
         ))}
-      </div>
-    </section>
+    </AdminSection>
   );
 }

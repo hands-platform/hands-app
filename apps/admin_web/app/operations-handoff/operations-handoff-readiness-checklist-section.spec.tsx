@@ -39,7 +39,7 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
 
     expect(section).not.toBeNull();
     if (section === null) throw new Error('Expected readiness checklist section to render.');
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
     expect(rendered).toContain('Shift handoff checklist');
     expect(rendered).toContain('1 check(s) open');
     expect(rendered).toContain('Live matching reviewed');
