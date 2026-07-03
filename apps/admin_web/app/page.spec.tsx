@@ -387,5 +387,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-customer-app-presence-title">Customer app presence</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-hourly-booking-demand"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-hourly-booking-demand-title">Hourly booking demand</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-regional-booking-demand"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-regional-booking-demand-title">Regional booking demand</h2>',
+    );
   });
 });

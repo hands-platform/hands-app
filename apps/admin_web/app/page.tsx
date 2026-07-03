@@ -1709,14 +1709,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </section>
 
           <section className="detail-grid admin-mt-20">
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Hourly booking demand</h2>
-                  <p className="muted">Bookings grouped by request hour in Vietnam time.</p>
-                </div>
-                <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
-              </div>
+            <AdminSection
+              actions={<span className="pill pill-info">Asia/Ho_Chi_Minh</span>}
+              description="Bookings grouped by request hour in Vietnam time."
+              id="dashboard-hourly-booking-demand"
+              title="Hourly booking demand"
+            >
               <div className="stack">
                 {fullDashboardData.hourlyDemand.map((item) => (
                   <div className="ops-row" key={item.hour}>
@@ -1730,18 +1728,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 ))}
               </div>
-            </div>
+            </AdminSection>
 
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Regional booking demand</h2>
-                  <p className="muted">Top service areas inferred from booking address text.</p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="text-link" href="/bookings?view=all">
                   Full booking list
                 </Link>
-              </div>
+              }
+              description="Top service areas inferred from booking address text."
+              id="dashboard-regional-booking-demand"
+              title="Regional booking demand"
+            >
               <div className="stack">
                 {fullDashboardData.regionalDemand.map((item) => (
                   <div className="ops-row" key={item.region}>
@@ -1760,7 +1758,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <p className="muted">No booking address data loaded yet.</p>
                 )}
               </div>
-            </div>
+            </AdminSection>
           </section>
 
           <section className="detail-grid admin-mt-20">
