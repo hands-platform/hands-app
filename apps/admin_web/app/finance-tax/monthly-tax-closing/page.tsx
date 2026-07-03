@@ -13,6 +13,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -317,7 +318,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <div className="muted">{closing.currency}</div>
                   </td>
                   <td>
-                    <span className={`pill ${closingStatusPill(closing.status)}`}>{closing.status}</span>
+                    <PillClassBadge pillClass={closingStatusPill(closing.status)}>{closing.status}</PillClassBadge>
                   </td>
                   <td>{closing.settlementCount}</td>
                   <td>
@@ -331,9 +332,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                   </td>
                   <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
                   <td>
-                    <span className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}>
+                    <PillClassBadge pillClass={remittanceEvidencePill(closingRemittanceState.tone)}>
                       {closingRemittanceState.label}
-                    </span>
+                    </PillClassBadge>
                     <div className="muted admin-mt-8">Declared {formatDateTime(closing.declaredAt)}</div>
                     <div className="muted">Paid {formatDateTime(closing.paidAt)}</div>
                     <div className="muted">Closed {formatDateTime(closing.closedAt)}</div>

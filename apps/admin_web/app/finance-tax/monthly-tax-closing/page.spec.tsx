@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -18,6 +21,14 @@ const mockedAdminGet = vi.mocked(adminGet);
 describe('MonthlyTaxClosingPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+  });
+
+  it('uses shared badge atoms for stored closing status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${closingStatusPill(closing.status)}`}');
+    expect(source).not.toContain('className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}');
   });
 
   it('keeps period and remittance forms on shared AdminForm atoms', async () => {
