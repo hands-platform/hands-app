@@ -106,7 +106,9 @@ describe('Referral cashout queue', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('Referral Cashouts');
-    expect(markup).toContain('card admin-section booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
+    expect(markup).toContain(
+      'card admin-section booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(markup).not.toContain('admin-filter-panel-eyebrow">Queue');
     expect(markup).toContain('class="admin-form-control-button button" type="submit">Apply filters');
     expect(markup).toContain('Cashout approved');
