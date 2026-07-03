@@ -1,6 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingChatRecordsSection } from './partner-detail-booking-chat-records-section';
 
 describe('PartnerDetailBookingChatRecordsSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No booking records matched this date filter</strong>');
+  });
+
   it('renders booking chat records as a Vuexy table', () => {
     const section = PartnerDetailBookingChatRecordsSection({
       openBookingsHref: '/bookings',

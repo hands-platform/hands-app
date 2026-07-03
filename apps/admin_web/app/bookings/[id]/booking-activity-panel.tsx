@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Download } from 'lucide-react';
 
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSection } from '../../../components/admin-surface';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
 import { formatDate, shortId } from './booking-formatters';
@@ -107,8 +108,10 @@ export function BookingActivityPanel({
           <div className="booking-activity-record-row is-empty">
             <span className="pill pill-neutral">NONE</span>
             <div>
-              <strong>No booking activity has been recorded yet</strong>
-              <p className="muted">Matching, payment, chat, location, and audit events will appear here.</p>
+              <AdminEmptyState
+                message="Matching, payment, chat, location, and audit events will appear here."
+                title="No booking activity has been recorded yet"
+              />
             </div>
             <small>0</small>
           </div>

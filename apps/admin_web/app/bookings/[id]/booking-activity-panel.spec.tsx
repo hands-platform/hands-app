@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { BookingActivityPanel, BookingFullRecordIndex } from './booking-activity-panel';
 
 describe('BookingActivityPanel', () => {
+  it('uses the shared Vuexy empty-state atom for empty activity', () => {
+    const source = readFileSync('app/bookings/[id]/booking-activity-panel.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No booking activity has been recorded yet</strong>');
+  });
+
   it('renders the full record index on the shared Vuexy section surface', () => {
     const markup = renderToStaticMarkup(
       <BookingFullRecordIndex

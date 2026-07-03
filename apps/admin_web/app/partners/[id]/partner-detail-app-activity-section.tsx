@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -79,10 +80,5 @@ export function PartnerDetailAppActivitySection({
 const activityHeaders = ['Type', 'Activity', 'Timeline'] as const;
 
 function PartnerAppActivityEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No activity matched this date filter</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} title="No activity matched this date filter" />;
 }

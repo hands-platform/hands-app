@@ -5,6 +5,7 @@ import {
   type AdminChatWindowMessage,
 } from '../../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -135,10 +136,5 @@ export function PartnerDetailBookingChatRecordsSection({
 const bookingChatHeaders = ['Relation', 'Booking', 'Payment', 'Chat archive', 'Action'] as const;
 
 function PartnerBookingChatEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No booking records matched this date filter</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} title="No booking records matched this date filter" />;
 }

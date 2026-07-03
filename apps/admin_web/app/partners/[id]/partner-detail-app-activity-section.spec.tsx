@@ -1,6 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { PartnerDetailAppActivitySection } from './partner-detail-app-activity-section';
 
 describe('PartnerDetailAppActivitySection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No activity matched this date filter</strong>');
+  });
+
   it('renders recent app activity as a Vuexy table', () => {
     const section = PartnerDetailAppActivitySection({
       summary: [
@@ -35,7 +43,7 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(rendered).toContain('Partner refreshed working location before receiving new requests.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
