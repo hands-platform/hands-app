@@ -20,6 +20,7 @@ import { AdminRoundedPagination } from '../../components/admin-rounded-paginatio
 import { AdminSection } from '../../components/admin-surface';
 import {
   AdminFormControlButton,
+  AdminFormDate,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -424,14 +425,13 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
       title="Manual daily spend"
     >
       <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
-        <AdminFormInput
+        <AdminFormDate
           className="calendar-field"
           defaultValue={defaultSpendDate}
           label="Date"
           labelVisibility="visible"
           name="spendDate"
           required
-          type="date"
         />
         <AdminFormSelect
           className="calendar-field"

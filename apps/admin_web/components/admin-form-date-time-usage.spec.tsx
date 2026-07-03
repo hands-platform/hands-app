@@ -11,6 +11,16 @@ describe('Admin date-time form usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps app date, month, and time fields behind AdminFormDate', () => {
+    const appDir = join(process.cwd(), 'app');
+    const offenders = listTsxFiles(appDir)
+      .filter((filePath) => !filePath.endsWith('.spec.tsx'))
+      .filter((filePath) => containsNativeCalendarField(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 function listTsxFiles(directory: string): string[] {
@@ -26,4 +36,8 @@ function listTsxFiles(directory: string): string[] {
     }
     return filePath.endsWith('.tsx') ? [filePath] : [];
   });
+}
+
+function containsNativeCalendarField(source: string) {
+  return ['type="date"', 'type="month"', 'type="time"'].some((needle) => source.includes(needle));
 }

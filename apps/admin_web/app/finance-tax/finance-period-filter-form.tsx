@@ -1,6 +1,6 @@
 import {
   AdminFormControlButton,
-  AdminFormInput,
+  AdminFormDate,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 
@@ -37,7 +37,13 @@ export function FinancePeriodFilterForm({
       {hiddenFields.map((field) => (
         <input key={field.name} name={field.name} type="hidden" value={field.value} />
       ))}
-      <AdminFormInput defaultValue={period} label={periodLabel} labelVisibility="visible" name="period" type="month" />
+      <AdminFormDate
+        defaultValue={period}
+        label={periodLabel}
+        labelVisibility="visible"
+        mode="month"
+        name="period"
+      />
       {rows ? (
         <AdminFormSelect
           defaultValue={String(rows.value)}

@@ -51,6 +51,28 @@ describe('Admin form controls', () => {
     expect(textContent(date)).toContain('From date');
   });
 
+  it('renders month controls through the shared date atom', () => {
+    const month = AdminFormDate({
+      className: 'finance-period',
+      defaultValue: '2026-07',
+      label: 'Monthly tax period',
+      labelVisibility: 'visible',
+      mode: 'month',
+      name: 'period',
+      required: true,
+    });
+
+    expect(month.props.className).toBe(
+      'admin-form-date admin-form-date-picker admin-form-control-labeled finance-period',
+    );
+    expect(month.props.children[1].props).toMatchObject({
+      defaultValue: '2026-07',
+      name: 'period',
+      required: true,
+      type: 'month',
+    });
+  });
+
   it('renders input controls with the same field contract', () => {
     const input = AdminFormInput({
       className: 'partner-reason',

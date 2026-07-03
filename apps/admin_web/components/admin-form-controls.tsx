@@ -34,8 +34,9 @@ type AdminFormDateProps = {
   readonly className?: string;
   readonly label: string;
   readonly labelVisibility?: AdminFormLabelVisibility;
+  readonly mode?: 'date' | 'month' | 'time';
   readonly name: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'value'>;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
 
 type AdminFormDateTimeProps = {
   readonly className?: string;
@@ -171,8 +172,10 @@ export function AdminFormDate({
   disabled,
   label,
   labelVisibility = 'hidden',
+  mode = 'date',
   name,
   onChange,
+  required,
   value,
 }: AdminFormDateProps) {
   return (
@@ -183,7 +186,8 @@ export function AdminFormDate({
         disabled={disabled}
         name={name}
         onChange={onChange}
-        type="date"
+        required={required}
+        type={mode}
         value={value}
       />
     </label>

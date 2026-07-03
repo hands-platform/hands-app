@@ -11,6 +11,7 @@ import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
+  AdminFormDate,
   AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
@@ -241,7 +242,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             />
             <AdminFormInput label="Amount" labelVisibility="visible" min={1} name="amount" required step={1} type="number" />
             <AdminFormDateTime label="Occurred at" labelVisibility="visible" name="occurredAt" required />
-            <AdminFormInput label="Value date" labelVisibility="visible" name="valueDate" type="date" />
+            <AdminFormDate label="Value date" labelVisibility="visible" name="valueDate" />
             <AdminFormInput label="Transfer reference" labelVisibility="visible" name="transferRef" />
             <AdminFormInput label="Counterparty" labelVisibility="visible" name="counterpartyName" />
             <AdminFormTextarea className="admin-grid-span-2" label="Description" labelVisibility="visible" name="description" rows={2} />
