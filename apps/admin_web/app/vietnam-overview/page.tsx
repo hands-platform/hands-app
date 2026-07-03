@@ -472,24 +472,22 @@ export default async function VietnamOverviewPage({
           </div>
       </AdminSection>
 
-      <section className="card admin-filter-panel vietnam-overview-filter-panel">
-        <div className="admin-filter-panel-header">
-          <div>
-            <h2>Period metrics range</h2>
-            <p className="muted">
-              Select the period used by numeric cards and regional tables. Realtime map dots stay current.
-            </p>
-          </div>
-          <div className="actions">
+      <AdminSection
+        actions={
+          <>
             {activeRegion ? (
               <a className="pill pill-primary vietnam-overview-clear-focus" href={clearRegionHref}>
                 Clear {activeRegion.shortName}
               </a>
             ) : null}
             <span className="pill pill-info">{overview.rangeLabel}</span>
-          </div>
-        </div>
-        <div className="vietnam-overview-filter-body">
+          </>
+        }
+        bodyClassName="vietnam-overview-filter-body"
+        className="vietnam-overview-filter-panel"
+        description="Select the period used by numeric cards and regional tables. Realtime map dots stay current."
+        title="Period metrics range"
+      >
           <div
             className="booking-date-filter-buttons vietnam-overview-range-buttons"
             aria-label="Period metric range"
@@ -517,8 +515,7 @@ export default async function VietnamOverviewPage({
               </article>
             ))}
           </div>
-        </div>
-      </section>
+      </AdminSection>
 
       {activeRegion ? (
         <AdminSection
