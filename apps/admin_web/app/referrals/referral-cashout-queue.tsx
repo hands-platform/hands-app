@@ -12,6 +12,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
   AdminReferralAudience,
@@ -170,16 +171,13 @@ export function ReferralCashoutQueuePage({
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-filter-panel booking-monitor-filter-panel admin-mt-16">
-        <div className="admin-filter-panel-header">
-          <div>
-            <span className="admin-filter-panel-eyebrow">Queue</span>
-            <h2>Referral cashout queue</h2>
-            <p>Open only the parent detail when deeper attribution evidence is needed.</p>
-          </div>
-          <span className="pill">{rows.length} shown</span>
-        </div>
-        <div className="admin-filter-panel-body booking-monitor">
+      <AdminSection
+        actions={<span className="pill">{rows.length} shown</span>}
+        bodyClassName="booking-monitor"
+        className="booking-monitor-filter-panel admin-mt-16"
+        description="Open only the parent detail when deeper attribution evidence is needed."
+        title="Referral cashout queue"
+      >
           <AdminTableScroll>
             <AdminDataTable
               className="vuexy-booking-table"
@@ -205,8 +203,7 @@ export function ReferralCashoutQueuePage({
               totalPages={totalPages}
             />
           </div>
-        </div>
-      </section>
+      </AdminSection>
     </AdminPageTemplate>
   );
 }

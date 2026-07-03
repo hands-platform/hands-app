@@ -106,6 +106,8 @@ describe('Referral cashout queue', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('Referral Cashouts');
+    expect(markup).toContain('card admin-section booking-monitor-filter-panel admin-mt-16');
+    expect(markup).not.toContain('admin-filter-panel-eyebrow">Queue');
     expect(markup).toContain('Cashout approved');
     expect(markup).toContain('Parent Partner');
     expect(markup).toContain('Referred Partner');
