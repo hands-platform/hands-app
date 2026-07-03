@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PARTNER_CONNECTED_RECORDS_DESCRIPTION,
   PartnerDetailConnectedRecordsSection,
@@ -5,6 +7,13 @@ import {
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
 describe('PartnerDetailConnectedRecordsSection', () => {
+  it('uses the shared Vuexy admin card surface for the section shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-mb-16"');
+  });
+
   it('renders connected record links with counts, detail, and tones', () => {
     const section = PartnerDetailConnectedRecordsSection({
       description: 'Jump from this partner to linked records.',

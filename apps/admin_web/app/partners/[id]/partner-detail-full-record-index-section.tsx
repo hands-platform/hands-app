@@ -1,3 +1,5 @@
+import { AdminCard } from '../../../components/admin-surface';
+
 type PartnerDetailFullRecordIndexSectionProps = {
   readonly appActivityCount: number;
   readonly bookingRecordCount: number;
@@ -14,7 +16,7 @@ export function PartnerDetailFullRecordIndexSection({
   missingKycDocumentCount,
 }: PartnerDetailFullRecordIndexSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-full-record-index">
+    <AdminCard className="admin-mb-16" id="partner-full-record-index">
       <div className="ops-section-header">
         <div>
           <h2>Partner full record index</h2>
@@ -53,6 +55,6 @@ export function PartnerDetailFullRecordIndexSection({
           <small>Date-grouped partner operations records.</small>
         </a>
       </div>
-    </div>
+    </AdminCard>
   );
 }

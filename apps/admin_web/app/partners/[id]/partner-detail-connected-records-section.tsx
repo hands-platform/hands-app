@@ -1,4 +1,7 @@
 import Link from 'next/link';
+
+import { AdminCard } from '../../../components/admin-surface';
+
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
 export const PARTNER_CONNECTED_RECORDS_DESCRIPTION =
@@ -18,7 +21,7 @@ export function PartnerDetailConnectedRecordsSection({
   title,
 }: PartnerDetailConnectedRecordsSectionProps) {
   return (
-    <div className="card admin-mb-16" id={id}>
+    <AdminCard className="admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -38,6 +41,6 @@ export function PartnerDetailConnectedRecordsSection({
           </div>
         ))}
       </div>
-    </div>
+    </AdminCard>
   );
 }

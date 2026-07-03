@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminCard } from '../../../components/admin-surface';
+
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
 type PartnerOpsCommandCard = {
@@ -29,7 +31,7 @@ export function PartnerDetailOpsCommandCenterSection({
   summary,
 }: PartnerDetailOpsCommandCenterSectionProps) {
   return (
-    <div className="card admin-mb-16">
+    <AdminCard className="admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Partner ops command center</h2>
@@ -56,6 +58,6 @@ export function PartnerDetailOpsCommandCenterSection({
           </div>
         ))}
       </div>
-    </div>
+    </AdminCard>
   );
 }

@@ -6,6 +6,7 @@ import {
   AdminFormDate,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
+import { AdminCard } from '../../../components/admin-surface';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
 import { detailActivityTypeLabel } from '../../../lib/detail-activity-filter';
@@ -44,7 +45,7 @@ export function PartnerDetailRecordDateFilterSection({
   const activityTypeLabel = detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS);
 
   return (
-    <div className="card admin-mb-16" id="record-date-filter">
+    <AdminCard className="admin-mb-16" id="record-date-filter">
       <div className="ops-section-header">
         <div>
           <h2>Record date filter</h2>
@@ -134,6 +135,6 @@ export function PartnerDetailRecordDateFilterSection({
           <small>Total factual activity before this filter.</small>
         </div>
       </div>
-    </div>
+    </AdminCard>
   );
 }

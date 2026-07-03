@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { AdminCard } from '../../../components/admin-surface';
+
 export type PartnerMasterFact = {
   readonly helper: ReactNode;
   readonly label: string;
@@ -12,7 +14,7 @@ type PartnerDetailMasterFactsSectionProps = {
 
 export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFactsSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-master-facts">
+    <AdminCard className="admin-mb-16" id="partner-master-facts">
       <div className="ops-section-header">
         <div>
           <h2>Partner master facts</h2>
@@ -32,6 +34,6 @@ export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFa
           </div>
         ))}
       </div>
-    </div>
+    </AdminCard>
   );
 }
