@@ -27,4 +27,28 @@ describe('AdminEmptyState', () => {
     expect(emptyState.props).toMatchObject({ className: 'empty-state' });
     expect(emptyState.props.children[0].props.children).toBe('No wallet evidence found');
   });
+
+  it('keeps existing layout spacing classes on framed empty states', () => {
+    const emptyState = AdminEmptyState({
+      className: 'admin-mt-14',
+      framed: true,
+      message: 'No participant records match the current booking filters.',
+    });
+
+    expect(emptyState.type).toBe('div');
+    expect(emptyState.props.className).toBe('empty-state admin-mt-14');
+  });
+
+  it('can render legacy sentence-only empty states without adding a title', () => {
+    const emptyState = AdminEmptyState({
+      framed: true,
+      message: 'No marketplace booking rows match the current filters.',
+      title: null,
+    });
+
+    expect(emptyState.props.children[0]).toBeNull();
+    expect(emptyState.props.children[1].props.children).toBe(
+      'No marketplace booking rows match the current filters.',
+    );
+  });
 });

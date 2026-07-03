@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminBooking } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -78,9 +79,12 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
         )}
       </div>
       {marketplaceLedgerRows.length === 0 ? (
-        <div className="empty-state admin-mt-14">
-          No participant records match the current booking filters.
-        </div>
+        <AdminEmptyState
+          className="admin-mt-14"
+          framed
+          message="No participant records match the current booking filters."
+          title={null}
+        />
       ) : (
         <AdminTableScroll>
           <AdminDataTable

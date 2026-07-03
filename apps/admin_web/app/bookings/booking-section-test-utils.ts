@@ -120,6 +120,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminAvatar',
       'AdminAvatarStatusDot',
       'AdminDataTable',
+      'AdminEmptyState',
       'AdminFormControlButton',
       'AdminFormSelect',
       'AdminFormTextarea',

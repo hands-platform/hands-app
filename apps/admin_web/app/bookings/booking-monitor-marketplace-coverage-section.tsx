@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -55,9 +56,12 @@ export function BookingMonitorMarketplaceCoverageSection({
         <span className="pill">Final Partner selected {marketplaceBookingCoverageSummary.selected}</span>
       </div>
       {marketplaceBookingCoverageRows.length === 0 ? (
-        <div className="empty-state admin-mt-14">
-          No marketplace booking rows match the current filters.
-        </div>
+        <AdminEmptyState
+          className="admin-mt-14"
+          framed
+          message="No marketplace booking rows match the current filters."
+          title={null}
+        />
       ) : (
         <AdminTableScroll>
           <AdminDataTable
