@@ -3,11 +3,11 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
-import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bookingSettlementAuditHref,
   bookingSettlementReversalDetailHref,
@@ -68,8 +68,7 @@ export default async function BookingSettlementAuditDetailPage({
       ]}
       title="Booking Settlement Audit Detail"
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description={`Snapshot ${shortId(snapshot.id)} · Posted ${formatDateTime(snapshot.postedAt)} · Period ${snapshot.monthlyPeriod}`}
         resultLabel={snapshot.taxStatus}
         resultTone={taxStatusTone(snapshot.taxStatus)}
@@ -114,10 +113,9 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem label="Monthly period" value={snapshot.monthlyPeriod} />
           <FinanceDetailInfoItem label="Closed at" value={snapshot.closedAt ? formatDateTime(snapshot.closedAt) : 'Open'} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Follow the posted journal, payment clearing, and refund reversal evidence linked to this immutable snapshot."
         resultLabel={evidenceStatus.label}
         resultTone={evidenceStatus.tone}
@@ -153,10 +151,9 @@ export default async function BookingSettlementAuditDetailPage({
           <PaymentClearingEvidence snapshot={snapshot} />
           <SettlementReversalEvidence snapshot={snapshot} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="These values must stay immutable after posting. Refunds and closed-period changes should create reversal entries instead."
         resultLabel={formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
         resultTone="info"
@@ -215,10 +212,9 @@ export default async function BookingSettlementAuditDetailPage({
             }
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Payment provider fee evidence is copied to the settlement snapshot so method-specific CARD, MOMO, or VNPAY rules can be audited later."
         resultLabel={formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}
         resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
@@ -235,10 +231,9 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem label="Payer / treatment" value={`${paymentFee.payer} / ${paymentFee.treatment}`} />
           <FinanceDetailInfoItem label="Rule type" value={paymentFee.feeType} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Coupon values are copied from the booking settlement metadata so later coupon edits do not rewrite historical finance evidence."
         resultLabel={coupon.reviewFlag ?? 'Snapshot OK'}
         resultTone={coupon.reviewFlag ? 'warning' : 'success'}
@@ -255,7 +250,7 @@ export default async function BookingSettlementAuditDetailPage({
             value={formatMoney(coupon.companyExpense, snapshot.currency)}
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

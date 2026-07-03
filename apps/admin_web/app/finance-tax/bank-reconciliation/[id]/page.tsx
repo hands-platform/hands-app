@@ -13,7 +13,6 @@ import {
   adminPostOrThrow,
 } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormInput,
@@ -24,6 +23,7 @@ import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bankReconciliationHref,
   buildBankReconciliationDetailApiHref,
@@ -104,8 +104,7 @@ export default async function BankReconciliationDetailPage({
       ]}
       title="Bank Reconciliation Detail"
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
         resultLabel={transaction.status}
         resultTone={statusTone(transaction.status)}
@@ -122,10 +121,9 @@ export default async function BankReconciliationDetailPage({
           <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, transaction.currency)} />
           <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, transaction.currency)} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Quick route from this bank transaction to the matched finance source, clearing evidence, and journal evidence."
         resultLabel={remainingAmount > 0 ? 'Unmatched remainder' : 'Fully reconciled'}
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
@@ -209,10 +207,9 @@ export default async function BankReconciliationDetailPage({
           />
           <FinanceDetailInfoItem label="Unmatched remainder" value={formatMoney(remainingAmount, transaction.currency)} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Create one explicit match against a payment clearing, journal, withdrawal, or payout record. The Admin API writes the audit log."
         resultLabel={manualMatchResultLabel({ matchError, matchNotice, reverseError, reverseNotice })}
         resultTone={manualMatchResultTone({ matchError, matchNotice, reverseError, reverseNotice })}
@@ -343,10 +340,10 @@ export default async function BankReconciliationDetailPage({
             This bank transaction is already fully reconciled. Reverse an existing match before creating a new one.
           </p>
         )}
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Each match points to the finance source used to reconcile this bank row."
         resultLabel={`${matches.length} match(es)`}
         resultTone="info"
@@ -439,7 +436,7 @@ export default async function BankReconciliationDetailPage({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

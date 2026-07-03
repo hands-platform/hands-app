@@ -4,11 +4,11 @@ import { notFound } from 'next/navigation';
 import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
@@ -56,8 +56,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       ]}
       title="General Ledger Detail"
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
         resultLabel={batch.status}
         resultTone={statusTone(batch.status)}
@@ -104,10 +103,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             }
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Quick route from this journal batch back to the source record, settlement snapshot, clearing row, and bank evidence."
         resultLabel={balanceDelta === 0 ? 'Balanced' : 'Unbalanced'}
         resultTone={balanceDelta === 0 ? 'success' : 'danger'}
@@ -199,10 +197,10 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             value={bankMatches[0] ? <BankMatchEvidence matches={[bankMatches[0]]} /> : 'No bank match'}
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Debits and credits posted by the source record. Bank match count is shown without loading unrelated bank transaction lists."
         resultLabel={`${batch.entries.length} entry row(s)`}
         resultTone="info"
@@ -240,7 +238,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

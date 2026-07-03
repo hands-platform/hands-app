@@ -4,11 +4,11 @@ import { notFound } from 'next/navigation';
 import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   bookingSettlementAuditDetailHref,
   bookingSettlementReversalHref,
@@ -68,8 +68,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       ]}
       title="Settlement Reversal Detail"
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description={`Reversal ${shortId(reversal.id)} · Occurred ${formatDateTime(reversal.occurredAt)} · Period ${reversal.monthlyPeriod}`}
         resultLabel={evidenceState.label}
         resultTone={evidenceState.tone}
@@ -159,10 +158,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem label="Reason" value={reversal.reason ?? 'Payment refund'} />
           <FinanceDetailInfoItem label="Source key" value={reversal.sourceKey} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Amounts below are the reversal entry values. They should offset the original posted settlement through journal and clearing evidence, not by editing the closed snapshot."
         resultLabel={formatMoney(reversal.customerPaymentAmount, reversal.currency)}
         resultTone="warning"
@@ -215,10 +213,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             }
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="The original monthly close is read-only. Finance should use this reversal record and its evidence links for correction review."
         resultLabel={originalSettlement?.settlementStatus ?? 'Original snapshot'}
         resultTone={originalSettlement?.settlementStatus === 'POSTED' ? 'success' : 'info'}
@@ -235,10 +232,10 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem label="Original tax status" value={originalSettlement?.taxStatus ?? '-'} />
           <FinanceDetailInfoItem label="Original booking status" value={originalSettlement?.booking?.status ?? '-'} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Open each evidence record to confirm the reversal journal, payment clearing row, and immutable original settlement snapshot."
         resultLabel={`${traceLinks.length} link(s)`}
         resultTone="info"
@@ -265,7 +262,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }

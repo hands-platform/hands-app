@@ -4,11 +4,11 @@ import { notFound } from 'next/navigation';
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { FinanceTablePanel } from '../../finance-table-panel';
 import {
   buildBookingPaymentClearingDetailApiHref,
   buildFinanceSettlementTraceLinks,
@@ -59,8 +59,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       ]}
       title="Payment Clearing Detail"
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
         resultLabel={entry.status}
         resultTone={statusTone(entry.status)}
@@ -134,10 +133,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, entry.currency)} />
           <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, entry.currency)} />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      <FinanceTablePanel
         description="Quick links from this clearing row to the payment source, settlement snapshot, journal, and bank match evidence."
         resultLabel={remainingAmount > 0 ? 'Needs match' : 'Fully matched'}
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
@@ -208,10 +206,10 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             value={matches[0] ? <BankMatchSummary match={matches[0]} /> : 'No bank match'}
           />
         </div>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <FinanceTablePanel
+        grouped
         description="Bank matches are loaded from this detail endpoint only. Open the bank transaction detail for full reconciliation evidence."
         resultLabel={`${matches.length} match(es)`}
         resultTone="info"
@@ -261,7 +259,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </FinanceTablePanel>
     </AdminPageTemplate>
   );
 }
