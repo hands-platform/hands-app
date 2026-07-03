@@ -169,7 +169,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       ) : null}
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-date-range-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"
         description={`Range: ${dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service evidence use payout batch record dates.`}
         resultLabel={`${summary.total} batch(es)`}
         resultTone={summary.total > 0 ? 'info' : 'warning'}
@@ -194,7 +194,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
       </AdminFilterPanel>
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card payout-release-policy-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"
         description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
         resultLabel={`${releasePolicyDesk.length} gate(s)`}
         resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}

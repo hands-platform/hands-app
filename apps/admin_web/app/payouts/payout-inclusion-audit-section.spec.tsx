@@ -36,7 +36,7 @@ describe('PayoutInclusionAuditSection', () => {
     expect(hrefsIn(section)).toContain('/earnings');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
       ]),
     );
   });

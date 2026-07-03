@@ -31,7 +31,7 @@ export function PaymentDetailActionMapSection({
 }: PaymentDetailActionMapSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Operator action checks for sync, capture, release, refund, and cash fee settlement."
       id="payment-action-map"
       resultLabel={hasBlockingReview ? 'Review needed' : 'No urgent block'}

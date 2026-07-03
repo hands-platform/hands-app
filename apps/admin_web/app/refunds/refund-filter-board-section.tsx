@@ -42,7 +42,7 @@ export function RefundFilterBoardSection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description={`Use these shortcuts from the dashboard to focus on the refund queue state. Refund date range: ${rangeLabel}.`}
       resultLabel={`Showing ${filteredCount} of ${totalCount}`}
       resultTone={review ? 'warning' : 'success'}

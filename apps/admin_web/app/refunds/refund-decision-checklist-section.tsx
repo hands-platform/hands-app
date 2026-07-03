@@ -20,7 +20,7 @@ type RefundDecisionChecklistSectionProps = {
 export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklistSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Evidence-first checklist for operators before a refund is released, rejected, or handed to finance closeout."
       resultLabel={`${items.length} check(s)`}
       resultTone={items.length > 0 ? 'warning' : 'success'}

@@ -32,13 +32,13 @@ describe('PaymentDetailPage', () => {
 
     expect(markup).toContain('Payment operation detail');
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card" id="booking-evidence"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="booking-evidence"',
     );
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card" id="money-ledger"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="money-ledger"',
     );
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card" id="chat-payment-evidence"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="chat-payment-evidence"',
     );
     expect(markup).toContain(
       'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="payment-audit-log"',

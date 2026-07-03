@@ -29,7 +29,7 @@ describe('RefundFilterBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?range=all&review=all', '/refunds?range=30d', '/refunds?review=requested&range=30d']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
         'pill pill-warn',
         'pill pill-info',
       ]),

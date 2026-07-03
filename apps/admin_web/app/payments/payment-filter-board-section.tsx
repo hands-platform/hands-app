@@ -42,7 +42,7 @@ export function PaymentFilterBoardSection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description={`Jump straight from the dashboard lane into the payment subset that needs operator review. Payment date range: ${rangeLabel}. Until the payment table stores its own timestamp, this uses the linked booking record date.`}
       resultLabel={`Showing ${filteredCount} of ${totalCount}`}
       resultTone={review ? 'warning' : 'success'}

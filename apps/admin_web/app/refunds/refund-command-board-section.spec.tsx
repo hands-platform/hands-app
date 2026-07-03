@@ -22,7 +22,7 @@ describe('RefundCommandBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?review=requested']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
         'pill pill-warn',
         'signal signal-warn',
       ]),

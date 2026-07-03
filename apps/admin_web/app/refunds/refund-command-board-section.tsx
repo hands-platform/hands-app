@@ -30,7 +30,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one operational view before closing a shift."
       resultLabel={`${totalRefundCount} refund record(s)`}
       resultTone={hasOpenOperatorWork ? 'warning' : 'success'}

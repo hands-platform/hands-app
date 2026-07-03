@@ -17,7 +17,7 @@ type PayoutCommandQueueSectionProps = {
 export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Finance-first view for review money, active transfers, payout holds, and reconciliation warnings."
       resultLabel={`${signals.length} signal(s)`}
       resultTone={signals.length > 0 ? 'warning' : 'success'}

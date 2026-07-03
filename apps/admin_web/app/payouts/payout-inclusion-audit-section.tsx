@@ -29,7 +29,7 @@ type PayoutInclusionAuditSectionProps = {
 export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Unbatched earning review before finance creates the next weekly, monthly, or admin-selected partner settlement batch."
       resultLabel={`${audit.readyCount} ready / ${audit.blockedCount} held`}
       resultTone={audit.blockedCount ? 'warning' : 'success'}

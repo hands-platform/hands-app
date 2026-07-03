@@ -163,7 +163,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
 
       <section className="grid admin-mb-16">
         <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
           description="Booking, customer, partner, address, service, and chat evidence attached to this payment."
           id="booking-evidence"
           resultLabel={booking ? 'Linked booking' : 'No booking'}
@@ -181,7 +181,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         </AdminFilterPanel>
 
         <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
           description="Money movement facts for gross, HANDS fee, withholding, partner net, earning state, and refund rows."
           id="money-ledger"
           resultLabel={money(payment.amount, payment.currency)}
@@ -200,7 +200,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       </section>
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="Matched bookings should have chat evidence. Operators use this before cancellation, no-show, refund, or payout decisions."
         id="chat-payment-evidence"
         resultLabel={messages.length ? 'Chat retained' : 'No chat messages'}

@@ -20,7 +20,7 @@ describe('RefundDecisionChecklistSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings?view=manual-decision']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
         'pill pill-warn',
         'ops-task-card ops-task-pending',
       ]),

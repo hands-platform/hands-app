@@ -26,7 +26,7 @@ type PayoutStatusLanesSectionProps = {
 export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLanesSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Work from blocked and failed lanes first, then draft review, processing confirmation, and paid reconciliation."
       resultLabel={`${batchCount} batch(es)`}
       resultTone={batchCount > 0 ? 'info' : 'warning'}

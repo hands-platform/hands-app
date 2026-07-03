@@ -30,7 +30,7 @@ describe('PaymentFilterBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments?range=all&review=all', '/payments?range=7d', '/payments?review=capture&range=7d']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
         'pill pill-warn',
         'pill pill-info',
       ]),
