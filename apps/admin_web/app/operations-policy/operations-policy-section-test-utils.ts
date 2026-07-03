@@ -40,11 +40,32 @@ export function hrefsIn(value: unknown): string[] {
   return [...href, ...hrefsIn(props?.children)];
 }
 
+export function classNamesIn(value: unknown): string[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return classNamesIn(expanded);
+  }
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
 type RenderableComponent = (props: Record<string, unknown>) => unknown;
 
 function renderKnownComponent(record: Record<string, unknown> | null) {
   const component = record?.type;
-  if (typeof component === 'function' && component.name === 'AdminDataTable') {
+  if (
+    typeof component === 'function' &&
+    ['AdminDataTable', 'PillClassBadge', 'StatusBadge'].includes(component.name)
+  ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});
   }
   return null;

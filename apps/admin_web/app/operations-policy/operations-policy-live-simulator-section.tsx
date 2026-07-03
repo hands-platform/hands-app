@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
+import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
 type LivePolicySimulator = {
@@ -47,9 +48,9 @@ export function OperationsPolicyLiveSimulatorSection({
             locations to preview who would see or participate in a new direct booking request.
           </p>
         </div>
-        <span className={`pill ${simulation.ready ? 'pill-success' : 'pill-warn'}`}>
+        <PillClassBadge pillClass={simulation.ready ? 'pill-success' : 'pill-warn'}>
           {simulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
-        </span>
+        </PillClassBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {simulation.metrics.map((metric) => (
@@ -71,9 +72,9 @@ export function OperationsPolicyLiveSimulatorSection({
                 <p>{step.detail}</p>
                 <div className="participant-list">
                   {step.tags.map((tag) => (
-                    <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
+                    <PillClassBadge pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
                       {tag.label}
-                    </span>
+                    </PillClassBadge>
                   ))}
                 </div>
               </div>
@@ -106,7 +107,7 @@ export function OperationsPolicyLiveSimulatorSection({
                     {partner.distanceLabel} / location {partner.locationAgeLabel}
                   </p>
                 </div>
-                <span className={`pill ${partner.pillClass}`}>{partner.status}</span>
+                <PillClassBadge pillClass={partner.pillClass}>{partner.status}</PillClassBadge>
               </div>
             ))}
             {simulation.partnerRows.length === 0 ? (
@@ -121,7 +122,7 @@ export function OperationsPolicyLiveSimulatorSection({
       <div className="ops-task-grid admin-mt-14">
         {simulation.checks.map((check) => (
           <div className={`ops-task-card ${check.className}`} key={check.title}>
-            <span className={`pill ${check.pillClass}`}>{check.status}</span>
+            <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
             <h3>{check.title}</h3>
             <p>{check.detail}</p>
             <small>{check.operatorAction}</small>

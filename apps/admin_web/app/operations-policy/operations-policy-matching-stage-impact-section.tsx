@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 import type { MatchingStageImpactPreview } from './matching-stage-impact-preview';
 
 type OperationsPolicyMatchingStageImpactSectionProps = {
@@ -52,7 +53,7 @@ export function OperationsPolicyMatchingStageImpactSection({
           {preview.rows.map((row) => (
             <tr key={`${row.scenario}-${row.value}`}>
               <td>
-                <span className={`pill ${row.pillClass}`}>{row.scenario}</span>
+                <PillClassBadge pillClass={row.pillClass}>{row.scenario}</PillClassBadge>
               </td>
               <td>{row.value}</td>
               <td>{row.stage1}</td>

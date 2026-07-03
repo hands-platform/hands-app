@@ -1,5 +1,5 @@
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyMatchingStageImpactSection', () => {
   it('renders matching stage scenarios and usage note', () => {
@@ -39,5 +39,31 @@ describe('OperationsPolicyMatchingStageImpactSection', () => {
     expect(rendered).toContain('Stage 2 marketplace');
     expect(rendered).toContain('Response window');
     expect(rendered).toContain('How to use this preview');
+  });
+
+  it('does not duplicate the base pill class for scenario badges', () => {
+    const section = OperationsPolicyMatchingStageImpactSection({
+      preview: {
+        currentPolicyLabel: '10m / 10 km / 30m fresh',
+        rows: [
+          {
+            noSupply: 0,
+            operatorRead: 'Radius change needs review.',
+            overdue: 0,
+            pillClass: 'pill pill-warn',
+            repair: 0,
+            scenario: 'Radius',
+            stage1: 1,
+            stage2: 2,
+            stage3: 0,
+            value: '10 km',
+          },
+        ],
+        summary: [],
+      },
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
   });
 });
