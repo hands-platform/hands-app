@@ -121,7 +121,7 @@ export function PartnerFilterBoard({
           </div>
         </div>
         {showAdvancedFilters ? (
-          <details className="vuexy-partner-filter-details" open>
+          <details className="admin-disclosure vuexy-partner-filter-details" open>
             <summary>
               <span>More filters</span>
               <small>Location, device/session, booking flow, and review lane</small>

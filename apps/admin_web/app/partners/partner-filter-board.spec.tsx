@@ -105,6 +105,7 @@ describe('PartnerFilterBoard', () => {
     );
 
     expect(rendered).toContain('More filters');
+    expect(rendered).toContain('class="admin-disclosure vuexy-partner-filter-details"');
     expect(rendered).toContain('Location');
     expect(rendered).toContain('Device/session');
     expect(rendered).toContain('Activity');

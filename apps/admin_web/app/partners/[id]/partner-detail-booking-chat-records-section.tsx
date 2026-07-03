@@ -78,7 +78,7 @@ export function PartnerDetailBookingChatRecordsSection({
               <td>
                 <p className="muted">{row.chatLine}</p>
                 {row.hasChatRoom ? (
-                  <details className="admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
+                  <details className="admin-disclosure admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
                     <summary className="admin-chat-transcript-summary">
                       <div>
                         <strong>Admin chat archive</strong>
