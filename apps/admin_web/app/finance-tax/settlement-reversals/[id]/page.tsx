@@ -15,6 +15,8 @@ import {
   buildBookingSettlementReversalDetailApiHref,
   buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalTraceLinks,
+  monthlyTaxClosingHref,
+  TAX_SETTLEMENT_DEFAULT_TAKE,
 } from '../../tax-settlement-page-model';
 
 type SettlementReversalDetailPageProps = {
@@ -46,6 +48,11 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const bankClearing = bankClearingEvidence(reversalClearing, reversal.currency);
   const allocationDelta = reversalAllocationDelta(reversal);
   const payoutRefundEvidence = payoutRefundReceivableEvidence(reversal);
+  const originalMonthlyClosingHref = monthlyTaxClosingHref({
+    page: 1,
+    period: reversal.originalMonthlyPeriod,
+    take: TAX_SETTLEMENT_DEFAULT_TAKE,
+  });
 
   return (
     <AdminPageTemplate
@@ -278,9 +285,23 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         title="Original settlement lock"
       >
         <FinanceDetailGrid>
-          <FinanceDetailInfoItem label="Original period" value={reversal.originalMonthlyPeriod} />
+          <FinanceDetailInfoItem
+            label="Original period"
+            value={
+              <Link className="text-link" href={originalMonthlyClosingHref}>
+                {reversal.originalMonthlyPeriod}
+              </Link>
+            }
+          />
           <FinanceDetailInfoItem label="Reversal period" value={reversal.monthlyPeriod} />
-          <FinanceDetailInfoItem label="Original closing" value={shortId(reversal.originalMonthlyClosingId)} />
+          <FinanceDetailInfoItem
+            label="Original closing"
+            value={
+              <Link className="text-link" href={originalMonthlyClosingHref}>
+                {shortId(reversal.originalMonthlyClosingId)}
+              </Link>
+            }
+          />
           <FinanceDetailInfoItem
             label="Original posted"
             value={originalSettlement?.postedAt ? formatDateTime(originalSettlement.postedAt) : '-'}
