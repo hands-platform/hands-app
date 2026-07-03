@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSection } from '../../components/admin-surface';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
@@ -61,15 +62,8 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
   ];
 
   return (
-    <section className="card booking-post-match-cancellations-card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Post-match Cancellations</h2>
-          <p>
-            Partner-side cancellations and no-show reviews after matching. Admin checks chat evidence,
-            restores eligible cancellation fee impact, or keeps the Partner fee deduction.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="booking-post-match-header-actions">
           <div className="booking-post-match-counts" aria-label="Post-match cancellation counts">
             <span className="pill pill-info">{board.totalCount} total</span>
@@ -79,7 +73,11 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
             Open queue
           </AdminFormControlLink>
         </div>
-      </div>
+      }
+      className="booking-post-match-cancellations-card admin-mt-16"
+      description="Partner-side cancellations and no-show reviews after matching. Admin checks chat evidence, restores eligible cancellation fee impact, or keeps the Partner fee deduction."
+      title="Post-match Cancellations"
+    >
 
       <div className="booking-post-match-decision-flow admin-mt-14" aria-label="Post-match decision flow">
         {POST_MATCH_CANCELLATION_DECISION_FLOW.map((item) => (
@@ -121,6 +119,6 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
           fee restoration or hold the existing Partner fee deduction.
         </span>
       </div>
-    </section>
+    </AdminSection>
   );
 }

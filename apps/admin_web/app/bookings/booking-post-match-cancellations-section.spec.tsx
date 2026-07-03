@@ -40,6 +40,8 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(markup).toContain('aria-label="Post-match cancellation counts"');
     expect(markup).toContain('aria-label="Post-match decision flow"');
     expect(markup).toContain('href="/bookings/post-match-cancellations"');
+    expect(markup).toContain('class="card admin-section booking-post-match-cancellations-card admin-mt-16"');
+    expect(markup).toContain('class="ops-section-header admin-section-header"');
     expect(markup).toContain('admin-form-control-link booking-action-button is-secondary');
     expect(markup).toContain('booking-post-match-cancellations-card');
     expect(markup).toContain('booking-post-match-header-actions');
