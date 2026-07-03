@@ -62,7 +62,7 @@ export function PayoutWalletWithdrawalRequestSection({
           label="Bank transfer pending"
           tone="info"
         />
-        <div className="payout-wallet-withdrawal-summary-card is-audit">
+        <div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">
           <span>Lock released</span>
           <strong>{summary.lockReleased}</strong>
           <small>Audit evidence</small>
@@ -139,7 +139,7 @@ function WithdrawalSummaryStatusCard({
   return (
     <Link
       className={joinClassNames(
-        'payout-wallet-withdrawal-summary-card',
+        'card admin-card payout-wallet-withdrawal-summary-card',
         `is-${tone}`,
         active ? 'is-active' : undefined,
       )}

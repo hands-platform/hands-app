@@ -245,7 +245,8 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'payout-wallet-withdrawal-summary-grid',
-        'payout-wallet-withdrawal-summary-card is-info is-active',
+        'card admin-card payout-wallet-withdrawal-summary-card is-info is-active',
+        'card admin-card payout-wallet-withdrawal-summary-card is-audit',
       ]),
     );
   });
