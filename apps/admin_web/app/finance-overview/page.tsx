@@ -15,7 +15,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
   buildFinanceOverviewActionItems,
@@ -133,7 +133,7 @@ export default async function FinanceOverviewPage({
       </section>
 
       <section className="finance-overview-principle-grid" aria-label="Finance accounting principles">
-        <article className="card finance-overview-principle-card is-primary">
+        <AdminCard className="finance-overview-principle-card is-primary">
           <span className="usage-overview-command-icon">
             <CircleDollarSign size={19} aria-hidden="true" />
           </span>
@@ -142,8 +142,8 @@ export default async function FinanceOverviewPage({
             <strong>{formatMoney(settlementSummary.customerPaymentAmount, settlementSummary.currency)}</strong>
             <small>Customer paid amount is not company revenue.</small>
           </div>
-        </article>
-        <article className="card finance-overview-principle-card is-success">
+        </AdminCard>
+        <AdminCard className="finance-overview-principle-card is-success">
           <span className="usage-overview-command-icon">
             <ReceiptText size={19} aria-hidden="true" />
           </span>
@@ -152,8 +152,8 @@ export default async function FinanceOverviewPage({
             <strong>{formatMoney(settlementSummary.platformFeeNetRevenue, settlementSummary.currency)}</strong>
             <small>Platform fee net revenue is the revenue base.</small>
           </div>
-        </article>
-        <article className="card finance-overview-principle-card is-warning">
+        </AdminCard>
+        <AdminCard className="finance-overview-principle-card is-warning">
           <span className="usage-overview-command-icon">
             <WalletCards size={19} aria-hidden="true" />
           </span>
@@ -162,8 +162,8 @@ export default async function FinanceOverviewPage({
             <strong>{formatMoney(settlementSummary.partnerPayoutAmount, settlementSummary.currency)}</strong>
             <small>Partner payout stays payable until payout or withdrawal closeout.</small>
           </div>
-        </article>
-        <article className="card finance-overview-principle-card is-info">
+        </AdminCard>
+        <AdminCard className="finance-overview-principle-card is-info">
           <span className="usage-overview-command-icon">
             <ShieldCheck size={19} aria-hidden="true" />
           </span>
@@ -172,7 +172,7 @@ export default async function FinanceOverviewPage({
             <strong>{formatMoney(netRevenueEstimate, settlementSummary.currency)}</strong>
             <small>Net revenue estimate excludes gross pass-through payment volume.</small>
           </div>
-        </article>
+        </AdminCard>
       </section>
 
       <AdminSection

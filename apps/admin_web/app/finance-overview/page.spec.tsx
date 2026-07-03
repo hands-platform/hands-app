@@ -176,6 +176,7 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('6 signals');
     expect(markup).toContain('card admin-section finance-overview-kpi-section');
     expect(markup).toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
+    expect(markup).toContain('card admin-card finance-overview-principle-card');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
