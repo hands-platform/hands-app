@@ -55,6 +55,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card partner-overview-priority-card');
     expect(markup).toContain('card admin-card usage-overview-command-card');
+    expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(markup).toContain('card admin-card partner-overview-action-card');
     expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
     expect(markup).toContain('admin-section-body partner-overview-action-grid');

@@ -45,6 +45,7 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('admin-section-body usage-overview-action-list');
     expect(markup).toContain('card admin-card usage-overview-action-item');
     expect(markup).toContain('card admin-card usage-overview-command-card');
+    expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(markup).toContain('card admin-section usage-overview-platform-card');
     expect(markup).toContain('card admin-section usage-overview-discovery-card');
     expect(markup).toContain('card admin-section usage-overview-behavior-card');

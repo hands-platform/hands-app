@@ -242,7 +242,7 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
     );
   }
 
-  return <article className={`card admin-card usage-overview-command-card is-${kpi.tone}`}>{body}</article>;
+  return <AdminCard className={`usage-overview-command-card is-${kpi.tone}`}>{body}</AdminCard>;
 }
 
 function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOverviewSection }) {

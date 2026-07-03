@@ -27,7 +27,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../components/admin-surface';
 import {
   formatCurrencyAmount as money,
   formatPercentLabel,
@@ -707,7 +707,7 @@ function UsageCommandCard({
   readonly value: string;
 }) {
   return (
-    <article className={`card admin-card usage-overview-command-card is-${tone}`}>
+    <AdminCard className={`usage-overview-command-card is-${tone}`}>
       <span className="usage-overview-command-icon">
         <Icon size={18} aria-hidden="true" />
       </span>
@@ -716,7 +716,7 @@ function UsageCommandCard({
         <strong>{value}</strong>
         <small>{detail}</small>
       </div>
-    </article>
+    </AdminCard>
   );
 }
 

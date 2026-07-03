@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('FinanceOverviewPage', () => {
   beforeEach(() => {
@@ -181,6 +183,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('card admin-section finance-overview-kpi-section');
     expect(markup).toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card');
+    expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
+    expect(pageSource).not.toContain(
+      '<article className={`card admin-card usage-overview-command-card',
+    );
     expect(markup).toContain('card admin-card finance-overview-principle-card');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');

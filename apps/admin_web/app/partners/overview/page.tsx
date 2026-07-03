@@ -25,7 +25,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
   AdminPartnerOverview,
@@ -335,7 +335,7 @@ function PartnerKpiCard({
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
 
   return (
-    <article className={`card admin-card usage-overview-command-card is-${tone}`}>
+    <AdminCard className={`usage-overview-command-card is-${tone}`}>
       <div className="usage-overview-command-icon">
         <Icon size={20} aria-hidden="true" />
       </div>
@@ -344,7 +344,7 @@ function PartnerKpiCard({
         <strong>{formatKpiValue(kpi)}</strong>
         <small>{kpi.detail}</small>
       </div>
-    </article>
+    </AdminCard>
   );
 }
 
@@ -896,7 +896,7 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
   const Icon = partnerSegmentIcons[segment.key] ?? Activity;
 
   return (
-    <article className={`card admin-card usage-overview-command-card is-${segment.tone}`}>
+    <AdminCard className={`usage-overview-command-card is-${segment.tone}`}>
       <div className="usage-overview-command-icon">
         <Icon size={20} aria-hidden="true" />
       </div>
@@ -906,7 +906,7 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
         <small>{segment.explanation}</small>
         <a href={segment.href}>{segment.recommendedAction}</a>
       </div>
-    </article>
+    </AdminCard>
   );
 }
 
