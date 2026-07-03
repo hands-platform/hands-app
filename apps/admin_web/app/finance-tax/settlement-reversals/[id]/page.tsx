@@ -16,6 +16,7 @@ import {
   buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalTraceLinks,
   monthlyTaxClosingHref,
+  paymentClearingDetailHref,
   TAX_SETTLEMENT_DEFAULT_TAKE,
 } from '../../tax-settlement-page-model';
 
@@ -199,6 +200,18 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 </>
               ) : (
                 'No clearing'
+              )
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Payment clearing record"
+            value={
+              reversalClearing ? (
+                <Link className="text-link" href={paymentClearingDetailHref(reversalClearing.id)}>
+                  {shortId(reversalClearing.id)}
+                </Link>
+              ) : (
+                '-'
               )
             }
           />

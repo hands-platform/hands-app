@@ -309,6 +309,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Debit 600.000 VND');
     expect(markup).toContain('Credit 600.000 VND');
     expect(markup).toContain('Bank clearing check');
+    expect(markup).toContain('Payment clearing record');
     expect(markup).toContain('Matched 250.000 VND');
     expect(markup).toContain('Remaining 350.000 VND');
     expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
