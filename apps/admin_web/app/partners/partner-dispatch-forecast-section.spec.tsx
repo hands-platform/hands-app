@@ -27,10 +27,12 @@ describe('PartnerDispatchForecastSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 partner-dispatch-forecast-card',
+        'metric-card',
         'signal signal-ok',
         'admin-form-control-link button button-secondary',
       ]),
     );
+    expect(classNamesIn(section).filter((className) => className.includes('partner-dispatch-panel'))).toHaveLength(2);
   });
 
   it('renders an empty city fallback when no supply lane exists', () => {

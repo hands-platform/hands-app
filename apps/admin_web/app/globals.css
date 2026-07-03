@@ -13123,7 +13123,8 @@ a.ops-task-card {
   padding: 8px 10px;
 }
 
-.booking-supply-panel {
+.booking-supply-panel,
+.partner-dispatch-panel {
   align-content: start;
   display: grid;
   gap: 10px;
@@ -13131,7 +13132,9 @@ a.ops-task-card {
 }
 
 .booking-supply-panel > h3,
-.booking-supply-panel > p {
+.booking-supply-panel > p,
+.partner-dispatch-panel > h3,
+.partner-dispatch-panel > p {
   margin: 0;
 }
 

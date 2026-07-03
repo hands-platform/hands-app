@@ -61,19 +61,21 @@ export function PartnerDispatchForecastSection({
       <div className="grid admin-mt-12">
         {forecast.totals.map((item) => (
           <Link className="card" href={item.href} key={item.label}>
-            <p>{item.label}</p>
-            <h2>{item.value}</h2>
-            <span className={`signal ${partnerDispatchForecastToneClass(item.tone)}`}>
-              {partnerDispatchForecastToneLabel(item.tone)}
-            </span>
-            <p className="muted admin-mt-8">
-              {item.detail}
-            </p>
+            <div className="metric-card">
+              <p>{item.label}</p>
+              <h2>{item.value}</h2>
+              <span className={`signal ${partnerDispatchForecastToneClass(item.tone)}`}>
+                {partnerDispatchForecastToneLabel(item.tone)}
+              </span>
+              <p className="muted admin-mt-8">
+                {item.detail}
+              </p>
+            </div>
           </Link>
         ))}
       </div>
       <div className="grid admin-mt-12">
-        <div className="card">
+        <div className="ops-task-note partner-dispatch-panel">
           <h3>Dispatch blockers</h3>
           <div className="setup-stage-list admin-mt-12">
             {forecast.blockers.map((item) => (
@@ -91,7 +93,7 @@ export function PartnerDispatchForecastSection({
             ))}
           </div>
         </div>
-        <div className="card">
+        <div className="ops-task-note partner-dispatch-panel">
           <h3>City supply lanes</h3>
           <p className="muted">
             Use this to see which partner onboarding, location refresh, or push registration records need
