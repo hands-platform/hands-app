@@ -1,4 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
 
 export type BookingMonitorCommandCenterLane = {
@@ -17,7 +18,7 @@ type BookingMonitorCommandCenterSectionProps = {
 export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorCommandCenterSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">Operator first view</span>}
+      actions={<StatusBadge tone="info">Operator first view</StatusBadge>}
       className="admin-mt-16 booking-monitor-command-center-card"
       description="One-glance control for dispatch pressure, customer protection, payment closeout, and handoff quality."
       title="Booking command center"
@@ -36,9 +37,9 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
           >
             <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
-                <span className="pill" key={item.label}>
+                <PillClassBadge pillClass="pill" key={item.label}>
                   {item.label}: {item.value}
-                </span>
+                </PillClassBadge>
               ))}
             </div>
           </AdminActionCard>

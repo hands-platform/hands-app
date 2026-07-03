@@ -3,6 +3,7 @@ import {
   PartnerDetailReferenceDetails,
   PartnerDetailSectionGroup,
 } from './partner-detail-section-group';
+import { readFileSync } from 'fs';
 
 describe('PartnerDetailSectionGroup', () => {
   it('renders a titled operations section with status and children', () => {
@@ -92,6 +93,13 @@ describe('PartnerDetailSectionGroup', () => {
         'partner-detail-dossier-cluster-body',
       ]),
     );
+  });
+
+  it('uses shared badge atoms for section and dossier status chips', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{status}</span>');
   });
 });
 

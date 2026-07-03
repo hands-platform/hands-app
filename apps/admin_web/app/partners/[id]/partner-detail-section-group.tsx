@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailSectionGroupProps = {
   readonly children: ReactNode;
@@ -40,7 +41,7 @@ export function PartnerDetailSectionGroup({
           <h2>{title}</h2>
           <p className="muted">{description}</p>
         </div>
-        <span className="pill pill-info">{status}</span>
+        <StatusBadge tone="info">{status}</StatusBadge>
       </div>
       <div className="partner-detail-section-band-body partner-detail-section-group-body">
         {children}
@@ -83,7 +84,7 @@ export function PartnerDetailDossierCluster({
           <strong>{label}</strong>
           <small>{helper}</small>
         </div>
-        <span className="pill pill-info">{status}</span>
+        <StatusBadge tone="info">{status}</StatusBadge>
       </div>
       <div className="partner-detail-dossier-cluster-body">{children}</div>
     </section>

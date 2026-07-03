@@ -1,5 +1,6 @@
 import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
+import { readFileSync } from 'fs';
 
 describe('BookingMonitorCommandRouteSections', () => {
   it('renders command summary and primary queue cards', () => {
@@ -123,5 +124,16 @@ describe('BookingMonitorCommandRouteSections', () => {
     expect(rendered).not.toContain('Blocked create attempts');
     expect(rendered).not.toContain('No primary booking command needs action');
     expect(rendered).not.toContain('Normal in-progress bookings');
+  });
+
+  it('uses shared badge atoms for command summary and primary queue chips', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">');
+    expect(source).not.toContain('<span className="pill">{item.owner}</span>');
+    expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill" key={bookingId}>');
   });
 });

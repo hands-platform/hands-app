@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { shortId } from '../../lib/admin-format';
 import type { BookingCommandRouteCard } from '../../lib/booking-command-route-cards';
 import type { BookingPrimaryCommandSummaryItem } from '../../lib/booking-primary-command-summary';
@@ -41,10 +42,10 @@ export function BookingMonitorCommandRouteSections({
   return (
     <AdminSection
       actions={
-        <span className="pill pill-info">
+        <StatusBadge tone="info">
           {autoRefresh ? 'Auto refresh on' : 'Auto refresh paused'} /{' '}
           {isPending ? 'refreshing' : `last ${hasMounted ? lastRefreshLabel : 'pending'}`}
-        </span>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Live queue health and operator lanes before table review."
@@ -69,7 +70,7 @@ export function BookingMonitorCommandRouteSections({
                 <strong>{item.value}</strong>
               </td>
               <td>
-                <span className="pill">{item.owner}</span>
+                <PillClassBadge pillClass="pill">{item.owner}</PillClassBadge>
               </td>
               <td>
                 <span className="muted">{item.action}</span>
@@ -83,7 +84,7 @@ export function BookingMonitorCommandRouteSections({
           <h3>Primary command queue</h3>
           <p className="muted">Open the lane that needs action; detailed evidence stays in booking detail.</p>
         </div>
-        <span className="pill pill-info">{visiblePrimaryCommandCount} booking(s)</span>
+        <StatusBadge tone="info">{visiblePrimaryCommandCount} booking(s)</StatusBadge>
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -95,7 +96,7 @@ export function BookingMonitorCommandRouteSections({
           {visiblePrimaryCommandQueue.map((item) => (
             <tr key={`${item.status}-${item.primaryAction}`}>
               <td>
-                <span className={`pill ${item.tone}`}>{item.status}</span>
+                <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge>
               </td>
               <td>
                 <Link className="text-link" href={item.href}>
@@ -109,9 +110,9 @@ export function BookingMonitorCommandRouteSections({
               <td>
                 <div className="participant-list">
                   {item.sampleBookingIds.map((bookingId) => (
-                    <span className="pill" key={bookingId}>
+                    <PillClassBadge pillClass="pill" key={bookingId}>
                       {shortId(bookingId)}
-                    </span>
+                    </PillClassBadge>
                   ))}
                 </div>
               </td>

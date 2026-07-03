@@ -1,5 +1,6 @@
 import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
+import { readFileSync } from 'fs';
 
 describe('BookingMonitorCommandCenterSection', () => {
   it('renders command center lanes with tone and metric copy', () => {
@@ -41,5 +42,13 @@ describe('BookingMonitorCommandCenterSection', () => {
     );
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-command-center-card');
     expect(classNamesIn(section)).toContain('card admin-action-card');
+  });
+
+  it('uses shared badge atoms for command center action and metric chips', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('actions={<span className="pill pill-info">Operator first view</span>}');
+    expect(source).not.toContain('<span className="pill" key={item.label}>');
   });
 });
