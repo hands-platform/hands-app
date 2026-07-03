@@ -2030,15 +2030,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminSection>
 
           <section className="detail-grid admin-mt-20 dashboard-queue-grid">
-            <div className="card dashboard-card-scroll dashboard-checklist-card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Operations checklist queue</h2>
-                  <p className="muted">
-                    Generated from the latest admin API snapshot. It groups customer protection, Partner
-                    controls, payment release, cash debt, and payout recovery together.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <span
                   className={`signal ${fullDashboardData.queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}
                 >
@@ -2046,7 +2039,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     ? `${fullDashboardData.queueSummary.high} same-shift`
                     : 'No same-shift queue'}
                 </span>
-              </div>
+              }
+              className="dashboard-card-scroll dashboard-checklist-card"
+              description="Generated from the latest admin API snapshot. It groups customer protection, Partner controls, payment release, cash debt, and payout recovery together."
+              id="dashboard-operations-checklist-queue"
+              title="Operations checklist queue"
+            >
               <div className="service-trace-summary">
                 <div>
                   <span>Immediate checks</span>
@@ -2114,20 +2112,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <p className="muted">No active operational issues detected from the current local data.</p>
                 )}
               </div>
-            </div>
+            </AdminSection>
 
-            <div className="card dashboard-card-scroll dashboard-setup-card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>External setup readiness</h2>
-                  <p className="muted">
-                    Live API environment check. Secrets are never shown, only configured/missing status.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <span className={`signal ${externalReadiness.ok ? 'signal-ok' : 'signal-warn'}`}>
                   {externalReadiness.ok ? 'Ready' : 'Needs setup'}
                 </span>
-              </div>
+              }
+              className="dashboard-card-scroll dashboard-setup-card"
+              description="Live API environment check. Secrets are never shown, only configured/missing status."
+              id="dashboard-external-setup-readiness"
+              title="External setup readiness"
+            >
               <p className="muted">
                 These are not code errors. They require console/account values before real E2E testing.
               </p>
@@ -2145,7 +2142,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 )}
               </div>
-            </div>
+            </AdminSection>
           </section>
 
           <section className="detail-grid admin-mt-20">

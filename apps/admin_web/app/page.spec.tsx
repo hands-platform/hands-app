@@ -411,5 +411,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-partner-readiness-funnel-title">Partner readiness funnel</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section dashboard-card-scroll dashboard-checklist-card" id="dashboard-operations-checklist-queue"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-operations-checklist-queue-title">Operations checklist queue</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section dashboard-card-scroll dashboard-setup-card" id="dashboard-external-setup-readiness"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-external-setup-readiness-title">External setup readiness</h2>',
+    );
   });
 });
