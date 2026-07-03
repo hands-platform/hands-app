@@ -7,10 +7,10 @@ import type {
   AdminPartnerWithholdingTaxSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
@@ -170,9 +170,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         resultTone="info"
         title="Partner monthly withholding rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No Partner withholding tax rows exist for this period."
             headers={['Partner', 'Period', 'Bookings', 'Gross revenue', 'Partner payout', 'VAT / PIT', 'Total withheld']}
             rowCount={tableRows.length}
@@ -198,8 +196,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
                 </td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Partner withholding tax pages"
           hrefForPage={(page) => partnerWithholdingTaxHref({ ...filters, page })}

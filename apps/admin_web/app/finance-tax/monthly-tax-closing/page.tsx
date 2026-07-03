@@ -10,11 +10,11 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceStageList } from '../finance-stage-list';
@@ -306,9 +306,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         resultTone="info"
         title="Stored monthly closing rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No stored monthly tax closing row exists for this period yet."
             headers={['Period', 'Status', 'Settlements', 'Platform VAT', 'Partner tax', 'Payment fees', 'Closeout']}
             rowCount={tableRows.length}
@@ -356,8 +354,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                 </tr>
               );
             })}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Monthly tax closing pages"
           hrefForPage={(page) => monthlyTaxClosingHref({ ...filters, page })}

@@ -366,9 +366,17 @@ describe('finance list pages', () => {
   });
 
   it.each([
+    ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx'],
+    ['coupon finance', 'app/finance-tax/coupon-finance/page.tsx'],
+    ['finance approvers', 'app/finance-tax/finance-approvers/page.tsx'],
     ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx'],
     ['general ledger', 'app/finance-tax/general-ledger/page.tsx'],
     ['bank reconciliation', 'app/finance-tax/bank-reconciliation/page.tsx'],
+    ['monthly tax closing', 'app/finance-tax/monthly-tax-closing/page.tsx'],
+    ['partner withholding tax', 'app/finance-tax/partner-withholding-tax/page.tsx'],
+    ['payment fees', 'app/finance-tax/payment-fees/page.tsx'],
+    ['platform VAT', 'app/finance-tax/platform-vat/page.tsx'],
+    ['settlement reversals', 'app/finance-tax/settlement-reversals/page.tsx'],
   ] as const)('uses the shared FinanceDataTable shell for %s', (_name, sourcePath) => {
     const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 

@@ -5,11 +5,11 @@ import type {
   AdminCouponFinanceSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
@@ -162,9 +162,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         resultTone="info"
         title="Coupon settlement rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No coupon settlement rows match the current filters."
             headers={[
               'Booking',
@@ -230,8 +228,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                 </tr>
               );
             })}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Coupon finance settlement pages"
           hrefForPage={(page) => couponFinanceHref({ ...filters, page })}

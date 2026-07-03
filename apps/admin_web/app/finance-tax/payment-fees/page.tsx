@@ -2,10 +2,10 @@ import { CreditCard, ReceiptText, ShieldCheck, WalletCards } from 'lucide-react'
 
 import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
@@ -161,9 +161,7 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
       resultTone="info"
       title={title}
     >
-      <AdminTableScroll>
-        <AdminDataTable
-          className="vuexy-booking-table"
+      <FinanceDataTable
           emptyMessage={emptyMessage}
           headers={[label, 'Settlements', 'Customer paid', 'Payment fees', 'Effective rate']}
           rowCount={rows.length}
@@ -181,8 +179,7 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
               <td>{formatFinancePercent(Number(row.paymentProcessingFeeTotal ?? 0), Number(row.customerPaymentAmountTotal ?? 0))}</td>
             </tr>
           ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+        </FinanceDataTable>
     </FinanceTablePanel>
   );
 }

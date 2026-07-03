@@ -6,12 +6,12 @@ import type {
   AdminBookingSettlementReversalSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { financeEvidenceTonePill, financeSettlementReversalTaxStatusPill } from '../finance-status-badge-model';
@@ -170,9 +170,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
         resultTone="info"
         title="Settlement reversal rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No settlement reversal rows match the current filters."
             headers={[
               'Booking',
@@ -256,8 +254,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                 </tr>
               );
             })}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Settlement reversal pages"
           hrefForPage={(page) => bookingSettlementReversalHref({ ...filters, page })}

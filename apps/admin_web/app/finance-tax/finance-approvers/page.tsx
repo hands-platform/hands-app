@@ -3,10 +3,10 @@ import { ShieldCheck, UserCheck, UserCog, UsersRound } from 'lucide-react';
 import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceStageList } from '../finance-stage-list';
 import { FinanceTablePanel } from '../finance-table-panel';
@@ -161,9 +161,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
         resultTone="info"
         title="Finance approver directory"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No admin users were returned by the bounded admin user API."
             headers={['Admin', 'Roles', 'Latest session', 'Push devices', 'Finance approver']}
             rowCount={adminUsers.length}
@@ -217,8 +215,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                 </tr>
               );
             })}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

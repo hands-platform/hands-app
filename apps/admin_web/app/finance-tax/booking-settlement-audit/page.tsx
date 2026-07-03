@@ -6,12 +6,12 @@ import type {
   AdminBookingSettlementSnapshotSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
@@ -186,9 +186,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         resultTone="info"
         title="Booking settlement snapshot rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No settlement snapshots match the current filters."
             headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon evidence', 'Partner tax', 'HANDS fee', 'Status', 'Evidence']}
             rowCount={tableRows.length}
@@ -257,8 +255,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                   </td>
                 </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Booking settlement audit pages"
           hrefForPage={(page) => bookingSettlementAuditHref({ ...filters, page })}

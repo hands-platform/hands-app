@@ -2,10 +2,10 @@ import { AlertTriangle, CircleDollarSign, ReceiptText, ShieldCheck } from 'lucid
 
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatMoney } from '../../../lib/admin-format';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
@@ -108,9 +108,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         resultTone="info"
         title="VAT rate breakdown"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No platform VAT rows exist for this period."
             headers={['VAT bucket', 'Rate', 'Settlements', 'Platform fee gross', 'Company VAT', 'Net revenue']}
             rowCount={summary.rateBreakdown.length}
@@ -129,8 +127,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
                 <td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
