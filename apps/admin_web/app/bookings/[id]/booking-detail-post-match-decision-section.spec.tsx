@@ -30,6 +30,7 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(markup).toContain('name="bookingId" value="booking-1"');
     expect(markup).toContain('card admin-section admin-mb-16 booking-post-match-cancellation-decision-card');
     expect(markup).toContain('booking-post-match-detail-evidence-grid');
+    expect(markup).toContain('card admin-card booking-post-match-detail-evidence-card');
     expect(markup).toContain('card admin-card booking-outcome-decision-panel');
     expect(markup).toContain('booking-outcome-decision-main');
   });

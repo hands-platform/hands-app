@@ -42,7 +42,7 @@ export function BookingDetailPostMatchDecisionSection({
         className="booking-post-match-detail-evidence-grid admin-mt-12"
       >
         {outcomeReview.rows.map((row) => (
-          <Link className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
+          <Link className="card admin-card booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
             <span className={`pill ${row.tone}`}>{row.label}</span>
             <strong>{row.value}</strong>
             <small>{row.helper}</small>
