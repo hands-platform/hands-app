@@ -1,9 +1,23 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   CashSettlementPriorityBoardSection,
   type CashSettlementPriorityBoardRow,
 } from './cash-settlement-priority-board-section';
 
 describe('CashSettlementPriorityBoardSection', () => {
+  it('uses the shared finance table shell instead of wiring table classes directly', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-priority-board-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('FinanceDataTable');
+    expect(source).not.toContain('AdminDataTable');
+    expect(source).not.toContain('className="vuexy-booking-table"');
+  });
+
   it('renders priority rows with booking links and evidence requirements', () => {
     const section = CashSettlementPriorityBoardSection({
       rows: [buildRow()],
@@ -18,7 +32,7 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-scroll-x admin-mt-12',
+        'admin-table-scroll admin-mt-12',
         'table vuexy-data-table vuexy-booking-table',
         'pill pill-danger',
       ]),

@@ -1,10 +1,25 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import {
   CashSettlementOpenDebtTableSection,
   type CashSettlementOpenDebtTableRow,
 } from './cash-settlement-open-debt-table-section';
-import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('CashSettlementOpenDebtTableSection', () => {
+  it('uses the shared finance table shell instead of wiring table classes directly', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-open-debt-table-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('FinanceDataTable');
+    expect(source).not.toContain('AdminTableScroll');
+    expect(source).not.toContain('className="vuexy-booking-table"');
+  });
+
   it('renders compact open cash debt rows without per-row operations evidence by default', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([buildRow()], { totalRows: 12 }),

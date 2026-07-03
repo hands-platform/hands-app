@@ -21,7 +21,7 @@ describe('CashSettlement board sections', () => {
     });
 
     expect(classNamesIn(section)).toContain(
-      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
     );
     expect(classNamesIn(section)).toContain('pill pill-danger');
     expect(classNamesIn(section)).not.toContain('pill pill pill-danger');

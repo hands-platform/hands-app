@@ -30,4 +30,22 @@ describe('FinanceDataTable', () => {
     expect(markup).toContain('admin-data-table-empty');
     expect(markup).toContain('No finance rows');
   });
+
+  it('allows pages to keep local spacing on the shared scroll shell', () => {
+    const markup = renderToStaticMarkup(
+      <FinanceDataTable
+        emptyMessage="No finance rows"
+        headers={['Source']}
+        rowCount={1}
+        scrollClassName="admin-mt-12"
+      >
+        <tr>
+          <td>Cash debt priority</td>
+        </tr>
+      </FinanceDataTable>,
+    );
+
+    expect(markup).toContain('admin-table-scroll admin-mt-12');
+    expect(markup).toContain('Cash debt priority');
+  });
 });

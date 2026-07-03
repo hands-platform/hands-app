@@ -2,11 +2,13 @@ import type { ComponentProps } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 
-type FinanceDataTableProps = Omit<ComponentProps<typeof AdminDataTable>, 'className'>;
+type FinanceDataTableProps = Omit<ComponentProps<typeof AdminDataTable>, 'className'> & {
+  readonly scrollClassName?: string;
+};
 
-export function FinanceDataTable(props: FinanceDataTableProps) {
+export function FinanceDataTable({ scrollClassName, ...props }: FinanceDataTableProps) {
   return (
-    <AdminTableScroll>
+    <AdminTableScroll className={scrollClassName}>
       <AdminDataTable className="vuexy-booking-table" {...props} />
     </AdminTableScroll>
   );

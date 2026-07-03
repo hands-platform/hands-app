@@ -1,5 +1,5 @@
-import { AdminDataTable } from '../../components/admin-data-table';
 import { PillClassBadge } from '../../components/status-badge';
+import { FinanceDataTable } from '../finance-tax/finance-data-table';
 
 export type CashSettlementPriorityBoardRow = {
   readonly ageLabel: string;
@@ -37,49 +37,47 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
   }
 
   return (
-    <div className="admin-scroll-x admin-mt-12">
-      <AdminDataTable
-        className="vuexy-booking-table"
-        emptyMessage={null}
-        headers={CASH_SETTLEMENT_PRIORITY_HEADERS}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <tr key={`${row.bookingHref}-${row.priority}`}>
-            <td>
-              <PillClassBadge pillClass={row.pillClass}>{row.priority}</PillClassBadge>
-              <div className="muted">{row.ageLabel}</div>
-            </td>
-            <td>
-              <strong>{row.providerName}</strong>
-              <div>
-                <a className="text-link" href={row.bookingHref}>
-                  {row.bookingLabel}
-                </a>
-              </div>
-              <div className="muted">{row.providerPhone}</div>
-            </td>
-            <td>
-              <strong>{row.debtAmountLabel}</strong>
-              <div className="muted">{row.reason}</div>
-            </td>
-            <td>
-              <div className="service-matrix-cell">
-                {row.requiredEvidence.map((line) => (
-                  <small key={line}>{line}</small>
-                ))}
-              </div>
-            </td>
-            <td>
-              <div className="service-matrix-cell">
-                {row.unlockResult.map((line) => (
-                  <small key={line}>{line}</small>
-                ))}
-              </div>
-            </td>
-          </tr>
-        ))}
-      </AdminDataTable>
-    </div>
+    <FinanceDataTable
+      emptyMessage={null}
+      headers={CASH_SETTLEMENT_PRIORITY_HEADERS}
+      rowCount={rows.length}
+      scrollClassName="admin-mt-12"
+    >
+      {rows.map((row) => (
+        <tr key={`${row.bookingHref}-${row.priority}`}>
+          <td>
+            <PillClassBadge pillClass={row.pillClass}>{row.priority}</PillClassBadge>
+            <div className="muted">{row.ageLabel}</div>
+          </td>
+          <td>
+            <strong>{row.providerName}</strong>
+            <div>
+              <a className="text-link" href={row.bookingHref}>
+                {row.bookingLabel}
+              </a>
+            </div>
+            <div className="muted">{row.providerPhone}</div>
+          </td>
+          <td>
+            <strong>{row.debtAmountLabel}</strong>
+            <div className="muted">{row.reason}</div>
+          </td>
+          <td>
+            <div className="service-matrix-cell">
+              {row.requiredEvidence.map((line) => (
+                <small key={line}>{line}</small>
+              ))}
+            </div>
+          </td>
+          <td>
+            <div className="service-matrix-cell">
+              {row.unlockResult.map((line) => (
+                <small key={line}>{line}</small>
+              ))}
+            </div>
+          </td>
+        </tr>
+      ))}
+    </FinanceDataTable>
   );
 }
