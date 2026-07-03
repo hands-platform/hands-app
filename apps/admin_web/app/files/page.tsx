@@ -105,6 +105,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
       />
 
       <AdminSection
+        className="vuexy-booking-table-card vuexy-booking-table-group"
         description="Approve or reject public media here. Private verification files remain evidence for Partner review."
         statusLabel={`${rows.length} visible`}
         statusTone={rows.length ? 'info' : 'neutral'}
