@@ -1881,19 +1881,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </section>
 
-          <section className="card admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card">
-            <div className="ops-section-header">
-              <div>
-                <h2>Partner dispatch control</h2>
-                <p className="muted">
-                  Partner checklist queue for marketplace blockers, location readiness, first-revenue payout
-                  requirements, and app contactability.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <Link className="text-link" href="/partners">
                 Partner queue
               </Link>
-            </div>
+            }
+            className="admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card"
+            description="Partner checklist queue for marketplace blockers, location readiness, first-revenue payout requirements, and app contactability."
+            id="dashboard-partner-dispatch-control"
+            title="Partner dispatch control"
+          >
             <div className="ops-task-grid admin-mt-12">
               {fullDashboardData.partnerOpsQueue.items.map((item) => (
                 <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
@@ -1946,21 +1944,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <small>No app session or push</small>
               </div>
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20">
-            <div className="ops-section-header">
-              <div>
-                <h2>Marketplace unblock quick order</h2>
-                <p className="muted">
-                  First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a
-                  post-first-earning payout gate, not an initial marketplace gate.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <Link className="text-link" href="/partner-controls">
                 Full unblock playbook
               </Link>
-            </div>
+            }
+            className="admin-mt-20"
+            description="First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a post-first-earning payout gate, not an initial marketplace gate."
+            id="dashboard-marketplace-unblock-quick-order"
+            title="Marketplace unblock quick order"
+          >
             <div className="ops-task-grid admin-mt-12">
               {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
                 <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
@@ -1981,23 +1977,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card">
-            <div className="ops-section-header">
-              <div>
-                <h2>Today command lanes</h2>
-                <p className="muted">
-                  High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts,
-                  and setup.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <span
                 className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
               >
                 {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
               </span>
-            </div>
+            }
+            className="admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card"
+            description="High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and setup."
+            id="dashboard-today-command-lanes"
+            title="Today command lanes"
+          >
             {fullDashboardData.topCommandSignal && (
               <div className="ops-task-note admin-mt-14">
                 <div className="ops-row">
@@ -2053,7 +2047,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
           <section className="detail-grid admin-mt-20 dashboard-queue-grid">
             <div className="card dashboard-card-scroll dashboard-checklist-card">

@@ -345,5 +345,23 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-operations-policy-snapshot-title">Operations policy snapshot</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card" id="dashboard-partner-dispatch-control"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-partner-dispatch-control-title">Partner dispatch control</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-marketplace-unblock-quick-order"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-marketplace-unblock-quick-order-title">Marketplace unblock quick order</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card" id="dashboard-today-command-lanes"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-today-command-lanes-title">Today command lanes</h2>',
+    );
   });
 });
