@@ -5,7 +5,8 @@ import {
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import {
@@ -96,16 +97,14 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         />
       ) : null}
 
-      <section className="admin-filter-panel coupons-create-panel">
-        <AdminSectionHeader
-          status={
-            <span className="pill pill-info">
-              {couponSummary.liveCount} running / {couponSummary.scheduledCount} upcoming /{' '}
-              {couponSummary.expiredCount + couponSummary.pausedCount} expired
-            </span>
-          }
-          title="Create coupons"
-        />
+      <AdminFilterPanel
+        className="coupons-create-panel"
+        resultLabel={`${couponSummary.liveCount} running / ${couponSummary.scheduledCount} upcoming / ${
+          couponSummary.expiredCount + couponSummary.pausedCount
+        } expired`}
+        resultTone="info"
+        title="Create coupons"
+      >
         {createNotice ? (
           <div className={`coupon-create-notice coupon-create-notice-${createNotice.tone}`} role="status">
             <strong>{createNotice.title}</strong>
@@ -140,7 +139,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             Create coupons
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminFilterPanel>
       <CouponsTableSection
         rows={couponModel.couponRows}
         updateAction={updateCoupon}

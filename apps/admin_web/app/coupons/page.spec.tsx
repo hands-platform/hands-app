@@ -60,6 +60,8 @@ describe('CouponsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Create coupons');
+    expect(markup).toContain('card admin-filter-panel coupons-create-panel');
+    expect(markup).toContain('admin-filter-panel-body');
     expect(markup).toContain('admin-form-textarea');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-control-button');
