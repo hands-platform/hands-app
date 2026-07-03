@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -107,10 +108,5 @@ export function PartnerDetailBookingJourneySection({
 }
 
 function PartnerBookingJourneyEmptyState({ detail, title }: { readonly detail: string; readonly title: string }) {
-  return (
-    <div className="empty-state">
-      <strong>{title}</strong>
-      <p className="muted">{detail}</p>
-    </div>
-  );
+  return <AdminEmptyState framed message={detail} title={title} />;
 }

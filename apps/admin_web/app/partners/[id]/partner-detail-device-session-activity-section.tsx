@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -188,10 +189,5 @@ export function PartnerDetailDeviceSessionActivitySection({
 }
 
 function PartnerDeviceSessionEmptyState({ message }: { readonly message: string }) {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </div>
-  );
+  return <AdminEmptyState framed message={message} />;
 }

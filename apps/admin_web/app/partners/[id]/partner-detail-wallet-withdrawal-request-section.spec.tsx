@@ -1,5 +1,11 @@
 import { PartnerDetailWalletWithdrawalRequestSection } from './partner-detail-wallet-withdrawal-request-section';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(
+  new URL('./partner-detail-wallet-withdrawal-request-section.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('PartnerDetailWalletWithdrawalRequestSection', () => {
   it('renders partner wallet withdrawal history and finance actions as a Vuexy table', () => {
@@ -61,7 +67,7 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Ref VCB-PAID-1');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -193,6 +199,11 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
 
     expect(rendered).toContain('Approved -> Bank transfer pending');
     expect(rendered).toContain('Lock retained 650.000 VND');
+  });
+
+  it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 });
 

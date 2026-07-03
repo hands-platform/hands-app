@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
@@ -231,10 +232,10 @@ function WithdrawalRequestActions({
 
 function WalletWithdrawalEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No recent partner wallet withdrawal request is loaded for this partner.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="No recent partner wallet withdrawal request is loaded for this partner."
+    />
   );
 }
 

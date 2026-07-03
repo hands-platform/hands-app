@@ -1,4 +1,10 @@
 import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(
+  new URL('./partner-detail-daily-activity-digest-section.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('PartnerDetailDailyActivityDigestSection', () => {
   it('renders date-grouped activity digest days with formatted highlight dates', () => {
@@ -44,7 +50,7 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('BOOKING / formatted 2026-06-01T10:00:00.000Z');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -73,6 +79,8 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
       ]),
     );
     expect(rendered).toContain('Showing 0 entries');
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 });
 

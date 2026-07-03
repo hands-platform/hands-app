@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -90,9 +91,10 @@ export function PartnerDetailDailyActivityDigestSection({
 
 function PartnerDailyActivityDigestEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No partner daily activity matched this filter</strong>
-      <p className="muted">Clear the date filter or choose a wider range.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="Clear the date filter or choose a wider range."
+      title="No partner daily activity matched this filter"
+    />
   );
 }
