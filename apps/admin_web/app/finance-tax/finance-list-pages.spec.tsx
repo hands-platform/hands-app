@@ -364,4 +364,16 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${statusPill(reversal.taxStatus)}`}');
     expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
   });
+
+  it.each([
+    ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx'],
+    ['general ledger', 'app/finance-tax/general-ledger/page.tsx'],
+    ['bank reconciliation', 'app/finance-tax/bank-reconciliation/page.tsx'],
+  ] as const)('uses the shared FinanceDataTable shell for %s', (_name, sourcePath) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('FinanceDataTable');
+    expect(source).not.toContain('AdminTableScroll');
+    expect(source).not.toContain('className="vuexy-booking-table"');
+  });
 });

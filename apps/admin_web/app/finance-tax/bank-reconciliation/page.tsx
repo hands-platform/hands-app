@@ -8,7 +8,6 @@ import type {
   AdminCompanyBankTransaction,
 } from '../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -20,6 +19,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { financeBankReconciliationStatusPill } from '../finance-status-badge-model';
@@ -258,75 +258,57 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         resultTone="info"
         title="Company bank transactions"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No bank transactions match the current filters."
-            headers={[
-              'Transaction',
-              'Bank account',
-              'Counterparty',
-              'Amount',
-              'Value date',
-              'Match',
-              'Status',
-              'Evidence',
-            ]}
-            rowCount={pagination.rows.length}
-          >
-            {pagination.rows.map((transaction) => (
-              <tr key={transaction.id}>
-                <td>
-                  <Link className="text-link" href={bankReconciliationDetailHref(transaction.id)}>
-                    <strong>{transaction.transferRef ?? shortId(transaction.sourceKey)}</strong>
-                  </Link>
-                  <div className="muted">{transaction.type}</div>
-                  <div className="muted">{shortId(transaction.id)}</div>
-                </td>
-                <td>
-                  <strong>{transaction.bankAccount?.name ?? 'Unknown account'}</strong>
-                  <div className="muted">{transaction.bankAccount?.bankName ?? '-'}</div>
-                  <div className="muted">
-                    {transaction.bankAccount?.accountNumberMasked ??
-                      transaction.bankAccount?.accountNumberLast4 ??
-                      '-'}
-                  </div>
-                </td>
-                <td>
-                  <strong>{transaction.counterpartyName ?? '-'}</strong>
-                  <div className="muted">{transaction.description ?? '-'}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
-                  <div className="muted">
-                    {transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}
-                  </div>
-                </td>
-                <td>
-                  <strong>{formatDateTime(transaction.occurredAt)}</strong>
-                  {transaction.valueDate ? (
-                    <div className="muted">Value {formatDateTime(transaction.valueDate)}</div>
-                  ) : null}
-                </td>
-                <td>
-                  <strong>{transaction._count?.reconciliationMatches ?? 0} match</strong>
-                  <div className="muted">{shortId(transaction.sourceKey)}</div>
-                </td>
-                <td>
-                  <PillClassBadge pillClass={financeBankReconciliationStatusPill(transaction.status)}>
-                    {transaction.status}
-                  </PillClassBadge>
-                </td>
-                <td>
-                  <Link className="pill pill-info" href={bankReconciliationDetailHref(transaction.id)}>
-                    Open detail
-                  </Link>
-                  <div className="muted">{transaction._count?.reconciliationMatches ?? 0} match</div>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+        <FinanceDataTable
+          emptyMessage="No bank transactions match the current filters."
+          headers={['Transaction', 'Bank account', 'Counterparty', 'Amount', 'Value date', 'Match', 'Status', 'Evidence']}
+          rowCount={pagination.rows.length}
+        >
+          {pagination.rows.map((transaction) => (
+            <tr key={transaction.id}>
+              <td>
+                <Link className="text-link" href={bankReconciliationDetailHref(transaction.id)}>
+                  <strong>{transaction.transferRef ?? shortId(transaction.sourceKey)}</strong>
+                </Link>
+                <div className="muted">{transaction.type}</div>
+                <div className="muted">{shortId(transaction.id)}</div>
+              </td>
+              <td>
+                <strong>{transaction.bankAccount?.name ?? 'Unknown account'}</strong>
+                <div className="muted">{transaction.bankAccount?.bankName ?? '-'}</div>
+                <div className="muted">
+                  {transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '-'}
+                </div>
+              </td>
+              <td>
+                <strong>{transaction.counterpartyName ?? '-'}</strong>
+                <div className="muted">{transaction.description ?? '-'}</div>
+              </td>
+              <td>
+                <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
+                <div className="muted">{transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}</div>
+              </td>
+              <td>
+                <strong>{formatDateTime(transaction.occurredAt)}</strong>
+                {transaction.valueDate ? <div className="muted">Value {formatDateTime(transaction.valueDate)}</div> : null}
+              </td>
+              <td>
+                <strong>{transaction._count?.reconciliationMatches ?? 0} match</strong>
+                <div className="muted">{shortId(transaction.sourceKey)}</div>
+              </td>
+              <td>
+                <PillClassBadge pillClass={financeBankReconciliationStatusPill(transaction.status)}>
+                  {transaction.status}
+                </PillClassBadge>
+              </td>
+              <td>
+                <Link className="pill pill-info" href={bankReconciliationDetailHref(transaction.id)}>
+                  Open detail
+                </Link>
+                <div className="muted">{transaction._count?.reconciliationMatches ?? 0} match</div>
+              </td>
+            </tr>
+          ))}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Bank reconciliation pages"
           hrefForPage={(page) => bankReconciliationHref({ ...filters, page })}

@@ -3,12 +3,12 @@ import { AlertTriangle, CheckCircle2, ReceiptText, Scale } from 'lucide-react';
 
 import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { financeJournalBatchStatusPill } from '../finance-status-badge-model';
@@ -164,77 +164,74 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         resultTone="info"
         title="Journal batches"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No journal batches match the current filters."
-            headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status', 'Evidence']}
-            rowCount={pagination.rows.length}
-          >
-            {pagination.rows.map((batch) => (
-              <tr key={batch.id}>
-                <td>
-                  <Link className="text-link" href={generalLedgerDetailHref(batch.id)}>
-                    <strong>{batch.sourceType}</strong>
+        <FinanceDataTable
+          emptyMessage="No journal batches match the current filters."
+          headers={['Source', 'Booking', 'Customer', 'Partner', 'Period', 'Debit / Credit', 'Status', 'Evidence']}
+          rowCount={pagination.rows.length}
+        >
+          {pagination.rows.map((batch) => (
+            <tr key={batch.id}>
+              <td>
+                <Link className="text-link" href={generalLedgerDetailHref(batch.id)}>
+                  <strong>{batch.sourceType}</strong>
+                </Link>
+                <div className="muted">{shortId(batch.sourceId)}</div>
+                <div className="muted">{batch._count?.entries ?? 0} entries</div>
+              </td>
+              <td>
+                {batch.bookingId ? (
+                  <Link className="text-link" href={`/bookings/${batch.bookingId}`}>
+                    {shortId(batch.bookingId)}
                   </Link>
-                  <div className="muted">{shortId(batch.sourceId)}</div>
-                  <div className="muted">{batch._count?.entries ?? 0} entries</div>
-                </td>
-                <td>
-                  {batch.bookingId ? (
-                    <Link className="text-link" href={`/bookings/${batch.bookingId}`}>
-                      {shortId(batch.bookingId)}
-                    </Link>
-                  ) : (
-                    <span className="muted">-</span>
-                  )}
-                  <div className="muted">{batch.booking?.status ?? 'No booking'}</div>
-                </td>
-                <td>
-                  {batch.customerProfileId ? (
-                    <Link className="text-link" href={`/customers/${batch.customerProfileId}`}>
-                      {personName(batch.customerProfile?.user, 'Unknown customer')}
-                    </Link>
-                  ) : (
-                    <strong>{personName(batch.customerProfile?.user, 'Unknown customer')}</strong>
-                  )}
-                  <div className="muted">{batch.customerProfile?.user?.phone ?? '-'}</div>
-                </td>
-                <td>
-                  {batch.providerProfileId ? (
-                    <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
-                      {batch.providerProfile?.displayName ?? personName(batch.providerProfile?.user, 'Unknown partner')}
-                    </Link>
-                  ) : (
-                    <span className="muted">-</span>
-                  )}
-                  <div className="muted">{batch.providerProfile?.user?.phone ?? '-'}</div>
-                </td>
-                <td>
-                  <strong>{batch.monthlyPeriod ?? '-'}</strong>
-                  <div className="muted">{formatDateTime(batch.postedAt)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>
-                  <div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>
-                  <div className="muted">
-                    Delta {formatMoney(Math.abs(batch.totalDebit - batch.totalCredit), batch.currency)}
-                  </div>
-                </td>
-                <td>
-                  <PillClassBadge pillClass={financeJournalBatchStatusPill(batch.status)}>{batch.status}</PillClassBadge>
-                  {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
-                </td>
-                <td>
-                  <Link className="pill pill-info" href={generalLedgerDetailHref(batch.id)}>
-                    Open detail
+                ) : (
+                  <span className="muted">-</span>
+                )}
+                <div className="muted">{batch.booking?.status ?? 'No booking'}</div>
+              </td>
+              <td>
+                {batch.customerProfileId ? (
+                  <Link className="text-link" href={`/customers/${batch.customerProfileId}`}>
+                    {personName(batch.customerProfile?.user, 'Unknown customer')}
                   </Link>
-                  <div className="muted">{batch._count?.entries ?? 0} entries</div>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+                ) : (
+                  <strong>{personName(batch.customerProfile?.user, 'Unknown customer')}</strong>
+                )}
+                <div className="muted">{batch.customerProfile?.user?.phone ?? '-'}</div>
+              </td>
+              <td>
+                {batch.providerProfileId ? (
+                  <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
+                    {batch.providerProfile?.displayName ?? personName(batch.providerProfile?.user, 'Unknown partner')}
+                  </Link>
+                ) : (
+                  <span className="muted">-</span>
+                )}
+                <div className="muted">{batch.providerProfile?.user?.phone ?? '-'}</div>
+              </td>
+              <td>
+                <strong>{batch.monthlyPeriod ?? '-'}</strong>
+                <div className="muted">{formatDateTime(batch.postedAt)}</div>
+              </td>
+              <td>
+                <strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>
+                <div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>
+                <div className="muted">
+                  Delta {formatMoney(Math.abs(batch.totalDebit - batch.totalCredit), batch.currency)}
+                </div>
+              </td>
+              <td>
+                <PillClassBadge pillClass={financeJournalBatchStatusPill(batch.status)}>{batch.status}</PillClassBadge>
+                {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
+              </td>
+              <td>
+                <Link className="pill pill-info" href={generalLedgerDetailHref(batch.id)}>
+                  Open detail
+                </Link>
+                <div className="muted">{batch._count?.entries ?? 0} entries</div>
+              </td>
+            </tr>
+          ))}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="General ledger pages"
           hrefForPage={(page) => generalLedgerHref({ ...filters, page })}

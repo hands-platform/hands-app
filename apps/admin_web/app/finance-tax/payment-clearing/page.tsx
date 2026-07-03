@@ -3,12 +3,12 @@ import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3 } from 'lucide-re
 
 import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
+import { FinanceDataTable } from '../finance-data-table';
 import { financePaymentClearingStatusPill } from '../finance-status-badge-model';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
@@ -160,58 +160,53 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         resultTone="info"
         title="Payment clearing rows"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No payment clearing rows match the current filters."
-            headers={['Booking', 'Payment', 'Clearing type', 'Amount', 'Occurred', 'Status', 'Evidence']}
-            rowCount={pagination.rows.length}
-          >
-            {pagination.rows.map((entry) => (
-              <tr key={entry.id}>
-                <td>
-                  <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
-                    {shortId(entry.bookingId)}
-                  </Link>
-                  <div className="muted">{entry.booking?.status ?? 'Unknown booking'}</div>
-                </td>
-                <td>
-                  <strong>{entry.payment?.method ?? '-'}</strong>
-                  <div className="muted">{entry.payment?.status ?? 'No payment row'}</div>
-                  {entry.paymentId ? <div className="muted">{shortId(entry.paymentId)}</div> : null}
-                </td>
-                <td>
-                  <Link className="text-link" href={paymentClearingDetailHref(entry.id)}>
-                    <strong>{entry.type}</strong>
-                  </Link>
-                  <div className="muted">{shortId(entry.sourceKey)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(entry.amount, entry.currency)}</strong>
-                  {entry.payment ? (
-                    <div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>
-                  ) : null}
-                </td>
-                <td>
-                  <strong>{formatDateTime(entry.occurredAt)}</strong>
-                  {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
-                </td>
-                <td>
-                  <PillClassBadge pillClass={financePaymentClearingStatusPill(entry.status)}>
-                    {entry.status}
-                  </PillClassBadge>
-                </td>
-                <td>
-                  <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
-                    Open detail
-                  </Link>
-                  <div className="muted">Bank matches {entry._count?.bankReconciliationMatches ?? 0}</div>
-                  <div className="muted">{shortId(entry.id)}</div>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+        <FinanceDataTable
+          emptyMessage="No payment clearing rows match the current filters."
+          headers={['Booking', 'Payment', 'Clearing type', 'Amount', 'Occurred', 'Status', 'Evidence']}
+          rowCount={pagination.rows.length}
+        >
+          {pagination.rows.map((entry) => (
+            <tr key={entry.id}>
+              <td>
+                <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
+                  {shortId(entry.bookingId)}
+                </Link>
+                <div className="muted">{entry.booking?.status ?? 'Unknown booking'}</div>
+              </td>
+              <td>
+                <strong>{entry.payment?.method ?? '-'}</strong>
+                <div className="muted">{entry.payment?.status ?? 'No payment row'}</div>
+                {entry.paymentId ? <div className="muted">{shortId(entry.paymentId)}</div> : null}
+              </td>
+              <td>
+                <Link className="text-link" href={paymentClearingDetailHref(entry.id)}>
+                  <strong>{entry.type}</strong>
+                </Link>
+                <div className="muted">{shortId(entry.sourceKey)}</div>
+              </td>
+              <td>
+                <strong>{formatMoney(entry.amount, entry.currency)}</strong>
+                {entry.payment ? (
+                  <div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>
+                ) : null}
+              </td>
+              <td>
+                <strong>{formatDateTime(entry.occurredAt)}</strong>
+                {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
+              </td>
+              <td>
+                <PillClassBadge pillClass={financePaymentClearingStatusPill(entry.status)}>{entry.status}</PillClassBadge>
+              </td>
+              <td>
+                <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
+                  Open detail
+                </Link>
+                <div className="muted">Bank matches {entry._count?.bankReconciliationMatches ?? 0}</div>
+                <div className="muted">{shortId(entry.id)}</div>
+              </td>
+            </tr>
+          ))}
+        </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Payment clearing pages"
           hrefForPage={(page) => paymentClearingHref({ ...filters, page })}
