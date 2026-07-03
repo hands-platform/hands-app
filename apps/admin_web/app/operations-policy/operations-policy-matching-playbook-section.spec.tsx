@@ -1,5 +1,5 @@
 import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyMatchingPlaybookSection', () => {
   it('renders the matching playbook timeline with Partner-facing copy', () => {
@@ -23,5 +23,22 @@ describe('OperationsPolicyMatchingPlaybookSection', () => {
     expect(rendered).toContain('customer, Partner, finance');
     expect(rendered).toContain('Customer picks one first-pick Partner');
     expect(rendered).toContain('Direct request');
+  });
+
+  it('does not duplicate the base pill class for playbook tag badges', () => {
+    const section = OperationsPolicyMatchingPlaybookSection({
+      playbook: [
+        {
+          className: 'timeline-done',
+          detail: 'The customer chooses a Partner profile and service option first.',
+          step: '1',
+          tags: [{ label: 'Direct request', tone: 'pill pill-success' }],
+          title: 'Customer picks one first-pick Partner',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-success');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-success');
   });
 });

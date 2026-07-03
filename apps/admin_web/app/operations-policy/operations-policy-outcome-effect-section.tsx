@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
 
@@ -28,9 +29,9 @@ export function OperationsPolicyOutcomeEffectSection({
             minute response window, marketplace policy, invite cap, or marketplace opening mode.
           </p>
         </div>
-        <span className={`pill ${analysis.sampleCount ? 'pill-info' : 'pill-warn'}`}>
+        <PillClassBadge pillClass={analysis.sampleCount ? 'pill-info' : 'pill-warn'}>
           {analysis.sampleCount} booking(s) with saved policy
-        </span>
+        </PillClassBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {analysis.metrics.map((metric) => (
@@ -66,7 +67,7 @@ export function OperationsPolicyOutcomeEffectSection({
                 <p className="muted">{row.avgParticipants} participant avg</p>
               </td>
               <td>
-                <span className={`pill ${row.outcomePill}`}>{row.outcomeLabel}</span>
+                <PillClassBadge pillClass={row.outcomePill}>{row.outcomeLabel}</PillClassBadge>
                 <p className="muted admin-mt-6">{row.outcomeDetail}</p>
               </td>
               <td>
@@ -79,7 +80,7 @@ export function OperationsPolicyOutcomeEffectSection({
       <div className="ops-task-grid admin-mt-14">
         {analysis.cards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+            <PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>
             <h3>{card.title}</h3>
             <p>{card.detail}</p>
             <small>{card.operatorAction}</small>

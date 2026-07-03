@@ -1,3 +1,4 @@
+import { PillClassBadge } from '../../components/status-badge';
 import type { MatchingPlaybookItem } from './matching-playbook';
 
 type OperationsPolicyMatchingPlaybookSectionProps = {
@@ -27,9 +28,9 @@ export function OperationsPolicyMatchingPlaybookSection({
             <p>{step.detail}</p>
             <div className="participant-list">
               {step.tags.map((tag) => (
-                <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
+                <PillClassBadge pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
                   {tag.label}
-                </span>
+                </PillClassBadge>
               ))}
             </div>
           </div>
