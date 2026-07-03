@@ -9,43 +9,11 @@ import {
   adminPostOrThrow,
   isAdminApiAuthError,
 } from '../../lib/admin-api';
-
-const operatorRoles = new Set(['ADMIN', 'FINANCE_APPROVER', 'MASTER_ADMIN']);
-const permissionCategories = new Set([
-  'BOOKINGS',
-  'BOOKINGS_REALTIME',
-  'BOOKINGS_IN_PROGRESS',
-  'BOOKINGS_COMPLETED',
-  'BOOKINGS_CANCELLATIONS',
-  'BOOKINGS_DETAIL',
-  'CUSTOMERS',
-  'CUSTOMERS_DIRECTORY',
-  'CUSTOMERS_DETAIL',
-  'CUSTOMERS_REVIEWS',
-  'PARTNERS',
-  'PARTNERS_DIRECTORY',
-  'PARTNERS_UNAPPROVED',
-  'PARTNERS_DETAIL',
-  'PARTNERS_KYC',
-  'FINANCE',
-  'FINANCE_PAYMENT_CLEARING',
-  'FINANCE_GENERAL_LEDGER',
-  'FINANCE_BANK_RECONCILIATION',
-  'FINANCE_WALLET_ADJUSTMENTS',
-  'FINANCE_SETTLEMENTS',
-  'FINANCE_TAX',
-  'NOTIFICATIONS',
-  'NOTIFICATIONS_TEMPLATES',
-  'NOTIFICATIONS_PUSH',
-  'NOTIFICATIONS_DELIVERY',
-  'SYSTEM',
-  'SYSTEM_SERVICES',
-  'SYSTEM_COUPONS',
-  'SYSTEM_ADMIN_OPERATORS',
-  'SYSTEM_POLICY',
-  'SYSTEM_AUDIT',
-  'SYSTEM_SETUP',
-]);
+import {
+  ADMIN_OPERATOR_BASE_ROLE,
+  isAdminOperatorPermissionCategory,
+  isAdminOperatorRole,
+} from './admin-operator-permissions';
 
 export async function createAdminOperator(formData: FormData) {
   const email = readOptionalString(formData, 'email');
@@ -113,9 +81,9 @@ export async function revokeAdminOperatorAccess(formData: FormData) {
 }
 
 function readOperatorRoles(formData: FormData) {
-  const roles = new Set(['ADMIN']);
+  const roles = new Set([ADMIN_OPERATOR_BASE_ROLE]);
   for (const value of formData.getAll('roles')) {
-    if (typeof value === 'string' && operatorRoles.has(value)) {
+    if (isAdminOperatorRole(value)) {
       roles.add(value);
     }
   }
@@ -125,7 +93,7 @@ function readOperatorRoles(formData: FormData) {
 function readPermissionCategories(formData: FormData) {
   return formData
     .getAll('permissionCategories')
-    .filter((value): value is string => typeof value === 'string' && permissionCategories.has(value));
+    .filter(isAdminOperatorPermissionCategory);
 }
 
 function readOptionalString(formData: FormData, key: string) {
