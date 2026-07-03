@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import {
+  AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormInput,
   AdminFormTextarea,
@@ -120,110 +121,106 @@ export function CalendarEventDrawer({
         <div className="calendar-drawer-body">
           {readonlyReason ? <div className="calendar-readonly-alert">{readonlyReason}</div> : null}
           <div className="calendar-form-grid">
-            <div className="calendar-field">
-              <span>Title</span>
-              <AdminFormInput
-                disabled={!canEdit}
-                label="Title"
-                onChange={updateField('title')}
-                placeholder="Add event title"
-                name="title"
-                value={draft.title}
-              />
-            </div>
+            <AdminFormInput
+              className="calendar-field"
+              disabled={!canEdit}
+              label="Title"
+              labelVisibility="visible"
+              onChange={updateField('title')}
+              placeholder="Add event title"
+              name="title"
+              value={draft.title}
+            />
 
-            <div className="calendar-field">
-              <span>Hashtags</span>
-              <AdminFormInput
-                disabled={!canEdit}
-                label="Hashtags"
-                name="tags"
-                onChange={updateField('tags')}
-                placeholder="#booking #handoff"
-                value={calendarTagsToInputValue(draft.tags)}
-              />
-            </div>
+            <AdminFormInput
+              className="calendar-field"
+              disabled={!canEdit}
+              label="Hashtags"
+              labelVisibility="visible"
+              name="tags"
+              onChange={updateField('tags')}
+              placeholder="#booking #handoff"
+              value={calendarTagsToInputValue(draft.tags)}
+            />
 
-            <div className="calendar-field">
-              <span>Start</span>
-              <DatePicker
-                calendarClassName="calendar-vuexy-datepicker"
-                customInput={<CalendarDatePickerInput disabled={!canEdit} label="Start" />}
-                dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
-                disabled={!canEdit}
-                onChange={updateDateField('start')}
-                popperClassName="calendar-vuexy-datepicker-popper"
-                popperPlacement="bottom-end"
-                selected={toDateValue(draft.start)}
-                selectsStart
-                showTimeSelect={!draft.allDay}
-                startDate={toDateValue(draft.start)}
-                endDate={toDateValue(draft.end)}
-                timeIntervals={30}
-              />
-            </div>
+            <DatePicker
+              calendarClassName="calendar-vuexy-datepicker"
+              customInput={<CalendarDatePickerInput disabled={!canEdit} label="Start" />}
+              dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
+              disabled={!canEdit}
+              onChange={updateDateField('start')}
+              popperClassName="calendar-vuexy-datepicker-popper"
+              popperPlacement="bottom-end"
+              selected={toDateValue(draft.start)}
+              selectsStart
+              showTimeSelect={!draft.allDay}
+              startDate={toDateValue(draft.start)}
+              endDate={toDateValue(draft.end)}
+              timeIntervals={30}
+              wrapperClassName="calendar-field"
+            />
 
-            <div className="calendar-field">
-              <span>End</span>
-              <DatePicker
-                calendarClassName="calendar-vuexy-datepicker"
-                customInput={<CalendarDatePickerInput disabled={!canEdit} label="End" />}
-                dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
-                disabled={!canEdit}
-                endDate={toDateValue(draft.end)}
-                minDate={toDateValue(draft.start) ?? undefined}
-                onChange={updateDateField('end')}
-                popperClassName="calendar-vuexy-datepicker-popper"
-                popperPlacement="bottom-end"
-                selected={toDateValue(draft.end)}
-                selectsEnd
-                showTimeSelect={!draft.allDay}
-                startDate={toDateValue(draft.start)}
-                timeIntervals={30}
-              />
-            </div>
+            <DatePicker
+              calendarClassName="calendar-vuexy-datepicker"
+              customInput={<CalendarDatePickerInput disabled={!canEdit} label="End" />}
+              dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
+              disabled={!canEdit}
+              endDate={toDateValue(draft.end)}
+              minDate={toDateValue(draft.start) ?? undefined}
+              onChange={updateDateField('end')}
+              popperClassName="calendar-vuexy-datepicker-popper"
+              popperPlacement="bottom-end"
+              selected={toDateValue(draft.end)}
+              selectsEnd
+              showTimeSelect={!draft.allDay}
+              startDate={toDateValue(draft.start)}
+              timeIntervals={30}
+              wrapperClassName="calendar-field"
+            />
 
-            <label className="calendar-field calendar-field-toggle">
-              <span>All day</span>
-              <input checked={draft.allDay} disabled={!canEdit} onChange={updateField('allDay')} type="checkbox" />
-            </label>
+            <AdminFormCheckbox
+              checked={draft.allDay}
+              className="calendar-field calendar-field-toggle"
+              disabled={!canEdit}
+              label="All day"
+              onChange={updateField('allDay')}
+            >
+              <span className="admin-form-label">All day</span>
+            </AdminFormCheckbox>
 
-            <div className="calendar-field">
-              <span>Location</span>
-              <AdminFormInput
-                disabled={!canEdit}
-                label="Location"
-                name="location"
-                onChange={updateField('location')}
-                placeholder="Workspace, queue, or district"
-                value={draft.location}
-              />
-            </div>
+            <AdminFormInput
+              className="calendar-field"
+              disabled={!canEdit}
+              label="Location"
+              labelVisibility="visible"
+              name="location"
+              onChange={updateField('location')}
+              placeholder="Workspace, queue, or district"
+              value={draft.location}
+            />
 
-            <div className="calendar-field">
-              <span>Link</span>
-              <AdminFormInput
-                disabled={!canEdit}
-                label="Link"
-                name="url"
-                onChange={updateField('url')}
-                placeholder="https://..."
-                value={draft.url}
-              />
-            </div>
+            <AdminFormInput
+              className="calendar-field"
+              disabled={!canEdit}
+              label="Link"
+              labelVisibility="visible"
+              name="url"
+              onChange={updateField('url')}
+              placeholder="https://..."
+              value={draft.url}
+            />
 
-            <div className="calendar-field calendar-field-wide">
-              <span>Notes</span>
-              <AdminFormTextarea
-                disabled={!canEdit}
-                label="Notes"
-                name="description"
-                onChange={updateField('description')}
-                placeholder="Operational details, owner, or follow-up note"
-                rows={5}
-                value={draft.description}
-              />
-            </div>
+            <AdminFormTextarea
+              className="calendar-field calendar-field-wide"
+              disabled={!canEdit}
+              label="Notes"
+              labelVisibility="visible"
+              name="description"
+              onChange={updateField('description')}
+              placeholder="Operational details, owner, or follow-up note"
+              rows={5}
+              value={draft.description}
+            />
           </div>
         </div>
 
@@ -247,8 +244,8 @@ export function CalendarEventDrawer({
 const CalendarDatePickerInput = forwardRef<HTMLInputElement, CalendarDatePickerInputProps>(
   function CalendarDatePickerInput({ disabled, label, onClick, value }, ref) {
     return (
-      <label className="admin-form-input admin-form-input-date-picker calendar-datepicker-input">
-        <span className="sr-only">{label}</span>
+      <label className="admin-form-input admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input">
+        <span className="admin-form-label">{label}</span>
         <input
           aria-label={label}
           disabled={disabled}

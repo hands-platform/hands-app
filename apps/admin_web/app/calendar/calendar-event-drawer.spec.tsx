@@ -1,0 +1,41 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { vi } from 'vitest';
+
+import { CalendarEventDrawer } from './calendar-event-drawer';
+
+describe('CalendarEventDrawer', () => {
+  it('uses shared Vuexy form atoms for editable event fields', () => {
+    const markup = renderToStaticMarkup(
+      <CalendarEventDrawer
+        canEdit
+        currentOperatorName="Master Admin"
+        draft={{
+          allDay: false,
+          authorId: 'admin-1',
+          authorName: 'Master Admin',
+          description: 'Follow up with dispatch',
+          end: '2026-07-03T04:30:00.000Z',
+          location: 'Hanoi',
+          start: '2026-07-03T03:00:00.000Z',
+          tags: ['booking', 'handoff'],
+          title: 'Booking handoff',
+          url: '/bookings/booking-1',
+        }}
+        isOpen
+        mode="edit"
+        onChange={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        onReset={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-field');
+    expect(markup).toContain('admin-form-textarea admin-form-control-labeled calendar-field calendar-field-wide');
+    expect(markup).toContain('admin-form-checkbox calendar-field calendar-field-toggle');
+    expect(markup).not.toContain('<div class="calendar-field"><span>Title</span><label class="admin-form-input');
+    expect(markup).not.toContain('<div class="calendar-field"><span>Hashtags</span><label class="admin-form-input');
+    expect(markup).not.toContain('<label class="calendar-field calendar-field-toggle"><span>All day</span><input');
+  });
+});
