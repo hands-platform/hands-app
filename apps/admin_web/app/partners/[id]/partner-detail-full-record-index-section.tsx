@@ -1,4 +1,5 @@
 import { AdminCard } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailFullRecordIndexSectionProps = {
   readonly appActivityCount: number;
@@ -26,7 +27,7 @@ export function PartnerDetailFullRecordIndexSection({
             record.
           </p>
         </div>
-        <span className="pill pill-info">{bookingRecordCount} booking record(s)</span>
+        <StatusBadge tone="info">{bookingRecordCount} booking record(s)</StatusBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         <a href="#booking-chat-records">

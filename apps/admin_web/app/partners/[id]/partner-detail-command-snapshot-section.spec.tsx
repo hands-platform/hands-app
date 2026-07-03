@@ -1,4 +1,5 @@
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
+import { readFileSync } from 'node:fs';
 
 describe('PartnerDetailCommandSnapshotSection', () => {
   it('renders command snapshot fact groups with links', () => {
@@ -33,6 +34,13 @@ describe('PartnerDetailCommandSnapshotSection', () => {
     const section = PartnerDetailCommandSnapshotSection({ items: [] });
 
     expect(normalizedText(section)).toContain('0 fact groups');
+  });
+
+  it('uses a shared badge atom for the command fact count', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-command-snapshot-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{items.length} fact groups</span>');
   });
 });
 

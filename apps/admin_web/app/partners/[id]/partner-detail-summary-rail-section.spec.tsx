@@ -1,6 +1,7 @@
 import {
   PartnerDetailSummaryRailSection,
 } from './partner-detail-summary-rail-section';
+import { readFileSync } from 'fs';
 import type {
   PartnerDetailSummaryRailItem,
   PartnerDetailUsageRegionSummary,
@@ -35,6 +36,13 @@ describe('PartnerDetailSummaryRailSection', () => {
       'partner-detail-usage-summary admin-mt-12',
       'partner-detail-usage-region-list',
     ]));
+  });
+
+  it('uses a shared badge atom for the summary rail status label', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{statusLabel}</span>');
   });
 });
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { StatusBadge } from '../../../components/status-badge';
 import type {
   PartnerDetailSummaryRailItem,
   PartnerDetailUsageRegionSummary,
@@ -29,7 +30,7 @@ export function PartnerDetailSummaryRailSection({
           <h2>{title}</h2>
           <p className="muted">{description}</p>
         </div>
-        <span className="pill pill-info">{statusLabel}</span>
+        <StatusBadge tone="info">{statusLabel}</StatusBadge>
       </div>
       <div className="partner-detail-section-band-body">
         <div className="service-trace-summary partner-detail-summary-rail-grid">

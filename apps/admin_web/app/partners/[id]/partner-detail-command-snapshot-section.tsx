@@ -1,3 +1,5 @@
+import { StatusBadge } from '../../../components/status-badge';
+
 export type PartnerDetailCommandSnapshotItem = {
   readonly helper: string;
   readonly href: string;
@@ -23,7 +25,7 @@ export function PartnerDetailCommandSnapshotSection({
             finance rows, latest location, app access, and staff records.
           </p>
         </div>
-        <span className="pill pill-info">{items.length} fact groups</span>
+        <StatusBadge tone="info">{items.length} fact groups</StatusBadge>
       </div>
       <div className="partner-detail-section-band-body">
         <div className="service-trace-summary partner-detail-summary-rail-grid">

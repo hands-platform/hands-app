@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminCard } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 
 export type PartnerMasterFact = {
   readonly helper: ReactNode;
@@ -23,7 +24,7 @@ export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFa
             location, review, and account facts.
           </p>
         </div>
-        <span className="pill pill-info">{facts.length} field(s)</span>
+        <StatusBadge tone="info">{facts.length} field(s)</StatusBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {facts.map((fact) => (

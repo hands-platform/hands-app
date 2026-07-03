@@ -7,4 +7,11 @@ describe('PartnerDetailFullRecordIndexSection', () => {
     expect(source).toContain('AdminCard');
     expect(source).not.toContain('className="card admin-mb-16"');
   });
+
+  it('uses a shared badge atom for the booking record count', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-full-record-index-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{bookingRecordCount} booking record(s)</span>');
+  });
 });
