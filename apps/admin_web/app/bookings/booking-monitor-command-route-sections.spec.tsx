@@ -1,4 +1,4 @@
-import { headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 
 describe('BookingMonitorCommandRouteSections', () => {
@@ -45,6 +45,7 @@ describe('BookingMonitorCommandRouteSections', () => {
     expect(hrefsIn(sections)).toEqual(
       expect.arrayContaining(['/bookings?view=active', '/bookings?view=attention']),
     );
+    expect(classNamesIn(sections)).toContain('card admin-section admin-mb-16');
   });
 
   it('renders paused and refreshing state copy', () => {

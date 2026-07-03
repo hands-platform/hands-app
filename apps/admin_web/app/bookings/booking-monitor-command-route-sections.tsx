@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { shortId } from '../../lib/admin-format';
 import type { BookingCommandRouteCard } from '../../lib/booking-command-route-cards';
 import type { BookingPrimaryCommandSummaryItem } from '../../lib/booking-primary-command-summary';
@@ -38,17 +39,17 @@ export function BookingMonitorCommandRouteSections({
   );
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operations command summary</h2>
-          <p className="muted">Live queue health and operator lanes before table review.</p>
-        </div>
+    <AdminSection
+      actions={
         <span className="pill pill-info">
           {autoRefresh ? 'Auto refresh on' : 'Auto refresh paused'} /{' '}
           {isPending ? 'refreshing' : `last ${hasMounted ? lastRefreshLabel : 'pending'}`}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Live queue health and operator lanes before table review."
+      title="Booking operations command summary"
+    >
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table admin-mt-14"
@@ -118,7 +119,7 @@ export function BookingMonitorCommandRouteSections({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+    </AdminSection>
   );
 }
 
