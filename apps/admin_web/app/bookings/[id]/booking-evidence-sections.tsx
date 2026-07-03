@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
+import { AdminSection } from '../../../components/admin-surface';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
@@ -101,17 +102,13 @@ export function BookingEvidenceSections({
 }: BookingEvidenceSectionsProps) {
   return (
     <>
-      <section className="card admin-mb-16" id="booking-decision-evidence-guardrails">
-        <div className="ops-section-header">
-          <div>
-            <h2>Decision evidence guardrails</h2>
-            <p className="muted">
-              Required, supporting, and finance records for admin-only outcome work. Use this before
-              cancellation, no-show, refund, release, cash settlement, or completed-service closeout.
-            </p>
-          </div>
-          <span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>
-        </div>
+      <AdminSection
+        actions={<span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>}
+        className="admin-mb-16"
+        description="Required, supporting, and finance records for admin-only outcome work. Use this before cancellation, no-show, refund, release, cash settlement, or completed-service closeout."
+        id="booking-decision-evidence-guardrails"
+        title="Decision evidence guardrails"
+      >
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Decision evidence guardrail rows">
           {decisionEvidenceGuardrails.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.id}>
@@ -128,20 +125,15 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="booking-evidence-packet">
-        <div className="ops-section-header">
-          <div>
-            <h2>Evidence packet for admin decision</h2>
-            <p className="muted">
-              Cancellation, no-show, refund, and settlement decisions should use retained booking evidence.
-              This packet groups chat, location, payment, alerts, notes, and audit records as factual decision
-              context for the Customer and Partner.
-            </p>
-          </div>
-          <span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>
-        </div>
+      <AdminSection
+        actions={<span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>}
+        className="admin-mb-16"
+        description="Cancellation, no-show, refund, and settlement decisions should use retained booking evidence. This packet groups chat, location, payment, alerts, notes, and audit records as factual decision context for the Customer and Partner."
+        id="booking-evidence-packet"
+        title="Evidence packet for admin decision"
+      >
         <p className="muted admin-mt-8">
           {evidencePacket.summary}
         </p>
@@ -170,20 +162,15 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="booking-chat-evidence-decision-board">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat evidence decision board</h2>
-            <p className="muted">
-              Retained chat evidence is the first place operators should look before cancellation, no-show,
-              refund, release, or completed-work closeout. This board keeps the view limited to factual
-              records and operator context.
-            </p>
-          </div>
-          <span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>
-        </div>
+      <AdminSection
+        actions={<span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>}
+        className="admin-mb-16"
+        description="Retained chat evidence is the first place operators should look before cancellation, no-show, refund, release, or completed-work closeout. This board keeps the view limited to factual records and operator context."
+        id="booking-chat-evidence-decision-board"
+        title="Chat evidence decision board"
+      >
         <p className="muted admin-mt-8">
           {chatEvidenceDecisionBoard.summary}
         </p>
@@ -212,24 +199,22 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="manual-decision-readiness">
-        <div className="ops-section-header">
-          <div>
-            <h2>Manual outcome decision readiness</h2>
-            <p className="muted">
-              Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement,
-              and completed closeout. It keeps the decision factual and evidence-based.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <div className="actions">
             <Link className="text-link" href="/bookings?view=manual-decision">
               Open manual queue
             </Link>
             <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
           </div>
-        </div>
+        }
+        className="admin-mb-16"
+        description="Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement, and completed closeout. It keeps the decision factual and evidence-based."
+        id="manual-decision-readiness"
+        title="Manual outcome decision readiness"
+      >
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Manual decision readiness rows">
           {manualDecisionReadiness.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
@@ -274,19 +259,15 @@ export function BookingEvidenceSections({
             ))}
           </div>
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="booking-full-evidence-bundle">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking full evidence bundle</h2>
-            <p className="muted">
-              Single booking command view that ties the customer, Partner, address snapshot, chat archive,
-              payment, earning, wallet, location, alerts, and operator notes into one factual bundle.
-            </p>
-          </div>
-          <span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>
-        </div>
+      <AdminSection
+        actions={<span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>}
+        className="admin-mb-16"
+        description="Single booking command view that ties the customer, Partner, address snapshot, chat archive, payment, earning, wallet, location, alerts, and operator notes into one factual bundle."
+        id="booking-full-evidence-bundle"
+        title="Booking full evidence bundle"
+      >
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Booking full evidence bundle rows">
           {bookingEvidenceBundleRows.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
@@ -303,7 +284,7 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
     </>
   );
 }

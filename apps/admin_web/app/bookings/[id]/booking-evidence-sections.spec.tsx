@@ -120,6 +120,7 @@ describe('Booking evidence sections', () => {
       expect.arrayContaining([
         'booking-settlement-ledger booking-evidence-ledger admin-mt-12',
         'booking-settlement-ledger-row is-evidence-record',
+        'card admin-section admin-mb-16',
         'booking-decision-preset-list admin-mt-12',
         'booking-decision-preset-card',
         'text-link',
@@ -129,5 +130,6 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section)).not.toContain('admin-table-scroll');
     expect(classNamesIn(section)).not.toContain('table vuexy-data-table');
     expect(classNamesIn(section)).not.toContain('setup-stage-list admin-mt-12');
+    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(5);
   });
 });
