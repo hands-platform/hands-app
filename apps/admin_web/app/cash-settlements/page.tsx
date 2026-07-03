@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { ActionMenu } from '../../components/action-menu';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   type AdminCashSettlementSummary,
@@ -193,20 +192,23 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           resultTone="info"
           title="Cash settlement operations playbook"
         >
-          <div className="participant-list">
-            <Link
-              className="pill pill-info"
-              href={cashSettlementHref({
-                pageSize: filters.pageSize,
-                q: filters.q,
-                queue: filters.queue,
-                range: filters.range,
-                view: 'full',
-              })}
-            >
-              Open full operations view
-            </Link>
-          </div>
+          <ActionMenu
+            actions={[
+              {
+                href: cashSettlementHref({
+                  pageSize: filters.pageSize,
+                  q: filters.q,
+                  queue: filters.queue,
+                  range: filters.range,
+                  view: 'full',
+                }),
+                kind: 'link',
+                label: 'Open full operations view',
+                tone: 'info',
+              },
+            ]}
+            label="Cash settlement optional operations actions"
+          />
         </AdminFilterPanel>
       )}
       <CashSettlementOpenDebtTableSection

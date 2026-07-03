@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -93,6 +95,14 @@ describe('CashSettlementsPage', () => {
       [],
     );
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
+  });
+
+  it('uses the shared ActionMenu atom for the optional full operations link', () => {
+    const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
+
+    expect(source).toContain('ActionMenu');
+    expect(source).not.toContain('<Link');
+    expect(source).not.toContain('className="pill pill-info"');
   });
 
   it('loads the full cash settlement operations playbook only when requested', async () => {

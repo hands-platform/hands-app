@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -47,6 +49,13 @@ describe('FinanceTaxPage', () => {
       expect.stringContaining('/admin/provider-wallet/withdrawal-requests/summary'),
       expect.anything(),
     );
+  });
+
+  it('uses the shared ActionMenu atom for the optional full summary link', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/page.tsx'), 'utf8');
+
+    expect(source).toContain('ActionMenu');
+    expect(source).not.toContain('<Link className="pill pill-info" href="/finance-tax?view=full">');
   });
 
   it('loads optional coupon and payout summaries only in full view', async () => {

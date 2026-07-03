@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { AlertTriangle, Landmark, ReceiptText, Scale } from 'lucide-react';
 
+import { ActionMenu } from '../../components/action-menu';
 import type {
   AdminBankReconciliationSummary,
   AdminBookingPaymentClearingSummary,
@@ -336,11 +336,17 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           resultTone="info"
           title="Finance optional summary desk"
         >
-          <div className="participant-list">
-            <Link className="pill pill-info" href="/finance-tax?view=full">
-              Open full finance summary view
-            </Link>
-          </div>
+          <ActionMenu
+            actions={[
+              {
+                href: '/finance-tax?view=full',
+                kind: 'link',
+                label: 'Open full finance summary view',
+                tone: 'info',
+              },
+            ]}
+            label="Finance optional summary actions"
+          />
         </AdminFilterPanel>
       )}
 
