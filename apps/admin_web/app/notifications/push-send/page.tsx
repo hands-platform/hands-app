@@ -304,6 +304,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       </AdminFilterPanel>
 
       <AdminFilterPanel
+        className="vuexy-booking-table-card vuexy-booking-table-group"
         resultLabel={`${campaigns.length} loaded of ${totalCampaigns} total`}
         title={`Recent push campaigns / ${campaignRangeLabel}`}
       >
