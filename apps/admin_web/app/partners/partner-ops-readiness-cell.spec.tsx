@@ -1,8 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminProvider } from '../../lib/admin-api';
 import { DEFAULT_PROVIDER_OPS_POLICY } from './partner-list-ops';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 
 describe('PartnerOpsReadinessCell', () => {
+  it('uses the shared Vuexy admin card surface for marketplace eligibility', () => {
+    const source = readFileSync('app/partners/partner-ops-readiness-cell.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-mt-10 admin-p-12"');
+  });
+
   it('renders next action, readiness badges, issue pills, action hint, eligibility, and open report link', () => {
     const cell = PartnerOpsReadinessCell({
       actionHint: 'Partner is ready for direct requests and marketplace matching.',

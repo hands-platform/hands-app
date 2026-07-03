@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminCard } from '../../components/admin-surface';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { ProviderListAction } from './partner-list-actions';
 import { partnerListActionPillClass } from './partner-list-actions';
@@ -119,7 +120,7 @@ function PartnerBackupEligibilityCard({
   readonly opsPolicy: ProviderOpsPolicy;
 }) {
   return (
-    <div className="card admin-mt-10 admin-p-12">
+    <AdminCard className="admin-mt-10 admin-p-12">
       <div className="ops-section-header">
         <div>
           <strong>Marketplace participation eligibility</strong>
@@ -149,6 +150,6 @@ function PartnerBackupEligibilityCard({
       <p className="muted admin-mt-8">
         {eligibility.operatorAction}
       </p>
-    </div>
+    </AdminCard>
   );
 }
