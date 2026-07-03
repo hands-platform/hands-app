@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 
 import { adminGet } from '../../lib/admin-api';
 import MarketingAnalyticsPage from './page';
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('MarketingAnalyticsPage', () => {
   beforeEach(() => {
@@ -90,5 +92,9 @@ describe('MarketingAnalyticsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table');
+    expect(markup).toContain('admin-table-scroll usage-overview-table-wrap');
+    expect(pageSource).toContain('AdminDataTable');
+    expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">');
   });
 });

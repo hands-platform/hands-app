@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminSection } from '../../components/admin-surface';
 import {
@@ -61,6 +62,17 @@ const marketingDimensionKeys: readonly AdminMarketingDimensionKey[] = [
   'campaign',
   'platform',
 ];
+const marketingDimensionMetricHeaders = [
+  'Signups',
+  'Address',
+  'Created',
+  'Completed',
+  'Cancel',
+  'Ad spend',
+  'CPA done',
+  'Fee revenue',
+  'ROAS',
+] as const;
 
 const emptyStats: AdminMarketingStats = {
   firstOpens: 0,
@@ -644,7 +656,6 @@ function MarketingTable({
           {icon}
         </div>
       }
-      bodyClassName="admin-table-scroll usage-overview-table-wrap"
       className="usage-overview-ranking-card marketing-table-card"
       description={description}
       footer={
@@ -669,22 +680,19 @@ function MarketingTable({
       footerClassName="vuexy-booking-table-footer marketing-table-pagination-footer"
       title={title}
     >
-        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">
-          <thead>
-            <tr>
-              <th>{primaryColumn}</th>
-              <th>Signups</th>
-              <th>Address</th>
-              <th>Created</th>
-              <th>Completed</th>
-              <th>Cancel</th>
-              <th>Ad spend</th>
-              <th>CPA done</th>
-              <th>Fee revenue</th>
-              <th>ROAS</th>
-            </tr>
-          </thead>
-          <tbody>
+      <AdminTableScroll className="usage-overview-table-wrap">
+        <AdminDataTable
+          className="usage-overview-table marketing-analytics-table"
+          emptyMessage={
+            <div className="empty-state">
+              <BarChart3 size={20} aria-hidden="true" />
+              <strong>{emptyMessage}</strong>
+              <p className="muted">Try a different range or remove the dimension filter.</p>
+            </div>
+          }
+          headers={[primaryColumn, ...marketingDimensionMetricHeaders]}
+          rowCount={rows.length}
+        >
             {rows.map((row) => (
               <tr key={row.key}>
                 <td>
@@ -709,19 +717,8 @@ function MarketingTable({
                 <td>{formatNullableMultiplier(row.conversionRates.roas)}</td>
               </tr>
             ))}
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={10}>
-                  <div className="empty-state">
-                    <BarChart3 size={20} aria-hidden="true" />
-                    <strong>{emptyMessage}</strong>
-                    <p className="muted">Try a different range or remove the dimension filter.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        </AdminDataTable>
+      </AdminTableScroll>
     </AdminSection>
   );
 }
