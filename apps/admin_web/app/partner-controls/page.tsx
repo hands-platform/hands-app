@@ -537,17 +537,14 @@ export default async function PartnerControlsPage({
         </form>
       </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>System control checklist</h2>
-            <p className="muted">
-              Factual partner follow-ups from wallet debt, account controls, onboarding gaps, devices, and
-              recent report history.
-            </p>
-          </div>
-          <span className="pill pill-info">{providerWatchlist.length} partner(s)</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Factual partner follow-ups from wallet debt, account controls, onboarding gaps, devices, and recent report history."
+        id="partner-control-checklist"
+        statusLabel={`${providerWatchlist.length} partner(s)`}
+        statusTone="info"
+        title="System control checklist"
+      >
         <AdminDataTable
           emptyMessage="No Partner control follow-ups are active."
           headers={['Partner', 'Control signals', 'Money / access', 'Operator next step']}
@@ -601,17 +598,14 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Create partner report</h2>
-            <p className="muted">
-              Use this for customer complaints, staff findings, payout holds, or service safety notes.
-            </p>
-          </div>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Use this for customer complaints, staff findings, payout holds, or service safety notes."
+        id="partner-control-create-report"
+        title="Create partner report"
+      >
         <form className="form-grid" action={createProviderReport}>
           <div className="calendar-field">
             <span>Partner</span>
@@ -689,18 +683,16 @@ export default async function PartnerControlsPage({
             </AdminFormControlButton>
           </div>
         </form>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Reports</h2>
-            <p className="muted">
-              Open and investigating reports should be cleared before profile review or payout changes.
-            </p>
-          </div>
-          <span className="pill pill-info">{visibleReports.length} shown</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Open and investigating reports should be cleared before profile review or payout changes."
+        id="partner-control-reports"
+        statusLabel={`${visibleReports.length} shown`}
+        statusTone="info"
+        title="Reports"
+      >
         <AdminDataTable
           emptyMessage={emptyPartnerControlMessage('report', activeFilters)}
           headers={['Report', 'Partner', 'Status', 'Account control', 'Action']}
@@ -817,18 +809,15 @@ export default async function PartnerControlsPage({
             totalPages={reportTotalPages}
           />
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Account controls</h2>
-            <p className="muted">
-              Active account controls restrict work or payout. Lift them only with a clear audit trail.
-            </p>
-          </div>
-          <span className="pill pill-info">{visibleSanctions.length} shown</span>
-        </div>
+      <AdminSection
+        description="Active account controls restrict work or payout. Lift them only with a clear audit trail."
+        id="partner-control-account-controls"
+        statusLabel={`${visibleSanctions.length} shown`}
+        statusTone="info"
+        title="Account controls"
+      >
         <AdminDataTable
           emptyMessage={emptyPartnerControlMessage('sanction', activeFilters)}
           headers={['Control', 'Partner', 'Linked report', 'Timeline', 'Action']}
@@ -907,7 +896,7 @@ export default async function PartnerControlsPage({
             totalPages={sanctionTotalPages}
           />
         </div>
-      </section>
+      </AdminSection>
       </AdminPageTemplate>
     </>
   );

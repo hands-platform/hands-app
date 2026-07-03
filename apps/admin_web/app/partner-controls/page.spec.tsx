@@ -31,6 +31,10 @@ describe('PartnerControlsPage', () => {
     expect(markup).toContain('id="partner-control-unblock-playbook"');
     expect(markup).toContain('id="partner-control-block-matrix"');
     expect(markup).toContain('id="partner-control-filters"');
+    expect(markup).toContain('id="partner-control-checklist"');
+    expect(markup).toContain('id="partner-control-create-report"');
+    expect(markup).toContain('id="partner-control-reports"');
+    expect(markup).toContain('id="partner-control-account-controls"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-command-center"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-next-actions"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-board"');
@@ -38,5 +42,9 @@ describe('PartnerControlsPage', () => {
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-unblock-playbook"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-block-matrix"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-filters"');
+    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-checklist"');
+    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-create-report"');
+    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-reports"');
+    expect(markup).toContain('class="card admin-section" id="partner-control-account-controls"');
   });
 });
