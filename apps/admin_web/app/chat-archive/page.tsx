@@ -24,9 +24,9 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { MetricCard } from '../../components/metric-card';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -141,16 +141,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   );
 
   return (
-    <div className="chat-archive-page">
-      <section className="toolbar">
-        <div>
-          <h1>Chat Evidence Search</h1>
-          <p className="muted">
-            Audit-only search for retained booking chat evidence. Day-to-day review stays inside booking,
-            customer, and Partner detail pages; use this page when an operator needs cross-record evidence.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <Link className="button button-secondary" href="/audit-log?bucket=Booking">
             <MessageSquare aria-hidden="true" size={16} />
             Audit log
@@ -163,8 +156,41 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             <Users aria-hidden="true" size={16} />
             Partners
           </Link>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="chat-archive-page"
+      description="Audit-only search for retained booking chat evidence. Day-to-day review stays inside booking, customer, and Partner detail pages; use this page when an operator needs cross-record evidence."
+      metrics={[
+        {
+          label: 'Rooms loaded',
+          value: totalRooms.toString(),
+          helper: `${rooms.length} shown / ${dateFilters.label}`,
+        },
+        {
+          label: 'Messages',
+          value: summary.messageCount.toString(),
+          helper: `${summary.customerMessages} customer / ${summary.partnerMessages} Partner`,
+        },
+        { label: 'Completed rooms', value: summary.completedRooms.toString(), helper: 'Service done' },
+        {
+          label: 'Active rooms',
+          value: summary.activeRooms.toString(),
+          helper: 'Open operational flow',
+        },
+        {
+          label: 'Empty rooms',
+          value: summary.emptyRooms.toString(),
+          helper: 'Chat room exists but no message',
+        },
+        {
+          label: 'Missing rooms',
+          value: repairSummary.missingRooms.toString(),
+          helper: 'Matched booking needs a chat room',
+        },
+        { label: 'Latest message', value: summary.latestMessageAt, helper: 'Newest loaded message' },
+      ]}
+      title="Chat Evidence Search"
+    >
 
       <AdminSection className="admin-mb-16" title="Chat evidence filters">
         <form className="form-grid" action="/chat-archive">
@@ -249,36 +275,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </div>
         </form>
       </AdminSection>
-
-      <section className="grid admin-mb-16">
-        <MetricCard
-          label="Rooms loaded"
-          value={totalRooms.toString()}
-          helper={`${rooms.length} shown / ${dateFilters.label}`}
-        />
-        <MetricCard
-          label="Messages"
-          value={summary.messageCount.toString()}
-          helper={`${summary.customerMessages} customer / ${summary.partnerMessages} Partner`}
-        />
-        <MetricCard label="Completed rooms" value={summary.completedRooms.toString()} helper="Service done" />
-        <MetricCard
-          label="Active rooms"
-          value={summary.activeRooms.toString()}
-          helper="Open operational flow"
-        />
-        <MetricCard
-          label="Empty rooms"
-          value={summary.emptyRooms.toString()}
-          helper="Chat room exists but no message"
-        />
-        <MetricCard
-          label="Missing rooms"
-          value={repairSummary.missingRooms.toString()}
-          helper="Matched booking needs a chat room"
-        />
-        <MetricCard label="Latest message" value={summary.latestMessageAt} helper="Newest loaded message" />
-      </section>
 
       <AdminSection
         actions={
@@ -521,7 +517,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           ))}
         </div>
       </AdminSection>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

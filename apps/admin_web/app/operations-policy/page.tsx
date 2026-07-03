@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Settings } from 'lucide-react';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import {
   AdminAuditLog,
@@ -117,21 +118,18 @@ export default async function OperationsPolicyPage({
       : null;
 
   return (
-    <div className="operations-policy-page">
-      <section className="toolbar">
-        <div>
-          <h1>Operations Policy</h1>
-          <p className="muted">
-            Change live matching details from Admin instead of editing code. Decision cards capture product
-            choices that should be approved before deeper app-flow work.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">{matchingSettings.length} enforced policy</span>
           <span className="pill pill-info">{decisionSettings.length} decision item(s)</span>
           <span className="pill pill-info">{savedCount} saved override(s)</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="operations-policy-page"
+      description="Change live matching details from Admin instead of editing code. Decision cards capture product choices that should be approved before deeper app-flow work."
+      title="Operations Policy"
+    >
 
       {notice ? (
         <AdminSection
@@ -252,6 +250,6 @@ export default async function OperationsPolicyPage({
           />
         </>
       ) : null}
-    </div>
+    </AdminPageTemplate>
   );
 }
