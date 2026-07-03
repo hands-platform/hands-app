@@ -21,7 +21,7 @@ export type AdminOperatorPageAccess =
   | {
       allowed: false;
       access: AdminOperatorAccess | null;
-      category: AdminOperatorPermissionCategory;
+      category: AdminOperatorPermissionCategory | null;
     };
 
 export async function getCurrentAdminOperatorAccess() {
@@ -43,8 +43,11 @@ export async function getAdminOperatorPageAccess(pathname: string): Promise<Admi
   const access = await getCurrentAdminOperatorAccess();
 
   if (!category) {
-    await recordAdminOperatorActivity('admin_web.page_view', pathname, { category: null });
-    return { allowed: true, access, category };
+    await recordAdminOperatorActivity('admin_web.access_denied', pathname, {
+      category: null,
+      reason: 'unmapped_admin_page',
+    });
+    return { allowed: false, access, category };
   }
 
   if (hasAdminOperatorCategory(access, category)) {

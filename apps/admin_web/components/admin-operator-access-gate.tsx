@@ -25,11 +25,12 @@ export async function AdminOperatorAccessGate({ children }: { readonly children:
             <p className="admin-section-eyebrow">Operator access</p>
             <h1>Access restricted</h1>
             <p className="muted">
-              This operator does not have {access.category.toLowerCase()} category access. Ask a Master Admin to grant
-              the matching category before opening this page.
+              {access.category
+                ? `This operator does not have ${access.category.toLowerCase()} category access. Ask a Master Admin to grant the matching category before opening this page.`
+                : 'This page is not mapped to an operator category yet. Ask a Master Admin to review the route policy before opening this page.'}
             </p>
           </div>
-          <span className="pill pill-danger">{access.category}</span>
+          <span className="pill pill-danger">{access.category ?? 'UNMAPPED_PAGE'}</span>
         </div>
         <div className="admin-empty-state">
           <strong>Page content is hidden.</strong>
