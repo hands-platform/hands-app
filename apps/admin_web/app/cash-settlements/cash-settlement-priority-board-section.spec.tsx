@@ -17,7 +17,11 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(rendered).toContain('Confirm bank deposit reference');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-scroll-x admin-mt-12', 'table vuexy-data-table vuexy-booking-table']),
+      expect.arrayContaining([
+        'admin-scroll-x admin-mt-12',
+        'table vuexy-data-table vuexy-booking-table',
+        'pill pill-danger',
+      ]),
     );
   });
 

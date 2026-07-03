@@ -16,13 +16,31 @@ type StatusBadgeProps = {
   readonly title?: string;
 };
 
+type PillClassBadgeProps = {
+  readonly children: ReactNode;
+  readonly pillClass: string;
+  readonly title?: string;
+};
+
 export function statusBadgeClassName(tone: StatusBadgeTone) {
   return STATUS_BADGE_CLASS_BY_TONE[tone];
+}
+
+export function pillClassBadgeClassName(pillClass: string) {
+  return pillClass.startsWith('pill ') ? pillClass : `pill ${pillClass}`;
 }
 
 export function StatusBadge({ children, tone, title }: StatusBadgeProps) {
   return (
     <span className={statusBadgeClassName(tone)} title={title}>
+      {children}
+    </span>
+  );
+}
+
+export function PillClassBadge({ children, pillClass, title }: PillClassBadgeProps) {
+  return (
+    <span className={pillClassBadgeClassName(pillClass)} title={title}>
       {children}
     </span>
   );

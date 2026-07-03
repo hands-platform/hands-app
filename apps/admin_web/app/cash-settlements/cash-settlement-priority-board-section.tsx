@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type CashSettlementPriorityBoardRow = {
   readonly ageLabel: string;
@@ -46,7 +47,7 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
         {rows.map((row) => (
           <tr key={`${row.bookingHref}-${row.priority}`}>
             <td>
-              <span className={`pill ${row.pillClass}`}>{row.priority}</span>
+              <PillClassBadge pillClass={row.pillClass}>{row.priority}</PillClassBadge>
               <div className="muted">{row.ageLabel}</div>
             </td>
             <td>
