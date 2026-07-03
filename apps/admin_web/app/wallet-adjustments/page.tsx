@@ -307,7 +307,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
 
       {preview ? (
         <AdminFilterPanel
-          className="admin-mt-16"
+          className="admin-mt-16 vuexy-booking-table-card"
           description="Debit and credit legs are shown as an operator preview. No booking revenue or company VAT is created here."
           footer={
             <CreateAdjustmentForm

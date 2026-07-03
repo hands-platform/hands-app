@@ -129,6 +129,7 @@ describe('WalletAdjustmentsPage', () => {
       null,
     );
     expect(markup).toContain('Accounting preview');
+    expect(markup).toContain('card admin-filter-panel admin-mt-16 vuexy-booking-table-card');
     expect(markup).toContain('Partner Bonus Expense');
     expect(markup).toContain('Partner Wallet Liability');
     expect(markup).toContain('No bank/cash movement');
