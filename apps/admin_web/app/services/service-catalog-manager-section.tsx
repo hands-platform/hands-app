@@ -7,6 +7,7 @@ import {
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
@@ -37,21 +38,17 @@ export function ServiceCatalogManagerSection({
 }: ServiceCatalogManagerSectionProps) {
   return (
     <>
-      <section className="card admin-filter-panel service-catalog-manager-card">
-        <div className="admin-filter-panel-header">
-          <div>
-            <span className="calendar-drawer-eyebrow">Service menu</span>
-            <h2>Service catalog</h2>
-            <p>
-              Register the service menu that Partners can opt into. Customer app partner details only show
-              services selected by that Partner.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <a className="button button-primary" href={serviceDialogHref('new', null)}>
             <Plus aria-hidden="true" size={16} />
             Add service
           </a>
-        </div>
+        }
+        className="service-catalog-manager-card"
+        description="Register the service menu that Partners can opt into. Customer app partner details only show services selected by that Partner."
+        title="Service catalog"
+      >
 
         <div className="admin-filter-panel-body service-catalog-toolbar">
           <p className="muted">
@@ -69,7 +66,7 @@ export function ServiceCatalogManagerSection({
             </div>
           )}
         </div>
-      </section>
+      </AdminSection>
 
       {dialogMode === 'new' ? <NewServiceDialog /> : null}
       {dialogMode === 'edit' && editGroup ? <EditServiceDialog group={editGroup} /> : null}

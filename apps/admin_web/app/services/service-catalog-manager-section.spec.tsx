@@ -12,6 +12,8 @@ describe('ServiceCatalogManagerSection', () => {
     const classNames = classNamesIn(section);
 
     expect(textContent(section)).toContain('Add service menu');
+    expect(classNames).toContain('card admin-section service-catalog-manager-card');
+    expect(classNames).not.toContain('card admin-filter-panel service-catalog-manager-card');
     expect(classNames).toContain('admin-form-input');
     expect(classNames).toContain('admin-form-textarea');
     expect(classNames).toContain('admin-form-control-button button button-primary');
