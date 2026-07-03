@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutShiftActionMapItem } from '../../lib/finance-closeout';
 
 type FinanceCloseoutShiftActionMapSectionProps = {
@@ -25,7 +26,7 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
         <div className="setup-stage-list admin-mt-12">
           {items.map((item) => (
             <Link className="setup-stage-item" href={item.href} key={item.action}>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
               <div>
                 <strong>{item.action}</strong>
                 <p className="muted">{item.reason}</p>

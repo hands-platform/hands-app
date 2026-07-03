@@ -1,4 +1,5 @@
 import { FinanceCloseoutShiftActionMapSection } from './finance-closeout-shift-action-map-section';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('FinanceCloseoutShiftActionMapSection', () => {
   it('renders shift close actions with status, reason, and operator rule', () => {
@@ -24,6 +25,26 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
     expect(rendered).toContain('1 authorization hold remains open.');
     expect(rendered).toContain('Capture, release, refund');
     expect(hrefsIn(section)).toContain('/operations-handoff');
+  });
+
+  it('normalizes legacy action pill classes without duplicating the pill prefix', () => {
+    const section = FinanceCloseoutShiftActionMapSection({
+      items: [
+        {
+          action: 'Payment close',
+          href: '/payments?review=needs-action',
+          operatorRule: 'Capture, release, refund, or record cash settlement evidence before handoff.',
+          pillClass: 'pill pill-warn',
+          reason: '1 authorization hold remains open.',
+          status: '1 open',
+        },
+      ],
+    });
+
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('class="pill pill-warn"');
+    expect(markup).not.toContain('pill pill pill-warn');
   });
 
   it('renders an empty state when no shift close action is visible', () => {

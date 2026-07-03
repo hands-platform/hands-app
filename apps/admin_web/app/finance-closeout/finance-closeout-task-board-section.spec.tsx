@@ -1,4 +1,5 @@
 import { FinanceCloseoutTaskBoardSection } from './finance-closeout-task-board-section';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('FinanceCloseoutTaskBoardSection', () => {
   it('renders closeout tasks with their status, detail, and operator action', () => {
@@ -25,6 +26,27 @@ describe('FinanceCloseoutTaskBoardSection', () => {
     expect(rendered).toContain('2 HOLD(S)');
     expect(rendered).toContain('Open payment holds before handoff.');
     expect(hrefs).toContain('/operations-handoff');
+  });
+
+  it('normalizes legacy task pill classes without duplicating the pill prefix', () => {
+    const section = FinanceCloseoutTaskBoardSection({
+      tasks: [
+        {
+          action: 'Open payment holds before handoff.',
+          className: 'ops-task-pending',
+          detail: 'Authorized payments should remain held until service completion.',
+          href: '/payments?review=authorized',
+          pillClass: 'pill pill-warn',
+          status: '2 HOLD(S)',
+          title: 'Payment hold review',
+        },
+      ],
+    });
+
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('class="pill pill-warn"');
+    expect(markup).not.toContain('pill pill pill-warn');
   });
 
   it('renders an empty state when there are no closeout tasks', () => {

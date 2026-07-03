@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutTask } from '../../lib/finance-closeout';
 
 type FinanceCloseoutTaskBoardSectionProps = {
@@ -26,7 +27,7 @@ export function FinanceCloseoutTaskBoardSection({ tasks }: FinanceCloseoutTaskBo
           {tasks.map((task) => (
             <Link className={`ops-task-card ${task.className}`} href={task.href} key={task.title}>
               <div>
-                <span className={`pill ${task.pillClass}`}>{task.status}</span>
+                <PillClassBadge pillClass={task.pillClass}>{task.status}</PillClassBadge>
                 <h3>{task.title}</h3>
                 <p className="muted">{task.detail}</p>
               </div>
