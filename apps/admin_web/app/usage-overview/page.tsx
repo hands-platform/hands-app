@@ -25,6 +25,7 @@ import {
   AdminUsageOverviewRankRow,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminSection } from '../../components/admin-surface';
 import {
   formatCurrencyAmount as money,
   formatPercentLabel,
@@ -171,34 +172,29 @@ export default async function UsageOverviewPage({
         ))}
       </section>
 
-      <section className="card usage-overview-funnel-card" aria-labelledby="usage-funnel-title">
-        <div className="ops-section-header usage-overview-section-header">
-          <div>
-            <h2 id="usage-funnel-title">Customer app-to-booking funnel</h2>
-            <p className="muted">
-              Stored flow from app activity to Partner discovery, preferred request, and completed work.
-            </p>
-          </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
-        </div>
-        <div className="usage-overview-funnel-steps">
-          {funnelSteps.map((step, index) => (
-            <article key={step.label} className={`usage-overview-funnel-step is-${step.tone}`}>
-              <div className="usage-overview-funnel-step-header">
-                <span>{step.label}</span>
-                <strong>{formatNumber(step.value)}</strong>
-              </div>
-              <div className="usage-overview-funnel-bar" aria-hidden="true">
-                <i style={{ width: `${step.widthPercent}%` }} />
-              </div>
-              <small>{step.detail}</small>
-              {index < funnelSteps.length - 1 ? (
-                <ChevronRight className="usage-overview-funnel-arrow" size={18} aria-hidden="true" />
-              ) : null}
-            </article>
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        bodyClassName="usage-overview-funnel-steps"
+        className="usage-overview-funnel-card"
+        description="Stored flow from app activity to Partner discovery, preferred request, and completed work."
+        statusLabel={overview.rangeLabel}
+        title="Customer app-to-booking funnel"
+      >
+        {funnelSteps.map((step, index) => (
+          <article key={step.label} className={`usage-overview-funnel-step is-${step.tone}`}>
+            <div className="usage-overview-funnel-step-header">
+              <span>{step.label}</span>
+              <strong>{formatNumber(step.value)}</strong>
+            </div>
+            <div className="usage-overview-funnel-bar" aria-hidden="true">
+              <i style={{ width: `${step.widthPercent}%` }} />
+            </div>
+            <small>{step.detail}</small>
+            {index < funnelSteps.length - 1 ? (
+              <ChevronRight className="usage-overview-funnel-arrow" size={18} aria-hidden="true" />
+            ) : null}
+          </article>
+        ))}
+      </AdminSection>
 
       <section className="usage-overview-segment-grid" aria-label="Customer usage segments">
         {usageSegmentCards.map(({ label, value, detail, icon: Icon, tone }) => (
@@ -416,32 +412,27 @@ function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOver
   }>;
 
   return (
-    <section className="card usage-overview-segment-board-card" aria-labelledby="usage-segments-title">
-      <div className="ops-section-header">
-        <div>
-          <h2 id="usage-segments-title">Customer segments</h2>
-          <p className="muted">
-            Operational customer groups for follow-up, retention, priority handling, and issue review.
-          </p>
-        </div>
-        <Users size={18} aria-hidden="true" />
-      </div>
-      <div className="usage-overview-segment-board-grid">
-        {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
-          <article key={label} className={`usage-overview-segment-board-item is-${tone}`}>
-            <span className="usage-overview-command-icon">
-              <Icon size={17} aria-hidden="true" />
-            </span>
-            <div>
-              <span>{label}</span>
-              <strong>{formatNumber(value)}</strong>
-              <small>{detail}</small>
-            </div>
-            <em>{percent}</em>
-          </article>
-        ))}
-      </div>
-    </section>
+    <AdminSection
+      actions={<Users size={18} aria-hidden="true" />}
+      bodyClassName="usage-overview-segment-board-grid"
+      className="usage-overview-segment-board-card"
+      description="Operational customer groups for follow-up, retention, priority handling, and issue review."
+      title="Customer segments"
+    >
+      {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
+        <article key={label} className={`usage-overview-segment-board-item is-${tone}`}>
+          <span className="usage-overview-command-icon">
+            <Icon size={17} aria-hidden="true" />
+          </span>
+          <div>
+            <span>{label}</span>
+            <strong>{formatNumber(value)}</strong>
+            <small>{detail}</small>
+          </div>
+          <em>{percent}</em>
+        </article>
+      ))}
+    </AdminSection>
   );
 }
 
@@ -449,23 +440,17 @@ function ActionPrioritiesBoard({ overview }: { readonly overview: AdminUsageOver
   const priorities = buildUsageActionPriorities(overview);
 
   return (
-    <section className="card usage-overview-action-card" aria-labelledby="usage-actions-title">
-      <div className="ops-section-header">
-        <div>
-          <h2 id="usage-actions-title">Action priorities</h2>
-          <p className="muted">
-            Follow-up signals calculated from the current usage range. These are counts and rates only,
-            not full customer lists.
-          </p>
-        </div>
-        <AlertTriangle size={18} aria-hidden="true" />
-      </div>
-      <div className="usage-overview-action-list">
-        {priorities.map((priority) => (
-          <ActionPriorityItem key={priority.key} priority={priority} />
-        ))}
-      </div>
-    </section>
+    <AdminSection
+      actions={<AlertTriangle size={18} aria-hidden="true" />}
+      bodyClassName="usage-overview-action-list"
+      className="usage-overview-action-card"
+      description="Follow-up signals calculated from the current usage range. These are counts and rates only, not full customer lists."
+      title="Action priorities"
+    >
+      {priorities.map((priority) => (
+        <ActionPriorityItem key={priority.key} priority={priority} />
+      ))}
+    </AdminSection>
   );
 }
 
