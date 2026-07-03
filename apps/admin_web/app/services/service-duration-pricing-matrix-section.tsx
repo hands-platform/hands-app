@@ -34,7 +34,7 @@ export function ServiceDurationPricingMatrixSection({
   return (
     <AdminSection
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="One row is one service name. Each duration cell shows customer minimum, Partner payout, and projected company commission after VAT, withholding, and other configured costs."
       statusLabel={`${SERVICE_MATRIX_DURATIONS.join(' / ')} min`}
       statusTone="info"

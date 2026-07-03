@@ -19,7 +19,7 @@ describe('ServicePricingAuditTrailSection', () => {
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
       title: 'Recent pricing audit trail',
     });
     expect(rendered).toContain('Recent pricing audit trail');
