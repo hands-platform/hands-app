@@ -295,4 +295,43 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-on-demand-detail-title">Detailed dashboard loaded on demand</h2>',
     );
   });
+
+  it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'all' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-live-operations-radar"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-live-operations-radar-title">Live operations radar</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-policy-outcome-pulse"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-policy-outcome-pulse-title">Policy outcome pulse</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-shift-command-briefing"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-shift-command-briefing-title">Shift command briefing</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-opening-shift-checklist"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-opening-shift-checklist-title">Opening shift checklist</h2>',
+    );
+  });
 });

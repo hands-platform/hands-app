@@ -1069,22 +1069,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       {fullDashboardData ? (
         <>
-          <section className="card admin-mt-20">
-            <div className="ops-section-header">
-              <div>
-                <h2>Live operations radar</h2>
-                <p className="muted">
-                  Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice,
-                  chat handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <Link
                 className="text-link"
                 href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}
               >
                 Open first lane
               </Link>
-            </div>
+            }
+            className="admin-mt-20"
+            description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat handoff, Partner supply, cash fee gates, payout batches, and setup readiness."
+            id="dashboard-live-operations-radar"
+            title="Live operations radar"
+          >
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.liveOperationsRadar.map((item) => (
                 <Link
@@ -1109,22 +1107,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20">
-            <div className="ops-section-header">
-              <div>
-                <h2>Policy outcome pulse</h2>
-                <p className="muted">
-                  First-screen readout of whether current matching policy is producing acceptable outcomes.
-                  Deeper cohort analysis stays in Operations Policy.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <Link className="button button-secondary" href="/operations-policy">
                 <Settings2 size={16} aria-hidden="true" />
                 Review policy cohorts
               </Link>
-            </div>
+            }
+            className="admin-mt-20"
+            description="First-screen readout of whether current matching policy is producing acceptable outcomes. Deeper cohort analysis stays in Operations Policy."
+            id="dashboard-policy-outcome-pulse"
+            title="Policy outcome pulse"
+          >
             <div className="service-trace-summary admin-mt-12">
               {fullDashboardData.policyOutcome.metrics.map((metric) => (
                 <div key={metric.label}>
@@ -1144,21 +1140,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20">
-            <div className="ops-section-header">
-              <div>
-                <h2>Shift command briefing</h2>
-                <p className="muted">
-                  Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt,
-                  notification, and payout pressure into one operating handoff.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <span className={`signal ${fullDashboardData.shiftBriefing.signalClass}`}>
                 {fullDashboardData.shiftBriefing.label}
               </span>
-            </div>
+            }
+            className="admin-mt-20"
+            description="Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt, notification, and payout pressure into one operating handoff."
+            id="dashboard-shift-command-briefing"
+            title="Shift command briefing"
+          >
             <div className="ops-task-note admin-mt-14">
               <div className="ops-row">
                 <div>
@@ -1213,17 +1207,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               )}
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20">
-            <div className="ops-section-header">
-              <div>
-                <h2>Opening shift checklist</h2>
-                <p className="muted">
-                  A simple order for the first admin pass: protect waiting customers, confirm Partner supply,
-                  clear money blockers, then check external integrations.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <span
                 className={`signal ${
                   fullDashboardData.operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
@@ -1237,7 +1224,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 }{' '}
                 action(s)
               </span>
-            </div>
+            }
+            className="admin-mt-20"
+            description="A simple order for the first admin pass: protect waiting customers, confirm Partner supply, clear money blockers, then check external integrations."
+            id="dashboard-opening-shift-checklist"
+            title="Opening shift checklist"
+          >
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.operatorStartChecklist.map((item, index) => (
                 <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
@@ -1249,7 +1241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
           <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
             <div className="ops-section-header">
