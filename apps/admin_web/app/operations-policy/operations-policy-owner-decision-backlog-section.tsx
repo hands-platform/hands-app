@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
@@ -15,17 +16,13 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
   backlog,
 }: OperationsPolicyOwnerDecisionBacklogSectionProps) {
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Owner decision backlog</h2>
-          <p className="muted">
-            Product and operations choices that should be reviewed before HANDS turns each policy into
-            stricter automation. Keep the decision in Admin first, then automate after real operating data.
-          </p>
-        </div>
-        <span className="pill pill-info">Review weekly</span>
-      </div>
+    <AdminSection
+      className="admin-mt-16"
+      description="Product and operations choices that should be reviewed before HANDS turns each policy into stricter automation. Keep the decision in Admin first, then automate after real operating data."
+      statusLabel="Review weekly"
+      statusTone="info"
+      title="Owner decision backlog"
+    >
       <div className="ops-task-note admin-mt-14">
         <div className="ops-section-header">
           <div>
@@ -87,6 +84,6 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
