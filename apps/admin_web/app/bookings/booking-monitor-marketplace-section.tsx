@@ -22,14 +22,12 @@ export function BookingMonitorMarketplaceSection({
   marketplaceBookingCoverageSummary,
 }: BookingMonitorMarketplaceSectionProps) {
   return (
-    <section className="card admin-mt-16">
-      <BookingMonitorMarketplaceCoverageSection
-        getCustomerLabel={getCustomerLabel}
-        getMatchingWindowLabel={getMatchingWindowLabel}
-        marketplaceBookingCoveragePills={marketplaceBookingCoveragePills}
-        marketplaceBookingCoverageRows={marketplaceBookingCoverageRows}
-        marketplaceBookingCoverageSummary={marketplaceBookingCoverageSummary}
-      />
-    </section>
+    <BookingMonitorMarketplaceCoverageSection
+      getCustomerLabel={getCustomerLabel}
+      getMatchingWindowLabel={getMatchingWindowLabel}
+      marketplaceBookingCoveragePills={marketplaceBookingCoveragePills}
+      marketplaceBookingCoverageRows={marketplaceBookingCoverageRows}
+      marketplaceBookingCoverageSummary={marketplaceBookingCoverageSummary}
+    />
   );
 }

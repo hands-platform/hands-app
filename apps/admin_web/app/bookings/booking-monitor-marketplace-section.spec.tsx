@@ -21,6 +21,7 @@ describe('BookingMonitorMarketplaceSection', () => {
 
     expect(rendered).toContain('Marketplace booking coverage board');
     expect(rendered).toContain('No marketplace booking rows match the current filters.');
+    expect(rendered).not.toContain('class="card admin-mt-16"');
     expect(rendered).not.toContain('Marketplace participant ledger');
     expect(rendered).not.toContain('No participant records match the current booking filters.');
   });
