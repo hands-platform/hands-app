@@ -208,7 +208,7 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
   const Icon = financeControlMetricIcons[metric.label] ?? ShieldCheck;
 
   return (
-    <a className={`finance-overview-control-card is-${metric.tone}`} href={metric.href}>
+    <a className={`card admin-card finance-overview-control-card is-${metric.tone}`} href={metric.href}>
       <span className="usage-overview-command-icon">
         <Icon size={18} aria-hidden="true" />
       </span>
@@ -238,13 +238,13 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
 
   if (kpi.href) {
     return (
-      <a className={`usage-overview-command-card is-${kpi.tone}`} href={kpi.href}>
+      <a className={`card admin-card usage-overview-command-card is-${kpi.tone}`} href={kpi.href}>
         {body}
       </a>
     );
   }
 
-  return <article className={`usage-overview-command-card is-${kpi.tone}`}>{body}</article>;
+  return <article className={`card admin-card usage-overview-command-card is-${kpi.tone}`}>{body}</article>;
 }
 
 function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOverviewSection }) {
@@ -287,7 +287,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <a className={`usage-overview-action-item is-${item.tone}`} href={item.href}>
+    <a className={`card admin-card usage-overview-action-item is-${item.tone}`} href={item.href}>
       <span className="usage-overview-command-icon">
         <Icon size={17} aria-hidden="true" />
       </span>
@@ -305,7 +305,10 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <a className={`usage-overview-command-card finance-overview-priority-card is-${item.tone}`} href={item.href}>
+    <a
+      className={`card admin-card usage-overview-command-card finance-overview-priority-card is-${item.tone}`}
+      href={item.href}
+    >
       <span className="usage-overview-command-icon">
         <Icon size={18} aria-hidden="true" />
       </span>
