@@ -1,6 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { PillClassBadge } from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -119,9 +120,9 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="participant-list">
               {row.blockingReasons.length ? (
                 row.blockingReasons.map((reason) => (
-                  <span className={`pill ${reason.pillClass}`} key={reason.label} title={reason.detail}>
+                  <PillClassBadge key={reason.label} pillClass={reason.pillClass} title={reason.detail}>
                     {reason.label}
-                  </span>
+                  </PillClassBadge>
                 ))
               ) : (
                 <span className="pill pill-success">Clear</span>
@@ -173,7 +174,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
                   <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
-                    <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                    <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                     <div>
                       <strong>{item.action}</strong>
                       <p className="muted">{item.reason}</p>

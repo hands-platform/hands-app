@@ -165,6 +165,39 @@ describe('PayoutBatchTable', () => {
 
     expect(textContent(table)).toContain('No payout batches loaded.');
   });
+
+  it('does not duplicate the base pill class for blocking reason and action execution badges', () => {
+    const table = PayoutBatchTable({
+      rows: [
+        buildPayoutBatchRow({
+          actionExecutionItems: [
+            {
+              action: 'Mark paid',
+              operatorRule: 'Require transfer reference first.',
+              pillClass: 'pill pill-warn',
+              reason: 'Transfer reference missing.',
+              status: 'Blocked',
+            },
+          ],
+          blockingReasons: [
+            {
+              detail: 'Transfer reference is required.',
+              label: 'Transfer ref',
+              pillClass: 'pill pill-danger',
+            },
+          ],
+        }),
+      ],
+      updateTransferRefAction: async () => undefined,
+    });
+
+    const classNames = classNamesIn(table);
+
+    expect(classNames).toContain('pill pill-warn');
+    expect(classNames).toContain('pill pill-danger');
+    expect(classNames).not.toContain('pill pill pill-warn');
+    expect(classNames).not.toContain('pill pill pill-danger');
+  });
 });
 
 function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): PayoutBatchTableRow {
