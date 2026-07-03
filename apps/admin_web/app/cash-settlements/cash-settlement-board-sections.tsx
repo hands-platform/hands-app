@@ -83,7 +83,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
             acceptance, service start, and payout release.
           </p>
         </div>
-        <span className="pill pill-info">Live policy default</span>
+        <PillClassBadge pillClass="pill-info">Live policy default</PillClassBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {appliedPolicyCards.map((card) => (

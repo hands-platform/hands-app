@@ -92,7 +92,7 @@ export function CashSettlementOpenDebtTableSection({
                 <Link className="pill" href={row.partnerHref}>
                   Partner
                 </Link>
-                <span className="pill pill-danger">Final acceptance blocked</span>
+                <PillClassBadge pillClass="pill-danger">Final acceptance blocked</PillClassBadge>
               </div>
             </td>
             <td>

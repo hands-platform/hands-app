@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   CashSettlementExecutionSection,
   CashSettlementRulesSection,
@@ -120,6 +123,16 @@ describe('CashSettlement board sections', () => {
     });
 
     expect(groupedTableCardClassNamesIn(classNamesIn(section))).toHaveLength(1);
+  });
+
+  it('uses the shared status badge for the live policy marker', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-board-sections.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
   });
 });
 

@@ -18,6 +18,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).toContain('FinanceDataTable');
     expect(source).not.toContain('AdminTableScroll');
     expect(source).not.toContain('className="vuexy-booking-table"');
+    expect(source).not.toContain('<span className="pill pill-danger">Final acceptance blocked</span>');
   });
 
   it('renders compact open cash debt rows without per-row operations evidence by default', () => {
