@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ActionMenu } from '../../components/action-menu';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
@@ -89,9 +90,10 @@ export function CashSettlementOpenDebtTableSection({
               <strong>{row.providerName}</strong>
               <div className="muted">{row.providerPhone}</div>
               <div className="participant-list admin-mt-8">
-                <Link className="pill" href={row.partnerHref}>
-                  Partner
-                </Link>
+                <ActionMenu
+                  actions={[{ href: row.partnerHref, kind: 'link', label: 'Partner', tone: 'info' }]}
+                  label={`${row.providerName} partner actions`}
+                />
                 <PillClassBadge pillClass="pill-danger">Final acceptance blocked</PillClassBadge>
               </div>
             </td>

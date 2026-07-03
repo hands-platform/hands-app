@@ -24,9 +24,11 @@ describe('CashSettlementProviderGroupsSection', () => {
     );
 
     expect(source).toContain('PillClassBadge');
+    expect(source).toContain('ActionMenu');
     expect(source).not.toContain('<span className="pill pill-danger">');
     expect(source).not.toContain('<span className="pill pill-warn">');
     expect(source).not.toContain('<span className="pill pill-info">');
+    expect(source).not.toContain('<Link className="pill" href');
   });
 
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {

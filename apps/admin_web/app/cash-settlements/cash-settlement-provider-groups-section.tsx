@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { PillClassBadge } from '../../components/status-badge';
@@ -38,9 +39,17 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                 fee, {formatMoney(provider.taxAmount, provider.currency)} tax.
               </p>
               <div className="participant-list admin-mt-8">
-                <Link className="pill" href={`/partners/${provider.providerProfileId}`}>
-                  Partner
-                </Link>
+                <ActionMenu
+                  actions={[
+                    {
+                      href: `/partners/${provider.providerProfileId}`,
+                      kind: 'link',
+                      label: 'Partner',
+                      tone: 'info',
+                    },
+                  ]}
+                  label={`${provider.providerName} partner actions`}
+                />
                 <PillClassBadge pillClass="pill-warn">Suggested ref {provider.settlementReference}</PillClassBadge>
                 <PillClassBadge pillClass="pill-info">{provider.oldestOpenLabel}</PillClassBadge>
               </div>
