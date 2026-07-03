@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminSection } from '../../components/admin-surface';
 import {
@@ -684,11 +685,10 @@ function MarketingTable({
         <AdminDataTable
           className="usage-overview-table marketing-analytics-table"
           emptyMessage={
-            <div className="empty-state">
-              <BarChart3 size={20} aria-hidden="true" />
-              <strong>{emptyMessage}</strong>
-              <p className="muted">Try a different range or remove the dimension filter.</p>
-            </div>
+            <AdminEmptyState
+              message="Try a different range or remove the dimension filter."
+              title={emptyMessage}
+            />
           }
           headers={[primaryColumn, ...marketingDimensionMetricHeaders]}
           rowCount={rows.length}

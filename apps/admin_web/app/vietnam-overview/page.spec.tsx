@@ -45,6 +45,8 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table vietnam-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');
   });
 

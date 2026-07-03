@@ -25,6 +25,7 @@ import {
 } from './vietnam-overview-model';
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 
 export const dynamic = 'force-dynamic';
@@ -635,11 +636,10 @@ export default async function VietnamOverviewPage({
           <AdminDataTable
             className="vietnam-overview-table"
             emptyMessage={
-              <div className="empty-state">
-                <ShieldCheck size={22} aria-hidden="true" />
-                <strong>No regional aggregates loaded</strong>
-                <p className="muted">Check API availability or seed stored address records.</p>
-              </div>
+              <AdminEmptyState
+                message="Check API availability or seed stored address records."
+                title="No regional aggregates loaded"
+              />
             }
             headers={VIETNAM_REGION_HEADERS}
             rowCount={visibleRegions.length}

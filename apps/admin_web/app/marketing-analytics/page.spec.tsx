@@ -95,6 +95,8 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('admin-table-scroll usage-overview-table-wrap');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">');
   });
 });
