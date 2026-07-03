@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { pillClassBadgeClassName } from '../../components/status-badge';
+
 export const FINANCE_LIST_DATE_RANGE_LINKS = [
   ['Today', 'today'],
   ['Last 7 days', '7d'],
@@ -21,6 +23,13 @@ export type FinanceListFilterLinkGroup = {
   readonly links: readonly FinanceListFilterLink[];
 };
 
+export function financeListFilterLinkClassName({
+  active,
+  activePillClassName,
+}: Pick<FinanceListFilterLink, 'active' | 'activePillClassName'>) {
+  return pillClassBadgeClassName(active ? activePillClassName : 'pill-neutral');
+}
+
 export function FinanceListFilterLinks({ groups }: { readonly groups: readonly FinanceListFilterLinkGroup[] }) {
   return (
     <>
@@ -28,7 +37,7 @@ export function FinanceListFilterLinks({ groups }: { readonly groups: readonly F
         <div className={group.className ?? `participant-list${index > 0 ? ' admin-mt-10' : ''}`} key={group.id}>
           {group.links.map((link) => (
             <Link
-              className={`pill ${link.active ? link.activePillClassName : 'pill-neutral'}`}
+              className={financeListFilterLinkClassName(link)}
               href={link.href}
               key={link.id}
             >
