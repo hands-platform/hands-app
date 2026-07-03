@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminFilterPanel } from './admin-filter-panel';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+} from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
 import { statusBadgeClassName } from './status-badge';
 
@@ -42,27 +48,23 @@ export function FilterBar({
   submitLabel = 'Search',
 }: FilterBarProps) {
   return (
-    <section className="card filter-bar">
+    <AdminFilterPanel className="filter-bar" resultLabel={resultLabel} resultTone="info" title={queryLabel}>
       <form action={action} className="form-grid compact-form">
-        <label>
-          {queryLabel}
-          <input defaultValue={defaultQuery} name={queryName} placeholder={placeholder} />
-        </label>
-        <button type="submit">{submitLabel}</button>
+        <AdminFormSearch defaultValue={defaultQuery} label={queryLabel} name={queryName} placeholder={placeholder} />
+        <AdminFormControlButton type="submit">{submitLabel}</AdminFormControlButton>
         {resetHref ? (
-          <Link className="pill pill-neutral" href={resetHref}>
+          <AdminFormControlLink className="pill pill-neutral" href={resetHref}>
             Clear
-          </Link>
+          </AdminFormControlLink>
         ) : null}
       </form>
       <div className="participant-list filter-bar-options">
-        {resultLabel ? <span className="pill pill-info">{resultLabel}</span> : null}
         {options.map((option) => (
           <Link className={filterBarOptionClassName(option)} href={option.href} key={option.href}>
             {option.label}
           </Link>
         ))}
       </div>
-    </section>
+    </AdminFilterPanel>
   );
 }
