@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Download } from 'lucide-react';
 
+import { AdminSection } from '../../../components/admin-surface';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
 import { formatDate, shortId } from './booking-formatters';
 
@@ -25,14 +26,8 @@ export function BookingFullRecordIndex({
   cards,
 }: BookingFullRecordIndexProps) {
   return (
-    <section className="card admin-mb-16" id="payment-actions">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking full record index</h2>
-          <p className="muted">
-            Jump map for the detailed booking record sections below.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="actions">
           <a
             className="button button-secondary admin-inline-action"
@@ -44,7 +39,12 @@ export function BookingFullRecordIndex({
           </a>
           <span className="pill pill-info">{eventCount} event(s)</span>
         </div>
-      </div>
+      }
+      className="admin-mb-16 booking-full-record-index-card"
+      description="Jump map for the detailed booking record sections below."
+      id="payment-actions"
+      title="Booking full record index"
+    >
       <div className="service-trace-summary admin-mt-12">
         {cards.map((card) => (
           <a href={card.href} key={`${card.href}-${card.label}`}>
@@ -54,7 +54,7 @@ export function BookingFullRecordIndex({
           </a>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -66,16 +66,13 @@ export function BookingActivityPanel({
   const hiddenRecordCount = Math.max(totalRecordCount - records.length, 0);
 
   return (
-    <section className="card admin-mt-16" id="booking-activity">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking chronological activity</h2>
-          <p className="muted">
-            Latest date-sorted operational event trail for this booking.
-          </p>
-        </div>
-        <span className="pill pill-info">{totalRecordCount} event(s)</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{totalRecordCount} event(s)</span>}
+      className="admin-mt-16 booking-activity-card"
+      description="Latest date-sorted operational event trail for this booking."
+      id="booking-activity"
+      title="Booking chronological activity"
+    >
       <div className="service-trace-summary admin-mt-12">
         {summary.map((item) => (
           <div key={item.label}>
@@ -123,7 +120,7 @@ export function BookingActivityPanel({
           audit/notification boards for the full operational trail.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 

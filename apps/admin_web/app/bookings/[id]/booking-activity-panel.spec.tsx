@@ -1,8 +1,31 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { BookingActivityPanel } from './booking-activity-panel';
+import { BookingActivityPanel, BookingFullRecordIndex } from './booking-activity-panel';
 
 describe('BookingActivityPanel', () => {
+  it('renders the full record index on the shared Vuexy section surface', () => {
+    const markup = renderToStaticMarkup(
+      <BookingFullRecordIndex
+        bookingId="booking_123456789"
+        cards={[
+          {
+            href: '#booking-activity',
+            label: 'Activity',
+            value: '2',
+            helper: 'Latest operational records.',
+          },
+        ]}
+        csvHref="/api/admin/bookings/booking_123456789/activity.csv"
+        eventCount={2}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('card admin-section admin-mb-16 booking-full-record-index-card');
+    expect(markup).toContain('Booking full record index');
+    expect(markup).toContain('Export activity CSV');
+    expect(markup).toContain('2 event(s)');
+  });
+
   it('renders booking activity as compact record rows', () => {
     const markup = renderToStaticMarkup(
       <BookingActivityPanel
@@ -33,6 +56,7 @@ describe('BookingActivityPanel', () => {
       />,
     ).replace(/\s+/g, ' ');
 
+    expect(markup).toContain('card admin-section admin-mt-16 booking-activity-card');
     expect(markup).toContain('booking-activity-record-list admin-mt-12');
     expect(markup).toContain('booking-activity-record-row');
     expect(markup).toContain('pill pill-neutral');
