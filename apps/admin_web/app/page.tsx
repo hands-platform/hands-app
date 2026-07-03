@@ -2146,8 +2146,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </section>
 
           <section className="detail-grid admin-mt-20">
-            <div className="card">
-              <h2>Realtime flow health</h2>
+            <AdminSection
+              description="Matching, chat, Partner location, and payment hold signals from the current admin snapshot."
+              id="dashboard-realtime-flow-health"
+              title="Realtime flow health"
+            >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
                 <InfoRow
                   label="Matching"
@@ -2170,10 +2173,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail="Capture after service completion, release/refund on cancellation."
                 />
               </AdminDataTable>
-            </div>
+            </AdminSection>
 
-            <div className="card">
-              <h2>Finance snapshot</h2>
+            <AdminSection
+              description="Gross earnings, platform fee, pending net, and paid net from the earnings snapshot."
+              id="dashboard-finance-snapshot"
+              title="Finance snapshot"
+            >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
                 <InfoRow
                   label="Gross"
@@ -2196,7 +2202,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail="Already marked paid."
                 />
               </AdminDataTable>
-            </div>
+            </AdminSection>
           </section>
         </>
       ) : (

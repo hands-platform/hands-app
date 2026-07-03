@@ -423,5 +423,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-external-setup-readiness-title">External setup readiness</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-realtime-flow-health"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-realtime-flow-health-title">Realtime flow health</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-finance-snapshot"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-finance-snapshot-title">Finance snapshot</h2>',
+    );
   });
 });
