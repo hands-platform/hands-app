@@ -28,19 +28,19 @@ export function AdminFilterPanel({
 
   return (
     <section
-      className={joinClassNames('card admin-filter-panel', className)}
+      className={joinClassNames('card admin-filter-panel', className, 'admin-section')}
       id={id}
       aria-labelledby={headingId}
     >
-      <div className="ops-section-header admin-filter-panel-header">
+      <div className="ops-section-header admin-filter-panel-header admin-section-header">
         <div>
           <h2 id={headingId}>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
         {resultLabel ? <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge> : null}
       </div>
-      {hasBody ? <div className="admin-filter-panel-body">{children}</div> : null}
-      {footer ? <div className="admin-filter-panel-footer">{footer}</div> : null}
+      {hasBody ? <div className="admin-filter-panel-body admin-section-body">{children}</div> : null}
+      {footer ? <div className="admin-filter-panel-footer admin-section-footer">{footer}</div> : null}
     </section>
   );
 }

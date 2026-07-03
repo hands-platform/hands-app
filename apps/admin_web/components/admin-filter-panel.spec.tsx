@@ -16,13 +16,16 @@ describe('AdminFilterPanel', () => {
     expect(panel.type).toBe('section');
     expect(panel.props).toMatchObject({
       'aria-labelledby': 'booking-filters-title',
-      className: 'card admin-filter-panel booking-monitor-filter-panel',
+      className: 'card admin-filter-panel booking-monitor-filter-panel admin-section',
       id: 'booking-filters',
     });
     expect(panel.props.children).toHaveLength(3);
-    expect(panel.props.children[0].props.className).toBe('ops-section-header admin-filter-panel-header');
+    expect(panel.props.children[0].props.className).toBe(
+      'ops-section-header admin-filter-panel-header admin-section-header',
+    );
     expect(panel.props.children[0].props.children[1].props.tone).toBe('warning');
-    expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer');
+    expect(panel.props.children[1].props.className).toBe('admin-filter-panel-body admin-section-body');
+    expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
   });
 
   it('allows link-only filter panels without a body section', () => {
@@ -34,6 +37,6 @@ describe('AdminFilterPanel', () => {
 
     expect(panel.props.children).toHaveLength(3);
     expect(panel.props.children[1]).toBeNull();
-    expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer');
+    expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
   });
 });
