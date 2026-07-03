@@ -1,4 +1,5 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
+import { AdminSection } from '../../components/admin-surface';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
@@ -102,20 +103,17 @@ function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
-function SetupGroupDetailSummaryLink({ groupCount }: { readonly groupCount: number }) {
+export function SetupGroupDetailSummaryLink({ groupCount }: { readonly groupCount: number }) {
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Setup group details</h2>
-          <p className="muted">
-            Full environment notes and command packs are kept out of the default setup payload.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <a className="pill pill-neutral" href="/setup?details=all">
           Show {groupCount} setup group(s)
         </a>
-      </div>
-    </section>
+      }
+      className="admin-mt-16"
+      description="Full environment notes and command packs are kept out of the default setup payload."
+      title="Setup group details"
+    />
   );
 }
