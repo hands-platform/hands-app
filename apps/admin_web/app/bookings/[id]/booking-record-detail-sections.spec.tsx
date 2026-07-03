@@ -138,6 +138,9 @@ describe('BookingRecordDetailSections', () => {
     const markup = renderSections();
 
     expect(markup).toContain('Actual marketplace participant ledger');
+    expect(markup).toContain('class="card admin-section" id="flow"');
+    expect(markup).toContain('class="card admin-section" id="participants"');
+    expect(markup).toContain('class="ops-section-header admin-section-header"');
     expect(markup).toContain('Partner participation rows');
     expect(markup).toContain('Partner One');
     expect(markup).toContain('Wallet: Clear');

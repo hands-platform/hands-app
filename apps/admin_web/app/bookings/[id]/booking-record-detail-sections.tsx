@@ -1,4 +1,5 @@
 import { AdminPersonCell } from '../../../components/admin-person-cell';
+import { AdminSection } from '../../../components/admin-surface';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat-evidence';
@@ -178,8 +179,7 @@ export function BookingRecordDetailSections({
   return (
     <>
       <section className="detail-grid">
-        <div className="card" id="flow">
-          <h2>Operations timeline</h2>
+        <AdminSection id="flow" title="Operations timeline">
           <div className="timeline">
             {timelineStages.map((stage) => (
               <div className={`timeline-step ${stage.done ? 'timeline-done' : ''}`} key={stage.label}>
@@ -189,57 +189,54 @@ export function BookingRecordDetailSections({
               </div>
             ))}
           </div>
-        </div>
+        </AdminSection>
 
-        <div className="card" id="customer">
-          <div className="ops-section-header">
-            <h2>Customer</h2>
-            {customerProfileId && <span className="pill pill-neutral">Linked in toolbar</span>}
-          </div>
+        <AdminSection
+          actions={customerProfileId ? <span className="pill pill-neutral">Linked in toolbar</span> : null}
+          id="customer"
+          title="Customer"
+        >
           <InfoRows rows={customerRows} />
-        </div>
+        </AdminSection>
 
-        <div className="card" id="service">
-          <h2>Service</h2>
+        <AdminSection id="service" title="Service">
           <InfoRows rows={serviceRows} />
-        </div>
+        </AdminSection>
 
-        <div className="card" id="handoff">
-          <div className="ops-section-header">
-            <h2>Partner handoff</h2>
-            {finalPartnerId ? (
+        <AdminSection
+          actions={
+            finalPartnerId ? (
               <span className="pill pill-neutral">Linked in toolbar</span>
             ) : (
               <span className="pill pill-neutral">Partner record link pending</span>
-            )}
-          </div>
+            )
+          }
+          id="handoff"
+          title="Partner handoff"
+        >
           <InfoRows rows={handoffRows} />
-        </div>
+        </AdminSection>
       </section>
 
       <section className="detail-grid admin-mt-16">
         <ParticipantLedgerSection participantLedger={participantLedger} />
 
-        <div className="card" id="payment">
-          <h2>Payment and refund</h2>
+        <AdminSection id="payment" title="Payment and refund">
           <InfoRows rows={paymentRows} />
-        </div>
+        </AdminSection>
 
         <CashFeeSettlementPathSection cashFeeSettlementPath={cashFeeSettlementPath} />
 
-        <div className="card" id="finance">
-          <h2>Finance trace</h2>
+        <AdminSection id="finance" title="Finance trace">
           <InfoRows rows={financeRows} />
-        </div>
+        </AdminSection>
 
-        <div className="card" id="chat">
-          <div className="ops-section-header">
-            <div>
-              <h2>Chat evidence</h2>
-              <p className="muted">Compact archive state. The full retained transcript stays in the chat history panel.</p>
-            </div>
-            <span className="pill pill-info">{countLabel(chatMessages.length, 'message')}</span>
-          </div>
+        <AdminSection
+          actions={<span className="pill pill-info">{countLabel(chatMessages.length, 'message')}</span>}
+          description="Compact archive state. The full retained transcript stays in the chat history panel."
+          id="chat"
+          title="Chat evidence"
+        >
           {chatEvidenceRows.length > 0 && (
             <div className="booking-chat-evidence-grid is-detail" aria-label="Booking chat evidence snapshot">
               {chatEvidenceRows.map((row) => (
@@ -252,16 +249,14 @@ export function BookingRecordDetailSections({
             </div>
           )}
           {chatEvidenceRows.length === 0 && <p className="muted">No chat evidence snapshot linked to this booking yet.</p>}
-        </div>
+        </AdminSection>
 
-        <div className="card" id="location">
-          <div className="ops-section-header">
-            <div>
-              <h2>Location evidence</h2>
-              <p className="muted">Partner snapshots captured only for booking actions and live movement checks.</p>
-            </div>
-            <span className="pill pill-neutral">{countLabel(locationTrailRows.length, 'snapshot')}</span>
-          </div>
+        <AdminSection
+          actions={<span className="pill pill-neutral">{countLabel(locationTrailRows.length, 'snapshot')}</span>}
+          description="Partner snapshots captured only for booking actions and live movement checks."
+          id="location"
+          title="Location evidence"
+        >
           <div className="route-mini">
             <span className="route-dot route-customer">Customer</span>
             {hasLatestPartnerLocation && <span className="route-dot route-provider">Partner</span>}
@@ -284,7 +279,7 @@ export function BookingRecordDetailSections({
               </p>
             )}
           </div>
-        </div>
+        </AdminSection>
       </section>
     </>
   );
@@ -294,16 +289,14 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
   const { boundary, cards, lifecycleRows, rows, selectionTrace, status, tone } = participantLedger;
 
   return (
-    <div className="card" id="participants">
-      <div className="ops-section-header">
-        <div>
-          <h2>Actual marketplace participant ledger</h2>
-          <p className="muted">
-            Booking participation evidence only; marketplace supply visibility is tracked separately.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${tone}`}>{status}</span>
-      </div>
+      }
+      description="Booking participation evidence only; marketplace supply visibility is tracked separately."
+      id="participants"
+      title="Actual marketplace participant ledger"
+    >
       <ParticipantBoundary boundary={boundary} />
       <SummaryCards cards={cards} />
       <ParticipantSelectionTrace rows={selectionTrace} />
@@ -313,7 +306,7 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
         One row per Partner with booking evidence, customer selection state, distance policy, and operator notes.
       </p>
       <ParticipantRows rows={rows} />
-    </div>
+    </AdminSection>
   );
 }
 
@@ -443,16 +436,13 @@ function CashFeeSettlementPathSection({
   cashFeeSettlementPath: CashSettlementPath;
 }) {
   return (
-    <div className="card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Cash fee settlement path</h2>
-          <p className="muted">
-            Cash settlement and wallet unblock evidence for this booking.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
-      </div>
+      }
+      description="Cash settlement and wallet unblock evidence for this booking."
+      title="Cash fee settlement path"
+    >
       <SummaryCards cards={cashFeeSettlementPath.cards} />
       <div className="booking-settlement-ledger admin-mt-12" aria-label="Cash fee settlement rows">
         {cashFeeSettlementPath.rows.map((row) => (
@@ -467,7 +457,7 @@ function CashFeeSettlementPathSection({
           </div>
         ))}
       </div>
-    </div>
+    </AdminSection>
   );
 }
 
