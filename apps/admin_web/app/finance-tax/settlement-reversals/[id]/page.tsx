@@ -285,7 +285,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
       <FinanceTablePanel
         description="The original monthly close is read-only. Finance should use this reversal record and its evidence links for correction review."
-        resultLabel={originalSettlement?.settlementStatus ?? 'Original snapshot'}
+        resultLabel={`Original tax ${originalSettlement?.taxStatus ?? '-'} lock`}
         resultTone={originalSettlement?.settlementStatus === 'POSTED' ? 'success' : 'info'}
         title="Original settlement lock"
       >
