@@ -175,7 +175,7 @@ export function ReferralCashoutQueuePage({
       <AdminSection
         actions={<span className="pill">{rows.length} shown</span>}
         bodyClassName="booking-monitor"
-        className="booking-monitor-filter-panel admin-mt-16"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
         description="Open only the parent detail when deeper attribution evidence is needed."
         title="Referral cashout queue"
       >
