@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Users } from 'lucide-react';
+import { PillClassBadge } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
   readonly blockingCount: number;
@@ -49,7 +50,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
       <div className="ops-task-grid admin-mt-14">
         {matrix.cards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <span className={`pill ${card.pillClass}`}>{card.status}</span>
+            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
             <h3>{card.title}</h3>
             <p>{card.detail}</p>
             <small>{card.operatorAction}</small>

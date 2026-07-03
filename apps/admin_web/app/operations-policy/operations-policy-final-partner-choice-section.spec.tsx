@@ -43,4 +43,55 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
     expect(rendered).toContain('Open Partner queue');
     expect(hrefsIn(section)).toContain('/partners');
   });
+
+  it('does not duplicate the base pill class for partner choice card badges', () => {
+    const section = OperationsPolicyFinalPartnerChoiceSection({
+      matrix: {
+        blockingCount: 1,
+        cards: [
+          {
+            className: 'ops-task-warning',
+            detail: 'Direct booking requires current owner review.',
+            operatorAction: 'Keep dispatch aligned before changing this value.',
+            pillClass: 'pill pill-warn',
+            status: 'Owner choice',
+            title: 'Direct booking window',
+          },
+        ],
+        impact: [],
+        summary: [],
+      },
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

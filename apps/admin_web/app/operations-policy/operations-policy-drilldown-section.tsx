@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
   readonly label: string;
@@ -57,7 +58,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
   return (
     <div className={`ops-task-card admin-min-h-0 ${list.className}`}>
       <div>
-        <span className={`pill ${list.pillClass}`}>{list.rows.length} item(s)</span>
+        <PillClassBadge pillClass={list.pillClass}>{list.rows.length} item(s)</PillClassBadge>
         <h3>{list.title}</h3>
         <p>{list.helper}</p>
       </div>
@@ -72,9 +73,9 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
               <p className="muted admin-my-6">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
-                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
+                  <PillClassBadge key={`${row.id}-${pill.label}`} pillClass={pill.className}>
                     {pill.label}
-                  </span>
+                  </PillClassBadge>
                 ))}
               </div>
               <small>{row.operatorAction}</small>
