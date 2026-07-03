@@ -1466,20 +1466,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminSection>
 
           <section className="detail-grid admin-mt-20">
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Booking attention cockpit</h2>
-                  <p className="muted">
-                    Dispatch exceptions for the selected dashboard date range that should be checked before
-                    they become customer complaints.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="button button-secondary" href="/bookings?view=attention">
                   <BellRing size={16} aria-hidden="true" />
                   Attention bookings
                 </Link>
-              </div>
+              }
+              description="Dispatch exceptions for the selected dashboard date range that should be checked before they become customer complaints."
+              id="dashboard-booking-attention-cockpit"
+              title="Booking attention cockpit"
+            >
               <div className="participant-list admin-mt-8">
                 <Link className="button button-secondary" href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
@@ -1537,21 +1534,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <small>Needs operator audit trail</small>
                 </div>
               </div>
-            </div>
+            </AdminSection>
 
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Service and payment mix</h2>
-                  <p className="muted">
-                    Which services and payment methods created operational load in the selected dashboard date
-                    range.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="text-link" href="/services">
                   Pricing setup
                 </Link>
-              </div>
+              }
+              description="Which services and payment methods created operational load in the selected dashboard date range."
+              id="dashboard-service-payment-mix"
+              title="Service and payment mix"
+            >
               <div className="detail-grid">
                 <div>
                   <h3>Top service demand</h3>
@@ -1595,7 +1589,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 </div>
               </div>
-            </div>
+            </AdminSection>
           </section>
 
           <section className="detail-grid admin-mt-20">

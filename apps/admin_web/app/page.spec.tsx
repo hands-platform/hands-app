@@ -363,5 +363,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-today-command-lanes-title">Today command lanes</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-booking-attention-cockpit"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-booking-attention-cockpit-title">Booking attention cockpit</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-service-payment-mix"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-service-payment-mix-title">Service and payment mix</h2>',
+    );
   });
 });
