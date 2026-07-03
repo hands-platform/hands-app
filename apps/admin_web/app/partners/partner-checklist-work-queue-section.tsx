@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -108,12 +109,9 @@ function partnerChecklistAvatarStatus(provider: AdminProvider) {
 
 function PartnerChecklistQueueEmptyState() {
   return (
-    <>
-      <strong>No partner work queue items</strong>
-      <p className="muted">
-        The current filter has no visible blockers. Keep monitoring dispatch demand and live booking
-        pressure.
-      </p>
-    </>
+    <AdminEmptyState
+      message="The current filter has no visible blockers. Keep monitoring dispatch demand and live booking pressure."
+      title="No partner work queue items"
+    />
   );
 }

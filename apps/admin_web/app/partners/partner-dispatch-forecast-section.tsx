@@ -1,5 +1,6 @@
 import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminActionCard, AdminCard, AdminSection } from '../../components/admin-surface';
 
@@ -119,8 +120,10 @@ export function PartnerDispatchForecastSection({
               <div className="setup-stage-item">
                 <span>EMPTY</span>
                 <div>
-                  <strong>No city data yet</strong>
-                  <p className="muted">Partner city data will appear here once profiles are filled.</p>
+                  <AdminEmptyState
+                    message="Partner city data will appear here once profiles are filled."
+                    title="No city data yet"
+                  />
                 </div>
                 <small>0</small>
               </div>

@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerChecklistLaneSection,
   type PartnerChecklistLaneSectionItem,
 } from './partner-checklist-lane-section';
 
 describe('PartnerChecklistLaneSection', () => {
+  it('uses the shared Vuexy empty-state atom for clear lane fallback', () => {
+    const source = readFileSync('app/partners/partner-checklist-lane-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No partners need immediate attention</strong>');
+  });
+
   it('renders ordered partner checklist items', () => {
     const section = PartnerChecklistLaneSection({
       blockedCount: 2,

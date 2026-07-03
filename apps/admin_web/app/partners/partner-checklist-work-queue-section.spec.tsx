@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerChecklistWorkQueueSection,
   type PartnerChecklistWorkQueueSectionQueue,
 } from './partner-checklist-work-queue-section';
 
 describe('PartnerChecklistWorkQueueSection', () => {
+  it('uses the shared Vuexy empty-state atom for empty work queues', () => {
+    const source = readFileSync('app/partners/partner-checklist-work-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No partner work queue items</strong>');
+  });
+
   it('renders partner checklist queue counters, row facts, and detail links', () => {
     const section = PartnerChecklistWorkQueueSection({
       partnerName: (provider) => provider.displayName,
@@ -26,7 +35,7 @@ describe('PartnerChecklistWorkQueueSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1#kyc']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-table service-trace',
         'vuexy-booking-table-footer vuexy-partner-table-footer',

@@ -10,7 +10,9 @@ describe('PartnerDispatchForecastSection', () => {
     const source = readFileSync('app/partners/partner-dispatch-forecast-section.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('className="card admin-card ops-task-note partner-dispatch-panel"');
+    expect(source).not.toContain('<strong>No city data yet</strong>');
   });
 
   it('renders dispatch totals, blockers, and city supply lanes', () => {

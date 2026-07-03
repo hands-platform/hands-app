@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 
 type PartnerChecklistLaneTone = 'blocked' | 'done' | 'pending';
@@ -51,8 +52,10 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
           <div className="setup-stage-item">
             <span>OK</span>
             <div>
-              <strong>No partners need immediate attention</strong>
-              <p className="muted">The current filtered list has no blocking partner operation items.</p>
+              <AdminEmptyState
+                message="The current filtered list has no blocking partner operation items."
+                title="No partners need immediate attention"
+              />
             </div>
             <small>Clear</small>
           </div>
