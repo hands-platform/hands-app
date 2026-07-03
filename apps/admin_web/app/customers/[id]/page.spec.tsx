@@ -46,6 +46,8 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-evidence"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-operations"');
     expect(markup).toContain('class="card admin-section" id="notifications"');
+    expect(markup).not.toContain('<button type="submit">Add address note</button>');
+    expect(markup).toContain('class="admin-form-control-button" type="submit">Add address note</button>');
   });
 });
 

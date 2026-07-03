@@ -1007,7 +1007,7 @@ function CustomerOperatorCommandAction({
       <input type="hidden" name="customerId" value={customerId} />
       <input type="hidden" name="preset" value={command.action.preset} />
       <input type="hidden" name="bookingId" value={command.action.bookingId ?? ''} />
-      <button type="submit">{command.action.label}</button>
+      <AdminFormControlButton type="submit">{command.action.label}</AdminFormControlButton>
     </form>
   );
 }

@@ -5,6 +5,7 @@ import { MoreVertical } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
+  AdminFormControlButton,
   AdminFormControlLink,
   AdminFormInput,
   AdminFormSearch,
@@ -147,9 +148,9 @@ export function ReferralCashoutQueuePage({
               { label: 'Paid', value: 'paid' },
             ]}
           />
-          <button className="button" type="submit">
+          <AdminFormControlButton className="button" type="submit">
             Apply filters
-          </button>
+          </AdminFormControlButton>
           <AdminFormControlLink className="button button-secondary" href="/referrals/cashouts">
             Reset
           </AdminFormControlLink>
