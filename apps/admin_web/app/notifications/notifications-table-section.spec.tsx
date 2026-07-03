@@ -42,7 +42,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Re-enable device');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'notification-table-shell',
+        'card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell',
         'admin-table-scroll',
         'admin-action-dropdown action-menu-dropdown',
         'admin-action-menu action-menu-panel',

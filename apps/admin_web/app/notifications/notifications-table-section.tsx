@@ -19,7 +19,7 @@ export function NotificationsTableSection({
   rows,
 }: NotificationsTableSectionProps) {
   return (
-    <div className="notification-table-shell">
+    <div className="card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell">
       <AdminTableScroll>
         <AdminDataTable
           emptyMessage={emptyMessage}
