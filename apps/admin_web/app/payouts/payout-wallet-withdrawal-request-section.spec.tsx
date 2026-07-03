@@ -1,5 +1,8 @@
 import { PayoutWalletWithdrawalRequestSection } from './payout-wallet-withdrawal-request-section';
 import type { AdminProviderWalletWithdrawalRequest } from '../../lib/admin-api';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(new URL('./payout-wallet-withdrawal-request-section.tsx', import.meta.url), 'utf8');
 
 describe('PayoutWalletWithdrawalRequestSection', () => {
   it('renders withdrawal requests with partner, bank, status, and finance actions', () => {
@@ -44,7 +47,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(hrefsIn(section)).toContain('/partners/provider-1?section=full#finance');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
         'admin-form-input',
@@ -249,6 +252,11 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
         'card admin-card payout-wallet-withdrawal-summary-card is-audit',
       ]),
     );
+  });
+
+  it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 });
 

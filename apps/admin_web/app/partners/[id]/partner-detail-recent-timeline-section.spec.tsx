@@ -1,4 +1,7 @@
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(new URL('./partner-detail-recent-timeline-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailRecentTimelineSection', () => {
   it('renders recent partner timeline records with links and formatted dates', () => {
@@ -32,7 +35,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#app-activity', '#booking-chat-records']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -61,6 +64,8 @@ describe('PartnerDetailRecentTimelineSection', () => {
       ]),
     );
     expect(rendered).toContain('Showing 0 entries');
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 
   it('normalizes internal provider wording in timeline titles and details', () => {

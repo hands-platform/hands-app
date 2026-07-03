@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { PayoutPartnerFinanceQueueRow } from './payout-partner-finance-queue-model';
 
@@ -60,10 +61,10 @@ export function PayoutPartnerFinanceQueueSection({
 
 function PayoutPartnerFinanceQueueEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No partner finance follow-up is visible in the current payout batch window.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="No partner finance follow-up is visible in the current payout batch window."
+    />
   );
 }
 

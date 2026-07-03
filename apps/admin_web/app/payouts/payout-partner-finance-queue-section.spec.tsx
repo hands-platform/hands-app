@@ -1,4 +1,7 @@
 import { PayoutPartnerFinanceQueueSection } from './payout-partner-finance-queue-section';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(new URL('./payout-partner-finance-queue-section.tsx', import.meta.url), 'utf8');
 
 describe('PayoutPartnerFinanceQueueSection', () => {
   it('renders partner finance queue rows with partner, amount, evidence, and links', () => {
@@ -29,11 +32,16 @@ describe('PayoutPartnerFinanceQueueSection', () => {
     expect(hrefsIn(section)).toContain('/partners/provider-1#bank');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );
+  });
+
+  it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 });
 

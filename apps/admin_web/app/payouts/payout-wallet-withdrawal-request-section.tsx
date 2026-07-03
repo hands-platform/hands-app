@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
@@ -335,10 +336,11 @@ function WithdrawalRequestActions({
 
 function PayoutWalletWithdrawalRequestEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No withdrawal requests found</strong>
-      <p className="muted">No partner wallet withdrawal request is visible in the current payout window.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="No partner wallet withdrawal request is visible in the current payout window."
+      title="No withdrawal requests found"
+    />
   );
 }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type {
   PartnerFinanceFollowUpRow,
@@ -65,10 +66,10 @@ export function PartnerDetailFinanceFollowUpSection({
 
 function PartnerFinanceFollowUpEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No bank correction, negative wallet, manual deposit, or withdrawal follow-up is active.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="No bank correction, negative wallet, manual deposit, or withdrawal follow-up is active."
+    />
   );
 }
 

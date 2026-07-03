@@ -1,4 +1,7 @@
 import { PartnerDetailFinanceFollowUpSection } from './partner-detail-finance-follow-up-section';
+import { readFileSync } from 'node:fs';
+
+const sectionSource = readFileSync(new URL('./partner-detail-finance-follow-up-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailFinanceFollowUpSection', () => {
   it('renders finance follow-up rows with Vuexy table styling', () => {
@@ -37,12 +40,17 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/cash-settlements', '#bank']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );
+  });
+
+  it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 });
 

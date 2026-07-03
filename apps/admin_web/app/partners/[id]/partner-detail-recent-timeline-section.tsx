@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -80,9 +81,10 @@ export function PartnerDetailRecentTimelineSection({
 
 function PartnerRecentTimelineEmptyState() {
   return (
-    <div className="empty-state">
-      <strong>No partner event matched this filter</strong>
-      <p className="muted">Clear the date filter or choose a wider period.</p>
-    </div>
+    <AdminEmptyState
+      framed
+      message="Clear the date filter or choose a wider period."
+      title="No partner event matched this filter"
+    />
   );
 }
