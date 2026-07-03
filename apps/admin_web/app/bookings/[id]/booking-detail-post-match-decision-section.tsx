@@ -50,7 +50,7 @@ export function BookingDetailPostMatchDecisionSection({
         ))}
       </div>
 
-      <div className="booking-outcome-decision-panel">
+      <div className="card admin-card booking-outcome-decision-panel">
         <div className="booking-outcome-decision-main">
           <div className="booking-outcome-decision-copy">
             <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>

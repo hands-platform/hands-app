@@ -192,7 +192,7 @@ function BookingOutcomePostMatchDecision({
   const decision = outcomeReview.postMatchDecision;
 
   return (
-    <div className="booking-outcome-decision-panel">
+    <div className="card admin-card booking-outcome-decision-panel">
       <div className="booking-outcome-decision-copy">
         <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
         <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
@@ -382,7 +382,7 @@ function BookingOperatorNotesSection({
       </div>
       <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
-        <div className="booking-action-note-panel">
+        <div className="card admin-card booking-action-note-panel">
           <div className="booking-action-note-field">
             <span className="booking-action-note-label">Operator note</span>
             <BookingOperatorNotesEditor />
@@ -417,7 +417,7 @@ function BookingCompletedCloseoutSection({
       {closeout.canSubmit ? (
         <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <div className="booking-action-note-panel">
+          <div className="card admin-card booking-action-note-panel">
             <div className="booking-action-note-field">
               <span className="booking-action-note-label">Closeout note</span>
               <AdminFormTextarea
