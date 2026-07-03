@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import {
   PartnerDetailApprovalChecklistSection,
   PartnerDetailRegistrationDossierSection,
 } from './partner-detail-review-readiness-section';
 
 describe('Partner detail review readiness sections', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-review-readiness-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No records found</strong>');
+  });
+
   it('renders the approval checklist as a Vuexy table', () => {
     const section = PartnerDetailApprovalChecklistSection({
       checklist: {
@@ -36,7 +44,7 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('Withdrawal details still need admin review.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -82,7 +90,7 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).not.toContain('Tax profile optional');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

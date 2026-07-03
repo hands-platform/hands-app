@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -462,10 +463,5 @@ function controlStatusPill(status: string) {
 }
 
 function ReportsControlsEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} />;
 }

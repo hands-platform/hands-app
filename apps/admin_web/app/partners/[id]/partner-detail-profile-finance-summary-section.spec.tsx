@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import {
   PartnerDetailAgreementsCard,
   PartnerDetailBasicProfileCard,
@@ -6,6 +7,16 @@ import {
 } from './partner-detail-profile-finance-summary-section';
 
 describe('partner detail profile and location sections', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync(
+      'app/partners/[id]/partner-detail-profile-finance-summary-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No profile evidence found</strong>');
+  });
+
   it('renders the basic profile as a compact evidence table', () => {
     const section = PartnerDetailBasicProfileCard({
       note: 'Partner prefers evening bookings.',
@@ -25,7 +36,7 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Partner prefers evening bookings.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -55,7 +66,7 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).not.toContain('21.02776, 105.83416');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -81,7 +92,7 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('ACCEPTED');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -111,7 +122,7 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('COMPLETED: gross 400,000 VND');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

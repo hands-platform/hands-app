@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -104,9 +105,9 @@ const servicePricingHeaders = ['Service', 'Pricing', 'Visibility', 'Issue'] as c
 
 function ServicePricingEmptyState() {
   return (
-    <>
-      <strong>No service pricing found</strong>
-      <p className="muted">No partner service prices are connected yet.</p>
-    </>
+    <AdminEmptyState
+      message="No partner service prices are connected yet."
+      title="No service pricing found"
+    />
   );
 }

@@ -1,6 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { PartnerDetailServicePricingSection } from './partner-detail-service-pricing-section';
 
 describe('PartnerDetailServicePricingSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No service pricing found</strong>');
+  });
+
   it('renders service price readiness in a Vuexy table', () => {
     const section = PartnerDetailServicePricingSection({
       readyCount: 1,
@@ -45,7 +53,7 @@ describe('PartnerDetailServicePricingSection', () => {
     expect(rendered).toContain('Missing payout rule.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

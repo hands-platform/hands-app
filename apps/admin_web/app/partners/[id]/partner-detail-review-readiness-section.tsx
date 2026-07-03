@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -132,10 +133,5 @@ const approvalChecklistHeaders = ['Gate', 'Status', 'Detail', 'Outcome'] as cons
 const registrationDossierHeaders = ['Dossier item', 'Status', 'Detail', 'Operator action', 'Outcome'] as const;
 
 function PartnerReviewReadinessEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} />;
 }

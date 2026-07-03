@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -257,10 +258,5 @@ function ProfileValue({ value }: { readonly value?: string | null }) {
 }
 
 function ProfileEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No profile evidence found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} title="No profile evidence found" />;
 }

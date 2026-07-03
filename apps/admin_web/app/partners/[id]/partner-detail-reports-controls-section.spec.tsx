@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { PartnerDetailReportsControlsSection } from './partner-detail-reports-controls-section';
 
 describe('PartnerDetailReportsControlsSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No records found</strong>');
+  });
+
   it('renders reports and account controls as Vuexy tables', () => {
     const section = PartnerDetailReportsControlsSection({
       accountControls: [
