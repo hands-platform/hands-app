@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminCard } from '../../components/admin-surface';
 import { NotificationTableRowItem, type NotificationTableRow } from './notification-table-row';
 import type { NotificationTablePagination } from './notification-page-model';
 
@@ -19,7 +20,7 @@ export function NotificationsTableSection({
   rows,
 }: NotificationsTableSectionProps) {
   return (
-    <div className="card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell">
+    <AdminCard className="admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell">
       <AdminTableScroll>
         <AdminDataTable
           emptyMessage={emptyMessage}
@@ -46,6 +47,6 @@ export function NotificationsTableSection({
           />
         </div>
       ) : null}
-    </div>
+    </AdminCard>
   );
 }

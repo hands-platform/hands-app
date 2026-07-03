@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { NotificationsTableSection, type NotificationTableRow } from './notifications-table-section';
 import {
   classNamesIn,
@@ -8,6 +10,13 @@ import {
 } from './notification-section-test-utils';
 
 describe('NotificationsTableSection', () => {
+  it('uses the shared Vuexy admin card surface for the table shell', () => {
+    const source = readFileSync('app/notifications/notifications-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell"');
+  });
+
   it('renders notification delivery evidence and action links', () => {
     const section = NotificationsTableSection({
       emptyMessage: 'No notifications loaded.',
@@ -42,7 +51,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Re-enable device');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell',
+        'card admin-card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell',
         'admin-table-scroll',
         'admin-action-dropdown action-menu-dropdown',
         'admin-action-menu action-menu-panel',

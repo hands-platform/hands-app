@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import type { ReactNode } from 'react';
 
 import type { AdminProvider } from '../../lib/admin-api';
 import { PartnerLegacyOperationsTableSection } from './partner-legacy-operations-table-section';
 
 describe('PartnerLegacyOperationsTableSection', () => {
+  it('uses the shared Vuexy admin card surface for the legacy table shell', () => {
+    const source = readFileSync('app/partners/partner-legacy-operations-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card"');
+  });
+
   it('renders the partner operations table with provided cell renderers', () => {
     const section = PartnerLegacyOperationsTableSection({
       emptyMessage: 'No visible partners',
@@ -33,7 +41,7 @@ describe('PartnerLegacyOperationsTableSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
+        'card admin-card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
         'admin-avatar-status-dot is-online',
         'admin-table-scroll',
         'table-link',
