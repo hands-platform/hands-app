@@ -36,7 +36,7 @@ export function AdminDataTable({
       </thead>
       <tbody>
         {children}
-        {rowCount === 0 ? (
+        {rowCount === 0 && emptyMessage !== null ? (
           <tr>
             <td colSpan={headers.length}>{emptyMessage}</td>
           </tr>

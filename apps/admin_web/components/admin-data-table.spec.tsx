@@ -37,6 +37,17 @@ describe('AdminDataTable', () => {
     });
   });
 
+  it('does not render an empty row when the caller provides no empty message', () => {
+    const table = AdminDataTable({
+      children: null,
+      emptyMessage: null,
+      headers: ['Role', 'Count'],
+      rowCount: 0,
+    });
+
+    expect(table.props.children[1].props.children[1]).toBeNull();
+  });
+
   it('renders a reusable scroll wrapper for wide admin tables', () => {
     const wrapper = AdminTableScroll({
       children: <table className="table" />,
