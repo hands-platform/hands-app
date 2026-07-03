@@ -42,6 +42,8 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/provider-wallet/withdrawal-requests/request-1')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payout-batches')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/referrals/rewards/reward-1/credit')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/company-bank-accounts/bank-account-1')).toBe('FINANCE_BANK_RECONCILIATION');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/referrals/policies/customer')).toBe('SYSTEM_POLICY');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partners/provider-1/approve')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-documents/document-1/approve')).toBe('PARTNERS_KYC');

@@ -221,7 +221,8 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/finance-tax/bank-reconciliation',
         label: 'Bank Reconciliation',
-        description: 'Company bank transactions and reconciliation status for manual finance closeout.',
+        description:
+          'Company bank transactions, active company bank accounts, and reconciliation status for manual finance closeout.',
       },
       {
         href: '/finance-tax/booking-settlement-audit',

@@ -198,7 +198,7 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'FINANCE_BANK_RECONCILIATION',
-    prefixes: ['/admin/bank-reconciliation'],
+    prefixes: ['/admin/bank-reconciliation', '/admin/company-bank-accounts'],
   },
   {
     category: 'FINANCE_PAYMENT_CLEARING',

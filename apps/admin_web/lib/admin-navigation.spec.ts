@@ -164,8 +164,12 @@ describe('admin navigation', () => {
     expect(financeSection?.links.map((link) => link.href)).not.toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');
+    expect(taxSection?.links.find((link) => link.href === '/finance-tax/bank-reconciliation')?.description).toContain(
+      'company bank accounts',
+    );
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/coupon-finance');
     expect(taxSection?.links.map((link) => link.href)).not.toContain('/finance-tax/finance-approvers');
+    expect(taxSection?.links.map((link) => link.href)).not.toContain('/finance-tax/company-bank-accounts');
     expect(adminNavSections.find((section) => section.label === 'Admin Control')?.links.map((link) => link.href)).toEqual([
       '/admin-operators',
       '/finance-tax/finance-approvers',
