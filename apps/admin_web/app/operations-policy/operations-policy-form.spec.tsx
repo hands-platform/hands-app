@@ -60,7 +60,9 @@ describe('OperationsPolicyForm', () => {
     expect(classNames).toContain('admin-form-control-button button button-primary admin-mt-12');
     expect(classNames).not.toContain('field');
     expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminEmptyState');
     expect(sectionSource).toContain('AdminLinkCard');
+    expect(sectionSource).not.toContain('<strong>No sampled record</strong>');
     expect(sectionSource).not.toContain('className="card admin-card insight-card"');
     expect(sectionSource).not.toContain('className="card admin-card insight-card" href=');
   });

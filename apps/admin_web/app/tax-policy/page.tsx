@@ -7,6 +7,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
@@ -458,8 +459,10 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div className="setup-stage-item">
             <span>EMPTY</span>
             <div>
-              <strong>No recent tax policy audit entries</strong>
-              <p className="muted">Create or update a policy/rule to populate this operator summary.</p>
+              <AdminEmptyState
+                message="Create or update a policy/rule to populate this operator summary."
+                title="No recent tax policy audit entries"
+              />
             </div>
             <small>-</small>
           </div>
@@ -511,8 +514,10 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div className="setup-stage-item">
             <span>EMPTY</span>
             <div>
-              <strong>No recent earning tax snapshots</strong>
-              <p className="muted">Completed earnings will appear here after the API returns recent rows.</p>
+              <AdminEmptyState
+                message="Completed earnings will appear here after the API returns recent rows."
+                title="No recent earning tax snapshots"
+              />
             </div>
             <small>30d</small>
           </div>

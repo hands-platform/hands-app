@@ -6,6 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -101,8 +102,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           ))}
           {relatedBookings.rows.length === 0 ? (
             <AdminCard className="insight-card">
-              <strong>No sampled record</strong>
-              <p className="muted">{relatedBookings.emptyText}</p>
+              <AdminEmptyState message={relatedBookings.emptyText} title="No sampled record" />
             </AdminCard>
           ) : null}
         </div>

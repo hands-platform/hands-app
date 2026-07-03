@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync('app/tax-policy/page.tsx', 'utf8');
 
 describe('TaxPolicyPage', () => {
   beforeEach(() => {
@@ -98,6 +100,12 @@ describe('TaxPolicyPage', () => {
     expect(markup).not.toContain('toolbar admin-mb-12');
     expect(markup).toContain('card admin-section admin-mt-16 tax-policy-audit-summary-card');
     expect(markup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
+  });
+
+  it('uses shared Vuexy empty-state atoms for tax evidence fallbacks', () => {
+    expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('<strong>No recent tax policy audit entries</strong>');
+    expect(pageSource).not.toContain('<strong>No recent earning tax snapshots</strong>');
   });
 });
 
