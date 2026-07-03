@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -318,11 +319,10 @@ export function BookingDispatchCandidateDecisionMatrixSection({
               <div className="setup-stage-item">
                 <span>NONE</span>
                 <div>
-                  <strong>No usable marketplace participant</strong>
-                  <p className="muted">
-                    Use the exclusion groups to decide whether to refresh location, widen policy, or contact
-                    Partners.
-                  </p>
+                  <AdminEmptyState
+                    message="Use the exclusion groups to decide whether to refresh location, widen policy, or contact Partners."
+                    title="No usable marketplace participant"
+                  />
                 </div>
                 <Link className="text-link" href="/partners?review=marketplace-ready">
                   Open marketplace queue

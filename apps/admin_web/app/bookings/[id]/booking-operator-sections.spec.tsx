@@ -1,8 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { BookingOperatorQueueSections, BookingOpsCommandCenter } from './booking-operator-sections';
 
 describe('BookingOperatorQueueSections', () => {
+  it('uses the shared Vuexy empty-state atom for missing payment actions', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No payment action available</strong>');
+  });
+
   it('renders command queue and action availability table with shared table styling', () => {
     const section = BookingOperatorQueueSections({
       bookingId: 'booking-1',
@@ -59,7 +68,7 @@ describe('BookingOperatorQueueSections', () => {
       expect.arrayContaining([
         'card admin-section admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
         'pill pill-success',
       ]),
     );

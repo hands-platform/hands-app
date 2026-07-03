@@ -17,7 +17,9 @@ describe('booking policy supply sections', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('className="card admin-card ops-task-note booking-supply-panel"');
+    expect(source).not.toContain('<strong>No usable marketplace participant</strong>');
   });
 
   it('renders marketplace Partner candidates with shared avatar person cells', () => {

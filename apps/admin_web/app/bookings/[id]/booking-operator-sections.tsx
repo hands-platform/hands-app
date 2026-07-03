@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
@@ -279,8 +280,10 @@ export function BookingOpsCommandCenter({
         ) : (
           <div className="action-button-card ops-task-blocked">
             <span className="pill pill-neutral">Locked</span>
-            <strong>No payment action available</strong>
-            <p className="muted">No payment record is linked to this booking yet.</p>
+            <AdminEmptyState
+              message="No payment record is linked to this booking yet."
+              title="No payment action available"
+            />
             <small>Payment buttons appear after a booking payment row exists.</small>
           </div>
         )}
