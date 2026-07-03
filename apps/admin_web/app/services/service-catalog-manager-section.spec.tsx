@@ -5,8 +5,37 @@ describe('ServiceCatalogManagerSection', () => {
     const section = ServiceCatalogManagerSection({
       dialogMode: 'new',
       editGroup: null,
-      groups: [],
-      totalGroupCount: 0,
+      groups: [
+        {
+          items: [
+            {
+              active: true,
+              basePrice: 300000,
+              displayOrder: 1,
+              durationMin: 60,
+              id: 'service-aroma-60',
+              name: 'Aroma Massage',
+              payoutRules: [
+                {
+                  active: true,
+                  currency: 'VND',
+                  customerPrice: 300000,
+                  id: 'payout-aroma-60',
+                  otherCostAmount: 0,
+                  providerPayoutAmount: 210000,
+                  serviceId: 'service-aroma-60',
+                  vatBps: 0,
+                },
+              ],
+              priceStep: 100000,
+              serviceGroupKey: 'aroma_massage',
+            },
+          ],
+          key: 'aroma_massage',
+          label: 'Aroma Massage',
+        },
+      ],
+      totalGroupCount: 1,
     });
 
     const classNames = classNamesIn(section);
@@ -16,6 +45,8 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).not.toContain('card admin-filter-panel service-catalog-manager-card');
     expect(classNames).toContain('admin-form-input');
     expect(classNames).toContain('admin-form-textarea');
+    expect(classNames).toContain('card admin-card service-menu-duration-panel');
+    expect(classNames).toContain('card admin-card service-menu-duration-panel is-empty');
     expect(classNames).toContain('admin-form-control-button button button-primary');
   });
 });

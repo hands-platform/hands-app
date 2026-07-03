@@ -137,7 +137,7 @@ function ServiceDurationPanel({
 }) {
   if (!service) {
     return (
-      <div className="service-menu-duration-panel is-empty">
+      <div className="card admin-card service-menu-duration-panel is-empty">
         <strong>{duration} min</strong>
         <span className="pill pill-neutral">Not set</span>
       </div>
@@ -147,7 +147,7 @@ function ServiceDurationPanel({
   const payoutRule = serviceBasePayoutRule(service);
 
   return (
-    <div className="service-menu-duration-panel">
+    <div className="card admin-card service-menu-duration-panel">
       <div>
         <strong>{duration} min</strong>
         <span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>
