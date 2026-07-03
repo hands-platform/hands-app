@@ -188,6 +188,7 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain(
       '<article className={`card admin-card usage-overview-command-card',
     );
+    expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-command-card is-');
     expect(markup).toContain('card admin-card finance-overview-principle-card');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');

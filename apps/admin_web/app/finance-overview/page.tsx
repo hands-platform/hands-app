@@ -236,9 +236,9 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
 
   if (kpi.href) {
     return (
-      <a className={`card admin-card usage-overview-command-card is-${kpi.tone}`} href={kpi.href}>
+      <AdminLinkCard className={`usage-overview-command-card is-${kpi.tone}`} href={kpi.href}>
         {body}
-      </a>
+      </AdminLinkCard>
     );
   }
 
