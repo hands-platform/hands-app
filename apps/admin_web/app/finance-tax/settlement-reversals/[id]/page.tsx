@@ -48,6 +48,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const bankClearing = bankClearingEvidence(reversalClearing, reversal.currency);
   const allocationDelta = reversalAllocationDelta(reversal);
   const payoutRefundEvidence = payoutRefundReceivableEvidence(reversal);
+  const nextCloseoutAction = reversalCloseoutLabel(reversal, allocationDelta, evidenceState.label);
   const originalMonthlyClosingHref = monthlyTaxClosingHref({
     page: 1,
     period: reversal.originalMonthlyPeriod,
@@ -113,7 +114,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             {
               detail: payoutRefundEvidence.treatment,
               label: 'Closeout action',
-              value: reversalCloseoutLabel(reversal, allocationDelta, evidenceState.label),
+              value: nextCloseoutAction,
             },
           ]}
         />
@@ -161,6 +162,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             }
           />
           <FinanceDetailInfoItem label="Evidence state" value={evidenceState.detail} />
+          <FinanceDetailInfoItem label="Next closeout action" value={nextCloseoutAction} />
           <FinanceDetailInfoItem
             label="Paid payout refund"
             value={payoutRefundEvidence.refundAfterPaidPayout ? 'Yes' : 'No'}

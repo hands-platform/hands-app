@@ -298,6 +298,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Reversal impact');
     expect(markup).toContain('Journal / clearing');
     expect(markup).toContain('Closeout action');
+    expect(markup).toContain('Next closeout action');
     expect(markup).toContain('Clearing open');
     expect(markup).toContain('Paid payout refund');
     expect(markup).toContain('Partner receivable treatment');
