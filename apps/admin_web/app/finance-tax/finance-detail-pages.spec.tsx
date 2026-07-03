@@ -316,6 +316,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('bank-match:refund:1');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Original tax PAID lock');
+    expect(markup).toContain('Correction method');
+    expect(markup).toContain('Reversal entry only');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-06');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-07');
     expect(markup).toContain('Original monthly close');

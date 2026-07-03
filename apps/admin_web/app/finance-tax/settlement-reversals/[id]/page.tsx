@@ -320,6 +320,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem label="Original tax status" value={originalSettlement?.taxStatus ?? '-'} />
           <FinanceDetailInfoItem label="Original booking status" value={originalSettlement?.booking?.status ?? '-'} />
+          <FinanceDetailInfoItem label="Correction method" value="Reversal entry only" />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
