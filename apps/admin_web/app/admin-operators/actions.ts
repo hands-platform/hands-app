@@ -13,7 +13,7 @@ import {
   ADMIN_OPERATOR_BASE_ROLE,
   isAdminOperatorPermissionCategory,
   isAdminOperatorRole,
-} from './admin-operator-permissions';
+} from '../../lib/admin-operator-permissions';
 
 export async function createAdminOperator(formData: FormData) {
   const email = readOptionalString(formData, 'email');

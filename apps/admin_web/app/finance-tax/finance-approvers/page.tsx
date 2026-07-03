@@ -6,6 +6,7 @@ import { AdminFormControlButton, AdminFormInput } from '../../../components/admi
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { formatDateTime } from '../../../lib/admin-format';
+import { ADMIN_OPERATOR_BASE_ROLE, FINANCE_APPROVER_ROLE } from '../../../lib/admin-operator-permissions';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinanceStageList } from '../finance-stage-list';
@@ -24,13 +25,10 @@ type FinanceApproversPageProps = {
   readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const FINANCE_APPROVER_ROLE = 'FINANCE_APPROVER';
-const ADMIN_ROLE = 'ADMIN';
-
 export default async function FinanceApproversPage({ searchParams }: FinanceApproversPageProps) {
   const params = searchParams ? await searchParams : {};
   const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
-  const adminUsers = users.filter((user) => user.roles.includes(ADMIN_ROLE));
+  const adminUsers = users.filter((user) => user.roles.includes(ADMIN_OPERATOR_BASE_ROLE));
   const approverCount = adminUsers.filter((user) => isFinanceApprover(user)).length;
   const nonApproverCount = Math.max(adminUsers.length - approverCount, 0);
   const settlementFilters = readBookingSettlementFilters(params);

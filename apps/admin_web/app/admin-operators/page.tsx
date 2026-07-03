@@ -17,7 +17,7 @@ import {
   adminOperatorAssignableRoleFields,
   adminOperatorPermissionCategoryDefinitions,
   expandLegacyAdminOperatorCategories,
-} from './admin-operator-permissions';
+} from '../../lib/admin-operator-permissions';
 
 type AdminOperatorsPageProps = {
   readonly searchParams?: Promise<{ readonly operatorNotice?: string }>;

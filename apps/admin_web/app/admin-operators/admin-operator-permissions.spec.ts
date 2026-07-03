@@ -4,7 +4,7 @@ import {
   expandLegacyAdminOperatorCategories,
   isAdminOperatorPermissionCategory,
   isAdminOperatorRole,
-} from './admin-operator-permissions';
+} from '../../lib/admin-operator-permissions';
 
 describe('admin operator permission catalog', () => {
   it('keeps fine-grained page category options in one shared catalog', () => {

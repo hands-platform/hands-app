@@ -1,4 +1,4 @@
-import type { AdminOperatorPermissionCategory } from '../../lib/admin-operator-access-model';
+import type { AdminOperatorPermissionCategory } from './admin-operator-access-model';
 
 export const ADMIN_OPERATOR_BASE_ROLE = 'ADMIN';
 export const FINANCE_APPROVER_ROLE = 'FINANCE_APPROVER';
