@@ -15,7 +15,7 @@ export function PayoutPartnerFinanceQueueSection({
 }: PayoutPartnerFinanceQueueSectionProps) {
   return (
     <AdminFilterPanel
-      className="payout-partner-finance-queue-section admin-mb-16"
+      className="payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Partner-facing payout readiness queue. This shows bank detail issues, payout holds, negative wallet evidence, and transfer reference gaps before finance marks a payout paid."
       id="payout-partner-finance-queue"
       resultLabel={rows.length ? `${rows.length} item(s)` : 'Clear'}

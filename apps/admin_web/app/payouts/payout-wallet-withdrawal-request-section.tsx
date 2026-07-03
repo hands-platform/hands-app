@@ -33,7 +33,7 @@ export function PayoutWalletWithdrawalRequestSection({
 
   return (
     <AdminFilterPanel
-      className="payout-wallet-withdrawal-request-section admin-mb-16"
+      className="payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Partner wallet withdrawal requests from the partner app. Finance can request bank correction, approve, reject, or mark paid after manual bank transfer."
       id="partner-wallet-withdrawal-requests"
       resultLabel={needsActionCount ? `${needsActionCount} needs action` : 'Clear'}
