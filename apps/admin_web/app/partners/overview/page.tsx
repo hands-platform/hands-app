@@ -25,6 +25,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -502,53 +503,48 @@ function SupplyAreaCard({
 }) {
   return (
     <AdminSection
-      bodyClassName="table-responsive"
       className="usage-overview-table-card"
       description={`Partner coverage and open demand by area · ${rangeLabel}`}
       title="Area supply health"
     >
-        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Partners</th>
-              <th>Online</th>
-              <th>Fresh location</th>
-              <th>Eligible</th>
-              <th>Open</th>
-              <th>Failed</th>
-              <th>Failure</th>
-              <th>Response</th>
-              <th>Status</th>
+      <AdminTableScroll className="usage-overview-table-wrap">
+        <AdminDataTable
+          className="usage-overview-table"
+          emptyMessage="No area supply rows for this range."
+          headers={[
+            'Area',
+            'Partners',
+            'Online',
+            'Fresh location',
+            'Eligible',
+            'Open',
+            'Failed',
+            'Failure',
+            'Response',
+            'Status',
+          ]}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.areaCode}>
+              <td>{row.area}</td>
+              <td>{formatNumber(row.totalPartners)}</td>
+              <td>{formatNumber(row.onlinePartners)}</td>
+              <td>{formatNumber(row.locationFreshPartners)}</td>
+              <td>{formatNumber(row.eligiblePartners)}</td>
+              <td>{formatNumber(row.openRequests)}</td>
+              <td>{formatNumber(row.failedRequests)}</td>
+              <td>{row.matchingFailureRate}%</td>
+              <td>
+                <span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>
+              </td>
+              <td>
+                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={row.areaCode}>
-                  <td>{row.area}</td>
-                  <td>{formatNumber(row.totalPartners)}</td>
-                  <td>{formatNumber(row.onlinePartners)}</td>
-                  <td>{formatNumber(row.locationFreshPartners)}</td>
-                  <td>{formatNumber(row.eligiblePartners)}</td>
-                  <td>{formatNumber(row.openRequests)}</td>
-                  <td>{formatNumber(row.failedRequests)}</td>
-                  <td>{row.matchingFailureRate}%</td>
-                  <td>
-                    <span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>
-                  </td>
-                  <td>
-                    <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={10}>No area supply rows for this range.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </AdminSection>
   );
 }
@@ -562,49 +558,34 @@ function SupplyServiceCard({
 }) {
   return (
     <AdminSection
-      bodyClassName="table-responsive"
       className="usage-overview-table-card"
       description={`Supply by service duration and open work · ${rangeLabel}`}
       title="Service supply health"
     >
-        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>Offering</th>
-              <th>Online</th>
-              <th>Eligible</th>
-              <th>Open</th>
-              <th>Done</th>
-              <th>Completion</th>
-              <th>Avg rating</th>
-              <th>Status</th>
+      <AdminTableScroll className="usage-overview-table-wrap">
+        <AdminDataTable
+          className="usage-overview-table"
+          emptyMessage="No service supply rows for this range."
+          headers={['Service', 'Offering', 'Online', 'Eligible', 'Open', 'Done', 'Completion', 'Avg rating', 'Status']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.serviceId}>
+              <td>{row.serviceName}</td>
+              <td>{formatNumber(row.partnersOffering)}</td>
+              <td>{formatNumber(row.onlinePartners)}</td>
+              <td>{formatNumber(row.eligiblePartners)}</td>
+              <td>{formatNumber(row.openRequests)}</td>
+              <td>{formatNumber(row.completedBookings)}</td>
+              <td>{row.completionRate}%</td>
+              <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
+              <td>
+                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={row.serviceId}>
-                  <td>{row.serviceName}</td>
-                  <td>{formatNumber(row.partnersOffering)}</td>
-                  <td>{formatNumber(row.onlinePartners)}</td>
-                  <td>{formatNumber(row.eligiblePartners)}</td>
-                  <td>{formatNumber(row.openRequests)}</td>
-                  <td>{formatNumber(row.completedBookings)}</td>
-                  <td>{row.completionRate}%</td>
-                  <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
-                  <td>
-                    <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={9}>No service supply rows for this range.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </AdminSection>
   );
 }
@@ -690,56 +671,45 @@ function PartnerRiskTable({
   readonly rows: readonly AdminPartnerOverviewRiskPartner[];
   readonly showWallet?: boolean;
 }) {
+  const headers = showWallet
+    ? ['Partner', 'Area', 'Rating', 'Done', 'Cancel', 'No-show', 'Wallet', 'Action']
+    : ['Partner', 'Area', 'Rating', 'Done', 'Cancel', 'No-show', 'Action'];
+
   return (
-    <div className="table-responsive">
-      <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
-        <thead>
-          <tr>
-            <th>Partner</th>
-            <th>Area</th>
-            <th>Rating</th>
-            <th>Done</th>
-            <th>Cancel</th>
-            <th>No-show</th>
-            {showWallet ? <th>Wallet</th> : null}
-            <th>Action</th>
+    <AdminTableScroll className="usage-overview-table-wrap">
+      <AdminDataTable
+        className="usage-overview-table"
+        emptyMessage="No risk rows in this range."
+        headers={headers}
+        rowCount={rows.length}
+      >
+        {rows.map((row) => (
+          <tr key={row.partnerId}>
+            <td>
+              <a href={row.href}>{row.partnerName}</a>
+              <small>
+                {formatPartnerStatus(row.status)} · {row.mainReason}
+              </small>
+            </td>
+            <td>{row.area}</td>
+            <td>{row.rating ? row.rating.toFixed(1) : '-'}</td>
+            <td>{formatNumber(row.completedBookings)}</td>
+            <td>{row.cancellationRate}%</td>
+            <td>{formatNumber(row.noShowReports)}</td>
+            {showWallet ? <td>{formatMoney(row.walletBalance)}</td> : null}
+            <td>
+              <a
+                aria-label={`${row.recommendedAction} for ${row.partnerName}`}
+                className="button button-secondary partner-overview-risk-action"
+                href={row.href}
+              >
+                {row.recommendedAction}
+              </a>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.length > 0 ? (
-            rows.map((row) => (
-              <tr key={row.partnerId}>
-                <td>
-                  <a href={row.href}>{row.partnerName}</a>
-                  <small>
-                    {formatPartnerStatus(row.status)} · {row.mainReason}
-                  </small>
-                </td>
-                <td>{row.area}</td>
-                <td>{row.rating ? row.rating.toFixed(1) : '-'}</td>
-                <td>{formatNumber(row.completedBookings)}</td>
-                <td>{row.cancellationRate}%</td>
-                <td>{formatNumber(row.noShowReports)}</td>
-                {showWallet ? <td>{formatMoney(row.walletBalance)}</td> : null}
-                <td>
-                  <a
-                    aria-label={`${row.recommendedAction} for ${row.partnerName}`}
-                    className="button button-secondary partner-overview-risk-action"
-                    href={row.href}
-                  >
-                    {row.recommendedAction}
-                  </a>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={showWallet ? 8 : 7}>No risk rows in this range.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </AdminDataTable>
+    </AdminTableScroll>
   );
 }
 
@@ -806,77 +776,71 @@ function SelectionFrictionCard({
           </AdminFormControlButton>
         </form>
       </div>
-      <div className="table-responsive">
-        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Area</th>
-              <th>Views</th>
-              <th>Favorites</th>
-              <th>Price</th>
-              <th>Response</th>
-              <th>Availability</th>
-              <th>Profile</th>
-              <th>Done</th>
-              <th>Selected</th>
-              <th>Rating</th>
-              <th>Reason</th>
-              <th>Action</th>
+      <AdminTableScroll className="usage-overview-table-wrap">
+        <AdminDataTable
+          className="usage-overview-table"
+          emptyMessage="No viewed or favorited Partners need selection follow-up in this range."
+          headers={[
+            'Partner',
+            'Area',
+            'Views',
+            'Favorites',
+            'Price',
+            'Response',
+            'Availability',
+            'Profile',
+            'Done',
+            'Selected',
+            'Rating',
+            'Reason',
+            'Action',
+          ]}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.partnerId}>
+              <td>
+                <a href={row.href}>{row.partnerName}</a>
+                <small>{formatPartnerStatus(row.status)}</small>
+              </td>
+              <td>{row.area}</td>
+              <td>
+                {formatNumber(row.profileViews)} views
+                <small>{formatNumber(row.profileViewCustomers)} customers</small>
+              </td>
+              <td>{formatNumber(row.favoriteCount)} favorites</td>
+              <td>{formatPriceRange(row.minServicePrice, row.maxServicePrice)}</td>
+              <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
+              <td>
+                {row.availabilityStatus}
+                <small>Next {formatDateTime(row.nextAvailableAt)}</small>
+              </td>
+              <td>
+                {row.hasProfileImage ? 'Profile image ready' : 'No profile image'}
+                <small>
+                  {formatNumber(row.galleryImageCount)} gallery · {formatNumber(row.activeServiceCount)} services
+                </small>
+              </td>
+              <td>{formatNumber(row.completedBookings)}</td>
+              <td>{row.selectionRate}% selected</td>
+              <td>{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : '-'}</td>
+              <td>
+                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>
+                <small>{row.readinessFlags.join(' · ')}</small>
+              </td>
+              <td>
+                <a
+                  aria-label={`${row.recommendedAction} for ${row.partnerName}`}
+                  className="button button-secondary partner-overview-risk-action"
+                  href={row.href}
+                >
+                  {row.recommendedAction}
+                </a>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={row.partnerId}>
-                  <td>
-                    <a href={row.href}>{row.partnerName}</a>
-                    <small>{formatPartnerStatus(row.status)}</small>
-                  </td>
-                  <td>{row.area}</td>
-                  <td>
-                    {formatNumber(row.profileViews)} views
-                    <small>{formatNumber(row.profileViewCustomers)} customers</small>
-                  </td>
-                  <td>{formatNumber(row.favoriteCount)} favorites</td>
-                  <td>{formatPriceRange(row.minServicePrice, row.maxServicePrice)}</td>
-                  <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
-                  <td>
-                    {row.availabilityStatus}
-                    <small>Next {formatDateTime(row.nextAvailableAt)}</small>
-                  </td>
-                  <td>
-                    {row.hasProfileImage ? 'Profile image ready' : 'No profile image'}
-                    <small>
-                      {formatNumber(row.galleryImageCount)} gallery · {formatNumber(row.activeServiceCount)} services
-                    </small>
-                  </td>
-                  <td>{formatNumber(row.completedBookings)}</td>
-                  <td>{row.selectionRate}% selected</td>
-                  <td>{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : '-'}</td>
-                  <td>
-                    <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>
-                    <small>{row.readinessFlags.join(' · ')}</small>
-                  </td>
-                  <td>
-                    <a
-                      aria-label={`${row.recommendedAction} for ${row.partnerName}`}
-                      className="button button-secondary partner-overview-risk-action"
-                      href={row.href}
-                    >
-                      {row.recommendedAction}
-                    </a>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={13}>No viewed or favorited Partners need selection follow-up in this range.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </AdminSection>
   );
 }

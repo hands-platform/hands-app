@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet, type AdminPartnerOverview } from '../../../lib/admin-api';
@@ -14,6 +15,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('PartnerOverviewPage', () => {
   beforeEach(() => {
@@ -56,8 +58,13 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
     expect(markup).toContain('admin-section-body partner-overview-action-grid');
     expect(markup).toContain('card admin-section usage-overview-table-card');
-    expect(markup).toContain('admin-section-body table-responsive');
+    expect(markup).toContain('admin-table-scroll usage-overview-table-wrap');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table');
+    expect(pageSource).toContain('AdminDataTable');
+    expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).not.toContain(
+      '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
+    );
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
     expect(markup).toContain('admin-section-body partner-overview-selection-body');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
