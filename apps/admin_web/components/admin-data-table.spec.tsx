@@ -32,8 +32,12 @@ describe('AdminDataTable', () => {
     expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-customer-table' });
     const emptyRow = table.props.children[1].props.children[1];
     expect(emptyRow.props.children.props).toMatchObject({
-      children: 'No feedback records loaded.',
+      className: 'admin-data-table-empty-cell',
       colSpan: 3,
+    });
+    expect(emptyRow.props.children.props.children.props).toMatchObject({
+      children: 'No feedback records loaded.',
+      className: 'admin-data-table-empty',
     });
   });
 

@@ -14355,6 +14355,22 @@ textarea:focus-visible {
   background: var(--admin-action-hover);
 }
 
+.table.vuexy-data-table td.admin-data-table-empty-cell {
+  color: var(--admin-muted);
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.admin-data-table-empty {
+  align-items: center;
+  border: 1px dashed var(--admin-border);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  min-height: 64px;
+  padding: 16px;
+}
+
 .sr-only {
   border: 0;
   clip: rect(0, 0, 0, 0);

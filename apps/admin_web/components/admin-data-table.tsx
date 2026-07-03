@@ -38,7 +38,9 @@ export function AdminDataTable({
         {children}
         {rowCount === 0 && emptyMessage !== null ? (
           <tr>
-            <td colSpan={headers.length}>{emptyMessage}</td>
+            <td className="admin-data-table-empty-cell" colSpan={headers.length}>
+              <div className="admin-data-table-empty">{emptyMessage}</div>
+            </td>
           </tr>
         ) : null}
       </tbody>
