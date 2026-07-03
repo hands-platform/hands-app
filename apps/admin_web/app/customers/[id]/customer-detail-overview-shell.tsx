@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminAvatar } from '../../../components/admin-person-cell';
+import { AdminCard } from '../../../components/admin-surface';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerDetailOverviewFact = {
@@ -65,7 +66,7 @@ export function CustomerDetailOverviewShell({
   usageSummary,
 }: CustomerDetailOverviewShellProps) {
   return (
-    <section className="card customer-detail-overview-card">
+    <AdminCard className="customer-detail-overview-card">
       <div className="customer-detail-overview-main">
         <div className="customer-detail-identity">
           <AdminAvatar
@@ -186,7 +187,7 @@ export function CustomerDetailOverviewShell({
           })}
         </div>
       ) : null}
-    </section>
+    </AdminCard>
   );
 }
 
