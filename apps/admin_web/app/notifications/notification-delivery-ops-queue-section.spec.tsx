@@ -25,12 +25,14 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'ops-section-header',
+        'card admin-section soft-card admin-mb-16',
+        'ops-section-header admin-section-header',
         'ops-task-card',
         'pill pill-warn',
         'admin-form-control-link pill pill-neutral',
       ]),
     );
+    expect(classNamesIn(section)).not.toContain('card soft-card admin-mb-16');
   });
 
   it('renders a clean state when no delivery blockers exist', () => {

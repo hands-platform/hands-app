@@ -49,8 +49,15 @@ describe('NotificationChannelPolicySection', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['ops-section-header', 'command-copy-row', 'ops-task-card', 'pill pill-warn']),
+      expect.arrayContaining([
+        'card admin-section soft-card admin-mb-16',
+        'ops-section-header admin-section-header',
+        'command-copy-row',
+        'ops-task-card',
+        'pill pill-warn',
+      ]),
     );
+    expect(classNamesIn(section)).not.toContain('card soft-card admin-mb-16');
   });
 
   it('uses a neutral FCM badge when no FCM push deliveries exist', () => {

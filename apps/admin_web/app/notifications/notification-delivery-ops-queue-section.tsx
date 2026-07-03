@@ -1,5 +1,5 @@
-import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSection } from '../../components/admin-surface';
 
 export type NotificationDeliveryOpsQueueItem = {
   readonly count: number;
@@ -16,16 +16,16 @@ type NotificationDeliveryOpsQueueSectionProps = {
 
 export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliveryOpsQueueSectionProps) {
   return (
-    <div className="card soft-card admin-mb-16">
-      <AdminSectionHeader
-        description="Fix current delivery blockers before retrying, so alert sends do not loop."
-        status={
+    <AdminSection
+      className="soft-card admin-mb-16"
+      description="Fix current delivery blockers before retrying, so alert sends do not loop."
+      status={
         <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
           {items.length ? `${items.length} issue(s)` : 'No delivery blockers'}
         </span>
-        }
-        title="Delivery operations queue"
-      />
+      }
+      title="Delivery operations queue"
+    >
       <div className="ops-task-grid">
         {items.length ? (
           items.map((item) => (
@@ -48,6 +48,6 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
           </div>
         )}
       </div>
-    </div>
+    </AdminSection>
   );
 }

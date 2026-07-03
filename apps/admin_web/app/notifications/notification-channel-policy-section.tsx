@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Settings2 } from 'lucide-react';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import type {
   NotificationFcmSmokeReadiness,
@@ -38,22 +38,22 @@ export function NotificationChannelPolicySection({
   const isCompact = density === 'compact';
 
   return (
-    <div className="card soft-card admin-mb-16">
-      <AdminSectionHeader
-        actions={
+    <AdminSection
+      actions={
         <Link className="button button-secondary" href="/operations-policy">
           <Settings2 aria-hidden="true" size={16} />
           Change alert policy
         </Link>
-        }
-        description={
-          <>
-            Current decision: <strong>{policyLabel}</strong>. Use this to confirm whether Partner booking
-            requests are intentionally in-app only or routed to FCM push.
-          </>
-        }
-        title="Partner alert routing policy"
-      />
+      }
+      className="soft-card admin-mb-16"
+      description={
+        <>
+          Current decision: <strong>{policyLabel}</strong>. Use this to confirm whether Partner booking
+          requests are intentionally in-app only or routed to FCM push.
+        </>
+      }
+      title="Partner alert routing policy"
+    >
       {isCompact ? (
         <div className="participant-list admin-mt-10">
           <span className="pill pill-info">Partner alerts {partnerAlertCount}</span>
@@ -206,6 +206,6 @@ export function NotificationChannelPolicySection({
         ) : null}
       </div>
       )}
-    </div>
+    </AdminSection>
   );
 }
