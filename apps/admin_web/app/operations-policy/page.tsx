@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Settings } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -133,21 +134,15 @@ export default async function OperationsPolicyPage({
       </section>
 
       {notice ? (
-        <section
-          className={`card admin-notice-card ${
+        <AdminSection
+          className={`admin-notice-card ${
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
           }`}
-        >
-          <div className="ops-section-header">
-            <div>
-              <h2>{notice.title}</h2>
-              <p className="muted">{notice.detail}</p>
-            </div>
-            <span className={`pill ${notice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
-              {notice.tone === 'success' ? 'Saved' : 'Blocked'}
-            </span>
-          </div>
-        </section>
+          description={notice.detail}
+          statusLabel={notice.tone === 'success' ? 'Saved' : 'Blocked'}
+          statusTone={notice.tone === 'success' ? 'success' : 'danger'}
+          title={notice.title}
+        />
       ) : null}
 
       <OperationsPolicyAuthorityBaselineSection />
@@ -172,24 +167,19 @@ export default async function OperationsPolicyPage({
         </>
       ) : null}
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Live matching policy</h2>
-            <p className="muted">
-              These settings are enforced by booking creation, marketplace partner discovery, and partner
-              participation eligibility. Existing open bookings keep their stored expiry time, while new
-              bookings use the latest policy.
-            </p>
-          </div>
-          <span className="pill pill-success">Admin editable</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="These settings are enforced by booking creation, marketplace partner discovery, and partner participation eligibility. Existing open bookings keep their stored expiry time, while new bookings use the latest policy."
+        statusLabel="Admin editable"
+        statusTone="success"
+        title="Live matching policy"
+      >
         <div className="grid">
           {matchingSettings.map((setting) => (
             <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
           {matchingSettings.length === 0 ? (
-            <div className="card admin-m-0">
+            <div className="ops-task-note admin-m-0">
               <h3>No matching policies loaded</h3>
               <p className="muted">
                 Seed operational policies from the API setup before editing live matching rules. Each policy
@@ -202,7 +192,7 @@ export default async function OperationsPolicyPage({
             </div>
           ) : null}
         </div>
-      </section>
+      </AdminSection>
 
       {shouldRenderFullDiagnostics ? (
         <>
@@ -220,40 +210,37 @@ export default async function OperationsPolicyPage({
           <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
         </>
       ) : (
-        <section className="card admin-mb-16">
-          <div className="ops-section-header">
-            <div>
-              <h2>Diagnostics loaded on demand</h2>
-              <p className="muted">
-                The default policy page keeps live editing and gate checks fast. Load full diagnostics only
-                when reviewing simulation, audit trail, drilldown, and owner decision pressure.
-              </p>
-            </div>
+        <AdminSection
+          actions={
             <Link className="button button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
               Load full diagnostics
             </Link>
-          </div>
-        </section>
+          }
+          className="admin-mb-16"
+          description="The default policy page keeps live editing and gate checks fast. Load full diagnostics only when reviewing simulation, audit trail, drilldown, and owner decision pressure."
+          title="Diagnostics loaded on demand"
+        />
       )}
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Operator decisions</h2>
-            <p className="muted">
-              These are the flow choices HANDS should decide before the mobile screens are redesigned. Saving
-              them creates an audit trail; items marked &quot;planning&quot; are not enforced until that flow
-              is built.
-            </p>
-          </div>
-          <span className="pill pill-warn">Needs owner choice</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description={
+          <>
+            These are the flow choices HANDS should decide before the mobile screens are redesigned. Saving
+            them creates an audit trail; items marked &quot;planning&quot; are not enforced until that flow
+            is built.
+          </>
+        }
+        statusLabel="Needs owner choice"
+        statusTone="warning"
+        title="Operator decisions"
+      >
         <div className="grid">
           {decisionSettings.map((setting) => (
             <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
         </div>
-      </section>
+      </AdminSection>
 
       {shouldRenderFullDiagnostics && ownerDecisionBacklog && ownerDecisionPressure ? (
         <>
