@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 
-import { MetricCard } from './metric-card';
+import { MetricCard, type MetricCardProps } from './metric-card';
 import { StatusBadge, type StatusBadgeTone } from './status-badge';
 
 type AdminCardProps = {
@@ -30,12 +30,7 @@ type AdminSectionProps = {
   readonly title: string;
 };
 
-type AdminKpiCardProps = {
-  readonly helper: string;
-  readonly href?: string;
-  readonly label: string;
-  readonly value: number | string;
-};
+type AdminKpiCardProps = MetricCardProps;
 
 type AdminActionCardProps = {
   readonly children?: ReactNode;

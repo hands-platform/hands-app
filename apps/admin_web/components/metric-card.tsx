@@ -1,12 +1,24 @@
 import Link from 'next/link';
 import { createElement } from 'react';
-import { Activity, BellRing, CheckCircle2, CircleDollarSign, ListChecks, ShieldCheck, UsersRound } from 'lucide-react';
+import {
+  Activity,
+  BellRing,
+  CheckCircle2,
+  CircleDollarSign,
+  ListChecks,
+  ShieldCheck,
+  UsersRound,
+  type LucideIcon,
+} from 'lucide-react';
 
-type MetricCardProps = {
+export type MetricCardProps = {
+  className?: string;
   label: string;
   value: number | string;
   helper: string;
   href?: string;
+  icon?: LucideIcon;
+  iconSize?: number;
 };
 
 function metricIcon(label: string) {
@@ -24,12 +36,12 @@ function metricIcon(label: string) {
   return Activity;
 }
 
-export function MetricCard({ label, value, helper, href }: MetricCardProps) {
-  const Icon = metricIcon(label);
+export function MetricCard({ className, label, value, helper, href, icon, iconSize = 20 }: MetricCardProps) {
+  const Icon = icon ?? metricIcon(label);
   const content = (
     <div className="metric-card">
       <span className="metric-card-icon" aria-hidden="true">
-        {createElement(Icon, { size: 20, strokeWidth: 2.2 })}
+        {createElement(Icon, { size: iconSize, strokeWidth: 2.2 })}
       </span>
       <div className="metric-card-content">
         <p>{label}</p>
@@ -41,11 +53,15 @@ export function MetricCard({ label, value, helper, href }: MetricCardProps) {
 
   if (href) {
     return (
-      <Link className="card admin-kpi-card" href={href}>
+      <Link className={joinClassNames('card admin-kpi-card', className)} href={href}>
         {content}
       </Link>
     );
   }
 
-  return <div className="card admin-kpi-card">{content}</div>;
+  return <div className={joinClassNames('card admin-kpi-card', className)}>{content}</div>;
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
 }

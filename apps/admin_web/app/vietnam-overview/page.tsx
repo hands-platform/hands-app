@@ -27,7 +27,7 @@ import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 
 export const dynamic = 'force-dynamic';
 
@@ -589,16 +589,15 @@ export default async function VietnamOverviewPage({
         title={activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
       >
         {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
-          <article key={label} className={`card admin-kpi-card metric-card vietnam-overview-metric is-${tone}`}>
-            <span className="metric-card-icon">
-              <Icon size={18} aria-hidden="true" />
-            </span>
-            <div className="metric-card-content">
-              <p>{label}</p>
-              <h2>{value}</h2>
-              <small>{detail}</small>
-            </div>
-          </article>
+          <AdminKpiCard
+            className={`vietnam-overview-metric is-${tone}`}
+            helper={detail}
+            icon={Icon}
+            iconSize={18}
+            key={label}
+            label={label}
+            value={value}
+          />
         ))}
       </AdminSection>
 
