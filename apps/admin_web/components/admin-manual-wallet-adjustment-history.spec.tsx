@@ -35,6 +35,9 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     );
 
     expect(markup).toContain('Recent manual wallet adjustments');
+    expect(markup).toContain(
+      'card admin-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-123');

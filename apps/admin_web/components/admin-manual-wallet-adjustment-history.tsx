@@ -23,7 +23,7 @@ type AdminManualWalletAdjustmentHistoryProps = {
 };
 
 export function AdminManualWalletAdjustmentHistory({
-  className = 'admin-mt-16',
+  className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
   rows,
   walletAdjustmentsHref,
 }: AdminManualWalletAdjustmentHistoryProps) {
