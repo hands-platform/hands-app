@@ -80,4 +80,15 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-table-card');
     expect(markup).toContain('admin-section-body empty-state');
   });
+
+  it('renders breakdown tables with shared Vuexy table atoms when requested', async () => {
+    const page = await MarketingAnalyticsPage({
+      searchParams: Promise.resolve({
+        breakdowns: '1',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table');
+  });
 });

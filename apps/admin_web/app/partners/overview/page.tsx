@@ -507,7 +507,7 @@ function SupplyAreaCard({
       description={`Partner coverage and open demand by area · ${rangeLabel}`}
       title="Area supply health"
     >
-        <table className="table usage-overview-table">
+        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
           <thead>
             <tr>
               <th>Area</th>
@@ -567,7 +567,7 @@ function SupplyServiceCard({
       description={`Supply by service duration and open work · ${rangeLabel}`}
       title="Service supply health"
     >
-        <table className="table usage-overview-table">
+        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
           <thead>
             <tr>
               <th>Service</th>
@@ -692,7 +692,7 @@ function PartnerRiskTable({
 }) {
   return (
     <div className="table-responsive">
-      <table className="table usage-overview-table">
+      <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
         <thead>
           <tr>
             <th>Partner</th>
@@ -807,7 +807,7 @@ function SelectionFrictionCard({
         </form>
       </div>
       <div className="table-responsive">
-        <table className="table usage-overview-table">
+        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table">
           <thead>
             <tr>
               <th>Partner</th>

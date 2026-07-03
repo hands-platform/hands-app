@@ -57,6 +57,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-action-grid');
     expect(markup).toContain('card admin-section usage-overview-table-card');
     expect(markup).toContain('admin-section-body table-responsive');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table');
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
     expect(markup).toContain('admin-section-body partner-overview-selection-body');
     expect(markup).toContain('aria-label="Remove Risk filter High"');

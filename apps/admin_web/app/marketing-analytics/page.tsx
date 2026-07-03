@@ -669,7 +669,7 @@ function MarketingTable({
       footerClassName="vuexy-booking-table-footer marketing-table-pagination-footer"
       title={title}
     >
-        <table className="table usage-overview-table marketing-analytics-table">
+        <table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">
           <thead>
             <tr>
               <th>{primaryColumn}</th>
