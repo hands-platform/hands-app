@@ -26,6 +26,7 @@ import {
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 
 export const dynamic = 'force-dynamic';
@@ -365,22 +366,18 @@ export default async function VietnamOverviewPage({
   ];
 
   return (
-    <div className="vietnam-overview-page">
-      <section className="toolbar">
-        <div>
-          <h1>Vietnam Overview</h1>
-          <p className="muted">
-            Realtime operating map for saved customer addresses, active customers, ready Partners,
-            offline Partners, 7-day inactive Partners, and active bookings across Vietnam.
-            Period metrics are summarized below without paid map lookup.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">Vietnam only</span>
           {activeRegion ? <span className="pill pill-primary">Focused: {activeRegion.regionName}</span> : null}
           <span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="vietnam-overview-page"
+      description="Realtime operating map for saved customer addresses, active customers, ready Partners, offline Partners, 7-day inactive Partners, and active bookings across Vietnam. Period metrics are summarized below without paid map lookup."
+      title="Vietnam Overview"
+    >
 
       <section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">
         <div className="vietnam-realtime-widget-grid">
@@ -762,7 +759,7 @@ export default async function VietnamOverviewPage({
           </AdminDataTable>
         </AdminTableScroll>
       </AdminSection>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

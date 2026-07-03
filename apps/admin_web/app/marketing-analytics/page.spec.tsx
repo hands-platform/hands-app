@@ -70,6 +70,7 @@ describe('MarketingAnalyticsPage', () => {
     const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('card admin-section usage-overview-filter-panel marketing-analytics-filter-panel');
     expect(markup).toContain('card admin-section marketing-spend-panel');
     expect(markup).toContain('card admin-kpi-card metric-card vietnam-overview-metric');

@@ -16,6 +16,7 @@ import {
 import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminSection } from '../../components/admin-surface';
 import {
@@ -260,21 +261,17 @@ export default async function MarketingAnalyticsPage({
   ];
 
   return (
-    <div className="marketing-analytics-page usage-overview-page">
-      <section className="toolbar">
-        <div>
-          <h1>Marketing Analytics</h1>
-          <p className="muted">
-            Acquisition funnel, source, campaign, and region analytics from stored HANDS app,
-            booking, referral, and finance records. This page is intentionally separate from
-            Vietnam Operations Map.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">No live ad API</span>
           <span className="pill pill-info">Generated {generatedAt}</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="marketing-analytics-page usage-overview-page"
+      description="Acquisition funnel, source, campaign, and region analytics from stored HANDS app, booking, referral, and finance records. This page is intentionally separate from Vietnam Operations Map."
+      title="Marketing Analytics"
+    >
 
       <AdminSection
         actions={<span className="pill pill-info">{overview.rangeLabel}</span>}
@@ -410,7 +407,7 @@ export default async function MarketingAnalyticsPage({
           <MarketingBreakdownLoader filters={filters} />
         )}
       </section>
-    </div>
+    </AdminPageTemplate>
   );
 }
 
