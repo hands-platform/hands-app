@@ -19,6 +19,7 @@ import {
   UserX,
   WalletCards,
 } from 'lucide-react';
+import { AdminSection } from '../../../components/admin-surface';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -202,20 +203,17 @@ export default async function PartnerOverviewPage({
         <SupplyServiceCard rows={overview.supplyHealth.services} rangeLabel={overview.rangeLabel} />
       </section>
 
-      <section className="card usage-overview-funnel-card" aria-labelledby="partner-funnel-title">
-        <div className="ops-section-header usage-overview-section-header">
-          <div>
-            <h2 id="partner-funnel-title">Partner readiness funnel</h2>
-            <p className="muted">From signup to approved supply, request activity, completed work, and payout readiness.</p>
-          </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
-        </div>
-        <div className="partner-overview-funnel-steps">
-          {overview.funnel.steps.map((step) => (
-            <PartnerFunnelStep key={step.key} step={step} />
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        bodyClassName="partner-overview-funnel-steps"
+        className="usage-overview-funnel-card"
+        description="From signup to approved supply, request activity, completed work, and payout readiness."
+        statusLabel={overview.rangeLabel}
+        title="Partner readiness funnel"
+      >
+        {overview.funnel.steps.map((step) => (
+          <PartnerFunnelStep key={step.key} step={step} />
+        ))}
+      </AdminSection>
 
       {overview.activityRetention.cards.length > 0 ? (
         <section className="usage-overview-segment-grid" aria-label="Partner activity and retention">
@@ -241,20 +239,18 @@ export default async function PartnerOverviewPage({
         rows={overview.selectionFriction.rows}
       />
 
-      <section className="card usage-overview-funnel-card" aria-labelledby="partner-action-title">
-        <div className="ops-section-header usage-overview-section-header">
-          <div>
-            <h2 id="partner-action-title">Risk and action queues</h2>
-            <p className="muted">Small, operator-first queues. Open full filtered lists from each section when needed.</p>
-          </div>
-          <span className="pill pill-warning">{overview.actionLists.length} queues</span>
-        </div>
-        <div className="partner-overview-action-grid">
-          {overview.actionLists.map((list) => (
-            <ActionListCard key={list.key} list={list} />
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        bodyClassName="partner-overview-action-grid"
+        className="usage-overview-funnel-card"
+        description="Small, operator-first queues. Open full filtered lists from each section when needed."
+        statusLabel={`${overview.actionLists.length} queues`}
+        statusTone="warning"
+        title="Risk and action queues"
+      >
+        {overview.actionLists.map((list) => (
+          <ActionListCard key={list.key} list={list} />
+        ))}
+      </AdminSection>
 
       {overview.segments.length > 0 ? (
         <section className="usage-overview-segment-grid" aria-label="Partner segments">
@@ -328,15 +324,13 @@ function PartnerKpiCard({
 
 function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartnerOverviewOperatingStatusCard[] }) {
   return (
-    <section className="card usage-overview-funnel-card partner-overview-operating-board" aria-labelledby="partner-operating-status-title">
-      <div className="ops-section-header usage-overview-section-header">
-        <div>
-          <h2 id="partner-operating-status-title">Partner operating status</h2>
-          <p className="muted">Separates ready supply from busy, soon-online, offline, and inactive Partners.</p>
-        </div>
-        <span className="pill pill-info">{cards.length} statuses</span>
-      </div>
-      <div className="partner-overview-operating-grid">
+    <AdminSection
+      bodyClassName="partner-overview-operating-grid"
+      className="usage-overview-funnel-card partner-overview-operating-board"
+      description="Separates ready supply from busy, soon-online, offline, and inactive Partners."
+      statusLabel={`${cards.length} statuses`}
+      title="Partner operating status"
+    >
         {cards.length > 0 ? (
           cards.map((card) => (
             <a
@@ -357,8 +351,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
         ) : (
           <p className="muted">No operating status data is available yet.</p>
         )}
-      </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -437,15 +430,13 @@ function PartnerPriorityBoard({
   ];
 
   return (
-    <section className="card usage-overview-funnel-card partner-overview-priority-board" aria-labelledby="partner-priority-title">
-      <div className="ops-section-header usage-overview-section-header">
-        <div>
-          <h2 id="partner-priority-title">Partner operations priority</h2>
-          <p className="muted">The shortest route from supply signal to the next operator action.</p>
-        </div>
-        <span className="pill pill-info">{cards.length} actions</span>
-      </div>
-      <div className="partner-overview-priority-grid">
+    <AdminSection
+      bodyClassName="partner-overview-priority-grid"
+      className="usage-overview-funnel-card partner-overview-priority-board"
+      description="The shortest route from supply signal to the next operator action."
+      statusLabel={`${cards.length} actions`}
+      title="Partner operations priority"
+    >
         {cards.map((card) => {
           const Icon = card.icon;
 
@@ -471,8 +462,7 @@ function PartnerPriorityBoard({
             </a>
           );
         })}
-      </div>
-    </section>
+    </AdminSection>
   );
 }
 

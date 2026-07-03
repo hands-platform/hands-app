@@ -39,6 +39,12 @@ describe('PartnerOverviewPage', () => {
       expect.any(Object),
     );
     expect(markup).toContain('Risk and action queues');
+    expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-operating-board');
+    expect(markup).toContain('admin-section-body partner-overview-operating-grid');
+    expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-priority-board');
+    expect(markup).toContain('admin-section-body partner-overview-priority-grid');
+    expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
+    expect(markup).toContain('admin-section-body partner-overview-action-grid');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
     expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
     expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');
