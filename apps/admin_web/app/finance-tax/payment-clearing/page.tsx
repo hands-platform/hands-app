@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
@@ -195,7 +196,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                   {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
                 </td>
                 <td>
-                  <span className={`pill ${statusPill(entry.status)}`}>{entry.status}</span>
+                  <PillClassBadge pillClass={statusPill(entry.status)}>{entry.status}</PillClassBadge>
                 </td>
                 <td>
                   <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>

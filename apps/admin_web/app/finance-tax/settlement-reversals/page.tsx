@@ -9,6 +9,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
@@ -230,7 +231,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   </td>
                   <td>
                     <div className="admin-table-substack">
-                      <span className={`pill ${evidencePill(evidenceState.tone)}`}>{evidenceState.label}</span>
+                      <PillClassBadge pillClass={evidencePill(evidenceState.tone)}>{evidenceState.label}</PillClassBadge>
                       <div className="muted">{evidenceState.detail}</div>
                       <Link className="text-link" href={bookingSettlementReversalDetailHref(reversal.id)}>
                         Open reversal <span className="muted">{shortId(reversal.id)}</span>
@@ -243,7 +244,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     </div>
                   </td>
                   <td>
-                    <span className={`pill ${statusPill(reversal.taxStatus)}`}>{reversal.taxStatus}</span>
+                    <PillClassBadge pillClass={statusPill(reversal.taxStatus)}>{reversal.taxStatus}</PillClassBadge>
                     <div className="muted admin-mt-8">{reversal.settlementStatus}</div>
                     <div className="muted">{reversal.reason ?? 'Payment refund'}</div>
                   </td>

@@ -1,4 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
@@ -332,5 +334,27 @@ describe('finance list pages', () => {
       expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
       expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
     }
+  });
+
+  it('uses shared badge atoms for payment clearing status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
+  });
+
+  it('uses shared badge atoms for bank reconciliation status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${statusPill(transaction.status)}`}');
+  });
+
+  it('uses shared badge atoms for settlement reversal status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${statusPill(reversal.taxStatus)}`}');
+    expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
   });
 });
