@@ -28,7 +28,7 @@ type EarningsMoneyFlowSectionProps = {
 export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMoneyFlowSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax, company net, and cash debt before payout."
       resultLabel={`${checks.length} check(s)`}
       resultTone={checks.length > 0 ? 'warning' : 'success'}

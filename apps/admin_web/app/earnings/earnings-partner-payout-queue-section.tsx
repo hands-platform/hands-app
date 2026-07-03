@@ -28,7 +28,7 @@ type EarningsPartnerPayoutQueueSectionProps = {
 export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPayoutQueueSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Grouped by Partner so finance can create one payout batch for all eligible unpaid earnings."
       resultLabel={`${groups.length} Partner(s)`}
       resultTone={groups.length > 0 ? 'info' : 'warning'}

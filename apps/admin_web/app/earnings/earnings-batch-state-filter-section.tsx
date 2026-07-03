@@ -26,7 +26,7 @@ export function EarningsBatchStateFilterSection({
 }: EarningsBatchStateFilterSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue stay based on the selected date range."
       resultLabel={`${ledgerCount} ledger row(s)`}
       resultTone={ledgerCount > 0 ? 'info' : 'warning'}

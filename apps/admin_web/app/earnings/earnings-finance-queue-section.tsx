@@ -19,7 +19,7 @@ type EarningsFinanceQueueSectionProps = {
 export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Operator summary for Partner payout readiness, batched earnings, tax logs, and stale pending revenue."
       resultLabel={`${signals.length} signal(s)`}
       resultTone={signals.length > 0 ? 'info' : 'warning'}

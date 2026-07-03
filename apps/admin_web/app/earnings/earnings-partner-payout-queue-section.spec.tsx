@@ -32,7 +32,7 @@ describe('EarningsPartnerPayoutQueueSection', () => {
     expect(classNamesIn(section)).toContain('admin-form-control-button btn btn-primary');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
       ]),
     );
     expect(hrefsIn(section)).toContain('/partners/partner-1');

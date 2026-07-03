@@ -51,7 +51,7 @@ describe('EarningsCashDebtQueueSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
       ]),
     );
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
