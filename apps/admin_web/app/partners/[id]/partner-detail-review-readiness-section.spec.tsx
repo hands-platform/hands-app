@@ -12,6 +12,13 @@ describe('Partner detail review readiness sections', () => {
     expect(source).not.toContain('<strong>No records found</strong>');
   });
 
+  it('uses shared Vuexy status badges for readiness status chips', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-review-readiness-section.tsx', 'utf8');
+
+    expect(source).toContain('<StatusBadge');
+    expect(source).not.toContain("<span className={`pill ${item.ok ? 'pill-success' : 'pill-warn'}`}>");
+  });
+
   it('renders the approval checklist as a Vuexy table', () => {
     const section = PartnerDetailApprovalChecklistSection({
       checklist: {

@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -63,9 +64,9 @@ export function PartnerDetailApprovalChecklistSection({
                 <strong>{item.label}</strong>
               </td>
               <td>
-                <span className={`pill ${item.ok ? 'pill-success' : 'pill-warn'}`}>
+                <StatusBadge tone={item.ok ? 'success' : 'warning'}>
                   {item.status}
-                </span>
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -107,9 +108,9 @@ export function PartnerDetailRegistrationDossierSection({
                 <strong>{item.label}</strong>
               </td>
               <td>
-                <span className={`pill ${item.ok ? 'pill-success' : 'pill-warn'}`}>
+                <StatusBadge tone={item.ok ? 'success' : 'warning'}>
                   {item.status}
-                </span>
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>

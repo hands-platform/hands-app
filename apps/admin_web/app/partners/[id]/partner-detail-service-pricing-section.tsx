@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -77,17 +78,17 @@ export function PartnerDetailServicePricingSection({
               <td>
                 <strong>{row.name}</strong>
                 <div className="participant-list admin-mt-6">
-                  <span className="pill pill-info">{row.durationLabel}</span>
-                  <span className="pill pill-info">{row.payoutRuleLabel}</span>
+                  <StatusBadge tone="info">{row.durationLabel}</StatusBadge>
+                  <StatusBadge tone="info">{row.payoutRuleLabel}</StatusBadge>
                 </div>
               </td>
               <td>
                 <strong>{row.priceLine}</strong>
               </td>
               <td>
-                <span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>
+                <StatusBadge tone={row.bookable ? 'success' : 'warning'}>
                   {row.bookable ? 'CUSTOMER VISIBLE' : 'HIDDEN'}
-                </span>
+                </StatusBadge>
               </td>
               <td>
                 <span className="muted">{marketplaceDisplayText(row.issue)}</span>

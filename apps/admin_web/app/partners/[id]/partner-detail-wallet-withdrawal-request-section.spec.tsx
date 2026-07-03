@@ -205,6 +205,15 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(sectionSource).toContain('AdminEmptyState');
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
+
+  it('uses shared Vuexy badges for withdrawal status and finance action chips', () => {
+    expect(sectionSource).toContain('PillClassBadge');
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('<span className={`pill ${statusPillClass(request.status)}`}>');
+    expect(sectionSource).not.toContain('<span className="pill pill-warn">Waiting for partner bank correction</span>');
+    expect(sectionSource).not.toContain('<span className="pill pill-warn">Finance review required before payout</span>');
+    expect(sectionSource).not.toContain('<span className="pill pill-info">Manual bank transfer pending</span>');
+  });
 });
 
 function textContent(value: unknown): string {

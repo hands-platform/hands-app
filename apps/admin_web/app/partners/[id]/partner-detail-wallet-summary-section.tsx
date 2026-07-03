@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { formatCurrency, formatDate, walletLedgerLabel } from './partner-detail-format';
 import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
 import {
@@ -103,15 +103,15 @@ export function PartnerDetailWalletSummarySection({
                   <div className="participant-list">
                     {row.type === 'PARTNER_BANK_DEPOSIT_RECEIVED' ? (
                       <>
-                        <span className="pill pill-success">
+                        <StatusBadge tone="success">
                           Cleared {formatCurrency(summary.appliedToNegativeWallet, summary.currency)}
-                        </span>
-                        <span className="pill pill-info">
+                        </StatusBadge>
+                        <StatusBadge tone="info">
                           Prepaid {formatCurrency(summary.recordedAsPrepaidBalance, summary.currency)}
-                        </span>
+                        </StatusBadge>
                       </>
                     ) : (
-                      <span className="pill pill-info">Cash-service wallet movement</span>
+                      <StatusBadge tone="info">Cash-service wallet movement</StatusBadge>
                     )}
                   </div>
                 </td>

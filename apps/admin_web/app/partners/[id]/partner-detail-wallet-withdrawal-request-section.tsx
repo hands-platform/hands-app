@@ -7,7 +7,7 @@ import {
   AdminFormInput,
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
-import type { StatusBadgeTone } from '../../../components/status-badge';
+import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
 import { formatCurrency, formatDate, shortRecordId } from './partner-detail-format';
@@ -64,9 +64,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <span className={`pill ${statusPillClass(request.status)}`}>
+                <PillClassBadge pillClass={statusPillClass(request.status)}>
                   {statusLabel(request.status)}
-                </span>
+                </PillClassBadge>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
@@ -107,7 +107,7 @@ function WithdrawalRequestActions({
   if (request.status === 'NEEDS_BANK_CORRECTION') {
     return (
       <div className="admin-inline-action-stack">
-        <span className="pill pill-warn">Waiting for partner bank correction</span>
+        <StatusBadge tone="warning">Waiting for partner bank correction</StatusBadge>
         <p className="muted">
           Partner must update bank details in the Partner app before finance can approve this withdrawal.
         </p>
@@ -118,7 +118,7 @@ function WithdrawalRequestActions({
     <div className="admin-inline-action-stack">
       {request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
         <>
-          <span className="pill pill-warn">Finance review required before payout</span>
+          <StatusBadge tone="warning">Finance review required before payout</StatusBadge>
           <p className="muted">Resolve the review flag before moving this request to a bank payout run.</p>
         </>
       ) : null}
@@ -158,7 +158,7 @@ function WithdrawalRequestActions({
       ) : null}
 
       {request.status === 'BANK_TRANSFER_PENDING' ? (
-        <span className="pill pill-info">Manual bank transfer pending</span>
+        <StatusBadge tone="info">Manual bank transfer pending</StatusBadge>
       ) : null}
 
       {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (

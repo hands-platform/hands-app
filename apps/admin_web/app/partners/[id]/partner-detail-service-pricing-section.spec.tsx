@@ -9,6 +9,15 @@ describe('PartnerDetailServicePricingSection', () => {
     expect(source).not.toContain('<strong>No service pricing found</strong>');
   });
 
+  it('uses shared Vuexy status badges for service duration, payout, and visibility chips', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
+
+    expect(source).toContain('<StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{row.durationLabel}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{row.payoutRuleLabel}</span>');
+    expect(source).not.toContain("<span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>");
+  });
+
   it('renders service price readiness in a Vuexy table', () => {
     const section = PartnerDetailServicePricingSection({
       readyCount: 1,

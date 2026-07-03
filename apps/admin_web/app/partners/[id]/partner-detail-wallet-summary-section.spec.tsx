@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { PartnerDetailWalletSummarySection } from './partner-detail-wallet-summary-section';
 
 describe('PartnerDetailWalletSummarySection', () => {
+  it('uses shared Vuexy status badges for wallet allocation chips', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
+
+    expect(source).toContain('<StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-success">');
+    expect(source).not.toContain('<span className="pill pill-info">');
+  });
+
   it('renders partner wallet cards and visible ledger rows as a Vuexy table', () => {
     const section = PartnerDetailWalletSummarySection({
       summary: {
@@ -50,7 +59,7 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(rendered).toContain('Cash service platform fee collected.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'service-trace-summary admin-mt-12 partner-wallet-summary-grid',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
