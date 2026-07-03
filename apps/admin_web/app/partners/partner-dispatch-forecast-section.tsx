@@ -71,7 +71,7 @@ export function PartnerDispatchForecastSection({
         ))}
       </div>
       <div className="grid admin-mt-12">
-        <div className="ops-task-note partner-dispatch-panel">
+        <div className="card admin-card ops-task-note partner-dispatch-panel">
           <h3>Dispatch blockers</h3>
           <div className="setup-stage-list admin-mt-12">
             {forecast.blockers.map((item) => (
@@ -89,7 +89,7 @@ export function PartnerDispatchForecastSection({
             ))}
           </div>
         </div>
-        <div className="ops-task-note partner-dispatch-panel">
+        <div className="card admin-card ops-task-note partner-dispatch-panel">
           <h3>City supply lanes</h3>
           <p className="muted">
             Use this to see which partner onboarding, location refresh, or push registration records need
