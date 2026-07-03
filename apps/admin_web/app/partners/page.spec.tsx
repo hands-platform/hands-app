@@ -91,5 +91,8 @@ describe('ProvidersPage', () => {
 
     expect(markup).toContain('Current filter summary');
     expect(markup).toContain('card admin-section admin-mb-16 partner-current-filter-summary-card');
+    expect(markup).toContain('partner-deep-summary-grid');
+    expect(markup).toContain('metric-card');
+    expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
   });
 });

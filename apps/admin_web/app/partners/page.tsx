@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -332,12 +332,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ))}
             </div>
           </AdminSection>
-          <div className="grid admin-mb-16">
+          <div className="grid admin-mb-16 partner-deep-summary-grid">
             {deepPartnerOps.summary.map(([label, value]) => (
-              <div className="card" key={label}>
-                <p>{label}</p>
-                <h2>{value}</h2>
-              </div>
+              <AdminKpiCard helper="Current filtered partner set" key={label} label={label} value={value} />
             ))}
           </div>
         </>
