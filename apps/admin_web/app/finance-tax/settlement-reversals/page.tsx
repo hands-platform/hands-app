@@ -12,6 +12,7 @@ import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
+import { financePersonName } from '../finance-participant-label';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { financeEvidenceTonePill, financeSettlementReversalTaxStatusPill } from '../finance-status-badge-model';
@@ -203,13 +204,13 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     <div className="muted">Snapshot {shortId(reversal.originalSettlementSnapshotId)}</div>
                   </td>
                   <td>
-                    <strong>{personName(reversal.originalSettlementSnapshot?.customerProfile?.user, 'Unknown customer')}</strong>
+                    <strong>{financePersonName(reversal.originalSettlementSnapshot?.customerProfile?.user, 'Unknown customer')}</strong>
                     <div className="muted">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? '-'}</div>
                   </td>
                   <td>
                     <Link className="text-link" href={`/partners/${reversal.providerProfileId}?section=full`}>
                       {reversal.originalSettlementSnapshot?.providerProfile?.displayName ??
-                        personName(reversal.originalSettlementSnapshot?.providerProfile?.user, 'Unknown partner')}
+                        financePersonName(reversal.originalSettlementSnapshot?.providerProfile?.user, 'Unknown partner')}
                     </Link>
                     <div className="muted">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? '-'}</div>
                   </td>
@@ -265,9 +266,6 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
   );
 }
 
-function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return user?.fullName ?? user?.phone ?? fallback;
-}
 
 function reversalReviewLabel(review: string) {
   return SETTLEMENT_REVERSAL_REVIEW_LINKS.find((item) => item.review === review)?.label ?? 'All';

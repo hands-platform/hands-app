@@ -6,6 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
+import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
@@ -152,14 +153,14 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem
             label="Customer"
-            value={personName(originalSettlement?.customerProfile?.user, 'Unknown customer')}
+            value={financePersonName(originalSettlement?.customerProfile?.user, 'Unknown customer')}
           />
           <FinanceDetailInfoItem
             label="Partner"
             value={
               <Link className="text-link" href={`/partners/${reversal.providerProfileId}?section=full`}>
                 {originalSettlement?.providerProfile?.displayName ??
-                  personName(originalSettlement?.providerProfile?.user, 'Unknown partner')}
+                  financePersonName(originalSettlement?.providerProfile?.user, 'Unknown partner')}
               </Link>
             }
           />
@@ -383,9 +384,6 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   );
 }
 
-function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return user?.fullName ?? user?.phone ?? fallback;
-}
 
 function reversalAllocationDelta(reversal: AdminBookingSettlementReversalEntry) {
   return (

@@ -5,6 +5,7 @@ import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { financeTaxCloseoutStatusTone } from '../../finance-status-badge-model';
@@ -100,14 +101,14 @@ export default async function BookingSettlementAuditDetailPage({
           />
           <FinanceDetailInfoItem
             label="Customer"
-            value={personName(snapshot.customerProfile?.user, 'Unknown customer')}
+            value={financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}
           />
           <FinanceDetailInfoItem
             label="Partner"
             value={
               <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
                 {snapshot.providerProfile?.displayName ??
-                  personName(snapshot.providerProfile?.user, 'Unknown partner')}
+                  financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
               </Link>
             }
           />
@@ -360,9 +361,6 @@ function settlementEvidenceStatus(snapshot: AdminBookingSettlementSnapshot): {
   return { label: 'Evidence retained', tone: 'success' };
 }
 
-function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return user?.fullName ?? user?.phone ?? fallback;
-}
 
 function settlementEvidenceCountLabel(snapshot: AdminBookingSettlementSnapshot) {
   const journalCount = snapshot.accountingJournalBatches?.length ?? 0;

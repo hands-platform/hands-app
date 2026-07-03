@@ -9,6 +9,7 @@ import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
+import { financePersonName } from '../finance-participant-label';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { financeJournalBatchStatusPill } from '../finance-status-badge-model';
@@ -191,17 +192,17 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
               <td>
                 {batch.customerProfileId ? (
                   <Link className="text-link" href={`/customers/${batch.customerProfileId}`}>
-                    {personName(batch.customerProfile?.user, 'Unknown customer')}
+                    {financePersonName(batch.customerProfile?.user, 'Unknown customer')}
                   </Link>
                 ) : (
-                  <strong>{personName(batch.customerProfile?.user, 'Unknown customer')}</strong>
+                  <strong>{financePersonName(batch.customerProfile?.user, 'Unknown customer')}</strong>
                 )}
                 <div className="muted">{batch.customerProfile?.user?.phone ?? '-'}</div>
               </td>
               <td>
                 {batch.providerProfileId ? (
                   <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
-                    {batch.providerProfile?.displayName ?? personName(batch.providerProfile?.user, 'Unknown partner')}
+                    {batch.providerProfile?.displayName ?? financePersonName(batch.providerProfile?.user, 'Unknown partner')}
                   </Link>
                 ) : (
                   <span className="muted">-</span>
@@ -240,8 +241,4 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
       </FinanceTablePanel>
     </AdminPageTemplate>
   );
-}
-
-function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return user?.fullName ?? user?.phone ?? fallback;
 }

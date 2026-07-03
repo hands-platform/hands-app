@@ -10,6 +10,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
+import { financePersonName } from '../finance-participant-label';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
@@ -192,13 +193,13 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     <div className="muted">Posted {formatDateTime(snapshot.postedAt)}</div>
                   </td>
                   <td>
-                    <strong>{personName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
+                    <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
                     <div className="muted">{snapshot.customerProfile?.user?.phone ?? '-'}</div>
                   </td>
                   <td>
                     <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
                       {snapshot.providerProfile?.displayName ??
-                        personName(snapshot.providerProfile?.user, 'Unknown partner')}
+                        financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
                     </Link>
                     <div className="muted">{snapshot.providerProfile?.user?.phone ?? '-'}</div>
                   </td>
@@ -258,9 +259,6 @@ function couponSettlementInfo(snapshot: AdminBookingSettlementSnapshot) {
   };
 }
 
-function personName(user: { fullName?: string | null; phone?: string | null } | null | undefined, fallback: string) {
-  return user?.fullName ?? user?.phone ?? fallback;
-}
 
 function jsonRecord(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
