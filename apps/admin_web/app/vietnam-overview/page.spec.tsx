@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { type AdminVietnamOverviewSummary, adminGet } from '../../lib/admin-api';
@@ -18,6 +19,7 @@ vi.mock('./vietnam-overview-live-map', () => ({
 }));
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('VietnamOverviewPage', () => {
   beforeEach(() => {
@@ -40,6 +42,10 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
     expect(markup).toContain('card admin-kpi-card metric-card vietnam-overview-metric');
     expect(markup).toContain('card admin-section vietnam-overview-region-card');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table vietnam-overview-table');
+    expect(pageSource).toContain('AdminDataTable');
+    expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');
   });
 
   it('renders a focused region summary with the shared Vuexy section surface', async () => {

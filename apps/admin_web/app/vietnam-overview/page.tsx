@@ -24,6 +24,7 @@ import {
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,19 @@ const emptyVietnamOverviewRealtimePointFeed: AdminVietnamOverviewRealtimePointFe
   windowEndAt: null,
   realtimePoints: [],
 };
+
+const VIETNAM_REGION_HEADERS = [
+  'Region',
+  'Load',
+  'Customers',
+  'Active',
+  'Partners',
+  'Ready',
+  'Bookings',
+  'Done',
+  'Cancel',
+  'Paid volume',
+] as const;
 
 export default async function VietnamOverviewPage({
   searchParams,
@@ -617,23 +631,19 @@ export default async function VietnamOverviewPage({
             </article>
           ))}
         </div>
-        <div className="admin-table-scroll vietnam-overview-table-wrap">
-          <table className="table vuexy-data-table vietnam-overview-table">
-            <thead>
-              <tr>
-                <th>Region</th>
-                <th>Load</th>
-                <th>Customers</th>
-                <th>Active</th>
-                <th>Partners</th>
-                <th>Ready</th>
-                <th>Bookings</th>
-                <th>Done</th>
-                <th>Cancel</th>
-                <th>Paid volume</th>
-              </tr>
-            </thead>
-            <tbody>
+        <AdminTableScroll className="vietnam-overview-table-wrap">
+          <AdminDataTable
+            className="vietnam-overview-table"
+            emptyMessage={
+              <div className="empty-state">
+                <ShieldCheck size={22} aria-hidden="true" />
+                <strong>No regional aggregates loaded</strong>
+                <p className="muted">Check API availability or seed stored address records.</p>
+              </div>
+            }
+            headers={VIETNAM_REGION_HEADERS}
+            rowCount={visibleRegions.length}
+          >
               {visibleRegions.map((region) => {
                 const operatingScore = vietnamRegionOperatingScore(region);
                 const loadLevel = vietnamRegionLoadLevel(operatingScore, maxRegionOperatingScore);
@@ -749,20 +759,8 @@ export default async function VietnamOverviewPage({
                   </tr>
                 );
               })}
-              {visibleRegions.length === 0 ? (
-                <tr>
-                  <td colSpan={10}>
-                    <div className="empty-state">
-                      <ShieldCheck size={22} aria-hidden="true" />
-                      <strong>No regional aggregates loaded</strong>
-                      <p className="muted">Check API availability or seed stored address records.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+          </AdminDataTable>
+        </AdminTableScroll>
       </AdminSection>
     </div>
   );

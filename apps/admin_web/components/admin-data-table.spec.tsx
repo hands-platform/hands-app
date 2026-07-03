@@ -71,9 +71,10 @@ describe('AdminDataTable', () => {
   it('renders a reusable scroll wrapper for wide admin tables', () => {
     const wrapper = AdminTableScroll({
       children: <table className="table" />,
+      className: 'vietnam-overview-table-wrap',
     });
 
     expect(wrapper.type).toBe('div');
-    expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll' });
+    expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll vietnam-overview-table-wrap' });
   });
 });

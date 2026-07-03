@@ -10,10 +10,11 @@ type AdminDataTableProps = {
 
 type AdminTableScrollProps = {
   readonly children: ReactNode;
+  readonly className?: string;
 };
 
-export function AdminTableScroll({ children }: AdminTableScrollProps) {
-  return <div className="admin-table-scroll">{children}</div>;
+export function AdminTableScroll({ children, className }: AdminTableScrollProps) {
+  return <div className={joinClassNames('admin-table-scroll', className)}>{children}</div>;
 }
 
 export function AdminDataTable({
