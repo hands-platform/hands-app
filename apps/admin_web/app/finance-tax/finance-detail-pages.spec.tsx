@@ -315,6 +315,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-06');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-07');
+    expect(markup).toContain('Original monthly close');
+    expect(markup).toContain('Reversal monthly close');
+    expect(markup).toContain('closing-1');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
     expect(markup).toContain('Balanced');

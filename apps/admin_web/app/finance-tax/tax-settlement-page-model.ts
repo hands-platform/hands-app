@@ -456,7 +456,11 @@ export function bookingSettlementReversalDetailHref(id: string) {
 export function buildBookingSettlementReversalTraceLinks(
   reversal: Pick<
     AdminBookingSettlementReversalEntry,
-    'accountingJournalBatches' | 'originalSettlementSnapshotId' | 'paymentClearingEntries'
+    | 'accountingJournalBatches'
+    | 'monthlyPeriod'
+    | 'originalMonthlyPeriod'
+    | 'originalSettlementSnapshotId'
+    | 'paymentClearingEntries'
   >,
 ): BookingSettlementReversalTraceLink[] {
   const journal = reversal.accountingJournalBatches?.[0] ?? null;
@@ -467,6 +471,24 @@ export function buildBookingSettlementReversalTraceLinks(
       href: bookingSettlementAuditDetailHref(reversal.originalSettlementSnapshotId),
       label: 'Original settlement',
       value: shortId(reversal.originalSettlementSnapshotId),
+    },
+    {
+      href: monthlyTaxClosingHref({
+        page: 1,
+        period: reversal.originalMonthlyPeriod,
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
+      label: 'Original monthly close',
+      value: reversal.originalMonthlyPeriod,
+    },
+    {
+      href: monthlyTaxClosingHref({
+        page: 1,
+        period: reversal.monthlyPeriod,
+        take: TAX_SETTLEMENT_DEFAULT_TAKE,
+      }),
+      label: 'Reversal monthly close',
+      value: reversal.monthlyPeriod,
     },
   ];
 

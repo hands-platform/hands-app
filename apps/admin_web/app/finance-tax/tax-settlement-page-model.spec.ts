@@ -256,6 +256,9 @@ describe('tax settlement page model', () => {
           status: 'POSTED',
         },
       ],
+      monthlyPeriod: '2026-07',
+      originalMonthlyClosingId: 'closing-1',
+      originalMonthlyPeriod: '2026-06',
       originalSettlementSnapshotId: 'settlement-1',
       paymentClearingEntries: [
         {
@@ -278,6 +281,16 @@ describe('tax settlement page model', () => {
         href: '/finance-tax/booking-settlement-audit/settlement-1',
         label: 'Original settlement',
         value: 'settleme',
+      },
+      {
+        href: '/finance-tax/monthly-tax-closing?period=2026-06',
+        label: 'Original monthly close',
+        value: '2026-06',
+      },
+      {
+        href: '/finance-tax/monthly-tax-closing?period=2026-07',
+        label: 'Reversal monthly close',
+        value: '2026-07',
       },
       {
         href: '/finance-tax/general-ledger/journal-batch-1',
