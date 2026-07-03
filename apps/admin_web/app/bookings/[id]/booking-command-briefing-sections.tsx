@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
@@ -92,16 +93,13 @@ export function BookingCommandDecisionStripSection({
   commandDecisionStrip,
 }: BookingCommandDecisionStripSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-command-decision-strip">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking command decision strip</h2>
-          <p className="muted">
-            Primary booking command and four-lane operator strip for address, matching, chat, and finance.
-          </p>
-        </div>
-        <span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}
+      className="admin-mb-16"
+      description="Primary booking command and four-lane operator strip for address, matching, chat, and finance."
+      id="booking-command-decision-strip"
+      title="Booking command decision strip"
+    >
       <div className="booking-command-primary">
         <strong>Primary booking command</strong>
         <p>{commandDecisionStrip.primaryAction}</p>
@@ -116,7 +114,7 @@ export function BookingCommandDecisionStripSection({
           </a>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -205,18 +203,15 @@ export function BookingDetailToolbar({
 
 export function BookingOperatorFirstReadSection({ rows }: BookingOperatorFirstReadSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-operator-first-read">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operator first read</h2>
-          <p className="muted">
-            The first facts an operator checks before opening the full booking evidence record.
-          </p>
-        </div>
-        <span className="pill pill-info">Above-fold summary</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">Above-fold summary</span>}
+      className="admin-mb-16"
+      description="The first facts an operator checks before opening the full booking evidence record."
+      id="booking-operator-first-read"
+      title="Booking operator first read"
+    >
       <SummaryLinkGrid rows={rows} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -240,20 +235,15 @@ export type BookingMetricGridSectionProps = {
 
 export function BookingOperationsQuickRailSection({ rows }: BookingOperationsQuickRailSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-operations-quick-rail">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operations quick rail</h2>
-          <p className="muted">
-            Fast jumps for one booking. This keeps operations centered on address evidence, marketplace
-            participants, customer choice, retained chat, payment, wallet, fee, tax, location, and staff
-            records.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} shortcuts</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{rows.length} shortcuts</span>}
+      className="admin-mb-16"
+      description="Fast jumps for one booking. This keeps operations centered on address evidence, marketplace participants, customer choice, retained chat, payment, wallet, fee, tax, location, and staff records."
+      id="booking-operations-quick-rail"
+      title="Booking operations quick rail"
+    >
       <SummaryLinkGrid rows={rows} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -265,16 +255,13 @@ export function BookingMatchingRuleSnapshotSection({
   matchingRuleSnapshot,
 }: BookingMatchingRuleSnapshotSectionProps) {
   return (
-    <section className="card admin-mb-16" id="matching-rule-snapshot">
-      <div className="ops-section-header">
-        <div>
-          <h2>Matching rule snapshot</h2>
-          <p className="muted">
-            Current matching rule state and the linked policy actions for this booking.
-          </p>
-        </div>
-        <span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>}
+      className="admin-mb-16"
+      description="Current matching rule state and the linked policy actions for this booking."
+      id="matching-rule-snapshot"
+      title="Matching rule snapshot"
+    >
       <p className="muted admin-mt-8">
         {matchingRuleSnapshot.summary}
       </p>
@@ -287,7 +274,7 @@ export function BookingMatchingRuleSnapshotSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -297,19 +284,18 @@ export type BookingMatchingRuleSnapshotSectionProps = {
 
 export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthorityContractSectionProps) {
   return (
-    <section className="card admin-mb-16" id="mvp-authority-contract">
-      <div className="ops-section-header">
-        <div>
-          <h2>MVP authority contract</h2>
-          <p className="muted">
-            Authority source check for the booking decisions shown on this page.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="button button-secondary admin-inline-action" href="/operations-policy">
           <ExternalLink aria-hidden="true" size={14} />
           Open policy controls
         </Link>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Authority source check for the booking decisions shown on this page."
+      id="mvp-authority-contract"
+      title="MVP authority contract"
+    >
       <AdminTableScroll>
         <AdminDataTable emptyMessage={null} headers={MVP_AUTHORITY_CONTRACT_HEADERS} rowCount={rows.length}>
           {rows.map((row) => (
@@ -333,7 +319,7 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -345,19 +331,18 @@ export function BookingRecentOperationsTimelineSection({
   operatingTimeline,
 }: BookingRecentOperationsTimelineSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-recent-operations-timeline">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking recent operations timeline</h2>
-          <p className="muted">
-            Latest factual booking steps before an operator decides the next action.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="button button-secondary admin-inline-action" href="#operating-timeline">
           <ExternalLink aria-hidden="true" size={14} />
           Open full operating timeline
         </Link>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Latest factual booking steps before an operator decides the next action."
+      id="booking-recent-operations-timeline"
+      title="Booking recent operations timeline"
+    >
       <div className="setup-stage-list admin-mt-12">
         {operatingTimeline.slice(0, 8).map((item) => (
           <div className="setup-stage-item" key={`recent-${item.id}`}>
@@ -370,7 +355,7 @@ export function BookingRecentOperationsTimelineSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -382,17 +367,13 @@ export function BookingPriorityBriefingSection({
   operatorPriorityBriefing,
 }: BookingPriorityBriefingSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-priority-briefing">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking priority briefing</h2>
-          <p className="muted">
-            First-screen operator summary for handoff, chat, location, payment, and closeout. This shows
-            factual state only, not customer or Partner judgment.
-          </p>
-        </div>
-        <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>}
+      className="admin-mb-16"
+      description="First-screen operator summary for handoff, chat, location, payment, and closeout. This shows factual state only, not customer or Partner judgment."
+      id="booking-priority-briefing"
+      title="Booking priority briefing"
+    >
       <SummaryMetricGrid rows={operatorPriorityBriefing.rows} />
       <div className="setup-stage-list admin-mt-12">
         {operatorPriorityBriefing.steps.map((step) => (
@@ -409,7 +390,7 @@ export function BookingPriorityBriefingSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
