@@ -31,7 +31,7 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     expect(rendered).toContain('4 key(s)');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

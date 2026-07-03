@@ -174,7 +174,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
         </div>
       </div>
       {callback.rawKeys.length ? (
-        <details className="admin-mt-8">
+        <details className="admin-disclosure admin-mt-8">
           <summary>Callback payload keys</summary>
           <p className="muted">{callback.rawKeys.join(', ')}</p>
         </details>

@@ -446,7 +446,7 @@ function PayloadDetails({ value }: { value: unknown }) {
   }
   const keys = Object.keys(record).sort();
   return (
-    <details>
+    <details className="admin-disclosure">
       <summary>{keys.length} key(s)</summary>
       <div className="setup-stage-list">
         {keys.slice(0, 12).map((key) => (

@@ -32,16 +32,16 @@ describe('PaymentDetailPage', () => {
 
     expect(markup).toContain('Payment operation detail');
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="booking-evidence"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section" id="booking-evidence"',
     );
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="money-ledger"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section" id="money-ledger"',
     );
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="chat-payment-evidence"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section" id="chat-payment-evidence"',
     );
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group" id="payment-audit-log"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section" id="payment-audit-log"',
     );
     expect(markup).toContain('class="table vuexy-data-table vuexy-booking-table"');
     expect(markup).not.toContain('class="card" id="booking-evidence"');
