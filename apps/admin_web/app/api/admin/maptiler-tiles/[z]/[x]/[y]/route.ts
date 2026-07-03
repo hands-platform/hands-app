@@ -4,8 +4,10 @@ import {
   isVietnamOverviewMapTilerTile,
   VIETNAM_MAPTILER_TILE_VIEW,
 } from '../../../../../../vietnam-overview/vietnam-overview-model';
+import { requireAdminWebAccess } from '../../../../../../../lib/admin-session';
 
 const tileCacheSeconds = 60 * 60 * 24;
+const noStoreHeaders = { 'cache-control': 'no-store' };
 
 type RouteContext = {
   params: Promise<{
@@ -17,7 +19,12 @@ type RouteContext = {
 
 export const runtime = 'nodejs';
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
+  const access = requireAdminWebAccess(request);
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.error }, { headers: noStoreHeaders, status: access.status });
+  }
+
   const params = await context.params;
   const z = parseTileCoordinate(params.z);
   const x = parseTileCoordinate(params.x);
