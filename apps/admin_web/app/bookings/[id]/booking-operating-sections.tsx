@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminSection } from '../../../components/admin-surface';
 import { formatDate } from './booking-formatters';
 
 type SummaryCard = {
@@ -123,18 +124,17 @@ export function BookingMarketplaceWalletEvidenceSection({
   marketplaceWalletEvidence,
 }: BookingMarketplaceWalletEvidenceSectionProps) {
   return (
-    <section className="card admin-mb-16" id="marketplace-wallet-evidence">
-      <div className="ops-section-header">
-        <div>
-          <h2>Marketplace participation and wallet evidence</h2>
-          <p className="muted">
-            Participant, customer choice, alert, and wallet evidence for this booking.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${marketplaceWalletEvidence.tone}`}>
           {marketplaceWalletEvidence.status}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Participant, customer choice, alert, and wallet evidence for this booking."
+      id="marketplace-wallet-evidence"
+      title="Marketplace participation and wallet evidence"
+    >
       <div className="service-trace-summary admin-mt-12">
         {marketplaceWalletEvidence.cards.map((card) => (
           <a href={card.href} key={card.label}>
@@ -169,7 +169,7 @@ export function BookingMarketplaceWalletEvidenceSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -181,17 +181,13 @@ export function BookingOperatingLedgerSection({
   operatingLedger,
 }: BookingOperatingLedgerSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-operating-ledger">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operating ledger</h2>
-          <p className="muted">
-            Compact operator ledger for the full booking record. Every row links to the deeper factual
-            section below.
-          </p>
-        </div>
-        <span className="pill pill-info">{operatingLedger.length} record areas</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{operatingLedger.length} record areas</span>}
+      className="admin-mb-16"
+      description="Compact operator ledger for the full booking record. Every row links to the deeper factual section below."
+      id="booking-operating-ledger"
+      title="Booking operating ledger"
+    >
       <AdminTableScroll>
         <AdminDataTable emptyMessage={null} headers={BOOKING_OPERATING_LEDGER_HEADERS} rowCount={operatingLedger.length}>
           {operatingLedger.map((row) => (
@@ -208,7 +204,7 @@ export function BookingOperatingLedgerSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -221,16 +217,13 @@ export function BookingCloseoutReadinessSection({
   closeoutReadiness,
 }: BookingCloseoutReadinessSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-closeout-readiness">
-      <div className="ops-section-header">
-        <div>
-          <h2>Closeout readiness</h2>
-          <p className="muted">
-            Factual completeness check for booking closeout.
-          </p>
-        </div>
-        <span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>}
+      className="admin-mb-16"
+      description="Factual completeness check for booking closeout."
+      id="booking-closeout-readiness"
+      title="Closeout readiness"
+    >
       <p className="muted admin-mt-8">
         {closeoutReadiness.helper}
       </p>
@@ -274,7 +267,7 @@ export function BookingCloseoutReadinessSection({
           </p>
         )}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -287,17 +280,13 @@ export function BookingOperatingSnapshotSection({
   operatingSnapshot,
 }: BookingOperatingSnapshotSectionProps) {
   return (
-    <section className="card admin-mb-16" id="operating-snapshot">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operating snapshot</h2>
-          <p className="muted">
-            Same-shift control view for the confirmed address, customer choice, Partner participation, chat,
-            payment, wallet, and next operator action.
-          </p>
-        </div>
-        <span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>}
+      className="admin-mb-16"
+      description="Same-shift control view for the confirmed address, customer choice, Partner participation, chat, payment, wallet, and next operator action."
+      id="operating-snapshot"
+      title="Booking operating snapshot"
+    >
       <div className="service-trace-summary admin-mt-12">
         {operatingSnapshot.facts.map((fact) => (
           <div key={fact.label}>
@@ -318,7 +307,7 @@ export function BookingOperatingSnapshotSection({
           </Link>
         </div>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -330,19 +319,15 @@ export function BookingOperatingTimelineSection({
   operatingTimeline,
 }: BookingOperatingTimelineSectionProps) {
   return (
-    <section className="card admin-mb-16" id="operating-timeline">
-      <div className="ops-section-header">
-        <div>
-          <h2>Operating timeline</h2>
-          <p className="muted">
-            Time-ordered operating trail for address confirmation, Partner participation, customer final choice,
-            chat, location, payment, wallet, tax, fee, and audit events.
-          </p>
-        </div>
-        <span className="pill pill-info">{operatingTimeline.length} step(s)</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{operatingTimeline.length} step(s)</span>}
+      className="admin-mb-16"
+      description="Time-ordered operating trail for address confirmation, Partner participation, customer final choice, chat, location, payment, wallet, tax, fee, and audit events."
+      id="operating-timeline"
+      title="Operating timeline"
+    >
       <BookingVuexyTimelineList items={operatingTimeline} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -435,17 +420,13 @@ export function BookingHandoffChecklistSection({
   handoffChecklist,
 }: BookingHandoffChecklistSectionProps) {
   return (
-    <section className="card admin-mb-16" id="booking-handoff-checklist">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking handoff checklist</h2>
-          <p className="muted">
-            One-row-per-stage view of the customer app, Partner app, admin archive, location, and finance
-            handoff. This is factual state tracking only.
-          </p>
-        </div>
-        <span className="pill pill-info">{handoffChecklist.length} stage(s)</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{handoffChecklist.length} stage(s)</span>}
+      className="admin-mb-16"
+      description="One-row-per-stage view of the customer app, Partner app, admin archive, location, and finance handoff. This is factual state tracking only."
+      id="booking-handoff-checklist"
+      title="Booking handoff checklist"
+    >
       <div className="setup-stage-list admin-mt-12">
         {handoffChecklist.map((item) => (
           <div className="setup-stage-item" key={item.id}>
@@ -464,7 +445,7 @@ export function BookingHandoffChecklistSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -476,19 +457,17 @@ export function BookingCommunicationMovementHandoffSection({
   communicationMovementHandoff,
 }: BookingCommunicationMovementHandoffSectionProps) {
   return (
-    <section className="card admin-mb-16" id="communication-movement-handoff">
-      <div className="ops-section-header">
-        <div>
-          <h2>Communication and movement handoff</h2>
-          <p className="muted">
-            Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This
-            helps support confirm whether the assigned Partner and customer are connected.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${communicationMovementHandoff.tone}`}>
           {communicationMovementHandoff.status}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This helps support confirm whether the assigned Partner and customer are connected."
+      id="communication-movement-handoff"
+      title="Communication and movement handoff"
+    >
       <div className="service-trace-summary admin-mt-12">
         {communicationMovementHandoff.metrics.map((item) => (
           <div key={item.label}>
@@ -526,7 +505,7 @@ export function BookingCommunicationMovementHandoffSection({
           No chat, alert, or Partner location event has been recorded yet.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -580,19 +559,15 @@ export function BookingChatLifecycleSection({
   const lifecycleItems = chatLifecycleTimelineItems(chatLifecycle, messageCount);
 
   return (
-    <section className="card admin-mb-16" id="structured-ops-status">
-      <div className="ops-section-header">
-        <div>
-          <h2>Chat lifecycle and retention</h2>
-          <p className="muted">
-            Chat is a required operational handoff after matching/service start. Mobile apps may hide it after
-            service closeout, but admin keeps the full archive for support and dispute review.
-          </p>
-        </div>
-        <span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>}
+      className="admin-mb-16"
+      description="Chat is a required operational handoff after matching/service start. Mobile apps may hide it after service closeout, but admin keeps the full archive for support and dispute review."
+      id="structured-ops-status"
+      title="Chat lifecycle and retention"
+    >
       <BookingVuexyTimelineList items={lifecycleItems} />
-    </section>
+    </AdminSection>
   );
 }
 

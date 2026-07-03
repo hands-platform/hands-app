@@ -5,8 +5,10 @@ import {
   BookingChatLifecycleSection,
   BookingCloseoutReadinessSection,
   BookingCommunicationMovementHandoffSection,
+  BookingHandoffChecklistSection,
   BookingMarketplaceWalletEvidenceSection,
   BookingOperatingLedgerSection,
+  BookingOperatingSnapshotSection,
   BookingOperatingTimelineSection,
 } from './booking-operating-sections';
 
@@ -56,6 +58,7 @@ describe('Booking operating sections', () => {
         'booking-settlement-ledger admin-mt-14',
         'booking-settlement-ledger admin-mt-12',
         'booking-settlement-ledger-row is-command',
+        'card admin-section admin-mb-16',
         'booking-settlement-ledger-row',
         'pill pill-success',
       ]),
@@ -83,7 +86,7 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('Service address snapshot retained.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#address']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+      expect.arrayContaining(['card admin-section admin-mb-16', 'admin-table-scroll', 'table vuexy-data-table', 'text-link']),
     );
   });
 
@@ -119,6 +122,7 @@ describe('Booking operating sections', () => {
     expect(classNames).toEqual(
       expect.arrayContaining([
         'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'card admin-section admin-mb-16',
         'vuexy-basic-timeline-dot is-success',
         'vuexy-basic-timeline-dot is-danger',
         'vuexy-basic-timeline-meta is-compact',
@@ -184,6 +188,7 @@ describe('Booking operating sections', () => {
     expect(classNames).toEqual(
       expect.arrayContaining([
         'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'card admin-section admin-mb-16',
         'vuexy-basic-timeline-dot is-success',
         'vuexy-basic-timeline-dot is-warning',
         'vuexy-basic-timeline-dot is-info',
@@ -221,6 +226,7 @@ describe('Booking operating sections', () => {
     expect(classNames).toEqual(
       expect.arrayContaining([
         'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'card admin-section admin-mb-16',
         'vuexy-basic-timeline-dot is-success',
       ]),
     );
@@ -273,6 +279,7 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('Clear before the next handoff.');
     expect(rendered).not.toContain('Customer and address linked');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#payment']));
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
   });
 
   it('renders a compact closeout success state when there are no exceptions', () => {
@@ -291,6 +298,42 @@ describe('Booking operating sections', () => {
 
     expect(rendered).toContain('No closeout exceptions for the current booking stage.');
     expect(rendered).toContain('No exceptions');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
+  });
+
+  it('renders operating snapshot and handoff checklist with shared Vuexy surfaces', () => {
+    const sections = [
+      BookingOperatingSnapshotSection({
+        operatingSnapshot: {
+          facts: [{ helper: 'Customer choice retained.', label: 'Choice', value: 'Recorded' }],
+          href: '#participants',
+          hrefLabel: 'Open participants',
+          nextAction: 'Monitor service handoff',
+          nextDetail: 'No blocking issue is active.',
+          noteClassName: 'ops-task-success',
+          status: 'Ready',
+          tone: 'pill-success',
+        },
+      }),
+      BookingHandoffChecklistSection({
+        handoffChecklist: [
+          {
+            detail: 'Customer app state is visible.',
+            href: '#customer',
+            id: 'customer-handoff',
+            label: 'Customer',
+            status: 'Open customer',
+            title: 'Customer handoff',
+          },
+        ],
+      }),
+    ];
+
+    const classNames = sections.flatMap(classNamesIn);
+
+    expect(normalizedText(sections)).toContain('Booking operating snapshot');
+    expect(normalizedText(sections)).toContain('Booking handoff checklist');
+    expect(classNames.filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(2);
   });
 });
 
