@@ -169,6 +169,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
     expect(markup).toContain('Top finance queues');
+    expect(markup).toContain('card admin-section usage-overview-filter-panel finance-overview-filter-panel');
+    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel finance-overview-filter-panel');
     expect(markup).toContain('card admin-section finance-overview-priority-board');
     expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('finance-overview-priority-card');

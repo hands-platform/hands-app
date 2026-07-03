@@ -83,16 +83,12 @@ export default async function FinanceOverviewPage({
         </div>
       </section>
 
-      <section className="card admin-filter-panel usage-overview-filter-panel finance-overview-filter-panel">
-        <div className="admin-filter-panel-header">
-          <div>
-            <h2>Finance range</h2>
-            <p className="muted">
-              This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists.
-            </p>
-          </div>
-          <span className="pill pill-info">Period {filters.period}</span>
-        </div>
+      <AdminSection
+        className="usage-overview-filter-panel finance-overview-filter-panel"
+        description="This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists."
+        statusLabel={`Period ${filters.period}`}
+        title="Finance range"
+      >
         <div className="booking-date-filter-buttons usage-overview-range-buttons">
           {financeOverviewRangeOptions.map((option) => (
             <a
@@ -111,7 +107,7 @@ export default async function FinanceOverviewPage({
           period={filters.period}
           periodLabel="Monthly tax period"
         />
-      </section>
+      </AdminSection>
 
       <AdminSection
         bodyClassName="finance-overview-priority-grid"
