@@ -624,7 +624,7 @@ function CustomerReferralParentTable({
 }) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Parent customer accounts only. The full customer directory stays in Customer Management."
       resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"
@@ -705,7 +705,7 @@ function PartnerReferralParentTable({
 }) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Parent Partner accounts only. The full Partner directory stays in Partners."
       resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"

@@ -198,6 +198,9 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
+    expect(markup).toContain(
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
     expect(markup).toContain('Actions');
     expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
     expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');

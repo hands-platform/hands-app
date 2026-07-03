@@ -194,7 +194,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       <ReferralRewardDecisionTimeline referrals={props.row.referrals} summary={reviewSummary} />
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         resultLabel={`${props.row.referrals.length} attribution(s)`}
         resultTone="info"
         title="Referral attributions"
@@ -239,7 +239,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         resultLabel={`${rewardRows.length} reward(s)`}
         resultTone="info"
         title="Reward ledger"
