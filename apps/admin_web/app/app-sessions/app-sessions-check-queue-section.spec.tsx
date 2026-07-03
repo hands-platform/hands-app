@@ -11,6 +11,11 @@ describe('AppSessionsCheckQueueSection', () => {
 
     const rendered = textContent(section);
 
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-mb-16',
+      title: 'Session check queue',
+    });
     expect(rendered).toContain('Session check queue');
     expect(rendered).toContain('Check old app versions, stale sessions');
     expect(rendered).toContain('2 review');

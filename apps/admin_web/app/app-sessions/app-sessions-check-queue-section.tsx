@@ -1,4 +1,4 @@
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 export type SessionCheckQueueItem = {
   readonly action: string;
@@ -15,16 +15,16 @@ type AppSessionsCheckQueueSectionProps = {
 
 export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Check old app versions, stale sessions, missing push readiness, and duplicate device usage."
-        status={
-          <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
-            {items.length ? `${items.length} review` : 'No session check'}
-          </span>
-        }
-        title="Session check queue"
-      />
+    <AdminSection
+      className="admin-mb-16"
+      description="Check old app versions, stale sessions, missing push readiness, and duplicate device usage."
+      status={
+        <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
+          {items.length ? `${items.length} review` : 'No session check'}
+        </span>
+      }
+      title="Session check queue"
+    >
       {items.length ? (
         <div className="ops-task-grid admin-mt-12">
           {items.slice(0, 12).map((item) => (
@@ -39,6 +39,6 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
       ) : (
         <p className="muted">No visible session issue in the latest heartbeat snapshot.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }

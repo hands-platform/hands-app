@@ -15,6 +15,12 @@ describe('AppSessionsScopeSection', () => {
 
     const rendered = textContent(section);
 
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'actions admin-mt-12 admin-justify-start',
+      className: 'admin-mb-16',
+      title: 'Session scope',
+    });
     expect(rendered).toContain('Session scope');
     expect(rendered).toContain('Filtered to partner sessions, live heartbeat. Showing 3 of 12 heartbeat record(s).');
     expect(rendered).toContain('Clear filters');

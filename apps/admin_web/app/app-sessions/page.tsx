@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Bell, LayoutDashboard } from 'lucide-react';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -116,14 +117,13 @@ export default async function AppSessionsPage({
 
       <AppSessionsCheckQueueSection items={checkRows} />
 
-      <section className="card">
-        <AdminSectionHeader
-          description="Sorted by last heartbeat. Live means the session expiry is still in the future."
-          status={<span className="pill pill-info">{sessions.length} loaded</span>}
-          title="Latest app sessions"
-        />
+      <AdminSection
+        description="Sorted by last heartbeat. Live means the session expiry is still in the future."
+        status={<span className="pill pill-info">{sessions.length} loaded</span>}
+        title="Latest app sessions"
+      >
         <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />
-      </section>
+      </AdminSection>
     </AdminPageTemplate>
   );
 }
