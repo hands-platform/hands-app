@@ -8,7 +8,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../components/admin-surface';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
@@ -140,17 +140,17 @@ function ServiceDurationPanel({
 }) {
   if (!service) {
     return (
-      <div className="card admin-card service-menu-duration-panel is-empty">
+      <AdminCard className="service-menu-duration-panel is-empty">
         <strong>{duration} min</strong>
         <span className="pill pill-neutral">Not set</span>
-      </div>
+      </AdminCard>
     );
   }
 
   const payoutRule = serviceBasePayoutRule(service);
 
   return (
-    <div className="card admin-card service-menu-duration-panel">
+    <AdminCard className="service-menu-duration-panel">
       <div>
         <strong>{duration} min</strong>
         <span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>
@@ -167,7 +167,7 @@ function ServiceDurationPanel({
           <dd>{formatMoney(payoutRule?.providerPayoutAmount)}</dd>
         </div>
       </dl>
-    </div>
+    </AdminCard>
   );
 }
 

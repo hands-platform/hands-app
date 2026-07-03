@@ -52,6 +52,8 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).toContain('card admin-card service-menu-duration-panel');
     expect(classNames).toContain('card admin-card service-menu-duration-panel is-empty');
     expect(classNames).toContain('admin-form-control-button button button-primary');
+    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).not.toContain('<div className="card admin-card service-menu-duration-panel');
   });
 
   it('uses the shared empty-state atom when no service menus are registered', () => {
