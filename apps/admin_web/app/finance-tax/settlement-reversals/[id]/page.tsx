@@ -53,6 +53,11 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
     period: reversal.originalMonthlyPeriod,
     take: TAX_SETTLEMENT_DEFAULT_TAKE,
   });
+  const reversalMonthlyClosingHref = monthlyTaxClosingHref({
+    page: 1,
+    period: reversal.monthlyPeriod,
+    take: TAX_SETTLEMENT_DEFAULT_TAKE,
+  });
 
   return (
     <AdminPageTemplate
@@ -293,7 +298,14 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
               </Link>
             }
           />
-          <FinanceDetailInfoItem label="Reversal period" value={reversal.monthlyPeriod} />
+          <FinanceDetailInfoItem
+            label="Reversal period"
+            value={
+              <Link className="text-link" href={reversalMonthlyClosingHref}>
+                {reversal.monthlyPeriod}
+              </Link>
+            }
+          />
           <FinanceDetailInfoItem
             label="Original closing"
             value={
