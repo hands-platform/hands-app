@@ -31,6 +31,7 @@ describe('BookingDetailChatTranscriptSection', () => {
     expect(rendered).toContain('Customer Nguyen');
     expect(rendered).toContain('Partner Linh');
     expect(markup).toContain('id="booking-chat-history"');
+    expect(markup).toContain('card admin-section admin-mb-16 booking-detail-chat-transcript');
     expect(markup).toContain('booking-chat-transcript-panel');
   });
 

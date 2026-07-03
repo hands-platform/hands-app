@@ -3,6 +3,7 @@ import {
   type AdminChatWindowMessage,
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
+import { AdminSection } from '../../../components/admin-surface';
 import type { AdminChatMessage } from '../../../lib/admin-api';
 import { formatDateTime } from '../../../lib/admin-format';
 
@@ -21,14 +22,13 @@ export function BookingDetailChatTranscriptSection({
   const chatMessages = messages.map(bookingDetailChatWindowMessage);
 
   return (
-    <section className="card admin-mb-16 booking-detail-chat-transcript" id="booking-chat-history">
-      <div className="ops-section-header">
-        <div>
-          <h3>Customer and Partner chat history</h3>
-          <p className="muted">Read-only retained booking chat transcript.</p>
-        </div>
-        <span className="pill pill-info">{countLabel(totalMessages, 'message')}</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{countLabel(totalMessages, 'message')}</span>}
+      className="admin-mb-16 booking-detail-chat-transcript"
+      description="Read-only retained booking chat transcript."
+      id="booking-chat-history"
+      title="Customer and Partner chat history"
+    >
       <AdminChatWindow
         avatarLabel="HANDS"
         emptyMessage="No retained chat yet."
@@ -48,7 +48,7 @@ export function BookingDetailChatTranscriptSection({
           )}
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
