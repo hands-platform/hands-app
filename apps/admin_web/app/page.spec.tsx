@@ -399,5 +399,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-regional-booking-demand-title">Regional booking demand</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-partner-supply-snapshot"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-partner-supply-snapshot-title">Partner supply snapshot</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section" id="dashboard-partner-readiness-funnel"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-partner-readiness-funnel-title">Partner readiness funnel</h2>',
+    );
   });
 });

@@ -1762,18 +1762,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </section>
 
           <section className="detail-grid admin-mt-20">
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Partner supply snapshot</h2>
-                  <p className="muted">
-                    Current operational capacity, app presence, location freshness, and finance blockers.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="text-link" href="/partners">
                   Open Partners
                 </Link>
-              </div>
+              }
+              description="Current operational capacity, app presence, location freshness, and finance blockers."
+              id="dashboard-partner-supply-snapshot"
+              title="Partner supply snapshot"
+            >
               <div className="service-trace-summary">
                 <div>
                   <span>Total Partners</span>
@@ -1816,21 +1814,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <small>Account-control blockers</small>
                 </div>
               </div>
-            </div>
+            </AdminSection>
 
-            <div className="card">
-              <div className="ops-section-header">
-                <div>
-                  <h2>Partner readiness funnel</h2>
-                  <p className="muted">
-                    Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile
-                    review.
-                  </p>
-                </div>
+            <AdminSection
+              actions={
                 <Link className="text-link" href="/partner-controls">
                   Review queue
                 </Link>
-              </div>
+              }
+              description="Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile review."
+              id="dashboard-partner-readiness-funnel"
+              title="Partner readiness funnel"
+            >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
                 <InfoRow
                   label="Approved verification"
@@ -1863,7 +1858,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail="Partners whose KYC and verification support matching participation."
                 />
               </AdminDataTable>
-            </div>
+            </AdminSection>
           </section>
 
           <AdminSection
