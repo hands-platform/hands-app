@@ -18,7 +18,7 @@ describe('BookingDetailDisclosureGroup', () => {
       </BookingDetailDisclosureGroup>,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('<details class="booking-detail-section-disclosure">');
+    expect(markup).toContain('<details class="admin-disclosure booking-detail-section-disclosure">');
     expect(markup).toContain(
       '<summary aria-label="Details: Evidence and records. Open only when an operator needs the full record. 2 groups: Evidence, Settlement."',
     );

@@ -57,7 +57,7 @@ export function PartnerDetailReferenceDetails({
   status,
 }: PartnerDetailReferenceDetailsProps) {
   return (
-    <details className="partner-detail-reference-details" open={defaultOpen ? true : undefined}>
+    <details className="admin-disclosure partner-detail-reference-details" open={defaultOpen ? true : undefined}>
       <summary>
         <span>
           <strong>{label}</strong>

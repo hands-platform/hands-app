@@ -47,7 +47,7 @@ describe('PartnerDetailSectionGroup', () => {
     expect(rendered).toContain('Reference ledger');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'partner-detail-reference-details',
+        'admin-disclosure partner-detail-reference-details',
         'partner-detail-reference-details-body',
       ]),
     );

@@ -25,7 +25,7 @@ export function BookingDetailDisclosureGroup({
     : '';
 
   return (
-    <details className="booking-detail-section-disclosure">
+    <details className="admin-disclosure booking-detail-section-disclosure">
       <summary
         aria-label={`${label}: ${title}. ${helper}${summaryLabel}`}
         className="booking-detail-section-summary"

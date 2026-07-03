@@ -37,7 +37,7 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
   const hiddenAttempts = Math.max(0, attempts - deliveryRows.length);
 
   return (
-    <details className="notification-delivery-disclosure">
+    <details className="admin-disclosure notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
         <span className={latest.statusClassName}>{latest.status}</span>{' '}
         <strong>{attempts} attempts</strong>{' '}

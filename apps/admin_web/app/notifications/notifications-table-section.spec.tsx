@@ -102,7 +102,7 @@ describe('NotificationsTableSection', () => {
     expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'notification-delivery-disclosure',
+        'admin-disclosure notification-delivery-disclosure',
         'notification-delivery-summary',
         'pill pill-success',
       ]),
