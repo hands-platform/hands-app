@@ -190,6 +190,7 @@ describe('bookingDetailLifecycleListRows', () => {
     );
 
     expect(rendered).toContain('Booking lifecycle timeline');
+    expect(rendered).toContain('card admin-section booking-detail-lifecycle-list admin-mb-16');
     expect(rendered).toContain('vuexy-basic-timeline');
     expect(rendered).toContain('Post-match cancellation needs admin review');
     expect(rendered).toContain('aria-label="Customer: Customer Nguyen"');

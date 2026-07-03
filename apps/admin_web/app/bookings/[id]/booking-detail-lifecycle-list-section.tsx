@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { AdminSection } from '../../../components/admin-surface';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
   isPostMatchCancellationReviewBooking,
@@ -42,16 +43,13 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
   }
 
   return (
-    <section className="card booking-detail-lifecycle-list admin-mb-16" id="booking-detail-lifecycle-list">
-      <div className="ops-section-header admin-mt-16">
-        <div>
-          <h2>Booking lifecycle timeline</h2>
-          <p className="muted">
-            Compact stage history for this reservation without repeating full booking-list tables.
-          </p>
-        </div>
-        <span className="pill pill-info">{timelineItems.length} stage(s)</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{timelineItems.length} stage(s)</span>}
+      className="booking-detail-lifecycle-list admin-mb-16"
+      description="Compact stage history for this reservation without repeating full booking-list tables."
+      id="booking-detail-lifecycle-list"
+      title="Booking lifecycle timeline"
+    >
 
       <div className="vuexy-basic-timeline admin-mt-16">
         {timelineItems.map((item, index) => (
@@ -86,7 +84,7 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
           </article>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
