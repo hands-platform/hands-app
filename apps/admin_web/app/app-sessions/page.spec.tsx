@@ -77,5 +77,6 @@ describe('AppSessionsPage', () => {
     expect(markup).toContain('>7<');
     expect(markup).toContain('>4<');
     expect(markup).toContain('>2<');
+    expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
   });
 });

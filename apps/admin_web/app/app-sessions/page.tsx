@@ -118,6 +118,7 @@ export default async function AppSessionsPage({
       <AppSessionsCheckQueueSection items={checkRows} />
 
       <AdminSection
+        className="vuexy-booking-table-card vuexy-booking-table-group"
         description="Sorted by last heartbeat. Live means the session expiry is still in the future."
         status={<span className="pill pill-info">{sessions.length} loaded</span>}
         title="Latest app sessions"
