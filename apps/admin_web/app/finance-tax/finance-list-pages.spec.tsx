@@ -350,6 +350,13 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${statusPill(transaction.status)}`}');
   });
 
+  it('uses shared badge atoms for general ledger status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${statusPill(batch.status)}`}');
+  });
+
   it('uses shared badge atoms for settlement reversal status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
