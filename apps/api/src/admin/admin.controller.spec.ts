@@ -34,6 +34,10 @@ describe('AdminController notification and push actions', () => {
     listAuditLogs: vi.fn(),
     auditLogSummary: vi.fn(),
     listUsers: vi.fn(),
+    listAdminCalendarEvents: vi.fn(),
+    createAdminCalendarEvent: vi.fn(),
+    updateAdminCalendarEvent: vi.fn(),
+    deleteAdminCalendarEvent: vi.fn(),
     createAdminOperator: vi.fn(),
     getAdminOperatorAccess: vi.fn(),
     recordAdminOperatorActivity: vi.fn(),
@@ -189,6 +193,65 @@ describe('AdminController notification and push actions', () => {
       skip: '40',
       take: '25',
       to: '2026-06-28T00:00:00.000Z',
+    });
+  });
+
+  it('exposes operations calendar events with bounded list and author-aware mutations', async () => {
+    admin.listAdminCalendarEvents.mockResolvedValue([{ id: 'calendar-1' }]);
+    admin.createAdminCalendarEvent.mockResolvedValue({ id: 'calendar-2' });
+    admin.updateAdminCalendarEvent.mockResolvedValue({ id: 'calendar-1' });
+    admin.deleteAdminCalendarEvent.mockResolvedValue({ ok: true, id: 'calendar-1' });
+
+    await expect(
+      controller.calendarEvents(
+        '2026-07-01T00:00:00.000Z',
+        '2026-07-31T23:59:59.999Z',
+        '50',
+      ),
+    ).resolves.toEqual([{ id: 'calendar-1' }]);
+    await expect(
+      controller.createCalendarEvent(user, {
+        end: '2026-07-01T10:00:00.000Z',
+        start: '2026-07-01T09:00:00.000Z',
+        title: 'Ops watch',
+      }),
+    ).resolves.toEqual({ id: 'calendar-2' });
+    await expect(controller.updateCalendarEvent(user, 'calendar-1', { title: 'Updated' })).resolves.toEqual({
+      id: 'calendar-1',
+    });
+    await expect(
+      controller.deleteCalendarEvent(user, 'calendar-1', { operatorIdentity: 'ops@hands.vn' }),
+    ).resolves.toEqual({ ok: true, id: 'calendar-1' });
+
+    expect(routeMetadata('calendarEvents')).toEqual({
+      method: RequestMethod.GET,
+      path: 'calendar-events',
+    });
+    expect(routeMetadata('createCalendarEvent')).toEqual({
+      method: RequestMethod.POST,
+      path: 'calendar-events',
+    });
+    expect(routeMetadata('updateCalendarEvent')).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'calendar-events/:id',
+    });
+    expect(routeMetadata('deleteCalendarEvent')).toEqual({
+      method: RequestMethod.DELETE,
+      path: 'calendar-events/:id',
+    });
+    expect(admin.listAdminCalendarEvents).toHaveBeenCalledWith({
+      from: '2026-07-01T00:00:00.000Z',
+      take: '50',
+      to: '2026-07-31T23:59:59.999Z',
+    });
+    expect(admin.createAdminCalendarEvent).toHaveBeenCalledWith('admin-1', {
+      end: '2026-07-01T10:00:00.000Z',
+      start: '2026-07-01T09:00:00.000Z',
+      title: 'Ops watch',
+    });
+    expect(admin.updateAdminCalendarEvent).toHaveBeenCalledWith('admin-1', 'calendar-1', { title: 'Updated' });
+    expect(admin.deleteAdminCalendarEvent).toHaveBeenCalledWith('admin-1', 'calendar-1', {
+      operatorIdentity: 'ops@hands.vn',
     });
   });
 

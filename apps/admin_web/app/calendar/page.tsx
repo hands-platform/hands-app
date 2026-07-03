@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { adminGet, type AdminCalendarEvent } from '../../lib/admin-api';
 import { getAdminWebSession } from '../../lib/admin-session';
 
 import { CalendarClient } from './calendar-client';
@@ -10,13 +11,14 @@ export default async function CalendarPage() {
   const session = getAdminWebSession({ headers: headerList });
   const operatorId = session?.sub ?? 'admin-web';
   const operatorName = displayOperatorName(operatorId);
+  const initialEvents = await adminGet<AdminCalendarEvent[]>('/admin/calendar-events?take=200', []);
 
   return (
     <AdminPageTemplate
       title="Operations Calendar"
       description="Vuexy-style shared calendar for operator planning, booking watch blocks, Partner review windows, customer follow-up, and finance closeout reminders."
     >
-      <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} />
+      <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} initialEvents={initialEvents} />
     </AdminPageTemplate>
   );
 }

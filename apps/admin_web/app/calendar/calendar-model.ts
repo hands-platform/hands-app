@@ -1,7 +1,5 @@
 import type { EventInput } from '@fullcalendar/core';
 
-export const CALENDAR_STORAGE_KEY = 'hands-admin-calendar-events-v1';
-
 export const CALENDAR_TAG_TONES = ['accent', 'info', 'success', 'warning', 'danger'] as const;
 
 export type CalendarTagTone = (typeof CALENDAR_TAG_TONES)[number];
@@ -260,14 +258,6 @@ export function normalizeCalendarDraft(draft: CalendarEventDraft): CalendarEvent
   }
 
   return draft;
-}
-
-export function createCalendarEventId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return `calendar-${Date.now()}`;
 }
 
 export function createBlankDraft(date = new Date()): CalendarEventDraft {

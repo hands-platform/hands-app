@@ -2,7 +2,7 @@
 
 import 'react-datepicker/dist/react-datepicker.css';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -21,10 +21,7 @@ import {
   buildCalendarTagFilters,
   calendarTagTone,
   canEditCalendarEvent,
-  CALENDAR_STORAGE_KEY,
   createBlankDraft,
-  createCalendarEventId,
-  createSeedEvents,
   filterCalendarEvents,
   fromCalendarEventInput,
   normalizeStoredCalendarEvent,
@@ -41,62 +38,24 @@ type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listM
 
 type CalendarClientProps = {
   readonly currentOperator: CalendarOperator;
+  readonly initialEvents: readonly CalendarEventRecord[];
 };
 
-export function CalendarClient({ currentOperator }: CalendarClientProps) {
+export function CalendarClient({ currentOperator, initialEvents }: CalendarClientProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
-  const [events, setEvents] = useState<CalendarEventRecord[]>([]);
+  const [events, setEvents] = useState<CalendarEventRecord[]>(() =>
+    initialEvents
+      .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
+      .filter((event): event is CalendarEventRecord => Boolean(event)),
+  );
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<CalendarViewName>('dayGridMonth');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CalendarEventDraft>(createBlankDraft(new Date()));
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    queueMicrotask(() => {
-      if (cancelled) {
-        return;
-      }
-
-      const storedEvents = globalThis.localStorage?.getItem(CALENDAR_STORAGE_KEY);
-
-      if (storedEvents) {
-        try {
-          const parsed = JSON.parse(storedEvents) as unknown;
-          const nextEvents = Array.isArray(parsed)
-            ? parsed
-                .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
-                .filter((event): event is CalendarEventRecord => Boolean(event))
-            : [];
-          setEvents(nextEvents);
-          setHydrated(true);
-          return;
-        } catch {
-          globalThis.localStorage.removeItem(CALENDAR_STORAGE_KEY);
-        }
-      }
-
-      const seedEvents = createSeedEvents(new Date(), currentOperator);
-      setEvents(seedEvents);
-      setHydrated(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentOperator]);
-
-  useEffect(() => {
-    if (!hydrated) {
-      return;
-    }
-
-    globalThis.localStorage?.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(events));
-  }, [events, hydrated]);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const visibleEvents = useMemo(
     () => filterCalendarEvents(events, selectedTags),
@@ -151,7 +110,7 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
     );
   };
 
-  const handleEventMutation = (payload: EventDropArg | EventResizeDoneArg) => {
+  const handleEventMutation = async (payload: EventDropArg | EventResizeDoneArg) => {
     const next = fromCalendarEventInput(
       payload.event.toPlainObject({ collapseExtendedProps: false }) as EventInput,
       currentOperator,
@@ -162,56 +121,70 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
       return;
     }
 
-    setEvents((current) => current.map((event) => (event.id === next.id ? next : event)));
+    setMutationError(null);
+    try {
+      const savedEvent = await updateCalendarEvent(next.id, calendarEventPayload(next));
+      setEvents((current) => current.map((event) => (event.id === next.id ? savedEvent : event)));
+    } catch {
+      payload.revert();
+      setMutationError('Calendar event could not be saved. Check author permissions and try again.');
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const normalized = normalizeCalendarDraft(fromInputDraft(draft));
 
     if (!normalized.title.trim()) {
       return;
     }
 
+    setMutationError(null);
+    setSubmitting(true);
+
     if (editingEventId) {
       if (!canEditCalendarEvent(editingEvent, currentOperator)) {
+        setSubmitting(false);
         return;
       }
 
-      setEvents((current) =>
-        current.map((event) =>
-          event.id === editingEventId
-            ? {
-                id: editingEventId,
-                ...normalized,
-                authorId: event.authorId,
-                authorName: event.authorName,
-              }
-            : event,
-        ),
-      );
-    } else {
-      setEvents((current) => [
-        ...current,
-        {
-          id: createCalendarEventId(),
-          ...normalized,
-          authorId: currentOperator.id,
-          authorName: currentOperator.name,
-        },
-      ]);
+      try {
+        const savedEvent = await updateCalendarEvent(editingEventId, calendarEventPayload(normalized));
+        setEvents((current) => current.map((event) => (event.id === editingEventId ? savedEvent : event)));
+        closeDrawer();
+      } catch {
+        setMutationError('Calendar event could not be updated. Check author permissions and try again.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
     }
 
-    closeDrawer();
+    try {
+      const savedEvent = await createCalendarEvent(calendarEventPayload(normalized));
+      setEvents((current) => [...current, savedEvent]);
+      closeDrawer();
+    } catch {
+      setMutationError('Calendar event could not be created. Check required fields and try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editingEventId) {
       closeDrawer();
       return;
     }
 
     if (canEditCalendarEvent(editingEvent, currentOperator)) {
-      setEvents((current) => current.filter((event) => event.id !== editingEventId));
+      setMutationError(null);
+      try {
+        await deleteCalendarEvent(editingEventId);
+        setEvents((current) => current.filter((event) => event.id !== editingEventId));
+      } catch {
+        setMutationError('Calendar event could not be deleted. Check author permissions and try again.');
+        return;
+      }
     }
     closeDrawer();
   };
@@ -278,6 +251,8 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
         />
         <MetricCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
       </section>
+
+      {mutationError ? <div className="admin-form-error calendar-error-banner">{mutationError}</div> : null}
 
       <div className="calendar-shell">
         <aside className="calendar-sidebar card">
@@ -463,7 +438,7 @@ export function CalendarClient({ currentOperator }: CalendarClientProps) {
         onDelete={handleDelete}
         onReset={handleReset}
         onSubmit={handleSubmit}
-        canEdit={canEditSelectedEvent}
+        canEdit={canEditSelectedEvent && !submitting}
         currentOperatorName={currentOperator.name}
       />
     </div>
@@ -495,4 +470,53 @@ function fromInputDraft(draft: CalendarEventDraft): CalendarEventDraft {
 
 function readDatePart(value: string) {
   return value.includes('T') ? value.slice(0, 10) : value;
+}
+
+function calendarEventPayload(event: CalendarEventDraft | CalendarEventRecord) {
+  return {
+    allDay: event.allDay,
+    description: event.description,
+    end: event.end,
+    location: event.location,
+    start: event.start,
+    tags: event.tags,
+    title: event.title,
+    url: event.url,
+  };
+}
+
+async function createCalendarEvent(payload: ReturnType<typeof calendarEventPayload>) {
+  return calendarEventRequest('/api/admin/calendar-events', {
+    body: JSON.stringify(payload),
+    method: 'POST',
+  });
+}
+
+async function updateCalendarEvent(id: string, payload: ReturnType<typeof calendarEventPayload>) {
+  return calendarEventRequest(`/api/admin/calendar-events/${encodeURIComponent(id)}`, {
+    body: JSON.stringify(payload),
+    method: 'PATCH',
+  });
+}
+
+async function deleteCalendarEvent(id: string) {
+  await calendarEventRequest(`/api/admin/calendar-events/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+}
+
+async function calendarEventRequest(path: string, init: RequestInit) {
+  const headers = new Headers(init.headers);
+  headers.set('content-type', 'application/json');
+
+  const response = await fetch(path, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Calendar request failed');
+  }
+
+  return (await response.json()) as CalendarEventRecord;
 }

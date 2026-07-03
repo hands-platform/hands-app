@@ -811,6 +811,111 @@ describe('AdminService partner overview request events', () => {
   });
 });
 
+describe('AdminService operations calendar', () => {
+  const calendarEvent = {
+    allDay: false,
+    authorId: 'ops@hands.vn',
+    authorName: 'Ops Lead',
+    createdAt: new Date('2026-07-01T08:00:00.000Z'),
+    description: 'Watch the live booking board.',
+    endAt: new Date('2026-07-01T10:00:00.000Z'),
+    id: 'calendar-1',
+    location: 'Operations room',
+    startAt: new Date('2026-07-01T09:00:00.000Z'),
+    tags: ['booking', 'handoff'],
+    title: 'Morning booking watch',
+    updatedAt: new Date('2026-07-01T08:05:00.000Z'),
+    updatedById: 'ops@hands.vn',
+    url: '',
+  };
+
+  it('lists calendar events with a bounded default limit and calendar response shape', async () => {
+    const prisma = {
+      adminCalendarEvent: {
+        findMany: vi.fn().mockResolvedValue([calendarEvent]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listAdminCalendarEvents({ take: '500' })).resolves.toEqual([
+      expect.objectContaining({
+        authorId: 'ops@hands.vn',
+        authorName: 'Ops Lead',
+        end: '2026-07-01T10:00:00.000Z',
+        id: 'calendar-1',
+        start: '2026-07-01T09:00:00.000Z',
+        tags: ['booking', 'handoff'],
+        title: 'Morning booking watch',
+      }),
+    ]);
+    expect(prisma.adminCalendarEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }],
+        take: 200,
+      }),
+    );
+  });
+
+  it('creates calendar events for the current Admin Web operator identity', async () => {
+    const prisma = {
+      adminCalendarEvent: {
+        create: vi.fn().mockResolvedValue(calendarEvent),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createAdminCalendarEvent('admin-token-user', {
+        allDay: false,
+        end: '2026-07-01T10:00:00.000Z',
+        operatorIdentity: 'ops@hands.vn',
+        operatorName: 'Ops Lead',
+        start: '2026-07-01T09:00:00.000Z',
+        tags: ['booking', '#handoff'],
+        title: 'Morning booking watch',
+      }),
+    ).resolves.toEqual(expect.objectContaining({ authorId: 'ops@hands.vn' }));
+    expect(prisma.adminCalendarEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          authorId: 'ops@hands.vn',
+          authorName: 'Ops Lead',
+          tags: ['booking', 'handoff'],
+          title: 'Morning booking watch',
+        }),
+      }),
+    );
+  });
+
+  it('blocks calendar edits and deletes from a different operator identity', async () => {
+    const prisma = {
+      adminCalendarEvent: {
+        delete: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(calendarEvent),
+        update: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateAdminCalendarEvent('admin-token-user', 'calendar-1', {
+        operatorIdentity: 'other@hands.vn',
+        title: 'Hijacked event',
+      }),
+    ).rejects.toThrow('Only the calendar event author can update this event');
+    await expect(
+      service.deleteAdminCalendarEvent('admin-token-user', 'calendar-1', {
+        operatorIdentity: 'other@hands.vn',
+      }),
+    ).rejects.toThrow('Only the calendar event author can delete this event');
+    expect(prisma.adminCalendarEvent.update).not.toHaveBeenCalled();
+    expect(prisma.adminCalendarEvent.delete).not.toHaveBeenCalled();
+  });
+});
+
 describe('AdminService query orchestration', () => {
   it('bounds the admin user list used by the operations dashboard', async () => {
     const prisma = {

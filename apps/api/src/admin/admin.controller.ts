@@ -7,6 +7,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminReasonDto,
+  AdminCalendarActorDto,
   AdminOperatorActivityDto,
   AdminPushCampaignDto,
   BookingCloseoutDto,
@@ -16,6 +17,7 @@ import {
   BookingPostMatchCancellationDecisionDto,
   BulkUpsertServicePayoutRulesDto,
   CreateAdminOperatorDto,
+  CreateAdminCalendarEventDto,
   CreateAdminServiceDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankTransactionDto,
@@ -37,6 +39,7 @@ import {
   RecordPartnerBankDepositDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminServiceDto,
+  UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
   UpdateCouponDto,
   UpdateFinanceApproverRoleDto,
@@ -104,6 +107,41 @@ export class AdminController {
   @Post('operator-activity')
   recordAdminOperatorActivity(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminOperatorActivityDto) {
     return this.admin.recordAdminOperatorActivity(user.id, body);
+  }
+
+  @Get('calendar-events')
+  calendarEvents(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.admin.listAdminCalendarEvents({ from, take, to });
+  }
+
+  @Post('calendar-events')
+  createCalendarEvent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateAdminCalendarEventDto,
+  ) {
+    return this.admin.createAdminCalendarEvent(user.id, body);
+  }
+
+  @Patch('calendar-events/:id')
+  updateCalendarEvent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: UpdateAdminCalendarEventDto,
+  ) {
+    return this.admin.updateAdminCalendarEvent(user.id, id, body);
+  }
+
+  @Delete('calendar-events/:id')
+  deleteCalendarEvent(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: AdminCalendarActorDto = {},
+  ) {
+    return this.admin.deleteAdminCalendarEvent(user.id, id, body);
   }
 
   @Patch('users/:id/finance-approver')

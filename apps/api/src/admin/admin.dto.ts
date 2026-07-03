@@ -471,6 +471,85 @@ export class AdminOperatorActivityDto {
   metadata?: unknown;
 }
 
+class AdminCalendarEventPayloadDto {
+  @IsOptional()
+  @IsBoolean()
+  allDay?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  location?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  url?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  operatorIdentity?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  operatorName?: string;
+}
+
+export class CreateAdminCalendarEventDto extends AdminCalendarEventPayloadDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(160)
+  title!: string;
+
+  @IsDateString()
+  start!: string;
+
+  @IsDateString()
+  end!: string;
+}
+
+export class UpdateAdminCalendarEventDto extends AdminCalendarEventPayloadDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  title?: string;
+
+  @IsOptional()
+  @IsDateString()
+  start?: string;
+
+  @IsOptional()
+  @IsDateString()
+  end?: string;
+}
+
+export class AdminCalendarActorDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(160)
+  operatorIdentity?: string;
+}
+
 export class UpdateMonthlyTaxClosingStatusDto {
   @IsEnum(MonthlyTaxClosingStatus)
   status!: MonthlyTaxClosingStatus;

@@ -263,7 +263,7 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_SETUP',
-    prefixes: ['/admin/marketing'],
+    prefixes: ['/admin/calendar-events', '/admin/marketing'],
   },
 ];
 

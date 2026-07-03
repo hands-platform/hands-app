@@ -3085,6 +3085,23 @@ export type AdminVietnamOverviewRealtimePointFeed = Pick<
   realtimePoints: AdminVietnamOverviewRealtimePoint[];
 };
 
+export type AdminCalendarEvent = {
+  allDay: boolean;
+  authorId: string;
+  authorName: string;
+  createdAt?: string;
+  description: string;
+  end: string;
+  id: string;
+  location: string;
+  start: string;
+  tags: string[];
+  title: string;
+  updatedAt?: string;
+  updatedById?: string | null;
+  url: string;
+};
+
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {

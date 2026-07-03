@@ -206,7 +206,9 @@ import {
   withMarketingRates,
 } from './admin-marketing-analytics';
 import type {
+  AdminCalendarActorDto,
   AdminPushCampaignDto,
+  CreateAdminCalendarEventDto,
   CreateAdminOperatorDto,
   CreateBankReconciliationMatchDto,
   CreateCompanyBankTransactionDto,
@@ -215,6 +217,7 @@ import type {
   PreviewManualWalletAdjustmentDto,
   RecordPartnerBankDepositDto,
   ReverseBankReconciliationMatchDto,
+  UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
   UpdateFinanceApproverRoleDto,
   UpdateNotificationTemplateDto,
@@ -225,6 +228,7 @@ const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
 const ADMIN_APP_SESSION_RECENT_WINDOW_MS = 30 * 60_000;
 const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;
 const ADMIN_BOOKING_LIST_LIMIT = 50;
+const ADMIN_CALENDAR_EVENT_LIST_LIMIT = 200;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
 const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
 const ADMIN_USER_LIST_LIMIT = 50;
@@ -1763,6 +1767,117 @@ export class AdminService {
     });
 
     return { ok: true, auditLog };
+  }
+
+  async listAdminCalendarEvents(options: {
+    from?: string | null;
+    take?: number | string | null;
+    to?: string | null;
+  } = {}) {
+    const from = parseOptionalAdminCalendarDate(options.from, 'Calendar from date');
+    const to = parseOptionalAdminCalendarDate(options.to, 'Calendar to date');
+    const where: Prisma.AdminCalendarEventWhereInput = {};
+
+    if (from || to) {
+      where.AND = [
+        ...(from ? [{ endAt: { gte: from } }] : []),
+        ...(to ? [{ startAt: { lte: to } }] : []),
+      ];
+    }
+
+    const events = await this.prisma.adminCalendarEvent.findMany({
+      ...(Object.keys(where).length ? { where } : {}),
+      orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }],
+      take: adminCalendarEventListTake(options.take),
+    });
+
+    return events.map(adminCalendarEventView);
+  }
+
+  async createAdminCalendarEvent(actorId: string, input: CreateAdminCalendarEventDto) {
+    const actor = adminCalendarActor(actorId, input);
+    const data = adminCalendarCreateData(input, actor);
+    const event = await this.prisma.adminCalendarEvent.create({ data });
+    await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        action: 'calendar_event.create',
+        target: `calendar_event:${event.id}`,
+        metadata: {
+          operatorIdentity: actor.id,
+          title: event.title,
+        },
+      },
+    });
+
+    return adminCalendarEventView(event);
+  }
+
+  async updateAdminCalendarEvent(actorId: string, id: string, input: UpdateAdminCalendarEventDto) {
+    const eventId = normalizeNullable(id);
+    if (!eventId) {
+      throw new BadRequestException('Calendar event id is required');
+    }
+
+    const existing = await this.prisma.adminCalendarEvent.findUnique({ where: { id: eventId } });
+    if (!existing) {
+      throw new NotFoundException('Calendar event not found');
+    }
+
+    const actor = adminCalendarActor(actorId, input);
+    if (existing.authorId !== actor.id) {
+      throw new ForbiddenException('Only the calendar event author can update this event');
+    }
+
+    const event = await this.prisma.adminCalendarEvent.update({
+      where: { id: eventId },
+      data: adminCalendarUpdateData(input, existing, actor),
+    });
+    await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        action: 'calendar_event.update',
+        target: `calendar_event:${event.id}`,
+        metadata: {
+          operatorIdentity: actor.id,
+          title: event.title,
+        },
+      },
+    });
+
+    return adminCalendarEventView(event);
+  }
+
+  async deleteAdminCalendarEvent(actorId: string, id: string, input: AdminCalendarActorDto = {}) {
+    const eventId = normalizeNullable(id);
+    if (!eventId) {
+      throw new BadRequestException('Calendar event id is required');
+    }
+
+    const existing = await this.prisma.adminCalendarEvent.findUnique({ where: { id: eventId } });
+    if (!existing) {
+      throw new NotFoundException('Calendar event not found');
+    }
+
+    const actor = adminCalendarActor(actorId, input);
+    if (existing.authorId !== actor.id) {
+      throw new ForbiddenException('Only the calendar event author can delete this event');
+    }
+
+    await this.prisma.adminCalendarEvent.delete({ where: { id: eventId } });
+    await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        action: 'calendar_event.delete',
+        target: `calendar_event:${eventId}`,
+        metadata: {
+          operatorIdentity: actor.id,
+          title: existing.title,
+        },
+      },
+    });
+
+    return { ok: true, id: eventId };
   }
 
   private findAdminOperatorForIdentity(
@@ -12463,6 +12578,188 @@ function adminAuditLogPriorityWhere(priority: string | null): Prisma.AdminAuditL
 
 function adminBookingListLimit(value: number | string | null | undefined): number {
   return boundedAdminListLimit(value, ADMIN_BOOKING_LIST_LIMIT);
+}
+
+function adminCalendarEventListTake(value: number | string | null | undefined): number {
+  return boundedAdminListLimit(value, ADMIN_CALENDAR_EVENT_LIST_LIMIT);
+}
+
+function adminCalendarActor(
+  actorId: string,
+  input: { operatorIdentity?: string | null; operatorName?: string | null },
+) {
+  const id = normalizeNullable(input.operatorIdentity) ?? actorId;
+  const name = normalizeNullable(input.operatorName) ?? displayAdminCalendarActorName(id);
+
+  return { id, name };
+}
+
+function adminCalendarCreateData(
+  input: CreateAdminCalendarEventDto,
+  actor: { id: string; name: string },
+): Prisma.AdminCalendarEventCreateInput {
+  const title = normalizeRequiredAdminCalendarTitle(input.title);
+  const startAt = parseRequiredAdminCalendarDate(input.start, 'Calendar start date');
+  const endAt = parseRequiredAdminCalendarDate(input.end, 'Calendar end date');
+  assertAdminCalendarDateRange(startAt, endAt);
+
+  return {
+    allDay: Boolean(input.allDay),
+    authorId: actor.id,
+    authorName: actor.name,
+    description: normalizeNullable(input.description),
+    endAt,
+    location: normalizeNullable(input.location),
+    startAt,
+    tags: normalizeAdminCalendarTags(input.tags) as Prisma.InputJsonValue,
+    title,
+    updatedById: actor.id,
+    url: normalizeNullable(input.url),
+  };
+}
+
+function adminCalendarUpdateData(
+  input: UpdateAdminCalendarEventDto,
+  existing: { startAt: Date; endAt: Date },
+  actor: { id: string },
+): Prisma.AdminCalendarEventUpdateInput {
+  const data: Prisma.AdminCalendarEventUpdateInput = {
+    updatedById: actor.id,
+  };
+  const startAt = input.start === undefined ? existing.startAt : parseRequiredAdminCalendarDate(input.start, 'Calendar start date');
+  const endAt = input.end === undefined ? existing.endAt : parseRequiredAdminCalendarDate(input.end, 'Calendar end date');
+  assertAdminCalendarDateRange(startAt, endAt);
+
+  if (input.title !== undefined) {
+    data.title = normalizeRequiredAdminCalendarTitle(input.title);
+  }
+  if (input.start !== undefined) {
+    data.startAt = startAt;
+  }
+  if (input.end !== undefined) {
+    data.endAt = endAt;
+  }
+  if (input.allDay !== undefined) {
+    data.allDay = Boolean(input.allDay);
+  }
+  if (input.description !== undefined) {
+    data.description = normalizeNullable(input.description);
+  }
+  if (input.location !== undefined) {
+    data.location = normalizeNullable(input.location);
+  }
+  if (input.tags !== undefined) {
+    data.tags = normalizeAdminCalendarTags(input.tags) as Prisma.InputJsonValue;
+  }
+  if (input.url !== undefined) {
+    data.url = normalizeNullable(input.url);
+  }
+
+  return data;
+}
+
+function adminCalendarEventView(event: {
+  allDay: boolean;
+  authorId: string;
+  authorName: string;
+  createdAt: Date;
+  description: string | null;
+  endAt: Date;
+  id: string;
+  location: string | null;
+  startAt: Date;
+  tags: Prisma.JsonValue | null;
+  title: string;
+  updatedAt: Date;
+  updatedById: string | null;
+  url: string | null;
+}) {
+  return {
+    allDay: event.allDay,
+    authorId: event.authorId,
+    authorName: event.authorName,
+    createdAt: event.createdAt.toISOString(),
+    description: event.description ?? '',
+    end: event.endAt.toISOString(),
+    id: event.id,
+    location: event.location ?? '',
+    start: event.startAt.toISOString(),
+    tags: normalizeAdminCalendarTags(event.tags),
+    title: event.title,
+    updatedAt: event.updatedAt.toISOString(),
+    updatedById: event.updatedById,
+    url: event.url ?? '',
+  };
+}
+
+function normalizeRequiredAdminCalendarTitle(value: unknown) {
+  const title = typeof value === 'string' ? normalizeNullable(value) : null;
+  if (!title) {
+    throw new BadRequestException('Calendar event title is required');
+  }
+
+  return title.slice(0, 160);
+}
+
+function parseOptionalAdminCalendarDate(value: unknown, label: string) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  return parseRequiredAdminCalendarDate(value, label);
+}
+
+function parseRequiredAdminCalendarDate(value: unknown, label: string) {
+  if (typeof value !== 'string' && !(value instanceof Date)) {
+    throw new BadRequestException(`${label} is required`);
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    throw new BadRequestException(`${label} is invalid`);
+  }
+
+  return date;
+}
+
+function assertAdminCalendarDateRange(startAt: Date, endAt: Date) {
+  if (endAt < startAt) {
+    throw new BadRequestException('Calendar event end date cannot be before the start date');
+  }
+}
+
+function normalizeAdminCalendarTags(value: unknown): string[] {
+  const tags = Array.isArray(value) ? value : [];
+
+  return [
+    ...new Set(
+      tags
+        .map((tag) => normalizeAdminCalendarTag(String(tag ?? '')))
+        .filter(Boolean)
+        .slice(0, 20),
+    ),
+  ];
+}
+
+function normalizeAdminCalendarTag(value: string) {
+  return value
+    .trim()
+    .replace(/^#+/, '')
+    .replace(/[^\p{L}\p{N}_-]/gu, '')
+    .toLowerCase()
+    .slice(0, 50);
+}
+
+function displayAdminCalendarActorName(identity: string) {
+  const [name] = identity.split('@');
+
+  return (
+    name
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ') || identity
+  );
 }
 
 function adminMarketingDimensionTake(value: number | string | null | undefined): number {
