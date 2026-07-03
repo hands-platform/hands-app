@@ -225,6 +225,11 @@ export const adminNavSections: AdminNavSection[] = [
           'Company bank transactions, active company bank accounts, and reconciliation status for manual finance closeout.',
       },
       {
+        href: '/finance-tax/company-bank-accounts',
+        label: 'Company Bank Accounts',
+        description: 'Company settlement bank accounts used by manual import and reconciliation evidence.',
+      },
+      {
         href: '/finance-tax/booking-settlement-audit',
         label: 'Booking Settlement Audit',
         description: 'Immutable booking settlement snapshots for tax and finance audit review.',

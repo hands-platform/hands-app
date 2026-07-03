@@ -96,7 +96,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'FINANCE_BANK_RECONCILIATION',
-    prefixes: ['/finance-tax/bank-reconciliation'],
+    prefixes: ['/finance-tax/bank-reconciliation', '/finance-tax/company-bank-accounts'],
   },
   {
     category: 'FINANCE_TAX',

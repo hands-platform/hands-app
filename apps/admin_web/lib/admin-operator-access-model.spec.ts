@@ -18,6 +18,7 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/finance-tax/payment-clearing')).toBe('FINANCE_PAYMENT_CLEARING');
     expect(adminOperatorCategoryForPath('/finance-overview')).toBe('FINANCE');
     expect(adminOperatorCategoryForPath('/finance-closeout')).toBe('FINANCE');
+    expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
     expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/referrals/customers')).toBe('CUSTOMERS');
