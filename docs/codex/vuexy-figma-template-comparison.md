@@ -1,0 +1,107 @@
+# HANDS Admin Vuexy Figma + Template Comparison
+
+This document is the working comparison baseline for applying the purchased
+Vuexy design system to HANDS Admin Web without changing HANDS business logic,
+API contracts, auth/session behavior, or route ownership.
+
+## Source Check
+
+| Source | Path | Readable? | Used For | Notes |
+| --- | --- | --- | --- | --- |
+| Figma design source | `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig` | Yes | Final visual source for fundamentals, atoms, components, states, spacing, radius, shadow, typography | User-provided file exists locally. |
+| Figma design source, repo mirror | `C:/dev/massage-on-demand-vn/design/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig` | No | Intended stable repo reference | Not present yet. Keep using the ThemeForest source path unless the file is copied into the repo later. |
+| Vuexy Next.js TypeScript full version | `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/nextjs-version/typescript-version/full-version` | Yes | Implementation reference for layout, menu, cards, tables, forms, dashboard widgets, calendar, dialogs | Do not copy demo data, demo routes, demo auth, or fake APIs. |
+| HANDS Admin Web | `C:/dev/massage-on-demand-vn/apps/admin_web` | Yes | Product implementation that must preserve HANDS operations behavior | Shared CSS/component wrappers remain the migration layer for now. |
+
+## Area Gap Matrix
+
+| Area | HANDS Current | Vuexy Template Reference | Figma Reference | Gap | Recommended Action |
+| --- | --- | --- | --- | --- | --- |
+| Layout | `AdminPageTemplate`, global shell, compact admin pages | `src/configs/themeConfig.ts`, vertical layout components | Layout and navigation nodes | Mostly aligned after shell work, but page-by-page density varies | Keep `AdminPageTemplate`; avoid page-local shell markup. |
+| Sidebar | `admin-navigation.ts` + custom shell | `verticalMenuData.tsx`, `VerticalMenu.tsx` | Navigation | Category IA mostly HANDS-specific; count chips must be operational counts only | Continue route/menu inventory tests and keep Vuexy vertical rhythm. |
+| Topbar | Custom admin topbar | Vuexy navbar/floating header | Layout/navigation | Needs consistent icon button sizing and logout/action placement | Apply shared icon button tokens only. |
+| Page header | Shared header in `AdminPageTemplate` | Vuexy page title/breadcrumb composition | Layout/breadcrumbs | Some legacy pages still have page-local headings | Prefer `AdminPageTemplate` header and compact breadcrumbs. |
+| Breadcrumb | Available where needed | Vuexy breadcrumbs | Breadcrumbs | Not every detail page uses it consistently | Add only where it helps detail-page context. |
+| Cards | `AdminSection`, `AdminCard`, page CSS cards | Vuexy card examples | Card | Some page-local cards still have custom borders/backgrounds | Replace repeated page-local card shells with `AdminSection`/shared card classes. |
+| KPI cards | Shared and page-local stats | CRM/dashboard card-statistics | Cards/widgets | Metrics vary in spacing and status tone | Keep domain metrics but normalize card shell and tonal chips. |
+| Tables | `AdminDataTable`, `AdminTableScroll` | React table examples, user list | Data display | Most critical lists aligned, but some finance/overview tables still custom | Use `AdminDataTable` first for every list. |
+| Filters | `AdminFilterPanel`, scattered controls | Form/select/button groups | Text field/select/buttons | Some pages still mix raw labels/selects/date controls | Migrate raw filters to shared form controls. |
+| Forms | `admin-form-controls.tsx`, global tokens | `@core/components/mui/TextField.tsx` | Text field/input/select atoms | Needs continuous cleanup in finance/calendar/coupons forms | Use shared controls and no raw overlapping labels. |
+| Buttons | Shared `.button` classes and icon buttons | MUI Button/IconButton usage | Buttons | Mostly aligned; page-local action buttons still appear | Use shared variants and lucide icons for tool actions. |
+| Inputs | Global tokens + shared controls | CustomTextField | Text field/input atoms | Some raw `input`/`textarea` remain | Keep moving to `AdminFormInput`, `AdminFormTextarea`, date controls. |
+| Selects | Shared select exists | CustomTextField select | Select | Some page-local selects have label overlap risk | Use shared select wrapper and guard tests. |
+| Badges | Pills/status classes | Chip/Badge | Chip/Badge | Multiple tone systems exist | Consolidate status tone helpers where repeated. |
+| Status chips | Page-specific pills | Chip | Chip/Badge | Some status copy and colors diverge by page | Route through shared status/tone helpers. |
+| Dialogs | Page-specific modal/dialog flows | `pages/dialog-examples/*`, calendar sidebar | Dialog | Services/coupons use dialog-like flows but not always one style | Normalize edit/create flows without copying demo logic. |
+| Drawers | Calendar and detail flows use custom panels | Calendar event sidebar | Dialog/drawer patterns | Calendar closest to Vuexy, other drawers are ad hoc | Use calendar drawer pattern only where focused edit flow needs it. |
+| Tabs | Segment controls and tabs vary | Tabs examples | Tabs | Some segmented controls are page-local | Introduce shared segmented control only after 3+ stable uses. |
+| Pagination | `AdminRoundedPagination` | Pagination examples | Pagination | Long operational lists mostly covered | Keep server pagination/cursor rules. |
+| Empty state | `AdminEmptyState` now broadly adopted | Empty/list fallback patterns | Alert/data display | Raw fallback patterns have been reduced; intentional labels remain | Keep source guard scans to prevent regression. |
+| Loading state | Mostly route/server rendered | Progress/loading examples | Progress | Not consistently explicit on client-heavy pages | Add shared loading state where actual async UI exists. |
+| Error state | Page forms have uneven feedback | Alert/snackbar | Alert/snackbar | Form failures still vary | Use shared form error/notice styles. |
+| Login page | Custom Vuexy-inspired login | Auth pages | Layout/forms/buttons | Broad marketing copy removed, but visual QA should continue | Compare with Vuexy auth page at 1440px. |
+| Unauthorized page | Protected middleware redirects | Error/auth examples | Alert/error | Needs consistent no-permission state | Add when category permissions are enforced page-wide. |
+| 404 page | Next fallback/custom routes | Error pages | Error/misc | Needs review if custom not found exists | Align only if visible in Admin flow. |
+| Dashboard widgets | Dashboard/overview pages use widgets | CRM dashboards/card statistics | Widgets/cards | Usage/Partner/Finance overview are improving but still mixed | Continue page-by-page widget alignment. |
+| Finance tables | Finance pages have heavy custom tables | React table + invoice/payment examples | Data display/cards | Meaning is strong, visual consistency still ongoing | Use common table, money, status, pagination components. |
+| Booking tables | Booking list/detail mostly table-first | React table + user/detail/timeline | Data display/timeline | Detail sections still have some bespoke panels | Keep aligning detail sublists with `AdminDataTable`. |
+| Partner/customer detail pages | Rich detail pages with many sections | User view/account detail | User view/card/tabs | Functionally rich, visually dense | Apply shared sections/tables before any layout rewrite. |
+
+## Vuexy Template Reference Map
+
+| Vuexy File/Folder | Purpose | Useful For HANDS? | How To Adapt | Risk |
+| --- | --- | --- | --- | --- |
+| `src/configs/themeConfig.ts` | Layout, content width, navbar/menu defaults | Yes | Use as token/reference only; keep HANDS CSS variables | Low |
+| `src/data/navigation/verticalMenuData.tsx` | Vertical menu grouping pattern | Yes | Reference section/submenu structure; keep HANDS routes/permissions | Medium |
+| `src/components/layout/vertical/VerticalMenu.tsx` | Vertical menu implementation | Yes | Reference behavior/density; do not replace HANDS shell wholesale | Medium |
+| `src/@menu/styles/vertical/*` | Vertical menu styling | Yes | Map rhythm/active state into existing sidebar CSS | Low |
+| `src/@core/components/mui/TextField.tsx` | Vuexy input/select baseline | Yes | Reflect sizing/state tokens in `admin-form-controls` and `globals.css` | Low |
+| `src/@core/components/mui/IconButton.tsx` | Icon button styling | Yes | Apply to topbar/table row/icon-only actions | Low |
+| `src/@core/components/mui/Chip.tsx` | Chip/status visual model | Yes | Align pills/status chips through shared tone helpers | Low |
+| `src/@core/components/mui/Avatar.tsx` | Avatar visual model | Yes | Keep person cells/status indicators consistent | Low |
+| `src/views/react-table/BasicDataTables.tsx` | Data table basics | Yes | Inform `AdminDataTable` spacing/header/pagination | Low |
+| `src/views/react-table/KitchenSink.tsx` | Advanced table/filtering | Yes | Reference only for richer operational tables | Medium |
+| `src/views/apps/user/list` | User directory/list patterns | Yes | Customers/Partners directories | Low |
+| `src/views/apps/user/view` | User detail composition | Yes | Customer/Partner detail sections | Medium |
+| `src/views/apps/calendar/*` | Calendar page, sidebar, event form | Yes | Calendar page and date/time atoms | Medium |
+| `src/views/pages/dialog-examples/*` | Dialog layouts | Yes | Services/coupons/admin action dialogs | Low |
+| `src/views/dashboards/crm` | Dashboard widgets | Yes | Usage/Partner/Finance overview metric and chart layout | Low |
+
+## HANDS Page Mapping Baseline
+
+| HANDS Page | Route | Closest Vuexy Example | Components Needed | Apply Strategy | Status |
+| --- | --- | --- | --- | --- | --- |
+| Command dashboard | `/` | CRM dashboard | `AdminPageTemplate`, `AdminSection`, KPI cards, empty state | Keep operations-first widgets; avoid demo dashboard data | In progress |
+| Usage overview | `/usage-overview` | CRM dashboard | KPI cards, charts, segments, tables | Separate from Vietnam map; focus app behavior/funnel/retention | In progress |
+| Vietnam overview | `/vietnam-overview` | Map/dashboard widgets | Map panel, metric widgets, period report tables | Map only here; period metrics below map | In progress |
+| Customers | `/customers` | User list | `AdminDataTable`, person cell, filters, pagination | Use Customer directory as table baseline | In progress |
+| Customer detail | `/customers/[id]` | User view | Detail sections, tables, chat/evidence panels | Keep one-column operations flow | In progress |
+| Partners | `/partners` | User list | Directory table, status chips, action menu | Match customers style with partner-specific states | In progress |
+| Partner detail | `/partners/[id]` | User view/account | Detail sections, KYC, services, wallet, reviews | Reuse tables/empty states/timeline where possible | In progress |
+| Partner overview | `/partners/overview` | CRM/dashboard | KPI cards, funnel/quality tables | Compare with usage overview; add partner-specific flow only | In progress |
+| Bookings | `/bookings` | React table/detail | Booking table, filters, status, pagination | Realtime Bookings style baseline | In progress |
+| Booking detail | `/bookings/[id]` | Timeline/detail | Detail panels, chat, review/evaluation, finance evidence | Keep evidence visible without duplicate tables | In progress |
+| Reviews | `/reviews` | Table/comment list | Table, moderation actions, read-only records | Customer reviews + partner evaluations separated | In progress |
+| Referrals | `/referrals/*` | User/list + finance cards | Parent-only referral lists, lifecycle panels | Separate customer/partner referral pages | In progress |
+| Notifications | `/notifications`, `/notifications/push-send` | Table/filter/form | Summary API, paginated lists, push form controls | Today/needs-action first; historical query filters | In progress |
+| Calendar | `/calendar` | Apps calendar | Calendar shell, sidebar, date/time picker, drawer | Match Vuexy calendar and datepicker atoms | In progress |
+| Services | `/services` | Dialog examples/forms | Service cards, dialog form, switch/input controls | No legacy smoke data; service catalog only | In progress |
+| Coupons | `/coupons` | Dialog/table/cards | Coupon cards, form controls, booking usage table | Keep creation validation and delete/edit actions | In progress |
+| Finance overview | `/finance-overview` | Dashboard/invoice widgets | KPI cards, finance status sections | High-level finance command, not ledger detail | In progress |
+| Finance tax pages | `/finance-tax/*` | React table/invoice/payment | Tables, money/status/date, pagination | Preserve accounting semantics | In progress |
+| Cash settlements | `/cash-settlements` | Finance/invoice table | Debt table, evidence actions, pagination | Show partner receivable/cash fee risk clearly | In progress |
+| Wallet adjustments | `/wallet-adjustments` | Finance form/table | Preview, approval, ledger table | Preserve no-bank/cash movement principle | In progress |
+| Admin operators | `/admin-operators` | User/list/settings | Operator list, permission chips, audit log | Master all access; operator category permissions | In progress |
+| Setup | `/setup` | Settings/forms | Form controls, status cards | Keep payload bounded and operational | In progress |
+
+## Immediate Implementation Direction
+
+1. Keep tightening shared atoms before page-specific redesigns:
+   `AdminEmptyState`, form controls, status chips, table wrappers,
+   pagination, money/date rendering.
+2. Treat Finance, Bookings, Customers, Partners, and Notifications as protected
+   operational pages: visual refactors must not change API response shape or
+   accounting/booking semantics.
+3. Use source guards where possible to stop regression to raw page-local
+   empty/error/form patterns.
+4. Run focused component/page tests and Admin Web typecheck for each commit.
