@@ -5,6 +5,7 @@ import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminRoundedPagination } from './admin-rounded-pagination';
+import { StatusBadge } from './status-badge';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -81,7 +82,7 @@ export function AdminReviewRecordsSection({
               <h3 id={`${id}-customer-reviews-title`}>Customer reviews</h3>
               <p className="muted">Customer-facing review content. Moderation stays on the Reviews page.</p>
             </div>
-            <span className="pill pill-neutral">{customerRows.length} review(s)</span>
+            <StatusBadge tone="neutral">{customerRows.length} review(s)</StatusBadge>
           </div>
           <AdminTableScroll>
             <AdminDataTable
@@ -133,7 +134,7 @@ export function AdminReviewRecordsSection({
               <h3 id={`${id}-partner-evaluations-title`}>Partner evaluations</h3>
               <p className="muted">Read-only internal records. These do not publish to the customer app.</p>
             </div>
-            <span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>
+            <StatusBadge tone="neutral">{partnerRows.length} evaluation(s)</StatusBadge>
           </div>
           <AdminTableScroll>
             <AdminDataTable

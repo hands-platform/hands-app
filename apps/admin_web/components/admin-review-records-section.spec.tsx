@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
@@ -241,5 +243,13 @@ describe('AdminReviewRecordsSection', () => {
       customerReviews: [customerReview],
       partnerEvaluations: [partnerEvaluation],
     });
+  });
+
+  it('uses shared badge atoms for review and evaluation counters', () => {
+    const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-neutral">{customerRows.length} review(s)</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>');
   });
 });
