@@ -1,5 +1,12 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyOwnerDecisionBacklogSection } from './operations-policy-owner-decision-backlog-section';
 import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
+
+const sectionSource = readFileSync(
+  new URL('./operations-policy-owner-decision-backlog-section.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
   it('renders owner pressure, backlog choices, and review links', () => {
@@ -44,6 +51,8 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16');
     expect(classNamesIn(section)).toContain('card admin-card insight-card');
+    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).not.toContain('className="card admin-card insight-card"');
     expect(rendered).toContain('Owner decision backlog');
     expect(rendered).toContain('Current decision pressure');
     expect(rendered).toContain('1 active record(s)');

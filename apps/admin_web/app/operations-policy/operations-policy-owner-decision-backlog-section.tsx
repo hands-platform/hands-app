@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
@@ -65,10 +65,10 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             <small>{item.evidence}</small>
             <div className="booking-radar admin-mt-12">
               {item.options.map((option) => (
-                <div className="card admin-card insight-card" key={option.label}>
+                <AdminCard className="insight-card" key={option.label}>
                   <strong>{displayOperationalWording(option.label)}</strong>
                   <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-                </div>
+                </AdminCard>
               ))}
             </div>
             <div className="ops-task-note admin-mt-12">
