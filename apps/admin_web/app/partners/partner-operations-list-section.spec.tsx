@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import {
   PartnerOperationsListSection,
   type PartnerOperationsListSectionRow,
 } from './partner-operations-list-section';
 
 describe('PartnerOperationsListSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/partner-operations-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No partners found</strong>');
+  });
+
   it('renders operations rows with approval, booking access, wallet, and app check facts', () => {
     const section = PartnerOperationsListSection({
       directReadyCount: 1,
@@ -41,7 +49,7 @@ describe('PartnerOperationsListSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-table service-trace',
         'vuexy-booking-table-footer vuexy-partner-table-footer',

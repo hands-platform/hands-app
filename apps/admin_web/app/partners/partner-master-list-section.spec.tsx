@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { PartnerMasterListSection, type PartnerMasterListSectionRow } from './partner-master-list-section';
 import { buildProviderFilters, type PartnerPagination, type ProviderFilters } from './partner-filters';
 
 describe('PartnerMasterListSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No partner rows found</strong>');
+  });
+
   it('renders partner master rows with operations facts and detail links', () => {
     const section = PartnerMasterListSection({
       filters: buildFilters({ review: 'unapproved' }),
@@ -46,7 +54,7 @@ describe('PartnerMasterListSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-table',
         'vuexy-booking-table-footer vuexy-partner-table-footer',

@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
@@ -147,7 +148,10 @@ export function ServiceBookingFinanceTraceSection({
           </AdminDataTable>
         </div>
       ) : (
-        <p className="muted">No recent booking service rows were found for the current service catalog.</p>
+        <AdminEmptyState
+          message="No recent booking service rows were found for the current service catalog."
+          title={null}
+        />
       )}
     </AdminSection>
   );

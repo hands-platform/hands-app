@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { CustomersTableSection } from './customers-table-section';
 import type { CustomerFilters } from './customer-filters';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 describe('CustomersTableSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No customers found</strong>');
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),
@@ -40,9 +48,9 @@ describe('CustomersTableSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-customer-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-customer-table',
         'vuexy-booking-person vuexy-customer-person',
         'vuexy-booking-avatar',
         'vuexy-booking-person-link',

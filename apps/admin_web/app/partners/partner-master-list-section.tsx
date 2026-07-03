@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -350,9 +351,9 @@ function buildPartnerMasterListSectionCopy(
 
 function PartnerMasterEmptyState() {
   return (
-    <>
-      <strong>No partner rows found</strong>
-      <p className="muted">Change the filters or clear search to view partner records.</p>
-    </>
+    <AdminEmptyState
+      message="Change the filters or clear search to view partner records."
+      title="No partner rows found"
+    />
   );
 }

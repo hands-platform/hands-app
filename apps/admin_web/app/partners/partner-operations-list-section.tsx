@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
@@ -158,10 +159,10 @@ function partnerOperationsListFooterLabel(rowCount: number) {
 
 function PartnerOperationsEmptyState() {
   return (
-    <>
-      <strong>No partners found</strong>
-      <p className="muted">Change the filters or clear search to view partner records.</p>
-    </>
+    <AdminEmptyState
+      message="Change the filters or clear search to view partner records."
+      title="No partners found"
+    />
   );
 }
 

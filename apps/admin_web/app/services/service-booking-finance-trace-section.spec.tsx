@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
 
 describe('ServiceBookingFinanceTraceSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/services/service-booking-finance-trace-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<p className="muted">No recent booking service rows were found');
+  });
+
   it('renders finance trace summary and booking rows', () => {
     const section = ServiceBookingFinanceTraceSection({
       rows: [traceRowFixture()],

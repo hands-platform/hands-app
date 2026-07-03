@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -114,9 +115,9 @@ function CustomerCountryCell({ row }: { readonly row: CustomerManagementTableRow
 
 function CustomerTableEmptyState() {
   return (
-    <>
-      <strong>No customers found</strong>
-      <p className="muted">Change the filters or clear the search to view customer records.</p>
-    </>
+    <AdminEmptyState
+      message="Change the filters or clear the search to view customer records."
+      title="No customers found"
+    />
   );
 }
