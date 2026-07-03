@@ -18,7 +18,12 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'setup-stage-list admin-mt-12',
+      className: 'admin-mb-16',
+      title: 'Shift close action map',
+    });
     expect(rendered).toContain('Shift close action map');
     expect(rendered).toContain('Payment close');
     expect(rendered).toContain('1 open');
@@ -67,7 +72,7 @@ function textContent(value: unknown): string {
 
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return textContent(props?.children);
+  return textContent([props?.title, props?.description, props?.statusLabel, props?.actions, props?.children]);
 }
 
 function hrefsIn(value: unknown): string[] {
@@ -81,7 +86,7 @@ function hrefsIn(value: unknown): string[] {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
+  return [...href, ...hrefsIn([props?.actions, props?.children])];
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

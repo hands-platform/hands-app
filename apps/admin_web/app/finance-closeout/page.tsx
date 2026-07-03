@@ -10,7 +10,8 @@ import {
   AdminRefundSummary,
   adminGet,
 } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import {
   buildCloseoutTasks,
@@ -93,34 +94,33 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       title="Finance Closeout"
     >
 
-      <section className="card admin-mt-16 admin-mb-16">
-        <AdminSectionHeader
-          actions={
-            <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
-              Open finance audit
-            </Link>
-          }
-          description={
-            <>
-              Range: {filters.label}. Refunds, earnings, payout batches, and local cash debt use record dates.
-              Payment hold rows remain all-time until payment timestamps are exposed by the API.
-            </>
-          }
-          title="Finance date range"
-        />
-        <div className="filter-row admin-mt-12">
-          {[
-            ['All records', '/finance-closeout?range=all'],
-            ['Today', '/finance-closeout?range=today'],
-            ['Last 7 days', '/finance-closeout?range=7d'],
-            ['Last 30 days', '/finance-closeout?range=30d'],
-          ].map(([label, href]) => (
-            <Link className="filter-pill" href={href} key={href}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        actions={
+          <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
+            Open finance audit
+          </Link>
+        }
+        bodyClassName="filter-row admin-mt-12"
+        className="admin-mt-16 admin-mb-16"
+        description={
+          <>
+            Range: {filters.label}. Refunds, earnings, payout batches, and local cash debt use record dates.
+            Payment hold rows remain all-time until payment timestamps are exposed by the API.
+          </>
+        }
+        title="Finance date range"
+      >
+        {[
+          ['All records', '/finance-closeout?range=all'],
+          ['Today', '/finance-closeout?range=today'],
+          ['Last 7 days', '/finance-closeout?range=7d'],
+          ['Last 30 days', '/finance-closeout?range=30d'],
+        ].map(([label, href]) => (
+          <Link className="filter-pill" href={href} key={href}>
+            {label}
+          </Link>
+        ))}
+      </AdminSection>
 
       <FinanceCloseoutTaskBoardSection tasks={closeoutTasks} />
 

@@ -20,7 +20,12 @@ describe('FinanceCloseoutTaskBoardSection', () => {
     const rendered = textContent(section);
     const hrefs = hrefsIn(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'ops-task-grid',
+      className: 'admin-mb-16',
+      title: 'Closeout reconciliation board',
+    });
     expect(rendered).toContain('Closeout reconciliation board');
     expect(rendered).toContain('Payment hold review');
     expect(rendered).toContain('2 HOLD(S)');
@@ -69,7 +74,7 @@ function textContent(value: unknown): string {
 
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return textContent(props?.children);
+  return textContent([props?.title, props?.description, props?.statusLabel, props?.actions, props?.children]);
 }
 
 function hrefsIn(value: unknown): string[] {
@@ -83,7 +88,7 @@ function hrefsIn(value: unknown): string[] {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
+  return [...href, ...hrefsIn([props?.actions, props?.children])];
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

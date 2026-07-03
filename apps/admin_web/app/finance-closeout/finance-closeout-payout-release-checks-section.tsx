@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import type { FinanceCloseoutHandoffRow } from '../../lib/finance-closeout';
 
 type FinanceCloseoutPayoutReleaseChecksSectionProps = {
@@ -11,19 +12,17 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
   rows,
 }: FinanceCloseoutPayoutReleaseChecksSectionProps) {
   return (
-    <section className="card admin-card-scroll">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout release checks</h2>
-          <p className="muted">
-            Transfer refs, earnings, tax logs, and open holds should be checked before a batch moves to paid.
-            Use this as the final finance handoff list.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href="/payouts">
           Open payouts
         </Link>
-      </div>
+      }
+      bodyClassName="admin-table-section-body"
+      className="admin-card-scroll"
+      description="Transfer refs, earnings, tax logs, and open holds should be checked before a batch moves to paid. Use this as the final finance handoff list."
+      title="Payout release checks"
+    >
       <AdminDataTable
         emptyMessage="No finance handoff rows loaded."
         headers={['Queue', 'Count', 'Amount', 'Next action', 'Open']}
@@ -43,6 +42,6 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
           </tr>
         ))}
       </AdminDataTable>
-    </section>
+    </AdminSection>
   );
 }
