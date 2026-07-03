@@ -7,6 +7,7 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
@@ -103,14 +104,12 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         resultLabel={`${rows.length} visible / ${summary.total} file(s)`}
       />
 
-      <section className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Review queue</h2>
-            <p className="muted">Approve or reject public media here. Private verification files remain evidence for Partner review.</p>
-          </div>
-          <StatusBadge tone={rows.length ? 'info' : 'neutral'}>{rows.length} visible</StatusBadge>
-        </div>
+      <AdminSection
+        description="Approve or reject public media here. Private verification files remain evidence for Partner review."
+        statusLabel={`${rows.length} visible`}
+        statusTone={rows.length ? 'info' : 'neutral'}
+        title="Review queue"
+      >
         <div className="admin-table-scroll">
           <AdminDataTable
             className="files-review-table"
@@ -131,7 +130,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={totalPages}
         />
-      </section>
+      </AdminSection>
     </AdminPageTemplate>
   );
 }

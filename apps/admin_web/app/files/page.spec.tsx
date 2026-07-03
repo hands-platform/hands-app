@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
@@ -20,14 +21,17 @@ describe('FilesPage', () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
   });
 
-  it('keeps file review hydration paged and fetches summary separately', async () => {
-    await FilesPage({
+  it('keeps file review hydration paged and renders the review queue on the shared Vuexy section surface', async () => {
+    const page = await FilesPage({
       searchParams: Promise.resolve({ page: '3' }),
     });
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+    const markup = renderToStaticMarkup(page);
 
     expect(hrefs).toContain('/admin/files/review-providers?take=10&skip=20');
     expect(hrefs).toContain('/admin/files/review-summary');
+    expect(markup).toContain('Review queue');
+    expect(markup).toContain('admin-section');
   });
 });
