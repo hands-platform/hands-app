@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
+import { AdminSection } from '../../../components/admin-surface';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
@@ -19,15 +20,8 @@ export function BookingDetailPostMatchDecisionSection({
   }
 
   return (
-    <section className="card admin-mb-16" id="booking-post-match-cancellation-decision">
-      <div className="ops-section-header">
-        <div>
-          <h2>Post-match cancellation processing</h2>
-          <p className="muted">
-            Review retained chat, closeout evidence, and operator notes before choosing the final Partner fee
-            outcome.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="booking-outcome-review-actions">
           <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
@@ -36,7 +30,12 @@ export function BookingDetailPostMatchDecisionSection({
             </Link>
           ) : null}
         </div>
-      </div>
+      }
+      className="admin-mb-16 booking-post-match-cancellation-decision-card"
+      description="Review retained chat, closeout evidence, and operator notes before choosing the final Partner fee outcome."
+      id="booking-post-match-cancellation-decision"
+      title="Post-match cancellation processing"
+    >
 
       <div
         aria-label="Post-match cancellation evidence checklist"
@@ -86,6 +85,6 @@ export function BookingDetailPostMatchDecisionSection({
           <span className="muted">This cancellation decision is already closed.</span>
         )}
       </div>
-    </section>
+    </AdminSection>
   );
 }
