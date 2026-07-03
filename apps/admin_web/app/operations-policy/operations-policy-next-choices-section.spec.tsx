@@ -10,7 +10,7 @@ describe('OperationsPolicyNextChoicesSection', () => {
 
     expect(classNamesIn(section)).toContain('card admin-section');
     expect(rendered).toContain('Recommended next choices');
-    expect(rendered.match(/class="insight-card"/g)).toHaveLength(7);
+    expect(rendered.match(/class="card admin-card insight-card"/g)).toHaveLength(7);
     expect(rendered).toContain('First-pick Partner acceptance');
     expect(rendered).toContain('Partner response window');
     expect(rendered).toContain('Vietnam sender rules');

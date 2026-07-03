@@ -52,7 +52,7 @@ const decisionHints: readonly DecisionHintProps[] = [
 
 function DecisionHint({ title, recommendation, detail }: DecisionHintProps) {
   return (
-    <div className="insight-card">
+    <div className="card admin-card insight-card">
       <strong>{title}</strong>
       <p>{recommendation}</p>
       <p className="muted">{detail}</p>

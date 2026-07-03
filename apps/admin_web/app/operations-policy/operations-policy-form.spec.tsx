@@ -52,6 +52,7 @@ describe('OperationsPolicyForm', () => {
 
     expect(classNames).toContain('admin-form-input');
     expect(classNames).toContain('admin-form-textarea');
+    expect(classNames).toContain('card admin-card insight-card');
     expect(classNames).toContain('admin-form-control-button button button-primary admin-mt-12');
     expect(classNames).not.toContain('field');
   });

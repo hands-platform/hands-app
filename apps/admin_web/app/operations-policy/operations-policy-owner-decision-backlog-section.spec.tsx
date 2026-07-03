@@ -43,6 +43,7 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
     const rendered = normalizedTextContent(section);
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16');
+    expect(classNamesIn(section)).toContain('card admin-card insight-card');
     expect(rendered).toContain('Owner decision backlog');
     expect(rendered).toContain('Current decision pressure');
     expect(rendered).toContain('1 active record(s)');

@@ -65,7 +65,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             <small>{item.evidence}</small>
             <div className="booking-radar admin-mt-12">
               {item.options.map((option) => (
-                <div className="insight-card" key={option.label}>
+                <div className="card admin-card insight-card" key={option.label}>
                   <strong>{displayOperationalWording(option.label)}</strong>
                   <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
                 </div>
