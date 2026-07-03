@@ -97,7 +97,7 @@ export function ConfirmDialog({
       aria-busy={loading || undefined}
       aria-describedby={descriptionId}
       aria-labelledby={titleId}
-      className="card"
+      className="card admin-dialog-card"
       role="alertdialog"
     >
       <div className="ops-section-header">

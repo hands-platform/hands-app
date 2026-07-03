@@ -49,7 +49,7 @@ describe('ConfirmDialog', () => {
     expect(dialog.props).toMatchObject({
       'aria-describedby': 'booking-cancel-description',
       'aria-labelledby': 'booking-cancel-title',
-      className: 'card',
+      className: 'card admin-dialog-card',
       role: 'alertdialog',
     });
     expect(dialog.props.children).toHaveLength(2);

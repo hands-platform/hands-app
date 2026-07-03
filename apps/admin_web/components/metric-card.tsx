@@ -41,11 +41,11 @@ export function MetricCard({ label, value, helper, href }: MetricCardProps) {
 
   if (href) {
     return (
-      <Link className="card" href={href}>
+      <Link className="card admin-kpi-card" href={href}>
         {content}
       </Link>
     );
   }
 
-  return <div className="card">{content}</div>;
+  return <div className="card admin-kpi-card">{content}</div>;
 }

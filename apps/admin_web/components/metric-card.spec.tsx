@@ -10,7 +10,7 @@ describe('MetricCard', () => {
 
     expect(card.type).toBe('div');
     expect(card.props).toMatchObject({
-      className: 'card',
+      className: 'card admin-kpi-card',
     });
     expect(card.props.children.props.className).toBe('metric-card');
     const content = card.props.children.props.children[1].props.children;
@@ -28,7 +28,7 @@ describe('MetricCard', () => {
 
     expect(card.type).toBeDefined();
     expect(card.props).toMatchObject({
-      className: 'card',
+      className: 'card admin-kpi-card',
       href: '/notifications?review=failed',
     });
   });
