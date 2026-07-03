@@ -92,6 +92,7 @@ describe('BookingMonitorFiltersSection', () => {
     expect(renderToStaticMarkup(section)).toContain('aria-pressed="true"');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
         'booking-date-filter-bar admin-mb-14',
         'booking-date-filter-buttons',
       ]),
