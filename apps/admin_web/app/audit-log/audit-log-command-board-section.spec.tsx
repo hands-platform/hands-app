@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   AuditLogCommandBoardSection,
   type AuditCommandBoardItem,
@@ -49,6 +52,15 @@ describe('AuditLogCommandBoardSection', () => {
     expect(rendered).toContain('0 audit record(s)');
     expect(rendered).toContain('Quiet trail');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'signal signal-ok']));
+  });
+
+  it('uses shared badge atoms for audit command status chips', () => {
+    const source = readFileSync(join(process.cwd(), 'app/audit-log/audit-log-command-board-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${hasWarningLogs ?');
+    expect(source).not.toContain('<span className="pill">{item.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.logs.length} event(s)</span>');
   });
 });
 

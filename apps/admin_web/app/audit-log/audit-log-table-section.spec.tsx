@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-section';
 
 describe('AuditLogTableSection', () => {
@@ -30,6 +33,15 @@ describe('AuditLogTableSection', () => {
     });
 
     expect(textContent(section)).toContain('No audit logs loaded.');
+  });
+
+  it('uses shared action and badge atoms for audit row links and metadata chips', () => {
+    const source = readFileSync(join(process.cwd(), 'app/audit-log/audit-log-table-section.tsx'), 'utf8');
+
+    expect(source).toContain('ActionMenu');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<Link className="pill pill-info" href={row.relatedBoardHref}>');
+    expect(source).not.toContain('<span className={item.className} key={`${item.label}-${index}`}>');
   });
 });
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 export type AuditCommandTone = 'warn' | 'info' | 'ok';
 
@@ -35,9 +36,9 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
       className="admin-mb-16"
       description="High-impact admin changes grouped by policy, money movement, dispatch state, notifications, and recent operator actions."
       status={
-        <span className={`pill ${hasWarningLogs ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={hasWarningLogs ? 'warning' : 'success'}>
           {totalLogCount} audit record(s)
-        </span>
+        </StatusBadge>
       }
       title="Audit command board"
     >
@@ -47,8 +48,8 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
           <h3>{item.title}</h3>
           <p>{item.detail}</p>
           <div className="participant-list">
-            <span className="pill">{item.status}</span>
-            <span className="pill">{item.logs.length} event(s)</span>
+            <StatusBadge tone="neutral">{item.status}</StatusBadge>
+            <StatusBadge tone="neutral">{item.logs.length} event(s)</StatusBadge>
           </div>
           {item.logs.length > 0 ? (
             <div className="stack">

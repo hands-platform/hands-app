@@ -1,6 +1,6 @@
-import Link from 'next/link';
-
+import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type AuditLogMetadataHighlight = {
   readonly className: string;
@@ -54,9 +54,17 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             <div className="muted">{row.targetLabel}</div>
           </td>
           <td>
-            <Link className="pill pill-info" href={row.relatedBoardHref}>
-              {row.relatedBoardLabel}
-            </Link>
+            <ActionMenu
+              actions={[
+                {
+                  href: row.relatedBoardHref,
+                  kind: 'link',
+                  label: row.relatedBoardLabel,
+                  tone: 'info',
+                },
+              ]}
+              label={`${row.id} related board actions`}
+            />
             <div className="muted admin-mt-6">{row.priorityLabel}</div>
           </td>
           <td>
@@ -67,9 +75,9 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             {row.metadataHighlights.length > 0 ? (
               <div className="participant-list admin-mb-8">
                 {row.metadataHighlights.map((item, index) => (
-                  <span className={item.className} key={`${item.label}-${index}`}>
+                  <PillClassBadge pillClass={item.className} key={`${item.label}-${index}`}>
                     {item.label}
-                  </span>
+                  </PillClassBadge>
                 ))}
               </div>
             ) : null}
