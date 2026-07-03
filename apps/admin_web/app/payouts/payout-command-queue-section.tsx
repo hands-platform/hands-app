@@ -1,4 +1,5 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type PayoutCommandSignal = {
   readonly action: string;
@@ -32,7 +33,7 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
           {signals.map((signal) => (
             <div className={`ops-task-card ${signal.className}`} key={signal.title}>
               <div>
-                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
                 <h3>{signal.title}</h3>
                 <p className="muted">{signal.detail}</p>
               </div>

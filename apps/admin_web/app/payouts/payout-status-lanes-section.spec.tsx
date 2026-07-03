@@ -52,6 +52,23 @@ describe('PayoutStatusLanesSection', () => {
 
     expect(textContent(section)).toContain('No paid payout batch.');
   });
+
+  it('does not duplicate the base pill class for lane count badges', () => {
+    const section = PayoutStatusLanesSection({
+      batchCount: 0,
+      lanes: [
+        {
+          batches: [],
+          emptyText: 'No blocked payout batch.',
+          pillClass: 'pill pill-warn',
+          title: 'Needs review',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function textContent(value: unknown): string {

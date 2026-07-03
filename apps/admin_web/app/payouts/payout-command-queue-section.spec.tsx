@@ -34,6 +34,24 @@ describe('PayoutCommandQueueSection', () => {
 
     expect(textContent(section)).toContain('No payout command signal is visible for this range.');
   });
+
+  it('does not duplicate the base pill class for command signal badges', () => {
+    const section = PayoutCommandQueueSection({
+      signals: [
+        {
+          action: 'Review transfer evidence.',
+          className: 'ops-task-pending',
+          detail: 'Transfer needs finance review.',
+          pillClass: 'pill pill-warn',
+          status: 'Review',
+          title: 'Transfer review',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function textContent(value: unknown): string {

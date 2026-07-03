@@ -1,4 +1,5 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney, shortRecordId } from '../../lib/admin-format';
 
 export type PayoutStatusLaneBatch = {
@@ -36,7 +37,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
           <div key={lane.title}>
             <div className="ops-section-header">
               <h3>{lane.title}</h3>
-              <span className={`pill ${lane.pillClass}`}>{lane.batches.length}</span>
+              <PillClassBadge pillClass={lane.pillClass}>{lane.batches.length}</PillClassBadge>
             </div>
             {lane.batches.length ? (
               <div className="setup-stage-list">

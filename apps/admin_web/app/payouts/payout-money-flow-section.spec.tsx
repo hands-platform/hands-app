@@ -46,6 +46,26 @@ describe('PayoutMoneyFlowSection', () => {
 
     expect(textContent(section)).toContain('No payout money flow check is visible for this range.');
   });
+
+  it('does not duplicate the base pill class for money flow check badges', () => {
+    const section = PayoutMoneyFlowSection({
+      cards: [],
+      checks: [
+        {
+          action: 'Attach reference.',
+          className: 'ops-task-pending',
+          detail: 'Reference is missing.',
+          pillClass: 'pill pill-warn',
+          status: 'Review',
+          title: 'Transfer reference',
+        },
+      ],
+      currency: 'VND',
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function textContent(value: unknown): string {

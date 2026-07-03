@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutMoneyFlowCard = {
@@ -53,7 +54,7 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
           {checks.map((check) => (
             <div className={`ops-task-card ${check.className}`} key={check.title}>
               <div>
-                <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
                 <h3>{check.title}</h3>
                 <p className="muted">{check.detail}</p>
               </div>

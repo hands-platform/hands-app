@@ -37,6 +37,27 @@ describe('PayoutReleaseBlockerQueueSection', () => {
 
     expect(textContent(section)).toContain('No payout release blocker');
   });
+
+  it('does not duplicate the base pill class for release blocker reason badges', () => {
+    const section = PayoutReleaseBlockerQueueSection({
+      items: [
+        {
+          amount: 750000,
+          blockingReasons: [{ label: 'Missing ref', pillClass: 'pill pill-danger' }],
+          currency: 'VND',
+          detail: 'Bank reference is required before paid status.',
+          id: 'batch-1',
+          label: 'Missing ref',
+          providerLabel: 'Partner One',
+          severity: 'Block',
+          action: 'Save bank reference before release.',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-danger');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-danger');
+  });
 });
 
 function textContent(value: unknown): string {
