@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffImmediateActionSection } from './operations-handoff-immediate-action-section';
 
 describe('OperationsHandoffImmediateActionSection', () => {
@@ -38,13 +38,18 @@ describe('OperationsHandoffImmediateActionSection', () => {
 
     expect(section).not.toBeNull();
     if (section === null) throw new Error('Expected immediate action section to render.');
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Immediate action queue');
     expect(rendered).toContain('1');
     expect(rendered).toContain('action lane(s)');
     expect(rendered).toContain('Open matching windows');
     expect(rendered).not.toContain('Closeout clear');
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 operations-handoff-immediate-action-card',
+        'ops-task-grid',
+      ]),
+    );
   });
 
   it('returns no section when there are no actions', () => {

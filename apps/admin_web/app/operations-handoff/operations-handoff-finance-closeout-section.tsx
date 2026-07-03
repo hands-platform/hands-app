@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney, shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
 
@@ -23,14 +24,8 @@ export function OperationsHandoffFinanceCloseoutSection({
   const visibleRows = rows.slice(0, 12);
 
   return (
-    <section className="card">
-      <div className="toolbar">
-        <div>
-          <h2>Finance and chat closeout</h2>
-          <p className="muted">
-            Cash debt, payout evidence, and chat records that an operator should not lose at handoff.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="actions">
           <Link className="text-link" href="/cash-settlements">
             Cash settlements
@@ -39,7 +34,11 @@ export function OperationsHandoffFinanceCloseoutSection({
             Payouts
           </Link>
         </div>
-      </div>
+      }
+      className="operations-handoff-finance-closeout-card"
+      description="Cash debt, payout evidence, and chat records that an operator should not lose at handoff."
+      title="Finance and chat closeout"
+    >
       <div className="admin-table-scroll">
         <AdminDataTable
           emptyMessage="No finance rows need handoff."
@@ -69,6 +68,6 @@ export function OperationsHandoffFinanceCloseoutSection({
           ))}
         </AdminDataTable>
       </div>
-    </section>
+    </AdminSection>
   );
 }

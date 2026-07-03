@@ -15,6 +15,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminSection } from '../../components/admin-surface';
 import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
@@ -261,19 +262,15 @@ function OperationsHandoffFullDetailsLink({ range }: { readonly range: string })
   }
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Detailed handoff lists</h2>
-          <p className="muted">
-            Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and
-            finance closeout rows are loaded only when an operator opens full handoff details.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <a className="button button-secondary" href={`/operations-handoff?${query.toString()}`}>
           Load full handoff details
         </a>
-      </div>
-    </section>
+      }
+      className="admin-mb-16 operations-handoff-full-details-card"
+      description="Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and finance closeout rows are loaded only when an operator opens full handoff details."
+      title="Detailed handoff lists"
+    />
   );
 }

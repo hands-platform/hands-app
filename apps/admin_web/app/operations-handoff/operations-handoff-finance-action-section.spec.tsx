@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffFinanceActionSection } from './operations-handoff-finance-action-section';
 
 describe('OperationsHandoffFinanceActionSection', () => {
@@ -23,12 +23,17 @@ describe('OperationsHandoffFinanceActionSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Finance handoff action map');
     expect(rendered).toContain('Payment state handoff');
     expect(rendered).toContain('100.000 VND');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/finance-closeout', '/payments?review=needs-action']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 operations-handoff-finance-action-card',
+        'ops-task-grid',
+      ]),
     );
   });
 

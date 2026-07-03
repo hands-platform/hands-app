@@ -21,7 +21,6 @@ describe('OperationsHandoffActivityStreamSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Unified activity stream');
     expect(rendered).toContain('Export activity CSV');
     expect(rendered).toContain('Notification');
@@ -35,7 +34,11 @@ describe('OperationsHandoffActivityStreamSection', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'card admin-section admin-mb-16 operations-handoff-activity-stream-card',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+      ]),
     );
   });
 

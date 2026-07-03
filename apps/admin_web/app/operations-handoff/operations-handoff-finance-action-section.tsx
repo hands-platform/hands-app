@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import type { FinanceHandoffActionRow } from './operations-handoff-finance-actions';
 
 type OperationsHandoffFinanceActionSectionProps = {
@@ -9,19 +10,16 @@ export function OperationsHandoffFinanceActionSection({
   actions,
 }: OperationsHandoffFinanceActionSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h2>Finance handoff action map</h2>
-          <p className="muted">
-            Money-flow lanes the next operator should verify before continuing the shift: payment state,
-            refund rows, cash wallet debt, payout release, and tax/reference trace.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href="/finance-closeout">
           Open Finance Closeout
         </Link>
-      </div>
+      }
+      className="admin-mb-16 operations-handoff-finance-action-card"
+      description="Money-flow lanes the next operator should verify before continuing the shift: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
+      title="Finance handoff action map"
+    >
       <div className="ops-task-grid">
         {actions.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.id}>
@@ -36,6 +34,6 @@ export function OperationsHandoffFinanceActionSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

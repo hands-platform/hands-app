@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CalendarDays } from 'lucide-react';
 
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
 
@@ -17,17 +18,14 @@ const handoffRangeLinks = [
 
 export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDateRangeSectionProps) {
   return (
-    <section className="card admin-mt-16 admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h2>Handoff date range</h2>
-          <p className="muted">
-            Live booking counters stay current. Operator notes and the unified activity stream are filtered by
-            the selected record window.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className="pill pill-info">{dateRangeLabel(range)}</span>
-      </div>
+      }
+      className="admin-mt-16 admin-mb-16 operations-handoff-date-range-card"
+      description="Live booking counters stay current. Operator notes and the unified activity stream are filtered by the selected record window."
+      title="Handoff date range"
+    >
       <div className="actions">
         {handoffRangeLinks.map(([label, href]) => (
           <Link className="button button-secondary" href={href} key={href}>
@@ -36,6 +34,6 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

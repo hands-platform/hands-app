@@ -30,7 +30,6 @@ describe('OperationsHandoffBookingQueueSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Booking handoff queue');
     expect(rendered).toContain('Customer Mai');
     expect(rendered).toContain('Partner Linh');
@@ -47,6 +46,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-avatar-status-dot is-working',
+        'card admin-section admin-mb-16 operations-handoff-booking-queue-card',
         'admin-table-scroll',
         'table-link',
         'table vuexy-data-table',

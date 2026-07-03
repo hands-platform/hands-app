@@ -24,7 +24,6 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
     expect(rendered).toContain('Finance and chat closeout');
     expect(rendered).toContain('Partner Linh');
     expect(rendered).toContain('200.000 VND');
@@ -38,7 +37,11 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'card admin-section operations-handoff-finance-closeout-card',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+      ]),
     );
   });
 

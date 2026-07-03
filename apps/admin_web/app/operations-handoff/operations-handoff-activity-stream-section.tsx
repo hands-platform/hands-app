@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Download, ExternalLink, FileClock, MessageSquare } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
 
@@ -16,15 +17,8 @@ export function OperationsHandoffActivityStreamSection({
   rows,
 }: OperationsHandoffActivityStreamSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h2>Unified activity stream</h2>
-          <p className="muted">
-            Recent booking movement, chat archive messages, operator notes, notification failures, and
-            finance rows in one chronological trail.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="actions">
           <a
             className="button button-secondary"
@@ -43,7 +37,11 @@ export function OperationsHandoffActivityStreamSection({
             Chat archive
           </Link>
         </div>
-      </div>
+      }
+      className="admin-mb-16 operations-handoff-activity-stream-card"
+      description="Recent booking movement, chat archive messages, operator notes, notification failures, and finance rows in one chronological trail."
+      title="Unified activity stream"
+    >
       <div className="admin-table-scroll">
         <AdminDataTable
           emptyMessage="No recent activity stream rows."
@@ -74,7 +72,7 @@ export function OperationsHandoffActivityStreamSection({
           ))}
         </AdminDataTable>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

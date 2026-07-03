@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminSection } from '../../components/admin-surface';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -23,14 +24,8 @@ export function OperationsHandoffBookingQueueSection({
   bookings,
 }: OperationsHandoffBookingQueueSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h2>Booking handoff queue</h2>
-          <p className="muted">
-            Open and recently changed bookings with payment, chat, Partner, and next action.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <div className="actions">
           <Link className="button button-secondary" href="/bookings?view=attention">
             <ClipboardList aria-hidden="true" size={16} />
@@ -41,7 +36,11 @@ export function OperationsHandoffBookingQueueSection({
             Chat archive
           </Link>
         </div>
-      </div>
+      }
+      className="admin-mb-16 operations-handoff-booking-queue-card"
+      description="Open and recently changed bookings with payment, chat, Partner, and next action."
+      title="Booking handoff queue"
+    >
       <div className="admin-table-scroll">
         <AdminDataTable
           emptyMessage="No active booking handoff rows."
@@ -94,7 +93,7 @@ export function OperationsHandoffBookingQueueSection({
           ))}
         </AdminDataTable>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

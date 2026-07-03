@@ -1,11 +1,10 @@
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 
 describe('OperationsHandoffDateRangeSection', () => {
   it('renders the selected range label and handoff range links', () => {
     const section = OperationsHandoffDateRangeSection({ range: 'today' });
 
-    expect(section.type).toBe('section');
     expect(textContent(section)).toContain('Today (Vietnam)');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
@@ -13,6 +12,12 @@ describe('OperationsHandoffDateRangeSection', () => {
         '/operations-handoff?range=today',
         '/operations-handoff?range=7d',
         '/operations-handoff?range=30d',
+      ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mt-16 admin-mb-16 operations-handoff-date-range-card',
+        'actions',
       ]),
     );
   });
