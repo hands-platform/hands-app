@@ -7,6 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -220,9 +221,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     <div className="muted">Company expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>
                   </td>
                   <td>
-                    <span className={`pill ${coupon.reviewFlag ? 'pill-warn' : 'pill-success'}`}>
+                    <PillClassBadge pillClass={coupon.reviewFlag ? 'pill-warn' : 'pill-success'}>
                       {coupon.reviewFlag ?? 'Snapshot OK'}
-                    </span>
+                    </PillClassBadge>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.taxStatus}</div>
                   </td>

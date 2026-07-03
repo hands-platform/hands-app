@@ -366,6 +366,20 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
   });
 
+  it('uses shared badge atoms for coupon finance review pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/coupon-finance/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain("className={`pill ${coupon.reviewFlag ? 'pill-warn' : 'pill-success'}`}");
+  });
+
+  it('uses shared badge atoms for platform VAT category pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${platformVatCategoryPill(row.category)}`}');
+  });
+
   it.each([
     ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx'],
     ['coupon finance', 'app/finance-tax/coupon-finance/page.tsx'],

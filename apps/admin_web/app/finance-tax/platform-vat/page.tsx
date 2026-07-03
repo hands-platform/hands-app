@@ -4,6 +4,7 @@ import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -116,7 +117,9 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             {summary.rateBreakdown.map((row) => (
               <tr key={`${row.category}-${row.platformVatRateBps}`}>
                 <td>
-                  <span className={`pill ${platformVatCategoryPill(row.category)}`}>{row.category}</span>
+                  <PillClassBadge pillClass={platformVatCategoryPill(row.category)}>
+                    {row.category}
+                  </PillClassBadge>
                 </td>
                 <td>{formatBps(row.platformVatRateBps)}</td>
                 <td>{row.settlementCount}</td>
