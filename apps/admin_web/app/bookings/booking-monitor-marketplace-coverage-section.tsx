@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -36,22 +37,20 @@ export function BookingMonitorMarketplaceCoverageSection({
   marketplaceBookingCoverageSummary,
 }: BookingMonitorMarketplaceCoverageSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mt-14">
-      <div className="ops-section-header">
-        <div>
-          <h3>Marketplace booking coverage board</h3>
-          <p className="muted">
-            Booking-level exceptions for marketplace supply, customer choice, wallet gate, and final selection.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminSection
+      actions={
+        <>
           {marketplaceBookingCoveragePills.map((pill) => (
             <span className={`pill ${pill.tone}`} key={pill.label}>
               {pill.label}
             </span>
           ))}
-        </div>
-      </div>
+        </>
+      }
+      className="admin-card-scroll admin-mt-14"
+      description="Booking-level exceptions for marketplace supply, customer choice, wallet gate, and final selection."
+      title="Marketplace booking coverage board"
+    >
       <div className="participant-list admin-mt-12">
         <span className="pill">Final Partner selected {marketplaceBookingCoverageSummary.selected}</span>
       </div>
@@ -120,7 +119,7 @@ export function BookingMonitorMarketplaceCoverageSection({
           </AdminDataTable>
         </AdminTableScroll>
       )}
-    </section>
+    </AdminSection>
   );
 }
 

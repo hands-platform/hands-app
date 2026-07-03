@@ -66,7 +66,13 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
     expect(rendered).toContain('2 participant record(s)');
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+      expect.arrayContaining([
+        'card admin-section admin-card-scroll admin-mt-14',
+        'ops-section-header admin-section-header',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'text-link',
+      ]),
     );
   });
 
