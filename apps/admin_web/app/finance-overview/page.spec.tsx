@@ -169,10 +169,13 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
     expect(markup).toContain('Top finance queues');
-    expect(markup).toContain('finance-overview-priority-board');
+    expect(markup).toContain('card admin-section finance-overview-priority-board');
+    expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('finance-overview-priority-card');
     expect(markup).toContain('Core Finance KPI');
     expect(markup).toContain('6 signals');
+    expect(markup).toContain('card admin-section finance-overview-kpi-section');
+    expect(markup).toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
@@ -185,6 +188,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('200.000');
     expect(markup).toContain('75.000');
     expect(markup).toContain('Finance Action Lists');
+    expect(markup).toContain('card admin-section usage-overview-action-card finance-overview-action-card');
+    expect(markup).toContain('admin-section-body usage-overview-action-list finance-overview-action-list');
     expect(markup).toContain('/finance-tax/payment-clearing');
     expect(markup).toContain('/finance-tax/general-ledger');
     expect(markup).toContain('admin-form-input');

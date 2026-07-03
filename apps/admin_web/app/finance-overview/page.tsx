@@ -15,6 +15,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
+import { AdminSection } from '../../components/admin-surface';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
   buildFinanceOverviewActionItems,
@@ -112,22 +113,18 @@ export default async function FinanceOverviewPage({
         />
       </section>
 
-      <section className="card finance-overview-priority-board" aria-label="Finance priority desk">
-        <div className="ops-section-header usage-overview-section-header">
-          <div>
-            <h2>Finance Priority Desk</h2>
-            <p className="muted">Top finance queues stay above the KPI wall so operators see risk first.</p>
-          </div>
-          <span className={`pill ${priorityItems.length > 0 ? 'pill-warn' : 'pill-success'}`}>
-            {priorityItems.length > 0 ? `${priorityItems.length} need review` : 'All clear'}
-          </span>
-        </div>
-        <div className="finance-overview-priority-grid">
-          {priorityDeskItems.map((item) => (
-            <FinancePriorityItem item={item} key={item.label} />
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        bodyClassName="finance-overview-priority-grid"
+        className="finance-overview-priority-board"
+        description="Top finance queues stay above the KPI wall so operators see risk first."
+        statusLabel={priorityItems.length > 0 ? `${priorityItems.length} need review` : 'All clear'}
+        statusTone={priorityItems.length > 0 ? 'warning' : 'success'}
+        title="Finance Priority Desk"
+      >
+        {priorityDeskItems.map((item) => (
+          <FinancePriorityItem item={item} key={item.label} />
+        ))}
+      </AdminSection>
 
       <section className="finance-overview-control-board" aria-label="Finance control board">
         {controlMetrics.map((metric) => (
@@ -178,20 +175,17 @@ export default async function FinanceOverviewPage({
         </article>
       </section>
 
-      <section className="finance-overview-kpi-section" aria-label="Core finance KPI">
-        <div className="ops-section-header usage-overview-section-header">
-          <div>
-            <h2>Core Finance KPI</h2>
-            <p className="muted">Six top-level signals. Detailed wallet, refund, tax, and settlement evidence remains below.</p>
-          </div>
-          <span className="pill pill-info">{primaryKpis.length} signals</span>
-        </div>
-        <div className="usage-overview-command-grid finance-overview-kpi-grid">
-          {primaryKpis.map((kpi) => (
-            <FinanceKpiCard key={kpi.label} kpi={kpi} />
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        bodyClassName="usage-overview-command-grid finance-overview-kpi-grid"
+        className="finance-overview-kpi-section"
+        description="Six top-level signals. Detailed wallet, refund, tax, and settlement evidence remains below."
+        statusLabel={`${primaryKpis.length} signals`}
+        title="Core Finance KPI"
+      >
+        {primaryKpis.map((kpi) => (
+          <FinanceKpiCard key={kpi.label} kpi={kpi} />
+        ))}
+      </AdminSection>
 
       <section className="finance-overview-section-grid" aria-label="Finance overview sections">
         {sections.map((section) => (
@@ -199,23 +193,17 @@ export default async function FinanceOverviewPage({
         ))}
       </section>
 
-      <section className="card usage-overview-action-card finance-overview-action-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Finance Action Lists</h2>
-            <p className="muted">
-              Today-first finance queues. Each link opens a bounded evidence list instead of pulling all rows
-              into this overview.
-            </p>
-          </div>
-          <AlertTriangle size={18} aria-hidden="true" />
-        </div>
-        <div className="usage-overview-action-list finance-overview-action-list">
-          {actionItems.map((item) => (
-            <FinanceActionItem key={item.label} item={item} />
-          ))}
-        </div>
-      </section>
+      <AdminSection
+        actions={<AlertTriangle size={18} aria-hidden="true" />}
+        bodyClassName="usage-overview-action-list finance-overview-action-list"
+        className="usage-overview-action-card finance-overview-action-card"
+        description="Today-first finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
+        title="Finance Action Lists"
+      >
+        {actionItems.map((item) => (
+          <FinanceActionItem key={item.label} item={item} />
+        ))}
+      </AdminSection>
     </div>
   );
 }
@@ -267,38 +255,35 @@ function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOver
   const Icon = financeSectionIcons[section.title] ?? CircleDollarSign;
 
   return (
-    <section className={`card finance-overview-section-card is-${section.tone}`}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{section.title}</h2>
-          <p className="muted">{section.description}</p>
-        </div>
-        <Icon size={18} aria-hidden="true" />
-      </div>
-      <div className="finance-overview-row-list">
-        {section.rows.map((row) => {
-          const body = (
-            <>
-              <div>
-                <strong>{row.label}</strong>
-                <small>{row.detail}</small>
-              </div>
-              <span>{row.value}</span>
-            </>
-          );
-
-          return row.href ? (
-            <a className="finance-overview-row" href={row.href} key={row.label}>
-              {body}
-            </a>
-          ) : (
-            <div className="finance-overview-row" key={row.label}>
-              {body}
+    <AdminSection
+      actions={<Icon size={18} aria-hidden="true" />}
+      bodyClassName="finance-overview-row-list"
+      className={`finance-overview-section-card is-${section.tone}`}
+      description={section.description}
+      title={section.title}
+    >
+      {section.rows.map((row) => {
+        const body = (
+          <>
+            <div>
+              <strong>{row.label}</strong>
+              <small>{row.detail}</small>
             </div>
-          );
-        })}
-      </div>
-    </section>
+            <span>{row.value}</span>
+          </>
+        );
+
+        return row.href ? (
+          <a className="finance-overview-row" href={row.href} key={row.label}>
+            {body}
+          </a>
+        ) : (
+          <div className="finance-overview-row" key={row.label}>
+            {body}
+          </div>
+        );
+      })}
+    </AdminSection>
   );
 }
 
