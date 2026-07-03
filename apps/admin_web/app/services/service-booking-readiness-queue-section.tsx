@@ -1,3 +1,4 @@
+import { AdminSection } from '../../components/admin-surface';
 import type { ServiceBookingReadinessItem } from '../../lib/service-booking-readiness-queue';
 
 type ServiceBookingReadinessQueueSectionProps = {
@@ -14,15 +15,10 @@ export function ServiceBookingReadinessQueueSection({
   warningCount,
 }: ServiceBookingReadinessQueueSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking readiness queue</h2>
-          <p className="muted">
-            Shows services that can block customer booking or create a negative finance result before Partners
-            start using those prices.
-          </p>
-        </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Shows services that can block customer booking or create a negative finance result before Partners start using those prices."
+      status={
         <div className="actions">
           <span className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
             {blockedCount} blocked
@@ -31,7 +27,9 @@ export function ServiceBookingReadinessQueueSection({
             {warningCount} warning
           </span>
         </div>
-      </div>
+      }
+      title="Booking readiness queue"
+    >
       {items.length ? (
         <div className="setup-stage-list">
           {items.slice(0, VISIBLE_READINESS_ITEM_LIMIT).map((item) => (
@@ -51,6 +49,6 @@ export function ServiceBookingReadinessQueueSection({
           All active service rows have a base payout rule and a positive projected company commission.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }

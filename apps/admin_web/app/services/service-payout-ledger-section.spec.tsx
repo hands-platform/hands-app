@@ -13,11 +13,17 @@ describe('ServicePayoutLedgerSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'admin-table-section-body',
+      className: 'admin-card-scroll admin-mb-16',
+      statusLabel: '3 active option(s)',
+      statusTone: 'info',
+      title: 'Service payout ledger',
+    });
     expect(rendered).toContain('Service payout ledger');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('active option(s)');
-    expect(rendered).toContain('pill-info');
     expect(rendered).toContain('Showing first');
   });
 

@@ -21,7 +21,14 @@ describe('ServiceDurationPricingMatrixSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'admin-table-section-body',
+      className: 'admin-card-scroll admin-mb-16',
+      statusLabel: '60 / 90 / 120 min',
+      statusTone: 'info',
+      title: 'Duration pricing matrix',
+    });
     expect(rendered).toContain('Duration pricing matrix');
     expect(rendered).toContain('60 / 90 / 120');
     expect(rendered).toContain('120 min');

@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 
@@ -32,18 +33,13 @@ export function ServiceBookingFinanceTraceSection({
   summary,
 }: ServiceBookingFinanceTraceSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recent booking finance trace</h2>
-          <p className="muted">
-            Links service pricing to booking payment, Partner earning, tax log, platform fee log, and wallet
-            movement. Use this after changing a price policy to confirm real bookings are producing the
-            expected finance records.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} trace row(s)</span>
-      </div>
+    <AdminSection
+      className="admin-card-scroll admin-mb-16"
+      description="Links service pricing to booking payment, Partner earning, tax log, platform fee log, and wallet movement. Use this after changing a price policy to confirm real bookings are producing the expected finance records."
+      statusLabel={`${rows.length} trace row(s)`}
+      statusTone="info"
+      title="Recent booking finance trace"
+    >
       <div className="service-trace-summary">
         <div>
           <span>Payment total</span>
@@ -153,6 +149,6 @@ export function ServiceBookingFinanceTraceSection({
       ) : (
         <p className="muted">No recent booking service rows were found for the current service catalog.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }

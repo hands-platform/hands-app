@@ -21,7 +21,13 @@ describe('ServicePricePolicyPreviewSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-card-scroll admin-mb-16',
+      statusLabel: '1 policy check(s)',
+      statusTone: 'warning',
+      title: 'Price policy change preview',
+    });
     expect(rendered).toContain('Price policy change preview');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('policy check(s)');

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { CalendarClock, FileClock } from 'lucide-react';
 
+import { AdminSection } from '../../components/admin-surface';
+
 type ServiceBookingExposureGuardSectionProps = {
   readonly activeServiceCount: number;
   readonly blockedCount: number;
@@ -19,15 +21,10 @@ export function ServiceBookingExposureGuardSection({
   warningCount,
 }: ServiceBookingExposureGuardSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Customer booking exposure guard</h2>
-          <p className="muted">
-            Customer and Partner apps only expose service options backed by an active payout rule. Use this
-            guard before opening a new service type or changing Partner prices.
-          </p>
-        </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Customer and Partner apps only expose service options backed by an active payout rule. Use this guard before opening a new service type or changing Partner prices."
+      status={
         <div className="actions">
           <span className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
             {blockedCount} blocked
@@ -36,7 +33,9 @@ export function ServiceBookingExposureGuardSection({
             {warningCount} warning
           </span>
         </div>
-      </div>
+      }
+      title="Customer booking exposure guard"
+    >
       <div className="service-trace-summary">
         <div>
           <span>Active duration options</span>
@@ -65,6 +64,6 @@ export function ServiceBookingExposureGuardSection({
           Review service pricing audit
         </a>
       </div>
-    </section>
+    </AdminSection>
   );
 }

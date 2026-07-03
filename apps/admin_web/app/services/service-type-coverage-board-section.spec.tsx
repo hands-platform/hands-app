@@ -24,7 +24,11 @@ describe('ServiceTypeCoverageBoardSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-card-scroll admin-mb-16',
+      title: 'Service type coverage board',
+    });
     expect(rendered).toContain('Service type coverage board');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('blocked');

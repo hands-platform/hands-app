@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
 import { slugify } from '../../lib/service-catalog-filters';
@@ -28,18 +29,14 @@ export function ServicePayoutLedgerSection({
   visibleRows,
 }: ServicePayoutLedgerSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Service payout ledger</h2>
-          <p className="muted">
-            Finance view for the current minimum price of every active duration option. This is the fastest
-            way to confirm customer price, Partner payout, tax/cost assumptions, and customer-app visibility
-            before Partners start selling.
-          </p>
-        </div>
-        <span className="pill pill-info">{activeServiceCount} active option(s)</span>
-      </div>
+    <AdminSection
+      bodyClassName="admin-table-section-body"
+      className="admin-card-scroll admin-mb-16"
+      description="Finance view for the current minimum price of every active duration option. This is the fastest way to confirm customer price, Partner payout, tax/cost assumptions, and customer-app visibility before Partners start selling."
+      statusLabel={`${activeServiceCount} active option(s)`}
+      statusTone="info"
+      title="Service payout ledger"
+    >
       <div className="admin-table-scroll">
         <AdminDataTable
           className="service-ledger"
@@ -95,6 +92,6 @@ export function ServicePayoutLedgerSection({
           include every active option.
         </p>
       ) : null}
-    </section>
+    </AdminSection>
   );
 }

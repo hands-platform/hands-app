@@ -19,7 +19,13 @@ describe('ServiceBookingFinanceTraceSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-card-scroll admin-mb-16',
+      statusLabel: '1 trace row(s)',
+      statusTone: 'info',
+      title: 'Recent booking finance trace',
+    });
     expect(rendered).toContain('Recent booking finance trace');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Open booking');

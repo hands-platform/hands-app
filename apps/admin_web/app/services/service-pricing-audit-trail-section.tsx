@@ -1,5 +1,6 @@
 import { FileClock } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   humanizeAuditAction,
@@ -21,20 +22,18 @@ const SERVICE_PRICING_AUDIT_HEADERS = [
 
 export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTrailSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recent pricing audit trail</h2>
-          <p className="muted">
-            Tracks who changed service prices, Partner payout amounts, VAT, other costs, and duration settings.
-            Use this before investigating unexpected commission or payout changes.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <a className="button button-secondary" href="/audit-log?bucket=Service%2FPricing">
           <FileClock aria-hidden="true" size={16} />
           Open service audit
         </a>
-      </div>
+      }
+      bodyClassName="admin-table-section-body"
+      className="admin-card-scroll admin-mb-16"
+      description="Tracks who changed service prices, Partner payout amounts, VAT, other costs, and duration settings. Use this before investigating unexpected commission or payout changes."
+      title="Recent pricing audit trail"
+    >
       {rows.length ? (
         <div className="admin-table-scroll">
           <AdminDataTable
@@ -80,6 +79,6 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
       ) : (
         <p className="muted">No recent service pricing audit event has been recorded yet.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }

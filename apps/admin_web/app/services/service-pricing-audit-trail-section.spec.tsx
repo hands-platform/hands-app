@@ -16,7 +16,12 @@ describe('ServicePricingAuditTrailSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'admin-table-section-body',
+      className: 'admin-card-scroll admin-mb-16',
+      title: 'Recent pricing audit trail',
+    });
     expect(rendered).toContain('Recent pricing audit trail');
     expect(rendered).toContain('Service payout rule / Created');
     expect(rendered).toContain('customerPrice');

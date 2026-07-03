@@ -1,3 +1,4 @@
+import { AdminSection } from '../../components/admin-surface';
 import type { ServiceActionNotice } from '../../lib/service-action-notice';
 
 type ServiceActionNoticeSectionProps = {
@@ -13,16 +14,12 @@ export function ServiceActionNoticeSection({ notice }: ServiceActionNoticeSectio
   const noticeClassName = isSuccess ? 'admin-notice-success' : 'admin-notice-danger';
 
   return (
-    <section className={`card admin-mb-16 admin-notice-card ${noticeClassName}`}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{notice.title}</h2>
-          <p className="muted">{notice.detail}</p>
-        </div>
-        <span className={`pill ${isSuccess ? 'pill-success' : 'pill-danger'}`}>
-          {isSuccess ? 'Saved' : 'Blocked'}
-        </span>
-      </div>
-    </section>
+    <AdminSection
+      className={`admin-mb-16 admin-notice-card ${noticeClassName}`}
+      description={notice.detail}
+      statusLabel={isSuccess ? 'Saved' : 'Blocked'}
+      statusTone={isSuccess ? 'success' : 'danger'}
+      title={notice.title}
+    />
   );
 }

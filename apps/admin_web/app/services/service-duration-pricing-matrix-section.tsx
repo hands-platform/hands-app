@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule as basePayoutRule } from '../../lib/service-base-payout-rule';
@@ -31,17 +32,14 @@ export function ServiceDurationPricingMatrixSection({
   visibleGroups,
 }: ServiceDurationPricingMatrixSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Duration pricing matrix</h2>
-          <p className="muted">
-            One row is one service name. Each duration cell shows customer minimum, Partner payout, and
-            projected company commission after VAT, withholding, and other configured costs.
-          </p>
-        </div>
-        <span className="pill pill-info">{SERVICE_MATRIX_DURATIONS.join(' / ')} min</span>
-      </div>
+    <AdminSection
+      bodyClassName="admin-table-section-body"
+      className="admin-card-scroll admin-mb-16"
+      description="One row is one service name. Each duration cell shows customer minimum, Partner payout, and projected company commission after VAT, withholding, and other configured costs."
+      statusLabel={`${SERVICE_MATRIX_DURATIONS.join(' / ')} min`}
+      statusTone="info"
+      title="Duration pricing matrix"
+    >
       <div className="admin-table-scroll">
         <AdminDataTable
           className="service-matrix"
@@ -105,7 +103,7 @@ export function ServiceDurationPricingMatrixSection({
           page responsive. Full totals above still use the complete catalog.
         </p>
       ) : null}
-    </section>
+    </AdminSection>
   );
 }
 

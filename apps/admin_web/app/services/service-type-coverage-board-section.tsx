@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 
@@ -36,15 +37,10 @@ export function ServiceTypeCoverageBoardSection({
   visibleRows,
 }: ServiceTypeCoverageBoardSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Service type coverage board</h2>
-          <p className="muted">
-            Checks each service name as one operating unit: duration options, minimum-price payout rules,
-            Partner price visibility, and projected company commission.
-          </p>
-        </div>
+    <AdminSection
+      className="admin-card-scroll admin-mb-16"
+      description="Checks each service name as one operating unit: duration options, minimum-price payout rules, Partner price visibility, and projected company commission."
+      status={
         <div className="actions">
           <span className={summary.blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
             {summary.blockedCount} blocked
@@ -54,7 +50,9 @@ export function ServiceTypeCoverageBoardSection({
           </span>
           <span className="pill pill-info">{summary.readyCount} ready</span>
         </div>
-      </div>
+      }
+      title="Service type coverage board"
+    >
       <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Service types checked</span>
@@ -146,6 +144,6 @@ export function ServiceTypeCoverageBoardSection({
           key to narrow the board.
         </p>
       ) : null}
-    </section>
+    </AdminSection>
   );
 }

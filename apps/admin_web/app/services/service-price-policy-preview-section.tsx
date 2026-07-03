@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { formatMoney } from '../../lib/admin-format';
 import type {
   ServicePricePolicyPreviewRow,
@@ -38,20 +39,13 @@ export function ServicePricePolicyPreviewSection({
   visibleRows,
 }: ServicePricePolicyPreviewSectionProps) {
   return (
-    <section className="card admin-card-scroll admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Price policy change preview</h2>
-          <p className="muted">
-            Before changing service prices, compare the current minimum price against common one-step
-            scenarios. This helps avoid accidentally creating zero-margin prices or Partner payouts that
-            create cash booking closeout problems.
-          </p>
-        </div>
-        <span className={`pill ${summary.policyCheckCount ? 'pill-warn' : 'pill-success'}`}>
-          {summary.policyCheckCount} policy check(s)
-        </span>
-      </div>
+    <AdminSection
+      className="admin-card-scroll admin-mb-16"
+      description="Before changing service prices, compare the current minimum price against common one-step scenarios. This helps avoid accidentally creating zero-margin prices or Partner payouts that create cash booking closeout problems."
+      statusLabel={`${summary.policyCheckCount} policy check(s)`}
+      statusTone={summary.policyCheckCount ? 'warning' : 'success'}
+      title="Price policy change preview"
+    >
       <div className="service-trace-summary">
         <div>
           <span>Previewed options</span>
@@ -133,7 +127,7 @@ export function ServicePricePolicyPreviewSection({
           the full active catalog.
         </p>
       ) : null}
-    </section>
+    </AdminSection>
   );
 }
 
