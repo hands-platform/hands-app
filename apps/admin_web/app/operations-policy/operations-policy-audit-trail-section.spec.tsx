@@ -1,5 +1,5 @@
 import { OperationsPolicyAuditTrailSection } from './operations-policy-audit-trail-section';
-import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyAuditTrailSection', () => {
   it('renders policy audit rows and audit link', () => {
@@ -26,7 +26,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
       title: 'Recent policy audit trail',
     });
     expect(rendered).toContain('Recent policy audit trail');
@@ -34,6 +34,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(rendered).toContain('Ops Admin');
     expect(rendered).toContain('Live behavior');
     expect(rendered).toContain('New bookings use the latest enforced setting.');
+    expect(classNamesIn(section)).toContain('table vuexy-data-table vuexy-booking-table service-trace');
     expect(hrefsIn(section)).toContain('/audit-log?bucket=Operations%2FPolicy');
   });
 

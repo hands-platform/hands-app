@@ -29,7 +29,7 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
         </a>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Shows who changed a policy, the previous value, the new value, and whether the setting is already enforced by live booking logic."
       title="Recent policy audit trail"
     >

@@ -45,7 +45,7 @@ export function OperationsPolicyBookingCreateGateSection({
 }: OperationsPolicyBookingCreateGateSectionProps) {
   return (
     <AdminSection
-      className="admin-mb-16"
+      className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="These policies stop unsafe bookings before payment authorization and matching. Customers can browse globally, but immediate booking must pass the selected address, Vietnam service area, and first-pick Partner distance checks. Customer GPS is optional evidence only."
       statusLabel={review.currentPolicyLabel}
       statusTone="info"

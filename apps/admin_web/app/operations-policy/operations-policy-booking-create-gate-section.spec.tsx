@@ -41,7 +41,9 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
+    expect(classNamesIn(section)).toContain(
+      'card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(rendered).toContain('Booking create gate controls');
     expect(rendered).toContain('Distance gates active');
     expect(rendered).toContain('Service area');
