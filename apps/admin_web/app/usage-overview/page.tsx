@@ -136,16 +136,12 @@ export default async function UsageOverviewPage({
         </div>
       </section>
 
-      <section className="card admin-filter-panel usage-overview-filter-panel">
-        <div className="admin-filter-panel-header">
-          <div>
-            <h2>Usage range</h2>
-            <p className="muted">
-              Use bounded date windows so operators can compare app activity without broad page fetches.
-            </p>
-          </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
-        </div>
+      <AdminSection
+        className="usage-overview-filter-panel"
+        description="Use bounded date windows so operators can compare app activity without broad page fetches."
+        statusLabel={overview.rangeLabel}
+        title="Usage range"
+      >
         <div className="booking-date-filter-buttons usage-overview-range-buttons">
           {usageOverviewRangeOptions.map((option) => (
             <a
@@ -157,7 +153,7 @@ export default async function UsageOverviewPage({
             </a>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
       <section className="usage-overview-command-grid" aria-label="Usage command summary">
         {usageHealthCards.map(({ label, value, detail, icon: Icon, tone }) => (

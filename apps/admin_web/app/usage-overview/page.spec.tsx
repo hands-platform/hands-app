@@ -31,6 +31,8 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('Customer app-to-booking funnel');
     expect(markup).toContain('Customer segments');
     expect(markup).toContain('Action priorities');
+    expect(markup).toContain('card admin-section usage-overview-filter-panel');
+    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel');
     expect(markup).toContain('card admin-section usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body usage-overview-funnel-steps');
     expect(markup).toContain('card admin-section usage-overview-segment-board-card');
