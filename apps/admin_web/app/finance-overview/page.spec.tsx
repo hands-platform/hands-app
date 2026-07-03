@@ -166,6 +166,7 @@ describe('FinanceOverviewPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Finance Overview');
+    expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
     expect(markup).toContain('Top finance queues');
@@ -198,7 +199,7 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('card admin-card usage-overview-action-item');
     expect(markup).toContain('/finance-tax/payment-clearing');
     expect(markup).toContain('/finance-tax/general-ledger');
-    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-date');
     expect(markup).toContain('admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).not.toContain('<label class="admin-form-control"><span>Monthly tax period</span>');

@@ -7,6 +7,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
@@ -43,22 +44,19 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const snapshotConsistency = buildTaxPolicySnapshotConsistency(recentEarnings);
 
   return (
-    <div className="tax-policy-page">
-      <section className="toolbar">
-        <div>
-          <h1>Tax policy</h1>
-          <p className="muted">
-            Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in
-            application code.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className={`signal ${activePolicies.length === 1 ? 'signal-ok' : 'signal-warn'}`}>
             {activePolicies.length} active
           </span>
           <span className="pill pill-info">{ruleCount} rule(s)</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="tax-policy-page"
+      description="Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in application code."
+      title="Tax policy"
+    >
 
       {notice ? (
         <AdminSection
@@ -518,7 +516,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </div>
         ) : null}
       </AdminSection>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

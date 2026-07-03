@@ -15,6 +15,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
@@ -68,20 +69,17 @@ export default async function FinanceOverviewPage({
     settlementSummary.paymentProcessingFee;
 
   return (
-    <div className="usage-overview-page finance-overview-page">
-      <section className="toolbar">
-        <div>
-          <h1>Finance Overview</h1>
-          <p className="muted">
-            Money-flow command view for gross payments, platform-fee revenue, Partner payable,
-            wallet liability, refunds, tax, and reconciliation risk.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">Read-only</span>
           <span className="pill pill-info">{buildFinanceOverviewRangeLabel(filters.range)}</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="usage-overview-page finance-overview-page"
+      description="Money-flow command view for gross payments, platform-fee revenue, Partner payable, wallet liability, refunds, tax, and reconciliation risk."
+      title="Finance Overview"
+    >
 
       <AdminSection
         className="usage-overview-filter-panel finance-overview-filter-panel"
@@ -200,7 +198,7 @@ export default async function FinanceOverviewPage({
           <FinanceActionItem key={item.label} item={item} />
         ))}
       </AdminSection>
-    </div>
+    </AdminPageTemplate>
   );
 }
 
