@@ -11,6 +11,12 @@ describe('AuditLogCommandBoardSection', () => {
 
     const rendered = normalizedText(section);
 
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'ops-task-grid',
+      className: 'admin-mb-16',
+      title: 'Audit command board',
+    });
     expect(rendered).toContain('Audit command board');
     expect(rendered).toContain('High-impact admin changes grouped by policy');
     expect(rendered).toContain('notifications');

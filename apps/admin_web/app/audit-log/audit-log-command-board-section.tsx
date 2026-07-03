@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 
 export type AuditCommandTone = 'warn' | 'info' | 'ok';
 
@@ -30,40 +30,39 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
   const hasWarningLogs = items.some((item) => item.logs.length > 0 && item.tone === 'warn');
 
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="High-impact admin changes grouped by policy, money movement, dispatch state, notifications, and recent operator actions."
-        status={
-          <span className={`pill ${hasWarningLogs ? 'pill-warn' : 'pill-success'}`}>
-            {totalLogCount} audit record(s)
-          </span>
-        }
-        title="Audit command board"
-      />
-      <div className="ops-task-grid">
-        {items.map((item) => (
-          <Link className="ops-task-card" href={item.href} key={item.title}>
-            <span className={`signal ${auditToneClass(item.tone)}`}>{auditToneLabel(item.tone)}</span>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
-            <div className="participant-list">
-              <span className="pill">{item.status}</span>
-              <span className="pill">{item.logs.length} event(s)</span>
+    <AdminSection
+      bodyClassName="ops-task-grid"
+      className="admin-mb-16"
+      description="High-impact admin changes grouped by policy, money movement, dispatch state, notifications, and recent operator actions."
+      status={
+        <span className={`pill ${hasWarningLogs ? 'pill-warn' : 'pill-success'}`}>
+          {totalLogCount} audit record(s)
+        </span>
+      }
+      title="Audit command board"
+    >
+      {items.map((item) => (
+        <Link className="ops-task-card" href={item.href} key={item.title}>
+          <span className={`signal ${auditToneClass(item.tone)}`}>{auditToneLabel(item.tone)}</span>
+          <h3>{item.title}</h3>
+          <p>{item.detail}</p>
+          <div className="participant-list">
+            <span className="pill">{item.status}</span>
+            <span className="pill">{item.logs.length} event(s)</span>
+          </div>
+          {item.logs.length > 0 ? (
+            <div className="stack">
+              {item.logs.slice(0, 3).map((log) => (
+                <span className="muted" key={`${item.title}-${log.id}`}>
+                  {log.actionLabel} / {log.shortTargetLabel} / {log.relativeTimeLabel}
+                </span>
+              ))}
             </div>
-            {item.logs.length > 0 ? (
-              <div className="stack">
-                {item.logs.slice(0, 3).map((log) => (
-                  <span className="muted" key={`${item.title}-${log.id}`}>
-                    {log.actionLabel} / {log.shortTargetLabel} / {log.relativeTimeLabel}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <small>{item.operatorAction}</small>
-          </Link>
-        ))}
-      </div>
-    </section>
+          ) : null}
+          <small>{item.operatorAction}</small>
+        </Link>
+      ))}
+    </AdminSection>
   );
 }
 

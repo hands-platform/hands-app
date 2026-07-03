@@ -3,6 +3,7 @@ import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import {
   AdminFormControlButton,
@@ -103,7 +104,10 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
       <div className="audit-log-page">
         <AuditLogCommandBoardSection items={commandBoard} />
 
-        <section className="card admin-mb-16">
+        <AdminSection
+          className="admin-mb-16"
+          title="Audit filters"
+        >
           <form className="form-grid" action="/audit-log">
             <div className="calendar-field">
               <span>Search</span>
@@ -177,19 +181,24 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               </span>
             </div>
           </form>
-        </section>
+        </AdminSection>
 
-        <div className="card">
+        <AdminSection
+          bodyClassName="admin-table-section-body"
+          status={
+            <div className="participant-list">
+              <span className="pill pill-success">Newest first</span>
+              <span className="pill pill-info">Action grouped</span>
+              <span className="pill pill-warn">Metadata preview</span>
+            </div>
+          }
+          title="Audit records"
+        >
           <div className="toolbar">
             <div>
               <p className="muted">
                 Recent operational trail for bookings, payments, refunds, Partner review, and alerts.
               </p>
-            </div>
-            <div className="participant-list">
-              <span className="pill pill-success">Newest first</span>
-              <span className="pill pill-info">Action grouped</span>
-              <span className="pill pill-warn">Metadata preview</span>
             </div>
           </div>
 
@@ -204,7 +213,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={totalPages}
           />
-        </div>
+        </AdminSection>
       </div>
     </AdminPageTemplate>
   );
