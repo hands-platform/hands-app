@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -60,18 +59,15 @@ export function PartnerDispatchForecastSection({
     >
       <div className="grid admin-mt-12">
         {forecast.totals.map((item) => (
-          <Link className="card" href={item.href} key={item.label}>
-            <div className="metric-card">
-              <p>{item.label}</p>
-              <h2>{item.value}</h2>
-              <span className={`signal ${partnerDispatchForecastToneClass(item.tone)}`}>
-                {partnerDispatchForecastToneLabel(item.tone)}
-              </span>
-              <p className="muted admin-mt-8">
-                {item.detail}
-              </p>
-            </div>
-          </Link>
+          <AdminActionCard
+            detail={item.detail}
+            href={item.href}
+            key={item.label}
+            signalClassName={partnerDispatchForecastToneClass(item.tone)}
+            signalLabel={partnerDispatchForecastToneLabel(item.tone)}
+            title={item.label}
+            value={item.value}
+          />
         ))}
       </div>
       <div className="grid admin-mt-12">

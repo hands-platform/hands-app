@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -38,17 +37,16 @@ export function BookingMonitorNextActionsSection({
     >
       <div className="participant-list admin-mt-12">
         {nextActions.map((item) => (
-          <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`} title={item.detail}>
-            <div className="ops-section-header">
-              <div>
-                <p>
-                  {shortId(item.booking.id)} / {bookingServiceOptionLabel(item.booking)}
-                </p>
-                <h2>{item.title}</h2>
-              </div>
-              <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
-            </div>
-            <p className="muted">{compactNextActionDetail(item.detail)}</p>
+          <AdminActionCard
+            detail={compactNextActionDetail(item.detail)}
+            href={item.href}
+            htmlTitle={item.detail}
+            key={`${item.booking.id}-${item.title}`}
+            signalClassName={commandToneClass(item.tone)}
+            signalLabel={commandToneLabel(item.tone)}
+            title={`${shortId(item.booking.id)} / ${bookingServiceOptionLabel(item.booking)}`}
+            value={item.title}
+          >
             <p title={item.operatorAction}>
               <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}:{' '}
               {compactOperatorAction(item.operatorAction)}
@@ -67,7 +65,7 @@ export function BookingMonitorNextActionsSection({
                 </span>
               ))}
             </div>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>

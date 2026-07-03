@@ -56,6 +56,7 @@ describe('BookingMonitorNextActionsSection', () => {
     expect(rendered).toContain('OPEN_MATCHING');
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-next-actions-card');
+    expect(classNamesIn(section)).toContain('card admin-action-card');
   });
 
   it('returns no section when no action is waiting', () => {

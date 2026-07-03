@@ -42,6 +42,7 @@ type AdminActionCardProps = {
   readonly className?: string;
   readonly detail?: ReactNode;
   readonly href: string;
+  readonly htmlTitle?: string;
   readonly signalClassName?: string;
   readonly signalLabel?: ReactNode;
   readonly title: ReactNode;
@@ -117,6 +118,7 @@ export function AdminActionCard({
   className,
   detail,
   href,
+  htmlTitle,
   signalClassName,
   signalLabel,
   title,
@@ -124,7 +126,7 @@ export function AdminActionCard({
   valueClassName,
 }: AdminActionCardProps) {
   return (
-    <Link className={joinClassNames('card admin-action-card', className)} href={href}>
+    <Link className={joinClassNames('card admin-action-card', className)} href={href} title={htmlTitle}>
       <p>{title}</p>
       <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
       {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
