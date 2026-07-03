@@ -1,6 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { BookingPayoutBatchEligibilitySection } from './booking-finance-trace-sections';
+import {
+  BookingAlertTraceSection,
+  BookingAttentionChecksSection,
+  BookingFinanceCommandCenterSection,
+  BookingOperationsAuditTraceSection,
+  BookingPayoutBatchEligibilitySection,
+  BookingServicePricingSnapshotSection,
+} from './booking-finance-trace-sections';
 
 describe('BookingPayoutBatchEligibilitySection', () => {
   it('renders payout checks as a compact settlement ledger', () => {
@@ -31,5 +38,52 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     expect(markup).toContain('Closeout readiness');
     expect(markup).toContain('href="#booking-closeout-readiness"');
     expect(markup).not.toContain('ops-task-card');
+  });
+
+  it('renders booking finance trace panels with the shared Vuexy admin section surface', () => {
+    const markup = renderToStaticMarkup(
+      <>
+        <BookingAlertTraceSection
+          bookingId="booking-1"
+          notificationTrace={{ backupBatches: [], metrics: [], rows: [] }}
+        />
+        <BookingOperationsAuditTraceSection
+          bookingId="booking-1"
+          operationsTrace={{
+            detail: 'No policy updates after booking creation.',
+            metrics: [],
+            rows: [],
+            status: 'Clear',
+            statusTone: 'pill-success',
+            title: 'Policy aligned',
+          }}
+        />
+        <BookingAttentionChecksSection
+          attentionFlags={[]}
+          attentionSummary={{ label: 'Clear', tone: 'pill-success' }}
+        />
+        <BookingFinanceCommandCenterSection
+          financeFlags={[]}
+          financeSummaryCards={[{ helper: 'No finance issue.', label: 'Finance', value: 'Clear' }]}
+        />
+        <BookingPayoutBatchEligibilitySection
+          payoutBatchEligibility={{
+            rows: [],
+            status: 'Ready',
+            summary: 'Payout batch eligibility is clear.',
+            tone: 'pill-success',
+          }}
+        />
+        <BookingServicePricingSnapshotSection
+          financeFlags={[]}
+          servicePricingSnapshotRows={[{ helper: 'Base price retained.', label: 'Price', value: '100,000 VND' }]}
+        />
+      </>,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup.match(/class="card admin-section/g)).toHaveLength(6);
+    expect(markup).toContain('Booking alert trace');
+    expect(markup).toContain('Finance command center');
+    expect(markup).toContain('Service pricing snapshot');
   });
 });

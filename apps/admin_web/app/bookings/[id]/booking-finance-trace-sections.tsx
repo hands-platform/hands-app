@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
 import { ActionLink } from './booking-operator-actions';
 
@@ -115,19 +116,16 @@ export function BookingAlertTraceSection({
   const hiddenBatches = Math.max(totalBackupBatches - notificationTrace.backupBatches.length, 0);
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking alert trace</h2>
-          <p className="muted">
-            Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and
-            disabled device checks.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href={`/notifications?booking=${bookingId}`}>
           Open notification board
         </Link>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and disabled device checks."
+      title="Booking alert trace"
+    >
       <div className="service-trace-summary admin-mt-12">
         {notificationTrace.metrics.map((item) => (
           <div key={item.label}>
@@ -179,7 +177,7 @@ export function BookingAlertTraceSection({
           notification board for the full delivery history.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -193,18 +191,16 @@ export function BookingOperationsAuditTraceSection({
   operationsTrace,
 }: BookingOperationsAuditTraceSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Operations audit trace</h2>
-          <p className="muted">
-            Booking-specific operator actions plus policy updates that happened after this request opened.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href={`/audit-log?q=${encodeURIComponent(bookingId)}`}>
           Open audit log
         </Link>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Booking-specific operator actions plus policy updates that happened after this request opened."
+      title="Operations audit trace"
+    >
       <div className="service-trace-summary admin-mt-12">
         {operationsTrace.metrics.map((item) => (
           <div key={item.label}>
@@ -244,7 +240,7 @@ export function BookingOperationsAuditTraceSection({
           No operator action has been recorded for this booking yet.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -258,14 +254,12 @@ export function BookingAttentionChecksSection({
   attentionSummary,
 }: BookingAttentionChecksSectionProps) {
   return (
-    <section className="card ops-watch admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Attention checks</h2>
-          <p className="muted">Automatic operational checks for bookings that need operator attention.</p>
-        </div>
-        <span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>}
+      className="ops-watch admin-mb-16"
+      description="Automatic operational checks for bookings that need operator attention."
+      title="Attention checks"
+    >
       {attentionFlags.length > 0 ? (
         <div className="ops-check-list">
           {attentionFlags.map((flag) => (
@@ -275,7 +269,7 @@ export function BookingAttentionChecksSection({
       ) : (
         <p className="muted">No active attention checks. Continue normal monitoring from the timeline.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -289,18 +283,17 @@ export function BookingFinanceCommandCenterSection({
   financeSummaryCards,
 }: BookingFinanceCommandCenterSectionProps) {
   return (
-    <section className="card ops-watch admin-mb-16" id="finance">
-      <div className="ops-section-header">
-        <div>
-          <h2>Finance command center</h2>
-          <p className="muted">
-            Booking finance summary and required checks.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
           {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
         </span>
-      </div>
+      }
+      className="ops-watch admin-mb-16"
+      description="Booking finance summary and required checks."
+      id="finance"
+      title="Finance command center"
+    >
       <div className="grid admin-mt-12">
         {financeSummaryCards.map((card) => (
           <MetricCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
@@ -317,7 +310,7 @@ export function BookingFinanceCommandCenterSection({
           Finance checks are aligned for this booking.
         </p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -330,16 +323,13 @@ export function BookingPayoutBatchEligibilitySection({
   payoutBatchEligibility,
 }: BookingPayoutBatchEligibilitySectionProps) {
   return (
-    <section className="card admin-mb-16" id="payout-batch-eligibility">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout batch eligibility</h2>
-          <p className="muted">
-            Booking readiness for Partner settlement batches.
-          </p>
-        </div>
-        <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>}
+      className="admin-mb-16"
+      description="Booking readiness for Partner settlement batches."
+      id="payout-batch-eligibility"
+      title="Payout batch eligibility"
+    >
       <p className="muted admin-mt-8">
         {payoutBatchEligibility.summary}
       </p>
@@ -356,7 +346,7 @@ export function BookingPayoutBatchEligibilitySection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -369,18 +359,17 @@ export function BookingServicePricingSnapshotSection({
   servicePricingSnapshotRows,
 }: BookingServicePricingSnapshotSectionProps) {
   return (
-    <section className="card admin-mb-16" id="service-pricing-snapshot">
-      <div className="ops-section-header">
-        <div>
-          <h2>Service pricing snapshot</h2>
-          <p className="muted">
-            Booking price, payout, fee, and tax evidence.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
           {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Booking price, payout, fee, and tax evidence."
+      id="service-pricing-snapshot"
+      title="Service pricing snapshot"
+    >
       <div className="service-trace-summary admin-mt-12">
         {servicePricingSnapshotRows.map((row) => (
           <div key={row.label}>
@@ -390,7 +379,7 @@ export function BookingServicePricingSnapshotSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
