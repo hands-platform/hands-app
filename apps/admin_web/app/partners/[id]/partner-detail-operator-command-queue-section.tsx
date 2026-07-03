@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 
 import {
@@ -118,7 +119,7 @@ export function PartnerDetailOperatorCommandQueueSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerCommandQueueEmptyState />}
+            emptyMessage={<AdminEmptyState framed message="No same-shift partner command is currently queued." />}
             headers={commandQueueHeaders}
             rowCount={queue.commands.length}
           >
@@ -146,14 +147,5 @@ export function PartnerDetailOperatorCommandQueueSection({
         <PartnerDetailVuexyTableFooter rowCount={queue.commands.length} />
       </div>
     </AdminFilterPanel>
-  );
-}
-
-function PartnerCommandQueueEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No same-shift partner command is currently queued.</p>
-    </div>
   );
 }

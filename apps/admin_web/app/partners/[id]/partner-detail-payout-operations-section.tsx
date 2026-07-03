@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import {
@@ -97,7 +98,7 @@ export function PartnerDetailPayoutOperationsSection({
           <AdminTableScroll>
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
-              emptyMessage={<PartnerPayoutTableEmptyState message="No active payout hold." />}
+              emptyMessage={<AdminEmptyState message="No active payout hold." />}
               headers={payoutHoldHeaders}
               rowCount={1}
             >
@@ -131,7 +132,7 @@ export function PartnerDetailPayoutOperationsSection({
           <AdminTableScroll>
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
-              emptyMessage={<PartnerPayoutTableEmptyState message="No payout blockers." />}
+              emptyMessage={<AdminEmptyState message="No payout blockers." />}
               headers={payoutBlockerHeaders}
               rowCount={operations.blockers.length}
             >
@@ -175,7 +176,7 @@ export function PartnerDetailPayoutOperationsSection({
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
               emptyMessage={
-                <PartnerPayoutTableEmptyState message="No earnings yet. Payout eligibility starts after the first completed service." />
+                <AdminEmptyState message="No earnings yet. Payout eligibility starts after the first completed service." />
               }
               headers={earningHeaders}
               rowCount={earningsRows.length}
@@ -231,7 +232,7 @@ export function PartnerDetailPayoutOperationsSection({
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
               emptyMessage={
-                <PartnerPayoutTableEmptyState message="No payout batch has been created for this partner yet." />
+                <AdminEmptyState message="No payout batch has been created for this partner yet." />
               }
               headers={payoutBatchHeaders}
               rowCount={payoutBatchRows.length}
@@ -285,13 +286,4 @@ function payoutOperationsStatusTone(tone: PartnerPayoutOperationsTone): StatusBa
   if (tone === 'done') return 'success';
   if (tone === 'blocked') return 'danger';
   return 'warning';
-}
-
-function PartnerPayoutTableEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
 }

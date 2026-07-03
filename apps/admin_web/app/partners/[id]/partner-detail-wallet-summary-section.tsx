@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import { formatCurrency, formatDate, walletLedgerLabel } from './partner-detail-format';
@@ -79,7 +80,12 @@ export function PartnerDetailWalletSummarySection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerWalletEmptyState />}
+            emptyMessage={
+              <AdminEmptyState
+                framed
+                message="No recent partner wallet ledger row is loaded for this detail page."
+              />
+            }
             headers={walletHeaders}
             rowCount={summary.visibleLedgerRows.length}
           >
@@ -120,15 +126,6 @@ export function PartnerDetailWalletSummarySection({
       </div>
       <PartnerDetailVuexyTableFooter rowCount={summary.visibleLedgerRows.length} />
     </AdminFilterPanel>
-  );
-}
-
-function PartnerWalletEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No recent partner wallet ledger row is loaded for this detail page.</p>
-    </div>
   );
 }
 

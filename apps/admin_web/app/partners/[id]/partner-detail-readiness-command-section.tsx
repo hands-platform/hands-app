@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 
 import {
@@ -89,7 +90,7 @@ export function PartnerDetailReadinessSnapshotSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerReadinessEmptyState message="No readiness gate loaded." />}
+            emptyMessage={<AdminEmptyState framed message="No readiness gate loaded." />}
             headers={readinessGateHeaders}
             rowCount={1}
           >
@@ -150,7 +151,7 @@ export function PartnerAcceptanceRepairCommandSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerReadinessEmptyState message="No repair command steps loaded." />}
+            emptyMessage={<AdminEmptyState framed message="No repair command steps loaded." />}
             headers={repairCommandHeaders}
             rowCount={command.steps.length}
           >
@@ -202,15 +203,6 @@ function TraceSummaryItem({
       <span>{label}</span>
       <strong>{value}</strong>
       <small>{helper}</small>
-    </div>
-  );
-}
-
-function PartnerReadinessEmptyState({ message }: { readonly message: string }) {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
     </div>
   );
 }
