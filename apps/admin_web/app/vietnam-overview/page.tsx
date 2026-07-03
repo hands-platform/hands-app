@@ -24,6 +24,7 @@ import {
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
+import { AdminSection } from '../../components/admin-surface';
 
 export const dynamic = 'force-dynamic';
 
@@ -386,81 +387,72 @@ export default async function VietnamOverviewPage({
         </div>
 
         <div className="vietnam-realtime-analytics-grid">
-          <article className="card vietnam-realtime-chart-card">
-            <div className="vietnam-realtime-chart-header">
-              <div>
-                <h2>Realtime signal mix</h2>
-                <p className="muted">Current dots only, separate from period totals.</p>
-              </div>
-              <strong>{formatNumber(realtimeSignalTotal)}</strong>
-            </div>
-            <div className="vietnam-realtime-signal-bars" aria-label="Realtime signal distribution">
-              {realtimeSignalRows.map((item) => (
-                <div key={item.key} className={`vietnam-realtime-signal-row is-${item.key}`}>
-                  <div className="vietnam-realtime-signal-label">
-                    <i aria-hidden="true" />
-                    <span>{item.label}</span>
-                    <strong>{formatNumber(item.value)}</strong>
-                  </div>
-                  <div className="vietnam-realtime-signal-track" aria-hidden="true">
-                    <i style={{ width: `${item.percent}%` }} />
-                  </div>
+          <AdminSection
+            actions={<strong>{formatNumber(realtimeSignalTotal)}</strong>}
+            bodyClassName="vietnam-realtime-signal-bars"
+            className="vietnam-realtime-chart-card"
+            description="Current dots only, separate from period totals."
+            title="Realtime signal mix"
+          >
+            {realtimeSignalRows.map((item) => (
+              <div key={item.key} className={`vietnam-realtime-signal-row is-${item.key}`}>
+                <div className="vietnam-realtime-signal-label">
+                  <i aria-hidden="true" />
+                  <span>{item.label}</span>
+                  <strong>{formatNumber(item.value)}</strong>
                 </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="card vietnam-realtime-chart-card">
-            <div className="vietnam-realtime-chart-header">
-              <div>
-                <h2>Regional live load</h2>
-                <p className="muted">Regions ranked by bookings, active customers, ready Partners, and offline supply.</p>
-              </div>
-              <span>{activeRegion ? 'Focused map below' : 'Top 5'}</span>
-            </div>
-            <div className="vietnam-realtime-region-bars" aria-label="Regional live load ranking">
-              {topRealtimeRegionRows.map(({ counts, region, load, href }) => {
-                const loadPercent = Math.max(6, Math.round((load / maxRealtimeRegionLoad) * 100));
-
-                return (
-                  <a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>
-                    <span>{region.shortName}</span>
-                    <div>
-                      <strong>{region.regionName}</strong>
-                      <small>
-                        {formatNumber(counts.bookings)} bookings ·{' '}
-                        {formatNumber(counts.active)} active ·{' '}
-                        {formatNumber(counts.online)} ready ·{' '}
-                        {formatNumber(counts['stale-partners'] + counts['offline-partners'])} off
-                      </small>
-                      <i aria-hidden="true">
-                        <b style={{ width: `${loadPercent}%` }} />
-                      </i>
-                    </div>
-                    <em>{formatNumber(load)}</em>
-                  </a>
-                );
-              })}
-              {topRealtimeRegionRows.length === 0 ? (
-                <div className="vietnam-realtime-empty">
-                  <ShieldCheck size={18} aria-hidden="true" />
-                  <span>No realtime regional load yet</span>
+                <div className="vietnam-realtime-signal-track" aria-hidden="true">
+                  <i style={{ width: `${item.percent}%` }} />
                 </div>
-              ) : null}
-            </div>
-          </article>
+              </div>
+            ))}
+          </AdminSection>
+
+          <AdminSection
+            actions={<span>{activeRegion ? 'Focused map below' : 'Top 5'}</span>}
+            bodyClassName="vietnam-realtime-region-bars"
+            className="vietnam-realtime-chart-card"
+            description="Regions ranked by bookings, active customers, ready Partners, and offline supply."
+            title="Regional live load"
+          >
+            {topRealtimeRegionRows.map(({ counts, region, load, href }) => {
+              const loadPercent = Math.max(6, Math.round((load / maxRealtimeRegionLoad) * 100));
+
+              return (
+                <a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>
+                  <span>{region.shortName}</span>
+                  <div>
+                    <strong>{region.regionName}</strong>
+                    <small>
+                      {formatNumber(counts.bookings)} bookings ·{' '}
+                      {formatNumber(counts.active)} active ·{' '}
+                      {formatNumber(counts.online)} ready ·{' '}
+                      {formatNumber(counts['stale-partners'] + counts['offline-partners'])} off
+                    </small>
+                    <i aria-hidden="true">
+                      <b style={{ width: `${loadPercent}%` }} />
+                    </i>
+                  </div>
+                  <em>{formatNumber(load)}</em>
+                </a>
+              );
+            })}
+            {topRealtimeRegionRows.length === 0 ? (
+              <div className="vietnam-realtime-empty">
+                <ShieldCheck size={18} aria-hidden="true" />
+                <span>No realtime regional load yet</span>
+              </div>
+            ) : null}
+          </AdminSection>
         </div>
       </section>
 
-      <section className="card vietnam-overview-map-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Realtime Vietnam operating map</h2>
-          </div>
-          <span className="pill pill-info">Generated {lastGeneratedAt}</span>
-        </div>
-
-        <div className="vietnam-overview-map-layout">
+      <AdminSection
+        actions={<span className="pill pill-info">Generated {lastGeneratedAt}</span>}
+        bodyClassName="vietnam-overview-map-layout"
+        className="vietnam-overview-map-card"
+        title="Realtime Vietnam operating map"
+      >
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <VietnamOverviewLiveMap
               clearRegionHref={activeRegion ? clearRegionHref : null}
@@ -478,8 +470,7 @@ export default async function VietnamOverviewPage({
               totalPointCount={regionalRealtimeMapPoints.length}
             />
           </div>
-        </div>
-      </section>
+      </AdminSection>
 
       <section className="card admin-filter-panel vietnam-overview-filter-panel">
         <div className="admin-filter-panel-header">
@@ -530,17 +521,13 @@ export default async function VietnamOverviewPage({
       </section>
 
       {activeRegion ? (
-        <section className="card vietnam-region-focus-summary-card">
-          <div className="vietnam-region-focus-heading">
-            <span>{activeRegion.shortName}</span>
-            <div>
-              <h2>{activeRegion.regionName}</h2>
-              <p className="muted">
-                Focused operating readout for realtime signals and {overview.rangeLabel} totals.
-              </p>
-            </div>
-          </div>
-          <div className="vietnam-region-focus-summary-grid" aria-label="Focused region summary">
+        <AdminSection
+          actions={<span className="pill pill-primary">{activeRegion.shortName}</span>}
+          bodyClassName="vietnam-region-focus-summary-grid"
+          className="vietnam-region-focus-summary-card"
+          description={`Focused operating readout for realtime signals and ${overview.rangeLabel} totals.`}
+          title={activeRegion.regionName}
+        >
             <div className="vietnam-region-focus-summary-group">
               <div className="vietnam-region-focus-summary-group-label">
                 <strong>Realtime map signals</strong>
@@ -571,60 +558,59 @@ export default async function VietnamOverviewPage({
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+        </AdminSection>
       ) : null}
 
-      <section className="vietnam-overview-report-band" aria-labelledby="vietnam-period-report-title">
-        <div className="ops-section-header vietnam-overview-report-header">
-          <div>
-            <span className="vietnam-overview-section-kicker">Period report</span>
-            <h2 id="vietnam-period-report-title">
-              {activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
-            </h2>
-            <p className="muted">
-              Stored customer, Partner, booking, cancellation, and paid volume totals for {overview.rangeLabel}.
-              Paid volume is gross captured/released payment amount, not company net revenue.
-            </p>
-          </div>
-          <div className="actions">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{overview.rangeLabel}</span>
             <span className="pill pill-success">Stored totals</span>
-          </div>
-        </div>
-        <div className="vietnam-overview-metric-grid" aria-label="Period metric summary">
-          {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
-            <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
-              <span className="metric-card-icon">
-                <Icon size={18} aria-hidden="true" />
-              </span>
-              <div className="metric-card-content">
-                <p>{label}</p>
-                <h2>{value}</h2>
-                <small>{detail}</small>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+          </>
+        }
+        bodyClassName="vietnam-overview-metric-grid"
+        className="vietnam-overview-period-report-card vietnam-overview-report-band"
+        description={
+          <>
+            Stored customer, Partner, booking, cancellation, and paid volume totals for {overview.rangeLabel}.
+            Paid volume is gross captured/released payment amount, not company net revenue.
+          </>
+        }
+        headerClassName="vietnam-overview-report-header"
+        title={activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
+      >
+        {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
+          <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
+            <span className="metric-card-icon">
+              <Icon size={18} aria-hidden="true" />
+            </span>
+            <div className="metric-card-content">
+              <p>{label}</p>
+              <h2>{value}</h2>
+              <small>{detail}</small>
+            </div>
+          </article>
+        ))}
+      </AdminSection>
 
-      <section className="card vietnam-overview-region-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>{activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}</h2>
-            <p className="muted">
-              {activeRegion
-                ? 'Focused period demand, supply, closeout, and paid volume for the selected region.'
-                : `Compare period demand, supply readiness, closeout, cancellations, and paid volume by region for ${overview.rangeLabel}.`}
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <div className="actions vietnam-overview-region-actions">
             <span className="pill pill-info">{overview.rangeLabel}</span>
             <span className={activeRegion ? 'pill pill-primary' : 'pill pill-neutral'}>
               {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
             </span>
           </div>
-        </div>
+        }
+        bodyClassName="vietnam-overview-region-card-body"
+        className="vietnam-overview-region-card"
+        description={
+          activeRegion
+            ? 'Focused period demand, supply, closeout, and paid volume for the selected region.'
+            : `Compare period demand, supply readiness, closeout, cancellations, and paid volume by region for ${overview.rangeLabel}.`
+        }
+        title={activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}
+      >
         <div className="vietnam-overview-region-insight-grid" aria-label="Regional operations highlights">
           {periodRegionalInsights.map((item) => (
             <article key={item.label} className={`vietnam-overview-region-insight-card is-${item.tone}`}>
@@ -780,7 +766,7 @@ export default async function VietnamOverviewPage({
             </tbody>
           </table>
         </div>
-      </section>
+      </AdminSection>
     </div>
   );
 }
