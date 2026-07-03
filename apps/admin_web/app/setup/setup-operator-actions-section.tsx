@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 
 type SetupOperatorAction = {
@@ -19,19 +20,16 @@ export function SetupOperatorActionsSection({
   deferredActions,
 }: SetupOperatorActionsSectionProps) {
   return (
-    <div className="card" id="live-readiness">
-      <div className="ops-section-header">
-        <div>
-          <h2>Next operator actions</h2>
-          <p className="muted">
-            These are the highest-priority human setup steps. Code checks can keep passing while these external
-            values are pending.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`signal ${nextActions.length === 0 ? 'signal-ok' : 'signal-warn'}`}>
           {nextActions.length === 0 ? 'No pending actions' : `${nextActions.length} pending`}
         </span>
-      </div>
+      }
+      description="These are the highest-priority human setup steps. Code checks can keep passing while these external values are pending."
+      id="live-readiness"
+      title="Next operator actions"
+    >
       <div className="setup-action-list">
         {nextActions.slice(0, 6).map((item) => (
           <a className="setup-action-item" href={`#${item.groupId}`} key={`${item.groupId}-${item.name}`}>
@@ -72,7 +70,7 @@ export function SetupOperatorActionsSection({
           </div>
         </div>
       )}
-    </div>
+    </AdminSection>
   );
 }
 

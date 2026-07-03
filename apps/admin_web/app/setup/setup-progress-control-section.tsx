@@ -1,4 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
 
 type SetupProgressStep = {
@@ -19,17 +20,11 @@ export function SetupProgressControlSection({
 }: SetupProgressControlSectionProps) {
   return (
     <section className="detail-grid admin-mb-16">
-      <div className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Master progress control</h2>
-            <p className="muted">
-              This is the single operating order for HANDS MVP work. Keep new requests inside this sequence
-              unless an urgent production blocker appears.
-            </p>
-          </div>
-          <span className="signal signal-info">Roadmap locked</span>
-        </div>
+      <AdminSection
+        actions={<span className="signal signal-info">Roadmap locked</span>}
+        description="This is the single operating order for HANDS MVP work. Keep new requests inside this sequence unless an urgent production blocker appears."
+        title="Master progress control"
+      >
         <div className="setup-stage-list">
           {sequence.map((item) => (
             <div className="setup-stage-item" key={item.phase}>
@@ -40,19 +35,13 @@ export function SetupProgressControlSection({
             </div>
           ))}
         </div>
-      </div>
+      </AdminSection>
 
-      <div className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Verified baseline</h2>
-            <p className="muted">
-              These checks were used to reset the project state before continuing. If one fails later, fix it
-              before moving to the next feature.
-            </p>
-          </div>
-          <span className="signal signal-ok">{verifiedBaseline.length} checks</span>
-        </div>
+      <AdminSection
+        actions={<span className="signal signal-ok">{verifiedBaseline.length} checks</span>}
+        description="These checks were used to reset the project state before continuing. If one fails later, fix it before moving to the next feature."
+        title="Verified baseline"
+      >
         <div className="setup-command-list">
           {verifiedBaseline.map((item) => (
             <CommandCopyRow
@@ -74,7 +63,7 @@ export function SetupProgressControlSection({
             <PathCopyRow path="docs\architecture\master-progress-roadmap.md" />
           </div>
         </div>
-      </div>
+      </AdminSection>
     </section>
   );
 }

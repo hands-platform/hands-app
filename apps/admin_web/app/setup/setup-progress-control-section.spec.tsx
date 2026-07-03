@@ -24,6 +24,12 @@ describe('SetupProgressControlSection', () => {
     expect(rendered).toContain('Verified baseline');
     expect(rendered).toContain('2 checks');
     expect(rendered).toContain('npm.cmd run typecheck');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(classNamesIn(section)).toContain('command-copy-row');
     expect(rendered).toContain('docs\\architecture\\master-progress-roadmap.md');
   });

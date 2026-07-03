@@ -33,6 +33,12 @@ describe('SetupOperatorActionsSection', () => {
     expect(rendered).toContain('npm.cmd run external:check:supabase');
     expect(rendered).toContain('Deferred production setup');
     expect(rendered).toContain('Payment gateway: Configure real payment gateway credentials.');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(classNamesIn(section)).toContain('command-copy-row');
     expect(hrefsIn(section)).toContain('#supabase');
   });
