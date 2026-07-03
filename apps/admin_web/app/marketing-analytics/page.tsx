@@ -306,16 +306,15 @@ export default async function MarketingAnalyticsPage({
           {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
           {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
           {filters.regionCode ? <input type="hidden" name="regionCode" value={filters.regionCode} /> : null}
-          <div className="calendar-field">
-            <span>Campaign ID</span>
-            <AdminFormInput
-              defaultValue={filters.campaignId ?? ''}
-              label="Campaign ID"
-              name="campaignId"
-              placeholder="ref-smoke, campaign id..."
-              type="search"
-            />
-          </div>
+          <AdminFormInput
+            className="calendar-field"
+            defaultValue={filters.campaignId ?? ''}
+            label="Campaign ID"
+            labelVisibility="visible"
+            name="campaignId"
+            placeholder="ref-smoke, campaign id..."
+            type="search"
+          />
           <AdminFormControlButton className="booking-date-apply-button" type="submit">
             Apply campaign
           </AdminFormControlButton>
@@ -412,75 +411,83 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
       title="Manual daily spend"
     >
       <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
-        <div className="calendar-field">
-          <span>Date</span>
-          <AdminFormInput
-            defaultValue={defaultSpendDate}
-            label="Date"
-            name="spendDate"
-            required
-            type="date"
-          />
-        </div>
-        <div className="calendar-field">
-          <span>Source</span>
-          <AdminFormSelect
-            defaultValue={filters.source ?? 'google'}
-            label="Source"
-            name="source"
-            options={marketingAnalyticsSourceOptions
-              .filter((option) => option.value !== 'all' && option.value !== 'unknown')
-              .map((option) => ({ label: option.label, value: option.value }))}
-          />
-        </div>
-        <div className="calendar-field">
-          <span>Platform</span>
-          <AdminFormSelect
-            defaultValue={filters.platform ?? 'android'}
-            label="Platform"
-            name="platform"
-            options={marketingAnalyticsPlatformOptions
-              .filter((option) => option.value !== 'all')
-              .map((option) => ({ label: option.label, value: option.value }))}
-          />
-        </div>
-        <div className="calendar-field">
-          <span>Region</span>
-          <AdminFormSelect
-            defaultValue={filters.regionCode ?? 'all'}
-            label="Region"
-            name="regionCode"
-            options={marketingAnalyticsRegionOptions.map((option) => ({
-              label: option.label,
-              value: option.value,
-            }))}
-          />
-        </div>
-        <div className="calendar-field">
-          <span>Campaign ID</span>
-          <AdminFormInput
-            defaultValue={filters.campaignId ?? ''}
-            label="Campaign ID"
-            name="campaignId"
-            placeholder="launch-hcm"
-          />
-        </div>
-        <div className="calendar-field">
-          <span>Campaign name</span>
-          <AdminFormInput label="Campaign name" name="campaignName" placeholder="Launch HCMC" />
-        </div>
-        <div className="calendar-field">
-          <span>Spend amount</span>
-          <AdminFormInput label="Spend amount" name="spendAmount" placeholder="600000" required />
-        </div>
-        <div className="calendar-field">
-          <span>Currency</span>
-          <AdminFormInput defaultValue="VND" label="Currency" name="currency" />
-        </div>
-        <div className="calendar-field marketing-spend-notes">
-          <span>Notes</span>
-          <AdminFormInput label="Notes" name="notes" placeholder="Manual import note" />
-        </div>
+        <AdminFormInput
+          className="calendar-field"
+          defaultValue={defaultSpendDate}
+          label="Date"
+          labelVisibility="visible"
+          name="spendDate"
+          required
+          type="date"
+        />
+        <AdminFormSelect
+          className="calendar-field"
+          defaultValue={filters.source ?? 'google'}
+          label="Source"
+          labelVisibility="visible"
+          name="source"
+          options={marketingAnalyticsSourceOptions
+            .filter((option) => option.value !== 'all' && option.value !== 'unknown')
+            .map((option) => ({ label: option.label, value: option.value }))}
+        />
+        <AdminFormSelect
+          className="calendar-field"
+          defaultValue={filters.platform ?? 'android'}
+          label="Platform"
+          labelVisibility="visible"
+          name="platform"
+          options={marketingAnalyticsPlatformOptions
+            .filter((option) => option.value !== 'all')
+            .map((option) => ({ label: option.label, value: option.value }))}
+        />
+        <AdminFormSelect
+          className="calendar-field"
+          defaultValue={filters.regionCode ?? 'all'}
+          label="Region"
+          labelVisibility="visible"
+          name="regionCode"
+          options={marketingAnalyticsRegionOptions.map((option) => ({
+            label: option.label,
+            value: option.value,
+          }))}
+        />
+        <AdminFormInput
+          className="calendar-field"
+          defaultValue={filters.campaignId ?? ''}
+          label="Campaign ID"
+          labelVisibility="visible"
+          name="campaignId"
+          placeholder="launch-hcm"
+        />
+        <AdminFormInput
+          className="calendar-field"
+          label="Campaign name"
+          labelVisibility="visible"
+          name="campaignName"
+          placeholder="Launch HCMC"
+        />
+        <AdminFormInput
+          className="calendar-field"
+          label="Spend amount"
+          labelVisibility="visible"
+          name="spendAmount"
+          placeholder="600000"
+          required
+        />
+        <AdminFormInput
+          className="calendar-field"
+          defaultValue="VND"
+          label="Currency"
+          labelVisibility="visible"
+          name="currency"
+        />
+        <AdminFormInput
+          className="calendar-field marketing-spend-notes"
+          label="Notes"
+          labelVisibility="visible"
+          name="notes"
+          placeholder="Manual import note"
+        />
         <AdminFormControlButton
           className="booking-date-apply-button marketing-spend-submit"
           type="submit"
