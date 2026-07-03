@@ -36,6 +36,7 @@ describe('CouponsTableSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button']),
     );
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });

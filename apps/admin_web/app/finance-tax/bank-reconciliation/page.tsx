@@ -199,7 +199,10 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         resultTone={importNotice === '1' ? 'success' : importError ? 'danger' : 'info'}
         title="Manual bank transaction import"
       >
-        <details className="finance-reconciliation-import-disclosure" open={shouldOpenImportDisclosure}>
+        <details
+          className="admin-disclosure finance-reconciliation-import-disclosure"
+          open={shouldOpenImportDisclosure}
+        >
           <summary>
             <span>Bank import form</span>
             <small>Open only when a bank statement row is missing from the reconciliation list.</small>

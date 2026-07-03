@@ -300,7 +300,7 @@ export default async function BankReconciliationDetailPage({
               </form>
             </div>
 
-            <details className="finance-reconciliation-import-disclosure admin-mt-16">
+            <details className="admin-disclosure finance-reconciliation-import-disclosure admin-mt-16">
               <summary>
                 <span>Advanced source match</span>
                 <small>Use only for journal, withdrawal, or payout evidence that is not in payment clearing.</small>

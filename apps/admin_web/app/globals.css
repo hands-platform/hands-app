@@ -2243,6 +2243,23 @@ a {
   padding-top: 14px;
 }
 
+.admin-disclosure {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
 .admin-state {
   align-items: flex-start;
   background: var(--admin-surface-raised);

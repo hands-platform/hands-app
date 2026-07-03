@@ -145,7 +145,7 @@ function CouponManagementCard({
         </Link>
       </div>
 
-      <details className="coupon-section-disclosure">
+      <details className="admin-disclosure coupon-section-disclosure">
         <summary>Edit coupon</summary>
         <form action={updateAction} className="coupon-edit-form">
           <input name="couponId" type="hidden" value={row.id} />
@@ -182,7 +182,7 @@ function CouponManagementCard({
         </form>
       </details>
 
-      <details className="coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>
+      <details className="admin-disclosure coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>
         <summary>Booking usage</summary>
         <CouponUsageBookingTable
           hrefForPage={(page) => usageHrefForPage(row.id, page)}
