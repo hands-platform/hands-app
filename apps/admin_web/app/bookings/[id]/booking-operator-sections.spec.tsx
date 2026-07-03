@@ -1,5 +1,6 @@
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
-import { BookingOperatorQueueSections } from './booking-operator-sections';
+import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { BookingOperatorQueueSections, BookingOpsCommandCenter } from './booking-operator-sections';
 
 describe('BookingOperatorQueueSections', () => {
   it('renders command queue and action availability table with shared table styling', () => {
@@ -55,7 +56,55 @@ describe('BookingOperatorQueueSections', () => {
     expect(rendered).toContain('Payment is authorized.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#booking-ops']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success']),
+      expect.arrayContaining([
+        'card admin-section admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-success',
+      ]),
+    );
+    expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(2);
+  });
+
+  it('renders operations command center with the shared Vuexy admin section surface', () => {
+    const section = BookingOpsCommandCenter({
+      actionEvidenceGate: {
+        rows: [
+          {
+            action: 'Payment sync',
+            className: 'ops-task-ready',
+            evidence: 'Payment record is linked.',
+            href: '#payment',
+            operatorRule: 'Sync before capture.',
+            pillClass: 'pill-info',
+            status: 'Ready',
+          },
+        ],
+        status: 'Evidence ready',
+        tone: 'pill-success',
+      },
+      actionGateByAction: new Map(),
+      badges: [{ label: 'Manual action gate', tone: 'pill-info' }],
+      booking: {
+        earning: null,
+        id: 'booking-1',
+        payment: null,
+      } as unknown as AdminBookingDetail,
+      cashDebtNeedsSettlement: false,
+      finalGateReason: {
+        className: 'ops-task-ready',
+        detail: 'No blocking issue is active.',
+        operatorRule: 'Continue normal handling.',
+        pillClass: 'pill-success',
+        title: 'Ready',
+      },
+      instruction: 'Review evidence before using a manual operation.',
+    });
+
+    expect(normalizedText(section)).toContain('Operations command center');
+    expect(normalizedText(section)).toContain('Action evidence gate');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['card admin-section ops-command-center admin-mb-16']),
     );
   });
 });

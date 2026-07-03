@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminSection } from '../../../components/admin-surface';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
   captureBookingPayment,
@@ -96,16 +97,13 @@ export function BookingOperatorQueueSections({
 }: BookingOperatorQueueSectionsProps) {
   return (
     <>
-      <section className="card admin-mb-16" id="operator-command-queue">
-        <div className="ops-section-header">
-          <div>
-            <h2>Operator command queue</h2>
-            <p className="muted">
-              Same-shift actions queued for operator handling.
-            </p>
-          </div>
-          <span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>
-        </div>
+      <AdminSection
+        actions={<span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>}
+        className="admin-mb-16"
+        description="Same-shift actions queued for operator handling."
+        id="operator-command-queue"
+        title="Operator command queue"
+      >
         <div className="service-trace-summary admin-mt-12">
           {operatorCommandQueue.labels.map((label) => (
             <div key={label.label}>
@@ -128,21 +126,20 @@ export function BookingOperatorQueueSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="operator-action-availability">
-        <div className="ops-section-header">
-          <div>
-            <h2>Operator action availability</h2>
-            <p className="muted">
-              Manual action availability and the linked destination for each action.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <span className="pill pill-info">
             {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length}{' '}
             available
           </span>
-        </div>
+        }
+        className="admin-mb-16"
+        description="Manual action availability and the linked destination for each action."
+        id="operator-action-availability"
+        title="Operator action availability"
+      >
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
@@ -164,7 +161,7 @@ export function BookingOperatorQueueSections({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
+      </AdminSection>
     </>
   );
 }
@@ -179,18 +176,21 @@ export function BookingOpsCommandCenter({
   cashDebtNeedsSettlement,
 }: BookingOpsCommandCenterProps) {
   return (
-    <section className="card ops-command-center admin-mb-16" id="booking-ops">
-      <div>
-        <h2>Operations command center</h2>
-        <p className="muted">{instruction}</p>
-        <div className="participant-list admin-mt-10">
+    <AdminSection
+      actions={
+        <>
           {badges.map((badge) => (
             <span className={`pill ${badge.tone}`} key={badge.label}>
               {badge.label}
             </span>
           ))}
-        </div>
-      </div>
+        </>
+      }
+      className="ops-command-center admin-mb-16"
+      description={instruction}
+      id="booking-ops"
+      title="Operations command center"
+    >
       <div className="ops-task-note admin-mt-14">
         <div className={`ops-task-card ${finalGateReason.className}`} id="booking-gate-reason">
           <div>
@@ -285,6 +285,6 @@ export function BookingOpsCommandCenter({
           </div>
         )}
       </div>
-    </section>
+    </AdminSection>
   );
 }
