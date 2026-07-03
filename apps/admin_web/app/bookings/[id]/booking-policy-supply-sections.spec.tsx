@@ -34,9 +34,11 @@ describe('booking policy supply sections', () => {
       ]),
     );
     expect(classNamesIn(candidateSection)).not.toContain('card');
-    expect(classNamesIn(candidateSection).filter((className) => className.includes('booking-supply-panel'))).toHaveLength(
-      2,
-    );
+    expect(
+      classNamesIn(candidateSection).filter(
+        (className) => className === 'card admin-card ops-task-note booking-supply-panel',
+      ),
+    ).toHaveLength(2);
   });
 
   it('renders booking policy and supply panels with the shared Vuexy admin section surface', () => {
