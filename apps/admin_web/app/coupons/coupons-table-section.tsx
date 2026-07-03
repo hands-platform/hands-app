@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
@@ -72,15 +72,13 @@ export function CouponsTableSection({
   return (
     <div className="coupons-management-stack">
       {sections.map((section) => (
-        <section
-          className={`admin-filter-panel coupons-status-section ${section.className}`}
+        <AdminFilterPanel
+          className={`coupons-status-section ${section.className}`}
+          description={section.description}
           key={section.title}
+          resultLabel={`${section.rows.length} coupon(s)`}
+          title={section.title}
         >
-          <AdminSectionHeader
-            description={section.description}
-            status={<span className="pill">{section.rows.length} coupon(s)</span>}
-            title={section.title}
-          />
           <div className="coupons-status-section-body">
             {section.rows.length > 0 ? (
               section.rows.map((row) => (
@@ -97,7 +95,7 @@ export function CouponsTableSection({
               <p className="muted">No coupons in this state.</p>
             )}
           </div>
-        </section>
+        </AdminFilterPanel>
       ))}
     </div>
   );

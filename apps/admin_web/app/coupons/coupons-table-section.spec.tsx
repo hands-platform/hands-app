@@ -27,6 +27,9 @@ describe('CouponsTableSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(hrefsIn(section)).toContain('/coupons?confirm=delete&couponId=coupon-1');
     expect(elementTypesIn(section)).not.toContain('article');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['card', 'admin-filter-panel', 'admin-filter-panel-body']),
+    );
     expect(classNamesIn(section)).toContain('coupon-management-section');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button']),
