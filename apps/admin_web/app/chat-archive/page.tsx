@@ -284,7 +284,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             Booking chat repair
           </Link>
         }
-        className="admin-mb-16"
+        className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="Matched and completed bookings should have retained chat evidence. Use this audit queue to find missing rooms or rooms where no message has been stored yet."
         title="Chat integrity repair queue"
       >
@@ -383,7 +383,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </AdminSection>
 
       <AdminSection
-        className="admin-mb-16"
+        className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="One row per retained booking chat room. The list loads a bounded message preview; open the booking, customer, or Partner detail for full operational context before making an admin decision."
         statusLabel={`${rooms.length} row(s)`}
         statusTone="info"

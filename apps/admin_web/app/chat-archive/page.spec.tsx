@@ -59,6 +59,10 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-section');
     expect(markup).toContain('Chat integrity repair queue');
     expect(markup).toContain('Chat evidence index');
+    expect(markup).toContain(
+      'class="card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
   });
 
   it('trusts server sender filtering when the bounded preview does not include that sender', async () => {
