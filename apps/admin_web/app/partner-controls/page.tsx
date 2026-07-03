@@ -295,15 +295,11 @@ export default async function PartnerControlsPage({
         )}
       </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Marketplace and payout unblock board</h2>
-            <p className="muted">
-              Shows which Partners cannot participate in marketplace bookings now, which issues only affect payout, and
-              exactly where staff should clear the blocker.
-            </p>
-          </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Shows which Partners cannot participate in marketplace bookings now, which issues only affect payout, and exactly where staff should clear the blocker."
+        id="partner-control-unblock-board"
+        status={
           <span
             className={`pill ${
               acceptanceUnblockBoard.some((item) => item.blockingCount > 0) ? 'pill-danger' : 'pill-success'
@@ -311,7 +307,9 @@ export default async function PartnerControlsPage({
           >
             {acceptanceUnblockBoard.reduce((sum, item) => sum + item.blockingCount, 0)} blocking partner(s)
           </span>
-        </div>
+        }
+        title="Marketplace and payout unblock board"
+      >
         <div className="ops-task-grid admin-mt-12">
           {acceptanceUnblockBoard.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
@@ -345,17 +343,13 @@ export default async function PartnerControlsPage({
             </Link>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Marketplace and payout unblock playbook</h2>
-            <p className="muted">
-              Step-by-step operating order for restoring Partner marketplace and payout gates without mixing payout-only
-              gates into customer discovery or marketplace participation decisions.
-            </p>
-          </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Step-by-step operating order for restoring Partner marketplace and payout gates without mixing payout-only gates into customer discovery or marketplace participation decisions."
+        id="partner-control-unblock-playbook"
+        status={
           <span
             className={`pill ${
               acceptanceUnblockPlaybook.some((step) => step.blockingCount) ? 'pill-warn' : 'pill-success'
@@ -363,7 +357,9 @@ export default async function PartnerControlsPage({
           >
             {acceptanceUnblockPlaybook.reduce((sum, step) => sum + step.blockingCount, 0)} active blocker(s)
           </span>
-        </div>
+        }
+        title="Marketplace and payout unblock playbook"
+      >
         <div className="setup-stage-list admin-mt-12">
           {acceptanceUnblockPlaybook.map((step) => (
             <div className="setup-stage-item" key={step.id}>
@@ -396,21 +392,19 @@ export default async function PartnerControlsPage({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operating block matrix</h2>
-            <p className="muted">
-              Explains why a Partner may be held from paid work, payout, or dispatch-sensitive
-              work, with the exact screen an operator should open next.
-            </p>
-          </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Explains why a Partner may be held from paid work, payout, or dispatch-sensitive work, with the exact screen an operator should open next."
+        id="partner-control-block-matrix"
+        status={
           <span className={`pill ${operatingBlocks.length ? 'pill-warn' : 'pill-success'}`}>
             {operatingBlocks.length ? `${operatingBlocks.length} block record(s)` : 'No block record'}
           </span>
-        </div>
+        }
+        title="Partner operating block matrix"
+      >
         {operatingBlocks.length ? (
           <div className="setup-stage-list admin-mt-12">
             {operatingBlocks.map((block) => (
@@ -444,27 +438,26 @@ export default async function PartnerControlsPage({
             No Partner currently has a control record that should block operations.
           </p>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header admin-mb-12">
-          <div>
-            <h2>Control filters</h2>
-            <p className="muted">
-              Dashboard links land here with the exact review lane already selected.
-            </p>
-            {activeFilters.length > 0 ? (
-              <p className="muted">
-                Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
-              </p>
-            ) : (
-              <p className="muted">No control filter is active. Showing every report and account-control lane.</p>
-            )}
-          </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Dashboard links land here with the exact review lane already selected."
+        id="partner-control-filters"
+        status={
           <span className={`pill ${activeFilters.length ? 'pill-warn' : 'pill-success'}`}>
             Showing {visibleReports.length} report(s), {visibleSanctions.length} account control(s)
           </span>
-        </div>
+        }
+        title="Control filters"
+      >
+        {activeFilters.length > 0 ? (
+          <p className="muted admin-mb-12">
+            Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
+          </p>
+        ) : (
+          <p className="muted admin-mb-12">No control filter is active. Showing every report and account-control lane.</p>
+        )}
         <form className="form-grid" action="/partner-controls">
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
           <div className="calendar-field">
@@ -542,7 +535,7 @@ export default async function PartnerControlsPage({
             </div>
           ) : null}
         </form>
-      </section>
+      </AdminSection>
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
