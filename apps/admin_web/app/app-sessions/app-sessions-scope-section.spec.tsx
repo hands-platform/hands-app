@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   AppSessionsScopeSection,
   type AppSessionQuickFilter,
@@ -27,6 +30,13 @@ describe('AppSessionsScopeSection', () => {
     expect(rendered).toContain('Live partners');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/app-sessions', '/app-sessions?role=PROVIDER&state=live']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'pill pill-info']));
+  });
+
+  it('uses the shared ActionMenu atom for quick filter pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-scope-section.tsx'), 'utf8');
+
+    expect(source).toContain('ActionMenu');
+    expect(source).not.toContain('className={`pill ${item.href === activeFilterHref ?');
   });
 });
 

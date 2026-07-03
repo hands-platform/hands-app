@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCheckQueueItem = {
   readonly action: string;
@@ -19,9 +20,9 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
       className="admin-mb-16"
       description="Check old app versions, stale sessions, missing push readiness, and duplicate device usage."
       status={
-        <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={items.length ? 'warning' : 'success'}>
           {items.length ? `${items.length} review` : 'No session check'}
-        </span>
+        </StatusBadge>
       }
       title="Session check queue"
     >

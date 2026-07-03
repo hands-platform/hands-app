@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   AppSessionsCheckQueueSection,
   type SessionCheckQueueItem,
@@ -35,6 +38,16 @@ describe('AppSessionsCheckQueueSection', () => {
     expect(rendered).toContain('No session check');
     expect(rendered).toContain('No visible session issue in the latest heartbeat snapshot.');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+  });
+
+  it('uses the shared StatusBadge atom for the check queue status', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/app-sessions/app-sessions-check-queue-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${items.length ?');
   });
 });
 

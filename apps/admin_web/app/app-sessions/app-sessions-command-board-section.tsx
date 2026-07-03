@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCommandCard = {
   readonly action: string;
@@ -24,9 +25,9 @@ export function AppSessionsCommandBoardSection({
       className="admin-mb-16"
       description="Live demand, Partner supply, push reachability, and shared-device checks for the current shift."
       status={
-        <span className={`pill ${checkCount ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={checkCount ? 'warning' : 'success'}>
           {checkCount ? `${checkCount} check item(s)` : 'Clear'}
-        </span>
+        </StatusBadge>
       }
       title="Session command board"
     >

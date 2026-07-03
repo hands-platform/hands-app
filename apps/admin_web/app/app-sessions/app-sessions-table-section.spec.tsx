@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { AppSessionsTableSection, type AppSessionTableRow } from './app-sessions-table-section';
 
 describe('AppSessionsTableSection', () => {
@@ -31,6 +34,13 @@ describe('AppSessionsTableSection', () => {
     });
 
     expect(textContent(section)).toContain('No app sessions loaded.');
+  });
+
+  it('uses the shared PillClassBadge atom for session state chips', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-table-section.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>');
   });
 });
 

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   AppSessionsCommandBoardSection,
   type SessionCommandCard,
@@ -32,6 +35,16 @@ describe('AppSessionsCommandBoardSection', () => {
 
     expect(rendered).toContain('Clear');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+  });
+
+  it('uses the shared StatusBadge atom for the board status', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/app-sessions/app-sessions-command-board-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${checkCount ?');
   });
 });
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { X } from 'lucide-react';
 
+import { ActionMenu } from '../../components/action-menu';
 import { AdminSection } from '../../components/admin-surface';
 
 export type AppSessionQuickFilter = {
@@ -36,15 +37,15 @@ export function AppSessionsScopeSection({
       description={`${activeFilterLabel}. Showing ${loadedCount} of ${totalCount} heartbeat record(s).`}
       title="Session scope"
     >
-      {quickFilters.map((item) => (
-        <Link
-          className={`pill ${item.href === activeFilterHref ? 'pill-success' : 'pill-info'}`}
-          href={item.href}
-          key={item.href}
-        >
-          {item.label}
-        </Link>
-      ))}
+      <ActionMenu
+        actions={quickFilters.map((item) => ({
+          href: item.href,
+          kind: 'link',
+          label: item.label,
+          tone: item.href === activeFilterHref ? 'success' : 'info',
+        }))}
+        label="App session quick filters"
+      />
     </AdminSection>
   );
 }

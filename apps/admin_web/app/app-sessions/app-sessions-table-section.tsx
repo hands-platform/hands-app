@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { RoleBadge } from '../../components/role-badge';
+import { PillClassBadge } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 
 export type AppSessionTableRow = {
@@ -63,7 +64,7 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
                 <RoleBadge role={row.roleLabel} />
               </td>
               <td>
-                <span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>
+                <PillClassBadge pillClass={row.statePillClassName}>{row.stateLabel}</PillClassBadge>
               </td>
               <td>{row.platformLabel}</td>
               <td>{row.appVersionLabel}</td>
