@@ -117,7 +117,7 @@ function CouponManagementCard({
   const usageCount = row.usageBookingCount;
 
   return (
-    <section className={`coupon-management-section coupon-management-section-${row.windowState}`}>
+    <section className={`card admin-card coupon-management-section coupon-management-section-${row.windowState}`}>
       <div className="coupon-management-section-header">
         <div>
           <div className="coupon-code-line">
