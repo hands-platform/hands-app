@@ -336,7 +336,7 @@ function PartnerKpiCard({
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
 
   return (
-    <article className={`usage-overview-command-card is-${tone}`}>
+    <article className={`card admin-card usage-overview-command-card is-${tone}`}>
       <div className="usage-overview-command-icon">
         <Icon size={20} aria-hidden="true" />
       </div>
@@ -362,7 +362,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
           cards.map((card) => (
             <a
               aria-label={`${card.label}, ${formatNumber(card.count)} Partners. Open filtered Partners list`}
-              className={`partner-overview-operating-card is-${card.tone}`}
+              className={`card admin-card partner-overview-operating-card is-${card.tone}`}
               href={card.href}
               key={card.key}
             >
@@ -470,7 +470,7 @@ function PartnerPriorityBoard({
           return (
             <a
               aria-label={`${card.label}, ${card.value}. ${card.action}`}
-              className={`usage-overview-command-card partner-overview-priority-card is-${card.tone}`}
+              className={`card admin-card usage-overview-command-card partner-overview-priority-card is-${card.tone}`}
               href={card.href}
               key={card.key}
             >
@@ -883,7 +883,7 @@ function SelectionFrictionCard({
 
 function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionList }) {
   return (
-    <article className="partner-overview-action-card">
+    <article className="card admin-card partner-overview-action-card">
       <div className="partner-overview-action-card-header">
         <div>
           <h3>{list.title}</h3>
@@ -934,7 +934,7 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
   const Icon = partnerSegmentIcons[segment.key] ?? Activity;
 
   return (
-    <article className={`usage-overview-command-card is-${segment.tone}`}>
+    <article className={`card admin-card usage-overview-command-card is-${segment.tone}`}>
       <div className="usage-overview-command-icon">
         <Icon size={20} aria-hidden="true" />
       </div>
