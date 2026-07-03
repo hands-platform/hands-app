@@ -20,6 +20,7 @@ import {
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
@@ -234,9 +235,9 @@ export default async function BankReconciliationDetailPage({
                   <strong>Recommended payment clearing match</strong>
                   <span>Use this first when the bank row belongs to a customer payment or booking settlement clearing entry.</span>
                 </div>
-                <span className={`pill ${paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}`}>
+                <PillClassBadge pillClass={paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}>
                   {paymentClearingOptions.length} candidate(s)
-                </span>
+                </PillClassBadge>
               </div>
               <form action={createBankReconciliationMatchAction} className="form-grid compact-form">
                 <input name="bankTransactionId" type="hidden" value={transaction.id} />
@@ -403,7 +404,7 @@ export default async function BankReconciliationDetailPage({
                   <strong>{formatMoney(match.amount, match.currency)}</strong>
                 </td>
                 <td>
-                  <span className={`pill ${statusPill(match.status)}`}>{match.status}</span>
+                  <PillClassBadge pillClass={statusPill(match.status)}>{match.status}</PillClassBadge>
                 </td>
                 <td>
                   <ReconciliationAuditTrail metadata={match.metadata} />

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -925,5 +928,34 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Reversal reason');
     expect(markup).toContain('Incorrect bank evidence selected.');
     expect(markup).toContain('Create match');
+  });
+
+  it('uses shared badge atoms for finance detail status pills', () => {
+    const paymentClearingSource = readFileSync(
+      join(process.cwd(), 'app/finance-tax/payment-clearing/[id]/page.tsx'),
+      'utf8',
+    );
+    const bankReconciliationSource = readFileSync(
+      join(process.cwd(), 'app/finance-tax/bank-reconciliation/[id]/page.tsx'),
+      'utf8',
+    );
+    const generalLedgerSource = readFileSync(
+      join(process.cwd(), 'app/finance-tax/general-ledger/[id]/page.tsx'),
+      'utf8',
+    );
+
+    expect(paymentClearingSource).toContain('PillClassBadge');
+    expect(paymentClearingSource).not.toContain('className={`pill ${bankStatusPill(match.status)}`}');
+
+    expect(bankReconciliationSource).toContain('PillClassBadge');
+    expect(bankReconciliationSource).not.toContain('className={`pill ${statusPill(match.status)}`}');
+    expect(bankReconciliationSource).not.toContain(
+      "className={`pill ${paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}`}",
+    );
+
+    expect(generalLedgerSource).toContain('PillClassBadge');
+    expect(generalLedgerSource).not.toContain(
+      "className={`pill ${entry.side === 'DEBIT' ? 'pill-info' : 'pill-success'}`}",
+    );
   });
 });

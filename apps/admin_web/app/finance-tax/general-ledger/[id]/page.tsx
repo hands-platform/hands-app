@@ -5,6 +5,7 @@ import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-ap
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -215,7 +216,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             {batch.entries.map((entry) => (
               <tr key={entry.id}>
                 <td>
-                  <span className={`pill ${entry.side === 'DEBIT' ? 'pill-info' : 'pill-success'}`}>{entry.side}</span>
+                  <PillClassBadge pillClass={entry.side === 'DEBIT' ? 'pill-info' : 'pill-success'}>
+                    {entry.side}
+                  </PillClassBadge>
                 </td>
                 <td>
                   <strong>{entry.accountCode}</strong>

@@ -5,6 +5,7 @@ import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/adm
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -261,7 +262,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 </td>
                 <td>{formatDateTime(match.matchedAt)}</td>
                 <td>
-                  <span className={`pill ${bankStatusPill(match.status)}`}>{match.status}</span>
+                  <PillClassBadge pillClass={bankStatusPill(match.status)}>{match.status}</PillClassBadge>
                 </td>
               </tr>
             ))}
