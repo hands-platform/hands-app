@@ -5,6 +5,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime } from '../../../lib/admin-format';
 import { ADMIN_OPERATOR_BASE_ROLE, FINANCE_APPROVER_ROLE } from '../../../lib/admin-operator-permissions';
 import { FinanceDataTable } from '../finance-data-table';
@@ -176,9 +177,12 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                   <td>
                     <div className="participant-list">
                       {user.roles.map((role) => (
-                        <span className={`pill ${role === FINANCE_APPROVER_ROLE ? 'pill-success' : 'pill-neutral'}`} key={role}>
+                        <PillClassBadge
+                          key={role}
+                          pillClass={role === FINANCE_APPROVER_ROLE ? 'pill-success' : 'pill-neutral'}
+                        >
                           {role}
-                        </span>
+                        </PillClassBadge>
                       ))}
                     </div>
                   </td>
