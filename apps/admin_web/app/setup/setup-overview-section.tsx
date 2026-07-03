@@ -1,4 +1,4 @@
-import { MetricCard } from '../../components/metric-card';
+import { AdminMetricGrid, AdminSectionHeader } from '../../components/admin-page-template';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 
 type SetupOverviewSectionProps = {
@@ -28,15 +28,9 @@ export function SetupOverviewSection({
 }: SetupOverviewSectionProps) {
   return (
     <>
-      <section className="toolbar">
-        <div>
-          <h1>External setup</h1>
-          <p className="muted">
-            One checklist for credentials, account setup, and external services needed before production-like
-            E2E.
-          </p>
-        </div>
-        <div className="actions">
+      <AdminSectionHeader
+        actions={
+          <>
           <span className={`signal ${currentStage.ok ? 'signal-ok' : 'signal-warn'}`}>
             {currentStage.label}
           </span>
@@ -46,28 +40,37 @@ export function SetupOverviewSection({
           <span className="pill pill-info">
             {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readinessTimestamp)}`}
           </span>
-        </div>
-      </section>
+          </>
+        }
+        description="One checklist for credentials, account setup, and external services needed before production-like E2E."
+        title="External setup"
+      />
 
-      <section className="grid admin-mb-16">
-        <MetricCard label="Current blockers" value={currentStage.blockers} helper={currentStage.helper} />
-        <MetricCard
-          label="Ready"
-          value={summary.ready}
-          helper="External groups configured enough for local/E2E use."
-        />
-        <MetricCard
-          label="Partial"
-          value={summary.partial}
-          helper="Some values exist, but production values are missing."
-        />
-        <MetricCard
-          label="Blocked"
-          value={summary.blocked}
-          helper="Cannot run real E2E until required values are set."
-        />
-        <MetricCard label="Missing values" value={summary.missing} helper="Secret values are never displayed here." />
-      </section>
+      <AdminMetricGrid
+        metrics={[
+          { label: 'Current blockers', value: currentStage.blockers, helper: currentStage.helper },
+          {
+            label: 'Ready',
+            value: summary.ready,
+            helper: 'External groups configured enough for local/E2E use.',
+          },
+          {
+            label: 'Partial',
+            value: summary.partial,
+            helper: 'Some values exist, but production values are missing.',
+          },
+          {
+            label: 'Blocked',
+            value: summary.blocked,
+            helper: 'Cannot run real E2E until required values are set.',
+          },
+          {
+            label: 'Missing values',
+            value: summary.missing,
+            helper: 'Secret values are never displayed here.',
+          },
+        ]}
+      />
     </>
   );
 }

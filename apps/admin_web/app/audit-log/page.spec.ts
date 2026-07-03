@@ -70,6 +70,7 @@ describe('audit log page model', () => {
     expect(markup).toContain('admin-form-select admin-form-control-labeled calendar-field');
     expect(markup).toContain('admin-form-control-button button button-primary');
     expect(markup).toContain('admin-form-control-link button button-secondary');
+    expect(markup).toContain('Operational trail');
     expect(markup).not.toContain('<div class="calendar-field"><span>Search</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Date range</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Bucket</span>');

@@ -16,6 +16,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
@@ -190,17 +191,11 @@ export default async function OperationsHandoffPage({
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
 
   return (
-    <div className="operations-handoff-page">
-      <div className="toolbar">
-        <div>
-          <h1>Operations Handoff</h1>
-          <p className="muted">
-            One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app
-            activity. Use this before changing operators so open work keeps context.
-          </p>
-        </div>
-      </div>
-
+    <AdminPageTemplate
+      contentClassName="operations-handoff-page"
+      description="One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app activity. Use this before changing operators so open work keeps context."
+      title="Operations Handoff"
+    >
       <OperationsHandoffDateRangeSection range={filters.range} />
 
       <OperationsHandoffMetricGridSection
@@ -251,7 +246,7 @@ export default async function OperationsHandoffPage({
       ) : (
         <OperationsHandoffFullDetailsLink range={filters.range} />
       )}
-    </div>
+    </AdminPageTemplate>
   );
 }
 

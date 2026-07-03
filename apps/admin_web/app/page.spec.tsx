@@ -128,12 +128,14 @@ describe('DashboardPage', () => {
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
-    await DashboardPage({
+    const page = await DashboardPage({
       searchParams: Promise.resolve({}),
     });
+    const markup = renderToStaticMarkup(page);
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
+    expect(markup).toContain('toolbar admin-page-header');
     expect(hrefs).toContain('/admin/dashboard/summary');
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');

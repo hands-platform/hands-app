@@ -27,6 +27,7 @@ describe('OperationsHandoffPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('Detailed handoff lists');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('/operations-handoff?details=all');

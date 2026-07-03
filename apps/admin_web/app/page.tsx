@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
+import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminSection } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
@@ -692,16 +693,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     })
     .filter((counter): counter is { label: string; value: string; helper: string } => Boolean(counter));
   return (
-    <div className="dashboard-page">
-      <section className="toolbar">
-        <div>
-          <h1>HANDS Operations</h1>
-          <p className="muted">
-            Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and
-            payout readiness.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <Link className="button button-secondary" href="/bookings">
             <CalendarClock size={16} aria-hidden="true" />
             Booking monitor
@@ -739,9 +733,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <FileClock size={16} aria-hidden="true" />
             Audit log
           </Link>
-        </div>
-      </section>
-
+        </>
+      }
+      contentClassName="dashboard-page"
+      description="Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and payout readiness."
+      title="HANDS Operations"
+    >
       <AdminSection
         actions={
           <Link className="button button-secondary" href="/bookings">
@@ -2220,7 +2217,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       )}
 
       <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

@@ -2,7 +2,7 @@ import { Filter, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import {
@@ -191,13 +191,10 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           }
           title="Audit records"
         >
-          <div className="toolbar">
-            <div>
-              <p className="muted">
-                Recent operational trail for bookings, payments, refunds, Partner review, and alerts.
-              </p>
-            </div>
-          </div>
+          <AdminSectionHeader
+            description="Recent operational trail for bookings, payments, refunds, Partner review, and alerts."
+            title="Operational trail"
+          />
 
           <AdminTableScroll>
             <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />

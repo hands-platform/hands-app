@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { SetupOverviewSection } from './setup-overview-section';
 import { textContent } from './setup-section-test-utils';
 
@@ -22,7 +24,10 @@ describe('SetupOverviewSection', () => {
     });
 
     const rendered = textContent(section);
+    const markup = renderToStaticMarkup(section);
 
+    expect(markup).toContain('ops-section-header');
+    expect(markup).not.toContain('class="toolbar"');
     expect(rendered).toContain('External setup');
     expect(rendered).toContain('Production deferred');
     expect(rendered).toContain('Current blockers');
