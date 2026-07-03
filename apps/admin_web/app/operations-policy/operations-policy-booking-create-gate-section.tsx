@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
 type BookingCreateGateReview = {
@@ -73,7 +74,7 @@ export function OperationsPolicyBookingCreateGateSection({
           {review.rows.map((row) => (
             <tr key={row.key}>
               <td>
-                <span className={`pill ${row.pillClass}`}>{row.gate}</span>
+                <PillClassBadge pillClass={row.pillClass}>{row.gate}</PillClassBadge>
               </td>
               <td>{row.current}</td>
               <td>{row.defaultValue}</td>
@@ -106,7 +107,7 @@ export function OperationsPolicyBookingCreateGateSection({
         <div className="ops-task-grid admin-mt-14">
           {review.recentAttempts.map((attempt) => (
             <section className="operations-policy-blocked-attempt-section" key={attempt.id}>
-              <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
+              <PillClassBadge pillClass={attempt.pillClass}>{attempt.reason}</PillClassBadge>
               <h3>Blocked booking create attempt</h3>
               <p>{attempt.detail}</p>
               <small>

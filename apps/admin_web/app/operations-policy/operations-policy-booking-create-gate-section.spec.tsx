@@ -71,6 +71,44 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
 
     expect(rendered).toContain('No booking create gate rejections are currently recorded.');
   });
+
+  it('does not duplicate the base pill class for gate and blocked attempt badges', () => {
+    const section = OperationsPolicyBookingCreateGateSection({
+      review: {
+        currentPolicyLabel: 'Distance gates active',
+        recentAttempts: [
+          {
+            createdAt: '2026-06-14T10:00:00.000Z',
+            detail: 'Booking address was outside the enabled service area.',
+            href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+            id: 'audit-booking-create-rejected-1',
+            pillClass: 'pill pill-danger',
+            reason: 'Service area',
+          },
+        ],
+        rows: [
+          {
+            current: 'Required',
+            defaultValue: 'Required',
+            evidence: '1 reject(s)',
+            gate: 'Service area',
+            href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+            key: OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired,
+            operatorMeaning: 'Booking address must be inside an enabled Vietnam service area.',
+            pillClass: 'pill pill-success',
+          },
+        ],
+        summary: [],
+      },
+    });
+
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toContain('pill pill-success');
+    expect(classNames).toContain('pill pill-danger');
+    expect(classNames).not.toContain('pill pill pill-success');
+    expect(classNames).not.toContain('pill pill pill-danger');
+  });
 });
 
 function elementTypesIn(value: unknown): string[] {
@@ -88,6 +126,7 @@ function elementTypesIn(value: unknown): string[] {
 }
 
 function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -99,6 +138,12 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
