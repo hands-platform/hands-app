@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { PartnerDetailReportsControlsSection } from './partner-detail-reports-controls-section';
 
 describe('PartnerDetailReportsControlsSection', () => {
@@ -74,9 +76,9 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
-        'admin-form-select',
-        'admin-form-input',
-        'admin-form-textarea',
+        'admin-form-select admin-form-control-labeled field',
+        'admin-form-input admin-form-control-labeled field',
+        'admin-form-textarea admin-form-control-labeled field full-span',
         'admin-form-control-button',
         'admin-form-control-link',
         'partner-report-command-grid admin-mt-16',
@@ -85,9 +87,11 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-action-dropdown action-menu-dropdown',
       ]),
     );
-    expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(8);
-    expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(5);
+    expect(classNames.filter((className) => className.startsWith('admin-form-select'))).toHaveLength(8);
+    expect(classNames.filter((className) => className.startsWith('admin-form-input'))).toHaveLength(6);
     expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
+    expect(renderToStaticMarkup(section)).not.toContain('<div class="field"><span>');
+    expect(renderToStaticMarkup(section)).not.toContain('<div class="field full-span"><span>');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 

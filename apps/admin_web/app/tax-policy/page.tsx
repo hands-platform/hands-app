@@ -108,26 +108,24 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         title="Withholding preview"
       >
         <form className="form-grid" method="get">
-          <div className="calendar-field">
-            <span>Service type</span>
-            <AdminFormInput
-              defaultValue={preview.serviceType}
-              label="Service type"
-              name="serviceType"
-              placeholder="leg_massage"
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Gross amount</span>
-            <AdminFormInput
-              defaultValue={preview.grossAmount}
-              label="Gross amount"
-              min="0"
-              name="grossAmount"
-              step="100000"
-              type="number"
-            />
-          </div>
+          <AdminFormInput
+            className="calendar-field"
+            defaultValue={preview.serviceType}
+            label="Service type"
+            labelVisibility="visible"
+            name="serviceType"
+            placeholder="leg_massage"
+          />
+          <AdminFormInput
+            className="calendar-field"
+            defaultValue={preview.grossAmount}
+            label="Gross amount"
+            labelVisibility="visible"
+            min="0"
+            name="grossAmount"
+            step="100000"
+            type="number"
+          />
           <AdminFormControlButton className="button button-primary" type="submit">
             Preview withholding
           </AdminFormControlButton>
@@ -176,47 +174,47 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         title="Create policy version"
       >
         <form action={createTaxPolicyVersion} className="form-grid">
-          <div className="calendar-field">
-            <span>Name</span>
-            <AdminFormInput
-              label="Name"
-              name="name"
-              placeholder="Vietnam freelance withholding 2026"
-              required
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Status</span>
-            <AdminFormSelect
-              defaultValue="DRAFT"
-              label="Status"
-              name="status"
-              options={statusSelectOptions}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Effective from</span>
-            <AdminFormInput label="Effective from" name="effectiveFrom" required type="datetime-local" />
-          </div>
-          <div className="calendar-field">
-            <span>Default rate bps</span>
-            <AdminFormInput
-              label="Default rate bps"
-              max="10000"
-              min="0"
-              name="defaultRateBps"
-              placeholder="500"
-              type="number"
-            />
-          </div>
-          <div className="calendar-field full-span">
-            <span>Notes</span>
-            <AdminFormInput
-              label="Notes"
-              name="notes"
-              placeholder="Policy source, approval note, or internal memo"
-            />
-          </div>
+          <AdminFormInput
+            className="calendar-field"
+            label="Name"
+            labelVisibility="visible"
+            name="name"
+            placeholder="Vietnam freelance withholding 2026"
+            required
+          />
+          <AdminFormSelect
+            className="calendar-field"
+            defaultValue="DRAFT"
+            label="Status"
+            labelVisibility="visible"
+            name="status"
+            options={statusSelectOptions}
+          />
+          <AdminFormInput
+            className="calendar-field"
+            label="Effective from"
+            labelVisibility="visible"
+            name="effectiveFrom"
+            required
+            type="datetime-local"
+          />
+          <AdminFormInput
+            className="calendar-field"
+            label="Default rate bps"
+            labelVisibility="visible"
+            max="10000"
+            min="0"
+            name="defaultRateBps"
+            placeholder="500"
+            type="number"
+          />
+          <AdminFormInput
+            className="calendar-field full-span"
+            label="Notes"
+            labelVisibility="visible"
+            name="notes"
+            placeholder="Policy source, approval note, or internal memo"
+          />
           <AdminFormControlButton className="button button-primary" type="submit">
             Create policy
           </AdminFormControlButton>
@@ -242,37 +240,37 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
             <form action={updateTaxPolicyVersion} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
-              <div className="calendar-field">
-                <span>Status</span>
-                <AdminFormSelect
-                  defaultValue={policy.status}
-                  label="Status"
-                  name="status"
-                  options={statusSelectOptions}
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Effective from</span>
-                <AdminFormInput
-                  defaultValue={toDateTimeLocal(policy.effectiveFrom)}
-                  label="Effective from"
-                  name="effectiveFrom"
-                  type="datetime-local"
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Effective to</span>
-                <AdminFormInput
-                  defaultValue={toDateTimeLocal(policy.effectiveTo)}
-                  label="Effective to"
-                  name="effectiveTo"
-                  type="datetime-local"
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Notes</span>
-                <AdminFormInput defaultValue={policy.notes ?? ''} label="Notes" name="notes" />
-              </div>
+              <AdminFormSelect
+                className="calendar-field"
+                defaultValue={policy.status}
+                label="Status"
+                labelVisibility="visible"
+                name="status"
+                options={statusSelectOptions}
+              />
+              <AdminFormInput
+                className="calendar-field"
+                defaultValue={toDateTimeLocal(policy.effectiveFrom)}
+                label="Effective from"
+                labelVisibility="visible"
+                name="effectiveFrom"
+                type="datetime-local"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                defaultValue={toDateTimeLocal(policy.effectiveTo)}
+                label="Effective to"
+                labelVisibility="visible"
+                name="effectiveTo"
+                type="datetime-local"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                defaultValue={policy.notes ?? ''}
+                label="Notes"
+                labelVisibility="visible"
+                name="notes"
+              />
               <AdminFormControlButton className="button button-primary" type="submit">
                 Update policy
               </AdminFormControlButton>
@@ -301,64 +299,58 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     </p>
                     <form action={updateTaxRule} className="form-grid compact-form">
                       <input type="hidden" name="ruleId" value={rule.id} />
-                      <div className="calendar-field">
-                        <span>Scope</span>
-                        <AdminFormSelect
-                          defaultValue={rule.scope}
-                          label="Scope"
-                          name="scope"
-                          options={scopeSelectOptions}
-                        />
-                      </div>
-                      <div className="calendar-field">
-                        <span>Service type</span>
-                        <AdminFormInput
-                          defaultValue={rule.serviceType ?? ''}
-                          label="Service type"
-                          name="serviceType"
-                        />
-                      </div>
-                      <div className="calendar-field">
-                        <span>Min amount</span>
-                        <AdminFormInput
-                          defaultValue={rule.minGrossAmount ?? ''}
-                          label="Min amount"
-                          min="0"
-                          name="minGrossAmount"
-                          type="number"
-                        />
-                      </div>
-                      <div className="calendar-field">
-                        <span>Max amount</span>
-                        <AdminFormInput
-                          defaultValue={rule.maxGrossAmount ?? ''}
-                          label="Max amount"
-                          min="0"
-                          name="maxGrossAmount"
-                          type="number"
-                        />
-                      </div>
-                      <div className="calendar-field">
-                        <span>Rate bps</span>
-                        <AdminFormInput
-                          defaultValue={rule.rateBps}
-                          label="Rate bps"
-                          max="10000"
-                          min="0"
-                          name="rateBps"
-                          type="number"
-                        />
-                      </div>
-                      <div className="calendar-field">
-                        <span>Fixed amount</span>
-                        <AdminFormInput
-                          defaultValue={rule.fixedAmount}
-                          label="Fixed amount"
-                          min="0"
-                          name="fixedAmount"
-                          type="number"
-                        />
-                      </div>
+                      <AdminFormSelect
+                        className="calendar-field"
+                        defaultValue={rule.scope}
+                        label="Scope"
+                        labelVisibility="visible"
+                        name="scope"
+                        options={scopeSelectOptions}
+                      />
+                      <AdminFormInput
+                        className="calendar-field"
+                        defaultValue={rule.serviceType ?? ''}
+                        label="Service type"
+                        labelVisibility="visible"
+                        name="serviceType"
+                      />
+                      <AdminFormInput
+                        className="calendar-field"
+                        defaultValue={rule.minGrossAmount ?? ''}
+                        label="Min amount"
+                        labelVisibility="visible"
+                        min="0"
+                        name="minGrossAmount"
+                        type="number"
+                      />
+                      <AdminFormInput
+                        className="calendar-field"
+                        defaultValue={rule.maxGrossAmount ?? ''}
+                        label="Max amount"
+                        labelVisibility="visible"
+                        min="0"
+                        name="maxGrossAmount"
+                        type="number"
+                      />
+                      <AdminFormInput
+                        className="calendar-field"
+                        defaultValue={rule.rateBps}
+                        label="Rate bps"
+                        labelVisibility="visible"
+                        max="10000"
+                        min="0"
+                        name="rateBps"
+                        type="number"
+                      />
+                      <AdminFormInput
+                        className="calendar-field"
+                        defaultValue={rule.fixedAmount}
+                        label="Fixed amount"
+                        labelVisibility="visible"
+                        min="0"
+                        name="fixedAmount"
+                        type="number"
+                      />
                       <AdminFormCheckbox
                         defaultChecked={rule.active}
                         label={`Tax rule ${rule.id} active`}
@@ -379,60 +371,58 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
             <form action={createTaxRule} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
-              <div className="calendar-field">
-                <span>Scope</span>
-                <AdminFormSelect
-                  defaultValue="DEFAULT"
-                  label="Scope"
-                  name="scope"
-                  options={scopeSelectOptions}
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Service type</span>
-                <AdminFormInput label="Service type" name="serviceType" placeholder="optional" />
-              </div>
-              <div className="calendar-field">
-                <span>Min amount</span>
-                <AdminFormInput
-                  label="Min amount"
-                  min="0"
-                  name="minGrossAmount"
-                  placeholder="optional"
-                  type="number"
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Max amount</span>
-                <AdminFormInput
-                  label="Max amount"
-                  min="0"
-                  name="maxGrossAmount"
-                  placeholder="optional"
-                  type="number"
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Rate bps</span>
-                <AdminFormInput
-                  defaultValue="0"
-                  label="Rate bps"
-                  max="10000"
-                  min="0"
-                  name="rateBps"
-                  type="number"
-                />
-              </div>
-              <div className="calendar-field">
-                <span>Fixed amount</span>
-                <AdminFormInput
-                  defaultValue="0"
-                  label="Fixed amount"
-                  min="0"
-                  name="fixedAmount"
-                  type="number"
-                />
-              </div>
+              <AdminFormSelect
+                className="calendar-field"
+                defaultValue="DEFAULT"
+                label="Scope"
+                labelVisibility="visible"
+                name="scope"
+                options={scopeSelectOptions}
+              />
+              <AdminFormInput
+                className="calendar-field"
+                label="Service type"
+                labelVisibility="visible"
+                name="serviceType"
+                placeholder="optional"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                label="Min amount"
+                labelVisibility="visible"
+                min="0"
+                name="minGrossAmount"
+                placeholder="optional"
+                type="number"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                label="Max amount"
+                labelVisibility="visible"
+                min="0"
+                name="maxGrossAmount"
+                placeholder="optional"
+                type="number"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                defaultValue="0"
+                label="Rate bps"
+                labelVisibility="visible"
+                max="10000"
+                min="0"
+                name="rateBps"
+                type="number"
+              />
+              <AdminFormInput
+                className="calendar-field"
+                defaultValue="0"
+                label="Fixed amount"
+                labelVisibility="visible"
+                min="0"
+                name="fixedAmount"
+                type="number"
+              />
               <AdminFormControlButton className="button button-primary" type="submit">
                 Add rule
               </AdminFormControlButton>

@@ -86,40 +86,45 @@ export function PartnerDetailReportsControlsSection({
     >
       <form className="form-grid admin-mb-16" action={createProviderReport}>
         <input type="hidden" name="providerProfileId" value={providerId} />
-        <div className="field">
-          <span>Category</span>
-          <AdminFormInput
-            label="Category"
-            name="category"
-            placeholder="safety, payout, behavior, identity"
-            required
-          />
-        </div>
-        <div className="field">
-          <span>Severity</span>
-          <AdminFormSelect
-            label="Severity"
-            name="severity"
-            defaultValue="MEDIUM"
-            options={reportSeverityOptions}
-          />
-        </div>
-        <div className="field">
-          <span>Source</span>
-          <AdminFormSelect label="Source" name="source" defaultValue="ADMIN" options={reportSourceOptions} />
-        </div>
-        <div className="field full-span">
-          <span>Summary</span>
-          <AdminFormInput label="Summary" name="summary" placeholder="Short report summary" required />
-        </div>
-        <div className="field full-span">
-          <span>Details</span>
-          <AdminFormTextarea
-            label="Details"
-            name="details"
-            placeholder="Evidence, timeline, follow-up, or staff note"
-          />
-        </div>
+        <AdminFormInput
+          className="field"
+          label="Category"
+          labelVisibility="visible"
+          name="category"
+          placeholder="safety, payout, behavior, identity"
+          required
+        />
+        <AdminFormSelect
+          className="field"
+          defaultValue="MEDIUM"
+          label="Severity"
+          labelVisibility="visible"
+          name="severity"
+          options={reportSeverityOptions}
+        />
+        <AdminFormSelect
+          className="field"
+          defaultValue="ADMIN"
+          label="Source"
+          labelVisibility="visible"
+          name="source"
+          options={reportSourceOptions}
+        />
+        <AdminFormInput
+          className="field full-span"
+          label="Summary"
+          labelVisibility="visible"
+          name="summary"
+          placeholder="Short report summary"
+          required
+        />
+        <AdminFormTextarea
+          className="field full-span"
+          label="Details"
+          labelVisibility="visible"
+          name="details"
+          placeholder="Evidence, timeline, follow-up, or staff note"
+        />
         <div className="actions full-span">
           <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
         </div>
@@ -169,30 +174,31 @@ export function PartnerDetailReportsControlsSection({
         </div>
         <form className="form-grid" action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
-          <div className="field">
-            <span>Control type</span>
-            <AdminFormSelect
-              label="Control type"
-              name="type"
-              defaultValue="PAYOUT_HOLD"
-              options={accountControlTypeOptions}
-            />
-          </div>
-          <div className="field">
-            <span>Expires at</span>
-            <AdminFormInput label="Expires at" name="expiresAt" type="datetime-local" />
-          </div>
-          <div className="field full-span">
-            <span>Reason</span>
-            <AdminFormInput
-              label="Reason"
-              name="reason"
-              placeholder="Clear operator reason, visible in audit and payout controls"
-              required
-              minLength={12}
-              maxLength={500}
-            />
-          </div>
+          <AdminFormSelect
+            className="field"
+            defaultValue="PAYOUT_HOLD"
+            label="Control type"
+            labelVisibility="visible"
+            name="type"
+            options={accountControlTypeOptions}
+          />
+          <AdminFormInput
+            className="field"
+            label="Expires at"
+            labelVisibility="visible"
+            name="expiresAt"
+            type="datetime-local"
+          />
+          <AdminFormInput
+            className="field full-span"
+            label="Reason"
+            labelVisibility="visible"
+            maxLength={500}
+            minLength={12}
+            name="reason"
+            placeholder="Clear operator reason, visible in audit and payout controls"
+            required
+          />
           <div className="actions full-span">
             <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
@@ -320,37 +326,37 @@ function PartnerReportCommandPanel({
         <>
           <form className="form-grid compact-form partner-report-command-form" action={updateProviderReport}>
             <input type="hidden" name="providerProfileId" value={providerId} />
-            <div className="field">
-              <span>Report</span>
-              <AdminFormSelect
-                label="Report"
-                name="reportId"
-                defaultValue={firstReport.id}
-                options={reportSelectOptions(reports)}
-              />
-            </div>
-            <div className="field">
-              <span>Status</span>
-              <AdminFormSelect
-                label="Report status"
-                name="status"
-                defaultValue={firstReport.status}
-                options={reportStatusOptions}
-              />
-            </div>
-            <div className="field">
-              <span>Severity</span>
-              <AdminFormSelect
-                label="Report severity"
-                name="severity"
-                defaultValue={firstReport.severity}
-                options={reportSeverityOptions}
-              />
-            </div>
-            <div className="field full-span">
-              <span>Resolution note</span>
-              <AdminFormInput label="Resolution note" name="resolutionNote" placeholder="Resolution note" />
-            </div>
+            <AdminFormSelect
+              className="field"
+              defaultValue={firstReport.id}
+              label="Report"
+              labelVisibility="visible"
+              name="reportId"
+              options={reportSelectOptions(reports)}
+            />
+            <AdminFormSelect
+              className="field"
+              defaultValue={firstReport.status}
+              label="Report status"
+              labelVisibility="visible"
+              name="status"
+              options={reportStatusOptions}
+            />
+            <AdminFormSelect
+              className="field"
+              defaultValue={firstReport.severity}
+              label="Report severity"
+              labelVisibility="visible"
+              name="severity"
+              options={reportSeverityOptions}
+            />
+            <AdminFormInput
+              className="field full-span"
+              label="Resolution note"
+              labelVisibility="visible"
+              name="resolutionNote"
+              placeholder="Resolution note"
+            />
             <div className="actions full-span">
               <AdminFormControlButton type="submit">Update report</AdminFormControlButton>
             </div>
@@ -360,35 +366,32 @@ function PartnerReportCommandPanel({
             action={createProviderSanction}
           >
             <input type="hidden" name="providerProfileId" value={providerId} />
-            <div className="field">
-              <span>Linked report</span>
-              <AdminFormSelect
-                label="Linked report"
-                name="reportId"
-                defaultValue={firstReport.id}
-                options={reportSelectOptions(reports)}
-              />
-            </div>
-            <div className="field">
-              <span>Control type</span>
-              <AdminFormSelect
-                label="Control type"
-                name="type"
-                defaultValue={firstReport.defaultControlType}
-                options={accountControlTypeOptions}
-              />
-            </div>
-            <div className="field full-span">
-              <span>Control reason</span>
-              <AdminFormInput
-                label="Control reason"
-                name="reason"
-                placeholder="Control reason"
-                required
-                minLength={12}
-                maxLength={500}
-              />
-            </div>
+            <AdminFormSelect
+              className="field"
+              defaultValue={firstReport.id}
+              label="Linked report"
+              labelVisibility="visible"
+              name="reportId"
+              options={reportSelectOptions(reports)}
+            />
+            <AdminFormSelect
+              className="field"
+              defaultValue={firstReport.defaultControlType}
+              label="Control type"
+              labelVisibility="visible"
+              name="type"
+              options={accountControlTypeOptions}
+            />
+            <AdminFormInput
+              className="field full-span"
+              label="Control reason"
+              labelVisibility="visible"
+              maxLength={500}
+              minLength={12}
+              name="reason"
+              placeholder="Control reason"
+              required
+            />
             <div className="actions full-span">
               <AdminFormControlButton type="submit">Apply linked control</AdminFormControlButton>
             </div>
