@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
+import { AdminSection } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
   AdminAuditLog,
@@ -741,20 +742,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Core operating counters</h2>
-            <p className="muted">
-              Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply,
-              payment holds, and cash debt in one operator scan.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="button button-secondary" href="/bookings">
             <CalendarClock size={16} aria-hidden="true" />
             Open booking monitor
           </Link>
-        </div>
+        }
+        className="admin-mt-20"
+        description="Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply, payment holds, and cash debt in one operator scan."
+        id="dashboard-core-operating-counters"
+        title="Core operating counters"
+      >
         <div className="service-trace-summary admin-mt-12">
           {coreOperatingCounters.map((counter) => (
             <div key={counter.label}>
@@ -781,22 +780,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Cash settlement gate
           </Link>
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Operations command board</h2>
-            <p className="muted">
-              One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer
-              choice, chat handoff, settlement gates, notifications, and setup.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="button button-secondary" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
             <BellRing size={16} aria-hidden="true" />
             Open first action
           </Link>
-        </div>
+        }
+        className="admin-mt-20"
+        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat handoff, settlement gates, notifications, and setup."
+        id="dashboard-operations-command-board"
+        title="Operations command board"
+      >
         <div className="ops-task-grid admin-mt-14">
           {operationsCommandBoard.map((item) => (
             <Link
@@ -819,21 +816,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Marketplace participant snapshot</h2>
-            <p className="muted">
-              Actual booking participant records only. Partners with negative wallets can see marketplace
-              demand, but final acceptance, service start, and payout release wait for settlement.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="text-link" href="/bookings?view=marketplace">
             Open participant ledger
           </Link>
-        </div>
+        }
+        className="admin-mt-20"
+        description="Actual booking participant records only. Partners with negative wallets can see marketplace demand, but final acceptance, service start, and payout release wait for settlement."
+        id="dashboard-marketplace-participant-snapshot"
+        title="Marketplace participant snapshot"
+      >
         <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Open marketplace bookings</span>
@@ -905,21 +900,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Negative wallet settlement
           </Link>
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Evidence drilldown</h2>
-            <p className="muted">
-              Fast paths for admin decisions that must be based on retained facts: chat, location, alert,
-              payment, cash settlement, refund, and audit evidence.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="text-link" href="/bookings?view=attention">
             Open evidence queue
           </Link>
-        </div>
+        }
+        className="admin-mt-20"
+        description="Fast paths for admin decisions that must be based on retained facts: chat, location, alert, payment, cash settlement, refund, and audit evidence."
+        id="dashboard-evidence-drilldown"
+        title="Evidence drilldown"
+      >
         <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Booking create gates</span>
@@ -987,22 +980,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </small>
           </div>
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking evidence command queue</h2>
-            <p className="muted">
-              Direct routes into the booking monitor evidence filters. Use these when staff need the exact
-              booking list behind address, Partner choice, chat archive, payment, wallet, location, alert, or
-              closeout evidence.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="text-link" href={bookingEvidenceCommandQueue[0]?.href ?? '/bookings'}>
             Open first evidence queue
           </Link>
-        </div>
+        }
+        className="admin-mt-20"
+        description="Direct routes into the booking monitor evidence filters. Use these when staff need the exact booking list behind address, Partner choice, chat archive, payment, wallet, location, alert, or closeout evidence."
+        id="dashboard-booking-evidence-command-queue"
+        title="Booking evidence command queue"
+      >
         <div className="ops-task-grid admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
             <Link
@@ -1032,20 +1022,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Dashboard date range</h2>
-            <p className="muted">
-              Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled
-              work, closeout checks, and notification history use this window. Live queues and app sessions
-              stay current so urgent work is never hidden.
-            </p>
-          </div>
-          <span className="pill pill-info">{selectedRangeLabel}</span>
-        </div>
+      <AdminSection
+        actions={<span className="pill pill-info">{selectedRangeLabel}</span>}
+        className="admin-mt-20"
+        description={
+          <>
+            Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
+            closeout checks, and notification history use this window. Live queues and app sessions stay
+            current so urgent work is never hidden.
+          </>
+        }
+        id="dashboard-date-range"
+        title="Dashboard date range"
+      >
         <div className="actions admin-mt-12">
           {dashboardRangeLinks.map((link) => (
             <Link
@@ -1074,7 +1065,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <small>Earning rows created in the selected window.</small>
           </div>
         </div>
-      </section>
+      </AdminSection>
 
       {fullDashboardData ? (
         <>
@@ -2250,21 +2241,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </section>
         </>
       ) : (
-        <section className="card admin-mt-20">
-          <div className="ops-section-header">
-            <div>
-              <h2>Detailed dashboard loaded on demand</h2>
-              <p className="muted">
-                The default dashboard keeps the first operator scan focused on core counters, command lanes,
-                evidence shortcuts, and the selected date range. Load the full dashboard when you need radar,
-                policy pulse, partner readiness, queue, setup, flow health, and finance detail sections.
-              </p>
-            </div>
+        <AdminSection
+          actions={
             <Link className="button button-secondary" href={buildDashboardDetailsHref('all', params)}>
               Load full dashboard
             </Link>
-          </div>
-        </section>
+          }
+          className="admin-mt-20"
+          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, partner readiness, queue, setup, flow health, and finance detail sections."
+          id="dashboard-on-demand-detail"
+          title="Detailed dashboard loaded on demand"
+        />
       )}
 
       <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>

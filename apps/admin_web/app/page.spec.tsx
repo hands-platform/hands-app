@@ -242,4 +242,57 @@ describe('DashboardPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/payments/summary?range=today', null);
     expect(markup).toContain('<span>Payment holds</span><strong>13</strong>');
   });
+
+  it('renders primary command panels with the shared Vuexy admin section shell', async () => {
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-core-operating-counters"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-core-operating-counters-title">Core operating counters</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-operations-command-board"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-marketplace-participant-snapshot"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-marketplace-participant-snapshot-title">Marketplace participant snapshot</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
+    );
+    expect(markup).toContain('<h2 id="dashboard-evidence-drilldown-title">Evidence drilldown</h2>');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-booking-evidence-command-queue-title">Booking evidence command queue</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-date-range"',
+    );
+    expect(markup).toContain('<h2 id="dashboard-date-range-title">Dashboard date range</h2>');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-on-demand-detail"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-on-demand-detail-title">Detailed dashboard loaded on demand</h2>',
+    );
+  });
 });
