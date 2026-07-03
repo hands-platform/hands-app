@@ -256,7 +256,7 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_ADMIN_OPERATORS',
-    prefixes: ['/admin/operator-activity', '/admin/users'],
+    prefixes: ['/admin/users'],
   },
   {
     category: 'SYSTEM_SERVICES',
@@ -301,6 +301,10 @@ const parentCategories: Partial<Record<AdminOperatorPermissionCategory, AdminOpe
   SYSTEM_SETUP: 'SYSTEM',
 };
 
+const uncategorizedWriteApiAllowlist: Record<string, string> = {
+  'POST /admin/operator-activity': 'Operator activity is the audit sink used to record access decisions.',
+};
+
 export function adminOperatorCategoryForPath(pathname: string): AdminOperatorPermissionCategory | null {
   return categoryForPath(pathname, pageCategoryRules);
 }
@@ -314,6 +318,13 @@ export function adminOperatorCategoryForAdminApiPath(
   }
 
   return categoryForPath(path, apiCategoryRules);
+}
+
+export function adminOperatorUncategorizedWriteApiAllowlistReason(
+  method: 'DELETE' | 'PATCH' | 'POST',
+  path: string,
+) {
+  return uncategorizedWriteApiAllowlist[`${method} ${normalizePath(path)}`] ?? null;
 }
 
 export function hasAdminOperatorCategory(

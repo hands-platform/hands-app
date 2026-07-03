@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { getAdminWebSession } from './admin-session';
 import {
   adminOperatorCategoryForAdminApiPath,
+  adminOperatorUncategorizedWriteApiAllowlistReason,
   hasAdminOperatorCategory,
   type AdminOperatorPermissionCategory,
 } from './admin-operator-access-model';
@@ -3366,7 +3367,8 @@ async function verifyAdminOperatorWriteAccess(
 ) {
   const operatorIdentity = await currentAdminWebSessionIdentity();
   const category = adminOperatorCategoryForAdminApiPath(method, path);
-  if (!operatorIdentity || path === '/admin/operator-activity') {
+  const allowlistReason = adminOperatorUncategorizedWriteApiAllowlistReason(method, path);
+  if (!operatorIdentity || allowlistReason) {
     return { category, denied: false, operatorIdentity };
   }
 

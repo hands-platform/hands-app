@@ -1,6 +1,10 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+
 import {
   adminOperatorCategoryForAdminApiPath,
   adminOperatorCategoryForPath,
+  adminOperatorUncategorizedWriteApiAllowlistReason,
   hasAdminOperatorCategory,
 } from './admin-operator-access-model';
 
@@ -48,6 +52,25 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_DELIVERY');
   });
 
+  it('keeps audit sink writes out of category matching and behind an explicit allowlist reason', () => {
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/operator-activity')).toBeNull();
+    expect(adminOperatorUncategorizedWriteApiAllowlistReason('POST', '/admin/operator-activity')).toBe(
+      'Operator activity is the audit sink used to record access decisions.',
+    );
+  });
+
+  it('keeps Admin Web write API calls mapped to permission categories or an explicit audit allowlist', () => {
+    const writeCalls = collectAdminWebWriteApiCalls();
+    expect(writeCalls.length).toBeGreaterThan(40);
+    expect(writeCalls.map(writeCallKey)).toContain('POST /admin/operator-activity');
+    const unmappedCalls = writeCalls
+      .filter((call) => !adminWriteCallHasCategory(call) && !adminWriteCallHasAllowlistReason(call))
+      .map((call) => `${writeCallKey(call)} in ${call.file}`)
+      .sort();
+
+    expect(unmappedCalls).toEqual([]);
+  });
+
   it('checks detailed category membership with legacy parent fallback', () => {
     expect(hasAdminOperatorCategory(null, 'BOOKINGS')).toBe(false);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'BOOKINGS')).toBe(true);
@@ -58,3 +81,83 @@ describe('admin operator access model', () => {
     expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(true);
   });
 });
+
+type AdminWebWriteApiCall = {
+  readonly file: string;
+  readonly method: 'DELETE' | 'PATCH' | 'POST';
+  readonly path: string;
+};
+
+function collectAdminWebWriteApiCalls() {
+  const sourceDirectories = ['app', 'components', 'lib'].map((directory) => path.join(process.cwd(), directory));
+
+  return sourceDirectories
+    .flatMap((directory) => collectSourceFiles(directory))
+    .flatMap((file) => collectAdminWebWriteApiCallsFromFile(file))
+    .sort((a, b) => writeCallKey(a).localeCompare(writeCallKey(b)) || a.file.localeCompare(b.file));
+}
+
+function collectSourceFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((entry) => {
+    const entryPath = path.join(directory, entry);
+    const stats = statSync(entryPath);
+
+    if (stats.isDirectory()) {
+      return collectSourceFiles(entryPath);
+    }
+    if (!/\.(ts|tsx)$/u.test(entry) || /\.(spec|test)\.(ts|tsx)$/u.test(entry)) {
+      return [];
+    }
+
+    return [entryPath];
+  });
+}
+
+function collectAdminWebWriteApiCallsFromFile(filePath: string): AdminWebWriteApiCall[] {
+  const source = readFileSync(filePath, 'utf8');
+  const calls: AdminWebWriteApiCall[] = [];
+  const callPattern =
+    /\b(adminPostOrThrow|adminPost|adminPatchOrThrow|adminPatch|adminDeleteWithBodyOrThrow|adminDeleteOrThrow|adminDelete)(?:<[^>]*>)?\s*\(\s*([`'"])([\s\S]*?)\2/gu;
+
+  for (const match of source.matchAll(callPattern)) {
+    const [, functionName, , rawPath] = match;
+    if (!rawPath.startsWith('/admin/')) {
+      continue;
+    }
+
+    calls.push({
+      file: path.relative(process.cwd(), filePath),
+      method: adminWriteMethodForFunction(functionName),
+      path: normalizeAdminWritePath(rawPath),
+    });
+  }
+
+  return calls;
+}
+
+function adminWriteMethodForFunction(functionName: string): AdminWebWriteApiCall['method'] {
+  if (functionName.includes('Delete')) {
+    return 'DELETE';
+  }
+  if (functionName.includes('Patch')) {
+    return 'PATCH';
+  }
+
+  return 'POST';
+}
+
+function normalizeAdminWritePath(rawPath: string) {
+  return rawPath.replace(/\$\{[^}]+\}/gu, 'sample-id');
+}
+
+function adminWriteCallHasCategory(call: AdminWebWriteApiCall) {
+  return Boolean(adminOperatorCategoryForAdminApiPath(call.method, call.path));
+}
+
+function adminWriteCallHasAllowlistReason(call: AdminWebWriteApiCall) {
+  return Boolean(adminOperatorUncategorizedWriteApiAllowlistReason(call.method, call.path));
+}
+
+function writeCallKey(call: AdminWebWriteApiCall) {
+  return `${call.method} ${call.path}`;
+}
