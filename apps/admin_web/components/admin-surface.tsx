@@ -14,6 +14,11 @@ type AdminCardProps = {
   readonly id?: string;
 };
 
+type AdminLinkCardProps = AdminCardProps & {
+  readonly href: string;
+  readonly htmlTitle?: string;
+};
+
 type AdminSectionProps = {
   readonly actions?: ReactNode;
   readonly bodyClassName?: string;
@@ -62,6 +67,29 @@ export function AdminCard({ ariaLabel, ariaLabelledBy, children, className, id }
     >
       {children}
     </section>
+  );
+}
+
+export function AdminLinkCard({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  href,
+  htmlTitle,
+  id,
+}: AdminLinkCardProps) {
+  return (
+    <Link
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card', className)}
+      href={href}
+      id={id}
+      title={htmlTitle}
+    >
+      {children}
+    </Link>
   );
 }
 

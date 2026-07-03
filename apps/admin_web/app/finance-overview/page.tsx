@@ -16,7 +16,7 @@ import type {
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
   buildFinanceOverviewActionItems,
@@ -206,7 +206,7 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
   const Icon = financeControlMetricIcons[metric.label] ?? ShieldCheck;
 
   return (
-    <a className={`card admin-card finance-overview-control-card is-${metric.tone}`} href={metric.href}>
+    <AdminLinkCard className={`finance-overview-control-card is-${metric.tone}`} href={metric.href}>
       <span className="usage-overview-command-icon">
         <Icon size={18} aria-hidden="true" />
       </span>
@@ -215,7 +215,7 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
         <strong>{metric.value}</strong>
         <small>{metric.detail}</small>
       </div>
-    </a>
+    </AdminLinkCard>
   );
 }
 
@@ -285,7 +285,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <a className={`card admin-card usage-overview-action-item is-${item.tone}`} href={item.href}>
+    <AdminLinkCard className={`usage-overview-action-item is-${item.tone}`} href={item.href}>
       <span className="usage-overview-command-icon">
         <Icon size={17} aria-hidden="true" />
       </span>
@@ -295,7 +295,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
         <small>{item.detail}</small>
       </div>
       <em>{item.amountLabel}</em>
-    </a>
+    </AdminLinkCard>
   );
 }
 
@@ -303,8 +303,8 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <a
-      className={`card admin-card usage-overview-command-card finance-overview-priority-card is-${item.tone}`}
+    <AdminLinkCard
+      className={`usage-overview-command-card finance-overview-priority-card is-${item.tone}`}
       href={item.href}
     >
       <span className="usage-overview-command-icon">
@@ -316,7 +316,7 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
         <small>{item.detail}</small>
       </div>
       <em>{item.amountLabel}</em>
-    </a>
+    </AdminLinkCard>
   );
 }
 

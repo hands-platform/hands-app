@@ -3,6 +3,7 @@ import {
   AdminCard,
   AdminErrorState,
   AdminKpiCard,
+  AdminLinkCard,
   AdminLoadingState,
   AdminSection,
 } from './admin-surface';
@@ -62,6 +63,21 @@ describe('Admin surface components', () => {
       href: '/finance-tax/payment-clearing',
       label: 'Payment queue',
       value: 8,
+    });
+  });
+
+  it('renders a reusable clickable card shell without losing admin-card styling', () => {
+    const card = AdminLinkCard({
+      ariaLabel: 'Open payment clearing',
+      children: <span>Payment clearing</span>,
+      className: 'finance-overview-control-card',
+      href: '/finance-tax/payment-clearing',
+    });
+
+    expect(card.props).toMatchObject({
+      'aria-label': 'Open payment clearing',
+      className: 'card admin-card finance-overview-control-card',
+      href: '/finance-tax/payment-clearing',
     });
   });
 
