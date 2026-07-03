@@ -70,6 +70,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('id="booking-customer-detail"');
     expect(markup).toContain('id="booking-matched-partner-detail"');
     expect(markup).toContain('id="booking-finance-system-detail"');
+    expect(markup).toContain('card admin-section admin-mb-16 booking-unified-summary-card');
+    expect(markup.match(/card admin-section admin-mb-16 booking-unified-detail-card/g)).toHaveLength(3);
     expect(markup).toContain('booking-unified-participant-strip');
     expect(markup).toContain('aria-label="Participating Partners"');
     expect(markup).toContain('href="/customers/customer-profile-1"');

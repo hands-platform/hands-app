@@ -4,6 +4,7 @@ import {
   AdminPersonCell,
   adminPersonInitials,
 } from '../../../components/admin-person-cell';
+import { AdminSection } from '../../../components/admin-surface';
 import type {
   BookingUnifiedDetail,
   BookingUnifiedDetailCard,
@@ -18,23 +19,20 @@ export type BookingUnifiedDetailSectionProps = {
 export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDetailSectionProps) {
   return (
     <>
-      <section className="card admin-mb-16 booking-unified-summary-card" id="booking-unified-detail">
-        <div className="ops-section-header">
-          <div>
-            <h2>Unified booking detail</h2>
-            <p className="muted">
-              One booking record for realtime, in-progress, completed, and post-match cancellation updates.
-            </p>
-          </div>
-          <span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>
-        </div>
+      <AdminSection
+        actions={<span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>}
+        className="admin-mb-16 booking-unified-summary-card"
+        description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."
+        id="booking-unified-detail"
+        title="Unified booking detail"
+      >
 
         <div className="service-trace-summary admin-mt-12">
           {unifiedDetail.summaryCards.map((card) => (
             <BookingUnifiedSummaryCard card={card} key={card.label} />
           ))}
         </div>
-      </section>
+      </AdminSection>
 
       <BookingUnifiedRows
         helper="Customer profile, service address, live location, and service request."
@@ -97,16 +95,15 @@ function BookingUnifiedRows({
   const isFinance = variant === 'finance';
 
   return (
-    <section className="card admin-mb-16 booking-unified-detail-card" id={id}>
-      <div className="ops-section-header">
-        <div>
-          <h3>{title}</h3>
-          <p className="muted">{helper}</p>
-        </div>
-        <span className="pill pill-neutral">{countLabel(rows.length, 'field')}</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-neutral">{countLabel(rows.length, 'field')}</span>}
+      className="admin-mb-16 booking-unified-detail-card"
+      description={helper}
+      id={id}
+      title={title}
+    >
       {isFinance ? <BookingUnifiedFinanceRows rows={rows} /> : <BookingUnifiedCardGrid rows={rows} />}
-    </section>
+    </AdminSection>
   );
 }
 
