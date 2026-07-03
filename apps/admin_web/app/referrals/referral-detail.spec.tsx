@@ -131,13 +131,13 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Referred Customer');
     expect(markup.match(/href="\/customers\/referred-customer"/g)).toHaveLength(2);
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
     );
     expect(markup).toContain('Attribution attribution-1');
     expect(markup).toContain('Credited 1');
     expect(markup).toContain('1 reward(s) / 25.000 VND');
     expect(markup).toContain('wallet-ledger-1');
-    expect(markup).toContain('class="referral-reward-evidence-details"');
+    expect(markup).toContain('class="admin-disclosure referral-reward-evidence-details"');
     expect(markup).toContain('<summary>Decision evidence</summary>');
     expect(markup).toContain('Decision evidence');
     expect(markup).toContain('Ledger wallet-ledger-1');

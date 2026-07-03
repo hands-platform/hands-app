@@ -199,13 +199,13 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
     expect(markup).toContain(
-      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+      'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
     );
     expect(markup).toContain('Actions');
     expect(markup).toContain('admin-action-dropdown referral-parent-action-dropdown');
     expect(markup).toContain('aria-label="Referral parent actions for parent-customer"');
     expect(markup).toContain('Latest Credit by Ops Admin');
-    expect(markup).toContain('class="referral-parent-reward-decision-details"');
+    expect(markup).toContain('class="admin-disclosure referral-parent-reward-decision-details"');
     expect(markup).toContain('<summary>Decision details</summary>');
     expect(markup).toContain('manual payout check');
     expect(markup).toContain('Open referral detail');

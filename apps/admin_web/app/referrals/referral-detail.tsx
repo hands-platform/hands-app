@@ -680,7 +680,7 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
       {decisionSummary ? <p className="muted">{decisionSummary}</p> : null}
-      <details className="referral-reward-evidence-details">
+      <details className="admin-disclosure referral-reward-evidence-details">
         <summary>Decision evidence</summary>
         <div className="participant-list referral-reward-decision-evidence">
           {evidenceItems.map((item) => (

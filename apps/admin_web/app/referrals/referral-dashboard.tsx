@@ -928,7 +928,7 @@ function ReferralRewardCell({
           <p className="muted">
             Latest {referralRewardDecisionLabel(latestDecision.action)} by {userLabel(latestDecision.actor, 'Unknown admin')}
           </p>
-          <details className="referral-parent-reward-decision-details">
+          <details className="admin-disclosure referral-parent-reward-decision-details">
             <summary>Decision details</summary>
             <div className="participant-list referral-parent-reward-decision-evidence">
               {latestDecision.reason ? <span className="muted">{latestDecision.reason}</span> : null}
