@@ -378,7 +378,7 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
   return (
     <div className="booking-participant-row-list admin-mt-10">
       {rows.map((row) => (
-        <div className="booking-participant-row-card" key={row.id}>
+        <div className="card admin-card booking-participant-row-card" key={row.id}>
           <AdminPersonCell
             avatarClassName="vuexy-booking-avatar is-partner"
             avatarStatus={row.avatarStatus}

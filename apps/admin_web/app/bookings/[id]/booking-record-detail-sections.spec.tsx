@@ -145,7 +145,7 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Partner One');
     expect(markup).toContain('Wallet: Clear');
     expect(markup).toContain('booking-participant-row-list');
-    expect(markup).toContain('booking-participant-row-card');
+    expect(markup).toContain('card admin-card booking-participant-row-card');
     expect(markup).toContain('aria-label="Participant selection trace rows"');
     expect(markup).toContain('aria-label="Participant lifecycle rows"');
     expect(markup).toContain('Cash fee settlement path');
