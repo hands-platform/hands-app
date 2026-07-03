@@ -26,6 +26,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import {
   formatCurrencyAmount as money,
@@ -122,20 +123,17 @@ export default async function UsageOverviewPage({
   ];
 
   return (
-    <div className="usage-overview-page">
-      <section className="toolbar">
-        <div>
-          <h1>Usage Overview</h1>
-          <p className="muted">
-            Customer app frequency, Partner discovery, booking intent, and completed-work flow from
-            stored usage events.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">Vietnam only</span>
           <span className="pill pill-info">Generated {generatedAt}</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="usage-overview-page"
+      description="Customer app frequency, Partner discovery, booking intent, and completed-work flow from stored usage events."
+      title="Usage Overview"
+    >
 
       <AdminSection
         className="usage-overview-filter-panel"
@@ -327,7 +325,7 @@ export default async function UsageOverviewPage({
         </section>
         <RegionUsageCard rows={overview.regionUsage} />
       </section>
-    </div>
+    </AdminPageTemplate>
   );
 }
 

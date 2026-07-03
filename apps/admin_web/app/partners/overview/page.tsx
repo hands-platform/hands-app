@@ -24,6 +24,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
@@ -86,20 +87,17 @@ export default async function PartnerOverviewPage({
   const activeFilters = partnerOverviewActiveFilters(range, filters);
 
   return (
-    <div className="usage-overview-page partner-overview-page">
-      <section className="toolbar">
-        <div>
-          <h1>Partner Overview</h1>
-          <p className="muted">
-            Supply health, Partner readiness, booking quality, wallet risk, and action queues from stored
-            operational records.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <span className="pill pill-success">Vietnam supply</span>
           <span className="pill pill-info">Generated {generatedAt}</span>
-        </div>
-      </section>
+        </>
+      }
+      contentClassName="usage-overview-page partner-overview-page"
+      description="Supply health, Partner readiness, booking quality, wallet risk, and action queues from stored operational records."
+      title="Partner Overview"
+    >
 
       <AdminSection
         className="usage-overview-filter-panel partner-overview-filter-panel"
@@ -272,7 +270,7 @@ export default async function PartnerOverviewPage({
           </ul>
         </AdminSection>
       ) : null}
-    </div>
+    </AdminPageTemplate>
   );
 }
 
