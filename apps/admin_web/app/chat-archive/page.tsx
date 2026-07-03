@@ -27,6 +27,7 @@ import {
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { MetricCard } from '../../components/metric-card';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
@@ -322,7 +323,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
                   </td>
                   <td>
-                    <span className={`pill ${row.pillClass}`}>{row.issue}</span>
+                    <PillClassBadge pillClass={row.pillClass}>{row.issue}</PillClassBadge>
                     <p className="muted">{row.detail}</p>
                   </td>
                   <td>
@@ -409,9 +410,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <p className="muted">Room {shortId(room.roomId)}</p>
                 </td>
                 <td>
-                  <span className={`pill ${statusPillClass(room.booking.status)}`}>
+                  <PillClassBadge pillClass={statusPillClass(room.booking.status)}>
                     {room.booking.status}
-                  </span>
+                  </PillClassBadge>
                 </td>
                 <td>
                   <ChatArchivePersonCell
@@ -505,9 +506,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     Booking {shortId(room.booking.id)} / {room.booking.status} / {room.serviceLabel}
                   </p>
                 </div>
-                <span className="pill pill-info">
+                <StatusBadge tone="info">
                   {room.messages.length} shown / {room.messageCount} total
-                </span>
+                </StatusBadge>
               </summary>
               <AdminChatWindow
                 avatarLabel={room.customerName}

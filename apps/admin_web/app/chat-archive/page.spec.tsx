@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import type { AdminBookingDetail } from '../../lib/admin-api';
@@ -15,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('ChatArchivePage', () => {
   beforeEach(() => {
@@ -115,6 +117,13 @@ describe('ChatArchivePage', () => {
     expect(markup).not.toContain('<div class="calendar-field"><span>From</span>');
     expect(markup).not.toContain('<label>Search<input');
     expect(markup).not.toContain('<label>Booking status<select');
+  });
+
+  it('keeps visible chat status chips on shared badge atoms', () => {
+    expect(pageSource).toContain('PillClassBadge');
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className={`pill ${row.pillClass}`}>{row.issue}</span>');
+    expect(pageSource).not.toContain('<span className={`pill ${statusPillClass(room.booking.status)}`}>');
   });
 });
 
