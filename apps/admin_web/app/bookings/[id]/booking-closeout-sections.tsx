@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminSection } from '../../../components/admin-surface';
+
 type CloseoutChecklistItem = {
   title: string;
   status: string;
@@ -29,14 +31,8 @@ export function BookingCloseoutSections({
 }: BookingCloseoutSectionsProps) {
   return (
     <>
-      <section className="card admin-mb-16" id="booking-closeout-checklist">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking closeout checklist</h2>
-            <p className="muted">
-              Final factual checklist before closeout or finance action.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <div className="actions">
             <Link className="text-link" href="/bookings?view=manual-decision">
               Manual decision queue
@@ -45,7 +41,12 @@ export function BookingCloseoutSections({
               Finance closeout
             </Link>
           </div>
-        </div>
+        }
+        className="admin-mb-16 booking-closeout-checklist-card"
+        description="Final factual checklist before closeout or finance action."
+        id="booking-closeout-checklist"
+        title="Booking closeout checklist"
+      >
         <div className="ops-task-grid admin-mt-12">
           {bookingCloseoutChecklist.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
@@ -58,18 +59,15 @@ export function BookingCloseoutSections({
             </Link>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16" id="connected-operations-records">
-        <div className="ops-section-header">
-          <div>
-            <h2>Connected operations records</h2>
-            <p className="muted">
-              Jump links to records connected to this booking.
-            </p>
-          </div>
-          <span className="pill pill-info">{connectedRecordLinks.length} links</span>
-        </div>
+      <AdminSection
+        actions={<span className="pill pill-info">{connectedRecordLinks.length} links</span>}
+        className="admin-mb-16 connected-operations-records-card"
+        description="Jump links to records connected to this booking."
+        id="connected-operations-records"
+        title="Connected operations records"
+      >
         <div className="service-trace-summary admin-mt-12">
           {connectedRecordLinks.map((record) => (
             <div key={record.label}>
@@ -82,7 +80,7 @@ export function BookingCloseoutSections({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
     </>
   );
 }
