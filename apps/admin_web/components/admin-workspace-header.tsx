@@ -119,10 +119,12 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
               <label className="topbar-dropdown-header">
                 <Search aria-hidden="true" size={16} />
                 <input
+                  aria-label="Search admin pages"
                   autoFocus
                   className="topbar-search-input"
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search pages"
+                  type="search"
                   value={searchQuery}
                 />
               </label>

@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { adminNavSections } from '../lib/admin-navigation';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AdminShellNav } from './admin-shell-nav';
 import { AdminWorkspaceHeader } from './admin-workspace-header';
+
+const workspaceHeaderSource = readFileSync('components/admin-workspace-header.tsx', 'utf8');
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/partners',
@@ -89,5 +92,18 @@ describe('admin shell navigation', () => {
     expect(html).toContain('title="Sign out"');
     expect(html).toContain('lucide-log-out');
     expect(html).not.toContain('<span>Sign out</span>');
+  });
+
+  it('keeps the topbar search input as a labeled Vuexy navbar control', () => {
+    const searchClassStart = workspaceHeaderSource.indexOf('className="topbar-search-input"');
+    const searchInputStart = workspaceHeaderSource.lastIndexOf('<input', searchClassStart);
+    const searchInputMarkup = workspaceHeaderSource.slice(
+      searchInputStart,
+      workspaceHeaderSource.indexOf('/>', searchInputStart),
+    );
+
+    expect(searchInputStart).toBeGreaterThan(-1);
+    expect(searchInputMarkup).toContain('aria-label="Search admin pages"');
+    expect(searchInputMarkup).toContain('type="search"');
   });
 });
