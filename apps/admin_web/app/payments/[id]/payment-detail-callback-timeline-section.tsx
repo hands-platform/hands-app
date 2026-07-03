@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 
 export type PaymentDetailCallbackTimelineRow = {
   readonly amountLabel: string;
@@ -43,7 +44,7 @@ export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: Paym
           <tr id={`callback-attempt-${row.id}`} key={row.id}>
             <td>{row.createdAtLabel}</td>
             <td>
-              <span className={`pill ${row.pillClass}`}>{row.outcome}</span>
+              <PillClassBadge pillClass={row.pillClass}>{row.outcome}</PillClassBadge>
               <div className="muted">Signature: {row.signatureLabel}</div>
             </td>
             <td>

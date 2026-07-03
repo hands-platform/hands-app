@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
   readonly amountLabel: string;
@@ -43,7 +44,7 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             <td>{row.createdAtLabel}</td>
             <td>{row.method}</td>
             <td>
-              <span className={`pill ${row.pillClass}`}>{row.outcome}</span>
+              <PillClassBadge pillClass={row.pillClass}>{row.outcome}</PillClassBadge>
               <div className="muted">{row.errorMessage ?? 'No processing error recorded.'}</div>
             </td>
             <td>

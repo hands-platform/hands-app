@@ -32,6 +32,27 @@ describe('PaymentOperationsTableSection', () => {
 
     expect(textContent(section)).toContain('No payments currently match this queue.');
   });
+
+  it('does not duplicate the base pill class for payment execution badges', () => {
+    const row = buildRow();
+    const section = PaymentOperationsTableSection({
+      emptyMessage: 'No payments loaded.',
+      pagination: pagination([
+        {
+          ...row,
+          executionRows: [
+            {
+              ...row.executionRows[0],
+              pillClass: 'pill pill-warn',
+            },
+          ],
+        },
+      ]),
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function pagination(

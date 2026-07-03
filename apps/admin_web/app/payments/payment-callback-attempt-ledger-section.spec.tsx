@@ -44,6 +44,33 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
 
     expect(textContent(section)).toContain('No callback attempts match this queue.');
   });
+
+  it('does not duplicate the base pill class for callback outcome badges', () => {
+    const section = PaymentCallbackAttemptLedgerSection({
+      rows: [
+        {
+          amountLabel: '1.000.000 VND',
+          bookingHref: '/bookings/booking-1',
+          createdAtLabel: '2026-06-09 10:00',
+          errorMessage: null,
+          gatewayTransactionId: 'gw-1',
+          id: 'attempt-1',
+          method: 'MOMO',
+          outcome: 'ACCEPTED',
+          paymentIdLabel: 'pay-1',
+          paymentStatus: 'CAPTURED',
+          pillClass: 'pill pill-success',
+          providerRef: 'provider-1',
+          providerStatus: '00',
+          signatureLabel: 'Verified',
+          verificationMode: 'hmac',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-success');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-success');
+  });
 });
 
 function textContent(value: unknown): string {

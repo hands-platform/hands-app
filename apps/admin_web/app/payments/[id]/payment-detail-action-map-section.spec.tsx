@@ -39,6 +39,28 @@ describe('PaymentDetailActionMapSection', () => {
       ]),
     );
   });
+
+  it('does not duplicate the base pill class for detail action badges', () => {
+    const section = PaymentDetailActionMapSection({
+      actionLabel: 'Payment detail actions for paymen',
+      actions: [],
+      cashDebtSettlementForm: null,
+      confirmation: null,
+      hasBlockingReview: true,
+      rows: [
+        {
+          action: 'Capture',
+          operatorRule: 'Capture only after review.',
+          pillClass: 'pill pill-warn',
+          reason: 'Authorization hold is active.',
+          status: 'Review capture',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-warn');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
 });
 
 function textContent(value: unknown): string {

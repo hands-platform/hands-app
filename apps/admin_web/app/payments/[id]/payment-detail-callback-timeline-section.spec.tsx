@@ -43,6 +43,31 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     expect(textContent(section)).toContain('No gateway callback attempts have been captured for this payment yet.');
     expect(textContent(section)).toContain('Trace ready');
   });
+
+  it('does not duplicate the base pill class for detail callback badges', () => {
+    const section = PaymentDetailCallbackTimelineSection({
+      reviewCount: 1,
+      rows: [
+        {
+          amountLabel: '1.000.000 VND',
+          createdAtLabel: '2026-06-09 10:00',
+          errorCodeLabel: 'SIG_MISMATCH',
+          errorMessage: 'Signature did not match.',
+          id: 'attempt-1',
+          outcome: 'CONFLICT',
+          payloadDetails: <details>4 key(s)</details>,
+          pillClass: 'pill pill-danger',
+          providerRef: 'gateway-ref-1',
+          providerStatus: '99',
+          signatureLabel: 'not verified',
+          verificationMode: 'hmac',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-danger');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-danger');
+  });
 });
 
 function textContent(value: unknown): string {
