@@ -48,7 +48,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'BOOKINGS_REALTIME',
-    prefixes: ['/bookings', '/vietnam-overview', '/operations-handoff'],
+    prefixes: ['/', '/bookings', '/vietnam-overview', '/operations-handoff'],
   },
   {
     category: 'CUSTOMERS_DETAIL',
@@ -117,6 +117,10 @@ const pageCategoryRules: Array<{
   {
     category: 'PARTNERS',
     prefixes: ['/referrals/partners'],
+  },
+  {
+    category: 'CUSTOMERS',
+    prefixes: ['/referrals'],
   },
   {
     category: 'FINANCE_TAX',

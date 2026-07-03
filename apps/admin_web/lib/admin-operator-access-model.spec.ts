@@ -6,6 +6,7 @@ import {
 
 describe('admin operator access model', () => {
   it('maps Admin pages to operator permission categories', () => {
+    expect(adminOperatorCategoryForPath('/')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForPath('/bookings/post-match-cancellations')).toBe('BOOKINGS_DETAIL');
     expect(adminOperatorCategoryForPath('/customers/customer-1')).toBe('CUSTOMERS_DETAIL');
     expect(adminOperatorCategoryForPath('/partners/overview')).toBe('PARTNERS_DIRECTORY');
@@ -16,6 +17,7 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/referrals/customers')).toBe('CUSTOMERS');
+    expect(adminOperatorCategoryForPath('/referrals')).toBe('CUSTOMERS');
     expect(adminOperatorCategoryForPath('/referrals/partners')).toBe('PARTNERS');
     expect(adminOperatorCategoryForPath('/referrals/cashouts')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
