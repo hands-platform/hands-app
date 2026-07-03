@@ -4,6 +4,7 @@ import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
+import { AdminSection } from '../../../components/admin-surface';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerBookingOperationMetric = {
@@ -70,18 +71,14 @@ export function CustomerBookingOperationBoard({
 }: CustomerBookingOperationBoardProps) {
   return (
     <>
-      <section className="card admin-mb-16 customer-booking-operation-summary-card" id="customer-booking-situation-board">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer booking situation board</h2>
-            <p className="muted">
-              Current work appears first, followed by completed work, pre-match cancellations, and Partner
-              cancellations for this customer.
-            </p>
-          </div>
-          <span className="pill pill-info">Booking operations</span>
-        </div>
-
+      <AdminSection
+        className="admin-mb-16 customer-booking-operation-summary-card"
+        description="Current work appears first, followed by completed work, pre-match cancellations, and Partner cancellations for this customer."
+        id="customer-booking-situation-board"
+        statusLabel="Booking operations"
+        statusTone="info"
+        title="Customer booking situation board"
+      >
         <div className="service-trace-summary admin-mt-12">
           {metrics.map((metric) => (
             <div className={`customer-booking-operation-metric ${metric.tone}`} key={metric.label}>
@@ -91,7 +88,7 @@ export function CustomerBookingOperationBoard({
             </div>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
       {groups.map((group) => (
         <CustomerBookingOperationSection

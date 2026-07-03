@@ -30,6 +30,7 @@ describe('CustomerBookingOperationBoard', () => {
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',
+        'card admin-section admin-mb-16 customer-booking-operation-summary-card',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',
