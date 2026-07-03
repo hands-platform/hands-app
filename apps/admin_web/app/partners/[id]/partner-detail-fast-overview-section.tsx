@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
@@ -47,27 +48,23 @@ export function PartnerDetailFastOverviewSection({
   subtitle,
 }: PartnerDetailFastOverviewSectionProps) {
   return (
-    <>
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/partners">
-              Back to partners
-            </Link>
-          </p>
-          <h1>{partnerName}</h1>
-          <p className="muted">{marketplaceDisplayText(subtitle)}</p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
+          <Link className="button button-secondary" href="/partners">
+            Back to partners
+          </Link>
           <Link className="text-link" href={fullHref}>
             Open full dossier
           </Link>
           <Link className="text-link" href={accountControlsHref}>
             Account controls
           </Link>
-        </div>
-      </section>
-
+        </>
+      }
+      description={marketplaceDisplayText(subtitle)}
+      title={partnerName}
+    >
       <section className="grid admin-mb-16">
         {overviewCards.map((card) => (
           <AdminKpiCard helper={card.detail} href={card.href} key={card.label} label={card.label} value={card.value} />
@@ -94,7 +91,7 @@ export function PartnerDetailFastOverviewSection({
           </div>
         </AdminSection>
       </section>
-    </>
+    </AdminPageTemplate>
   );
 }
 

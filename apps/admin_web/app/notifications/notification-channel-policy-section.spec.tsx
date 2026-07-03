@@ -49,7 +49,7 @@ describe('NotificationChannelPolicySection', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['command-copy-row', 'ops-task-card', 'pill pill-warn']),
+      expect.arrayContaining(['ops-section-header', 'command-copy-row', 'ops-task-card', 'pill pill-warn']),
     );
   });
 

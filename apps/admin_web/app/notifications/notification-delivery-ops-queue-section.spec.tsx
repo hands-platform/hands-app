@@ -25,6 +25,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'ops-section-header',
         'ops-task-card',
         'pill pill-warn',
         'admin-form-control-link pill pill-neutral',

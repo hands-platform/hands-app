@@ -32,6 +32,7 @@ describe('PartnerDetailFastOverviewSection', () => {
 
     const classNames = classNamesIn(section);
 
+    expect(classNames).toContain('toolbar admin-page-header');
     expect(normalizedText(section)).toContain('Partner One');
     expect(normalizedText(section)).toContain('Marketplace ready');
     expect(hrefsIn(section)).toEqual(

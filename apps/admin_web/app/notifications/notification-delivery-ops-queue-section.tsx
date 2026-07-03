@@ -1,3 +1,4 @@
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 
 export type NotificationDeliveryOpsQueueItem = {
@@ -16,17 +17,15 @@ type NotificationDeliveryOpsQueueSectionProps = {
 export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliveryOpsQueueSectionProps) {
   return (
     <div className="card soft-card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h3>Delivery operations queue</h3>
-          <p className="muted">
-            Fix current delivery blockers before retrying, so alert sends do not loop.
-          </p>
-        </div>
+      <AdminSectionHeader
+        description="Fix current delivery blockers before retrying, so alert sends do not loop."
+        status={
         <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
           {items.length ? `${items.length} issue(s)` : 'No delivery blockers'}
         </span>
-      </div>
+        }
+        title="Delivery operations queue"
+      />
       <div className="ops-task-grid">
         {items.length ? (
           items.map((item) => (

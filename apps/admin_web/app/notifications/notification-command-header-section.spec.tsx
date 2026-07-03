@@ -13,7 +13,13 @@ describe('NotificationCommandHeaderSection', () => {
     expect(rendered).toContain('FCM setup');
     expect(hrefsIn(section)).toContain('/setup#notifications');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['pill pill-success', 'pill pill-info', 'pill pill-warn', 'pill pill-neutral']),
+      expect.arrayContaining([
+        'ops-section-header',
+        'pill pill-success',
+        'pill pill-info',
+        'pill pill-warn',
+        'pill pill-neutral',
+      ]),
     );
   });
 });

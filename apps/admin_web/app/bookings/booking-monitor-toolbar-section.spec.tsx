@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { normalizedText } from './booking-section-test-utils';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 
@@ -8,8 +10,9 @@ describe('BookingMonitorToolbarSection', () => {
       onToggleLiveUpdates: vi.fn(),
     });
     const rendered = normalizedText(section);
+    const markup = renderToStaticMarkup(section);
 
-    expect(section.type).toBe('section');
+    expect(markup).toContain('toolbar admin-page-header');
     expect(rendered).toContain('Booking Monitor');
     expect(rendered).toContain('Live operational view for matching');
     expect(rendered).toContain('Pause live');

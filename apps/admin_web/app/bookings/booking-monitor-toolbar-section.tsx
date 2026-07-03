@@ -2,6 +2,8 @@
 
 import { Pause, Play } from 'lucide-react';
 
+import { AdminPageTemplate } from '../../components/admin-page-template';
+
 type BookingMonitorToolbarSectionProps = {
   readonly description?: string;
   readonly liveUpdates: boolean;
@@ -18,17 +20,17 @@ export function BookingMonitorToolbarSection({
   const LiveUpdatesIcon = liveUpdates ? Pause : Play;
 
   return (
-    <section className="toolbar">
-      <div>
-        <h1>{title}</h1>
-        <p className="muted">{description}</p>
-      </div>
-      <div className="actions">
+    <AdminPageTemplate
+      actions={
         <button className="button button-secondary" type="button" onClick={onToggleLiveUpdates}>
           <LiveUpdatesIcon aria-hidden="true" size={16} />
           {liveUpdates ? 'Pause live' : 'Resume live'}
         </button>
-      </div>
-    </section>
+      }
+      description={description}
+      title={title}
+    >
+      {null}
+    </AdminPageTemplate>
   );
 }
