@@ -33,6 +33,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminSection } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
@@ -157,14 +158,9 @@ export default async function PartnerControlsPage({
         title="Partner Controls"
       >
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner control command center</h2>
-            <p className="muted">
-              One-screen review for finance blocks, account controls, document review, and investigation SLA.
-            </p>
-          </div>
+      <AdminSection
+        actions={
+          <>
           <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
           </span>
@@ -174,7 +170,13 @@ export default async function PartnerControlsPage({
             marketplace radius / {controlPolicy.invitationLimit} invite cap / location{' '}
             {controlPolicy.locationFreshnessMinutes}m
           </Link>
-        </div>
+          </>
+        }
+        className="admin-mb-16"
+        description="One-screen review for finance blocks, account controls, document review, and investigation SLA."
+        id="partner-control-command-center"
+        title="Partner control command center"
+      >
         <div className="ops-task-grid admin-mt-12">
           {commandCenter.lanes.map((lane) => (
             <Link className={`ops-task-card ${lane.className}`} href={lane.href} key={lane.title}>
@@ -193,18 +195,16 @@ export default async function PartnerControlsPage({
             </Link>
           ))}
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Next operator actions</h2>
-            <p className="muted">
-              Sorted by saved report level, wallet impact, active controls, and how long the item has waited.
-            </p>
-          </div>
-          <span className="pill pill-info">{commandCenter.nextActions.length} action(s)</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Sorted by saved report level, wallet impact, active controls, and how long the item has waited."
+        id="partner-control-next-actions"
+        statusLabel={`${commandCenter.nextActions.length} action(s)`}
+        statusTone="info"
+        title="Next operator actions"
+      >
         {commandCenter.nextActions.length ? (
           <div className="setup-stage-list admin-mt-12">
             {commandCenter.nextActions.map((action) => (
@@ -233,19 +233,16 @@ export default async function PartnerControlsPage({
             No Partner control action currently needs operator review.
           </p>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner control board</h2>
-            <p className="muted">
-              Shows factual Partner controls for booking blocks, wallet debt, payout gates, document gaps,
-              location freshness, and device reachability.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerControlBoard.items.length} partner(s)</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="Shows factual Partner controls for booking blocks, wallet debt, payout gates, document gaps, location freshness, and device reachability."
+        id="partner-control-board"
+        statusLabel={`${partnerControlBoard.items.length} partner(s)`}
+        statusTone="info"
+        title="Partner control board"
+      >
         <div className="ops-task-grid admin-mt-12">
           {partnerControlBoard.metrics.map((controlMetric) => (
             <div className="ops-task-card" key={controlMetric.label}>
@@ -296,7 +293,7 @@ export default async function PartnerControlsPage({
             follow-up.
           </p>
         )}
-      </section>
+      </AdminSection>
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
