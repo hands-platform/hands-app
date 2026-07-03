@@ -42,6 +42,8 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   const journalBalanceDelta = reversalJournal
     ? Math.abs(reversalJournal.totalDebit - reversalJournal.totalCredit)
     : null;
+  const reversalClearing = reversal.paymentClearingEntries?.[0] ?? null;
+  const bankClearing = bankClearingEvidence(reversalClearing, reversal.currency);
   const allocationDelta = reversalAllocationDelta(reversal);
   const payoutRefundEvidence = payoutRefundReceivableEvidence(reversal);
 
@@ -158,6 +160,33 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem
             label="Receivable amount"
             value={formatMoney(payoutRefundEvidence.receivableAmount, reversal.currency)}
+          />
+          <FinanceDetailInfoItem
+            label="Bank clearing check"
+            value={
+              reversalClearing ? (
+                <>
+                  {bankClearing.label}
+                  <span className="muted admin-block">
+                    Matched {formatMoney(bankClearing.matchedAmount, bankClearing.currency)}
+                  </span>
+                  <span className="muted admin-block">
+                    Remaining {formatMoney(bankClearing.remainingAmount, bankClearing.currency)}
+                  </span>
+                  {bankClearing.latestActiveMatch ? (
+                    <Link
+                      className="text-link admin-block"
+                      href={`/finance-tax/bank-reconciliation/${bankClearing.latestActiveMatch.bankTransactionId}`}
+                    >
+                      {bankClearing.latestActiveMatch.bankTransaction?.transferRef ??
+                        shortId(bankClearing.latestActiveMatch.bankTransactionId)}
+                    </Link>
+                  ) : null}
+                </>
+              ) : (
+                'No clearing'
+              )
+            }
           />
           <FinanceDetailInfoItem label="Reason" value={reversal.reason ?? 'Payment refund'} />
           <FinanceDetailInfoItem label="Source key" value={reversal.sourceKey} />
@@ -363,6 +392,31 @@ function payoutRefundReceivableEvidence(reversal: AdminBookingSettlementReversal
     treatment: refundAfterPaidPayout
       ? 'Partner receivable / negative wallet'
       : 'Partner wallet liability reversal',
+  };
+}
+
+type ReversalClearingEntry = NonNullable<AdminBookingSettlementReversalEntry['paymentClearingEntries']>[number];
+
+function bankClearingEvidence(clearing: ReversalClearingEntry | null, fallbackCurrency: string) {
+  const matches = clearing?.bankReconciliationMatches ?? [];
+  const latestActiveMatch = matches.find((match) => match.status !== 'REVERSED') ?? null;
+  const matchedAmount = matches.reduce((total, match) => {
+    return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
+  }, 0);
+  const remainingAmount = clearing ? Math.max(0, Math.abs(clearing.amount) - matchedAmount) : 0;
+
+  return {
+    currency: clearing?.currency ?? fallbackCurrency,
+    label: clearing
+      ? remainingAmount <= 0
+        ? 'Fully matched'
+        : matchedAmount > 0
+          ? 'Partially matched'
+          : 'Needs bank match'
+      : 'No clearing',
+    latestActiveMatch,
+    matchedAmount,
+    remainingAmount,
   };
 }
 

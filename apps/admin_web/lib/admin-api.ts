@@ -2316,6 +2316,7 @@ export type AdminBookingSettlementReversalEntry = {
     amount: number;
     currency: string;
     occurredAt: string;
+    bankReconciliationMatches?: AdminPaymentClearingBankReconciliationMatch[];
   }>;
   originalSettlementSnapshot?: {
     id: string;

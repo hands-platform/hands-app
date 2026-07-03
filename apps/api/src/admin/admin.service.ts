@@ -703,6 +703,45 @@ const adminBookingSettlementReversalEntryDetailSelect = {
       totalDebit: true,
     },
   },
+  paymentClearingEntries: {
+    orderBy: { occurredAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      sourceKey: true,
+      status: true,
+      type: true,
+      amount: true,
+      currency: true,
+      occurredAt: true,
+      bankReconciliationMatches: {
+        orderBy: { matchedAt: 'desc' },
+        take: 3,
+        select: {
+          id: true,
+          sourceKey: true,
+          bankTransactionId: true,
+          amount: true,
+          currency: true,
+          status: true,
+          matchedAt: true,
+          bankTransaction: {
+            select: {
+              id: true,
+              sourceKey: true,
+              type: true,
+              amount: true,
+              currency: true,
+              occurredAt: true,
+              transferRef: true,
+              counterpartyName: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  },
   originalSettlementSnapshot: {
     select: {
       id: true,

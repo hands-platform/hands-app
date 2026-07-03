@@ -8894,6 +8894,27 @@ describe('AdminService query orchestration', () => {
         totalDebit: true,
       }),
     );
+    expect(detailSelect.paymentClearingEntries.select).toEqual(
+      expect.objectContaining({
+        amount: true,
+        bankReconciliationMatches: expect.objectContaining({
+          orderBy: { matchedAt: 'desc' },
+          select: expect.objectContaining({
+            amount: true,
+            bankTransaction: expect.objectContaining({
+              select: expect.objectContaining({
+                id: true,
+                transferRef: true,
+                status: true,
+              }),
+            }),
+            status: true,
+          }),
+          take: 3,
+        }),
+        status: true,
+      }),
+    );
   });
 
   it('summarizes booking settlement reversal entries from reversal aggregates only', async () => {

@@ -245,6 +245,28 @@ describe('finance detail pages', () => {
           sourceKey: 'clearing:reversal:1',
           status: 'OPEN',
           type: 'REFUND_REVERSAL',
+          bankReconciliationMatches: [
+            {
+              amount: -250000,
+              bankTransactionId: 'bank-transaction-1',
+              bankTransaction: {
+                amount: -250000,
+                counterpartyName: 'Demo Customer',
+                currency: 'VND',
+                id: 'bank-transaction-1',
+                occurredAt: '2026-07-01T11:05:00.000Z',
+                sourceKey: 'bank:refund:1',
+                status: 'PARTIALLY_MATCHED',
+                transferRef: 'REFUND-001',
+                type: 'OUTFLOW',
+              },
+              currency: 'VND',
+              id: 'bank-match-1',
+              matchedAt: '2026-07-01T11:06:00.000Z',
+              sourceKey: 'bank-match:refund:1',
+              status: 'PARTIALLY_MATCHED',
+            },
+          ],
         },
       ],
       paymentId: 'payment-1',
@@ -283,6 +305,11 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Journal balance check');
     expect(markup).toContain('Debit 600.000 VND');
     expect(markup).toContain('Credit 600.000 VND');
+    expect(markup).toContain('Bank clearing check');
+    expect(markup).toContain('Matched 250.000 VND');
+    expect(markup).toContain('Remaining 350.000 VND');
+    expect(markup).toContain('/finance-tax/bank-reconciliation/bank-transaction-1');
+    expect(markup).toContain('REFUND-001');
     expect(markup).toContain('Original settlement lock');
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
