@@ -1,6 +1,10 @@
 import {
+  BookingAddressRadiusContractSection,
+  BookingAppliedPolicySection,
+  BookingCustomerWaitPanelSection,
   BookingDispatchCandidateDecisionMatrixSection,
   BookingMarketplaceSupplySection,
+  BookingStageSnapshotSection,
 } from './booking-policy-supply-sections';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 
@@ -29,6 +33,91 @@ describe('booking policy supply sections', () => {
         'admin-avatar-status-dot is-working',
       ]),
     );
+  });
+
+  it('renders booking policy and supply panels with the shared Vuexy admin section surface', () => {
+    const marketplaceSupply = buildMarketplaceSupply();
+    const sections = [
+      BookingStageSnapshotSection({
+        stageSnapshot: {
+          actionHref: '#booking-ops',
+          actionLabel: 'Open command',
+          badges: [{ label: 'Ready', tone: 'pill-success' }],
+          detail: 'No blocker is active.',
+          headline: 'Continue normal monitoring',
+          metrics: [{ helper: 'Booking is active.', label: 'Stage', value: 'Open' }],
+          noteClassName: 'ops-task-success',
+          pillClass: 'pill-info',
+          stage: 'Open',
+        },
+      }),
+      BookingCustomerWaitPanelSection({
+        customerWaitPanel: {
+          badges: [{ detail: 'Customer is waiting.', label: 'Waiting', tone: 'pill-warn' }],
+          cards: [
+            {
+              action: 'Review matching.',
+              className: 'ops-task-warning',
+              detail: 'Customer needs a Partner.',
+              pillClass: 'pill-warn',
+              status: 'Review',
+              title: 'Matching',
+            },
+          ],
+          detail: 'Matching evidence is available.',
+          headline: 'Customer is waiting',
+          nextActionHref: '#marketplace-supply',
+          nextActionLabel: 'Open supply',
+          signalStatus: 'Waiting',
+          signalTone: 'pill-warn',
+        },
+      }),
+      BookingAppliedPolicySection({
+        policySnapshot: {
+          decisionCards: [
+            {
+              className: 'ops-task-success',
+              helper: 'Saved on booking open and aligned with current policy.',
+              key: 'timeout',
+              label: 'Timeout',
+              pillClass: 'pill-success',
+              status: 'Aligned',
+              value: '15 min',
+            },
+          ],
+          decisionDetail: 'Policy is aligned.',
+          decisionStatus: 'Aligned',
+          decisionTitle: 'Use saved policy',
+          decisionTone: 'pill-success',
+          metrics: [{ helper: 'Saved policy aligned.', label: 'Policy', value: 'Current' }],
+        },
+      }),
+      BookingAddressRadiusContractSection({
+        addressRadiusContract: {
+          cards: [
+            {
+              action: 'Use booking address.',
+              className: 'ops-task-success',
+              detail: 'Address snapshot retained.',
+              pillClass: 'pill-success',
+              status: 'Ready',
+              title: 'Address',
+            },
+          ],
+          metrics: [{ helper: 'Radius contract retained.', label: 'Radius', value: '10 km' }],
+          status: 'Ready',
+          tone: 'pill-success',
+        },
+      }),
+      BookingDispatchCandidateDecisionMatrixSection({ marketplaceSupply }),
+      BookingMarketplaceSupplySection({ marketplaceSupply }),
+    ];
+
+    const classNames = sections.flatMap(classNamesIn);
+
+    expect(normalizedText(sections)).toContain('Booking stage snapshot');
+    expect(normalizedText(sections)).toContain('Booking address radius contract');
+    expect(classNames.filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(6);
   });
 });
 

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
+import { AdminSection } from '../../../components/admin-surface';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 type SummaryCard = {
@@ -125,16 +126,13 @@ type MarketplaceSupply = {
 
 export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnapshotSectionProps) {
   return (
-    <section className="card admin-mb-16" id="alerts">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking stage snapshot</h2>
-          <p className="muted">
-            Current stage, blocking signal, and next operator action for this booking.
-          </p>
-        </div>
-        <span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>}
+      className="admin-mb-16"
+      description="Current stage, blocking signal, and next operator action for this booking."
+      id="alerts"
+      title="Booking stage snapshot"
+    >
       <SummaryCardGrid cards={stageSnapshot.metrics} />
       <div className={`ops-task-note ${stageSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
@@ -148,7 +146,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
           </Link>
         </div>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -160,16 +158,13 @@ export function BookingCustomerWaitPanelSection({
   customerWaitPanel,
 }: BookingCustomerWaitPanelSectionProps) {
   return (
-    <section className="card admin-mb-16" id="audit">
-      <div className="ops-section-header">
-        <div>
-          <h2>Customer wait and matching decision</h2>
-          <p className="muted">
-            Customer waiting signal, matching evidence, and the next action while assignment is unresolved.
-          </p>
-        </div>
-        <span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>}
+      className="admin-mb-16"
+      description="Customer waiting signal, matching evidence, and the next action while assignment is unresolved."
+      id="audit"
+      title="Customer wait and matching decision"
+    >
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
@@ -183,7 +178,7 @@ export function BookingCustomerWaitPanelSection({
         </div>
       </div>
       <OpsTaskCardGrid cards={customerWaitPanel.cards} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -193,19 +188,17 @@ export type BookingCustomerWaitPanelSectionProps = {
 
 export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPolicySectionProps) {
   return (
-    <section className="card admin-mb-16" id="applied-operations-policy">
-      <div className="ops-section-header">
-        <div>
-          <h2>Applied operations policy</h2>
-          <p className="muted">
-            The live admin policy that operators should use when handling this booking. Existing bookings keep
-            their saved timeout, while Partner visibility and participation checks use the latest policy.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href="/operations-policy">
           Open policy
         </Link>
-      </div>
+      }
+      className="admin-mb-16"
+      description="The live admin policy that operators should use when handling this booking. Existing bookings keep their saved timeout, while Partner visibility and participation checks use the latest policy."
+      id="applied-operations-policy"
+      title="Applied operations policy"
+    >
       <SummaryCardGrid cards={policySnapshot.metrics} />
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
@@ -229,7 +222,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -255,19 +248,16 @@ export function BookingAddressRadiusContractSection({
   addressRadiusContract,
 }: BookingAddressRadiusContractSectionProps) {
   return (
-    <section className="card admin-mb-16" id="address-radius-contract">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking address radius contract</h2>
-          <p className="muted">
-            The immutable booking address snapshot is the source of truth for 10km marketplace eligibility.
-          </p>
-        </div>
-        <span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>}
+      className="admin-mb-16"
+      description="The immutable booking address snapshot is the source of truth for 10km marketplace eligibility."
+      id="address-radius-contract"
+      title="Booking address radius contract"
+    >
       <SummaryCardGrid cards={addressRadiusContract.metrics} />
       <OpsTaskCardGrid cards={addressRadiusContract.cards} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -279,18 +269,16 @@ export function BookingDispatchCandidateDecisionMatrixSection({
   marketplaceSupply,
 }: BookingDispatchCandidateDecisionMatrixSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking-address supply check</h2>
-          <p className="muted">
-            Usable Partner supply and operational blockers for this booking pin.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${marketplaceSupply.candidateCommand.tone}`}>
           {marketplaceSupply.candidateCommand.status}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Usable Partner supply and operational blockers for this booking pin."
+      title="Booking-address supply check"
+    >
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
@@ -366,7 +354,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           </div>
         </div>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -376,18 +364,17 @@ export type BookingDispatchCandidateDecisionMatrixSectionProps = {
 
 export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMarketplaceSupplySectionProps) {
   return (
-    <section className="card admin-mb-16" id="marketplace-supply">
-      <div className="ops-section-header">
-        <div>
-          <h2>Marketplace Partner supply for this booking</h2>
-          <p className="muted">
-            Full Partner supply rows for the booking pin, with eligibility and exclusion evidence.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
           {marketplaceSupply.eligibleCount} eligible
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Full Partner supply rows for the booking pin, with eligibility and exclusion evidence."
+      id="marketplace-supply"
+      title="Marketplace Partner supply for this booking"
+    >
       <SummaryCardGrid cards={marketplaceSupply.metrics} />
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
@@ -431,7 +418,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
           </p>
         ) : null}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
