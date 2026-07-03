@@ -185,6 +185,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
 
         <AdminSection
           bodyClassName="admin-table-section-body"
+          className="vuexy-booking-table-card vuexy-booking-table-group"
           status={
             <div className="participant-list">
               <span className="pill pill-success">Newest first</span>

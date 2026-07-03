@@ -68,6 +68,7 @@ describe('audit log page model', () => {
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button button button-primary');
     expect(markup).toContain('admin-form-control-link button button-secondary');
+    expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
   });
 
   it('surfaces FCM sent evidence for notification retry audit rows', () => {
