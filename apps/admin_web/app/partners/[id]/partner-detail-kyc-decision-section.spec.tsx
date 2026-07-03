@@ -1,6 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { PartnerDetailKycDecisionSection } from './partner-detail-kyc-decision-section';
 
 describe('PartnerDetailKycDecisionSection', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No records found</strong>');
+  });
+
   it('renders KYC checklist and evidence as Vuexy tables', () => {
     const section = PartnerDetailKycDecisionSection({
       canApprove: false,
@@ -74,7 +82,7 @@ describe('PartnerDetailKycDecisionSection', () => {
     expect(readRecord(resolveElement(section))?.props).toMatchObject({ id: 'kyc' });
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

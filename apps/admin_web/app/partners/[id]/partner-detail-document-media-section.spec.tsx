@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import {
   PartnerDetailPublicProfileMediaCard,
   PartnerDetailTypedDocumentsCard,
 } from './partner-detail-document-media-section';
 
 describe('partner detail document and media sections', () => {
+  it('uses the shared Vuexy empty-state atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<strong>No evidence found</strong>');
+  });
+
   it('renders typed onboarding documents in a Vuexy table with dropdown review actions', () => {
     const section = PartnerDetailTypedDocumentsCard({
       rows: [
@@ -43,7 +51,7 @@ describe('partner detail document and media sections', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -95,7 +103,7 @@ describe('partner detail document and media sections', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

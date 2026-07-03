@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -180,10 +181,5 @@ function FileOpenAction({
 }
 
 function EvidenceEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No evidence found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
+  return <AdminEmptyState message={message} title="No evidence found" />;
 }
