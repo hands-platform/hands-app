@@ -21,6 +21,16 @@ describe('Admin date-time form usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps app form control shells behind shared AdminForm atoms', () => {
+    const appDir = join(process.cwd(), 'app');
+    const offenders = listTsxFiles(appDir)
+      .filter((filePath) => !filePath.endsWith('.spec.tsx'))
+      .filter((filePath) => containsRawAdminFormShell(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 function listTsxFiles(directory: string): string[] {
@@ -40,4 +50,13 @@ function listTsxFiles(directory: string): string[] {
 
 function containsNativeCalendarField(source: string) {
   return ['type="date"', 'type="month"', 'type="time"'].some((needle) => source.includes(needle));
+}
+
+function containsRawAdminFormShell(source: string) {
+  return [
+    '<div className="admin-form-input',
+    '<label className="admin-form-input',
+    '<label className="admin-form-select',
+    '<label className="admin-form-textarea',
+  ].some((needle) => source.includes(needle));
 }

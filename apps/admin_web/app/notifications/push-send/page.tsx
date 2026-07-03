@@ -10,6 +10,7 @@ import {
   AdminFormControlButton,
   AdminFormInput,
   AdminFormSelect,
+  AdminFormStaticValue,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
@@ -211,11 +212,13 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             options={destinationOptions}
           />
           {targetRole === 'PROVIDER' ? (
-            <div className="admin-form-input">
-              <span>Language</span>
-              <strong>Vietnamese</strong>
-              <input name="locale" type="hidden" value="vi" />
-            </div>
+            <AdminFormStaticValue
+              hiddenName="locale"
+              hiddenValue="vi"
+              label="Language"
+              labelVisibility="visible"
+              value="Vietnamese"
+            />
           ) : (
             <AdminFormSelect defaultValue={locale} label="Language" name="locale" options={LOCALE_OPTIONS} />
           )}

@@ -1,10 +1,12 @@
-import type {
-  AnchorHTMLAttributes,
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  forwardRef,
+  type AnchorHTMLAttributes,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type MouseEventHandler,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 
 import { Search } from 'lucide-react';
@@ -44,6 +46,14 @@ type AdminFormDateTimeProps = {
   readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
+
+type AdminFormDatePickerInputProps = {
+  readonly className?: string;
+  readonly disabled?: boolean;
+  readonly label: string;
+  readonly onClick?: MouseEventHandler<HTMLInputElement>;
+  readonly value?: string;
+};
 
 type AdminFormInputProps = {
   readonly className?: string;
@@ -85,6 +95,15 @@ type AdminFormTextareaProps = {
   | 'rows'
   | 'value'
 >;
+
+type AdminFormStaticValueProps = {
+  readonly className?: string;
+  readonly hiddenName?: string;
+  readonly hiddenValue?: string;
+  readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
+  readonly value: ReactNode;
+};
 
 type AdminFormCheckboxProps = {
   readonly children?: ReactNode;
@@ -219,6 +238,31 @@ export function AdminFormDateTime({
   });
 }
 
+export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDatePickerInputProps>(
+  function AdminFormDatePickerInput({ className, disabled, label, onClick, value }, ref) {
+    return (
+      <label
+        className={joinClassNames(
+          'admin-form-input',
+          'admin-form-input-date-picker',
+          'admin-form-control-labeled',
+          className,
+        )}
+      >
+        <span className="admin-form-label">{label}</span>
+        <input
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          readOnly
+          ref={ref}
+          value={value ?? ''}
+        />
+      </label>
+    );
+  },
+);
+
 export function AdminFormInput({
   autoComplete,
   className,
@@ -265,6 +309,23 @@ export function AdminFormInput({
         value={value}
       />
     </label>
+  );
+}
+
+export function AdminFormStaticValue({
+  className,
+  hiddenName,
+  hiddenValue,
+  label,
+  labelVisibility = 'hidden',
+  value,
+}: AdminFormStaticValueProps) {
+  return (
+    <div className={joinClassNames('admin-form-static-value', visibleLabelClass(labelVisibility), className)}>
+      <span className={labelClassName(labelVisibility)}>{label}</span>
+      <strong>{value}</strong>
+      {hiddenName ? <input name={hiddenName} type="hidden" value={hiddenValue ?? ''} /> : null}
+    </div>
   );
 }
 

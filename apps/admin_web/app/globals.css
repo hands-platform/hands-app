@@ -14753,6 +14753,7 @@ textarea:focus-visible {
 .admin-form-date,
 .admin-form-input,
 .admin-form-select,
+.admin-form-static-value,
 .vuexy-customer-number-field,
 .vuexy-customer-search,
 .vuexy-customer-select,
@@ -14779,6 +14780,7 @@ textarea:focus-visible {
 .admin-form-date input,
 .admin-form-input input,
 .admin-form-select select,
+.admin-form-static-value strong,
 .vuexy-customer-number-field input,
 .vuexy-customer-search input,
 .vuexy-customer-select select,
@@ -14815,6 +14817,7 @@ textarea:focus-visible {
 .admin-form-select,
 .admin-form-date,
 .admin-form-input,
+.admin-form-static-value,
 .vuexy-customer-number-field,
 .vuexy-customer-select,
 .vuexy-partner-select {
@@ -16849,6 +16852,7 @@ textarea:focus-visible {
 .admin-form-date,
 .admin-form-input,
 .admin-form-select,
+.admin-form-static-value,
 .vuexy-customer-number-field,
 .vuexy-customer-search,
 .vuexy-customer-select,
@@ -16868,7 +16872,8 @@ textarea:focus-visible {
 
 .admin-form-date.admin-form-control-labeled,
 .admin-form-input.admin-form-control-labeled,
-.admin-form-select.admin-form-control-labeled {
+.admin-form-select.admin-form-control-labeled,
+.admin-form-static-value.admin-form-control-labeled {
   align-items: stretch;
   display: grid;
   gap: 6px;
@@ -16891,7 +16896,8 @@ textarea:focus-visible {
 
 .admin-form-date.admin-form-control-labeled input,
 .admin-form-input.admin-form-control-labeled input,
-.admin-form-select.admin-form-control-labeled select {
+.admin-form-select.admin-form-control-labeled select,
+.admin-form-static-value.admin-form-control-labeled strong {
   width: 100%;
 }
 
@@ -16905,6 +16911,7 @@ textarea:focus-visible {
 .admin-form-date:hover,
 .admin-form-input:hover,
 .admin-form-select:hover,
+.admin-form-static-value:hover,
 .vuexy-customer-number-field:hover,
 .vuexy-customer-search:hover,
 .vuexy-customer-select:hover,
@@ -17013,6 +17020,14 @@ textarea:focus-visible {
 .admin-form-input-date-picker input {
   color-scheme: light;
   cursor: pointer;
+}
+
+.admin-form-static-value strong {
+  color: var(--admin-text);
+  font-size: var(--admin-input-font-size);
+  font-weight: 500;
+  line-height: var(--admin-input-line-height);
+  min-width: 0;
 }
 
 [data-theme='dark'] .admin-form-date input,

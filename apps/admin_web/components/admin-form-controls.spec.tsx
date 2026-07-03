@@ -1,12 +1,16 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormDatePickerInput,
   AdminFormDateTime,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormStaticValue,
   AdminFormTextarea,
 } from './admin-form-controls';
 
@@ -145,6 +149,39 @@ describe('Admin form controls', () => {
       name: 'paidAt',
       required: true,
       type: 'datetime-local',
+    });
+  });
+
+  it('renders custom react-datepicker inputs through the shared Vuexy atom', () => {
+    const markup = renderToStaticMarkup(
+      <AdminFormDatePickerInput disabled label="Starts" value="03 Jul 2026, 10:00" />,
+    );
+
+    expect(markup).toContain(
+      'class="admin-form-input admin-form-input-date-picker admin-form-control-labeled"',
+    );
+    expect(markup).toContain('class="admin-form-label">Starts');
+    expect(markup).toContain('aria-label="Starts"');
+    expect(markup).toContain('readOnly=""');
+    expect(markup).toContain('value="03 Jul 2026, 10:00"');
+  });
+
+  it('renders read-only static values with the same Vuexy form shell', () => {
+    const staticValue = AdminFormStaticValue({
+      hiddenName: 'locale',
+      hiddenValue: 'vi',
+      label: 'Language',
+      labelVisibility: 'visible',
+      value: 'Vietnamese',
+    });
+
+    expect(staticValue.props.className).toBe('admin-form-static-value admin-form-control-labeled');
+    expect(textContent(staticValue)).toContain('Language');
+    expect(textContent(staticValue)).toContain('Vietnamese');
+    expect(staticValue.props.children[2].props).toMatchObject({
+      name: 'locale',
+      type: 'hidden',
+      value: 'vi',
     });
   });
 

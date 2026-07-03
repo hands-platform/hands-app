@@ -37,4 +37,17 @@ describe('PushSendPage', () => {
     );
     expect(markup).toContain('No manual push campaigns yet.');
   });
+
+  it('renders the partner language lock through the shared static-value form atom', async () => {
+    const page = await PushSendPage({
+      searchParams: Promise.resolve({
+        targetRole: 'PROVIDER',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('class="admin-form-static-value admin-form-control-labeled"');
+    expect(markup).toContain('Vietnamese');
+    expect(markup).not.toContain('<div class="admin-form-input"><span>Language</span>');
+  });
 });

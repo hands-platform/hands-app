@@ -8,16 +8,17 @@ describe('calendar event drawer structure', () => {
     expect(drawerSource).toContain('AdminFormInput');
     expect(drawerSource).toContain('AdminFormTextarea');
     expect(drawerSource).toContain('AdminFormControlButton');
+    expect(drawerSource).toContain('AdminFormDatePickerInput');
     expect(drawerSource).toContain('Author:');
     expect(drawerSource).toContain('Hashtags');
     expect(drawerSource).toContain('DatePicker');
-    expect(drawerSource).toContain('admin-form-input-date-picker calendar-datepicker-input');
     expect(drawerSource).toContain('showTimeSelect={!draft.allDay}');
     expect(drawerSource).toContain('calendar-vuexy-datepicker-popper');
     expect(drawerSource).toContain('Only ${draft.authorName} can update or delete this event.');
     expect(drawerSource).not.toContain('<input onChange={updateField');
     expect(drawerSource).not.toContain('<select onChange={updateField');
     expect(drawerSource).not.toContain('<textarea');
+    expect(drawerSource).not.toContain('<label className="admin-form-input');
     expect(drawerSource).not.toContain('<button className="button button-primary"');
     expect(drawerSource).not.toContain('<button className="button button-secondary"');
     expect(drawerSource).not.toContain('Category');

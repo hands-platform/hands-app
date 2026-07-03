@@ -1,12 +1,13 @@
 'use client';
 
-import { forwardRef, type ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormDatePickerInput,
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -23,13 +24,6 @@ type CalendarEventDrawerProps = {
   readonly onSubmit: () => void;
   readonly canEdit: boolean;
   readonly currentOperatorName: string;
-};
-
-type CalendarDatePickerInputProps = {
-  readonly disabled?: boolean;
-  readonly label: string;
-  readonly onClick?: () => void;
-  readonly value?: string;
 };
 
 export function CalendarEventDrawer({
@@ -145,7 +139,13 @@ export function CalendarEventDrawer({
 
             <DatePicker
               calendarClassName="calendar-vuexy-datepicker"
-              customInput={<CalendarDatePickerInput disabled={!canEdit} label="Start" />}
+              customInput={
+                <AdminFormDatePickerInput
+                  className="calendar-datepicker-input"
+                  disabled={!canEdit}
+                  label="Start"
+                />
+              }
               dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
               disabled={!canEdit}
               onChange={updateDateField('start')}
@@ -162,7 +162,13 @@ export function CalendarEventDrawer({
 
             <DatePicker
               calendarClassName="calendar-vuexy-datepicker"
-              customInput={<CalendarDatePickerInput disabled={!canEdit} label="End" />}
+              customInput={
+                <AdminFormDatePickerInput
+                  className="calendar-datepicker-input"
+                  disabled={!canEdit}
+                  label="End"
+                />
+              }
               dateFormat={draft.allDay ? 'yyyy-MM-dd' : 'yyyy-MM-dd h:mm aa'}
               disabled={!canEdit}
               endDate={toDateValue(draft.end)}
@@ -240,24 +246,6 @@ export function CalendarEventDrawer({
     </>
   );
 }
-
-const CalendarDatePickerInput = forwardRef<HTMLInputElement, CalendarDatePickerInputProps>(
-  function CalendarDatePickerInput({ disabled, label, onClick, value }, ref) {
-    return (
-      <label className="admin-form-input admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input">
-        <span className="admin-form-label">{label}</span>
-        <input
-          aria-label={label}
-          disabled={disabled}
-          onClick={onClick}
-          readOnly
-          ref={ref}
-          value={value ?? ''}
-        />
-      </label>
-    );
-  },
-);
 
 function toDateValue(value: string) {
   const date = new Date(value);
