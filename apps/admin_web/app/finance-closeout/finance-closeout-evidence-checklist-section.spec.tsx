@@ -1,4 +1,5 @@
 import { FinanceCloseoutEvidenceChecklistSection } from './finance-closeout-evidence-checklist-section';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 describe('FinanceCloseoutEvidenceChecklistSection', () => {
   it('renders checklist items with operator rules and handoff link', () => {
@@ -24,6 +25,27 @@ describe('FinanceCloseoutEvidenceChecklistSection', () => {
     expect(rendered).toContain('2 open');
     expect(rendered).toContain('Do not close the shift');
     expect(hrefsIn(section)).toContain('/operations-handoff');
+  });
+
+  it('normalizes legacy checklist pill classes without duplicating the pill prefix', () => {
+    const section = FinanceCloseoutEvidenceChecklistSection({
+      items: [
+        {
+          className: 'ops-task-pending',
+          detail: 'Payment review still has open evidence.',
+          href: '/payments',
+          operatorRule: 'Keep the closeout open until payment evidence is reviewed.',
+          pillClass: 'pill pill-warn',
+          status: 'Needs review',
+          title: 'Payment evidence',
+        },
+      ],
+    });
+
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('class="pill pill-warn"');
+    expect(markup).not.toContain('pill pill pill-warn');
   });
 
   it('renders an empty state when no evidence checklist item is visible', () => {
