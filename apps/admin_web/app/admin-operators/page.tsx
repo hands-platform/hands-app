@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime } from '../../lib/admin-format';
 import {
   createAdminOperator,
@@ -107,7 +108,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             <article className="admin-operator-permission-item" key={category.key}>
               <div>
                 <strong>{category.label}</strong>
-                <span className="pill pill-neutral">{category.group}</span>
+                <PillClassBadge pillClass="pill-neutral">{category.group}</PillClassBadge>
                 <p className="muted">{category.scope}</p>
               </div>
               <small>{category.defaultOwner}</small>
@@ -177,9 +178,9 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   <td>
                     <div className="participant-list">
                       {user.roles.map((role) => (
-                        <span className={operatorRolePillClassName(role)} key={role}>
+                        <PillClassBadge pillClass={operatorRolePillClassName(role)} key={role}>
                           {role}
-                        </span>
+                        </PillClassBadge>
                       ))}
                     </div>
                   </td>
@@ -190,14 +191,14 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   <td>
                     {isMasterAdmin ? (
                       <div className="admin-operator-master-access" role="note">
-                        <span className="pill pill-primary">All categories</span>
+                        <PillClassBadge pillClass="pill-primary">All categories</PillClassBadge>
                       </div>
                     ) : (
                       <div className="admin-operator-access-pills">
                         {operatorAccessLabels(user).map((label) => (
-                          <span className="pill pill-info" key={`${user.id}:${label}`}>
+                          <PillClassBadge pillClass="pill-info" key={`${user.id}:${label}`}>
                             {label}
-                          </span>
+                          </PillClassBadge>
                         ))}
                       </div>
                     )}

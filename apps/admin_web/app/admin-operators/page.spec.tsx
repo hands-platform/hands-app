@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -144,5 +146,15 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('/bookings');
     expect(markup).toContain('POST /admin/manual-wallet-adjustments');
     expect(markup).not.toContain('API required');
+  });
+
+  it('uses shared badge atoms for operator role and category chips', () => {
+    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-neutral">{category.group}</span>');
+    expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');
+    expect(source).not.toContain('<span className="pill pill-info" key={`${user.id}:${label}`}>');
+    expect(source).not.toContain('<span className={operatorRolePillClassName(role)} key={role}>');
   });
 });
