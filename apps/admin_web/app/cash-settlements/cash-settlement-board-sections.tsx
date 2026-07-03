@@ -32,7 +32,7 @@ type WorkflowSectionsProps = {
 export function CashSettlementExecutionSection({ executionDesk, priorityBoardRows }: ExecutionSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Operator-first view for clearing Partner cash-fee debt. It does not judge Partner quality; it only shows what must be evidenced before final acceptance, service start, and payout release reopen."
       resultLabel={`${priorityBoardRows.length} priority row(s)`}
       resultTone={priorityBoardRows.length > 0 ? 'warning' : 'success'}
