@@ -170,6 +170,45 @@ describe('BookingActionStatusSections', () => {
     expect(markup).not.toContain('Completed closeout');
   });
 
+  it('renders actionable status panels with the shared Vuexy admin section surface', () => {
+    const markup = render({
+      chatRepair: {
+        canSubmit: true,
+        helper: 'Final Partner is recorded, but the retained chat room is missing.',
+        status: 'Repair available',
+        tone: 'pill-danger',
+      },
+      closeout: {
+        canSubmit: true,
+        label: 'Completed closeout needs reconciliation',
+        tone: 'pill-warn',
+      },
+      matchingExpiry: {
+        canSubmit: true,
+        status: 'OPEN_MATCHING',
+      },
+      noShow: {
+        canSubmit: true,
+        status: 'OPEN_MATCHING',
+      },
+      outcomeReview: {
+        helper: 'Use retained chat before final confirmation.',
+        postMatchDecision: hiddenPostMatchDecision(),
+        primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
+        primaryLabel: 'Open review queue',
+        rows: [],
+        status: 'Post-match cancellation',
+        title: 'Post-match cancellation review',
+        tone: 'pill-warn',
+        visible: true,
+      },
+    });
+
+    expect(markup.match(/class="card admin-section/g)).toHaveLength(9);
+    expect(markup).toContain('class="ops-section-header admin-section-header"');
+    expect(markup).toContain('class="admin-section-body"');
+  });
+
   it('keeps warning repair states visible even when the submit button is locked', () => {
     const markup = render({
       chatRepair: {

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
+import { AdminSection } from '../../../components/admin-surface';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -147,12 +148,8 @@ function BookingOutcomeReviewSection({
   }
 
   return (
-    <section className="card admin-mb-16" id="booking-outcome-review">
-      <div className="ops-section-header">
-        <div>
-          <h2>{outcomeReview.title}</h2>
-          <p className="muted">{outcomeReview.helper}</p>
-        </div>
+    <AdminSection
+      actions={
         <div className="booking-outcome-review-actions">
           <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
@@ -161,7 +158,12 @@ function BookingOutcomeReviewSection({
             </Link>
           ) : null}
         </div>
-      </div>
+      }
+      className="admin-mb-16"
+      description={outcomeReview.helper}
+      id="booking-outcome-review"
+      title={outcomeReview.title}
+    >
       <div className="ops-task-grid">
         {outcomeReview.rows.map((row) => (
           <a className="ops-task-card" href={row.href} key={row.label}>
@@ -176,7 +178,7 @@ function BookingOutcomeReviewSection({
       {outcomeReview.postMatchDecision.visible ? (
         <BookingOutcomePostMatchDecision bookingId={bookingId} outcomeReview={outcomeReview} />
       ) : null}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -228,24 +230,22 @@ function BookingChatRepairSection({
   chatRepair: ChatRepairState;
 }) {
   return (
-    <section className="card ops-command-center admin-mb-16" id="chat-repair">
-      <div>
-        <h2>Chat room repair</h2>
-        <p className="muted">
-          Create the retained booking chat room after a final Partner exists.
-        </p>
-      </div>
+    <AdminSection
+      actions={!chatRepair.canSubmit ? <span className={`pill ${chatRepair.tone}`}>{chatRepair.status}</span> : null}
+      className="ops-command-center admin-mb-16"
+      description="Create the retained booking chat room after a final Partner exists."
+      id="chat-repair"
+      title="Chat room repair"
+    >
       {chatRepair.canSubmit ? (
         <form action={repairBookingChatRoom} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminFormControlButton type="submit">Repair chat room</AdminFormControlButton>
           <small>{chatRepair.helper}</small>
         </form>
-      ) : (
-        <span className={`pill ${chatRepair.tone}`}>{chatRepair.status}</span>
-      )}
+      ) : null}
       <p className="muted">{chatRepair.helper}</p>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -253,18 +253,16 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
   const sameShiftCount = dispatchSteps.filter((step) => step.priority === 'Now').length;
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Dispatch checklist</h2>
-          <p className="muted">
-            Next handling steps for this booking.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${sameShiftCount > 0 ? 'pill-warn' : 'pill-success'}`}>
           {sameShiftCount} same-shift
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Next handling steps for this booking."
+      title="Dispatch checklist"
+    >
       <div className="dispatch-checklist">
         {dispatchSteps.map((step) => (
           <div className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`} key={step.title}>
@@ -278,7 +276,7 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -298,18 +296,16 @@ function BookingStructuredOpsStatusSection({
   const allDone = doneCount === opsTaskCards.length;
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Structured ops status</h2>
-          <p className="muted">
-            Open handling checkpoints for this booking.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${allDone ? 'pill-success' : 'pill-info'}`}>
           {allDone ? 'All done' : `${visibleTasks.length} open / ${opsTaskCards.length}`}
         </span>
-      </div>
+      }
+      className="admin-mb-16"
+      description="Open handling checkpoints for this booking."
+      title="Structured ops status"
+    >
       {visibleTasks.length > 0 ? (
         <div className="ops-task-grid">
           {visibleTasks.map((task) => (
@@ -332,7 +328,7 @@ function BookingStructuredOpsStatusSection({
       ) : (
         <p className="muted admin-mt-12">All structured handling checkpoints are complete.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -370,16 +366,13 @@ function BookingOperatorNotesSection({
   const recentNotes = notes?.trim() ? notes.trim().split('\n').slice(-6) : [];
 
   return (
-    <section className="card admin-mb-16" id="operator-notes">
-      <div className="ops-section-header">
-        <div>
-          <h2>Operator notes</h2>
-          <p className="muted">
-            Keep short internal notes for the booking audit trail.
-          </p>
-        </div>
-        <span className="pill pill-info">{countLabel(recentNotes.length, 'note')}</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">{countLabel(recentNotes.length, 'note')}</span>}
+      className="admin-mb-16"
+      description="Keep short internal notes for the booking audit trail."
+      id="operator-notes"
+      title="Operator notes"
+    >
       <div className="ops-note-history">
         {recentNotes.length > 0 ? (
           recentNotes.map((note) => <p key={note}>{note}</p>)
@@ -402,7 +395,7 @@ function BookingOperatorNotesSection({
           </div>
         </div>
       </form>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -414,16 +407,13 @@ function BookingCompletedCloseoutSection({
   closeout: CloseoutState;
 }) {
   return (
-    <section className="card admin-mb-16" id="completed-closeout">
-      <div className="ops-section-header">
-        <div>
-          <h2>Completed closeout</h2>
-          <p className="muted">
-            Confirm the final finance state for this completed booking.
-          </p>
-        </div>
-        <span className={`pill ${closeout.tone}`}>{closeout.label}</span>
-      </div>
+    <AdminSection
+      actions={<span className={`pill ${closeout.tone}`}>{closeout.label}</span>}
+      className="admin-mb-16"
+      description="Confirm the final finance state for this completed booking."
+      id="completed-closeout"
+      title="Completed closeout"
+    >
       {closeout.canSubmit ? (
         <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
@@ -448,7 +438,7 @@ function BookingCompletedCloseoutSection({
       ) : (
         <p className="muted admin-mt-12">No manual closeout action is available for this booking.</p>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -460,13 +450,12 @@ function BookingMatchingExpirySection({
   matchingExpiry: MatchingExpiryState;
 }) {
   return (
-    <section className="card ops-command-center admin-mb-16" id="matching-expiry">
-      <div>
-        <h2>Matching expiry handling</h2>
-        <p className="muted">
-          Close an open matching request when the customer should stop waiting.
-        </p>
-      </div>
+    <AdminSection
+      className="ops-command-center admin-mb-16"
+      description="Close an open matching request when the customer should stop waiting."
+      id="matching-expiry"
+      title="Matching expiry handling"
+    >
       {matchingExpiry.canSubmit ? (
         <form action={expireBooking} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
@@ -482,7 +471,7 @@ function BookingMatchingExpirySection({
           {matchingExpiry.status === 'EXPIRED' ? 'Already expired' : 'Expiry not available for this status'}
         </span>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -494,13 +483,12 @@ function BookingNoShowHandlingSection({
   noShow: NoShowState;
 }) {
   return (
-    <section className="card ops-command-center admin-mb-16" id="no-show-handling">
-      <div>
-        <h2>No-show handling</h2>
-        <p className="muted">
-          Mark no-show when operations must close a live booking path.
-        </p>
-      </div>
+    <AdminSection
+      className="ops-command-center admin-mb-16"
+      description="Mark no-show when operations must close a live booking path."
+      id="no-show-handling"
+      title="No-show handling"
+    >
       {noShow.canSubmit ? (
         <form action={markBookingNoShow} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
@@ -516,19 +504,17 @@ function BookingNoShowHandlingSection({
           {noShow.status === 'NO_SHOW' ? 'Already no-show' : 'No-show not available for this status'}
         </span>
       )}
-    </section>
+    </AdminSection>
   );
 }
 
 function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoardSectionProps) {
   return (
-    <section className="card ops-command-center admin-mb-16">
-      <div>
-        <h2>Live service board</h2>
-        <p className="muted">
-          Last-known location monitoring for the live service.
-        </p>
-      </div>
+    <AdminSection
+      className="ops-command-center admin-mb-16"
+      description="Last-known location monitoring for the live service."
+      title="Live service board"
+    >
       <div className="grid admin-mt-12">
         {liveSignals.map((signal) => (
           <div className="ops-signal-card" key={signal.label}>
@@ -538,7 +524,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
