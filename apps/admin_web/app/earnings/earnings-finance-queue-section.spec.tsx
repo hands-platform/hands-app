@@ -33,6 +33,24 @@ describe('EarningsFinanceQueueSection', () => {
 
     expect(textContent(section)).toContain('Finance queue');
   });
+
+  it('does not duplicate the base pill class for finance queue badges', () => {
+    const section = EarningsFinanceQueueSection({
+      signals: [
+        {
+          action: 'Approve after review.',
+          className: 'ops-task-pending',
+          detail: 'One batch is waiting.',
+          pillClass: 'pill pill-info',
+          status: 'Waiting',
+          title: 'Approval',
+        },
+      ],
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-info');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-info');
+  });
 });
 
 function textContent(value: unknown): string {

@@ -46,6 +46,26 @@ describe('EarningsMoneyFlowSection', () => {
 
     expect(textContent(section)).toContain('Money flow command center');
   });
+
+  it('does not duplicate the base pill class for finance check badges', () => {
+    const section = EarningsMoneyFlowSection({
+      cards: [],
+      checks: [
+        {
+          action: 'Review exception.',
+          className: 'ops-task-blocked',
+          detail: 'Manual review required.',
+          pillClass: 'pill pill-danger',
+          status: 'Blocked',
+          title: 'Exception',
+        },
+      ],
+      currency: 'VND',
+    });
+
+    expect(classNamesIn(section)).toContain('pill pill-danger');
+    expect(classNamesIn(section)).not.toContain('pill pill pill-danger');
+  });
 });
 
 function textContent(value: unknown): string {
