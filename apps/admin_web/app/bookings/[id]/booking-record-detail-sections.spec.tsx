@@ -142,6 +142,16 @@ describe('BookingRecordDetailSections', () => {
     expect(source).not.toContain('className="card admin-card booking-participant-row-card"');
   });
 
+  it('uses shared Vuexy badge atoms for booking detail status chips', () => {
+    const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill');
+    expect(source).not.toContain('<span className={`pill');
+    expect(source).not.toContain('<span className={getParticipantBoundaryPillClass(index)}');
+  });
+
   it('renders participant ledger details and toolbar-linked record state', () => {
     const markup = renderSections();
 

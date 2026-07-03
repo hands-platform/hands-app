@@ -1,5 +1,6 @@
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat-evidence';
@@ -192,7 +193,7 @@ export function BookingRecordDetailSections({
         </AdminSection>
 
         <AdminSection
-          actions={customerProfileId ? <span className="pill pill-neutral">Linked in toolbar</span> : null}
+          actions={customerProfileId ? <StatusBadge tone="neutral">Linked in toolbar</StatusBadge> : null}
           id="customer"
           title="Customer"
         >
@@ -206,9 +207,9 @@ export function BookingRecordDetailSections({
         <AdminSection
           actions={
             finalPartnerId ? (
-              <span className="pill pill-neutral">Linked in toolbar</span>
+              <StatusBadge tone="neutral">Linked in toolbar</StatusBadge>
             ) : (
-              <span className="pill pill-neutral">Partner record link pending</span>
+              <StatusBadge tone="neutral">Partner record link pending</StatusBadge>
             )
           }
           id="handoff"
@@ -232,7 +233,7 @@ export function BookingRecordDetailSections({
         </AdminSection>
 
         <AdminSection
-          actions={<span className="pill pill-info">{countLabel(chatMessages.length, 'message')}</span>}
+          actions={<StatusBadge tone="info">{countLabel(chatMessages.length, 'message')}</StatusBadge>}
           description="Compact archive state. The full retained transcript stays in the chat history panel."
           id="chat"
           title="Chat evidence"
@@ -252,7 +253,7 @@ export function BookingRecordDetailSections({
         </AdminSection>
 
         <AdminSection
-          actions={<span className="pill pill-neutral">{countLabel(locationTrailRows.length, 'snapshot')}</span>}
+          actions={<StatusBadge tone="neutral">{countLabel(locationTrailRows.length, 'snapshot')}</StatusBadge>}
           description="Partner snapshots captured only for booking actions and live movement checks."
           id="location"
           title="Location evidence"
@@ -270,7 +271,7 @@ export function BookingRecordDetailSections({
                 </div>
                 <strong className="booking-settlement-ledger-value">{snapshot.coordinate}</strong>
                 <p className="muted">{snapshot.detail}</p>
-                <span className={`pill ${snapshot.badgeTone}`}>{snapshot.badge}</span>
+                <PillClassBadge pillClass={snapshot.badgeTone}>{snapshot.badge}</PillClassBadge>
               </div>
             ))}
             {locationTrailRows.length === 0 && (
@@ -291,7 +292,7 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
   return (
     <AdminSection
       actions={
-        <span className={`pill ${tone}`}>{status}</span>
+        <PillClassBadge pillClass={tone}>{status}</PillClassBadge>
       }
       description="Booking participation evidence only; marketplace supply visibility is tracked separately."
       id="participants"
@@ -315,9 +316,9 @@ function ParticipantBoundary({ boundary }: ParticipantBoundaryProps) {
     <>
       <div className="participant-list admin-mt-12">
         {boundary.pills.map((pill, index) => (
-          <span className={getParticipantBoundaryPillClass(index)} key={pill}>
+          <PillClassBadge pillClass={getParticipantBoundaryPillClass(index)} key={pill}>
             {pill}
-          </span>
+          </PillClassBadge>
         ))}
       </div>
       <p className="muted admin-mt-10">{boundary.helper}</p>
@@ -345,7 +346,7 @@ function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
           <span className="booking-settlement-ledger-label">{item.label}</span>
           <strong className="booking-settlement-ledger-value">{item.value}</strong>
           <p className="muted">{item.helper}</p>
-          <span className={`pill ${item.tone}`}>{item.status}</span>
+          <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge>
         </div>
       ))}
     </div>
@@ -361,7 +362,7 @@ function ParticipantLifecycleLedger({ rows }: ParticipantLifecycleLedgerProps) {
             <span className="booking-settlement-ledger-label">{row.stage}</span>
             <p className="muted">{row.scope}</p>
           </div>
-          <span className={`pill ${row.tone}`}>{row.status}</span>
+          <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
           <p>{row.evidence}</p>
           <p>{row.operatorUse}</p>
         </div>
@@ -390,17 +391,17 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
           />
           <div>
             <div className="filter-row">
-              <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-              <span className={`pill ${row.roleTone}`}>{row.role}</span>
-              <span className={`pill ${row.statusTone}`}>{row.status}</span>
+              <PillClassBadge pillClass={row.evidenceTone}>{row.evidenceLabel}</PillClassBadge>
+              <PillClassBadge pillClass={row.roleTone}>{row.role}</PillClassBadge>
+              <PillClassBadge pillClass={row.statusTone}>{row.status}</PillClassBadge>
             </div>
             <p className="muted admin-mt-6">{row.evidenceDetail}</p>
             <p className="muted">{row.decision}</p>
           </div>
           <div>
             <div className="filter-row">
-              <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
-              <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
+              <PillClassBadge pillClass={row.eligibilityTone}>{row.eligibilityLabel}</PillClassBadge>
+              <PillClassBadge pillClass={row.choiceTone}>{row.choiceState}</PillClassBadge>
             </div>
             <p className="muted admin-mt-6">{row.eligibilityReason}</p>
             <p className="muted">{row.operatorStatus}</p>
@@ -409,7 +410,7 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
           <div>
             <strong className="booking-settlement-ledger-value">{row.distance}</strong>
             <div className="filter-row admin-mt-6">
-              <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+              <PillClassBadge pillClass={row.distancePolicyTone}>{row.distancePolicyLabel}</PillClassBadge>
             </div>
             <p className="muted">{row.distancePolicyHelper}</p>
             <p className="muted">{row.timing}</p>
@@ -417,9 +418,9 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
           <div>
             <div className="filter-row">
               {row.facts.map((fact) => (
-                <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                <PillClassBadge pillClass={fact.tone} key={`${row.id}-${fact.label}`}>
                   {fact.label}: {fact.value}
-                </span>
+                </PillClassBadge>
               ))}
             </div>
             <p className="muted admin-mt-8">{row.operatorUse}</p>
@@ -438,7 +439,7 @@ function CashFeeSettlementPathSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
+        <PillClassBadge pillClass={cashFeeSettlementPath.tone}>{cashFeeSettlementPath.status}</PillClassBadge>
       }
       description="Cash settlement and wallet unblock evidence for this booking."
       title="Cash fee settlement path"
@@ -451,7 +452,7 @@ function CashFeeSettlementPathSection({
               <span className="booking-settlement-ledger-label">{row.lane}</span>
               <p className="muted">{row.scope}</p>
             </div>
-            <span className={`pill ${row.tone}`}>{row.status}</span>
+            <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
             <p>{row.evidence}</p>
             <p>{row.nextStep}</p>
           </div>
