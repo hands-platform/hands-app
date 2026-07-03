@@ -46,7 +46,13 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('Exit criteria: Push readiness check passes.');
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['command-copy-row']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+        'command-copy-row',
+      ]),
+    );
     expect(section.props.children[0].props.id).toBe('notifications');
   });
 

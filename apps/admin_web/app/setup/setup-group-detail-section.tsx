@@ -1,4 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminSection } from '../../components/admin-surface';
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
 
 export type SetupGroupDetail = {
@@ -31,17 +32,17 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
         const nextCommand = nextSetupCommand(group.id, group.commands);
 
         return (
-          <div className="card" id={group.id} key={group.id}>
-            <div className="ops-section-header">
-              <div>
-                <h2>{group.title}</h2>
-                <p className="muted">
-                  <strong>{group.phase}:</strong> {group.operatorAction}
-                </p>
-                <p className="muted">{group.purpose}</p>
-              </div>
-              <span className={group.statusClass}>{group.status}</span>
-            </div>
+          <AdminSection
+            actions={<span className={group.statusClass}>{group.status}</span>}
+            description={
+              <>
+                <strong>{group.phase}:</strong> {group.operatorAction} {group.purpose}
+              </>
+            }
+            id={group.id}
+            key={group.id}
+            title={group.title}
+          >
             <div className="detail-grid admin-mt-12">
               <div>
                 <h3>Environment values</h3>
@@ -106,7 +107,7 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                 <SetupCommandList groupId={group.id} commands={group.commands} />
               )}
             </div>
-          </div>
+          </AdminSection>
         );
       })}
     </section>
