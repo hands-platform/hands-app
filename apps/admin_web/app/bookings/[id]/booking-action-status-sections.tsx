@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -192,7 +192,7 @@ function BookingOutcomePostMatchDecision({
   const decision = outcomeReview.postMatchDecision;
 
   return (
-    <div className="card admin-card booking-outcome-decision-panel">
+    <AdminCard className="booking-outcome-decision-panel">
       <div className="booking-outcome-decision-copy">
         <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
         <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
@@ -218,7 +218,7 @@ function BookingOutcomePostMatchDecision({
       ) : (
         <span className="muted">This cancellation decision is already closed.</span>
       )}
-    </div>
+    </AdminCard>
   );
 }
 
@@ -382,7 +382,7 @@ function BookingOperatorNotesSection({
       </div>
       <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
-        <div className="card admin-card booking-action-note-panel">
+        <AdminCard className="booking-action-note-panel">
           <div className="booking-action-note-field">
             <span className="booking-action-note-label">Operator note</span>
             <BookingOperatorNotesEditor />
@@ -393,7 +393,7 @@ function BookingOperatorNotesSection({
               Add note
             </AdminFormControlButton>
           </div>
-        </div>
+        </AdminCard>
       </form>
     </AdminSection>
   );
@@ -417,7 +417,7 @@ function BookingCompletedCloseoutSection({
       {closeout.canSubmit ? (
         <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <div className="card admin-card booking-action-note-panel">
+          <AdminCard className="booking-action-note-panel">
             <div className="booking-action-note-field">
               <span className="booking-action-note-label">Closeout note</span>
               <AdminFormTextarea
@@ -433,7 +433,7 @@ function BookingCompletedCloseoutSection({
                 Reconcile booking
               </AdminFormControlButton>
             </div>
-          </div>
+          </AdminCard>
         </form>
       ) : (
         <p className="muted admin-mt-12">No manual closeout action is available for this booking.</p>

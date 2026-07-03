@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
@@ -77,6 +78,14 @@ function render(overrides: Partial<BookingActionStatusSectionsProps> = {}) {
 }
 
 describe('BookingActionStatusSections', () => {
+  it('uses shared Vuexy admin card surfaces for action panels', () => {
+    const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
+    expect(source).not.toContain('className="card admin-card booking-action-note-panel"');
+  });
+
   it('hides inactive action cards that only repeat not-available copy', () => {
     const markup = render();
 
