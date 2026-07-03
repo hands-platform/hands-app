@@ -325,7 +325,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
       <FinanceTablePanel
         grouped
-        description="Open each evidence record to confirm the reversal journal, payment clearing row, and immutable original settlement snapshot."
+        description="Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot."
         resultLabel={`${traceLinks.length} link(s)`}
         resultTone="info"
         title="Reversal evidence links"

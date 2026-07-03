@@ -321,6 +321,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Reversal tax REVERSED');
     expect(markup).toContain('Monthly closing closing-1');
     expect(markup).toContain('Reversal source seed-finance-smoke-reversal');
+    expect(markup).toContain(
+      'Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot.',
+    );
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
     expect(markup).toContain('Balanced');
