@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { MetricCard } from '../../components/metric-card';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -21,17 +22,13 @@ export function OperationsPolicyChangeImpactSection({
   sampledBookingCount,
 }: OperationsPolicyChangeImpactSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Policy change impact</h2>
-          <p className="muted">
-            Before changing a setting, use this view to see whether it only affects new bookings or also
-            changes live Partner visibility, participation checks, and operational review work.
-          </p>
-        </div>
-        <span className="pill pill-info">{sampledBookingCount} booking(s) sampled</span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Before changing a setting, use this view to see whether it only affects new bookings or also changes live Partner visibility, participation checks, and operational review work."
+      statusLabel={`${sampledBookingCount} booking(s) sampled`}
+      statusTone="info"
+      title="Policy change impact"
+    >
       <div className="grid admin-mt-12">
         {dashboard.metrics.map((metric) => (
           <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
@@ -79,6 +76,6 @@ export function OperationsPolicyChangeImpactSection({
           </div>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

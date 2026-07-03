@@ -1,5 +1,5 @@
 import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
-import { normalizedTextContent } from './operations-policy-section-test-utils';
+import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyEnforcementTraceSection', () => {
   it('renders enforced lanes with API and server ownership', () => {
@@ -18,7 +18,7 @@ describe('OperationsPolicyEnforcementTraceSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy enforcement trace');
     expect(rendered).toContain('1 enforced lane(s)');
     expect(rendered).toContain('Marketplace participation');

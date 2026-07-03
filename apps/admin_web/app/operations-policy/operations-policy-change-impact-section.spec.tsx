@@ -45,7 +45,7 @@ describe('OperationsPolicyChangeImpactSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Policy change impact');
     expect(rendered).toContain('5 booking(s) sampled');
     expect(rendered).toContain('First-pick response timer');
