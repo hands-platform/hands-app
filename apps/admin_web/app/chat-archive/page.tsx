@@ -16,6 +16,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -164,7 +165,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         </div>
       </section>
 
-      <section className="card admin-mb-16">
+      <AdminSection className="admin-mb-16" title="Chat evidence filters">
         <form className="form-grid" action="/chat-archive">
           <div className="calendar-field">
             <span>Search</span>
@@ -244,7 +245,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             </span>
           </div>
         </form>
-      </section>
+      </AdminSection>
 
       <section className="grid admin-mb-16">
         <MetricCard
@@ -276,20 +277,17 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         <MetricCard label="Latest message" value={summary.latestMessageAt} helper="Newest loaded message" />
       </section>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat integrity repair queue</h2>
-            <p className="muted">
-              Matched and completed bookings should have retained chat evidence. Use this audit queue to
-              find missing rooms or rooms where no message has been stored yet.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <Link className="button button-secondary" href="/bookings?view=chat-repair">
             <Wrench aria-hidden="true" size={16} />
             Booking chat repair
           </Link>
-        </div>
+        }
+        className="admin-mb-16"
+        description="Matched and completed bookings should have retained chat evidence. Use this audit queue to find missing rooms or rooms where no message has been stored yet."
+        title="Chat integrity repair queue"
+      >
         <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Repair rows</span>
@@ -382,20 +380,15 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             No chat repair row matches this filter.
           </p>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat evidence index</h2>
-            <p className="muted">
-              One row per retained booking chat room. The list loads a bounded message preview; open the
-              booking, customer, or Partner detail for full operational context before making an admin
-              decision.
-            </p>
-          </div>
-          <span className="pill pill-info">{rooms.length} row(s)</span>
-        </div>
+      <AdminSection
+        className="admin-mb-16"
+        description="One row per retained booking chat room. The list loads a bounded message preview; open the booking, customer, or Partner detail for full operational context before making an admin decision."
+        statusLabel={`${rooms.length} row(s)`}
+        statusTone="info"
+        title="Chat evidence index"
+      >
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={
@@ -486,19 +479,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={totalPages}
         />
-      </section>
+      </AdminSection>
 
-      <section className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat window previews</h2>
-            <p className="muted">
-              Open a preview here for quick audit triage. Full retained chat stays available from the
-              connected booking, customer, and Partner detail pages.
-            </p>
-          </div>
-          <span className="pill pill-info">Admin retained</span>
-        </div>
+      <AdminSection
+        description="Open a preview here for quick audit triage. Full retained chat stays available from the connected booking, customer, and Partner detail pages."
+        statusLabel="Admin retained"
+        statusTone="info"
+        title="Chat window previews"
+      >
         <div className="setup-stage-list admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
             <details
@@ -530,7 +518,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             </details>
           ))}
         </div>
-      </section>
+      </AdminSection>
     </div>
   );
 }

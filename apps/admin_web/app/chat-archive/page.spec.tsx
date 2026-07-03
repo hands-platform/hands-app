@@ -56,6 +56,9 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('800 customer / 434 Partner');
     expect(markup).toContain('Chat window previews');
     expect(markup).toContain('2 shown / 42 total');
+    expect(markup).toContain('admin-section');
+    expect(markup).toContain('Chat integrity repair queue');
+    expect(markup).toContain('Chat evidence index');
   });
 
   it('trusts server sender filtering when the bounded preview does not include that sender', async () => {
