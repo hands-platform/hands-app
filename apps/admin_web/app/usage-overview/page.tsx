@@ -26,6 +26,11 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
+  formatCurrencyAmount as money,
+  formatPercentLabel,
+  formatWholeNumber as formatNumber,
+} from '../../lib/admin-format';
+import {
   buildUsageActionPriorities,
   emptyUsageOverview,
   normalizeUsageOverviewRange,
@@ -1050,18 +1055,6 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
-}
-
-function money(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    currency: 'VND',
-    maximumFractionDigits: 0,
-    style: 'currency',
-  }).format(value);
-}
-
 function paymentMethodLabel(value: string) {
   return value
     .toLowerCase()
@@ -1080,5 +1073,5 @@ function platformLabel(value: string) {
 
 function formatPercent(numerator: number, denominator: number) {
   if (denominator <= 0) return '0%';
-  return `${formatNumber(Math.round((numerator / denominator) * 100))}%`;
+  return formatPercentLabel(Math.round((numerator / denominator) * 100));
 }

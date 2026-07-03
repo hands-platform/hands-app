@@ -1,5 +1,21 @@
 const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
+export function formatWholeNumber(value: number) {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+}
+
+export function formatCurrencyAmount(value: number, currency = 'VND') {
+  return new Intl.NumberFormat('en-US', {
+    currency,
+    maximumFractionDigits: 0,
+    style: 'currency',
+  }).format(value);
+}
+
+export function formatPercentLabel(value: number) {
+  return `${formatWholeNumber(value)}%`;
+}
+
 export function formatMoney(amount?: number | null, currency = 'VND', fallback = 'Not set') {
   if (amount === undefined || amount === null) {
     return fallback;

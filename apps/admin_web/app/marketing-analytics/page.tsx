@@ -30,6 +30,11 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
+  formatCurrencyAmount as formatCurrency,
+  formatPercentLabel as formatPercent,
+  formatWholeNumber as formatNumber,
+} from '../../lib/admin-format';
+import {
   MARKETING_ANALYTICS_DIMENSION_PAGE_SIZE,
   marketingAnalyticsDimensionApiPath,
   marketingAnalyticsDimensionPageHref,
@@ -785,24 +790,8 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
-}
-
 function formatDecimal(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    currency: 'VND',
-    maximumFractionDigits: 0,
-    style: 'currency',
-  }).format(value);
-}
-
-function formatPercent(value: number) {
-  return `${formatNumber(value)}%`;
 }
 
 function formatNullableCurrency(value: number | null) {
