@@ -1,4 +1,5 @@
 import { PartnerDetailFastOverviewSection } from './partner-detail-fast-overview-section';
+import { readFileSync } from 'node:fs';
 
 describe('PartnerDetailFastOverviewSection', () => {
   it('renders the fast overview with Vuexy KPI cards and shared admin panels', () => {
@@ -44,6 +45,13 @@ describe('PartnerDetailFastOverviewSection', () => {
         (className) => className.split(' ').includes('card') && className.includes('partner-fast-overview-panel'),
       ),
     ).toHaveLength(4);
+  });
+
+  it('uses shared badge link atoms for next action pill links', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<Link className="pill pill-info" href={link.href} key={link.href}>');
   });
 });
 

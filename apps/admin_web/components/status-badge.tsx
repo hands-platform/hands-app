@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 const STATUS_BADGE_CLASS_BY_TONE = {
@@ -22,6 +23,16 @@ type PillClassBadgeProps = {
   readonly title?: string;
 };
 
+type StatusBadgeLinkProps = StatusBadgeProps & {
+  readonly ariaLabel?: string;
+  readonly href: string;
+};
+
+type PillClassBadgeLinkProps = PillClassBadgeProps & {
+  readonly ariaLabel?: string;
+  readonly href: string;
+};
+
 export function statusBadgeClassName(tone: StatusBadgeTone) {
   return STATUS_BADGE_CLASS_BY_TONE[tone];
 }
@@ -43,5 +54,27 @@ export function PillClassBadge({ children, pillClass, title }: PillClassBadgePro
     <span className={pillClassBadgeClassName(pillClass)} title={title}>
       {children}
     </span>
+  );
+}
+
+export function StatusBadgeLink({ ariaLabel, children, href, title, tone }: StatusBadgeLinkProps) {
+  return (
+    <Link aria-label={ariaLabel} className={statusBadgeClassName(tone)} href={href} title={title}>
+      {children}
+    </Link>
+  );
+}
+
+export function PillClassBadgeLink({
+  ariaLabel,
+  children,
+  href,
+  pillClass,
+  title,
+}: PillClassBadgeLinkProps) {
+  return (
+    <Link aria-label={ariaLabel} className={pillClassBadgeClassName(pillClass)} href={href} title={title}>
+      {children}
+    </Link>
   );
 }

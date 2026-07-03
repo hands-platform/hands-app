@@ -41,6 +41,15 @@ describe('PartnerDetailConnectedRecordsSection', () => {
     );
     expect(PARTNER_CONNECTED_RECORDS_DESCRIPTION).not.toContain('bank, tax');
   });
+
+  it('uses shared badge atoms for link count and record open links', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('<span className="pill pill-info">{links.length} links</span>');
+    expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
+  });
 });
 
 function buildLinks(): PartnerDetailConnectedRecordLink[] {

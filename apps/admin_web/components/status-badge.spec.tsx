@@ -1,4 +1,11 @@
-import { PillClassBadge, StatusBadge, pillClassBadgeClassName, statusBadgeClassName } from './status-badge';
+import {
+  PillClassBadge,
+  PillClassBadgeLink,
+  StatusBadge,
+  StatusBadgeLink,
+  pillClassBadgeClassName,
+  statusBadgeClassName,
+} from './status-badge';
 
 describe('StatusBadge', () => {
   it('maps operational tones to existing pill classes', () => {
@@ -30,6 +37,38 @@ describe('StatusBadge', () => {
     expect(badge.props).toMatchObject({
       className: 'pill pill-danger',
       children: 'High debt',
+    });
+  });
+
+  it('renders tone-based badge links for Vuexy pill navigation', () => {
+    const link = StatusBadgeLink({
+      children: 'Open',
+      href: '/partners/partner-1',
+      title: 'Open partner record',
+      tone: 'info',
+    });
+
+    expect(link.props).toMatchObject({
+      className: 'pill pill-info',
+      href: '/partners/partner-1',
+      title: 'Open partner record',
+      children: 'Open',
+    });
+  });
+
+  it('renders existing pill class badge links during gradual migration', () => {
+    const link = PillClassBadgeLink({
+      ariaLabel: 'Open blocked record',
+      children: 'Open',
+      href: '/bookings?view=blocked-create',
+      pillClass: 'pill-warn',
+    });
+
+    expect(link.props).toMatchObject({
+      'aria-label': 'Open blocked record',
+      className: 'pill pill-warn',
+      href: '/bookings?view=blocked-create',
+      children: 'Open',
     });
   });
 });

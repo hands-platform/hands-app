@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
+import { StatusBadgeLink } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerDetailFastOverviewCard = {
@@ -84,9 +85,9 @@ export function PartnerDetailFastOverviewSection({
           ))}
           <div className="participant-list">
             {nextOperatorActionLinks.map((link) => (
-              <Link className="pill pill-info" href={link.href} key={link.href}>
+              <StatusBadgeLink href={link.href} key={link.href} tone="info">
                 {link.label}
-              </Link>
+              </StatusBadgeLink>
             ))}
           </div>
         </AdminSection>

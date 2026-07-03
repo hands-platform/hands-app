@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminCard } from '../../../components/admin-surface';
+import { PillClassBadgeLink, StatusBadge } from '../../../components/status-badge';
 
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
@@ -27,7 +26,7 @@ export function PartnerDetailConnectedRecordsSection({
           <h2>{title}</h2>
           <p className="muted">{description}</p>
         </div>
-        <span className="pill pill-info">{links.length} links</span>
+        <StatusBadge tone="info">{links.length} links</StatusBadge>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {links.map((record) => (
@@ -35,9 +34,9 @@ export function PartnerDetailConnectedRecordsSection({
             <span>{record.label}</span>
             <strong>{record.value}</strong>
             <small>{record.detail}</small>
-            <Link className={`pill ${record.tone}`} href={record.href}>
+            <PillClassBadgeLink href={record.href} pillClass={record.tone}>
               Open
-            </Link>
+            </PillClassBadgeLink>
           </div>
         ))}
       </div>
