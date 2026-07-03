@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -29,16 +30,12 @@ export function BookingMonitorNextActionsSection({
   }
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Next operator actions</h2>
-          <p className="muted">
-            Flagged bookings that need operator review now; normal active bookings stay in the table.
-          </p>
-        </div>
-        <span className="pill pill-warn">{nextActions.length} action(s)</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-warn">{nextActions.length} action(s)</span>}
+      className="admin-mt-16 booking-monitor-next-actions-card"
+      description="Flagged bookings that need operator review now; normal active bookings stay in the table."
+      title="Next operator actions"
+    >
       <div className="participant-list admin-mt-12">
         {nextActions.map((item) => (
           <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`} title={item.detail}>
@@ -73,7 +70,7 @@ export function BookingMonitorNextActionsSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }
 

@@ -1,4 +1,4 @@
-import { headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 
 describe('BookingMonitorCommandCenterSection', () => {
@@ -39,5 +39,6 @@ describe('BookingMonitorCommandCenterSection', () => {
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/bookings?view=no-supply', '/bookings?view=payment']),
     );
+    expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-command-center-card');
   });
 });

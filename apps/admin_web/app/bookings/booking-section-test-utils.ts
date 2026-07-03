@@ -125,6 +125,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminFormSelect',
       'AdminFormTextarea',
       'AdminPersonCell',
+      'AdminSection',
       'MetricCard',
     ].includes(component.name)
   ) {

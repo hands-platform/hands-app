@@ -1,5 +1,5 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
-import { buttonsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
+import { buttonsIn, classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -52,6 +52,7 @@ describe('BookingMonitorBlockedCreateSection', () => {
         '/audit-log?query=audit_123456789',
       ]),
     );
+    expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-blocked-create-card');
   });
 
   it('wires clear and gate triage actions', () => {

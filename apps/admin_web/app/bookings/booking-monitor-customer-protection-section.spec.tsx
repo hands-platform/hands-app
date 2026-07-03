@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
 
 describe('BookingMonitorCustomerProtectionSection', () => {
@@ -46,6 +46,9 @@ describe('BookingMonitorCustomerProtectionSection', () => {
       expect.arrayContaining(['/bookings?view=no-show']),
     );
     expect(hrefsIn(section)).not.toContain('/bookings?view=cash-debt');
+    expect(classNamesIn(section)).toContain(
+      'card admin-section admin-mt-16 booking-monitor-customer-protection-card',
+    );
   });
 
   it('returns no section when all closeout lanes are empty', () => {

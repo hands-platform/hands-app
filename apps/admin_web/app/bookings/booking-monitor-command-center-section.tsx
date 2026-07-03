@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
 
 export type BookingMonitorCommandCenterLane = {
@@ -16,17 +17,12 @@ type BookingMonitorCommandCenterSectionProps = {
 
 export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorCommandCenterSectionProps) {
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking command center</h2>
-          <p className="muted">
-            One-glance control for dispatch pressure, customer protection, payment closeout, and handoff
-            quality.
-          </p>
-        </div>
-        <span className="pill pill-info">Operator first view</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">Operator first view</span>}
+      className="admin-mt-16 booking-monitor-command-center-card"
+      description="One-glance control for dispatch pressure, customer protection, payment closeout, and handoff quality."
+      title="Booking command center"
+    >
       <div className="grid admin-mt-12">
         {lanes.map((lane) => (
           <Link className="card" href={lane.href} key={lane.title}>
@@ -44,6 +40,6 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

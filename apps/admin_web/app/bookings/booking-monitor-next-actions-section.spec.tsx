@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 
 describe('BookingMonitorNextActionsSection', () => {
@@ -55,6 +55,7 @@ describe('BookingMonitorNextActionsSection', () => {
     expect(rendered).toContain('Customer A / Partner B');
     expect(rendered).toContain('OPEN_MATCHING');
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-next-actions-card');
   });
 
   it('returns no section when no action is waiting', () => {

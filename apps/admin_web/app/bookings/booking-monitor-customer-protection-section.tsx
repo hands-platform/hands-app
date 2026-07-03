@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
@@ -31,16 +32,16 @@ export function BookingMonitorCustomerProtectionSection({
   }
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Customer protection closeout board</h2>
-          <p className="muted">Only unresolved customer money or evidence lanes are shown here.</p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${hasOpenCloseout ? 'pill-warn' : 'pill-success'}`}>
           {openCloseoutCount} open closeout
         </span>
-      </div>
+      }
+      className="admin-mt-16 booking-monitor-customer-protection-card"
+      description="Only unresolved customer money or evidence lanes are shown here."
+      title="Customer protection closeout board"
+    >
       <div className="ops-task-grid admin-mt-14">
         {visibleLanes.map((lane) => (
           <Link className="ops-task-card" href={lane.href} key={lane.title}>
@@ -65,6 +66,6 @@ export function BookingMonitorCustomerProtectionSection({
           </Link>
         ))}
       </div>
-    </section>
+    </AdminSection>
   );
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Filter, ScrollText, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormSelect } from '../../components/admin-form-controls';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass } from './booking-command-display';
@@ -55,20 +56,17 @@ export function BookingMonitorBlockedCreateSection({
   }));
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Blocked booking attempts</h2>
-          <p className="muted">
-            Booking create requests stopped before payment authorization and matching. These records are
-            evidence for support follow-up, not customer or Partner priority decisions.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="button button-secondary" href="/audit-log?query=booking.create.rejected">
           <ScrollText aria-hidden="true" size={16} />
           Open audit log
         </Link>
-      </div>
+      }
+      className="admin-mt-16 booking-monitor-blocked-create-card"
+      description="Booking create requests stopped before payment authorization and matching. These records are evidence for support follow-up, not customer or Partner priority decisions."
+      title="Blocked booking attempts"
+    >
       <div className="filter-grid admin-mt-14">
         <AdminFormSelect
           label="Create gate filter"
@@ -216,6 +214,6 @@ export function BookingMonitorBlockedCreateSection({
           )}
         </>
       )}
-    </section>
+    </AdminSection>
   );
 }
