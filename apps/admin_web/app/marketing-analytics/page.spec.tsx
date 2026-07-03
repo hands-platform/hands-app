@@ -63,6 +63,10 @@ describe('MarketingAnalyticsPage', () => {
     const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('card admin-section usage-overview-filter-panel marketing-analytics-filter-panel');
+    expect(markup).toContain('card admin-section marketing-spend-panel');
+    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel marketing-analytics-filter-panel');
+    expect(markup).not.toContain('card admin-filter-panel marketing-spend-panel');
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-funnel-card');
     expect(markup).toContain('admin-section-body marketing-funnel-list');
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-insight-card');

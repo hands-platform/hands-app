@@ -262,17 +262,12 @@ export default async function MarketingAnalyticsPage({
         </div>
       </section>
 
-      <section className="card admin-filter-panel usage-overview-filter-panel marketing-analytics-filter-panel">
-        <div className="admin-filter-panel-header">
-          <div>
-            <h2>Marketing filters</h2>
-            <p className="muted">
-              Bounded ranges and aggregate dimensions only. Phone numbers, exact location points, and ad
-              identifiers are not exposed here.
-            </p>
-          </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
-        </div>
+      <AdminSection
+        actions={<span className="pill pill-info">{overview.rangeLabel}</span>}
+        className="usage-overview-filter-panel marketing-analytics-filter-panel"
+        description="Bounded ranges and aggregate dimensions only. Phone numbers, exact location points, and ad identifiers are not exposed here."
+        title="Marketing filters"
+      >
         <FilterButtons
           label="Range"
           options={marketingAnalyticsRangeOptions}
@@ -325,7 +320,7 @@ export default async function MarketingAnalyticsPage({
             Apply campaign
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminSection>
 
       <ManualSpendForm filters={filters} />
 
@@ -410,17 +405,12 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
   const defaultSpendDate = new Date().toISOString().slice(0, 10);
 
   return (
-    <section className="card admin-filter-panel marketing-spend-panel">
-      <div className="admin-filter-panel-header">
-        <div>
-          <h2>Manual daily spend</h2>
-          <p className="muted">
-            Enter bounded daily spend by source, platform, region, and campaign. This keeps ad-network
-            API costs out of the MVP while still enabling CPI, CPA, and ROAS checks.
-          </p>
-        </div>
-        <span className="pill pill-warning">Manual input</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-warning">Manual input</span>}
+      className="marketing-spend-panel"
+      description="Enter bounded daily spend by source, platform, region, and campaign. This keeps ad-network API costs out of the MVP while still enabling CPI, CPA, and ROAS checks."
+      title="Manual daily spend"
+    >
       <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
         <div className="calendar-field">
           <span>Date</span>
@@ -498,7 +488,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           Save spend
         </AdminFormControlButton>
       </form>
-    </section>
+    </AdminSection>
   );
 }
 
