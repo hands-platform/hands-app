@@ -291,6 +291,8 @@ describe('finance detail pages', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-settlement-reversals/reversal-1', null);
     expect(markup).toContain('Settlement Reversal Detail');
     expect(markup).toContain('Refund after payout evidence');
+    expect(markup).toContain('Reversal ID reversal');
+    expect(markup).not.toContain('Reversal reversal ·');
     expect(markup).toContain('Settlement reversal operating path');
     expect(markup).toContain('Original settlement');
     expect(markup).toContain('Reversal impact');

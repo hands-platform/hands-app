@@ -87,7 +87,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       title="Settlement Reversal Detail"
     >
       <FinanceTablePanel
-        description={`Reversal ${shortId(reversal.id)} · Occurred ${formatDateTime(reversal.occurredAt)} · Period ${reversal.monthlyPeriod}`}
+        description={`Reversal ID ${shortId(reversal.id)} · Occurred ${formatDateTime(reversal.occurredAt)} · Period ${reversal.monthlyPeriod}`}
         resultLabel={evidenceState.label}
         resultTone={evidenceState.tone}
         title="Refund after payout evidence"
