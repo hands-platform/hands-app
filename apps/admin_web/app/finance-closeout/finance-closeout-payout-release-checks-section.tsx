@@ -19,7 +19,7 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
         </Link>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll"
+      className="admin-card-scroll vuexy-booking-table-card vuexy-booking-table-group"
       description="Transfer refs, earnings, tax logs, and open holds should be checked before a batch moves to paid. Use this as the final finance handoff list."
       title="Payout release checks"
     >
