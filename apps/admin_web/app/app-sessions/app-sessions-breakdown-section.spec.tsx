@@ -26,10 +26,10 @@ describe('AppSessionsBreakdownSection', () => {
     expect(rendered).toContain('2 live, 1 customer, 3 partner');
     expect(classNames(section)).toEqual(
       expect.arrayContaining([
-        'card admin-section',
+        'card admin-section vuexy-booking-table-card vuexy-booking-table-group',
         'ops-section-header admin-section-header',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
       ]),
     );
   });

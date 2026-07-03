@@ -41,7 +41,7 @@ export function AppSessionsBreakdownSection({
 }: AppSessionsBreakdownSectionProps) {
   return (
     <section className="detail-grid admin-mb-16">
-      <AdminSection title="Role split">
+      <AdminSection className="vuexy-booking-table-card vuexy-booking-table-group" title="Role split">
         <AdminTableScroll>
           <AdminDataTable emptyMessage={null} headers={APP_SESSION_ROLE_HEADERS} rowCount={roleRows.length}>
             {roleRows.map((row) => (
@@ -56,7 +56,7 @@ export function AppSessionsBreakdownSection({
         </AdminTableScroll>
       </AdminSection>
 
-      <AdminSection title="Platform and version">
+      <AdminSection className="vuexy-booking-table-card vuexy-booking-table-group" title="Platform and version">
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
