@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { headingTextsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 
@@ -20,7 +22,8 @@ describe('BookingMonitorLiveStatusSection', () => {
     expect(rendered).toContain('Realtime live');
     expect(rendered).toContain('Socket push updates active');
     expect(rendered).toContain('Last refresh 09:45');
-    expect(headingTextsIn(section)).toEqual([]);
+    expect(headingTextsIn(section)).toEqual(['3', '1']);
+    expect(renderToStaticMarkup(section).match(/class="metric-card"/g) ?? []).toHaveLength(2);
   });
 
   it('renders pending refresh metadata before mount', () => {

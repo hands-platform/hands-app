@@ -124,6 +124,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminFormControlButton',
       'AdminFormSelect',
       'AdminFormTextarea',
+      'AdminKpiCard',
       'AdminPersonCell',
       'AdminSection',
       'MetricCard',

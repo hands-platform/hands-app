@@ -1,4 +1,5 @@
 import type { BookingMonitorSummaryRow } from './booking-monitor-summary';
+import { AdminKpiCard } from '../../components/admin-surface';
 import {
   bookingMonitorRealtimeLabel,
   type BookingMonitorRealtimeState,
@@ -26,10 +27,7 @@ export function BookingMonitorLiveStatusSection({
     <>
       <section className="grid">
         {summary.map(([label, value]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <strong className="admin-summary-card-value">{value}</strong>
-          </div>
+          <AdminKpiCard helper="Booking monitor summary" key={label} label={label} value={value} />
         ))}
       </section>
 
