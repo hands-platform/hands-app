@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { InfoRow } from '../../components/info-row';
 
 export type AppSessionRoleRow = {
@@ -40,8 +41,7 @@ export function AppSessionsBreakdownSection({
 }: AppSessionsBreakdownSectionProps) {
   return (
     <section className="detail-grid admin-mb-16">
-      <div className="card">
-        <h2>Role split</h2>
+      <AdminSection title="Role split">
         <AdminTableScroll>
           <AdminDataTable emptyMessage={null} headers={APP_SESSION_ROLE_HEADERS} rowCount={roleRows.length}>
             {roleRows.map((row) => (
@@ -54,10 +54,9 @@ export function AppSessionsBreakdownSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </div>
+      </AdminSection>
 
-      <div className="card">
-        <h2>Platform and version</h2>
+      <AdminSection title="Platform and version">
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
@@ -82,7 +81,7 @@ export function AppSessionsBreakdownSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </div>
+      </AdminSection>
     </section>
   );
 }

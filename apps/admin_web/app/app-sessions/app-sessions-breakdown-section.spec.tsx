@@ -24,7 +24,14 @@ describe('AppSessionsBreakdownSection', () => {
     expect(rendered).toContain('4 session(s)');
     expect(rendered).toContain('Version 1.8.0');
     expect(rendered).toContain('2 live, 1 customer, 3 partner');
-    expect(classNames(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNames(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+      ]),
+    );
   });
 
   it('limits visible version rows to the first four versions', () => {
