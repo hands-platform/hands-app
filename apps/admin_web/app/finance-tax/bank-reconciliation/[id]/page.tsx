@@ -73,6 +73,7 @@ export default async function BankReconciliationDetailPage({
     return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
   }, 0);
   const remainingAmount = Math.max(0, Math.abs(transaction.amount) - matchedAmount);
+  const suggestedMatchAmount = remainingAmount || Math.abs(transaction.amount);
   const canCreateManualMatch = canCreateBankReconciliationMatch(transaction.status);
   const paymentClearingCandidates = canCreateManualMatch
     ? await adminGet<AdminBookingPaymentClearingEntry[]>(
@@ -82,9 +83,9 @@ export default async function BankReconciliationDetailPage({
     : [];
   const paymentClearingOptions = paymentClearingCandidates
     .filter((entry) => entry.currency === transaction.currency)
-    .sort(paymentClearingCandidateComparator(remainingAmount || Math.abs(transaction.amount)))
+    .sort(paymentClearingCandidateComparator(suggestedMatchAmount))
     .map((entry) => ({
-      label: paymentClearingCandidateLabel(entry, remainingAmount || Math.abs(transaction.amount)),
+      label: paymentClearingCandidateLabel(entry, suggestedMatchAmount),
       value: entry.id,
     }));
 
@@ -226,57 +227,73 @@ export default async function BankReconciliationDetailPage({
           </p>
         ) : null}
         {canCreateManualMatch ? (
-          <>
-            <form action={createBankReconciliationMatchAction} className="form-grid compact-form admin-mt-16">
-              <input name="bankTransactionId" type="hidden" value={transaction.id} />
-              <input name="sourceType" type="hidden" value="payment-clearing" />
-              <AdminFormSelect
-                disabled={!paymentClearingOptions.length}
-                label="Payment clearing candidate"
-                labelVisibility="visible"
-                name="sourceId"
-                options={
-                  paymentClearingOptions.length
-                    ? paymentClearingOptions
-                    : [{ label: 'No open payment clearing candidate for this currency', value: '' }]
-                }
-                required
-              />
-              <AdminFormInput
-                defaultValue={remainingAmount || Math.abs(transaction.amount)}
-                label="Match amount"
-                labelVisibility="visible"
-                min={1}
-                name="amount"
-                required
-                step={1}
-                type="number"
-              />
-              <AdminFormInput
-                defaultValue={transaction.currency}
-                label="Currency"
-                labelVisibility="visible"
-                name="currency"
-                required
-              />
-              <AdminFormInput
-                label="Approving admin ID"
-                labelVisibility="visible"
-                name="approvalAdminId"
-                placeholder="Finance approver admin id"
-                required
-              />
-              <AdminFormTextarea
-                className="admin-grid-span-2"
-                label="Operator notes"
-                labelVisibility="visible"
-                maxLength={500}
-                name="notes"
-                placeholder="Why this bank row matches the selected payment clearing evidence"
-                rows={3}
-              />
-              <AdminFormControlButton disabled={!paymentClearingOptions.length}>Create match</AdminFormControlButton>
-            </form>
+          <div className="finance-reconciliation-match-board admin-mt-16">
+            <div className="finance-reconciliation-match-primary">
+              <div className="finance-reconciliation-match-heading">
+                <div>
+                  <strong>Recommended payment clearing match</strong>
+                  <span>Use this first when the bank row belongs to a customer payment or booking settlement clearing entry.</span>
+                </div>
+                <span className={`pill ${paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}`}>
+                  {paymentClearingOptions.length} candidate(s)
+                </span>
+              </div>
+              <form action={createBankReconciliationMatchAction} className="form-grid compact-form">
+                <input name="bankTransactionId" type="hidden" value={transaction.id} />
+                <input name="sourceType" type="hidden" value="payment-clearing" />
+                <AdminFormSelect
+                  disabled={!paymentClearingOptions.length}
+                  label="Payment clearing candidate"
+                  labelVisibility="visible"
+                  name="sourceId"
+                  options={
+                    paymentClearingOptions.length
+                      ? paymentClearingOptions
+                      : [{ label: 'No open payment clearing candidate for this currency', value: '' }]
+                  }
+                  required
+                />
+                <AdminFormInput
+                  defaultValue={suggestedMatchAmount}
+                  label="Match amount"
+                  labelVisibility="visible"
+                  min={1}
+                  name="amount"
+                  required
+                  step={1}
+                  type="number"
+                />
+                <AdminFormInput
+                  defaultValue={transaction.currency}
+                  label="Currency"
+                  labelVisibility="visible"
+                  name="currency"
+                  required
+                />
+                <AdminFormInput
+                  label="Approving admin ID"
+                  labelVisibility="visible"
+                  name="approvalAdminId"
+                  placeholder="Finance approver admin id"
+                  required
+                />
+                <AdminFormTextarea
+                  className="admin-grid-span-2"
+                  label="Operator notes"
+                  labelVisibility="visible"
+                  maxLength={500}
+                  name="notes"
+                  placeholder="Why this bank row matches the selected payment clearing evidence"
+                  rows={3}
+                />
+                <div className="finance-reconciliation-form-actions admin-grid-span-2">
+                  <AdminFormControlButton disabled={!paymentClearingOptions.length}>Create match</AdminFormControlButton>
+                  <span className="muted">
+                    Suggested amount: {formatMoney(suggestedMatchAmount, transaction.currency)}
+                  </span>
+                </div>
+              </form>
+            </div>
 
             <details className="finance-reconciliation-import-disclosure admin-mt-16">
               <summary>
@@ -299,7 +316,7 @@ export default async function BankReconciliationDetailPage({
                   required
                 />
                 <AdminFormInput
-                  defaultValue={remainingAmount || Math.abs(transaction.amount)}
+                  defaultValue={suggestedMatchAmount}
                   label="Match amount"
                   labelVisibility="visible"
                   min={1}
@@ -331,10 +348,13 @@ export default async function BankReconciliationDetailPage({
                   placeholder="Why this bank row matches the selected finance source"
                   rows={3}
                 />
-                <AdminFormControlButton>Create advanced match</AdminFormControlButton>
+                <div className="finance-reconciliation-form-actions admin-grid-span-2">
+                  <AdminFormControlButton>Create advanced match</AdminFormControlButton>
+                  <span className="muted">Requires explicit source id and approver evidence.</span>
+                </div>
               </form>
             </details>
-          </>
+          </div>
         ) : (
           <p className="muted admin-mt-8">
             This bank transaction is already fully reconciled. Reverse an existing match before creating a new one.

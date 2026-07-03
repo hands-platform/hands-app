@@ -769,6 +769,8 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-payment-clearing?range=30d&take=50&review=open', []);
     expect(markup).toContain('Manual reconciliation match');
+    expect(markup).toContain('finance-reconciliation-match-board');
+    expect(markup).toContain('Recommended payment clearing match');
     expect(markup).toContain('Payment clearing candidate');
     expect(markup).toContain('Create explicit match');
     expect(markup).toContain('Pending journal evidence');
@@ -779,6 +781,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('type="hidden" name="sourceType" value="payment-clearing"');
     expect(markup).toContain('name="sourceId"');
     expect(markup).toContain('Create match');
+    expect(markup).toContain('Suggested amount: 650.000 VND');
+    expect(markup).toContain('Requires explicit source id and approver evidence.');
     expect(markup).not.toContain('This bank transaction is already fully reconciled.');
   });
 

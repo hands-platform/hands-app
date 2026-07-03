@@ -2384,6 +2384,11 @@ a.action-button-card:hover {
   justify-self: start;
 }
 
+.admin-grid-span-2,
+.form-grid-wide {
+  grid-column: 1 / -1;
+}
+
 .partner-report-command-grid {
   align-items: start;
   background: var(--admin-surface-raised);
@@ -8841,6 +8846,56 @@ a.action-button-card:hover {
   font-weight: 500;
   line-height: 17px;
   text-align: right;
+}
+
+.finance-reconciliation-match-board {
+  display: grid;
+  gap: 14px;
+}
+
+.finance-reconciliation-match-primary {
+  background: rgb(var(--admin-main-channel) / 0.045);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.finance-reconciliation-match-heading,
+.finance-reconciliation-form-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.finance-reconciliation-match-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.finance-reconciliation-match-heading strong {
+  color: var(--admin-text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.finance-reconciliation-match-heading span:not(.pill),
+.finance-reconciliation-form-actions .muted {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
+}
+
+.finance-reconciliation-form-actions {
+  flex-wrap: wrap;
+}
+
+.finance-reconciliation-form-actions .button {
+  min-width: 156px;
 }
 
 @media (max-width: 1180px) {
