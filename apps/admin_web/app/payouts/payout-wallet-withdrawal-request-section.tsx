@@ -8,6 +8,7 @@ import {
   AdminFormDateTime,
   AdminFormInput,
 } from '../../components/admin-form-controls';
+import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
 import type {
@@ -67,11 +68,11 @@ export function PayoutWalletWithdrawalRequestSection({
           label="Bank transfer pending"
           tone="info"
         />
-        <div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">
+        <AdminCard className="payout-wallet-withdrawal-summary-card is-audit">
           <span>Lock released</span>
           <strong>{summary.lockReleased}</strong>
           <small>Audit evidence</small>
-        </div>
+        </AdminCard>
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -142,9 +143,9 @@ function WithdrawalSummaryStatusCard({
   readonly tone?: 'info' | 'neutral' | 'warning';
 }) {
   return (
-    <Link
+    <AdminLinkCard
       className={joinClassNames(
-        'card admin-card payout-wallet-withdrawal-summary-card',
+        'payout-wallet-withdrawal-summary-card',
         `is-${tone}`,
         active ? 'is-active' : undefined,
       )}
@@ -153,7 +154,7 @@ function WithdrawalSummaryStatusCard({
       <span>{label}</span>
       <strong>{count}</strong>
       <small>{active ? 'Selected' : 'Open filter'}</small>
-    </Link>
+    </AdminLinkCard>
   );
 }
 

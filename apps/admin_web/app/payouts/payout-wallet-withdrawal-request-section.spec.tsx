@@ -252,6 +252,10 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
         'card admin-card payout-wallet-withdrawal-summary-card is-audit',
       ]),
     );
+    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminLinkCard');
+    expect(sectionSource).not.toContain('<div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">');
+    expect(sectionSource).not.toContain("'card admin-card payout-wallet-withdrawal-summary-card'");
   });
 
   it('uses the shared empty-state atom for no-row messaging', () => {
