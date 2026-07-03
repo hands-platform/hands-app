@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerDetailFastOverviewCard = {
@@ -69,14 +70,7 @@ export function PartnerDetailFastOverviewSection({
 
       <section className="grid admin-mb-16">
         {overviewCards.map((card) => (
-          <div className="card" key={card.label}>
-            <span className={`pill ${card.tone}`}>{card.label}</span>
-            <h2>{card.value}</h2>
-            <p className="muted">{card.detail}</p>
-            <Link className="text-link" href={card.href}>
-              Open section
-            </Link>
-          </div>
+          <AdminKpiCard helper={card.detail} href={card.href} key={card.label} label={card.label} value={card.value} />
         ))}
       </section>
 
@@ -85,8 +79,7 @@ export function PartnerDetailFastOverviewSection({
         <OverviewDetailCard title="Booking command" rows={bookingCommandRows} />
         <OverviewDetailCard title="Payout readiness" rows={payoutReadinessRows} />
 
-        <div className="card">
-          <h2>Next operator action</h2>
+        <AdminSection className="partner-fast-overview-panel" title="Next operator action">
           {nextOperatorActionNotes.map((note) => (
             <p className="muted" key={note}>
               {marketplaceDisplayText(note)}
@@ -99,7 +92,7 @@ export function PartnerDetailFastOverviewSection({
               </Link>
             ))}
           </div>
-        </div>
+        </AdminSection>
       </section>
     </>
   );
@@ -113,12 +106,11 @@ function OverviewDetailCard({
   readonly title: string;
 }) {
   return (
-    <div className="card">
-      <h2>{title}</h2>
+    <AdminSection className="partner-fast-overview-panel" title={title}>
       {rows.map((row) => (
         <InfoLine key={row.label} label={row.label} value={row.value} />
       ))}
-    </div>
+    </AdminSection>
   );
 }
 
