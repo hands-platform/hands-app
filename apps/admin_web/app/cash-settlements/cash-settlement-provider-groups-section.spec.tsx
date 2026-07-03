@@ -1,6 +1,22 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { CashSettlementProviderGroupsSection } from './cash-settlement-provider-groups-section';
 
 describe('CashSettlementProviderGroupsSection', () => {
+  it('uses the shared empty state atom when no Partner debt groups exist', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-provider-groups-section.tsx'),
+      'utf8',
+    );
+    const section = CashSettlementProviderGroupsSection({ providers: [] });
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<p className="muted">No Partner has open cash settlement debt.</p>');
+    expect(textContent(section)).toContain('No Partner has open cash settlement debt.');
+    expect(classNamesIn(section)).toContain('empty-state');
+  });
+
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {
     const section = CashSettlementProviderGroupsSection({
       providers: [
@@ -39,6 +55,23 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
 }
 
 function resolveElement(value: unknown): unknown {

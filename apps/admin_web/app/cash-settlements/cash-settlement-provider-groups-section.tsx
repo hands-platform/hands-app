@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
@@ -44,7 +45,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
           ))}
         </div>
       ) : (
-        <p className="muted">No Partner has open cash settlement debt.</p>
+        <AdminEmptyState framed message="No Partner has open cash settlement debt." title={null} />
       )}
     </AdminFilterPanel>
   );

@@ -18,6 +18,16 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(source).not.toContain('className="vuexy-booking-table"');
   });
 
+  it('uses the shared empty state atom for empty priority rows', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-priority-board-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<p className="muted admin-mt-12">');
+  });
+
   it('renders priority rows with booking links and evidence requirements', () => {
     const section = CashSettlementPriorityBoardSection({
       rows: [buildRow()],
@@ -43,6 +53,7 @@ describe('CashSettlementPriorityBoardSection', () => {
     const section = CashSettlementPriorityBoardSection({ rows: [] });
 
     expect(textContent(section)).toContain('No settlement priority rows are waiting for finance action.');
+    expect(classNamesIn(section)).toContain('empty-state admin-mt-12');
   });
 });
 

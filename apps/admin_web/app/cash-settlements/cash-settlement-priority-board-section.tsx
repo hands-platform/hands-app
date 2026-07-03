@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { PillClassBadge } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 
@@ -30,9 +31,12 @@ const CASH_SETTLEMENT_PRIORITY_HEADERS = [
 export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPriorityBoardSectionProps) {
   if (!rows.length) {
     return (
-      <p className="muted admin-mt-12">
-        No settlement priority rows are waiting for finance action.
-      </p>
+      <AdminEmptyState
+        className="admin-mt-12"
+        framed
+        message="No settlement priority rows are waiting for finance action."
+        title={null}
+      />
     );
   }
 
