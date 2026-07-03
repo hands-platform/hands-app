@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -26,6 +27,7 @@ vi.mock('../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedApiGet = vi.mocked(apiGet);
+const dashboardSource = readFileSync('app/page.tsx', 'utf8');
 
 describe('DashboardPage', () => {
   beforeEach(() => {
@@ -296,6 +298,12 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-on-demand-detail-title">Detailed dashboard loaded on demand</h2>',
     );
+  });
+
+  it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {
+    expect(dashboardSource).toContain('AdminEmptyState');
+    expect(dashboardSource).not.toContain('<strong>No same-shift queue item is visible.</strong>');
+    expect(dashboardSource).not.toContain('<strong>No Partner blocker is currently visible.</strong>');
   });
 
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
+import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminSection } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
@@ -1195,13 +1196,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
               {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
-                <div className="ops-task-note">
-                  <strong>No same-shift queue item is visible.</strong>
-                  <p className="muted">
-                    Keep monitoring live matching, Partner locations, cash debt, and notification delivery as
-                    demand changes.
-                  </p>
-                </div>
+                <AdminEmptyState
+                  className="ops-task-note"
+                  framed
+                  message="Keep monitoring live matching, Partner locations, cash debt, and notification delivery as demand changes."
+                  title="No same-shift queue item is visible."
+                />
               )}
             </div>
           </AdminSection>
@@ -1890,13 +1890,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               ))}
               {fullDashboardData.partnerOpsQueue.items.length === 0 && (
-                <div className="ops-task-note">
-                  <strong>No Partner blocker is currently visible.</strong>
-                  <p className="muted">
-                    Verified Partners, wallet debt, location freshness, payout readiness, and app
-                    contactability are clear in the current snapshot.
-                  </p>
-                </div>
+                <AdminEmptyState
+                  className="ops-task-note"
+                  framed
+                  message="Verified Partners, wallet debt, location freshness, payout readiness, and app contactability are clear in the current snapshot."
+                  title="No Partner blocker is currently visible."
+                />
               )}
             </div>
             <div className="service-trace-summary admin-mt-14">
