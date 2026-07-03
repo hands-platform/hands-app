@@ -25,6 +25,7 @@ import {
   AdminUsageOverviewRankRow,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import {
   formatCurrencyAmount as money,
@@ -456,7 +457,7 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
   return (
     <AdminSection
       actions={<Activity size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-platform-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={rows.length > 0 ? 'usage-overview-platform-list' : 'usage-overview-empty-state'}
       className="usage-overview-platform-card"
       description="Customer app sessions by platform in this range. Use this to spot Android/iOS/Web usage imbalance before checking acquisition or product issues."
       title="Platform usage"
@@ -487,11 +488,11 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
           );
         })
       ) : (
-        <>
-          <Activity size={20} aria-hidden="true" />
-          <strong>No platform session pattern loaded.</strong>
-          <p className="muted">Try another range after customer app sessions exist.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={Activity}
+          message="Try another range after customer app sessions exist."
+          title="No platform session pattern loaded."
+        />
       )}
     </AdminSection>
   );
@@ -505,7 +506,7 @@ function PartnerDiscoveryConversionCard({
   return (
     <AdminSection
       actions={<Eye size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-discovery-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={rows.length > 0 ? 'usage-overview-discovery-list' : 'usage-overview-empty-state'}
       className="usage-overview-discovery-card"
       description="Partner profile views, preferred requests, and completed-work conversion in this range."
       title="Partner discovery conversion"
@@ -545,11 +546,11 @@ function PartnerDiscoveryConversionCard({
           </article>
         ))
       ) : (
-        <>
-          <Eye size={20} aria-hidden="true" />
-          <strong>No Partner discovery conversion loaded.</strong>
-          <p className="muted">Try another range after Partner profile views or requests exist.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={Eye}
+          message="Try another range after Partner profile views or requests exist."
+          title="No Partner discovery conversion loaded."
+        />
       )}
     </AdminSection>
   );
@@ -582,7 +583,7 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
   return (
     <AdminSection
       actions={<Trophy size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-service-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={rows.length > 0 ? 'usage-overview-service-list' : 'usage-overview-empty-state'}
       className="usage-overview-behavior-card"
       description="Service choices from bookings created in this usage range."
       title="Popular services"
@@ -621,11 +622,11 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
           );
         })
       ) : (
-        <>
-          <Trophy size={20} aria-hidden="true" />
-          <strong>No service booking pattern loaded.</strong>
-          <p className="muted">Try another range after bookings exist.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={Trophy}
+          message="Try another range after bookings exist."
+          title="No service booking pattern loaded."
+        />
       )}
     </AdminSection>
   );
@@ -641,7 +642,7 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
   return (
     <AdminSection
       actions={<Activity size={18} aria-hidden="true" />}
-      bodyClassName={activeRows.length > 0 ? 'usage-overview-hour-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={activeRows.length > 0 ? 'usage-overview-hour-list' : 'usage-overview-empty-state'}
       className="usage-overview-behavior-card"
       description="Busiest hours from customer sessions and preferred-Partner requests."
       title="Hourly activity"
@@ -667,11 +668,11 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
           );
         })
       ) : (
-        <>
-          <Activity size={20} aria-hidden="true" />
-          <strong>No hourly usage pattern loaded.</strong>
-          <p className="muted">Try another range after customer app activity exists.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={Activity}
+          message="Try another range after customer app activity exists."
+          title="No hourly usage pattern loaded."
+        />
       )}
     </AdminSection>
   );
@@ -818,11 +819,11 @@ function PaymentCouponInsightCard({
           })}
         </div>
       ) : (
-        <div className="empty-state usage-overview-empty-state">
-          <BadgePercent size={20} aria-hidden="true" />
-          <strong>No completed payment mix loaded.</strong>
-          <p className="muted">Try another usage range after completed payments exist.</p>
-        </div>
+        <UsageOverviewEmptyState
+          icon={BadgePercent}
+          message="Try another usage range after completed payments exist."
+          title="No completed payment mix loaded."
+        />
       )}
     </AdminSection>
   );
@@ -843,7 +844,7 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
   return (
     <AdminSection
       actions={<MapPinned size={18} aria-hidden="true" />}
-      bodyClassName={activeRows.length > 0 ? 'usage-overview-region-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={activeRows.length > 0 ? 'usage-overview-region-list' : 'usage-overview-empty-state'}
       className="usage-overview-ranking-card usage-overview-region-card"
       description="RegionCode aggregate from stored customer login address and booking address snapshots. It intentionally excludes individual location points."
       title="Region usage"
@@ -880,11 +881,11 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
           );
         })
       ) : (
-        <>
-          <MapPinned size={20} aria-hidden="true" />
-          <strong>No region usage loaded.</strong>
-          <p className="muted">Try another stored usage range.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={MapPinned}
+          message="Try another stored usage range."
+          title="No region usage loaded."
+        />
       )}
     </AdminSection>
   );
@@ -906,7 +907,7 @@ function UsageRankingCard({
   return (
     <AdminSection
       actions={<Trophy size={18} aria-hidden="true" />}
-      bodyClassName={rows.length > 0 ? 'usage-overview-ranking-list' : 'empty-state usage-overview-empty-state'}
+      bodyClassName={rows.length > 0 ? 'usage-overview-ranking-list' : 'usage-overview-empty-state'}
       className="usage-overview-ranking-card"
       description={description}
       title={title}
@@ -932,13 +933,30 @@ function UsageRankingCard({
           </article>
         ))
       ) : (
-        <>
-          <MapPinned size={20} aria-hidden="true" />
-          <strong>{emptyMessage}</strong>
-          <p className="muted">Try another stored usage range.</p>
-        </>
+        <UsageOverviewEmptyState
+          icon={MapPinned}
+          message="Try another stored usage range."
+          title={emptyMessage}
+        />
       )}
     </AdminSection>
+  );
+}
+
+function UsageOverviewEmptyState({
+  icon: Icon,
+  message,
+  title,
+}: {
+  readonly icon: UsageCardIcon;
+  readonly message: string;
+  readonly title: string;
+}) {
+  return (
+    <>
+      <Icon size={20} aria-hidden="true" />
+      <AdminEmptyState message={message} title={title} />
+    </>
   );
 }
 

@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
 import UsageOverviewPage from './page';
+
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 vi.mock('../../lib/admin-api', async () => {
   const actual = await vi.importActual<typeof import('../../lib/admin-api')>('../../lib/admin-api');
@@ -46,5 +49,8 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('card admin-section usage-overview-behavior-card');
     expect(markup).toContain('card admin-section usage-overview-insight-card');
     expect(markup).toContain('card admin-section usage-overview-ranking-card');
+    expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('empty-state usage-overview-empty-state');
+    expect(pageSource).not.toContain('<div className="empty-state');
   });
 });
