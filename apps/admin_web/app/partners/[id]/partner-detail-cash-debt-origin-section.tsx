@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -87,7 +88,9 @@ export function PartnerDetailCashDebtOriginSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerCashDebtOriginEmptyState />}
+            emptyMessage={
+              <AdminEmptyState framed message="No open cash-service fee debt is visible for this partner." />
+            }
             headers={cashDebtOriginHeaders}
             rowCount={rows.length}
           >
@@ -140,14 +143,5 @@ export function PartnerDetailCashDebtOriginSection({
       </div>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
     </AdminFilterPanel>
-  );
-}
-
-function PartnerCashDebtOriginEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No open cash-service fee debt is visible for this partner.</p>
-    </div>
   );
 }

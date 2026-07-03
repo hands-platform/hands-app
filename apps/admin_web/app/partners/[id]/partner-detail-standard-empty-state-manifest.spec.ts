@@ -3,6 +3,9 @@ import path from 'node:path';
 
 const standardEmptyStateFiles = [
   'partner-detail-acceptance-unblock-playbook-section.tsx',
+  'partner-detail-booking-gate-decision-section.tsx',
+  'partner-detail-booking-gate-evidence-section.tsx',
+  'partner-detail-cash-debt-origin-section.tsx',
   'partner-detail-operating-checklist-section.tsx',
   'partner-detail-operations-digest-section.tsx',
 ] as const;

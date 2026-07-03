@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -90,7 +91,7 @@ export function PartnerDetailBookingGateDecisionSection({
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
-          emptyMessage={<PartnerBookingGateDecisionEmptyState message="No marketplace booking gate rows." />}
+          emptyMessage={<AdminEmptyState message="No marketplace booking gate rows." />}
           headers={bookingGateDecisionHeaders}
           rowCount={decision.gates.length}
         >
@@ -131,13 +132,4 @@ function bookingGateStatusLabel(gate: PartnerBookingGateDecisionGate) {
     return 'WARN';
   }
   return gate.ok ? 'OK' : 'BLOCK';
-}
-
-function PartnerBookingGateDecisionEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
 }

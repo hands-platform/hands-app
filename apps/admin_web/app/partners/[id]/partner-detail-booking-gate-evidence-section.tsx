@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -70,7 +71,7 @@ export function PartnerDetailBookingGateEvidenceSection({
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
           emptyMessage={
-            <PartnerBookingGateEvidenceEmptyState message="No first-pick booking create gate attempt matched this date filter." />
+            <AdminEmptyState message="No first-pick booking create gate attempt matched this date filter." />
           }
           headers={bookingGateEvidenceHeaders}
           rowCount={visibleAttempts.length}
@@ -115,12 +116,3 @@ export function PartnerDetailBookingGateEvidenceSection({
 }
 
 const bookingGateEvidenceHeaders = ['Gate', 'Reason', 'Address', 'Distance', 'Attempted', 'Action'] as const;
-
-function PartnerBookingGateEvidenceEmptyState({ message }: { readonly message: string }) {
-  return (
-    <>
-      <strong>No records found</strong>
-      <p className="muted">{message}</p>
-    </>
-  );
-}
