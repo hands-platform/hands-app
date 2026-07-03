@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
@@ -210,8 +211,10 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <div className="setup-stage-item">
               <span className="pill pill-warn">Chat</span>
               <div>
-                <strong>No retained messages</strong>
-                <p className="muted">Check booking stage before money or outcome decisions.</p>
+                <AdminEmptyState
+                  message="Check booking stage before money or outcome decisions."
+                  title="No retained messages"
+                />
               </div>
             </div>
           ) : null}

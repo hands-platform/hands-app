@@ -16,6 +16,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import {
   AdminFormControlButton,
@@ -391,10 +392,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={
-              <>
-                <strong>No chat rooms found</strong>
-                <p className="muted">Clear filters or wait until matched bookings create chat rooms.</p>
-              </>
+              <AdminEmptyState
+                message="Clear filters or wait until matched bookings create chat rooms."
+                title="No chat rooms found"
+              />
             }
             headers={CHAT_ARCHIVE_INDEX_HEADERS}
             rowCount={rooms.length}

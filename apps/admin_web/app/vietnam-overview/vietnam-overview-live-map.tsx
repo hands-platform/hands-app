@@ -3,6 +3,7 @@
 import maplibregl, { type LngLatBoundsLike, type Map as MapLibreMap, type Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
   type VietnamOverviewMapPoint,
   type VietnamOverviewMetricDotKey,
@@ -218,8 +219,10 @@ export function VietnamOverviewLiveMap({
         <div className="vietnam-map-tile-empty">
           <div className="vietnam-map-empty-icon" aria-hidden="true" />
           <div>
-            <strong>No live dots for selected filters</strong>
-            <p className="muted">Change filters or clear region focus.</p>
+            <AdminEmptyState
+              message="Change filters or clear region focus."
+              title="No live dots for selected filters"
+            />
           </div>
           <div className="vietnam-map-empty-stats" aria-label="Current realtime filter state">
             <span>
