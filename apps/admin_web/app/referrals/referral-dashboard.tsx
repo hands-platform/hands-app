@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -1025,10 +1026,10 @@ function ReferralEmptyState({
   if (activeFilters.length > 0 && totalCount > 0) {
     return (
       <>
-        <strong>No matching {audienceLabel} referral parents</strong>
-        <p className="muted">
-          {totalCount} parent account{totalCount === 1 ? ' exists' : 's exist'}, but none match the current filters.
-        </p>
+        <AdminEmptyState
+          message={`${totalCount} parent account${totalCount === 1 ? ' exists' : 's exist'}, but none match the current filters.`}
+          title={`No matching ${audienceLabel} referral parents`}
+        />
         <div className="participant-list admin-mt-8" aria-label="Active referral filters">
           {activeFilters.map((filter) => (
             <span className="pill pill-warn" key={filter}>
@@ -1046,10 +1047,10 @@ function ReferralEmptyState({
   }
 
   return (
-    <>
-      <strong>No {audienceLabel} referral parents yet</strong>
-      <p className="muted">Parents appear here only after at least one referral attribution is recorded.</p>
-    </>
+    <AdminEmptyState
+      message="Parents appear here only after at least one referral attribution is recorded."
+      title={`No ${audienceLabel} referral parents yet`}
+    />
   );
 }
 

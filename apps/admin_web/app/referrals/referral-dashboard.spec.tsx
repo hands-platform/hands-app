@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminCustomerReferralParent, AdminPartnerReferralParent, AdminReferralPolicy } from '../../lib/admin-api';
@@ -126,6 +127,7 @@ const referralStoreEnvKeys = [
   'CUSTOMER_ANDROID_APP_URL',
   'CUSTOMER_IOS_APP_URL',
 ] as const;
+const dashboardSource = readFileSync('app/referrals/referral-dashboard.tsx', 'utf8');
 
 function defaultReferralDashboardFiltersForTest() {
   return { q: '', reward: 'all' as const, status: 'all' as const };
@@ -373,6 +375,12 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/referrals/partners"');
     expect(markup).toContain('Clear referral filters');
     expect(markup).not.toContain('Parents appear here only after at least one referral attribution is recorded.');
+  });
+
+  it('uses the shared Vuexy empty-state atom for referral parent fallbacks', () => {
+    expect(dashboardSource).toContain('AdminEmptyState');
+    expect(dashboardSource).not.toContain('<strong>No matching {audienceLabel} referral parents</strong>');
+    expect(dashboardSource).not.toContain('<strong>No {audienceLabel} referral parents yet</strong>');
   });
 
   it('renders held reward totals in referral parent rows', () => {
