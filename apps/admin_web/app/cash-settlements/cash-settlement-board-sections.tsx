@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
 import type {
@@ -129,7 +130,7 @@ export function CashSettlementWorkflowSections({
         <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
             <div className="setup-stage-item" key={step.title}>
-              <span className={`pill ${step.pillClass}`}>{step.status}</span>
+              <PillClassBadge pillClass={step.pillClass}>{step.status}</PillClassBadge>
               <div>
                 <strong>{step.title}</strong>
                 <p className="muted">{step.detail}</p>
@@ -201,7 +202,7 @@ function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) 
       {cards.map((card) => (
         <div className={`ops-task-card ${card.className}`} key={card.title}>
           <div>
-            <span className={`pill ${card.pillClass}`}>{card.status}</span>
+            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
             <h3>{card.title}</h3>
             <p className="muted">{card.detail}</p>
           </div>
@@ -242,7 +243,7 @@ function LinkedCardSection({
         {items.map((item) => (
           <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
             <div>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
               <h3>{item.title}</h3>
               <p className="muted">{item.detail}</p>
             </div>
