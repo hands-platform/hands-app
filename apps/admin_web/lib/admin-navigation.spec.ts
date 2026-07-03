@@ -91,7 +91,7 @@ describe('admin navigation', () => {
     );
     expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Tax & Accounting: Payment Fees');
     expect(linksByHref.get('/finance-tax/coupon-finance')).toBe('Tax & Accounting: Coupon Finance');
-    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Tax & Accounting: Finance Approvers');
+    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
     expect(linksByHref.get('/tax-policy')).toBe('Tax & Accounting: Tax Policy');
 
     expect(linksByHref.get('/notifications')).toBe('Communications: Notifications');
@@ -104,6 +104,7 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/setup')).toBe('Policies & Setup: Setup');
 
     expect(linksByHref.get('/admin-operators')).toBe('Admin Control: Admin Operators');
+    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
     expect(linksByHref.get('/audit-log')).toBe('Admin Control: Audit Log');
   });
 
@@ -164,7 +165,12 @@ describe('admin navigation', () => {
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/coupon-finance');
-    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/finance-approvers');
+    expect(taxSection?.links.map((link) => link.href)).not.toContain('/finance-tax/finance-approvers');
+    expect(adminNavSections.find((section) => section.label === 'Admin Control')?.links.map((link) => link.href)).toEqual([
+      '/admin-operators',
+      '/finance-tax/finance-approvers',
+      '/audit-log',
+    ]);
     expect(adminNavSections.flatMap((section) => section.links.map((link) => link.href))).not.toContain(
       '/app-sessions?role=CUSTOMER&state=live',
     );

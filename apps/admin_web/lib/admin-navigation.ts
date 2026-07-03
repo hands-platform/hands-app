@@ -259,11 +259,6 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Payment processing fees by method, payer, and treatment from settlement snapshots.',
       },
       {
-        href: '/finance-tax/finance-approvers',
-        label: 'Finance Approvers',
-        description: 'Finance action approver setup for role separation and dual-control closeout.',
-      },
-      {
         href: '/tax-policy',
         label: 'Tax Policy',
         description: 'Versioned Vietnam freelance withholding rules.',
@@ -325,6 +320,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/admin-operators',
         label: 'Admin Operators',
         description: 'Master Admin workspace for operator access, category permissions, and admin role review.',
+      },
+      {
+        href: '/finance-tax/finance-approvers',
+        label: 'Finance Approvers',
+        description: 'Finance action approver setup for role separation and dual-control closeout.',
       },
       {
         href: '/audit-log',
