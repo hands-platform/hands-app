@@ -289,6 +289,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Open detail');
     }
     expect(markup).toContain(detailHref);
+    expect(markup).toContain('card finance-list-command-card is-');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(markup).toContain('vuexy-booking-table-footer');
 

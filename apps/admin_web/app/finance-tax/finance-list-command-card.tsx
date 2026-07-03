@@ -34,7 +34,7 @@ export function FinanceListCommandCard({
   readonly value: string;
 }) {
   return (
-    <Link className={`finance-list-command-card is-${tone}`} href={href}>
+    <Link className={`card finance-list-command-card is-${tone}`} href={href}>
       <span className="usage-overview-command-icon">
         <Icon size={18} aria-hidden="true" />
       </span>
