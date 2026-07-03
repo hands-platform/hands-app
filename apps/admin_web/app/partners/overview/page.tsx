@@ -474,9 +474,12 @@ function SupplyAreaCard({
   readonly rows: readonly AdminPartnerOverviewAreaRow[];
 }) {
   return (
-    <section className="card usage-overview-table-card">
-      <TableHeader title="Area supply health" description={`Partner coverage and open demand by area · ${rangeLabel}`} />
-      <div className="table-responsive">
+    <AdminSection
+      bodyClassName="table-responsive"
+      className="usage-overview-table-card"
+      description={`Partner coverage and open demand by area · ${rangeLabel}`}
+      title="Area supply health"
+    >
         <table className="table usage-overview-table">
           <thead>
             <tr>
@@ -519,8 +522,7 @@ function SupplyAreaCard({
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -532,9 +534,12 @@ function SupplyServiceCard({
   readonly rows: readonly AdminPartnerOverviewServiceRow[];
 }) {
   return (
-    <section className="card usage-overview-table-card">
-      <TableHeader title="Service supply health" description={`Supply by service duration and open work · ${rangeLabel}`} />
-      <div className="table-responsive">
+    <AdminSection
+      bodyClassName="table-responsive"
+      className="usage-overview-table-card"
+      description={`Supply by service duration and open work · ${rangeLabel}`}
+      title="Service supply health"
+    >
         <table className="table usage-overview-table">
           <thead>
             <tr>
@@ -573,8 +578,7 @@ function SupplyServiceCard({
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -605,11 +609,15 @@ function QualityRiskCard({
   readonly rows: readonly AdminPartnerOverviewRiskPartner[];
 }) {
   return (
-    <section className="card usage-overview-table-card">
-      <TableHeader title="Booking quality risk" description="Cancellation, no-show, low review, and rating risk." />
+    <AdminSection
+      bodyClassName="partner-overview-risk-card-body"
+      className="usage-overview-table-card"
+      description="Cancellation, no-show, low review, and rating risk."
+      title="Booking quality risk"
+    >
       <MiniKpiStrip kpis={kpis} />
       <PartnerRiskTable rows={rows} />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -623,11 +631,15 @@ function WalletRiskCard({
   readonly rows: readonly AdminPartnerOverviewNegativeWalletPartner[];
 }) {
   return (
-    <section className="card usage-overview-table-card">
-      <TableHeader title="Finance and wallet risk" description={policyNote || 'Ledger-backed Partner wallet exposure.'} />
+    <AdminSection
+      bodyClassName="partner-overview-risk-card-body"
+      className="usage-overview-table-card"
+      description={policyNote || 'Ledger-backed Partner wallet exposure.'}
+      title="Finance and wallet risk"
+    >
       <MiniKpiStrip kpis={kpis} />
       <PartnerRiskTable rows={rows} showWallet />
-    </section>
+    </AdminSection>
   );
 }
 
@@ -720,12 +732,12 @@ function SelectionFrictionCard({
   const issueCountMap = new Map(issueCounts.map((issue) => [issue.key, issue.count]));
 
   return (
-    <section className="card usage-overview-table-card" aria-labelledby="partner-selection-friction-title">
-      <TableHeader
-        titleId="partner-selection-friction-title"
-        title="Selection friction"
-        description="Partners customers look at or favorite, but do not select or complete with."
-      />
+    <AdminSection
+      bodyClassName="partner-overview-selection-body"
+      className="usage-overview-table-card"
+      description="Partners customers look at or favorite, but do not select or complete with."
+      title="Selection friction"
+    >
       <div className="partner-overview-selection-toolbar">
         <div>
           <strong>Selection issue</strong>
@@ -841,7 +853,7 @@ function SelectionFrictionCard({
           </tbody>
         </table>
       </div>
-    </section>
+    </AdminSection>
   );
 }
 
@@ -929,25 +941,6 @@ const partnerSegmentIcons: Record<string, typeof WalletCards> = {
   'payout-blocked': WalletCards,
   pending: FileWarning,
 };
-
-function TableHeader({
-  description,
-  title,
-  titleId,
-}: {
-  readonly description: string;
-  readonly title: string;
-  readonly titleId?: string;
-}) {
-  return (
-    <div className="ops-section-header usage-overview-section-header">
-      <div>
-        <h2 id={titleId}>{title}</h2>
-        <p className="muted">{description}</p>
-      </div>
-    </div>
-  );
-}
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;

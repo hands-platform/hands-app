@@ -45,6 +45,10 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
     expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
     expect(markup).toContain('admin-section-body partner-overview-action-grid');
+    expect(markup).toContain('card admin-section usage-overview-table-card');
+    expect(markup).toContain('admin-section-body table-responsive');
+    expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
+    expect(markup).toContain('admin-section-body partner-overview-selection-body');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
     expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
     expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');
