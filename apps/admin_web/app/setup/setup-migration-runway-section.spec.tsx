@@ -23,6 +23,12 @@ describe('SetupMigrationRunwaySection', () => {
     expect(rendered).toContain('Operator handoff files');
     expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
     expect(rendered).toContain('docs\\architecture\\operator-registration-plan.md');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(classNamesIn(section)).toContain('command-copy-row');
     expect(hrefsIn(section)).toContain('#supabase');
   });

@@ -1,5 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminSection } from '../../components/admin-surface';
 import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
 
@@ -22,11 +23,10 @@ export function SetupReadinessOrderSection({
 }: SetupReadinessOrderSectionProps) {
   return (
     <section className="detail-grid">
-      <div className="card">
-        <h2>Live readiness</h2>
-        <p className="muted">
-          This panel is backed by the API endpoint, so it reflects the current `.env` and process environment.
-        </p>
+      <AdminSection
+        description="This panel is backed by the API endpoint, so it reflects the current `.env` and process environment."
+        title="Live readiness"
+      >
         <div className="stack">
           {readinessChecks.map((check) => (
             <ReadinessRow check={check} commandMode={commandMode} key={`${check.category}-${check.name}`} />
@@ -41,10 +41,9 @@ export function SetupReadinessOrderSection({
             </div>
           )}
         </div>
-      </div>
+      </AdminSection>
 
-      <div className="card">
-        <h2>Recommended order</h2>
+      <AdminSection title="Recommended order">
         <div className="timeline">
           {recommendedOrder.map((group, index) => (
             <a className="timeline-step" href={`#${group.id}`} key={group.id}>
@@ -54,7 +53,7 @@ export function SetupReadinessOrderSection({
             </a>
           ))}
         </div>
-      </div>
+      </AdminSection>
     </section>
   );
 }

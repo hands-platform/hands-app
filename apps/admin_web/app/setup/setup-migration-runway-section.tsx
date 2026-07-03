@@ -1,4 +1,5 @@
 import { PathCopyRow } from '../../components/path-copy-row';
+import { AdminSection } from '../../components/admin-surface';
 
 type SetupMigrationRunwayStatus = {
   readonly id: string;
@@ -13,12 +14,10 @@ type SetupMigrationRunwaySectionProps = {
 
 export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRunwaySectionProps) {
   return (
-    <div className="card">
-      <h2>Migration runway</h2>
-      <p className="muted">
-        HANDS is moving from local MVP stability to Supabase-backed staging without breaking the mobile booking
-        flow. Current local auth remains Nest/dev OTP until production Phone Auth is deliberately tested.
-      </p>
+    <AdminSection
+      description="HANDS is moving from local MVP stability to Supabase-backed staging without breaking the mobile booking flow. Current local auth remains Nest/dev OTP until production Phone Auth is deliberately tested."
+      title="Migration runway"
+    >
       <div className="setup-stage-list">
         {groupStatuses.map((item, index) => (
           <a className="setup-stage-item" href={`#${item.id}`} key={item.id}>
@@ -42,6 +41,6 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
           <PathCopyRow path="infra\supabase\.generated\hands-staging-setup.sql" />
         </div>
       </div>
-    </div>
+    </AdminSection>
   );
 }

@@ -39,6 +39,12 @@ describe('SetupReadinessOrderSection', () => {
     expect(rendered).toContain('Secret-safe');
     expect(rendered).toContain('Recommended order');
     expect(rendered).toContain('Step 1');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(classNamesIn(section)).toContain('command-copy-row');
     expect(hrefsIn(section)).toContain('#notifications');
   });
