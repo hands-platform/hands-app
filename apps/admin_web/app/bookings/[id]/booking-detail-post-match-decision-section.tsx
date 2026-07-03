@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
@@ -42,15 +42,15 @@ export function BookingDetailPostMatchDecisionSection({
         className="booking-post-match-detail-evidence-grid admin-mt-12"
       >
         {outcomeReview.rows.map((row) => (
-          <Link className="card admin-card booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
+          <AdminLinkCard className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
             <span className={`pill ${row.tone}`}>{row.label}</span>
             <strong>{row.value}</strong>
             <small>{row.helper}</small>
-          </Link>
+          </AdminLinkCard>
         ))}
       </div>
 
-      <div className="card admin-card booking-outcome-decision-panel">
+      <AdminCard className="booking-outcome-decision-panel">
         <div className="booking-outcome-decision-main">
           <div className="booking-outcome-decision-copy">
             <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
@@ -84,7 +84,7 @@ export function BookingDetailPostMatchDecisionSection({
         ) : (
           <span className="muted">This cancellation decision is already closed.</span>
         )}
-      </div>
+      </AdminCard>
     </AdminSection>
   );
 }

@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { normalizedText } from '../booking-section-test-utils';
 import { BookingDetailPostMatchDecisionSection } from './booking-detail-post-match-decision-section';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 
 describe('BookingDetailPostMatchDecisionSection', () => {
+  it('uses shared Vuexy admin card surfaces for evidence and decision panels', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminLinkCard');
+    expect(source).not.toContain('className="card admin-card booking-post-match-detail-evidence-card"');
+    expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
+  });
+
   it('renders evidence checklist and clear fee decision actions', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailPostMatchDecisionSection bookingId="booking-1" outcomeReview={outcomeReview()} />,
