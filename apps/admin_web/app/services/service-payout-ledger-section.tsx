@@ -31,7 +31,7 @@ export function ServicePayoutLedgerSection({
   return (
     <AdminSection
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Finance view for the current minimum price of every active duration option. This is the fastest way to confirm customer price, Partner payout, tax/cost assumptions, and customer-app visibility before Partners start selling."
       statusLabel={`${activeServiceCount} active option(s)`}
       statusTone="info"
