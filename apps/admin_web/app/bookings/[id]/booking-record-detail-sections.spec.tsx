@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { BookingRecordDetailSections } from './booking-record-detail-sections';
@@ -134,6 +135,13 @@ function renderSections(overrides: Partial<SectionsProps> = {}) {
 }
 
 describe('BookingRecordDetailSections', () => {
+  it('uses shared Vuexy admin card surfaces for participant rows', () => {
+    const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('className="card admin-card booking-participant-row-card"');
+  });
+
   it('renders participant ledger details and toolbar-linked record state', () => {
     const markup = renderSections();
 

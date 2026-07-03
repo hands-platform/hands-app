@@ -1,5 +1,5 @@
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat-evidence';
@@ -378,7 +378,7 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
   return (
     <div className="booking-participant-row-list admin-mt-10">
       {rows.map((row) => (
-        <div className="card admin-card booking-participant-row-card" key={row.id}>
+        <AdminCard className="booking-participant-row-card" key={row.id}>
           <AdminPersonCell
             avatarClassName="vuexy-booking-avatar is-partner"
             avatarStatus={row.avatarStatus}
@@ -424,7 +424,7 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
             </div>
             <p className="muted admin-mt-8">{row.operatorUse}</p>
           </div>
-        </div>
+        </AdminCard>
       ))}
     </div>
   );
