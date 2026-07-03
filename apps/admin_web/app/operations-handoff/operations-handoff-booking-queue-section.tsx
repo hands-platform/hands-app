@@ -37,7 +37,7 @@ export function OperationsHandoffBookingQueueSection({
           </Link>
         </div>
       }
-      className="admin-mb-16 operations-handoff-booking-queue-card"
+      className="admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group"
       description="Open and recently changed bookings with payment, chat, Partner, and next action."
       title="Booking handoff queue"
     >

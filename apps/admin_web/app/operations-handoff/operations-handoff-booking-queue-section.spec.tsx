@@ -46,7 +46,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-avatar-status-dot is-working',
-        'card admin-section admin-mb-16 operations-handoff-booking-queue-card',
+        'card admin-section admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
         'admin-table-scroll',
         'table-link',
         'table vuexy-data-table',
