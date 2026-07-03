@@ -21,7 +21,14 @@ describe('SetupRegistrationHandoffSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'setup-backlog',
+      className: 'admin-mb-16',
+      statusLabel: '1 services tracked',
+      statusTone: 'info',
+      title: 'External registration handoff',
+    });
     expect(rendered).toContain('External registration handoff');
     expect(rendered.replace(/\s+/g, ' ')).toContain('1 services tracked');
     expect(rendered).toContain('Phone verification');

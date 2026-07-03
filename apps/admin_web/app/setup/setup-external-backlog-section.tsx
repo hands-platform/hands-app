@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 
 type SetupExternalBacklogItem = {
@@ -23,22 +24,18 @@ export function SetupExternalBacklogSection({
   const visibleBacklog =
     typeof backlogLimit === 'number' && backlogLimit > 0 ? backlog.slice(0, backlogLimit) : backlog;
   const hiddenCount = Math.max(0, backlog.length - visibleBacklog.length);
+  const statusLabel = missingCount === 0 ? 'No missing values' : `${missingCount} value(s) pending`;
+  const statusTone = missingCount === 0 ? 'success' : 'warning';
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>What still needs external registration</h2>
-          <p className="muted">
-            This is the human-action backlog. Code checks stay green while these production keys are not
-            filled.
-          </p>
-        </div>
-        <span className={`signal ${missingCount === 0 ? 'signal-ok' : 'signal-warn'}`}>
-          {missingCount === 0 ? 'No missing values' : `${missingCount} value(s) pending`}
-        </span>
-      </div>
-      <div className="setup-backlog">
+    <AdminSection
+      bodyClassName="setup-backlog"
+      className="admin-mt-16"
+      description="This is the human-action backlog. Code checks stay green while these production keys are not filled."
+      statusLabel={statusLabel}
+      statusTone={statusTone}
+      title="What still needs external registration"
+    >
         {visibleBacklog.map((item) => (
           <div className="setup-backlog-item" key={`${item.groupId}-${item.name}`}>
             <span>{item.groupTitle}</span>
@@ -76,7 +73,6 @@ export function SetupExternalBacklogSection({
         {backlog.length === 0 && (
           <p className="muted">All external readiness values are configured for the current environment.</p>
         )}
-      </div>
-    </section>
+    </AdminSection>
   );
 }

@@ -1,3 +1,5 @@
+import { AdminSection } from '../../components/admin-surface';
+
 type SetupRegistrationHandoffItem = {
   readonly id: string;
   readonly provider: string;
@@ -18,19 +20,14 @@ export function SetupRegistrationHandoffSection({
   registrationPlan,
 }: SetupRegistrationHandoffSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>External registration handoff</h2>
-          <p className="muted">
-            Account ownership, service consoles, and credential status in one place. Secret values are never
-            printed here; this page only shows whether each integration is ready, deferred, or needs a human
-            setup step.
-          </p>
-        </div>
-        <span className="signal signal-info">{registrationPlan.length} services tracked</span>
-      </div>
-      <div className="setup-backlog">
+    <AdminSection
+      bodyClassName="setup-backlog"
+      className="admin-mb-16"
+      description="Account ownership, service consoles, and credential status in one place. Secret values are never printed here; this page only shows whether each integration is ready, deferred, or needs a human setup step."
+      statusLabel={`${registrationPlan.length} services tracked`}
+      statusTone="info"
+      title="External registration handoff"
+    >
         {registrationPlan.map((item) => (
           <a className="setup-backlog-item" href={`#${item.groupId}`} key={item.id}>
             <span>{item.provider}</span>
@@ -49,7 +46,6 @@ export function SetupRegistrationHandoffSection({
             </div>
           </a>
         ))}
-      </div>
-    </section>
+    </AdminSection>
   );
 }

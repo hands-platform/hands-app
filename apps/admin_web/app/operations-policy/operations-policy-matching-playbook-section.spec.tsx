@@ -17,7 +17,14 @@ describe('OperationsPolicyMatchingPlaybookSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'timeline admin-mt-12',
+      className: 'admin-mb-16',
+      statusLabel: 'Policy driven',
+      statusTone: 'info',
+      title: 'Booking matching playbook',
+    });
     expect(rendered).toContain('Booking matching playbook');
     expect(rendered).toContain('Policy driven');
     expect(rendered).toContain('customer, Partner, finance');

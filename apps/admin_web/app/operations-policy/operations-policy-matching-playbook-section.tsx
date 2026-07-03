@@ -1,3 +1,4 @@
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { MatchingPlaybookItem } from './matching-playbook';
 
@@ -9,18 +10,14 @@ export function OperationsPolicyMatchingPlaybookSection({
   playbook,
 }: OperationsPolicyMatchingPlaybookSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking matching playbook</h2>
-          <p className="muted">
-            Current operator-facing flow based on the saved policy values. Use this to verify whether the
-            customer, Partner, finance, and alert behavior still matches the intended operation.
-          </p>
-        </div>
-        <span className="pill pill-info">Policy driven</span>
-      </div>
-      <div className="timeline admin-mt-12">
+    <AdminSection
+      bodyClassName="timeline admin-mt-12"
+      className="admin-mb-16"
+      description="Current operator-facing flow based on the saved policy values. Use this to verify whether the customer, Partner, finance, and alert behavior still matches the intended operation."
+      statusLabel="Policy driven"
+      statusTone="info"
+      title="Booking matching playbook"
+    >
         {playbook.map((step) => (
           <div className={`timeline-step ${step.className}`} key={step.title}>
             <span>{step.step}</span>
@@ -35,7 +32,6 @@ export function OperationsPolicyMatchingPlaybookSection({
             </div>
           </div>
         ))}
-      </div>
-    </section>
+    </AdminSection>
   );
 }

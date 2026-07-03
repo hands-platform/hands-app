@@ -6,7 +6,14 @@ describe('OperationsPolicyAuthorityBaselineSection', () => {
     const section = OperationsPolicyAuthorityBaselineSection();
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'ops-task-grid admin-mt-14',
+      className: 'admin-mb-16',
+      statusLabel: 'Command center rules',
+      statusTone: 'success',
+      title: 'MVP authority baseline',
+    });
     expect(rendered).toContain('MVP authority baseline');
     expect(rendered).toContain('Address snapshot required');
     expect(rendered).toContain('First-pick priority with fallback choice');

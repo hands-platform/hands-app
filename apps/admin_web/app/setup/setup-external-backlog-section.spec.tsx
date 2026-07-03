@@ -18,7 +18,14 @@ describe('SetupExternalBacklogSection', () => {
 
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'setup-backlog',
+      className: 'admin-mt-16',
+      statusLabel: '2 value(s) pending',
+      statusTone: 'warning',
+      title: 'What still needs external registration',
+    });
     expect(rendered).toContain('What still needs external registration');
     expect(rendered).toContain('2 value(s) pending');
     expect(rendered).toContain('FIREBASE_PROJECT_ID');

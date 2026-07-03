@@ -1,17 +1,15 @@
+import { AdminSection } from '../../components/admin-surface';
+
 export function OperationsPolicyAuthorityBaselineSection() {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>MVP authority baseline</h2>
-          <p className="muted">
-            These rules are not CRM preferences. They are the operating authority for Vietnam booking,
-            marketplace, and finance actions until a later product decision changes them.
-          </p>
-        </div>
-        <span className="pill pill-success">Command center rules</span>
-      </div>
-      <div className="ops-task-grid admin-mt-14">
+    <AdminSection
+      bodyClassName="ops-task-grid admin-mt-14"
+      className="admin-mb-16"
+      description="These rules are not CRM preferences. They are the operating authority for Vietnam booking, marketplace, and finance actions until a later product decision changes them."
+      statusLabel="Command center rules"
+      statusTone="success"
+      title="MVP authority baseline"
+    >
         <div className="ops-task-card ops-task-done">
           <span className="pill pill-success">BookingAddressSnapshot</span>
           <h3>Address snapshot required</h3>
@@ -48,7 +46,6 @@ export function OperationsPolicyAuthorityBaselineSection() {
           </p>
           <small>Direct first-pick response and already-matched service flow stay separate from this gate.</small>
         </div>
-      </div>
-    </section>
+    </AdminSection>
   );
 }
