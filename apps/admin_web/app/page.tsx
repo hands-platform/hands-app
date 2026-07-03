@@ -1243,15 +1243,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </AdminSection>
 
-          <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
-            <div className="ops-section-header">
-              <div>
-                <h2>Matching control room</h2>
-                <p className="muted">
-                  Live view of open matching demand. Existing bookings use their saved policy snapshot; new
-                  bookings use the current policy.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <div className="participant-list">
                 <Link className="button button-secondary" href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
@@ -1262,7 +1255,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Simulate policy
                 </Link>
               </div>
-            </div>
+            }
+            className="admin-mt-20 dashboard-card-scroll dashboard-matching-card"
+            description="Live view of open matching demand. Existing bookings use their saved policy snapshot; new bookings use the current policy."
+            id="dashboard-matching-control-room"
+            title="Matching control room"
+          >
             <div className="service-trace-summary admin-mt-12">
               {matchingControl.metrics.map((metric) => (
                 <div key={metric.label}>
@@ -1333,22 +1331,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               </div>
             </div>
-          </section>
+          </AdminSection>
 
-          <section className="card admin-mt-20 dashboard-card-scroll dashboard-policy-card">
-            <div className="ops-section-header">
-              <div>
-                <h2>Operations policy snapshot</h2>
-                <p className="muted">
-                  Live dispatch rules and owner decisions currently guiding matching, marketplace
-                  participation, cancellation, no-show, and Partner alerts.
-                </p>
-              </div>
+          <AdminSection
+            actions={
               <Link className="button button-secondary" href="/operations-policy">
                 <Settings2 size={16} aria-hidden="true" />
                 Change policy
               </Link>
-            </div>
+            }
+            className="admin-mt-20 dashboard-card-scroll dashboard-policy-card"
+            description="Live dispatch rules and owner decisions currently guiding matching, marketplace participation, cancellation, no-show, and Partner alerts."
+            id="dashboard-operations-policy-snapshot"
+            title="Operations policy snapshot"
+          >
             <div className="service-trace-summary admin-mt-12">
               <div>
                 <span>Active overrides</span>
@@ -1467,7 +1463,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               ))}
             </div>
-          </section>
+          </AdminSection>
 
           <section className="detail-grid admin-mt-20">
             <div className="card">

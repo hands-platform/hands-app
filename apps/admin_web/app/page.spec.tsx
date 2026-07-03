@@ -333,5 +333,17 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-opening-shift-checklist-title">Opening shift checklist</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-matching-card" id="dashboard-matching-control-room"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-matching-control-room-title">Matching control room</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-policy-card" id="dashboard-operations-policy-snapshot"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-operations-policy-snapshot-title">Operations policy snapshot</h2>',
+    );
   });
 });
