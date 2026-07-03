@@ -153,7 +153,7 @@ export function PartnerCustomerEvaluationsSection({
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
         description="Text-only notes Partners write about customers after a booking. This page is for admin review only."
         id="partner-customer-evaluation-table"
         resultLabel={`${pagination.totalRows} evaluation(s)`}

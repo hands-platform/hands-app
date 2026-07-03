@@ -207,7 +207,7 @@ export function ReviewsTableSection({
       </AdminFilterPanel>
 
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
         description="Review rows use the same table card, rounded pagination, avatars, and operator action pattern as bookings."
         id="customer-review-table"
         resultLabel={`${pagination.totalRows} review(s)`}

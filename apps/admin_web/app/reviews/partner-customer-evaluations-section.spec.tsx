@@ -46,7 +46,7 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
         'table vuexy-data-table vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table',
       ]),
     );

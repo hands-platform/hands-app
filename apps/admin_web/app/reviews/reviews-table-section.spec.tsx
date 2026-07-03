@@ -76,7 +76,7 @@ describe('ReviewsTableSection', () => {
         'admin-form-control-link vuexy-review-export',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-offline',
         'vuexy-booking-id-line',
