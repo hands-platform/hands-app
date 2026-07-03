@@ -6,6 +6,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
@@ -203,7 +204,14 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem label="Bank match status" value={`${matches.length} match(es) · ${formatMoney(remainingAmount, entry.currency)} remaining`} />
           <FinanceDetailInfoItem
             label="Latest bank match"
-            value={matches[0] ? <BankMatchSummary match={matches[0]} /> : 'No bank match'}
+            value={
+              <FinanceBankMatchEvidence
+                matches={matches[0] ? [matches[0]] : []}
+                showAmount={false}
+                showJournalLink
+                showPaymentClearingLink={false}
+              />
+            }
           />
         </FinanceDetailGrid>
       </FinanceTablePanel>
@@ -261,32 +269,6 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         </AdminTableScroll>
       </FinanceTablePanel>
     </AdminPageTemplate>
-  );
-}
-
-function BankMatchSummary({
-  match,
-}: {
-  readonly match: NonNullable<AdminBookingPaymentClearingEntryDetail['bankReconciliationMatches']>[number];
-}) {
-  return (
-    <div className="admin-table-substack">
-      {match.bankTransactionId ? (
-        <Link className="text-link" href={`/finance-tax/bank-reconciliation/${match.bankTransactionId}`}>
-          Bank {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
-        </Link>
-      ) : (
-        <span className="muted">No bank transaction</span>
-      )}
-      {match.accountingJournalEntry ? (
-        <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
-          Journal {match.accountingJournalEntry.accountCode}
-        </Link>
-      ) : (
-        <span className="muted">No journal entry</span>
-      )}
-      <span className="muted">{match.status}</span>
-    </div>
   );
 }
 

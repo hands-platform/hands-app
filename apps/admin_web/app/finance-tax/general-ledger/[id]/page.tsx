@@ -6,15 +6,14 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
-  bankReconciliationDetailHref,
   buildAccountingJournalBatchDetailApiHref,
   buildFinanceSettlementTraceLinks,
   generalLedgerHref,
-  paymentClearingDetailHref,
 } from '../../tax-settlement-page-model';
 
 type GeneralLedgerDetailPageProps = {
@@ -194,7 +193,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           />
           <FinanceDetailInfoItem
             label="Latest bank evidence"
-            value={bankMatches[0] ? <BankMatchEvidence matches={[bankMatches[0]]} /> : 'No bank match'}
+            value={<FinanceBankMatchEvidence className="stack" matches={bankMatches[0] ? [bankMatches[0]] : []} />}
           />
         </FinanceDetailGrid>
       </FinanceTablePanel>
@@ -232,7 +231,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                   <div className="muted">{shortId(entry.sourceId ?? batch.sourceId)}</div>
                 </td>
                 <td>
-                  <BankMatchEvidence matches={entry.bankReconciliationMatches ?? []} />
+                  <FinanceBankMatchEvidence className="stack" matches={entry.bankReconciliationMatches ?? []} />
                 </td>
               </tr>
             ))}
@@ -240,36 +239,6 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         </AdminTableScroll>
       </FinanceTablePanel>
     </AdminPageTemplate>
-  );
-}
-
-function BankMatchEvidence({
-  matches,
-}: {
-  readonly matches: NonNullable<AdminAccountingJournalBatchDetail['entries'][number]['bankReconciliationMatches']>;
-}) {
-  if (matches.length === 0) {
-    return <span className="muted">No bank match</span>;
-  }
-
-  return (
-    <div className="stack">
-      {matches.map((match) => (
-        <div key={match.id}>
-          <Link className="text-link" href={bankReconciliationDetailHref(match.bankTransactionId)}>
-            Bank {shortId(match.bankTransactionId)}
-          </Link>
-          <div className="muted">
-            {formatMoney(match.amount, match.currency)} · {match.status}
-          </div>
-          {match.paymentClearingEntryId ? (
-            <Link className="text-link" href={paymentClearingDetailHref(match.paymentClearingEntryId)}>
-              Clearing {shortId(match.paymentClearingEntryId)}
-            </Link>
-          ) : null}
-        </div>
-      ))}
-    </div>
   );
 }
 
