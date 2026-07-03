@@ -7,7 +7,7 @@ type FinanceTablePanelProps = Omit<ComponentProps<typeof AdminFilterPanel>, 'cla
   readonly grouped?: boolean;
 };
 
-export function FinanceTablePanel({ className, grouped = false, ...props }: FinanceTablePanelProps) {
+export function FinanceTablePanel({ className, grouped = true, ...props }: FinanceTablePanelProps) {
   return (
     <AdminFilterPanel
       className={joinClassNames(
