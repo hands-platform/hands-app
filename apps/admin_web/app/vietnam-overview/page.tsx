@@ -577,7 +577,7 @@ export default async function VietnamOverviewPage({
         title={activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
       >
         {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
-          <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
+          <article key={label} className={`card admin-kpi-card metric-card vietnam-overview-metric is-${tone}`}>
             <span className="metric-card-icon">
               <Icon size={18} aria-hidden="true" />
             </span>

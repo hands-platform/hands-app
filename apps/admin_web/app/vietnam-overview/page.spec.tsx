@@ -38,6 +38,7 @@ describe('VietnamOverviewPage', () => {
     expect(markup).not.toContain('card admin-filter-panel vietnam-overview-filter-panel');
     expect(markup).toContain('card admin-section vietnam-realtime-chart-card');
     expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
+    expect(markup).toContain('card admin-kpi-card metric-card vietnam-overview-metric');
     expect(markup).toContain('card admin-section vietnam-overview-region-card');
   });
 
