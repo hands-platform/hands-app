@@ -15,6 +15,7 @@ import {
   buildBookingSettlementReversalDetailApiHref,
   buildBookingSettlementReversalEvidenceState,
   buildBookingSettlementReversalTraceLinks,
+  generalLedgerDetailHref,
   monthlyTaxClosingHref,
   paymentClearingDetailHref,
   TAX_SETTLEMENT_DEFAULT_TAKE,
@@ -200,6 +201,18 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 </>
               ) : (
                 'No clearing'
+              )
+            }
+          />
+          <FinanceDetailInfoItem
+            label="Reversal journal record"
+            value={
+              reversalJournal ? (
+                <Link className="text-link" href={generalLedgerDetailHref(reversalJournal.id)}>
+                  {shortId(reversalJournal.id)}
+                </Link>
+              ) : (
+                '-'
               )
             }
           />
