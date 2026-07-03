@@ -3,11 +3,11 @@ import { notFound } from 'next/navigation';
 
 import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
+import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { financeJournalBatchStatusTone } from '../../finance-status-badge-model';
@@ -207,9 +207,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         resultTone="info"
         title="Journal entries"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No journal entries were recorded for this batch."
             headers={['Side', 'Account', 'Amount', 'Memo', 'Source', 'Bank match']}
             rowCount={batch.entries.length}
@@ -239,8 +237,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                 </td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

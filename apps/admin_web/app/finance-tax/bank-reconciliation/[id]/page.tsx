@@ -12,7 +12,6 @@ import {
   adminGet,
   adminPostOrThrow,
 } from '../../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import {
   AdminFormControlButton,
   AdminFormInput,
@@ -22,6 +21,7 @@ import {
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
@@ -374,9 +374,7 @@ export default async function BankReconciliationDetailPage({
         resultTone="info"
         title="Reconciliation matches"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No reconciliation matches are linked to this bank transaction."
             headers={[
               'Matched source',
@@ -420,8 +418,7 @@ export default async function BankReconciliationDetailPage({
                 </td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

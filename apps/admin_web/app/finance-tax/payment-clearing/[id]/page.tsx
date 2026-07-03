@@ -3,11 +3,11 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
+import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import {
@@ -228,9 +228,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         resultTone="info"
         title="Bank reconciliation matches"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No bank reconciliation matches are linked to this clearing row."
             headers={['Bank transaction', 'Journal entry', 'Counterparty', 'Amount', 'Matched', 'Status']}
             rowCount={matches.length}
@@ -272,8 +270,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 </td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

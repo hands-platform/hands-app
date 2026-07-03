@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../../components/admin-data-table';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
 import { FinanceTablePanel } from '../../finance-table-panel';
@@ -360,9 +360,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         resultTone="info"
         title="Reversal evidence links"
       >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
+        <FinanceDataTable
             emptyMessage="No reversal evidence links are available."
             headers={['Evidence', 'Record', 'Status', 'Source']}
             rowCount={traceLinks.length}
@@ -379,8 +377,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 <td>{evidenceSourceForLink(link.label, reversal)}</td>
               </tr>
             ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+          </FinanceDataTable>
       </FinanceTablePanel>
     </AdminPageTemplate>
   );

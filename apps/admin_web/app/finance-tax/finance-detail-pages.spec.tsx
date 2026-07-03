@@ -958,4 +958,17 @@ describe('finance detail pages', () => {
       "className={`pill ${entry.side === 'DEBIT' ? 'pill-info' : 'pill-success'}`}",
     );
   });
+
+  it.each([
+    ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],
+    ['general ledger detail', 'app/finance-tax/general-ledger/[id]/page.tsx'],
+    ['bank reconciliation detail', 'app/finance-tax/bank-reconciliation/[id]/page.tsx'],
+    ['settlement reversal detail', 'app/finance-tax/settlement-reversals/[id]/page.tsx'],
+  ] as const)('uses the shared FinanceDataTable shell for %s', (_name, sourcePath) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('FinanceDataTable');
+    expect(source).not.toContain('AdminTableScroll');
+    expect(source).not.toContain('className="vuexy-booking-table"');
+  });
 });
