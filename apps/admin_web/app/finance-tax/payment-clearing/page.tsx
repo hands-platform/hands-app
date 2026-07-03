@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3 } from 'lucide-re
 
 import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -198,9 +199,10 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 <PillClassBadge pillClass={financePaymentClearingStatusPill(entry.status)}>{entry.status}</PillClassBadge>
               </td>
               <td>
-                <Link className="pill pill-info" href={paymentClearingDetailHref(entry.id)}>
-                  Open detail
-                </Link>
+                <ActionMenu
+                  actions={[{ href: paymentClearingDetailHref(entry.id), kind: 'link', label: 'Open detail', tone: 'info' }]}
+                  label={`Payment clearing evidence actions for ${entry.id}`}
+                />
                 <div className="muted">Bank matches {entry._count?.bankReconciliationMatches ?? 0}</div>
                 <div className="muted">{shortId(entry.id)}</div>
               </td>

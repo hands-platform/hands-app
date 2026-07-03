@@ -381,6 +381,18 @@ describe('finance list pages', () => {
   });
 
   it.each([
+    ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx', 'bookingSettlementAuditDetailHref(snapshot.id)'],
+    ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', 'paymentClearingDetailHref(entry.id)'],
+    ['general ledger', 'app/finance-tax/general-ledger/page.tsx', 'generalLedgerDetailHref(batch.id)'],
+    ['bank reconciliation', 'app/finance-tax/bank-reconciliation/page.tsx', 'bankReconciliationDetailHref(transaction.id)'],
+  ] as const)('uses shared ActionMenu atoms for %s row detail actions', (_name, sourcePath, detailHref) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('ActionMenu');
+    expect(source).not.toContain(`<Link className="pill pill-info" href={${detailHref}}>`);
+  });
+
+  it.each([
     ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx'],
     ['coupon finance', 'app/finance-tax/coupon-finance/page.tsx'],
     ['finance approvers', 'app/finance-tax/finance-approvers/page.tsx'],

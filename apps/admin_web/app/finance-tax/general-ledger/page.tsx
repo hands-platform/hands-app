@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, ReceiptText, Scale } from 'lucide-react';
 
 import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -225,9 +226,10 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
               </td>
               <td>
-                <Link className="pill pill-info" href={generalLedgerDetailHref(batch.id)}>
-                  Open detail
-                </Link>
+                <ActionMenu
+                  actions={[{ href: generalLedgerDetailHref(batch.id), kind: 'link', label: 'Open detail', tone: 'info' }]}
+                  label={`General ledger evidence actions for ${batch.id}`}
+                />
                 <div className="muted">{batch._count?.entries ?? 0} entries</div>
               </td>
             </tr>

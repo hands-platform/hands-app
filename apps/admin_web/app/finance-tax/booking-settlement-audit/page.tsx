@@ -6,6 +6,7 @@ import type {
   AdminBookingSettlementSnapshotSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -248,9 +249,17 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
                   <td>
-                    <Link className="pill pill-info" href={bookingSettlementAuditDetailHref(snapshot.id)}>
-                      Open detail
-                    </Link>
+                    <ActionMenu
+                      actions={[
+                        {
+                          href: bookingSettlementAuditDetailHref(snapshot.id),
+                          kind: 'link',
+                          label: 'Open detail',
+                          tone: 'info',
+                        },
+                      ]}
+                      label={`Booking settlement evidence actions for ${snapshot.id}`}
+                    />
                     <div className="muted">Snapshot {shortId(snapshot.id)}</div>
                     <div className="muted">Posted {formatDateTime(snapshot.postedAt)}</div>
                   </td>

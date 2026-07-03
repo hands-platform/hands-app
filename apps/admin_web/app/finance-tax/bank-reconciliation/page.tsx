@@ -8,6 +8,7 @@ import type {
   AdminCompanyBankTransaction,
 } from '../../../lib/admin-api';
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
+import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -305,9 +306,10 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 </PillClassBadge>
               </td>
               <td>
-                <Link className="pill pill-info" href={bankReconciliationDetailHref(transaction.id)}>
-                  Open detail
-                </Link>
+                <ActionMenu
+                  actions={[{ href: bankReconciliationDetailHref(transaction.id), kind: 'link', label: 'Open detail', tone: 'info' }]}
+                  label={`Bank reconciliation evidence actions for ${transaction.id}`}
+                />
                 <div className="muted">{transaction._count?.reconciliationMatches ?? 0} match</div>
               </td>
             </tr>
