@@ -318,6 +318,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Original tax PAID lock');
     expect(markup).toContain('Correction method');
     expect(markup).toContain('Reversal entry only');
+    expect(markup).toContain('Direct edit allowed');
+    expect(markup).toContain('No');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-06');
     expect(markup).toContain('/finance-tax/monthly-tax-closing?period=2026-07');
     expect(markup).toContain('Original monthly close');
