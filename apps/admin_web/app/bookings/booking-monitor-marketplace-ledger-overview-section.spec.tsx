@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceLedgerOverviewSection } from './booking-monitor-marketplace-ledger-overview-section';
 
 describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
@@ -58,6 +58,12 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
       'Marketplace operating queue',
       'First-pick timer control',
     ]);
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mt-14',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(hrefsIn(section)).toContain('/bookings?view=first-pick');
   });
 

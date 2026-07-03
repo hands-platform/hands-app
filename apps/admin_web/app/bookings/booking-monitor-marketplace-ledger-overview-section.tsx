@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { MarketplaceOperatingQueueItem } from '../../lib/marketplace-operating-queue';
@@ -22,60 +23,56 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
   );
 
   return (
-    <>
-      <div className="ops-section-header">
-        <div>
-          <h2>Marketplace participant ledger</h2>
-          <p className="muted">
-            Participant evidence for first-pick, marketplace, declined, and final-choice rows.
-          </p>
-        </div>
+    <AdminSection
+      actions={
         <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
           All participant records {marketplaceLedgerSummary.total}
         </span>
+      }
+      className="admin-mt-14"
+      description="Participant evidence for first-pick, marketplace, declined, and final-choice rows."
+      title="Marketplace participant ledger"
+    >
+      <div className="ops-section-header">
+        <div>
+          <h3>Marketplace operating queue</h3>
+          <p className="muted">
+            Only marketplace lanes with current operator work are shown here.
+          </p>
+        </div>
+        <span className="pill pill-info">No auto assignment</span>
       </div>
-      <section className="card admin-mt-14">
-        <div className="ops-section-header">
-          <div>
-            <h3>Marketplace operating queue</h3>
-            <p className="muted">
-              Only marketplace lanes with current operator work are shown here.
-            </p>
-          </div>
-          <span className="pill pill-info">No auto assignment</span>
-        </div>
-        <div className="ops-task-grid admin-mt-12">
-          {visibleOperatingQueue.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.step}>
-              <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>
-                <span className="pill">{item.value}</span>
-              </div>
-              <small>{item.operatorAction}</small>
-              {item.bookings.length > 0 && (
-                <div className="stack admin-mt-10">
-                  {item.bookings.slice(0, 3).map((booking) => (
-                    <span className="muted" key={`${item.step}-${booking.id}`}>
-                      {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
-                      {getCustomerLabel(booking)}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
-          ))}
-          {visibleOperatingQueue.length === 0 && (
-            <div className="ops-task-card">
-              <span className="signal signal-ok">Clear</span>
-              <h3>No marketplace lane needs action</h3>
-              <p>First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.</p>
+      <div className="ops-task-grid admin-mt-12">
+        {visibleOperatingQueue.map((item) => (
+          <Link className="ops-task-card" href={item.href} key={item.step}>
+            <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
+            <h3>{item.title}</h3>
+            <p>{item.detail}</p>
+            <div className="participant-list">
+              <span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>
+              <span className="pill">{item.value}</span>
             </div>
-          )}
-        </div>
-      </section>
-    </>
+            <small>{item.operatorAction}</small>
+            {item.bookings.length > 0 && (
+              <div className="stack admin-mt-10">
+                {item.bookings.slice(0, 3).map((booking) => (
+                  <span className="muted" key={`${item.step}-${booking.id}`}>
+                    {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                    {getCustomerLabel(booking)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </Link>
+        ))}
+        {visibleOperatingQueue.length === 0 && (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Clear</span>
+            <h3>No marketplace lane needs action</h3>
+            <p>First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.</p>
+          </div>
+        )}
+      </div>
+    </AdminSection>
   );
 }
