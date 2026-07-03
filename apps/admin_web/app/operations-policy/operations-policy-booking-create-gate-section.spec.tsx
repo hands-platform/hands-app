@@ -41,7 +41,7 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Booking create gate controls');
     expect(rendered).toContain('Distance gates active');
     expect(rendered).toContain('Service area');

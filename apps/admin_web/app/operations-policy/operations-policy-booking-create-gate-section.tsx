@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
@@ -43,18 +44,13 @@ export function OperationsPolicyBookingCreateGateSection({
   review,
 }: OperationsPolicyBookingCreateGateSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking create gate controls</h2>
-          <p className="muted">
-            These policies stop unsafe bookings before payment authorization and matching. Customers can
-            browse globally, but immediate booking must pass the selected address, Vietnam service area, and
-            first-pick Partner distance checks. Customer GPS is optional evidence only.
-          </p>
-        </div>
-        <span className="pill pill-info">{review.currentPolicyLabel}</span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="These policies stop unsafe bookings before payment authorization and matching. Customers can browse globally, but immediate booking must pass the selected address, Vietnam service area, and first-pick Partner distance checks. Customer GPS is optional evidence only."
+      statusLabel={review.currentPolicyLabel}
+      statusTone="info"
+      title="Booking create gate controls"
+    >
       <div className="service-trace-summary admin-mt-12">
         {review.summary.map((item) => (
           <div key={item.label}>
@@ -123,6 +119,6 @@ export function OperationsPolicyBookingCreateGateSection({
           ))}
         </div>
       )}
-    </section>
+    </AdminSection>
   );
 }

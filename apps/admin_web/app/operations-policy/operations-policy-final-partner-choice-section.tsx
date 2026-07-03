@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Users } from 'lucide-react';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
@@ -24,20 +25,13 @@ export function OperationsPolicyFinalPartnerChoiceSection({
   matrix,
 }: OperationsPolicyFinalPartnerChoiceSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Final partner choice control matrix</h2>
-          <p className="muted">
-            Current owner choices for the direct booking window, marketplace participation, Partner push
-            reach, and the negative wallet marketplace/payout gate. This is the screen operators should
-            check before changing the mobile flow.
-          </p>
-        </div>
-        <span className={`pill ${matrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
-          {matrix.blockingCount} control choice(s)
-        </span>
-      </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Current owner choices for the direct booking window, marketplace participation, Partner push reach, and the negative wallet marketplace/payout gate. This is the screen operators should check before changing the mobile flow."
+      statusLabel={`${matrix.blockingCount} control choice(s)`}
+      statusTone={matrix.blockingCount ? 'warning' : 'success'}
+      title="Final partner choice control matrix"
+    >
       <div className="service-trace-summary admin-mt-12">
         {matrix.summary.map((item) => (
           <div key={item.label}>
@@ -76,10 +70,10 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           <div key={item.label}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
-    </section>
+          <small>{item.helper}</small>
+        </div>
+      ))}
+    </div>
+    </AdminSection>
   );
 }

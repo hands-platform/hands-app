@@ -35,7 +35,7 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
     expect(rendered).toContain('Final partner choice control matrix');
     expect(rendered).toContain('2 control choice(s)');
     expect(rendered).toContain('Direct booking window');
