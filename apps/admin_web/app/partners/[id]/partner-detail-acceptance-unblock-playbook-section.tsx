@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -51,7 +52,12 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerUnblockPlaybookEmptyState />}
+            emptyMessage={
+              <AdminEmptyState
+                framed
+                message="No marketplace or payout unblock steps are currently required."
+              />
+            }
             headers={unblockPlaybookHeaders}
             rowCount={steps.length}
           >
@@ -88,14 +94,5 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
         <PartnerDetailVuexyTableFooter rowCount={steps.length} />
       </div>
     </AdminFilterPanel>
-  );
-}
-
-function PartnerUnblockPlaybookEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No marketplace or payout unblock steps are currently required.</p>
-    </div>
   );
 }

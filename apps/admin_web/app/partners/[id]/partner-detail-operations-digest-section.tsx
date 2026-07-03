@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 import {
@@ -40,7 +41,9 @@ export function PartnerDetailOperationsDigestSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerOperationsDigestEmptyState />}
+            emptyMessage={
+              <AdminEmptyState framed message="No partner operations digest lanes are currently loaded." />
+            }
             headers={operationsDigestHeaders}
             rowCount={rows.length}
           >
@@ -76,14 +79,5 @@ export function PartnerDetailOperationsDigestSection({
         <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       </div>
     </AdminFilterPanel>
-  );
-}
-
-function PartnerOperationsDigestEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No partner operations digest lanes are currently loaded.</p>
-    </div>
   );
 }

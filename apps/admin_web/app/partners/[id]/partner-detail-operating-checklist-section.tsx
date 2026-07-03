@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   PartnerDetailVuexyTableFooter,
@@ -42,7 +43,9 @@ export function PartnerDetailOperatingChecklistSection({
         <AdminTableScroll>
           <AdminDataTable
             className={partnerDetailReviewTableClassName}
-            emptyMessage={<PartnerOperatingChecklistEmptyState />}
+            emptyMessage={
+              <AdminEmptyState framed message="No partner active-work checks are currently loaded." />
+            }
             headers={operatingChecklistHeaders}
             rowCount={rows.length}
           >
@@ -72,14 +75,5 @@ export function PartnerDetailOperatingChecklistSection({
       </div>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
     </AdminFilterPanel>
-  );
-}
-
-function PartnerOperatingChecklistEmptyState() {
-  return (
-    <div className="empty-state">
-      <strong>No records found</strong>
-      <p className="muted">No partner active-work checks are currently loaded.</p>
-    </div>
   );
 }
