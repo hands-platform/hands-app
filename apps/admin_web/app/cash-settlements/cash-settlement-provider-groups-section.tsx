@@ -10,7 +10,7 @@ type CashSettlementProviderGroupsSectionProps = {
 export function CashSettlementProviderGroupsSection({ providers }: CashSettlementProviderGroupsSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Partner-level view for deciding whether to collect a direct deposit or approve an offset against later positive earnings."
       resultLabel={`${providers.length} partner(s)`}
       resultTone={providers.length > 0 ? 'warning' : 'success'}

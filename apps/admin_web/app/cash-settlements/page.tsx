@@ -187,7 +187,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         </>
       ) : (
         <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
           description="The default queue keeps payload focused on today's action list. Open the full view only when policy, workflow, and Partner group evidence is needed."
           resultLabel="Compact default"
           resultTone="info"

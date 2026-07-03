@@ -1,5 +1,6 @@
 import {
   CashSettlementExecutionSection,
+  CashSettlementRulesSection,
   CashSettlementWorkflowSections,
 } from './cash-settlement-board-sections';
 
@@ -94,8 +95,40 @@ describe('CashSettlement board sections', () => {
         'pill pill pill-success',
       ]),
     );
+    expect(groupedTableCardClassNamesIn(classNames)).toHaveLength(5);
+  });
+
+  it('keeps cash operating rules on the grouped Vuexy table-card shell', () => {
+    const section = CashSettlementRulesSection({
+      appliedPolicyCards: [
+        {
+          helper: 'Current policy helper',
+          label: 'Settlement limit',
+          value: '100,000 VND',
+        },
+      ],
+      settlementRuleCards: [
+        {
+          action: 'Check evidence.',
+          className: 'ops-task-pending',
+          detail: 'Finance needs deposit evidence.',
+          pillClass: 'pill pill-info',
+          status: 'Review',
+          title: 'Evidence rule',
+        },
+      ],
+    });
+
+    expect(groupedTableCardClassNamesIn(classNamesIn(section))).toHaveLength(1);
   });
 });
+
+function groupedTableCardClassNamesIn(classNames: readonly string[]) {
+  return classNames.filter(
+    (className) =>
+      className.includes('vuexy-booking-table-card') && className.includes('vuexy-booking-table-group'),
+  );
+}
 
 function classNamesIn(value: unknown): string[] {
   value = resolveElement(value);

@@ -64,7 +64,7 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
 export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleCards }: RulesSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description="Use this as the first read before finance calls a Partner or clears a wallet. The rule is factual: cash fee debt gates final acceptance, service start, and payout release, not customer access or account status."
       resultLabel={`${settlementRuleCards.length} rule(s)`}
       resultTone="info"
@@ -116,7 +116,7 @@ export function CashSettlementWorkflowSections({
         title="Debt cause board"
       />
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="Standard operating flow for reopening final acceptance, service start, and payout release after cash-fee debt is paid or offset. This does not track blocked marketplace attempts."
         resultLabel={`${recoverySteps.length} step(s)`}
         resultTone={recoverySteps.length > 0 ? 'warning' : 'success'}
@@ -180,7 +180,7 @@ function CommandCardSection({
 }) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description={description}
       resultLabel={`${cards.length} item(s)`}
       resultTone={cards.length > 0 ? 'warning' : 'success'}
@@ -228,7 +228,7 @@ function LinkedCardSection({
 }) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description={description}
       resultLabel={`${items.length} item(s)`}
       resultTone={items.length > 0 ? 'warning' : 'success'}
