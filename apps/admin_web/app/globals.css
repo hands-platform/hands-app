@@ -10239,6 +10239,18 @@ a.action-button-card:hover {
   min-height: 100%;
 }
 
+.marketing-breakdown-loader-body {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.marketing-breakdown-loader-empty {
+  flex: 1 1 320px;
+  min-height: 76px;
+}
+
 .marketing-analytics-table {
   min-width: 1080px;
 }

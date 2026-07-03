@@ -519,17 +519,21 @@ function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof norm
   return (
     <AdminSection
       actions={<BarChart3 size={18} aria-hidden="true" />}
-      bodyClassName="empty-state"
+      bodyClassName="marketing-breakdown-loader-body"
       className="usage-overview-ranking-card marketing-table-card"
       description="The default view loads summary counts only. Open breakdowns when you need source, region, campaign, and platform rows."
       title="Breakdown tables"
     >
-        <BarChart3 size={22} aria-hidden="true" />
-        <strong>Dimension rows are not loaded by default.</strong>
-        <p className="muted">This keeps Marketing Analytics light until an operator requests the list data.</p>
-        <a className="button button-primary" href={`${href}${joiner}breakdowns=1`}>
-          Load breakdown tables
-        </a>
+      <BarChart3 size={22} aria-hidden="true" />
+      <AdminEmptyState
+        className="marketing-breakdown-loader-empty"
+        framed
+        message="This keeps Marketing Analytics light until an operator requests the list data."
+        title="Dimension rows are not loaded by default."
+      />
+      <a className="button button-primary" href={`${href}${joiner}breakdowns=1`}>
+        Load breakdown tables
+      </a>
     </AdminSection>
   );
 }

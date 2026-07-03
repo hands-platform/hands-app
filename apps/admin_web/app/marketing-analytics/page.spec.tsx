@@ -80,7 +80,9 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-insight-card');
     expect(markup).toContain('admin-section-body marketing-insight-list');
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-table-card');
-    expect(markup).toContain('admin-section-body empty-state');
+    expect(markup).toContain('admin-section-body marketing-breakdown-loader-body');
+    expect(markup).toContain('empty-state marketing-breakdown-loader-empty');
+    expect(pageSource).not.toContain('bodyClassName="empty-state"');
   });
 
   it('renders breakdown tables with shared Vuexy table atoms when requested', async () => {
