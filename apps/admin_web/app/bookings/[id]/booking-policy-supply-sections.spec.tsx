@@ -33,6 +33,10 @@ describe('booking policy supply sections', () => {
         'admin-avatar-status-dot is-working',
       ]),
     );
+    expect(classNamesIn(candidateSection)).not.toContain('card');
+    expect(classNamesIn(candidateSection).filter((className) => className.includes('booking-supply-panel'))).toHaveLength(
+      2,
+    );
   });
 
   it('renders booking policy and supply panels with the shared Vuexy admin section surface', () => {

@@ -291,7 +291,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
         </div>
       </div>
       <div className="grid admin-mt-14">
-        <div className="card">
+        <div className="ops-task-note booking-supply-panel">
           <h3>Top usable Partners</h3>
           <p className="muted">
             Closest eligible Partners under the booking pin, radius, online, verification, and location freshness
@@ -331,7 +331,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             ) : null}
           </div>
         </div>
-        <div className="card">
+        <div className="ops-task-note booking-supply-panel">
           <h3>Operational supply blockers</h3>
           <p className="muted">
             Non-wallet supply repair groups for this booking pin. Wallet debt repair is handled outside the

@@ -13123,6 +13123,18 @@ a.ops-task-card {
   padding: 8px 10px;
 }
 
+.booking-supply-panel {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.booking-supply-panel > h3,
+.booking-supply-panel > p {
+  margin: 0;
+}
+
 .ops-task-info {
   background: var(--admin-info-soft);
   border-color: rgb(var(--admin-info-channel) / 0.2);
