@@ -114,6 +114,9 @@ describe('AdminReviewRecordsSection', () => {
     expect(markup).toContain('href="/bookings/booking_1"');
     expect(markup).toContain('href="/customers/customer_1"');
     expect(markup).toContain('href="/partners/partner_1"');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
+    );
   });
 
   it('keeps Partner evaluations read-only without moderation controls', () => {

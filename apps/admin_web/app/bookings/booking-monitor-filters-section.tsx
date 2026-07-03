@@ -137,7 +137,7 @@ export function BookingMonitorFiltersSection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
       description={(
         <>
           Active queue: <strong>{activeView.label}</strong> - {activeView.description}

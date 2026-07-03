@@ -67,7 +67,7 @@ export function AdminReviewRecordsSection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card"
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
       description={description}
       id={id}
       resultLabel={`${totalRecords} record(s)`}
