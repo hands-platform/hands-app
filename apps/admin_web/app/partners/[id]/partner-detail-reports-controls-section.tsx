@@ -6,6 +6,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -182,12 +183,11 @@ export function PartnerDetailReportsControlsSection({
             name="type"
             options={accountControlTypeOptions}
           />
-          <AdminFormInput
+          <AdminFormDateTime
             className="field"
             label="Expires at"
             labelVisibility="visible"
             name="expiresAt"
-            type="datetime-local"
           />
           <AdminFormInput
             className="field full-span"

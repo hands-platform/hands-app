@@ -3,7 +3,12 @@ import { Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import {
+  AdminFormCheckbox,
+  AdminFormControlButton,
+  AdminFormDateTime,
+  AdminFormInput,
+} from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
@@ -151,21 +156,19 @@ function CouponManagementCard({
           <input name="couponId" type="hidden" value={row.id} />
           <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
           <div>
-            <AdminFormInput
+            <AdminFormDateTime
               defaultValue={row.startsAtInputValue}
               label="Starts"
               labelVisibility="visible"
               name="startsAt"
-              type="datetime-local"
             />
           </div>
           <div>
-            <AdminFormInput
+            <AdminFormDateTime
               defaultValue={row.endsAtInputValue}
               label="Ends"
               labelVisibility="visible"
               name="endsAt"
-              type="datetime-local"
             />
           </div>
           <AdminFormCheckbox

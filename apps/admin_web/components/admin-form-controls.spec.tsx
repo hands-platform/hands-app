@@ -3,6 +3,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormDateTime,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
@@ -101,6 +102,28 @@ describe('Admin form controls', () => {
       'admin-form-input admin-form-input-date-picker admin-form-control-labeled',
     );
     expect(monthInput.props.children[1].props.type).toBe('month');
+  });
+
+  it('renders date-time controls through a dedicated Vuexy atom', () => {
+    const dateTime = AdminFormDateTime({
+      className: 'payout-paid-at',
+      defaultValue: '2026-07-03T14:30',
+      label: 'Paid at',
+      labelVisibility: 'visible',
+      name: 'paidAt',
+      required: true,
+    });
+
+    expect(dateTime.props.className).toBe(
+      'admin-form-input admin-form-input-date-picker admin-form-control-labeled payout-paid-at',
+    );
+    expect(textContent(dateTime)).toContain('Paid at');
+    expect(dateTime.props.children[1].props).toMatchObject({
+      defaultValue: '2026-07-03T14:30',
+      name: 'paidAt',
+      required: true,
+      type: 'datetime-local',
+    });
   });
 
   it('can render visible field labels for operator data-entry forms', () => {

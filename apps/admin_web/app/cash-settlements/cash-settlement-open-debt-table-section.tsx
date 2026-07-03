@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import {
   AdminFormControlButton,
+  AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -181,7 +182,7 @@ export function CashSettlementOpenDebtTableSection({
                         placeholder="Bank transaction id"
                         required
                       />
-                      <AdminFormInput label="Deposit date" name="depositDate" required type="datetime-local" />
+                      <AdminFormDateTime label="Deposit date" name="depositDate" required />
                       <AdminFormInput label="Bank account" name="bankAccount" placeholder="Bank account" />
                       <AdminFormInput
                         label="Attachment evidence"

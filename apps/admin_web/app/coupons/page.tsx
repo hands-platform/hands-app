@@ -1,6 +1,7 @@
 import type { AdminCoupon, AdminCouponSummary, AdminCouponUsagePage } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import {
+  AdminFormDateTime,
   AdminFormControlButton,
   AdminFormInput,
   AdminFormTextarea,
@@ -130,10 +131,10 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             type="number"
           />
           <div className="calendar-field coupon-date-field">
-            <AdminFormInput label="Starts" labelVisibility="visible" name="startsAt" type="datetime-local" />
+            <AdminFormDateTime label="Starts" labelVisibility="visible" name="startsAt" />
           </div>
           <div className="calendar-field coupon-date-field">
-            <AdminFormInput label="Ends" labelVisibility="visible" name="endsAt" type="datetime-local" />
+            <AdminFormDateTime label="Ends" labelVisibility="visible" name="endsAt" />
           </div>
           <AdminFormControlButton className="button" type="submit">
             Create coupons

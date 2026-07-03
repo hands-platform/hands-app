@@ -1,7 +1,11 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
+import {
+  AdminFormControlButton,
+  AdminFormDateTime,
+  AdminFormInput,
+} from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import type { StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
@@ -169,11 +173,10 @@ function WithdrawalRequestActions({
             required
             type="text"
           />
-          <AdminFormInput
+          <AdminFormDateTime
             label={`Bank transfer date for withdrawal ${request.id}`}
             name="bankTransferDate"
             required
-            type="datetime-local"
           />
           <AdminFormInput
             label={`Bank transfer evidence URL for withdrawal ${request.id}`}

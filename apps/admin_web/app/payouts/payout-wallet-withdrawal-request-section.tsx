@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import {
+  AdminFormControlButton,
+  AdminFormDateTime,
+  AdminFormInput,
+} from '../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
 import type {
@@ -268,11 +272,10 @@ function WithdrawalRequestActions({
             required
             type="text"
           />
-          <AdminFormInput
+          <AdminFormDateTime
             label={`Bank transfer date for ${partnerLabel(request)}`}
             name="bankTransferDate"
             required
-            type="datetime-local"
           />
           <AdminFormInput
             label={`Bank transfer evidence URL for ${partnerLabel(request)}`}

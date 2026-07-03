@@ -37,6 +37,13 @@ type AdminFormDateProps = {
   readonly name: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'value'>;
 
+type AdminFormDateTimeProps = {
+  readonly className?: string;
+  readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
+  readonly name: string;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'required' | 'value'>;
+
 type AdminFormInputProps = {
   readonly className?: string;
   readonly label: string;
@@ -181,6 +188,31 @@ export function AdminFormDate({
       />
     </label>
   );
+}
+
+export function AdminFormDateTime({
+  className,
+  defaultValue,
+  disabled,
+  label,
+  labelVisibility,
+  name,
+  onChange,
+  required,
+  value,
+}: AdminFormDateTimeProps) {
+  return AdminFormInput({
+    className,
+    defaultValue,
+    disabled,
+    label,
+    labelVisibility,
+    name,
+    onChange,
+    required,
+    type: 'datetime-local',
+    value,
+  });
 }
 
 export function AdminFormInput({

@@ -7,6 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import {
   AdminFormControlButton,
+  AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
@@ -198,12 +199,11 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               name="approvalAdminId"
               placeholder="Required when moving to PAID"
             />
-            <AdminFormInput
+            <AdminFormDateTime
               defaultValue={datetimeLocalValue(summary.remittanceMetadata?.paidAt ?? summary.paidAt)}
               label="Paid at"
               labelVisibility="visible"
               name="paidAt"
-              type="datetime-local"
             />
             <AdminFormInput
               defaultValue={summary.remittanceMetadata?.channel ?? ''}

@@ -3,6 +3,7 @@ import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, admin
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -190,13 +191,12 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             name="status"
             options={statusSelectOptions}
           />
-          <AdminFormInput
+          <AdminFormDateTime
             className="calendar-field"
             label="Effective from"
             labelVisibility="visible"
             name="effectiveFrom"
             required
-            type="datetime-local"
           />
           <AdminFormInput
             className="calendar-field"
@@ -248,21 +248,19 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 name="status"
                 options={statusSelectOptions}
               />
-              <AdminFormInput
+              <AdminFormDateTime
                 className="calendar-field"
                 defaultValue={toDateTimeLocal(policy.effectiveFrom)}
                 label="Effective from"
                 labelVisibility="visible"
                 name="effectiveFrom"
-                type="datetime-local"
               />
-              <AdminFormInput
+              <AdminFormDateTime
                 className="calendar-field"
                 defaultValue={toDateTimeLocal(policy.effectiveTo)}
                 label="Effective to"
                 labelVisibility="visible"
                 name="effectiveTo"
-                type="datetime-local"
               />
               <AdminFormInput
                 className="calendar-field"
