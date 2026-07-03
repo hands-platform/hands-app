@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
@@ -80,16 +81,16 @@ export function BookingMonitorMatchingEscalationSection({
   }
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Matching escalation board</h2>
-          <p className="muted">Only lanes with current dispatch work are shown here.</p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="text-link" href="/operations-policy">
           Change matching rules
         </Link>
-      </div>
+      }
+      className="admin-mt-16"
+      description="Only lanes with current dispatch work are shown here."
+      title="Matching escalation board"
+    >
       <div className="ops-section-header admin-mt-14">
         <div>
           <h3>Applied operations policy</h3>
@@ -307,7 +308,7 @@ export function BookingMonitorMatchingEscalationSection({
           </AdminTableScroll>
         </div>
       )}
-    </section>
+    </AdminSection>
   );
 }
 

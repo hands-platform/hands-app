@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 
 describe('BookingMonitorMatchingEscalationSection', () => {
@@ -87,6 +87,12 @@ describe('BookingMonitorMatchingEscalationSection', () => {
     expect(rendered).toContain('Direct-ready Partners');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('8m left');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section admin-mt-16',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/operations-policy',
