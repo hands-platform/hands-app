@@ -1,6 +1,4 @@
-import Link from 'next/link';
-
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 
 type PartnerMarketplaceHoldBoardTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -46,13 +44,15 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
     >
       <div className="grid admin-mt-12">
         {board.cards.map((card) => (
-          <Link className="card" href={card.href} key={card.title}>
-            <p>{card.title}</p>
-            <h2>{card.count}</h2>
-            <span className={`signal ${partnerMarketplaceHoldToneClass(card.tone)}`}>{card.status}</span>
-            <p className="muted admin-mt-8">
-              {card.detail}
-            </p>
+          <AdminActionCard
+            detail={card.detail}
+            href={card.href}
+            key={card.title}
+            signalClassName={partnerMarketplaceHoldToneClass(card.tone)}
+            signalLabel={card.status}
+            title={card.title}
+            value={card.count}
+          >
             <p className="muted admin-mt-8">
               {card.operatorAction}
             </p>
@@ -67,7 +67,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
                 <span className="pill pill-success">No immediate queue</span>
               )}
             </div>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>

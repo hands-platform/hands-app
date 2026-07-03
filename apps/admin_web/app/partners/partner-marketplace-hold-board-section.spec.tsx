@@ -24,6 +24,7 @@ describe('PartnerMarketplaceHoldBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 partner-marketplace-hold-board-card',
+        'card admin-action-card',
         'pill pill-danger',
         'pill pill-warn',
         'signal signal-warn',

@@ -25,6 +25,7 @@ describe('PartnerKycReviewBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 partner-kyc-review-board-card',
+        'card admin-action-card',
         'pill pill-warn',
         'signal signal-info',
       ]),
