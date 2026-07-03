@@ -17,6 +17,18 @@ describe('CashSettlementProviderGroupsSection', () => {
     expect(classNamesIn(section)).toContain('empty-state');
   });
 
+  it('uses shared badge atoms for Partner debt group status chips', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-provider-groups-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-danger">');
+    expect(source).not.toContain('<span className="pill pill-warn">');
+    expect(source).not.toContain('<span className="pill pill-info">');
+  });
+
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {
     const section = CashSettlementProviderGroupsSection({
       providers: [

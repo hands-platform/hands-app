@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
 
@@ -28,7 +29,9 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
             <div key={provider.providerProfileId}>
               <div className="ops-section-header">
                 <h3>{provider.providerName}</h3>
-                <span className="pill pill-danger">{formatMoney(provider.debtAmount, provider.currency)}</span>
+                <PillClassBadge pillClass="pill-danger">
+                  {formatMoney(provider.debtAmount, provider.currency)}
+                </PillClassBadge>
               </div>
               <p className="muted">
                 {provider.rowCount} open cash debt row(s), {formatMoney(provider.platformFee, provider.currency)} HANDS
@@ -38,8 +41,8 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                 <Link className="pill" href={`/partners/${provider.providerProfileId}`}>
                   Partner
                 </Link>
-                <span className="pill pill-warn">Suggested ref {provider.settlementReference}</span>
-                <span className="pill pill-info">{provider.oldestOpenLabel}</span>
+                <PillClassBadge pillClass="pill-warn">Suggested ref {provider.settlementReference}</PillClassBadge>
+                <PillClassBadge pillClass="pill-info">{provider.oldestOpenLabel}</PillClassBadge>
               </div>
             </div>
           ))}
