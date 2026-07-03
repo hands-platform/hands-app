@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { ActionMenu } from '../../components/action-menu';
 import type { TaxFinanceWorkflowLink } from './tax-settlement-page-model';
 
 export function TaxFinanceWorkflowActions({
@@ -13,11 +13,15 @@ export function TaxFinanceWorkflowActions({
   return (
     <>
       {children}
-      {links.map((link) => (
-        <Link className="pill pill-info" href={link.href} key={link.key}>
-          {link.label}
-        </Link>
-      ))}
+      <ActionMenu
+        actions={links.map((link) => ({
+          href: link.href,
+          kind: 'link',
+          label: link.label,
+          tone: 'info',
+        }))}
+        label="Finance workflow actions"
+      />
     </>
   );
 }
