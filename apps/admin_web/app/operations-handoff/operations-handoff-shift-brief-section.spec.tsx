@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
 
 describe('OperationsHandoffShiftBriefSection', () => {
@@ -19,6 +19,12 @@ describe('OperationsHandoffShiftBriefSection', () => {
     expect(rendered).toContain('5 matching wait');
     expect(rendered).toContain('6 Partner facts to check');
     expect(rendered).toContain('2 cash wallet gate(s)');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=matching',

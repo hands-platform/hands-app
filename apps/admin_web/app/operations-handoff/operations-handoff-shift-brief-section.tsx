@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import { buildShiftBriefItems } from './operations-handoff-shift-brief';
 
 type OperationsHandoffShiftBriefSectionProps = {
@@ -28,14 +29,11 @@ export function OperationsHandoffShiftBriefSection({
   });
 
   return (
-    <div className="card">
-      <div className="toolbar">
-        <div>
-          <h2>Shift brief</h2>
-          <p className="muted">Recommended opening order for the next operator.</p>
-        </div>
-        <span className="pill pill-info">Factual queue</span>
-      </div>
+    <AdminSection
+      actions={<span className="pill pill-info">Factual queue</span>}
+      description="Recommended opening order for the next operator."
+      title="Shift brief"
+    >
       <div className="ops-task-grid">
         {items.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.title}>
@@ -46,6 +44,6 @@ export function OperationsHandoffShiftBriefSection({
           </Link>
         ))}
       </div>
-    </div>
+    </AdminSection>
   );
 }

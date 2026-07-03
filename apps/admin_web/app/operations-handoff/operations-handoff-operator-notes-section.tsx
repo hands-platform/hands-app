@@ -5,6 +5,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminSection } from '../../components/admin-surface';
 import { formatRelativeTime } from '../../lib/admin-format';
 import { addOperationsHandoffNote } from './actions';
 import type { OperatorNoteRow } from './operations-handoff-operator-notes';
@@ -17,17 +18,16 @@ export function OperationsHandoffOperatorNotesSection({
   notes,
 }: OperationsHandoffOperatorNotesSectionProps) {
   return (
-    <div className="card">
-      <div className="toolbar">
-        <div>
-          <h2>Latest operator notes</h2>
-          <p className="muted">Shift, Customer, Partner, and booking notes written by admins.</p>
-        </div>
+    <AdminSection
+      actions={
         <Link className="button button-secondary" href="/audit-log">
           <ScrollText aria-hidden="true" size={16} />
           Open audit log
         </Link>
-      </div>
+      }
+      description="Shift, Customer, Partner, and booking notes written by admins."
+      title="Latest operator notes"
+    >
       <form action={addOperationsHandoffNote} className="ops-note-form admin-mb-14">
         <div className="form-grid compact-form">
           <div className="calendar-field">
@@ -99,7 +99,7 @@ export function OperationsHandoffOperatorNotesSection({
         ))}
         {notes.length === 0 ? <p className="muted">No operator note has been written yet.</p> : null}
       </div>
-    </div>
+    </AdminSection>
   );
 }
 

@@ -23,6 +23,12 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     expect(rendered).toContain('Partner operations handoff reviewed.');
     expect(rendered).toContain('Partner document reviewed');
     expect(rendered).toContain('Ops Lead');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-section',
+        'ops-section-header admin-section-header',
+      ]),
+    );
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/audit-log', '/partners/partner-1']));
   });
 

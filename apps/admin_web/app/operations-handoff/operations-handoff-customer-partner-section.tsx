@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Briefcase, Users } from 'lucide-react';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminSection } from '../../components/admin-surface';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
@@ -22,17 +23,16 @@ export function OperationsHandoffCustomerPartnerSection({
   return (
     <section className="detail-grid admin-mb-16">
       {visibleCustomers.length > 0 ? (
-        <div className="card">
-          <div className="toolbar">
-            <div>
-              <h2>Customer handoff</h2>
-              <p className="muted">Recent customers with booking, payment, address, and chat evidence.</p>
-            </div>
+        <AdminSection
+          actions={
             <Link className="button button-secondary" href="/customers">
               <Users aria-hidden="true" size={16} />
               Customer list
             </Link>
-          </div>
+          }
+          description="Recent customers with booking, payment, address, and chat evidence."
+          title="Customer handoff"
+        >
           <div className="stack">
             {visibleCustomers.map((customer) => (
               <Link className="ops-signal-card" href={`/customers/${customer.id}`} key={customer.id}>
@@ -48,21 +48,20 @@ export function OperationsHandoffCustomerPartnerSection({
               </Link>
             ))}
           </div>
-        </div>
+        </AdminSection>
       ) : null}
 
       {visiblePartners.length > 0 ? (
-        <div className="card">
-          <div className="toolbar">
-            <div>
-              <h2>Partner handoff</h2>
-              <p className="muted">Partners that need location, identity, bank, or wallet follow-up.</p>
-            </div>
+        <AdminSection
+          actions={
             <Link className="button button-secondary" href="/partners">
               <Briefcase aria-hidden="true" size={16} />
               Partner list
             </Link>
-          </div>
+          }
+          description="Partners that need location, identity, bank, or wallet follow-up."
+          title="Partner handoff"
+        >
           <div className="stack">
             {visiblePartners.map((partner) => (
               <Link className="ops-signal-card" href={`/partners/${partner.id}`} key={partner.id}>
@@ -78,7 +77,7 @@ export function OperationsHandoffCustomerPartnerSection({
               </Link>
             ))}
           </div>
-        </div>
+        </AdminSection>
       ) : null}
     </section>
   );

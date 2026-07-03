@@ -55,6 +55,8 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
       expect.arrayContaining([
         'admin-avatar-status-dot is-offline',
         'admin-avatar-status-dot is-working',
+        'card admin-section',
+        'ops-section-header admin-section-header',
       ]),
     );
     expect(hrefsIn(section)).toEqual(
