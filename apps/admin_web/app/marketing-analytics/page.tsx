@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminSection } from '../../components/admin-surface';
 import {
   AdminFormControlButton,
   AdminFormInput,
@@ -506,26 +507,20 @@ function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof norm
   const joiner = href.includes('?') ? '&' : '?';
 
   return (
-    <article className="card usage-overview-ranking-card marketing-table-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Breakdown tables</h2>
-          <p className="muted">
-            The default view loads summary counts only. Open breakdowns when you need source, region,
-            campaign, and platform rows.
-          </p>
-        </div>
-        <BarChart3 size={18} aria-hidden="true" />
-      </div>
-      <div className="empty-state">
+    <AdminSection
+      actions={<BarChart3 size={18} aria-hidden="true" />}
+      bodyClassName="empty-state"
+      className="usage-overview-ranking-card marketing-table-card"
+      description="The default view loads summary counts only. Open breakdowns when you need source, region, campaign, and platform rows."
+      title="Breakdown tables"
+    >
         <BarChart3 size={22} aria-hidden="true" />
         <strong>Dimension rows are not loaded by default.</strong>
         <p className="muted">This keeps Marketing Analytics light until an operator requests the list data.</p>
         <a className="button button-primary" href={`${href}${joiner}breakdowns=1`}>
           Load breakdown tables
         </a>
-      </div>
-    </article>
+    </AdminSection>
   );
 }
 
@@ -560,54 +555,53 @@ function FilterButtons<T extends string>({
 
 function FunnelCard({ overview }: { overview: AdminMarketingOverview }) {
   return (
-    <article className="card usage-overview-ranking-card marketing-funnel-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Acquisition funnel</h2>
-          <p className="muted">Canonical HANDS funnel events from first open through repeat completion.</p>
-        </div>
-        <MousePointerClick size={18} aria-hidden="true" />
-      </div>
-      <div className="marketing-funnel-list">
-        {overview.funnel.map((step) => (
-          <div key={step.key} className="marketing-funnel-step">
-            <span className="marketing-funnel-dot" aria-hidden="true" />
-            <div>
-              <strong>{step.label}</strong>
-              <small>{step.key}</small>
-            </div>
-            <span>{formatNumber(step.value)}</span>
-            <em>{step.rateFromPrevious === null ? 'Start' : formatPercent(step.rateFromPrevious)}</em>
+    <AdminSection
+      actions={<MousePointerClick size={18} aria-hidden="true" />}
+      bodyClassName="marketing-funnel-list"
+      className="usage-overview-ranking-card marketing-funnel-card"
+      description="Canonical HANDS funnel events from first open through repeat completion."
+      title="Acquisition funnel"
+    >
+      {overview.funnel.map((step) => (
+        <div key={step.key} className="marketing-funnel-step">
+          <span className="marketing-funnel-dot" aria-hidden="true" />
+          <div>
+            <strong>{step.label}</strong>
+            <small>{step.key}</small>
           </div>
-        ))}
-      </div>
-    </article>
+          <span>{formatNumber(step.value)}</span>
+          <em>{step.rateFromPrevious === null ? 'Start' : formatPercent(step.rateFromPrevious)}</em>
+        </div>
+      ))}
+    </AdminSection>
   );
 }
 
 function InsightCard({ overview }: { overview: AdminMarketingOverview }) {
   return (
-    <article className="card usage-overview-ranking-card marketing-insight-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Top insights</h2>
-          <p className="muted">Operator-readable findings and current data gaps before paid scaling.</p>
-        </div>
-        <Send size={18} aria-hidden="true" />
-      </div>
-      <div className="marketing-insight-list">
+    <AdminSection
+      actions={<Send size={18} aria-hidden="true" />}
+      bodyClassName="marketing-insight-list"
+      className="usage-overview-ranking-card marketing-insight-card"
+      description="Operator-readable findings and current data gaps before paid scaling."
+      footer={
+        overview.dataGaps.length > 0 ? (
+          <>
+            {overview.dataGaps.map((gap) => (
+              <span key={gap}>{gap}</span>
+            ))}
+          </>
+        ) : null
+      }
+      footerClassName="marketing-data-gap-list"
+      title="Top insights"
+    >
         {(overview.topInsights.length ? overview.topInsights : ['No material insight in this range yet.']).map(
           (insight) => (
             <p key={insight}>{insight}</p>
           ),
         )}
-      </div>
-      <div className="marketing-data-gap-list">
-        {overview.dataGaps.map((gap) => (
-          <span key={gap}>{gap}</span>
-        ))}
-      </div>
-    </article>
+    </AdminSection>
   );
 }
 
@@ -642,12 +636,8 @@ function MarketingTable({
   const pageTo = page ? Math.min(totalRows, page.skip + rows.length) : rows.length;
 
   return (
-    <article className="card usage-overview-ranking-card marketing-table-card">
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
+    <AdminSection
+      actions={
         <div className="actions marketing-table-actions">
           {page ? (
             <span className="pill pill-info">
@@ -656,8 +646,32 @@ function MarketingTable({
           ) : null}
           {icon}
         </div>
-      </div>
-      <div className="admin-table-scroll usage-overview-table-wrap">
+      }
+      bodyClassName="admin-table-scroll usage-overview-table-wrap"
+      className="usage-overview-ranking-card marketing-table-card"
+      description={description}
+      footer={
+        page ? (
+          <>
+            <span>
+              Showing {formatNumber(pageFrom)} to {formatNumber(pageTo)} of {formatNumber(totalRows)} entries
+            </span>
+            <AdminRoundedPagination
+              activePage={activePage}
+              ariaLabel={`${title} pagination`}
+              className="vuexy-booking-pagination"
+              hrefForPage={(nextPage) =>
+                marketingAnalyticsDimensionPageHref(filters, page.dimension, nextPage)
+              }
+              pageLinkClassName="vuexy-booking-page-link"
+              totalPages={totalPages}
+            />
+          </>
+        ) : null
+      }
+      footerClassName="vuexy-booking-table-footer marketing-table-pagination-footer"
+      title={title}
+    >
         <table className="table usage-overview-table marketing-analytics-table">
           <thead>
             <tr>
@@ -711,25 +725,7 @@ function MarketingTable({
             ) : null}
           </tbody>
         </table>
-      </div>
-      {page ? (
-        <div className="vuexy-booking-table-footer marketing-table-pagination-footer">
-          <span>
-            Showing {formatNumber(pageFrom)} to {formatNumber(pageTo)} of {formatNumber(totalRows)} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={activePage}
-            ariaLabel={`${title} pagination`}
-            className="vuexy-booking-pagination"
-            hrefForPage={(nextPage) =>
-              marketingAnalyticsDimensionPageHref(filters, page.dimension, nextPage)
-            }
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={totalPages}
-          />
-        </div>
-      ) : null}
-    </article>
+    </AdminSection>
   );
 }
 

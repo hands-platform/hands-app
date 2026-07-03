@@ -58,4 +58,16 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).not.toContain('<label><span>Source</span><select');
     expect(markup).not.toContain('<label><span>Campaign ID</span><input');
   });
+
+  it('renders marketing evidence cards with shared Vuexy section surfaces', async () => {
+    const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-funnel-card');
+    expect(markup).toContain('admin-section-body marketing-funnel-list');
+    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-insight-card');
+    expect(markup).toContain('admin-section-body marketing-insight-list');
+    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-table-card');
+    expect(markup).toContain('admin-section-body empty-state');
+  });
 });
