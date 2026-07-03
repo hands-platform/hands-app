@@ -1,6 +1,13 @@
+import { readFileSync } from 'node:fs';
+
 import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
+
+const sectionSource = readFileSync(
+  new URL('./operations-policy-booking-create-gate-section.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('OperationsPolicyBookingCreateGateSection', () => {
   it('renders booking gate rows and recent blocked attempts', () => {
@@ -72,6 +79,8 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     );
 
     expect(rendered).toContain('No booking create gate rejections are currently recorded.');
+    expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('<div className="empty-state');
   });
 
   it('does not duplicate the base pill class for gate and blocked attempt badges', () => {

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
@@ -96,9 +97,12 @@ export function OperationsPolicyBookingCreateGateSection({
         </Link>
       </div>
       {review.recentAttempts.length === 0 ? (
-        <div className="empty-state admin-mt-12">
-          No booking create gate rejections are currently recorded.
-        </div>
+        <AdminEmptyState
+          className="admin-mt-12"
+          framed
+          message="No booking create gate rejections are currently recorded."
+          title={null}
+        />
       ) : (
         <div className="ops-task-grid admin-mt-14">
           {review.recentAttempts.map((attempt) => (
