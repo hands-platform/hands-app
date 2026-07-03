@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 
@@ -34,6 +35,18 @@ type AdminKpiCardProps = {
   readonly href?: string;
   readonly label: string;
   readonly value: number | string;
+};
+
+type AdminActionCardProps = {
+  readonly children?: ReactNode;
+  readonly className?: string;
+  readonly detail?: ReactNode;
+  readonly href: string;
+  readonly signalClassName?: string;
+  readonly signalLabel?: ReactNode;
+  readonly title: ReactNode;
+  readonly value: ReactNode;
+  readonly valueClassName?: string;
 };
 
 type AdminStateProps = {
@@ -97,6 +110,28 @@ export function AdminSection({
 
 export function AdminKpiCard(props: AdminKpiCardProps) {
   return <MetricCard {...props} />;
+}
+
+export function AdminActionCard({
+  children,
+  className,
+  detail,
+  href,
+  signalClassName,
+  signalLabel,
+  title,
+  value,
+  valueClassName,
+}: AdminActionCardProps) {
+  return (
+    <Link className={joinClassNames('card admin-action-card', className)} href={href}>
+      <p>{title}</p>
+      <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
+      {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+      {detail ? <p className="muted admin-mt-8">{detail}</p> : null}
+      {children}
+    </Link>
+  );
 }
 
 export function AdminLoadingState({

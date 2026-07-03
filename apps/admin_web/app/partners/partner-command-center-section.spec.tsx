@@ -22,6 +22,7 @@ describe('PartnerCommandCenterSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 partner-command-center-card',
+        'card admin-action-card',
         'signal signal-warn',
       ]),
     );

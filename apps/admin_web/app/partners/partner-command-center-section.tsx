@@ -1,6 +1,4 @@
-import Link from 'next/link';
-
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 
 export type PartnerCommandCenterSectionTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -27,15 +25,15 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
     >
       <div className="grid admin-mt-12">
         {lanes.map((lane) => (
-          <Link className="card" href={lane.href} key={lane.title}>
-            <p>{lane.title}</p>
-            <h2>{lane.status}</h2>
-            <span className={`signal ${partnerCommandCenterToneClass(lane.tone)}`}>
-              {partnerCommandCenterToneLabel(lane.tone)}
-            </span>
-            <p className="muted admin-mt-8">
-              {lane.detail}
-            </p>
+          <AdminActionCard
+            detail={lane.detail}
+            href={lane.href}
+            key={lane.title}
+            signalClassName={partnerCommandCenterToneClass(lane.tone)}
+            signalLabel={partnerCommandCenterToneLabel(lane.tone)}
+            title={lane.title}
+            value={lane.status}
+          >
             <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
                 <span className="pill" key={item.label}>
@@ -43,7 +41,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
                 </span>
               ))}
             </div>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>

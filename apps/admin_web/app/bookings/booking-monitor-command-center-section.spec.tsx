@@ -40,5 +40,6 @@ describe('BookingMonitorCommandCenterSection', () => {
       expect.arrayContaining(['/bookings?view=no-supply', '/bookings?view=payment']),
     );
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16 booking-monitor-command-center-card');
+    expect(classNamesIn(section)).toContain('card admin-action-card');
   });
 });

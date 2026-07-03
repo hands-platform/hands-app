@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
 
 export type BookingMonitorCommandCenterLane = {
@@ -25,11 +24,16 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
     >
       <div className="grid admin-mt-12">
         {lanes.map((lane) => (
-          <Link className="card" href={lane.href} key={lane.title}>
-            <p>{lane.title}</p>
-            <strong className="admin-summary-card-value">{lane.status}</strong>
-            <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-            <p className="muted admin-mt-8">{lane.detail}</p>
+          <AdminActionCard
+            detail={lane.detail}
+            href={lane.href}
+            key={lane.title}
+            signalClassName={commandToneClass(lane.tone)}
+            signalLabel={commandToneLabel(lane.tone)}
+            title={lane.title}
+            value={lane.status}
+            valueClassName="admin-summary-card-value"
+          >
             <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
                 <span className="pill" key={item.label}>
@@ -37,7 +41,7 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
                 </span>
               ))}
             </div>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>

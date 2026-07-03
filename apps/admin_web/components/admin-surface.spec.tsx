@@ -1,4 +1,5 @@
 import {
+  AdminActionCard,
   AdminCard,
   AdminErrorState,
   AdminKpiCard,
@@ -61,6 +62,23 @@ describe('Admin surface components', () => {
       href: '/finance-tax/payment-clearing',
       label: 'Payment queue',
       value: 8,
+    });
+  });
+
+  it('renders a reusable clickable action card surface', () => {
+    const card = AdminActionCard({
+      children: <span className="pill">ready: 2</span>,
+      detail: 'Operators can open this filtered queue.',
+      href: '/bookings?view=matching',
+      signalClassName: 'signal-warn',
+      signalLabel: 'Monitor',
+      title: 'Matching queue',
+      value: '3 open',
+    });
+
+    expect(card.props).toMatchObject({
+      className: 'card admin-action-card',
+      href: '/bookings?view=matching',
     });
   });
 
