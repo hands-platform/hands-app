@@ -679,6 +679,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
     expect(markup).toContain('/finance-tax/general-ledger/journal-batch-1');
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
+    expect(markup).toContain('finance-reconciliation-source-cell');
+    expect(markup).toContain('finance-reconciliation-reverse-form');
+    expect(markup).toContain('Requires approver ID before reversal.');
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('This bank transaction is already fully reconciled.');
     expect(markup).not.toContain('Create match');

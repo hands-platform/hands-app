@@ -8898,6 +8898,27 @@ a.action-button-card:hover {
   min-width: 156px;
 }
 
+.finance-reconciliation-source-cell,
+.finance-reconciliation-reverse-form,
+.finance-reconciliation-reverse-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-reconciliation-reverse-form {
+  min-width: 190px;
+}
+
+.finance-reconciliation-reverse-actions {
+  justify-items: start;
+}
+
+.finance-reconciliation-reverse-actions .muted {
+  font-size: 11px;
+  line-height: 15px;
+  max-width: 180px;
+}
+
 @media (max-width: 1180px) {
   .finance-overview-control-board,
   .finance-overview-kpi-grid,

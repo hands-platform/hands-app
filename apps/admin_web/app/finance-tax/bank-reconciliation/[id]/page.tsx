@@ -388,35 +388,16 @@ export default async function BankReconciliationDetailPage({
             {matches.map((match) => (
               <tr key={match.id}>
                 <td>
-                  <strong>{shortId(match.sourceKey)}</strong>
-                  <div className="muted">{formatDateTime(match.matchedAt)}</div>
+                  <ReconciliationMatchedSourceCell match={match} />
                 </td>
                 <td>
-                  {match.accountingJournalEntry ? (
-                    <>
-                      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
-                        {match.accountingJournalEntry.accountCode}
-                      </Link>
-                      <div className="muted">{match.accountingJournalEntry.accountName}</div>
-                    </>
-                  ) : (
-                    <span className="muted">-</span>
-                  )}
+                  <ReconciliationJournalCell match={match} />
                 </td>
                 <td>
-                  {match.paymentClearingEntry ? (
-                    <Link className="text-link" href={`/finance-tax/payment-clearing/${match.paymentClearingEntry.id}`}>
-                      {match.paymentClearingEntry.type}
-                    </Link>
-                  ) : (
-                    <span className="muted">-</span>
-                  )}
-                  <div className="muted">{match.paymentClearingEntry?.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}</div>
+                  <ReconciliationPaymentClearingCell match={match} />
                 </td>
                 <td>
-                  {match.withdrawalRequest ? <strong>Withdrawal {shortId(match.withdrawalRequest.id)}</strong> : null}
-                  {match.payoutBatch ? <strong>Payout {shortId(match.payoutBatch.id)}</strong> : null}
-                  {!match.withdrawalRequest && !match.payoutBatch ? <span className="muted">-</span> : null}
+                  <ReconciliationPayoutCell match={match} />
                 </td>
                 <td>
                   <strong>{formatMoney(match.amount, match.currency)}</strong>
@@ -428,29 +409,7 @@ export default async function BankReconciliationDetailPage({
                   <ReconciliationAuditTrail metadata={match.metadata} />
                 </td>
                 <td>
-                  {match.status === 'REVERSED' ? (
-                    <span className="muted">Reversed</span>
-                  ) : (
-                    <form action={reverseBankReconciliationMatchAction} className="admin-inline-form">
-                      <input name="bankTransactionId" type="hidden" value={transaction.id} />
-                      <input name="matchId" type="hidden" value={match.id} />
-                      <input
-                        name="reason"
-                        type="hidden"
-                        value="Operator reversed incorrect reconciliation match from Admin detail."
-                      />
-                      <AdminFormInput
-                        className="admin-inline-approval-input"
-                        label="Approving admin ID"
-                        name="approvalAdminId"
-                        placeholder="Approver id"
-                        required
-                      />
-                      <AdminFormControlButton className="button button-secondary admin-inline-action">
-                        Reverse
-                      </AdminFormControlButton>
-                    </form>
-                  )}
+                  <ReconciliationMatchActionCell match={match} transactionId={transaction.id} />
                 </td>
               </tr>
             ))}
@@ -458,6 +417,95 @@ export default async function BankReconciliationDetailPage({
         </AdminTableScroll>
       </FinanceTablePanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReconciliationMatchedSourceCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
+  return (
+    <div className="finance-reconciliation-source-cell">
+      <strong>{shortId(match.sourceKey)}</strong>
+      <span className="muted">{formatDateTime(match.matchedAt)}</span>
+    </div>
+  );
+}
+
+function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
+  if (!match.accountingJournalEntry) {
+    return <span className="muted">-</span>;
+  }
+
+  return (
+    <div className="admin-table-substack">
+      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+        {match.accountingJournalEntry.accountCode}
+      </Link>
+      <span className="muted">{match.accountingJournalEntry.accountName}</span>
+    </div>
+  );
+}
+
+function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
+  if (!match.paymentClearingEntry) {
+    return <span className="muted">-</span>;
+  }
+
+  return (
+    <div className="admin-table-substack">
+      <Link className="text-link" href={paymentClearingDetailHref(match.paymentClearingEntry.id)}>
+        {match.paymentClearingEntry.type}
+      </Link>
+      <span className="muted">{match.paymentClearingEntry.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}</span>
+    </div>
+  );
+}
+
+function ReconciliationPayoutCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
+  if (!match.withdrawalRequest && !match.payoutBatch) {
+    return <span className="muted">-</span>;
+  }
+
+  return (
+    <div className="admin-table-substack">
+      {match.withdrawalRequest ? <strong>Withdrawal {shortId(match.withdrawalRequest.id)}</strong> : null}
+      {match.payoutBatch ? <strong>Payout {shortId(match.payoutBatch.id)}</strong> : null}
+    </div>
+  );
+}
+
+function ReconciliationMatchActionCell({
+  match,
+  transactionId,
+}: {
+  readonly match: AdminBankReconciliationMatch;
+  readonly transactionId: string;
+}) {
+  if (match.status === 'REVERSED') {
+    return <span className="muted">Reversed</span>;
+  }
+
+  return (
+    <form action={reverseBankReconciliationMatchAction} className="finance-reconciliation-reverse-form">
+      <input name="bankTransactionId" type="hidden" value={transactionId} />
+      <input name="matchId" type="hidden" value={match.id} />
+      <input
+        name="reason"
+        type="hidden"
+        value="Operator reversed incorrect reconciliation match from Admin detail."
+      />
+      <AdminFormInput
+        className="admin-inline-approval-input"
+        label="Approving admin ID"
+        name="approvalAdminId"
+        placeholder="Approver id"
+        required
+      />
+      <div className="finance-reconciliation-reverse-actions">
+        <AdminFormControlButton className="button button-secondary admin-inline-action">
+          Reverse
+        </AdminFormControlButton>
+        <span className="muted">Requires approver ID before reversal.</span>
+      </div>
+    </form>
   );
 }
 
