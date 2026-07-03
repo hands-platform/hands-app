@@ -17,6 +17,7 @@ import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
   buildFinanceOverviewActionItems,
@@ -72,8 +73,8 @@ export default async function FinanceOverviewPage({
     <AdminPageTemplate
       actions={
         <>
-          <span className="pill pill-success">Read-only</span>
-          <span className="pill pill-info">{buildFinanceOverviewRangeLabel(filters.range)}</span>
+          <StatusBadge tone="success">Read-only</StatusBadge>
+          <StatusBadge tone="info">{buildFinanceOverviewRangeLabel(filters.range)}</StatusBadge>
         </>
       }
       contentClassName="usage-overview-page finance-overview-page"

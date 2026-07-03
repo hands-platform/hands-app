@@ -71,4 +71,20 @@ describe('StatusBadge', () => {
       children: 'Open',
     });
   });
+
+  it('keeps download attributes on shared badge links for export actions', () => {
+    const link = PillClassBadgeLink({
+      children: 'Export CSV',
+      download: 'finance-export.csv',
+      href: '/finance-tax/export.csv',
+      pillClass: 'pill-success',
+    });
+
+    expect(link.props).toMatchObject({
+      className: 'pill pill-success',
+      download: 'finance-export.csv',
+      href: '/finance-tax/export.csv',
+      children: 'Export CSV',
+    });
+  });
 });

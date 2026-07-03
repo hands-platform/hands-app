@@ -31,6 +31,15 @@ describe('MonthlyTaxClosingPage', () => {
     expect(source).not.toContain('className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}');
   });
 
+  it('uses shared Vuexy badge link atoms for monthly tax export actions', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('<AdminFormControlLink');
+    expect(source).not.toContain('className="pill pill-info"');
+    expect(source).not.toContain('className="pill pill-success"');
+  });
+
   it('keeps period and remittance forms on shared AdminForm atoms', async () => {
     const page = await MonthlyTaxClosingPage({
       searchParams: Promise.resolve({ period: '2026-06', take: '25' }),

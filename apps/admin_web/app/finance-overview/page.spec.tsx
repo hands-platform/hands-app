@@ -215,6 +215,12 @@ describe('FinanceOverviewPage', () => {
     expect(markup).not.toContain('<label class="admin-form-control"><span>Monthly tax period</span>');
   });
 
+  it('uses shared Vuexy badge atoms for page header status chips', () => {
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{buildFinanceOverviewRangeLabel(filters.range)}</span>');
+  });
+
   it('calls the consolidated Finance Overview summary API and forwards range and period', async () => {
     await FinanceOverviewPage({
       searchParams: Promise.resolve({ range: '7d', period: '2026-07' }),

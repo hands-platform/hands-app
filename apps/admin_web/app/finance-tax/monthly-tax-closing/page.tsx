@@ -7,14 +7,13 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import {
   AdminFormControlButton,
-  AdminFormControlLink,
   AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -89,27 +88,27 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             withholdingFilters,
           })}
         >
-          <AdminFormControlLink
-            className="pill pill-info"
+          <PillClassBadgeLink
             download={`hands-monthly-tax-closing-${filters.period}-summary.csv`}
             href={summaryCsvHref}
+            pillClass="pill-info"
           >
             Export summary CSV
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            className="pill pill-info"
+          </PillClassBadgeLink>
+          <PillClassBadgeLink
             download={`hands-monthly-tax-closing-${filters.period}-rows.csv`}
             href={closingRowsCsvHref}
+            pillClass="pill-info"
           >
             Export rows CSV
-          </AdminFormControlLink>
-          <AdminFormControlLink
-            className="pill pill-success"
+          </PillClassBadgeLink>
+          <PillClassBadgeLink
             download={`hands-accounting-journal-${filters.period}.csv`}
             href={accountingJournalCsvHref}
+            pillClass="pill-success"
           >
             Export accounting journal CSV
-          </AdminFormControlLink>
+          </PillClassBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
