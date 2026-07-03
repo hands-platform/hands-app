@@ -845,7 +845,7 @@ function SelectionFrictionCard({
 
 function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionList }) {
   return (
-    <article className="card admin-card partner-overview-action-card">
+    <AdminCard className="partner-overview-action-card">
       <div className="partner-overview-action-card-header">
         <div>
           <h3>{list.title}</h3>
@@ -863,7 +863,7 @@ function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionLis
           <p className="muted">No Partners need this action right now.</p>
         )}
       </div>
-    </article>
+    </AdminCard>
   );
 }
 
