@@ -68,6 +68,27 @@ describe('TaxPolicyPage', () => {
     expect(markup).not.toContain('<label>Rate bps<input');
     expect(markup).not.toContain('<input name="active" type="checkbox"');
   });
+
+  it('renders policy boards on shared Vuexy admin surfaces', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/tax-policy-versions')) {
+        return [taxPolicyFixture()];
+      }
+      return fallback;
+    });
+
+    const page = await TaxPolicyPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('card admin-section admin-mb-16 tax-policy-checklist-card');
+    expect(markup).toContain('card admin-section admin-mb-16 tax-policy-withholding-preview-card');
+    expect(markup).toContain('card admin-section admin-mb-16 tax-policy-create-policy-card');
+    expect(markup).toContain('card admin-card tax-policy-version-card');
+    expect(markup).toContain('card admin-section admin-mt-16 tax-policy-audit-summary-card');
+    expect(markup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
+  });
 });
 
 function taxPolicyFixture(): AdminTaxPolicyVersion {

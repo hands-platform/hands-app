@@ -6,6 +6,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
@@ -59,63 +60,53 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       </section>
 
       {notice ? (
-        <section
-          className={`card admin-mb-16 admin-notice-card ${
+        <AdminSection
+          className={`admin-mb-16 admin-notice-card ${
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
           }`}
-        >
-          <div className="ops-section-header">
-            <div>
-              <h2>{notice.title}</h2>
-              <p className="muted">{notice.detail}</p>
-            </div>
+          title={notice.title}
+          description={notice.detail}
+          actions={
             <span className={`pill ${notice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
               {notice.badge}
             </span>
-          </div>
-        </section>
+          }
+        />
       ) : null}
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Policy checklist</h2>
-            <p className="muted">
-              Keep exactly one active policy with a default rule. Every earning stores the selected rule
-              snapshot, so changing future policy does not rewrite tax history.
-            </p>
-          </div>
+      <AdminSection
+        actions={
           <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
             {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
           </span>
-        </div>
-        <div className="setup-stage-list">
-          {healthItems.map((item) => (
-            <div className="setup-stage-item" key={item.label}>
-              <span>{item.ok ? 'OK' : 'CHECK'}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.value}</small>
+        }
+        bodyClassName="setup-stage-list"
+        className="admin-mb-16 tax-policy-checklist-card"
+        description="Keep exactly one active policy with a default rule. Every earning stores the selected rule snapshot, so changing future policy does not rewrite tax history."
+        title="Policy checklist"
+      >
+        {healthItems.map((item) => (
+          <div className="setup-stage-item" key={item.label}>
+            <span>{item.ok ? 'OK' : 'CHECK'}</span>
+            <div>
+              <strong>{item.label}</strong>
+              <p className="muted">{item.detail}</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Withholding preview</h2>
-            <p className="muted">
-              Check the active rule result before changing partner payout or service pricing. This is only a
-              calculation preview; completed earnings still store their own immutable rule snapshot.
-            </p>
+            <small>{item.value}</small>
           </div>
+        ))}
+      </AdminSection>
+
+      <AdminSection
+        actions={
           <span className={`pill ${preview.policy ? 'pill-success' : 'pill-warn'}`}>
             {preview.policy ? preview.policy.name : 'No effective active policy'}
           </span>
-        </div>
+        }
+        className="admin-mb-16 tax-policy-withholding-preview-card"
+        description="Check the active rule result before changing partner payout or service pricing. This is only a calculation preview; completed earnings still store their own immutable rule snapshot."
+        title="Withholding preview"
+      >
         <form className="form-grid" method="get">
           <div className="calendar-field">
             <span>Service type</span>
@@ -177,11 +168,13 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
           </div>
         </div>
-      </section>
+      </AdminSection>
 
-      <section className="card admin-mb-16">
-        <h2>Create policy version</h2>
-        <p className="muted">Use basis points for percentage rates. Example: 500 bps = 5%.</p>
+      <AdminSection
+        className="admin-mb-16 tax-policy-create-policy-card"
+        description="Use basis points for percentage rates. Example: 500 bps = 5%."
+        title="Create policy version"
+      >
         <form action={createTaxPolicyVersion} className="form-grid">
           <div className="calendar-field">
             <span>Name</span>
@@ -228,11 +221,11 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             Create policy
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminSection>
 
       <section className="grid tax-policy-version-grid">
         {policies.map((policy) => (
-          <article className="card" key={policy.id}>
+          <AdminCard className="tax-policy-version-card" key={policy.id}>
             <div className="toolbar admin-mb-12">
               <div>
                 <h2>{policy.name}</h2>
@@ -444,107 +437,99 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 Add rule
               </AdminFormControlButton>
             </form>
-          </article>
+          </AdminCard>
         ))}
       </section>
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Tax policy audit summary</h2>
-            <p className="muted">
-              Recent policy and rule changes. Use the full audit log only when an operator needs deeper
-              evidence.
-            </p>
-          </div>
-          <div className="actions">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{auditSummary.totalChangeCount} recent</span>
             <span className="pill pill-neutral">{auditSummary.policyChangeCount} policy</span>
             <span className="pill pill-neutral">{auditSummary.ruleChangeCount} rule</span>
+          </>
+        }
+        bodyClassName="setup-stage-list"
+        className="admin-mt-16 tax-policy-audit-summary-card"
+        description="Recent policy and rule changes. Use the full audit log only when an operator needs deeper evidence."
+        title="Tax policy audit summary"
+      >
+        {auditSummary.rows.map((row) => (
+          <div className="setup-stage-item" key={row.id}>
+            <span className={`pill ${row.toneClassName}`}>{row.actionLabel.split(' ')[0].toUpperCase()}</span>
+            <div>
+              <strong>{row.actionLabel}</strong>
+              <p className="muted">
+                {row.detail} / {row.actorLabel} / {formatDateTime(row.createdAt, 'Unknown time')}
+              </p>
+            </div>
+            <small>{row.targetLabel}</small>
           </div>
-        </div>
-        <div className="setup-stage-list">
-          {auditSummary.rows.map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span className={`pill ${row.toneClassName}`}>{row.actionLabel.split(' ')[0].toUpperCase()}</span>
-              <div>
-                <strong>{row.actionLabel}</strong>
-                <p className="muted">
-                  {row.detail} / {row.actorLabel} / {formatDateTime(row.createdAt, 'Unknown time')}
-                </p>
-              </div>
-              <small>{row.targetLabel}</small>
+        ))}
+        {auditSummary.rows.length === 0 ? (
+          <div className="setup-stage-item">
+            <span>EMPTY</span>
+            <div>
+              <strong>No recent tax policy audit entries</strong>
+              <p className="muted">Create or update a policy/rule to populate this operator summary.</p>
             </div>
-          ))}
-          {auditSummary.rows.length === 0 ? (
-            <div className="setup-stage-item">
-              <span>EMPTY</span>
-              <div>
-                <strong>No recent tax policy audit entries</strong>
-                <p className="muted">Create or update a policy/rule to populate this operator summary.</p>
-              </div>
-              <small>-</small>
-            </div>
-          ) : null}
-        </div>
-      </section>
+            <small>-</small>
+          </div>
+        ) : null}
+      </AdminSection>
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Settlement snapshot consistency</h2>
-            <p className="muted">
-              Recent 30-day earning sample. This does not recalculate tax; it checks whether immutable
-              earning withholding and retained tax log snapshots still line up.
-            </p>
-          </div>
-          <div className="actions">
+      <AdminSection
+        actions={
+          <>
             <span className="pill pill-info">{snapshotConsistency.sampleCount} sampled</span>
             <span className="pill pill-success">{snapshotConsistency.consistentCount} aligned</span>
             <span className={snapshotConsistency.warningCount ? 'pill pill-warn' : 'pill pill-neutral'}>
               {snapshotConsistency.warningCount} check
             </span>
+          </>
+        }
+        bodyClassName="setup-stage-list"
+        className="admin-mt-16 tax-policy-snapshot-consistency-card"
+        description="Recent 30-day earning sample. This does not recalculate tax; it checks whether immutable earning withholding and retained tax log snapshots still line up."
+        title="Settlement snapshot consistency"
+      >
+        {snapshotConsistency.rows.map((row) => (
+          <div className="setup-stage-item" key={row.id}>
+            <span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>
+            <div>
+              <strong>
+                <Link className="text-link" href={row.bookingHref}>
+                  {row.bookingLabel}
+                </Link>{' '}
+                / {row.providerLabel}
+              </strong>
+              <p className="muted">
+                Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
+                {row.taxLogLabel} / delta {row.deltaLabel}
+              </p>
+              <div className="actions admin-mt-8">
+                <Link className="text-link" href={row.earningHref}>
+                  Open earning
+                </Link>
+                <Link className="text-link" href={row.financeTraceHref}>
+                  Finance trace
+                </Link>
+              </div>
+            </div>
+            <small>{row.snapshotLabel}</small>
           </div>
-        </div>
-        <div className="setup-stage-list">
-          {snapshotConsistency.rows.map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>
-              <div>
-                <strong>
-                  <Link className="text-link" href={row.bookingHref}>
-                    {row.bookingLabel}
-                  </Link>{' '}
-                  / {row.providerLabel}
-                </strong>
-                <p className="muted">
-                  Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
-                  {row.taxLogLabel} / delta {row.deltaLabel}
-                </p>
-                <div className="actions admin-mt-8">
-                  <Link className="text-link" href={row.earningHref}>
-                    Open earning
-                  </Link>
-                  <Link className="text-link" href={row.financeTraceHref}>
-                    Finance trace
-                  </Link>
-                </div>
-              </div>
-              <small>{row.snapshotLabel}</small>
+        ))}
+        {snapshotConsistency.rows.length === 0 ? (
+          <div className="setup-stage-item">
+            <span>EMPTY</span>
+            <div>
+              <strong>No recent earning tax snapshots</strong>
+              <p className="muted">Completed earnings will appear here after the API returns recent rows.</p>
             </div>
-          ))}
-          {snapshotConsistency.rows.length === 0 ? (
-            <div className="setup-stage-item">
-              <span>EMPTY</span>
-              <div>
-                <strong>No recent earning tax snapshots</strong>
-                <p className="muted">Completed earnings will appear here after the API returns recent rows.</p>
-              </div>
-              <small>30d</small>
-            </div>
-          ) : null}
-        </div>
-      </section>
+            <small>30d</small>
+          </div>
+        ) : null}
+      </AdminSection>
     </div>
   );
 }
