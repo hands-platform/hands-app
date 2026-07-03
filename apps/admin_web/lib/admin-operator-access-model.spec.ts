@@ -11,7 +11,18 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/partners/overview')).toBe('PARTNERS_DIRECTORY');
     expect(adminOperatorCategoryForPath('/partners/provider-1')).toBe('PARTNERS_DETAIL');
     expect(adminOperatorCategoryForPath('/finance-tax/payment-clearing')).toBe('FINANCE_PAYMENT_CLEARING');
+    expect(adminOperatorCategoryForPath('/finance-overview')).toBe('FINANCE');
+    expect(adminOperatorCategoryForPath('/finance-closeout')).toBe('FINANCE');
+    expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
+    expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
+    expect(adminOperatorCategoryForPath('/referrals/customers')).toBe('CUSTOMERS');
+    expect(adminOperatorCategoryForPath('/referrals/partners')).toBe('PARTNERS');
+    expect(adminOperatorCategoryForPath('/referrals/cashouts')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
+    expect(adminOperatorCategoryForPath('/app-sessions')).toBe('SYSTEM_AUDIT');
+    expect(adminOperatorCategoryForPath('/chat-archive')).toBe('SYSTEM_AUDIT');
+    expect(adminOperatorCategoryForPath('/calendar')).toBe('SYSTEM_SETUP');
+    expect(adminOperatorCategoryForPath('/operations-handoff')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForPath('/admin-operators')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/vietnam-overview')).toBe('BOOKINGS_REALTIME');
   });
@@ -20,6 +31,18 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/bookings/booking-1/ops-note')).toBe('BOOKINGS_DETAIL');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/users/user-1/admin-operator-access')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/manual-wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposits')).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/provider-wallet/withdrawal-requests/request-1')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payout-batches')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/referrals/rewards/reward-1/credit')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/referrals/policies/customer')).toBe('SYSTEM_POLICY');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partners/provider-1/approve')).toBe('PARTNERS_DETAIL');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-documents/document-1/approve')).toBe('PARTNERS_KYC');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-bank-accounts/bank-1/reject')).toBe('PARTNERS_KYC');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('FINANCE_TAX');
+    expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/service-payout-rules/rule-1')).toBe('SYSTEM_SERVICES');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('SYSTEM_SETUP');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_DELIVERY');
   });
 

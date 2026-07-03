@@ -229,6 +229,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Immutable booking settlement snapshots for tax and finance audit review.',
       },
       {
+        href: '/finance-tax/coupon-finance',
+        label: 'Coupon Finance',
+        description: 'Coupon-funded settlement rows, company expense exposure, and tax review flags.',
+      },
+      {
         href: '/finance-tax/settlement-reversals',
         label: 'Settlement Reversals',
         description: 'Closed-period refund and settlement reversal rows with accounting impact.',
@@ -252,6 +257,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/finance-tax/payment-fees',
         label: 'Payment Fees',
         description: 'Payment processing fees by method, payer, and treatment from settlement snapshots.',
+      },
+      {
+        href: '/finance-tax/finance-approvers',
+        label: 'Finance Approvers',
+        description: 'Finance action approver setup for role separation and dual-control closeout.',
       },
       {
         href: '/tax-policy',

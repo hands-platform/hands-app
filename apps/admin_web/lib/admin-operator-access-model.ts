@@ -48,7 +48,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'BOOKINGS_REALTIME',
-    prefixes: ['/bookings', '/vietnam-overview'],
+    prefixes: ['/bookings', '/vietnam-overview', '/operations-handoff'],
   },
   {
     category: 'CUSTOMERS_DETAIL',
@@ -83,12 +83,24 @@ const pageCategoryRules: Array<{
     prefixes: ['/finance-tax/payment-clearing', '/payments'],
   },
   {
+    category: 'FINANCE',
+    prefixes: ['/finance-overview', '/finance-closeout'],
+  },
+  {
     category: 'FINANCE_GENERAL_LEDGER',
     prefixes: ['/finance-tax/general-ledger'],
   },
   {
+    category: 'SYSTEM_ADMIN_OPERATORS',
+    prefixes: ['/finance-tax/finance-approvers'],
+  },
+  {
     category: 'FINANCE_BANK_RECONCILIATION',
     prefixes: ['/finance-tax/bank-reconciliation'],
+  },
+  {
+    category: 'FINANCE_TAX',
+    prefixes: ['/finance-tax/coupon-finance'],
   },
   {
     category: 'FINANCE_WALLET_ADJUSTMENTS',
@@ -96,7 +108,15 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'FINANCE_SETTLEMENTS',
-    prefixes: ['/cash-settlements', '/earnings', '/payouts', '/refunds'],
+    prefixes: ['/cash-settlements', '/earnings', '/payouts', '/refunds', '/referrals/cashouts'],
+  },
+  {
+    category: 'CUSTOMERS',
+    prefixes: ['/referrals/customers'],
+  },
+  {
+    category: 'PARTNERS',
+    prefixes: ['/referrals/partners'],
   },
   {
     category: 'FINANCE_TAX',
@@ -116,7 +136,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_AUDIT',
-    prefixes: ['/audit-log'],
+    prefixes: ['/audit-log', '/app-sessions', '/chat-archive'],
   },
   {
     category: 'SYSTEM_POLICY',
@@ -132,7 +152,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_SETUP',
-    prefixes: ['/setup', '/usage-overview', '/marketing-analytics'],
+    prefixes: ['/setup', '/usage-overview', '/marketing-analytics', '/calendar'],
   },
 ];
 
@@ -145,6 +165,10 @@ const apiCategoryRules: Array<{
     prefixes: ['/admin/bookings'],
   },
   {
+    category: 'BOOKINGS_REALTIME',
+    prefixes: ['/admin/operations-handoff'],
+  },
+  {
     category: 'CUSTOMERS_REVIEWS',
     prefixes: ['/admin/reviews'],
   },
@@ -153,8 +177,20 @@ const apiCategoryRules: Array<{
     prefixes: ['/admin/customers', '/admin/reviews'],
   },
   {
+    category: 'PARTNERS_KYC',
+    prefixes: ['/admin/partner-documents', '/admin/partner-bank-accounts'],
+  },
+  {
     category: 'PARTNERS_DETAIL',
-    prefixes: ['/admin/providers', '/admin/partner-controls', '/admin/files'],
+    prefixes: [
+      '/admin/providers',
+      '/admin/partners',
+      '/admin/partner-controls',
+      '/admin/files',
+      '/admin/provider-reports',
+      '/admin/provider-sanctions',
+      '/admin/partner-devices',
+    ],
   },
   {
     category: 'FINANCE_BANK_RECONCILIATION',
@@ -170,26 +206,37 @@ const apiCategoryRules: Array<{
       '/admin/booking-settlements',
       '/admin/cash-settlements',
       '/admin/earnings',
+      '/admin/payout-batches',
       '/admin/payouts',
+      '/admin/provider-wallet/withdrawal-requests',
+      '/admin/referrals/cashouts',
+      '/admin/referrals/rewards',
       '/admin/refunds',
     ],
   },
   {
     category: 'FINANCE_WALLET_ADJUSTMENTS',
-    prefixes: ['/admin/manual-wallet-adjustments', '/admin/wallet'],
+    prefixes: [
+      '/admin/manual-wallet-adjustments',
+      '/admin/provider-wallet/deposits',
+      '/admin/wallet',
+      '/admin/wallet-adjustments',
+    ],
   },
   {
     category: 'FINANCE_TAX',
     prefixes: [
       '/admin/finance',
       '/admin/monthly-tax-closings',
+      '/admin/tax-policy-versions',
+      '/admin/tax-rules',
       '/admin/tax',
       '/admin/wallet',
     ],
   },
   {
     category: 'NOTIFICATIONS_DELIVERY',
-    prefixes: ['/admin/notifications', '/admin/push'],
+    prefixes: ['/admin/notifications', '/admin/push', '/admin/push-devices'],
   },
   {
     category: 'SYSTEM_AUDIT',
@@ -201,7 +248,7 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_POLICY',
-    prefixes: ['/admin/operational-policy'],
+    prefixes: ['/admin/operational-policy', '/admin/referrals/policies'],
   },
   {
     category: 'SYSTEM_ADMIN_OPERATORS',
@@ -210,8 +257,13 @@ const apiCategoryRules: Array<{
   {
     category: 'SYSTEM_SERVICES',
     prefixes: [
+      '/admin/service-payout-rules',
       '/admin/services',
     ],
+  },
+  {
+    category: 'SYSTEM_SETUP',
+    prefixes: ['/admin/marketing'],
   },
 ];
 

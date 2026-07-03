@@ -3294,6 +3294,13 @@ export class AdminOperatorAccessDeniedError extends Error {
   }
 }
 
+export class AdminOperatorUnmappedWriteAccessError extends Error {
+  constructor(readonly path: string) {
+    super(`Admin operator write access denied for unmapped route: ${path}`);
+    this.name = 'AdminOperatorUnmappedWriteAccessError';
+  }
+}
+
 async function adminJsonRequestOrThrow<T>(
   method: 'DELETE' | 'PATCH' | 'POST',
   path: string,
@@ -3339,8 +3346,20 @@ async function verifyAdminOperatorWriteAccess(
 ) {
   const operatorIdentity = await currentAdminWebSessionIdentity();
   const category = adminOperatorCategoryForAdminApiPath(method, path);
-  if (!category || !operatorIdentity || path === '/admin/operator-activity') {
+  if (!operatorIdentity || path === '/admin/operator-activity') {
     return { category, denied: false, operatorIdentity };
+  }
+
+  if (!category) {
+    await recordAdminOperatorActivityForIdentity(operatorIdentity, 'admin_web.action_denied', `${method} ${path}`, {
+      category: null,
+      reason: 'unmapped_admin_write',
+    });
+    if (mode === 'throw') {
+      throw new AdminOperatorUnmappedWriteAccessError(path);
+    }
+
+    return { category, denied: true, operatorIdentity };
   }
 
   const access = await fetchAdminOperatorAccess(operatorIdentity);

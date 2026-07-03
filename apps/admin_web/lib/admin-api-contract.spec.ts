@@ -163,6 +163,48 @@ describe('admin api auth guard', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   });
+
+  it('fails closed when an Admin Web write route has no operator category mapping', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}`,
+      }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true, path: url, method: init?.method });
+      }
+      if (url.endsWith('/admin/unmapped-risk-action')) {
+        return Response.json({ ok: true, path: url, method: init?.method });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    await expect(adminPostOrThrow('/admin/unmapped-risk-action', {})).rejects.toThrow(
+      'Admin operator write access denied for unmapped route',
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/admin/unmapped-risk-action'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/operator-activity'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
 });
 
 function testJwt(exp: number) {

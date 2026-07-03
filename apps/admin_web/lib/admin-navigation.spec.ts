@@ -66,6 +66,8 @@ describe('admin navigation', () => {
       'Tax & Accounting: Partner Withholding Tax',
     );
     expect(linksByHref.get('/finance-tax/payment-fees')).toBe('Tax & Accounting: Payment Fees');
+    expect(linksByHref.get('/finance-tax/coupon-finance')).toBe('Tax & Accounting: Coupon Finance');
+    expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Tax & Accounting: Finance Approvers');
     expect(linksByHref.get('/tax-policy')).toBe('Tax & Accounting: Tax Policy');
 
     expect(linksByHref.get('/notifications')).toBe('Communications: Notifications');
@@ -137,6 +139,8 @@ describe('admin navigation', () => {
     expect(financeSection?.links.map((link) => link.href)).not.toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');
+    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/coupon-finance');
+    expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/finance-approvers');
     expect(adminNavSections.flatMap((section) => section.links.map((link) => link.href))).not.toContain(
       '/app-sessions?role=CUSTOMER&state=live',
     );
