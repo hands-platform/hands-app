@@ -41,7 +41,12 @@ describe('OperationsPolicyActionGateChecklistSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-mb-16',
+      id: 'action-gate-policy-checklist',
+      title: 'Action gate policy checklist',
+    });
     expect(rendered).toContain('Action gate policy checklist');
     expect(rendered).toContain('1 / 2 recommended');
     expect(rendered).toContain('Payout batch cycle');

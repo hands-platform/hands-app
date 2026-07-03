@@ -23,7 +23,12 @@ describe('OperationsPolicyAuditTrailSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      bodyClassName: 'admin-table-section-body',
+      className: 'admin-card-scroll admin-mb-16',
+      title: 'Recent policy audit trail',
+    });
     expect(rendered).toContain('Recent policy audit trail');
     expect(rendered).toContain('Open policy audit');
     expect(rendered).toContain('Ops Admin');

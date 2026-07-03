@@ -1,3 +1,4 @@
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
@@ -11,19 +12,16 @@ export function OperationsPolicyRecommendedValueReviewSection({
   const visibleCards = review.cards.filter((card) => card.status !== 'Recommended');
 
   return (
-    <section className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recommended value review</h2>
-          <p className="muted">
-            Compares current policy values with the HANDS recommended baseline. Differences are allowed, but
-            operators should know the likely tradeoff before keeping them.
-          </p>
-        </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="Compares current policy values with the HANDS recommended baseline. Differences are allowed, but operators should know the likely tradeoff before keeping them."
+      status={
         <PillClassBadge pillClass={review.warningCount ? 'pill-warn' : 'pill-success'}>
           {review.warningCount ? `${review.warningCount} owner choice(s)` : 'Aligned'}
         </PillClassBadge>
-      </div>
+      }
+      title="Recommended value review"
+    >
       <div className="service-trace-summary admin-mt-12">
         {review.summary.map((item) => (
           <div key={item.label}>
@@ -51,6 +49,6 @@ export function OperationsPolicyRecommendedValueReviewSection({
           </div>
         ) : null}
       </div>
-    </section>
+    </AdminSection>
   );
 }

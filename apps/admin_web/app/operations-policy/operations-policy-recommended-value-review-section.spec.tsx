@@ -38,7 +38,11 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props).toMatchObject({
+      className: 'admin-mb-16',
+      title: 'Recommended value review',
+    });
     expect(rendered).toContain('Recommended value review');
     expect(rendered).toContain('1 owner choice(s)');
     expect(rendered).toContain('Compared policies');

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
@@ -13,20 +14,17 @@ export function OperationsPolicyActionGateChecklistSection({
   const visibleCards = checklist.cards.filter((item) => item.status !== 'Recommended');
 
   return (
-    <section className="card admin-mb-16" id="action-gate-policy-checklist">
-      <div className="ops-section-header">
-        <div>
-          <h2>Action gate policy checklist</h2>
-          <p className="muted">
-            These admin-editable policies explain which evidence operators should check before booking
-            capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed
-            closeout actions.
-          </p>
-        </div>
+    <AdminSection
+      className="admin-mb-16"
+      description="These admin-editable policies explain which evidence operators should check before booking capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed closeout actions."
+      id="action-gate-policy-checklist"
+      status={
         <span className={`pill ${allRecommended ? 'pill-success' : 'pill-warn'}`}>
           {checklist.alignedCount}/{checklist.totalCount} recommended
         </span>
-      </div>
+      }
+      title="Action gate policy checklist"
+    >
       <div className="service-trace-summary admin-mt-12">
         {checklist.summary.map((item) => (
           <div key={item.label}>
@@ -58,6 +56,6 @@ export function OperationsPolicyActionGateChecklistSection({
           </div>
         ) : null}
       </div>
-    </section>
+    </AdminSection>
   );
 }
