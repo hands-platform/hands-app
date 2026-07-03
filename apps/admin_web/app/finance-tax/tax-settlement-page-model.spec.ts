@@ -260,6 +260,13 @@ describe('tax settlement page model', () => {
       paymentClearingEntries: [
         {
           id: 'clearing-1',
+          bankReconciliationMatches: [
+            {
+              bankTransactionId: 'bank-transaction-1',
+              bankTransaction: { transferRef: 'REFUND-001' },
+              status: 'PARTIALLY_MATCHED',
+            },
+          ],
           sourceKey: 'booking-payment-clearing:booking-1:refund-reversal',
           status: 'REVERSED',
         },
@@ -281,6 +288,11 @@ describe('tax settlement page model', () => {
         href: '/finance-tax/payment-clearing/clearing-1',
         label: 'Payment clearing',
         value: 'clearing',
+      },
+      {
+        href: '/finance-tax/bank-reconciliation/bank-transaction-1',
+        label: 'Bank match',
+        value: 'REFUND-001',
       },
     ]);
   });

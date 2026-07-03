@@ -461,6 +461,7 @@ export function buildBookingSettlementReversalTraceLinks(
 ): BookingSettlementReversalTraceLink[] {
   const journal = reversal.accountingJournalBatches?.[0] ?? null;
   const clearing = reversal.paymentClearingEntries?.[0] ?? null;
+  const bankMatch = clearing?.bankReconciliationMatches?.find((match) => match.status !== 'REVERSED') ?? null;
   const links: BookingSettlementReversalTraceLink[] = [
     {
       href: bookingSettlementAuditDetailHref(reversal.originalSettlementSnapshotId),
@@ -482,6 +483,14 @@ export function buildBookingSettlementReversalTraceLinks(
       href: paymentClearingDetailHref(clearing.id),
       label: 'Payment clearing',
       value: shortId(clearing.id),
+    });
+  }
+
+  if (bankMatch) {
+    links.push({
+      href: bankReconciliationDetailHref(bankMatch.bankTransactionId),
+      label: 'Bank match',
+      value: bankMatch.bankTransaction?.transferRef ?? shortId(bankMatch.bankTransactionId),
     });
   }
 
