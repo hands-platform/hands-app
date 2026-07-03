@@ -59,6 +59,7 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-section');
     expect(markup).toContain('Chat integrity repair queue');
     expect(markup).toContain('Chat evidence index');
+    expect(markup).toContain('class="card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
     expect(markup).toContain(
       'class="card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
     );

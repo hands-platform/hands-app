@@ -491,8 +491,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       >
         <div className="setup-stage-list admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
-            <details
-              className="card chat-transcript-room admin-chat-transcript-disclosure"
+            <details className="card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"
               id={chatRoomDomId(room.roomId)}
               key={`${room.roomId}-messages`}
               open={rooms.length === 1}
