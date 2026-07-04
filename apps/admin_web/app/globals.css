@@ -14619,53 +14619,12 @@ textarea:focus-visible {
   justify-content: flex-end;
 }
 
-.vuexy-review-search,
-.vuexy-review-select {
-  align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
-}
-
-.vuexy-review-search {
+.vuexy-review-controls .admin-directory-filter-search {
   width: 280px;
 }
 
-.vuexy-review-search input,
-.vuexy-review-select select {
-  font-size: 15px;
-  padding: 0;
-}
-
-.vuexy-review-search input {
-  flex: 1;
-  min-width: 0;
-}
-
-.vuexy-review-search input::placeholder {
-  color: var(--admin-disabled);
-}
-
-.vuexy-review-select {
-  min-width: 88px;
-}
-
-.vuexy-review-select select {
-  min-width: 56px;
-}
-
-.vuexy-review-button,
-.vuexy-review-export {
-  color: var(--admin-secondary-text);
-  font-size: 15px;
-  line-height: 22px;
-  min-height: 38px;
-  padding: 8px 18px;
-}
-
-.vuexy-review-button:hover,
-.vuexy-review-export:hover {
-  background: var(--admin-action-hover);
-  color: var(--admin-text);
+.vuexy-review-controls .admin-directory-filter-select {
+  min-width: 112px;
 }
 
 .vuexy-review-copy-cell {

@@ -135,20 +135,20 @@ export function PartnerCustomerEvaluationsSection({
             <input name="dateTo" type="hidden" value={filters.dateTo} />
             <input name="sort" type="hidden" value={filters.sort} />
             <AdminFormSearch
-              className="vuexy-review-search"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search Evaluation"
               name="q"
               placeholder="Search Evaluation"
             />
             <AdminFormSelect
-              className="vuexy-review-select"
+              className="admin-directory-filter-select"
               defaultValue={String(filters.pageSize)}
               label="Rows per page"
               name="pageSize"
               options={partnerEvaluationPageSizeOptions}
             />
-            <AdminFormControlButton className="vuexy-review-button">Apply</AdminFormControlButton>
+            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
           </form>
         </div>
       </AdminFilterPanel>

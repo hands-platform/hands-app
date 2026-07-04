@@ -87,10 +87,10 @@ describe('ReviewsTableSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-form-search vuexy-review-search',
-        'admin-form-select vuexy-review-select',
-        'admin-form-control-button button button-primary vuexy-review-button',
-        'admin-form-control-link button button-secondary vuexy-review-export',
+        'admin-form-search admin-directory-filter-search',
+        'admin-form-select admin-directory-filter-select',
+        'admin-form-control-button button button-primary admin-directory-filter-button',
+        'admin-form-control-link button button-secondary admin-directory-filter-export',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',

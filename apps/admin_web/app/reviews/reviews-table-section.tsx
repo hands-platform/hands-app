@@ -181,22 +181,22 @@ export function ReviewsTableSection({
             <input name="dateTo" type="hidden" value={filters.dateTo} />
             <input name="sort" type="hidden" value={filters.sort} />
             <AdminFormSearch
-              className="vuexy-review-search"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search Review"
               name="q"
               placeholder="Search Review"
             />
             <AdminFormSelect
-              className="vuexy-review-select"
+              className="admin-directory-filter-select"
               defaultValue={String(filters.pageSize)}
               label="Rows per page"
               name="pageSize"
               options={reviewPageSizeOptions}
             />
-            <AdminFormControlButton className="vuexy-review-button">Apply</AdminFormControlButton>
+            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
             <AdminFormControlLink
-              className="vuexy-review-export"
+              className="admin-directory-filter-export"
               download="hands-customer-reviews.csv"
               href={csvHref}
             >
