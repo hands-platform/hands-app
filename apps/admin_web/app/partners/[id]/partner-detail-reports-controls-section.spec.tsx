@@ -98,7 +98,7 @@ describe('PartnerDetailReportsControlsSection', () => {
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'admin-form-select admin-form-control-labeled field',
-        'admin-form-input admin-form-input-date-picker admin-form-control-labeled field',
+        'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled field',
         'admin-form-textarea admin-form-control-labeled field full-span',
         'admin-form-control-button button button-primary',
         'admin-form-control-link button button-secondary',
@@ -109,7 +109,8 @@ describe('PartnerDetailReportsControlsSection', () => {
       ]),
     );
     expect(classNames.filter((className) => className.startsWith('admin-form-select'))).toHaveLength(8);
-    expect(classNames.filter((className) => className.startsWith('admin-form-input'))).toHaveLength(6);
+    expect(classNames.filter((className) => className.startsWith('admin-form-date'))).toHaveLength(1);
+    expect(classNames.filter((className) => className.startsWith('admin-form-input'))).toHaveLength(5);
     expect(classNames.filter((className) => className === 'admin-form-control-button button button-primary')).toHaveLength(4);
     expect(renderToStaticMarkup(section)).not.toContain('<div class="field"><span>');
     expect(renderToStaticMarkup(section)).not.toContain('<div class="field full-span"><span>');

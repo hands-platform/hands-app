@@ -226,24 +226,34 @@ export function AdminFormDateTime({
   defaultValue,
   disabled,
   label,
-  labelVisibility,
+  labelVisibility = 'hidden',
   name,
   onChange,
   required,
   value,
 }: AdminFormDateTimeProps) {
-  return AdminFormInput({
-    className,
-    defaultValue,
-    disabled,
-    label,
-    labelVisibility,
-    name,
-    onChange,
-    required,
-    type: 'datetime-local',
-    value,
-  });
+  return (
+    <label
+      className={joinClassNames(
+        'admin-form-date',
+        'admin-form-date-picker',
+        'admin-form-input-date-picker',
+        visibleLabelClass(labelVisibility),
+        className,
+      )}
+    >
+      <span className={labelClassName(labelVisibility)}>{label}</span>
+      <input
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+        onChange={onChange}
+        required={required}
+        type="datetime-local"
+        value={value}
+      />
+    </label>
+  );
 }
 
 export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDatePickerInputProps>(

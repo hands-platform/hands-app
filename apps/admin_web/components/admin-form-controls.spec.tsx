@@ -143,7 +143,7 @@ describe('Admin form controls', () => {
     });
 
     expect(dateTime.props.className).toBe(
-      'admin-form-input admin-form-input-date-picker admin-form-control-labeled payout-paid-at',
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled payout-paid-at',
     );
     expect(textContent(dateTime)).toContain('Paid at');
     expect(dateTime.props.children[1].props).toMatchObject({
