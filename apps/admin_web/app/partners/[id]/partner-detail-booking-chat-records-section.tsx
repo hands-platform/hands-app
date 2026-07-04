@@ -8,7 +8,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminDisclosure } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -66,9 +66,9 @@ export function PartnerDetailBookingChatRecordsSection({
           {rows.map((row) => (
             <tr key={row.key}>
               <td>
-                <PillClassBadge pillClass={row.hasChatRoom ? 'pill-success' : 'pill-danger'}>
+                <StatusBadge tone={row.hasChatRoom ? 'success' : 'danger'}>
                   {row.relation}
-                </PillClassBadge>
+                </StatusBadge>
               </td>
               <td>
                 <strong>{row.heading}</strong>
