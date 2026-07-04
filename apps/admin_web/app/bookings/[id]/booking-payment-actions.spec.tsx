@@ -5,8 +5,8 @@ describe('Booking payment actions', () => {
     const source = readFileSync('app/bookings/[id]/booking-payment-actions.tsx', 'utf8');
 
     expect(source).toContain('AdminActionFormCard');
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<form action={action} className={`action-button-card');
     expect(source).not.toContain('<form action={settleBookingCashDebt} className="action-button-card');
     expect(source).not.toContain(
