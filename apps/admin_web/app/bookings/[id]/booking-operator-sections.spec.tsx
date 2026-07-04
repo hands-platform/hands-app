@@ -12,6 +12,21 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).not.toContain('<strong>No payment action available</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw operator pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>}');
+    expect(source).not.toContain('<span className="pill pill-info">');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${badge.tone}`} key={badge.label}>');
+    expect(source).not.toContain('<span className={`pill ${finalGateReason.pillClass}`}>Booking gate reason</span>');
+    expect(source).not.toContain('<span className={`pill ${actionEvidenceGate.tone}`}>{actionEvidenceGate.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.pillClass}`}>{row.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">Locked</span>');
+  });
+
   it('renders command queue and action availability table with shared table styling', () => {
     const section = BookingOperatorQueueSections({
       bookingId: 'booking-1',

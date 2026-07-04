@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
   captureBookingPayment,
@@ -99,7 +100,7 @@ export function BookingOperatorQueueSections({
   return (
     <>
       <AdminSection
-        actions={<span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>}
+        actions={<PillClassBadge pillClass={operatorCommandQueue.tone}>{operatorCommandQueue.status}</PillClassBadge>}
         className="admin-mb-16"
         description="Same-shift actions queued for operator handling."
         id="operator-command-queue"
@@ -131,10 +132,10 @@ export function BookingOperatorQueueSections({
 
       <AdminSection
         actions={
-          <span className="pill pill-info">
+          <StatusBadge tone="info">
             {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length}{' '}
             available
-          </span>
+          </StatusBadge>
         }
         className="admin-mb-16"
         description="Manual action availability and the linked destination for each action."
@@ -151,7 +152,7 @@ export function BookingOperatorQueueSections({
               <tr key={row.action}>
                 <td>{row.action}</td>
                 <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                  <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
                 </td>
                 <td>{row.evidence}</td>
                 <td>{row.operatorRule}</td>
@@ -181,9 +182,9 @@ export function BookingOpsCommandCenter({
       actions={
         <>
           {badges.map((badge) => (
-            <span className={`pill ${badge.tone}`} key={badge.label}>
+            <PillClassBadge key={badge.label} pillClass={badge.tone}>
               {badge.label}
-            </span>
+            </PillClassBadge>
           ))}
         </>
       }
@@ -195,7 +196,7 @@ export function BookingOpsCommandCenter({
       <div className="ops-task-note admin-mt-14">
         <div className={`ops-task-card ${finalGateReason.className}`} id="booking-gate-reason">
           <div>
-            <span className={`pill ${finalGateReason.pillClass}`}>Booking gate reason</span>
+            <PillClassBadge pillClass={finalGateReason.pillClass}>Booking gate reason</PillClassBadge>
             <h3>{finalGateReason.title}</h3>
             <p>{finalGateReason.detail}</p>
           </div>
@@ -210,13 +211,13 @@ export function BookingOpsCommandCenter({
               Evidence status for the manual action buttons below.
             </p>
           </div>
-          <span className={`pill ${actionEvidenceGate.tone}`}>{actionEvidenceGate.status}</span>
+          <PillClassBadge pillClass={actionEvidenceGate.tone}>{actionEvidenceGate.status}</PillClassBadge>
         </div>
         <div className="ops-task-grid admin-mt-12">
           {actionEvidenceGate.rows.map((row) => (
             <a className={`ops-task-card ${row.className}`} href={row.href} key={row.action}>
               <div>
-                <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
                 <h3>{row.action}</h3>
                 <p>{row.evidence}</p>
               </div>
@@ -279,7 +280,7 @@ export function BookingOpsCommandCenter({
           </>
         ) : (
           <div className="action-button-card ops-task-blocked">
-            <span className="pill pill-neutral">Locked</span>
+            <StatusBadge tone="neutral">Locked</StatusBadge>
             <AdminEmptyState
               message="No payment record is linked to this booking yet."
               title="No payment action available"
