@@ -11,7 +11,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { AdminSignal, PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
@@ -50,9 +50,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
     <AdminPageTemplate
       actions={
         <>
-          <span className={`signal ${activePolicies.length === 1 ? 'signal-ok' : 'signal-warn'}`}>
-            {activePolicies.length} active
-          </span>
+          <AdminSignal tone={activePolicies.length === 1 ? 'ok' : 'warn'}>{activePolicies.length} active</AdminSignal>
           <StatusBadge tone="info">{ruleCount} rule(s)</StatusBadge>
         </>
       }
