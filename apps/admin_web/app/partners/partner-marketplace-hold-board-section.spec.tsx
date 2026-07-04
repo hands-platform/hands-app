@@ -1,9 +1,23 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerMarketplaceHoldBoardSection,
   type PartnerMarketplaceHoldBoardSectionBoard,
 } from './partner-marketplace-hold-board-section';
 
 describe('PartnerMarketplaceHoldBoardSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw marketplace hold pill spans', () => {
+    const source = readFileSync('app/partners/partner-marketplace-hold-board-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${board.hardBlocked > 0 ? \'pill-danger\' : \'pill-success\'}`}>');
+    expect(source).not.toContain('<span className="pill pill-info">{board.eligibleNow} direct-ready</span>');
+    expect(source).not.toContain('<span className={`pill ${board.marketplaceBlocked > 0 ? \'pill-warn\' : \'pill-success\'}`}>');
+    expect(source).not.toContain('<span className="pill" key={sample}>');
+    expect(source).not.toContain('<span className="pill pill-success">No immediate queue</span>');
+  });
+
   it('renders hold counts, blocker cards, samples, and clear fallback', () => {
     const section = PartnerMarketplaceHoldBoardSection({
       board: buildBoard(),

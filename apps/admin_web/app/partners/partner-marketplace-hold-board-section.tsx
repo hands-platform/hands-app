@@ -1,4 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 
 type PartnerMarketplaceHoldBoardTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -29,13 +30,13 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
     <AdminSection
       actions={
         <>
-          <span className={`pill ${board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
+          <PillClassBadge pillClass={board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}>
             {board.hardBlocked} direct request held
-          </span>
-          <span className="pill pill-info">{board.eligibleNow} direct-ready</span>
-          <span className={`pill ${board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}`}>
+          </PillClassBadge>
+          <StatusBadge tone="info">{board.eligibleNow} direct-ready</StatusBadge>
+          <PillClassBadge pillClass={board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}>
             {board.marketplaceBlocked} dispatch repair
-          </span>
+          </PillClassBadge>
         </>
       }
       className="admin-mb-16 partner-marketplace-hold-board-card"
@@ -59,12 +60,12 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
             <div className="participant-list admin-mt-10">
               {card.samples.length > 0 ? (
                 card.samples.map((sample) => (
-                  <span className="pill" key={sample}>
+                  <StatusBadge key={sample} tone="neutral">
                     {sample}
-                  </span>
+                  </StatusBadge>
                 ))
               ) : (
-                <span className="pill pill-success">No immediate queue</span>
+                <StatusBadge tone="success">No immediate queue</StatusBadge>
               )}
             </div>
           </AdminActionCard>
