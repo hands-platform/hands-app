@@ -3,8 +3,8 @@ import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
 
 type CashSettlementProviderGroupsSectionProps = {
@@ -32,14 +32,15 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
               <AdminSectionHeader
                 status={
                   <StatusBadge tone="danger">
-                    {formatMoney(provider.debtAmount, provider.currency)}
+                    <MoneyText amount={provider.debtAmount} currency={provider.currency} />
                   </StatusBadge>
                 }
                 title={provider.providerName}
               />
               <p className="muted">
-                {provider.rowCount} open cash debt row(s), {formatMoney(provider.platformFee, provider.currency)} HANDS
-                fee, {formatMoney(provider.taxAmount, provider.currency)} tax.
+                {provider.rowCount} open cash debt row(s),{' '}
+                <MoneyText amount={provider.platformFee} currency={provider.currency} /> HANDS fee,{' '}
+                <MoneyText amount={provider.taxAmount} currency={provider.currency} /> tax.
               </p>
               <div className="participant-list admin-mt-8">
                 <ActionMenu

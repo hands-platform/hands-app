@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import {
   Activity,
   BellRing,
@@ -14,7 +14,7 @@ import {
 export type MetricCardProps = {
   className?: string;
   label: string;
-  value: number | string;
+  value: ReactNode;
   helper: string;
   href?: string;
   icon?: LucideIcon;

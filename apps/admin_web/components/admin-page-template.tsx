@@ -6,7 +6,7 @@ export type AdminPageMetric = {
   readonly helper: string;
   readonly href?: string;
   readonly label: string;
-  readonly value: number | string;
+  readonly value: ReactNode;
 };
 
 type AdminPageTemplateProps = {

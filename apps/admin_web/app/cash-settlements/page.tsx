@@ -8,7 +8,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { formatMoney } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
 import { readSearchParam } from '../../lib/date-range';
 import {
   buildAdminLiveOperationsPolicy,
@@ -115,22 +115,22 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         {
           helper: 'Company fee or tax still owed to HANDS.',
           label: 'Total wallet debt',
-          value: formatMoney(summary.debtAmount, summary.currency),
+          value: <MoneyText amount={summary.debtAmount} currency={summary.currency} />,
         },
         {
           helper: 'Company-funded coupon amount already offset from Partner cash settlement.',
           label: 'Company coupon offset',
-          value: formatMoney(summary.companyCouponOffset, summary.currency),
+          value: <MoneyText amount={summary.companyCouponOffset} currency={summary.currency} />,
         },
         {
           helper: 'Platform fee portion of cash debt.',
           label: 'HANDS fee',
-          value: formatMoney(summary.platformFee, summary.currency),
+          value: <MoneyText amount={summary.platformFee} currency={summary.currency} />,
         },
         {
           helper: 'Tax portion of cash debt.',
           label: 'Tax withholding',
-          value: formatMoney(summary.taxAmount, summary.currency),
+          value: <MoneyText amount={summary.taxAmount} currency={summary.currency} />,
         },
         { helper: 'Oldest visible settlement row.', label: 'Oldest open', value: summary.oldestOpenLabel },
         { helper: 'Rows older than 24 hours.', label: 'Over 24h', value: summary.staleDebtRowCount },

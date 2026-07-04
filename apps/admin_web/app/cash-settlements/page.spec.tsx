@@ -105,6 +105,13 @@ describe('CashSettlementsPage', () => {
     expect(source).not.toContain('className="pill pill-info"');
   });
 
+  it('uses shared money atoms for cash settlement page metrics', () => {
+    const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('loads the full cash settlement operations playbook only when requested', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/cash-settlement-earnings?range=today&take=10') {

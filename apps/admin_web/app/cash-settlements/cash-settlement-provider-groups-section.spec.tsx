@@ -55,6 +55,16 @@ describe('CashSettlementProviderGroupsSection', () => {
     );
   });
 
+  it('uses shared money atoms for Partner debt group amounts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-provider-groups-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {
     const section = CashSettlementProviderGroupsSection({
       providers: [
