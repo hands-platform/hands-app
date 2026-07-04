@@ -33,5 +33,7 @@ describe('FilesPage', () => {
     expect(hrefs).toContain('/admin/files/review-summary');
     expect(markup).toContain('Review queue');
     expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
+    expect(markup).toContain('No files match this queue.');
+    expect(markup).toContain('class="empty-state');
   });
 });

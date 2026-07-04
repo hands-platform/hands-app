@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -114,7 +115,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         <div className="admin-table-scroll">
           <AdminDataTable
             className="files-review-table"
-            emptyMessage={<p className="muted">No files match this queue.</p>}
+            emptyMessage={<AdminEmptyState framed message="No files match this queue." />}
             headers={FILE_REVIEW_HEADERS}
             rowCount={rows.length}
           >
