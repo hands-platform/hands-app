@@ -2,6 +2,7 @@ export type AdminChatWindowMessageRole = 'ADMIN' | 'CUSTOMER' | 'PROVIDER' | 'SY
 
 export type AdminChatWindowMessage = {
   readonly body: string;
+  readonly createdDateTime?: string;
   readonly createdLabel: string;
   readonly id: string;
   readonly role: AdminChatWindowMessageRole;
@@ -42,7 +43,7 @@ export function AdminChatWindow({
       <div className="booking-chat-transcript-panel admin-chat-window-body">
         {messages.length > 0 ? (
           messages.map((message) => (
-            <AdminChatWindowMessageBubble key={message.id} message={message} />
+            <AdminChatMessageBubble key={message.id} message={message} />
           ))
         ) : (
           <p className="muted">{emptyMessage}</p>
@@ -52,7 +53,7 @@ export function AdminChatWindow({
   );
 }
 
-function AdminChatWindowMessageBubble({ message }: { readonly message: AdminChatWindowMessage }) {
+export function AdminChatMessageBubble({ message }: { readonly message: AdminChatWindowMessage }) {
   const roleClass =
     message.role === 'PROVIDER'
       ? 'is-outgoing'
@@ -71,7 +72,11 @@ function AdminChatWindowMessageBubble({ message }: { readonly message: AdminChat
         <p className="admin-chat-message-bubble">{message.body}</p>
         <div className="admin-chat-message-meta">
           <span>{message.senderLabel}</span>
-          <span>{message.createdLabel}</span>
+          {message.createdDateTime ? (
+            <time dateTime={message.createdDateTime}>{message.createdLabel}</time>
+          ) : (
+            <span>{message.createdLabel}</span>
+          )}
         </div>
       </div>
     </div>
