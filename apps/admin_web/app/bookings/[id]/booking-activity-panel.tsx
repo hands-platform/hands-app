@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSection } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
 import { formatDate, shortId } from './booking-formatters';
 
@@ -38,7 +39,7 @@ export function BookingFullRecordIndex({
             <Download aria-hidden="true" size={14} />
             Export activity CSV
           </a>
-          <span className="pill pill-info">{eventCount} event(s)</span>
+          <StatusBadge tone="info">{eventCount} event(s)</StatusBadge>
         </div>
       }
       className="admin-mb-16 booking-full-record-index-card"
@@ -68,7 +69,7 @@ export function BookingActivityPanel({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{totalRecordCount} event(s)</span>}
+      actions={<StatusBadge tone="info">{totalRecordCount} event(s)</StatusBadge>}
       className="admin-mt-16 booking-activity-card"
       description="Latest date-sorted operational event trail for this booking."
       id="booking-activity"
@@ -90,7 +91,7 @@ export function BookingActivityPanel({
               className="booking-activity-record-row"
               key={`${record.type}-${record.id}-${record.at}`}
             >
-              <span className="pill pill-neutral">{record.type}</span>
+              <StatusBadge tone="neutral">{record.type}</StatusBadge>
               <div>
                 {record.href ? (
                   <Link className="text-link" href={record.href}>
@@ -106,7 +107,7 @@ export function BookingActivityPanel({
           ))
         ) : (
           <div className="booking-activity-record-row is-empty">
-            <span className="pill pill-neutral">NONE</span>
+            <StatusBadge tone="neutral">NONE</StatusBadge>
             <div>
               <AdminEmptyState
                 message="Matching, payment, chat, location, and audit events will appear here."

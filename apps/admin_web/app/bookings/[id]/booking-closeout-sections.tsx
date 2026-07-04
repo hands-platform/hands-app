@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../../components/status-badge';
 
 type CloseoutChecklistItem = {
   title: string;
@@ -51,7 +52,7 @@ export function BookingCloseoutSections({
           {bookingCloseoutChecklist.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <div>
-                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                 <h3>{item.title}</h3>
                 <p className="muted">{item.detail}</p>
               </div>
@@ -62,7 +63,7 @@ export function BookingCloseoutSections({
       </AdminSection>
 
       <AdminSection
-        actions={<span className="pill pill-info">{connectedRecordLinks.length} links</span>}
+        actions={<StatusBadge tone="info">{connectedRecordLinks.length} links</StatusBadge>}
         className="admin-mb-16 connected-operations-records-card"
         description="Jump links to records connected to this booking."
         id="connected-operations-records"
@@ -74,9 +75,9 @@ export function BookingCloseoutSections({
               <span>{record.label}</span>
               <strong>{record.value}</strong>
               <small>{record.detail}</small>
-              <Link className={`pill ${record.tone}`} href={record.href}>
+              <PillClassBadgeLink href={record.href} pillClass={record.tone}>
                 Open
-              </Link>
+              </PillClassBadgeLink>
             </div>
           ))}
         </div>

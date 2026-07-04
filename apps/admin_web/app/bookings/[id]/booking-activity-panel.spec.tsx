@@ -11,6 +11,16 @@ describe('BookingActivityPanel', () => {
     expect(source).not.toContain('<strong>No booking activity has been recorded yet</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw booking activity pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-activity-panel.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{eventCount} event(s)</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{totalRecordCount} event(s)</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{record.type}</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">NONE</span>');
+  });
+
   it('renders the full record index on the shared Vuexy section surface', () => {
     const markup = renderToStaticMarkup(
       <BookingFullRecordIndex

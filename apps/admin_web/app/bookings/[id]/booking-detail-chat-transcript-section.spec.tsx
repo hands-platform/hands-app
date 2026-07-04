@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminChatMessage } from '../../../lib/admin-api';
 import { BookingDetailChatTranscriptSection } from './booking-detail-chat-transcript-section';
 
 describe('BookingDetailChatTranscriptSection', () => {
+  it('uses the shared Vuexy badge atom for retained message counts', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-chat-transcript-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{countLabel(totalMessages, \'message\')}</span>');
+  });
+
   it('renders booking chat messages in the visible booking detail flow', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailChatTranscriptSection

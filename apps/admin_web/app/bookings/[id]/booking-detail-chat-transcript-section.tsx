@@ -4,6 +4,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminSection } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 import type { AdminChatMessage } from '../../../lib/admin-api';
 import { formatDateTime } from '../../../lib/admin-format';
 
@@ -23,7 +24,7 @@ export function BookingDetailChatTranscriptSection({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{countLabel(totalMessages, 'message')}</span>}
+      actions={<StatusBadge tone="info">{countLabel(totalMessages, 'message')}</StatusBadge>}
       className="admin-mb-16 booking-detail-chat-transcript"
       description="Read-only retained booking chat transcript."
       id="booking-chat-history"

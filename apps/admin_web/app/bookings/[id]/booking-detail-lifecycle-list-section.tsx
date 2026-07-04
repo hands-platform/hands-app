@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
   isPostMatchCancellationReviewBooking,
@@ -44,7 +45,7 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
 
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{timelineItems.length} stage(s)</span>}
+      actions={<StatusBadge tone="info">{timelineItems.length} stage(s)</StatusBadge>}
       className="booking-detail-lifecycle-list admin-mb-16"
       description="Compact stage history for this reservation without repeating full booking-list tables."
       id="booking-detail-lifecycle-list"
@@ -61,7 +62,7 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
             <div className="vuexy-basic-timeline-content">
               <div className="vuexy-basic-timeline-title-row">
                 <div>
-                  <span className={`pill ${timelinePillTone(item.tone)}`}>{item.statusLabel}</span>
+                  <PillClassBadge pillClass={timelinePillTone(item.tone)}>{item.statusLabel}</PillClassBadge>
                   <h3>{item.title}</h3>
                 </div>
                 <time>{item.timeLabel}</time>

@@ -1,8 +1,20 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { BookingCloseoutSections } from './booking-closeout-sections';
 
 describe('BookingCloseoutSections', () => {
+  it('uses shared Vuexy badge atoms instead of raw closeout pill spans and links', () => {
+    const source = readFileSync('app/bookings/[id]/booking-closeout-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{connectedRecordLinks.length} links</span>');
+    expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
+  });
+
   it('renders closeout checklist and connected records on shared Vuexy section surfaces', () => {
     const markup = renderToStaticMarkup(
       <BookingCloseoutSections

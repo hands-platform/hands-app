@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
@@ -7,6 +8,15 @@ import {
 } from './booking-detail-lifecycle-list-section';
 
 describe('bookingDetailLifecycleListRows', () => {
+  it('uses shared Vuexy badge atoms instead of raw lifecycle pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-lifecycle-list-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{timelineItems.length} stage(s)</span>');
+    expect(source).not.toContain('<span className={`pill ${timelinePillTone(item.tone)}`}>{item.statusLabel}</span>');
+  });
+
   it('keeps realtime and post-match list rows for an in-progress booking detail', () => {
     const rows = bookingDetailLifecycleListRows(
       bookingFixture({ status: 'IN_SERVICE' }),
