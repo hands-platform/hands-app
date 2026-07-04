@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
@@ -81,9 +82,9 @@ export function PartnerDetailReadinessSnapshotSection({
     >
       <div className="participant-list admin-mt-12">
         {snapshot.badges.map((badge) => (
-          <span className={`pill ${partnerOpsPillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
+          <PillClassBadge key={badge.label} pillClass={partnerOpsPillClass(badge.tone)} title={badge.detail}>
             {badge.label}
-          </span>
+          </PillClassBadge>
         ))}
       </div>
       <div className="admin-mt-16">
@@ -96,7 +97,9 @@ export function PartnerDetailReadinessSnapshotSection({
           >
             <tr>
               <td>
-                <span className={`pill ${partnerOpsPillClass(snapshot.tone)}`}>{snapshot.gate.label}</span>
+                <PillClassBadge pillClass={partnerOpsPillClass(snapshot.tone)}>
+                  {snapshot.gate.label}
+                </PillClassBadge>
               </td>
               <td>
                 <strong>{snapshot.gate.title}</strong>
@@ -172,7 +175,9 @@ export function PartnerAcceptanceRepairCommandSection({
                   <p className="muted">{step.operatorAction}</p>
                 </td>
                 <td>
-                  <span className={`pill ${partnerOpsPillClass(step.tone)}`}>{partnerOpsStepLabel(step.tone)}</span>
+                  <PillClassBadge pillClass={partnerOpsPillClass(step.tone)}>
+                    {partnerOpsStepLabel(step.tone)}
+                  </PillClassBadge>
                 </td>
                 <td>
                   <Link className="text-link" href={step.href}>
