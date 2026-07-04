@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
 type LivePolicySimulator = {
@@ -69,9 +69,12 @@ export function OperationsPolicyLiveSimulatorSection({
                 <p>{step.detail}</p>
                 <div className="participant-list">
                   {step.tags.map((tag) => (
-                    <PillClassBadge pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
+                    <StatusBadge
+                      tone={statusBadgeToneFromPillClass(tag.tone)}
+                      key={`${step.title}-${tag.label}`}
+                    >
                       {tag.label}
-                    </PillClassBadge>
+                    </StatusBadge>
                   ))}
                 </div>
               </div>
@@ -99,7 +102,9 @@ export function OperationsPolicyLiveSimulatorSection({
                     {partner.distanceLabel} / location {partner.locationAgeLabel}
                   </p>
                 </div>
-                <PillClassBadge pillClass={partner.pillClass}>{partner.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(partner.pillClass)}>
+                  {partner.status}
+                </StatusBadge>
               </div>
             ))}
             {simulation.partnerRows.length === 0 ? (
@@ -118,7 +123,9 @@ export function OperationsPolicyLiveSimulatorSection({
             className={check.className}
             detail={check.detail}
             key={check.title}
-            leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(check.pillClass)}>{check.status}</StatusBadge>
+            }
             title={check.title}
           />
         ))}

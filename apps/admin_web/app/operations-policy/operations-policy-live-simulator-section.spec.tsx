@@ -9,6 +9,8 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
 
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<span className="pill pill-info">{simulation.partnerRows.length} shown</span>');
   });
