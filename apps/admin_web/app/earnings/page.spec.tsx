@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import type { AdminEarning, AdminEarningSummary, AdminPayoutBatch } from '../../lib/admin-api';
@@ -15,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('EarningsPage', () => {
   beforeEach(() => {
@@ -171,5 +173,10 @@ describe('EarningsPage', () => {
     expect(markup).toContain(
       'Accounting preview: Dr Partner receivable 30.000 VND / Cr Platform fee net revenue 20.000 VND / Cr Company output VAT payable 5.000 VND / Cr Partner withholding tax payable 5.000 VND.',
     );
+  });
+
+  it('uses shared status links for earnings range filters', () => {
+    expect(pageSource).toContain('StatusBadgeLink');
+    expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 });
