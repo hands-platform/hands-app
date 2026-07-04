@@ -13,6 +13,7 @@ import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
@@ -321,7 +322,11 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
                   );
                 })
               ) : (
-                <p className="calendar-empty-filter muted">No hashtags yet.</p>
+                <AdminEmptyState
+                  className="calendar-empty-filter"
+                  message="No hashtags yet."
+                  title={null}
+                />
               )}
             </div>
           </div>
