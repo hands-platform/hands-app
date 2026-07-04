@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -120,9 +120,13 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="participant-list">
               {row.blockingReasons.length ? (
                 row.blockingReasons.map((reason) => (
-                  <PillClassBadge key={reason.label} pillClass={reason.pillClass} title={reason.detail}>
+                  <StatusBadge
+                    key={reason.label}
+                    title={reason.detail}
+                    tone={statusBadgeToneFromPillClass(reason.pillClass)}
+                  >
                     {reason.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                 ))
               ) : (
                 <StatusBadge tone="success">Clear</StatusBadge>
@@ -174,7 +178,9 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
                   <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
-                    <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                      {item.status}
+                    </StatusBadge>
                     <div>
                       <strong>{item.action}</strong>
                       <p className="muted">{item.reason}</p>

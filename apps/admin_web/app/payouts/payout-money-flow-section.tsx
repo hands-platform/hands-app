@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutMoneyFlowCard = {
@@ -59,7 +59,11 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
               className={check.className}
               detail={check.detail}
               key={check.title}
-              leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+              leading={
+                <StatusBadge tone={statusBadgeToneFromPillClass(check.pillClass)}>
+                  {check.status}
+                </StatusBadge>
+              }
               title={check.title}
             />
           ))}

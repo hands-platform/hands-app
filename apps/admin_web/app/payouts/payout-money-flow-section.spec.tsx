@@ -75,6 +75,8 @@ describe('PayoutMoneyFlowSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-money-flow-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
   });
 });

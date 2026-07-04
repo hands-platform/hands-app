@@ -1,6 +1,6 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutReleaseBlockerReason = {
@@ -47,9 +47,9 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
               <p className="muted">{item.action}</p>
               <div className="participant-list admin-mt-8">
                 {item.blockingReasons.map((reason) => (
-                  <PillClassBadge key={reason.label} pillClass={reason.pillClass}>
+                  <StatusBadge key={reason.label} tone={statusBadgeToneFromPillClass(reason.pillClass)}>
                     {reason.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                 ))}
               </div>
             </div>

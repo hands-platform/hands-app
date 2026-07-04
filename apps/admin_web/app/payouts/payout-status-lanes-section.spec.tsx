@@ -78,6 +78,8 @@ describe('PayoutStatusLanesSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
   });
 });

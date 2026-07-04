@@ -7,6 +7,8 @@ describe('PayoutReleaseBlockerQueueSection', () => {
     const source = readFileSync('app/payouts/payout-release-blocker-queue-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No payout release blocker</strong>');
   });
 

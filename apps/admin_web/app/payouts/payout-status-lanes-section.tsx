@@ -1,6 +1,6 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney, shortRecordId } from '../../lib/admin-format';
 
 export type PayoutStatusLaneBatch = {
@@ -37,7 +37,11 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
         {lanes.map((lane) => (
           <div key={lane.title}>
             <AdminSectionHeader
-              status={<PillClassBadge pillClass={lane.pillClass}>{lane.batches.length}</PillClassBadge>}
+              status={
+                <StatusBadge tone={statusBadgeToneFromPillClass(lane.pillClass)}>
+                  {lane.batches.length}
+                </StatusBadge>
+              }
               title={lane.title}
             />
             {lane.batches.length ? (

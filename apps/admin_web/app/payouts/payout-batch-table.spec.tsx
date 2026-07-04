@@ -207,6 +207,7 @@ describe('PayoutBatchTable', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-danger">Payout hold</span>');
     expect(source).not.toContain('<span className="pill pill-success">Clear</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${item.key}`}>');
