@@ -32,58 +32,52 @@ export function OperationsHandoffOperatorNotesSection({
     >
       <form action={addOperationsHandoffNote} className="ops-note-form admin-mb-14">
         <div className="form-grid compact-form">
-          <div className="calendar-field">
-            <span>Owner lane</span>
-            <AdminFormSelect
-              defaultValue="Shift handoff"
-              label="Owner lane"
-              name="owner"
-              options={[
-                { label: 'Shift handoff', value: 'Shift handoff' },
-                { label: 'Dispatch', value: 'Dispatch' },
-                { label: 'Support', value: 'Support' },
-                { label: 'Partner Ops', value: 'Partner Ops' },
-                { label: 'Finance', value: 'Finance' },
-                { label: 'Alerts', value: 'Alerts' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Preset</span>
-            <AdminFormSelect
-              defaultValue=""
-              label="Preset"
-              name="preset"
-              options={[
-                { label: 'No preset', value: '' },
-                {
-                  label: 'Review live matching, chat, and cash settlement first.',
-                  value: 'Next operator should review live matching, chat, and cash settlement lanes first.',
-                },
-                {
-                  label: 'Customer support handoff reviewed.',
-                  value: 'Customer support handoff: recent customer contacts and chat archives reviewed.',
-                },
-                {
-                  label: 'Partner operations handoff reviewed.',
-                  value: 'Partner operations handoff: KYC, wallet, location, and app session facts reviewed.',
-                },
-                {
-                  label: 'Finance handoff reviewed.',
-                  value: 'Finance handoff: cash debt, payout evidence, and completed closeout rows reviewed.',
-                },
-              ]}
-            />
-          </div>
-        </div>
-        <div className="calendar-field">
-          <span>Shift note</span>
-          <AdminFormTextarea
-            label="Shift note"
-            name="note"
-            placeholder="Write the factual shift handoff note for the next operator."
+          <AdminFormSelect
+            defaultValue="Shift handoff"
+            label="Owner lane"
+            labelVisibility="visible"
+            name="owner"
+            options={[
+              { label: 'Shift handoff', value: 'Shift handoff' },
+              { label: 'Dispatch', value: 'Dispatch' },
+              { label: 'Support', value: 'Support' },
+              { label: 'Partner Ops', value: 'Partner Ops' },
+              { label: 'Finance', value: 'Finance' },
+              { label: 'Alerts', value: 'Alerts' },
+            ]}
+          />
+          <AdminFormSelect
+            defaultValue=""
+            label="Preset"
+            labelVisibility="visible"
+            name="preset"
+            options={[
+              { label: 'No preset', value: '' },
+              {
+                label: 'Review live matching, chat, and cash settlement first.',
+                value: 'Next operator should review live matching, chat, and cash settlement lanes first.',
+              },
+              {
+                label: 'Customer support handoff reviewed.',
+                value: 'Customer support handoff: recent customer contacts and chat archives reviewed.',
+              },
+              {
+                label: 'Partner operations handoff reviewed.',
+                value: 'Partner operations handoff: KYC, wallet, location, and app session facts reviewed.',
+              },
+              {
+                label: 'Finance handoff reviewed.',
+                value: 'Finance handoff: cash debt, payout evidence, and completed closeout rows reviewed.',
+              },
+            ]}
           />
         </div>
+        <AdminFormTextarea
+          label="Shift note"
+          labelVisibility="visible"
+          name="note"
+          placeholder="Write the factual shift handoff note for the next operator."
+        />
         <AdminFormControlButton className="button-primary" type="submit">
           <Save aria-hidden="true" size={16} />
           Save handoff note

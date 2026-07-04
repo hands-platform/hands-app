@@ -55,9 +55,10 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     const section = OperationsHandoffOperatorNotesSection({ notes: [] });
     const classNames = classNamesIn(section);
 
-    expect(classNames).toContain('admin-form-select');
-    expect(classNames).toContain('admin-form-textarea');
+    expect(classNames).toContain('admin-form-select admin-form-control-labeled');
+    expect(classNames).toContain('admin-form-textarea admin-form-control-labeled');
     expect(classNames).toContain('admin-form-control-button button button-primary');
+    expect(classNames).not.toContain('calendar-field');
   });
 
   it('renders the empty state when there are no notes', () => {
