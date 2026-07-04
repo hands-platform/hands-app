@@ -65,7 +65,7 @@ describe('CustomerFilterBoard', () => {
 
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('href="/customers"');
-    expect(rendered).toContain('admin-form-control-link vuexy-customer-button is-ghost');
+    expect(rendered).toContain('admin-form-control-link button button-secondary vuexy-customer-button is-ghost');
   });
 
   it('places custom date apply controls next to visible custom date fields', () => {

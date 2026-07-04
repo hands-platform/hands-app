@@ -81,8 +81,8 @@ describe('ReviewsTableSection', () => {
       expect.arrayContaining([
         'admin-form-search vuexy-review-search',
         'admin-form-select vuexy-review-select',
-        'admin-form-control-button vuexy-review-button',
-        'admin-form-control-link vuexy-review-export',
+        'admin-form-control-button button button-primary vuexy-review-button',
+        'admin-form-control-link button button-secondary vuexy-review-export',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',

@@ -266,7 +266,7 @@ describe('Admin form controls', () => {
     expect(checkbox.props.children[2].props.className).toBe('admin-form-checkbox-label');
   });
 
-  it('renders link and button controls without owning behavior', () => {
+  it('renders link and button controls with the shared Vuexy shell and custom hooks', () => {
     const link = AdminFormControlLink({
       'aria-current': 'page',
       children: 'Export',
@@ -281,14 +281,14 @@ describe('Admin form controls', () => {
     });
 
     expect(link.props).toMatchObject({
-      className: 'admin-form-control-link customer-export',
+      className: 'admin-form-control-link button button-secondary customer-export',
       download: 'hands-customers.csv',
       href: 'data:text/csv,name',
       title: 'Export customers',
     });
     expect(link.props['aria-current']).toBe('page');
     expect(button.props).toMatchObject({
-      className: 'admin-form-control-button customer-apply',
+      className: 'admin-form-control-button button button-primary customer-apply',
       type: 'submit',
     });
   });
@@ -308,6 +308,21 @@ describe('Admin form controls', () => {
     expect(button.props.className).toBe(
       'admin-form-control-button button button-sm button-primary payout-action',
     );
+  });
+
+  it('does not add duplicate default tones when a custom Vuexy tone is supplied', () => {
+    const link = AdminFormControlLink({
+      children: 'Cancel',
+      className: 'button button-danger admin-inline-action',
+      href: '/bookings',
+    });
+    const button = AdminFormControlButton({
+      children: 'Save draft',
+      className: 'button button-secondary setup-action',
+    });
+
+    expect(link.props.className).toBe('admin-form-control-link button button-danger admin-inline-action');
+    expect(button.props.className).toBe('admin-form-control-button button button-secondary setup-action');
   });
 
   it('applies default Vuexy button tones when no class is supplied', () => {

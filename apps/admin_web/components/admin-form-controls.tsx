@@ -452,11 +452,8 @@ function joinClassNames(...classNames: Array<string | undefined>) {
 }
 
 function normalizeButtonClassNames(className: string | undefined, defaultClassName: string) {
-  if (!className) {
-    return defaultClassName;
-  }
-
-  const normalized = className.split(/\s+/).reduce<string[]>((tokens, token) => {
+  const defaultTokens = splitClassNames(defaultClassName);
+  const mappedTokens = splitClassNames(className).reduce<string[]>((tokens, token) => {
     const mappedToken = legacyButtonClassMap[token] ?? token;
     if (mappedToken && !tokens.includes(mappedToken)) {
       tokens.push(mappedToken);
@@ -464,8 +461,41 @@ function normalizeButtonClassNames(className: string | undefined, defaultClassNa
     return tokens;
   }, []);
 
-  return normalized.join(' ');
+  if (!mappedTokens.length) {
+    return defaultTokens.join(' ');
+  }
+
+  if (mappedTokens.some(isButtonToneClass)) {
+    return ensureButtonBaseToken(mappedTokens).join(' ');
+  }
+
+  return mergeClassNames(defaultTokens, mappedTokens);
 }
+
+function splitClassNames(className: string | undefined) {
+  return className?.split(/\s+/).filter(Boolean) ?? [];
+}
+
+function ensureButtonBaseToken(tokens: string[]) {
+  return tokens.includes('button') ? tokens : ['button', ...tokens];
+}
+
+function mergeClassNames(baseTokens: string[], customTokens: string[]) {
+  return [...baseTokens, ...customTokens.filter((token) => !baseTokens.includes(token))].join(' ');
+}
+
+function isButtonToneClass(className: string) {
+  return buttonToneClassNames.has(className);
+}
+
+const buttonToneClassNames = new Set([
+  'button-danger',
+  'button-info',
+  'button-outline',
+  'button-primary',
+  'button-secondary',
+  'button-success',
+]);
 
 const legacyButtonClassMap: Record<string, string> = {
   btn: 'button',
