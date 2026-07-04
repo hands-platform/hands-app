@@ -97,6 +97,20 @@ describe('Admin form control CSS', () => {
     expect(focusedPlaceholderBlock).toContain('transform: translateX(4px)');
   });
 
+  it('keeps visible shared form labels on the Vuexy text-primary color', () => {
+    const labelIndex = globalsCss.indexOf('.admin-form-label {');
+    const labelBlock = cssRuleBlockAt(labelIndex);
+    const textareaLabelIndex = globalsCss.indexOf('.admin-form-textarea > span:first-child {');
+    const textareaLabelBlock = cssRuleBlockAt(textareaLabelIndex);
+
+    expect(labelIndex).toBeGreaterThan(-1);
+    expect(textareaLabelIndex).toBeGreaterThan(-1);
+    expect(labelBlock).toContain('color: var(--admin-text)');
+    expect(textareaLabelBlock).toContain('color: var(--admin-text)');
+    expect(labelBlock).not.toContain('color: var(--admin-muted)');
+    expect(textareaLabelBlock).not.toContain('color: var(--admin-muted)');
+  });
+
   it('keeps shared textareas on the same Vuexy focus and placeholder motion as inputs', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-textarea textarea:focus,');
     const focusBlock = cssRuleBlockAt(focusIndex);

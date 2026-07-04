@@ -17083,7 +17083,7 @@ textarea:focus-visible {
 .marketing-spend-form label span,
 .referral-policy-field-label,
 .admin-form-textarea > span:first-child {
-  color: var(--admin-muted);
+  color: var(--admin-text);
   font-size: var(--admin-input-label-size);
   font-weight: 500;
   line-height: var(--admin-input-label-line-height);
@@ -17129,7 +17129,7 @@ textarea:focus-visible {
 }
 
 .admin-form-label {
-  color: var(--admin-muted);
+  color: var(--admin-text);
   font-size: var(--admin-input-label-size);
   font-weight: 500;
   line-height: var(--admin-input-label-line-height);
