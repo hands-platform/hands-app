@@ -4061,9 +4061,12 @@ a.action-button-card:hover {
   color: var(--admin-inverse-text);
 }
 
-.vuexy-booking-page-link:disabled {
+.vuexy-booking-page-link:disabled,
+.vuexy-booking-page-link.is-disabled {
   color: var(--admin-disabled);
   cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .vuexy-booking-page-link:not(:disabled):hover {
@@ -16455,6 +16458,8 @@ textarea:focus-visible {
 .vuexy-review-page-link.is-disabled {
   color: var(--admin-disabled);
   cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .vuexy-review-page-link:not(.is-disabled):hover {

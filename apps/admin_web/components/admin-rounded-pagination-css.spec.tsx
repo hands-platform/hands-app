@@ -14,6 +14,19 @@ describe('Admin rounded pagination CSS', () => {
     expect(hoverBlock).toContain('color: var(--admin-accent-strong)');
     expect(hoverBlock).not.toContain('#8f85f3');
   });
+
+  it.each([
+    ['booking', '.vuexy-booking-page-link:disabled,'],
+    ['review', '.vuexy-review-page-link.is-disabled {'],
+  ])('keeps %s disabled pagination controls on the Vuexy disabled opacity', (_label, selector) => {
+    const disabledIndex = globalsCss.indexOf(selector);
+    const disabledBlock = cssRuleBlockAt(disabledIndex);
+
+    expect(disabledIndex).toBeGreaterThan(-1);
+    expect(disabledBlock).toContain('cursor: not-allowed');
+    expect(disabledBlock).toContain('opacity: 0.45');
+    expect(disabledBlock).toContain('pointer-events: none');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

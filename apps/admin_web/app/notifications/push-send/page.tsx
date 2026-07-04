@@ -378,7 +378,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             ariaLabel="Push campaign pagination"
             className="vuexy-booking-pagination"
             hrefForPage={(page) => buildPushCampaignPageHref(page, params)}
-            pageLinkClassName="vuexy-booking-pagination-link"
+            pageLinkClassName="vuexy-booking-page-link"
             totalPages={campaignTotalPages}
           />
         </div>

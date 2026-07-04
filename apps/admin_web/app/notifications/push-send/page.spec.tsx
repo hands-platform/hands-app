@@ -66,4 +66,9 @@ describe('PushSendPage', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).not.toContain('className={`card admin-notice-card');
   });
+
+  it('uses the shared rounded pagination page-link class for recent campaigns', () => {
+    expect(pageSource).toContain('pageLinkClassName="vuexy-booking-page-link"');
+    expect(pageSource).not.toContain('pageLinkClassName="vuexy-booking-pagination-link"');
+  });
 });
