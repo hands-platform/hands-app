@@ -29,4 +29,24 @@ describe('Admin form control CSS', () => {
     expect(globalsCss.slice(markIndex, checkedIndex)).toContain('border-radius: 4px');
     expect(globalsCss.slice(checkedIndex, checkedIndex + 240)).toContain('background: var(--admin-accent)');
   });
+
+  it('keeps inline react-datepicker navigation aligned with the Vuexy 30px control position', () => {
+    const inlineNavigationIndex = globalsCss.indexOf(
+      '.react-datepicker.calendar-vuexy-datepicker-inline > .react-datepicker__navigation',
+    );
+    const inlineNavigationBlock = cssRuleBlockAt(inlineNavigationIndex);
+
+    expect(inlineNavigationIndex).toBeGreaterThan(-1);
+    expect(inlineNavigationBlock).toContain('top: 12px');
+    expect(inlineNavigationBlock).not.toContain('top: 8px');
+  });
 });
+
+function cssRuleBlockAt(index: number) {
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = globalsCss.indexOf('}', index);
+  return globalsCss.slice(index, endIndex + 1);
+}
