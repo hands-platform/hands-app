@@ -227,7 +227,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                         )}
                         <AdminFormInput label="Update reason" name="reason" placeholder="Reason" />
                         <div className="admin-operator-row-actions">
-                          <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
+                          <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
                             Save permissions
                           </AdminFormControlButton>
                         </div>

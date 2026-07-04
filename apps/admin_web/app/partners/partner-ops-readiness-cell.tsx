@@ -49,7 +49,7 @@ export function PartnerOpsReadinessCell({
       <PartnerBackupEligibilityCard eligibility={eligibility} opsPolicy={opsPolicy} />
       {hasOpenControl ? (
         <AdminFormControlLink
-          className="button button-secondary admin-inline-action admin-mt-8"
+          className="button-secondary admin-inline-action admin-mt-8"
           href={`/partners?review=reports&q=${encodeURIComponent(provider.id)}`}
         >
           <ExternalLink aria-hidden="true" size={14} />

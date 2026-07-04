@@ -1,5 +1,6 @@
-import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -76,10 +77,10 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
               <p className="muted">{item.recommendation}</p>
               <strong>Decision trigger</strong>
               <p className="muted">{item.decisionTrigger}</p>
-              <Link className="button button-secondary policy-inline-action" href={item.href}>
+              <AdminFormControlLink className="button-secondary policy-inline-action" href={item.href}>
                 <ExternalLink size={14} aria-hidden="true" />
                 Review data
-              </Link>
+              </AdminFormControlLink>
             </div>
           </div>
         ))}

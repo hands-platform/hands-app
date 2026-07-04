@@ -43,7 +43,7 @@ describe('BookingMvpAuthorityContractSection', () => {
         'card admin-section admin-mb-16',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
-        'button button-secondary admin-inline-action',
+        'admin-form-control-link button button-secondary admin-inline-action',
         'pill pill-success',
       ]),
     );

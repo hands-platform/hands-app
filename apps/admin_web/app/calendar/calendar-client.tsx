@@ -419,7 +419,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
           <div className="calendar-board-footer">
             <span className="muted">Drag, resize, or click an event to update it.</span>
             <AdminFormControlButton
-              className="button button-secondary calendar-quick-add"
+              className="button-secondary calendar-quick-add"
               onClick={() => openCreateDrawer(new Date())}
               type="button"
             >

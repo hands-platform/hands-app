@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminFormControlButton } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge } from '../../../components/status-badge';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -26,9 +26,9 @@ export function BookingDetailPostMatchDecisionSection({
         <div className="booking-outcome-review-actions">
           <PillClassBadge pillClass={outcomeReview.tone}>{outcomeReview.status}</PillClassBadge>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
-            <Link className="button button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
+            <AdminFormControlLink className="button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
               {outcomeReview.primaryLabel}
-            </Link>
+            </AdminFormControlLink>
           ) : null}
         </div>
       }
@@ -76,7 +76,7 @@ export function BookingDetailPostMatchDecisionSection({
             <form action={holdPostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.holdNote} />
-              <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
                 Hold fee deduction
               </AdminFormControlButton>
               <small>Keep existing deduction</small>

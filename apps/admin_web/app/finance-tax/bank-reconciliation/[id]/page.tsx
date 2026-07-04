@@ -505,7 +505,7 @@ function ReconciliationMatchActionCell({
         required
       />
       <div className="finance-reconciliation-reverse-actions">
-        <AdminFormControlButton className="button button-secondary admin-inline-action">
+        <AdminFormControlButton className="button-secondary admin-inline-action">
           Reverse
         </AdminFormControlButton>
         <span className="muted">Requires approver ID before reversal.</span>

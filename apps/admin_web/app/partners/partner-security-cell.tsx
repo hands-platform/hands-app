@@ -52,7 +52,7 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
       <AdminFormControlLink
-        className="button button-secondary admin-inline-action admin-mt-8"
+        className="button-secondary admin-inline-action admin-mt-8"
         href={`/partners/${provider.id}`}
       >
         <ShieldCheck aria-hidden="true" size={14} />

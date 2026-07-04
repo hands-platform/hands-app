@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
@@ -138,48 +139,48 @@ export function BookingDetailToolbar({
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary admin-inline-action" href="/bookings">
+          <AdminFormControlLink className="button-secondary admin-inline-action" href="/bookings">
             <ArrowLeft aria-hidden="true" size={14} />
             Back to booking monitor
-          </Link>
+          </AdminFormControlLink>
         {customerProfileId && (
-          <Link className="button button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
+          <AdminFormControlLink className="button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
             <User aria-hidden="true" size={14} />
             Open customer
-          </Link>
+          </AdminFormControlLink>
         )}
         {customerProfileId && (
-          <Link
-            className="button button-secondary admin-inline-action"
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
             href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}
           >
             <MessageSquareText aria-hidden="true" size={14} />
             All customer chats
-          </Link>
+          </AdminFormControlLink>
         )}
         {finalPartnerId && (
-          <Link className="button button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
+          <AdminFormControlLink className="button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
             <Users aria-hidden="true" size={14} />
             Open Partner
-          </Link>
+          </AdminFormControlLink>
         )}
         {finalPartnerId && (
-          <Link
-            className="button button-secondary admin-inline-action"
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
             href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}
           >
             <MessageSquareText aria-hidden="true" size={14} />
             All Partner chats
-          </Link>
+          </AdminFormControlLink>
         )}
         {chatRoomId && (
-          <Link
-            className="button button-secondary admin-inline-action"
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
             href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
           >
             <MessageSquareText aria-hidden="true" size={14} />
             Open chat archive
-          </Link>
+          </AdminFormControlLink>
         )}
         {paymentId && (
           <Link className="text-link" href={`/payments#payment-${paymentId}`}>
@@ -268,10 +269,10 @@ export function BookingMatchingRuleSnapshotSection({
       <SummaryMetricGrid rows={matchingRuleSnapshot.rows} />
       <div className="actions admin-mt-12">
         {matchingRuleSnapshot.actions.map((action) => (
-          <Link className="button button-secondary admin-inline-action" href={action.href} key={action.label}>
+          <AdminFormControlLink className="button-secondary admin-inline-action" href={action.href} key={action.label}>
             <ExternalLink aria-hidden="true" size={14} />
             {action.label}
-          </Link>
+          </AdminFormControlLink>
         ))}
       </div>
     </AdminSection>
@@ -286,10 +287,10 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary admin-inline-action" href="/operations-policy">
+        <AdminFormControlLink className="button-secondary admin-inline-action" href="/operations-policy">
           <ExternalLink aria-hidden="true" size={14} />
           Open policy controls
-        </Link>
+        </AdminFormControlLink>
       }
       className="admin-mb-16"
       description="Authority source check for the booking decisions shown on this page."
@@ -310,10 +311,10 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
               <td>{row.evidence}</td>
               <td>{row.operatorUse}</td>
               <td>
-                <Link className="button button-secondary admin-inline-action" href={row.href}>
+                <AdminFormControlLink className="button-secondary admin-inline-action" href={row.href}>
                   <ExternalLink aria-hidden="true" size={14} />
                   Open
-                </Link>
+                </AdminFormControlLink>
               </td>
             </tr>
           ))}
@@ -333,10 +334,10 @@ export function BookingRecentOperationsTimelineSection({
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary admin-inline-action" href="#operating-timeline">
+        <AdminFormControlLink className="button-secondary admin-inline-action" href="#operating-timeline">
           <ExternalLink aria-hidden="true" size={14} />
           Open full operating timeline
-        </Link>
+        </AdminFormControlLink>
       }
       className="admin-mb-16"
       description="Latest factual booking steps before an operator decides the next action."
@@ -383,10 +384,10 @@ export function BookingPriorityBriefingSection({
               <strong>{step.title}</strong>
               <p className="muted">{step.detail}</p>
             </div>
-            <Link className="button button-secondary admin-inline-action" href={step.href}>
+            <AdminFormControlLink className="button-secondary admin-inline-action" href={step.href}>
               <ExternalLink aria-hidden="true" size={14} />
               {step.linkLabel}
-            </Link>
+            </AdminFormControlLink>
           </div>
         ))}
       </div>

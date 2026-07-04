@@ -82,7 +82,7 @@ export function BookingMonitorBlockedCreateSection({
         />
         <div className="actions admin-align-end">
           <AdminFormControlButton
-            className="button button-secondary"
+            className="button-secondary"
             onClick={() => onGateFilterChange('all')}
             type="button"
           >

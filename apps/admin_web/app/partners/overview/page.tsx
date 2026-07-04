@@ -772,7 +772,7 @@ function SelectionFrictionCard({
             name="selectionSort"
             options={selectionSortOptions}
           />
-          <AdminFormControlButton className="button button-secondary" type="submit">
+          <AdminFormControlButton className="button-secondary" type="submit">
             Apply
           </AdminFormControlButton>
         </form>

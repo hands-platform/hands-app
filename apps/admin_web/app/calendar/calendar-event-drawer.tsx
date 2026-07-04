@@ -236,7 +236,7 @@ export function CalendarEventDrawer({
               <Save aria-hidden="true" size={16} />
               {mode === 'create' ? 'Add Event' : 'Update Event'}
             </AdminFormControlButton>
-            <AdminFormControlButton className="button button-secondary" onClick={onReset} type="button">
+            <AdminFormControlButton className="button-secondary" onClick={onReset} type="button">
               <RotateCcw aria-hidden="true" size={16} />
               Reset
             </AdminFormControlButton>

@@ -186,7 +186,7 @@ function ReviewEditDrawer({
           </div>
           <button
             aria-label="Close review editor"
-            className="button button-secondary"
+            className="button-secondary"
             onClick={onClose}
             type="button"
           >
@@ -246,7 +246,7 @@ function ReviewEditDrawer({
                 <Save aria-hidden="true" size={16} />
                 Save review
               </AdminFormControlButton>
-              <AdminFormControlButton className="button button-secondary" onClick={onClose} type="button">
+              <AdminFormControlButton className="button-secondary" onClick={onClose} type="button">
                 Cancel
               </AdminFormControlButton>
             </div>

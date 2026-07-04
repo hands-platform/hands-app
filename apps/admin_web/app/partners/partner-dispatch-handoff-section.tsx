@@ -16,7 +16,7 @@ export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandof
   return (
     <AdminSection
       actions={
-        <AdminFormControlLink className="button button-secondary" href="/operations-policy">
+        <AdminFormControlLink className="button-secondary" href="/operations-policy">
           <SlidersHorizontal aria-hidden="true" size={16} />
           {handoff.policyLabel}
         </AdminFormControlLink>

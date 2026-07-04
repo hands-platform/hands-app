@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Download } from 'lucide-react';
 
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
@@ -31,14 +32,14 @@ export function BookingFullRecordIndex({
     <AdminSection
       actions={
         <div className="actions">
-          <a
-            className="button button-secondary admin-inline-action"
+          <AdminFormControlLink
+            className="button-secondary admin-inline-action"
             download={`hands-booking-${shortId(bookingId)}-activity.csv`}
             href={csvHref}
           >
             <Download aria-hidden="true" size={14} />
             Export activity CSV
-          </a>
+          </AdminFormControlLink>
           <StatusBadge tone="info">{eventCount} event(s)</StatusBadge>
         </div>
       }

@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -91,13 +92,13 @@ export function OperationsPolicyLiveSimulatorSection({
             {simulation.partnerRows.map((partner) => (
               <div className="ops-row" key={partner.id}>
                 <div>
-                  <a
-                    className="button button-secondary policy-inline-action"
+                  <AdminFormControlLink
+                    className="button-secondary policy-inline-action"
                     href={`/partners/${partner.id}`}
                   >
                     <ExternalLink size={14} aria-hidden="true" />
                     {displayOperationalWording(partner.name)}
-                  </a>
+                  </AdminFormControlLink>
                   <p className="muted">
                     {partner.distanceLabel} / location {partner.locationAgeLabel}
                   </p>

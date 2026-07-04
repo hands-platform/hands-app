@@ -165,12 +165,12 @@ export default async function PartnerControlsPage({
           <PillClassBadge pillClass={commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
           </PillClassBadge>
-          <Link className="button button-secondary partner-control-inline-action" href="/operations-policy">
+          <AdminFormControlLink className="button-secondary partner-control-inline-action" href="/operations-policy">
             <ExternalLink aria-hidden="true" size={14} />
             {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
             marketplace radius / {controlPolicy.invitationLimit} invite cap / location{' '}
             {controlPolicy.locationFreshnessMinutes}m
-          </Link>
+          </AdminFormControlLink>
           </>
         }
         className="admin-mb-16"
@@ -424,12 +424,12 @@ export default async function PartnerControlsPage({
                   <Link className="text-link" href={block.href}>
                     Open
                   </Link>
-                  <Link
-                    className="button button-secondary partner-control-inline-action"
+                  <AdminFormControlLink
+                    className="button-secondary partner-control-inline-action"
                     href={`/partners/${block.providerId}`}
                   >
                     Profile
-                  </Link>
+                  </AdminFormControlLink>
                 </div>
               </div>
             ))}
@@ -520,7 +520,7 @@ export default async function PartnerControlsPage({
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>
-            <AdminFormControlLink className="button button-secondary" href="/partner-controls">
+            <AdminFormControlLink className="button-secondary" href="/partner-controls">
               <X aria-hidden="true" size={16} />
               Clear filters
             </AdminFormControlLink>
@@ -589,13 +589,13 @@ export default async function PartnerControlsPage({
                       </Link>
                     ) : null}
                     {item.openReportCount > 0 ? (
-                      <Link
-                        className="button button-secondary partner-control-inline-action"
+                      <AdminFormControlLink
+                        className="button-secondary partner-control-inline-action"
                         href={`/partner-controls?q=${encodeURIComponent(item.provider.id)}`}
                       >
                         <ExternalLink aria-hidden="true" size={14} />
                         Report lane
-                      </Link>
+                      </AdminFormControlLink>
                     ) : null}
                   </div>
                   <p className="muted">{item.nextStep}</p>
@@ -712,13 +712,13 @@ export default async function PartnerControlsPage({
                   </p>
                   {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
                   {report.bookingId ? (
-                    <Link
-                      className="button button-secondary partner-control-inline-action"
+                    <AdminFormControlLink
+                      className="button-secondary partner-control-inline-action"
                       href={`/bookings/${report.bookingId}`}
                     >
                       <ExternalLink aria-hidden="true" size={14} />
                       Booking {shortDisplayId(report.bookingId)}
-                    </Link>
+                    </AdminFormControlLink>
                   ) : null}
                 </td>
                 <td>

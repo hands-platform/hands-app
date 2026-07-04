@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -323,10 +324,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <strong>{item.value}</strong>
                   <small className="muted">{item.detail}</small>
                   {item.href ? (
-                    <Link className="button button-secondary partner-summary-action" href={item.href}>
+                    <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
                       <ArrowRight aria-hidden="true" size={14} />
                       Open subset
-                    </Link>
+                    </AdminFormControlLink>
                   ) : null}
                 </div>
               ))}

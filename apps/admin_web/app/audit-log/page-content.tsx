@@ -169,7 +169,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 <Filter aria-hidden="true" size={16} />
                 Apply filters
               </AdminFormControlButton>
-              <AdminFormControlLink className="button button-secondary" href="/audit-log">
+              <AdminFormControlLink className="button-secondary" href="/audit-log">
                 <X aria-hidden="true" size={16} />
                 Clear filters
               </AdminFormControlLink>

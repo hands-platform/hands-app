@@ -94,7 +94,7 @@ export function ReviewsTableSection({
             ))}
             {activeFilterLabels.length > 0 ? (
               <AdminFormControlLink
-                className="button button-secondary vuexy-review-clear-filter"
+                className="button-secondary vuexy-review-clear-filter"
                 href={buildReviewListHref(filters, {
                   dateFrom: '',
                   dateRange: 'all',

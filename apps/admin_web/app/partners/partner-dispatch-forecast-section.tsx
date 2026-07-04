@@ -49,7 +49,7 @@ export function PartnerDispatchForecastSection({
   return (
     <AdminSection
       actions={
-        <AdminFormControlLink className="button button-secondary" href="/operations-policy">
+        <AdminFormControlLink className="button-secondary" href="/operations-policy">
           <SlidersHorizontal aria-hidden="true" size={16} />
           Policy: fresh location {'<='} {staleLocationMinutes}m
         </AdminFormControlLink>
@@ -82,7 +82,7 @@ export function PartnerDispatchForecastSection({
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
                 </div>
-                <AdminFormControlLink className="button button-secondary partner-summary-action" href={item.href}>
+                <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
                   <ArrowRight aria-hidden="true" size={14} />
                   {item.count}
                 </AdminFormControlLink>
@@ -108,7 +108,7 @@ export function PartnerDispatchForecastSection({
                   </p>
                 </div>
                 <AdminFormControlLink
-                  className="button button-secondary partner-summary-action"
+                  className="button-secondary partner-summary-action"
                   href={`/partners?q=${encodeURIComponent(lane.city)}`}
                 >
                   <ArrowRight aria-hidden="true" size={14} />

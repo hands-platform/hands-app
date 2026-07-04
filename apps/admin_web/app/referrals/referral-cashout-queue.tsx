@@ -151,7 +151,7 @@ export function ReferralCashoutQueuePage({
           <AdminFormControlButton className="button button-primary" type="submit">
             Apply filters
           </AdminFormControlButton>
-          <AdminFormControlLink className="button button-secondary" href="/referrals/cashouts">
+          <AdminFormControlLink className="button-secondary" href="/referrals/cashouts">
             Reset
           </AdminFormControlLink>
         </form>

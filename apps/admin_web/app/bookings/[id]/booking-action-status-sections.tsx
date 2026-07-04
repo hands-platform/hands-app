@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink, AdminFormTextarea } from '../../../components/admin-form-controls';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
@@ -155,9 +155,9 @@ function BookingOutcomeReviewSection({
         <div className="booking-outcome-review-actions">
           <PillClassBadge pillClass={outcomeReview.tone}>{outcomeReview.status}</PillClassBadge>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
-            <Link className="button button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
+            <AdminFormControlLink className="button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
               {outcomeReview.primaryLabel}
-            </Link>
+            </AdminFormControlLink>
           ) : null}
         </div>
       }
@@ -212,7 +212,7 @@ function BookingOutcomePostMatchDecision({
           <form action={holdPostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.holdNote} />
-            <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
               Hold fee deduction
             </AdminFormControlButton>
           </form>

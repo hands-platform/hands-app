@@ -43,7 +43,7 @@ export function SetupOperatorActionsSection({
                 ))}
               </div>
             )}
-            <span className="button button-secondary setup-card-action">
+            <span className="button-secondary setup-card-action">
               <ArrowRight size={16} aria-hidden="true" />
               Open setup group
             </span>

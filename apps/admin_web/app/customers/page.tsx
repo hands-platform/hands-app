@@ -149,14 +149,14 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       metrics={metrics}
       actions={
         <>
-          <AdminFormControlLink className="button button-secondary" href="/bookings">
+          <AdminFormControlLink className="button-secondary" href="/bookings">
             <CalendarClock aria-hidden="true" size={16} />
             Open bookings
           </AdminFormControlLink>
           <AdminFormControlLink className="text-link" href="/payments">
             Open payments
           </AdminFormControlLink>
-          <AdminFormControlLink className="button button-secondary" href="/reviews">
+          <AdminFormControlLink className="button-secondary" href="/reviews">
             <Star aria-hidden="true" size={16} />
             Open reviews
           </AdminFormControlLink>
