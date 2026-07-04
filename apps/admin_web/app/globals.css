@@ -11042,7 +11042,7 @@ a.action-button-card:hover {
   padding: 0 24px 24px;
 }
 
-.coupon-create-form .calendar-field-wide {
+.coupon-create-form .coupon-create-form-field-wide {
   grid-column: auto;
   grid-row: auto;
 }
@@ -11282,7 +11282,7 @@ a.action-button-card:hover {
   line-height: var(--admin-input-label-line-height);
 }
 
-.coupon-create-form .calendar-field {
+.coupon-create-form .coupon-create-form-field {
   color: var(--admin-muted);
   display: grid;
   font-size: var(--admin-input-label-size);
@@ -11292,7 +11292,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.coupon-create-form .calendar-field > span:first-child,
+.coupon-create-form .coupon-create-form-field > span:first-child,
 .coupon-edit-form label > span:first-child {
   color: var(--admin-text);
   font-size: var(--admin-input-label-size);

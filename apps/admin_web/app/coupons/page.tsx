@@ -115,14 +115,14 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         ) : null}
         <form className="coupon-create-form" action={createCoupon}>
           <AdminFormTextarea
-            className="calendar-field calendar-field-wide"
+            className="coupon-create-form-field coupon-create-form-field-wide"
             label="Coupon codes"
             name="codes"
             required
             rows={1}
           />
           <AdminFormInput
-            className="calendar-field"
+            className="coupon-create-form-field"
             label="Discount %"
             max="100"
             min="1"

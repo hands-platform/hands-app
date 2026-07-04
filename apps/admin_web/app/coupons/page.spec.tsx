@@ -64,6 +64,8 @@ describe('CouponsPage', () => {
     expect(markup).toContain('admin-filter-panel-body');
     expect(markup).toContain('admin-form-textarea');
     expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('coupon-create-form-field');
+    expect(markup).not.toContain('calendar-field');
     expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Create coupons');
   });
 
