@@ -56,10 +56,12 @@ describe('ServiceCatalogManagerSection', () => {
     expect(textContent(section)).toContain('Add service menu');
     expect(classNames).toContain('card admin-section service-catalog-manager-card');
     expect(classNames).not.toContain('card admin-filter-panel service-catalog-manager-card');
-    expect(classNames).toContain('admin-form-input admin-form-control-labeled service-menu-dialog-field');
+    expect(classNames).toContain('admin-form-input admin-form-control-labeled admin-form-control-fluid');
     expect(classNames).toContain(
-      'admin-form-textarea admin-form-control-labeled service-menu-dialog-field service-menu-dialog-field-wide',
+      'admin-form-textarea admin-form-control-labeled admin-form-control-fluid admin-grid-span-2',
     );
+    expect(classNames.filter((className) => className.includes('service-menu-dialog-field'))).toEqual([]);
+    expect(sectionSource).not.toContain('service-menu-dialog-field');
     expect(classNames).not.toContain('calendar-field');
     expect(sectionSource).not.toContain('className="calendar-field"');
     expect(classNames).toContain('card admin-card service-menu-duration-panel');

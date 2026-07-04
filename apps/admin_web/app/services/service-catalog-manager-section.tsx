@@ -272,7 +272,7 @@ function ServiceIdentityFields({ group }: { readonly group?: ServiceCatalogGroup
       <div className="service-menu-name-grid">
         {SERVICE_TRANSLATION_FIELDS.map((field) => (
           <AdminFormInput
-            className="service-menu-dialog-field"
+            className="admin-form-control-fluid"
             defaultValue={translations[field.key] ?? (field.key === 'en' ? group?.label : '')}
             key={field.key}
             label={field.label}
@@ -284,7 +284,7 @@ function ServiceIdentityFields({ group }: { readonly group?: ServiceCatalogGroup
         ))}
       </div>
       <AdminFormTextarea
-        className="service-menu-dialog-field service-menu-dialog-field-wide"
+        className="admin-form-control-fluid admin-grid-span-2"
         defaultValue={firstService?.description ?? ''}
         label="Description"
         labelVisibility="visible"
@@ -315,7 +315,7 @@ function DurationInputRow({
         {duration} min option
       </div>
       <AdminFormInput
-        className="service-menu-dialog-field"
+        className="admin-form-control-fluid"
         defaultValue={service?.basePrice ?? ''}
         label="Base price"
         labelVisibility="visible"
@@ -326,7 +326,7 @@ function DurationInputRow({
         type="number"
       />
       <AdminFormInput
-        className="service-menu-dialog-field"
+        className="admin-form-control-fluid"
         defaultValue={payoutRule?.providerPayoutAmount ?? ''}
         label="Partner payout"
         labelVisibility="visible"
