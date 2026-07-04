@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
+const sectionSource = readFileSync(
+  new URL('./operations-policy-matching-playbook-section.tsx', import.meta.url),
+  'utf8',
+);
+
 describe('OperationsPolicyMatchingPlaybookSection', () => {
+  it('uses shared Vuexy badge atoms for playbook tag labels', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).not.toContain('PillClassBadge');
+  });
+
   it('renders the matching playbook timeline with Partner-facing copy', () => {
     const section = OperationsPolicyMatchingPlaybookSection({
       playbook: [

@@ -1,5 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { MatchingPlaybookItem } from './matching-playbook';
 
 type OperationsPolicyMatchingPlaybookSectionProps = {
@@ -18,20 +18,23 @@ export function OperationsPolicyMatchingPlaybookSection({
       statusTone="info"
       title="Booking matching playbook"
     >
-        {playbook.map((step) => (
-          <div className={`timeline-step ${step.className}`} key={step.title}>
-            <span>{step.step}</span>
-            <strong>{step.title}</strong>
-            <p>{step.detail}</p>
-            <div className="participant-list">
-              {step.tags.map((tag) => (
-                <PillClassBadge pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
-                  {tag.label}
-                </PillClassBadge>
-              ))}
-            </div>
+      {playbook.map((step) => (
+        <div className={`timeline-step ${step.className}`} key={step.title}>
+          <span>{step.step}</span>
+          <strong>{step.title}</strong>
+          <p>{step.detail}</p>
+          <div className="participant-list">
+            {step.tags.map((tag) => (
+              <StatusBadge
+                tone={statusBadgeToneFromPillClass(tag.tone)}
+                key={`${step.title}-${tag.label}`}
+              >
+                {tag.label}
+              </StatusBadge>
+            ))}
           </div>
-        ))}
+        </div>
+      ))}
     </AdminSection>
   );
 }
