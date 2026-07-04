@@ -1,5 +1,6 @@
 import { FileClock } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
@@ -25,10 +26,10 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
   return (
     <AdminSection
       actions={
-        <a className="button button-secondary" href="/audit-log?bucket=Service%2FPricing">
+        <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Service%2FPricing">
           <FileClock aria-hidden="true" size={16} />
           Open service audit
-        </a>
+        </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
       className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"

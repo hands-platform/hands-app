@@ -8,6 +8,8 @@ describe('ServicePricingAuditTrailSection', () => {
     const source = readFileSync('app/services/service-pricing-audit-trail-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain('<span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${field}`}>');
   });

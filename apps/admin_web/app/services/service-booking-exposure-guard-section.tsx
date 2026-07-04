@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { CalendarClock, FileClock } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -56,14 +56,14 @@ export function ServiceBookingExposureGuardSection({
         </div>
       </div>
       <div className="actions admin-mt-12">
-        <Link className="button button-secondary" href="/bookings?view=pricing">
+        <AdminFormControlLink className="button-secondary" href="/bookings?view=pricing">
           <CalendarClock aria-hidden="true" size={16} />
           Open pricing-check bookings
-        </Link>
-        <a className="button button-secondary" href="/audit-log?bucket=Service%2FPricing">
+        </AdminFormControlLink>
+        <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Service%2FPricing">
           <FileClock aria-hidden="true" size={16} />
           Review service pricing audit
-        </a>
+        </AdminFormControlLink>
       </div>
     </AdminSection>
   );
