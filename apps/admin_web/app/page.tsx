@@ -14,7 +14,7 @@ import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate } from '../components/admin-page-template';
-import { AdminSection } from '../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
   PillClassBadge,
@@ -801,14 +801,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       >
         <div className="ops-task-grid admin-mt-14">
           {operationsCommandBoard.map((item) => (
-            <Link
-              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
+            <AdminActionCard
+              className={dashboardToneCardClass(item.tone)}
               href={item.href}
               key={item.lane}
+              leading={
+                <>
+                  <small>{item.owner}</small>
+                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
+                </>
+              }
+              title={item.lane}
+              variant="ops-task"
             >
-              <small>{item.owner}</small>
-              <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
-              <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
               <div className="participant-list admin-mt-10">
@@ -818,7 +823,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </StatusBadge>
                 ))}
               </div>
-            </Link>
+            </AdminActionCard>
           ))}
         </div>
       </AdminSection>
@@ -1000,17 +1005,22 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       >
         <div className="ops-task-grid admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
-            <Link
-              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
+            <AdminActionCard
+              className={dashboardToneCardClass(item.tone)}
               href={item.href}
               key={item.lane}
+              actionLabel={item.operatorAction}
+              leading={
+                <>
+                  <small>{item.owner}</small>
+                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
+                </>
+              }
+              title={item.lane}
+              variant="ops-task"
             >
-              <small>{item.owner}</small>
-              <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
-              <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
-              <span className="ops-task-card-action">{item.operatorAction}</span>
               {item.sample ? (
                 <div className="ops-task-note admin-mt-10">
                   <strong>{item.sample.label}</strong>
@@ -1024,7 +1034,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </StatusBadge>
                 ))}
               </div>
-            </Link>
+            </AdminActionCard>
           ))}
         </div>
       </AdminSection>
@@ -1092,19 +1102,24 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           >
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.liveOperationsRadar.map((item) => (
-                <Link
-                  className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
+                <AdminActionCard
+                  className={dashboardToneCardClass(item.tone)}
                   href={item.href}
                   key={item.lane}
+                  detail={item.detail}
+                  leading={
+                    <>
+                      <small>
+                        {item.owner} / {item.lane}
+                      </small>
+                      <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>
+                        {item.status}
+                      </PillClassBadge>
+                    </>
+                  }
+                  title={item.title}
+                  variant="ops-task"
                 >
-                  <small>
-                    {item.owner} / {item.lane}
-                  </small>
-                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>
-                    {item.status}
-                  </PillClassBadge>
-                  <h3>{item.title}</h3>
-                  <p>{item.detail}</p>
                   <div className="participant-list admin-mt-10">
                     <StatusBadge tone="neutral">{item.value}</StatusBadge>
                     {item.checks.slice(0, 3).map((check) => (
@@ -1113,7 +1128,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </StatusBadge>
                     ))}
                   </div>
-                </Link>
+                </AdminActionCard>
               ))}
             </div>
           </AdminSection>
@@ -1141,12 +1156,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policyOutcome.cards.map((card) => (
-                <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
-                  <PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>
-                  <h3>{card.title}</h3>
-                  <p>{card.detail}</p>
-                  <small>{card.operatorAction}</small>
-                </Link>
+                <AdminActionCard
+                  actionLabel={card.operatorAction}
+                  className={card.className}
+                  detail={card.detail}
+                  href={card.href}
+                  key={card.title}
+                  leading={<PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>}
+                  title={card.title}
+                  variant="ops-task"
+                />
               ))}
             </div>
           </AdminSection>
@@ -1190,18 +1209,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
-                <Link
-                  className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
+                <AdminActionCard
+                  actionLabel="Open"
+                  className={opsQueueCardClass(item.severity)}
+                  detail={item.recommendedAction}
                   href={item.href}
                   key={`${item.area}-${item.href}-${item.label}-${index}`}
+                  leading={
+                    <small>
+                      {item.owner} / {item.area}
+                    </small>
+                  }
+                  title={item.label}
+                  variant="ops-task"
                 >
-                  <small>
-                    {item.owner} / {item.area}
-                  </small>
-                  <h3>{item.label}</h3>
-                  <p>{item.recommendedAction}</p>
-                  <span className="ops-task-card-action">Open</span>
-                </Link>
+                </AdminActionCard>
               ))}
               {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
                 <AdminEmptyState
@@ -1237,13 +1259,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           >
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.operatorStartChecklist.map((item, index) => (
-                <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-                  <small>Step {index + 1}</small>
-                  <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-                  <h3>{item.title}</h3>
-                  <p>{item.detail}</p>
-                  <span className="ops-task-card-action">{item.action}</span>
-                </Link>
+                <AdminActionCard
+                  actionLabel={item.action}
+                  className={item.className}
+                  detail={item.detail}
+                  href={item.href}
+                  key={item.title}
+                  leading={
+                    <>
+                      <small>Step {index + 1}</small>
+                      <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                    </>
+                  }
+                  title={item.title}
+                  variant="ops-task"
+                />
               ))}
             </div>
           </AdminSection>
@@ -1330,12 +1360,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
                 <div className="ops-task-grid admin-grid-single admin-mt-12">
                   {matchingControl.checks.map((check) => (
-                    <div className={`ops-task-card ${check.className}`} key={check.title}>
-                      <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
-                      <h3>{check.title}</h3>
-                      <p>{check.detail}</p>
+                    <AdminTaskCard
+                      className={check.className}
+                      detail={check.detail}
+                      key={check.title}
+                      leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+                      title={check.title}
+                    >
                       <small>{check.operatorAction}</small>
-                    </div>
+                    </AdminTaskCard>
                   ))}
                 </div>
               </div>
@@ -1465,15 +1498,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             ) : null}
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policySummary.decisions.map((decision) => (
-                <div className={`ops-task-card ${decision.className}`} key={decision.key}>
-                  <PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>
-                  <h3>{decision.label}</h3>
-                  <p>{decision.current}</p>
+                <AdminActionCard
+                  actionLabel="Open policy"
+                  className={decision.className}
+                  detail={decision.current}
+                  href={decision.href}
+                  key={decision.key}
+                  leading={<PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>}
+                  title={decision.label}
+                  variant="ops-task"
+                >
                   <small>{decision.recommendation}</small>
-                  <Link className="text-link" href={decision.href}>
-                    Open policy
-                  </Link>
-                </div>
+                </AdminActionCard>
               ))}
             </div>
           </AdminSection>
@@ -1889,10 +1925,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           >
             <div className="ops-task-grid admin-mt-12">
               {fullDashboardData.partnerOpsQueue.items.map((item) => (
-                <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
-                  <small>{item.status}</small>
-                  <h3>{item.name}</h3>
-                  <p>{item.detail}</p>
+                <AdminActionCard
+                  actionLabel={item.action}
+                  className={item.className}
+                  detail={item.detail}
+                  href={item.href}
+                  key={item.id}
+                  leading={<small>{item.status}</small>}
+                  title={item.name}
+                  variant="ops-task"
+                >
                   <div className="ops-task-breakdown">
                     {item.metrics.map((metric) => (
                       <span
@@ -1904,8 +1946,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </span>
                     ))}
                   </div>
-                  <span className="ops-task-card-action">{item.action}</span>
-                </Link>
+                </AdminActionCard>
               ))}
               {fullDashboardData.partnerOpsQueue.items.length === 0 && (
                 <AdminEmptyState
@@ -1953,10 +1994,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           >
             <div className="ops-task-grid admin-mt-12">
               {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
-                <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
-                  <PillClassBadge pillClass={step.pillClass}>Step {step.step}</PillClassBadge>
-                  <h3>{step.title}</h3>
-                  <p>{step.detail}</p>
+                <AdminActionCard
+                  actionLabel={step.action}
+                  className={step.className}
+                  detail={step.detail}
+                  href={step.href}
+                  key={step.id}
+                  leading={<PillClassBadge pillClass={step.pillClass}>Step {step.step}</PillClassBadge>}
+                  title={step.title}
+                  variant="ops-task"
+                >
                   <div className="ops-task-breakdown">
                     <span className={`ops-task-breakdown-item ops-task-breakdown-${step.tone}`}>
                       <span>{step.metricLabel}</span>
@@ -1967,8 +2014,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       <strong>{step.owner}</strong>
                     </span>
                   </div>
-                  <span className="ops-task-card-action">{step.action}</span>
-                </Link>
+                </AdminActionCard>
               ))}
             </div>
           </AdminSection>
@@ -2004,43 +2050,44 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             )}
             <div className="ops-task-grid">
               {fullDashboardData.commandSignals.map((signal) => (
-                <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-                  <div>
-                    <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
-                    <h3>{signal.title}</h3>
-                    <p className="muted">{signal.detail}</p>
-                    <div className="ops-task-breakdown">
-                      {signal.breakdown.map((item) => {
-                        const content = (
-                          <>
-                            <span>{item.label}</span>
-                            <strong>{item.value}</strong>
-                          </>
-                        );
+                <AdminActionCard
+                  actionLabel={signal.action}
+                  className={signal.className}
+                  detail={signal.detail}
+                  href={signal.href}
+                  key={signal.title}
+                  leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+                  title={signal.title}
+                  variant="ops-task"
+                >
+                  <div className="ops-task-breakdown">
+                    {signal.breakdown.map((item) => {
+                      const content = (
+                        <>
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                        </>
+                      );
 
-                        return item.href ? (
-                          <Link
-                            className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                            href={item.href}
-                            key={`${signal.title}-${item.label}`}
-                          >
-                            {content}
-                          </Link>
-                        ) : (
-                          <div
-                            className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                            key={`${signal.title}-${item.label}`}
-                          >
-                            {content}
-                          </div>
-                        );
-                      })}
-                    </div>
+                      return item.href ? (
+                        <Link
+                          className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                          href={item.href}
+                          key={`${signal.title}-${item.label}`}
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <div
+                          className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                          key={`${signal.title}-${item.label}`}
+                        >
+                          {content}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Link className="ops-task-card-action" href={signal.href}>
-                    {signal.action}
-                  </Link>
-                </div>
+                </AdminActionCard>
               ))}
             </div>
           </AdminSection>

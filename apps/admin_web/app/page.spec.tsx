@@ -332,6 +332,13 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('className="button button-secondary"');
   });
 
+  it('uses shared Vuexy task card surfaces instead of raw dashboard ops task card markup', () => {
+    expect(dashboardSource).toContain('AdminActionCard');
+    expect(dashboardSource).toContain('AdminTaskCard');
+    expect(dashboardSource).not.toContain('className={`ops-task-card');
+    expect(dashboardSource).not.toContain('className="ops-task-card-action"');
+  });
+
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],
