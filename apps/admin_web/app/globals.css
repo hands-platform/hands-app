@@ -2611,6 +2611,15 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.admin-filter-panel-footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
 .admin-filter-panel-footer .muted {
   margin: 0;
 }
