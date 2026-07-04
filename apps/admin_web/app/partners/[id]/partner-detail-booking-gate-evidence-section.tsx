@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -79,7 +80,7 @@ export function PartnerDetailBookingGateEvidenceSection({
           {visibleAttempts.map((attempt) => (
             <tr key={attempt.id}>
               <td>
-                <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
+                <PillClassBadge pillClass={attempt.tone}>{attempt.gateLabel}</PillClassBadge>
               </td>
               <td>
                 <Link className="text-link" href={attempt.bookingMonitorHref}>
@@ -88,10 +89,10 @@ export function PartnerDetailBookingGateEvidenceSection({
                 <p className="muted">{attempt.detail}</p>
               </td>
               <td>
-                <span className="pill pill-neutral">{attempt.addressLabel}</span>
+                <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
               </td>
               <td>
-                <span className="pill pill-neutral">{attempt.distanceLabel}</span>
+                <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
               </td>
               <td>
                 <span className="muted">{formatDate(attempt.at)}</span>
