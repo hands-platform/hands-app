@@ -68,6 +68,7 @@
   --admin-input-padding-sm: 7.25px 14px;
   --admin-input-padding-md: 10.8px 16px;
   --admin-input-padding-focused-sm: 6.25px 13px;
+  --admin-input-padding-focused-md: 9.8px 15px;
   --admin-input-font-sm: 0.8125rem;
   --admin-input-font-md: 0.9375rem;
   --admin-input-font-lg: 1.0625rem;
@@ -14927,6 +14928,9 @@ textarea:focus-visible {
 
 .admin-form-textarea textarea::placeholder {
   color: var(--admin-disabled);
+  transition:
+    opacity var(--admin-transition),
+    transform var(--admin-transition);
 }
 
 .admin-form-checkbox {
@@ -17577,10 +17581,10 @@ textarea:focus-visible {
 .ops-note-textarea:focus,
 .referral-policy-textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
+  padding: var(--admin-input-padding-focused-md);
 }
 
 /* Page-scoped controls keep the same Vuexy atom baseline. */
@@ -17790,9 +17794,8 @@ textarea:focus-visible {
 .operations-policy-page .field select:focus,
 .operations-policy-page .field textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 

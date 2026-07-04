@@ -74,6 +74,20 @@ describe('Admin form control CSS', () => {
     expect(placeholderBlock).toContain('transform var(--admin-transition)');
     expect(focusedPlaceholderBlock).toContain('transform: translateX(4px)');
   });
+
+  it('keeps shared textareas on the same Vuexy focus and placeholder motion as inputs', () => {
+    const focusIndex = globalsCss.indexOf('.admin-form-textarea textarea:focus,');
+    const focusBlock = cssRuleBlockAt(focusIndex);
+    const placeholderIndex = globalsCss.indexOf('.admin-form-textarea textarea::placeholder');
+    const placeholderBlock = cssRuleBlockAt(placeholderIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('border-width: 2px');
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).toContain('padding: var(--admin-input-padding-focused-md)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+    expect(placeholderBlock).toContain('transform var(--admin-transition)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
