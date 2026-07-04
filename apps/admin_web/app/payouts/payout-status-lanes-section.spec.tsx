@@ -82,6 +82,13 @@ describe('PayoutStatusLanesSection', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
   });
+
+  it('uses shared money atoms for lane batch amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('{formatMoney(batch.amount, batch.currency)}');
+  });
 });
 
 function textContent(value: unknown): string {

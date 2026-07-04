@@ -1,7 +1,8 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney, shortRecordId } from '../../lib/admin-format';
+import { shortRecordId } from '../../lib/admin-format';
 
 export type PayoutStatusLaneBatch = {
   readonly amount: number;
@@ -52,7 +53,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
                     <div>
                       <strong>{batch.partnerLabel}</strong>
                       <p className="muted">
-                        {formatMoney(batch.amount, batch.currency)} / {batch.earningCount} earning(s)
+                        <MoneyText amount={batch.amount} currency={batch.currency} /> / {batch.earningCount} earning(s)
                       </p>
                       <p className="muted">{batch.opsHint}</p>
                     </div>
