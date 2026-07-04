@@ -11179,15 +11179,6 @@ a.action-button-card:hover {
   margin: 0;
 }
 
-.coupon-active-field {
-  justify-items: center;
-}
-
-.coupon-active-field input[type='checkbox'] {
-  accent-color: var(--admin-accent);
-  min-height: 18px;
-}
-
 .coupon-usage-list {
   display: grid;
   gap: 10px;

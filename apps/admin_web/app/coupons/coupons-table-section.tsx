@@ -173,7 +173,6 @@ function CouponManagementCard({
             name="endsAt"
           />
           <AdminFormCheckbox
-            className="coupon-active-field"
             defaultChecked={row.active}
             label={`${row.code} active`}
             name="active"
