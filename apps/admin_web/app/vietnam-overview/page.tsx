@@ -28,6 +28,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
 
 export const dynamic = 'force-dynamic';
 
@@ -369,9 +370,11 @@ export default async function VietnamOverviewPage({
     <AdminPageTemplate
       actions={
         <>
-          <span className="pill pill-success">Vietnam only</span>
-          {activeRegion ? <span className="pill pill-primary">Focused: {activeRegion.regionName}</span> : null}
-          <span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>
+          <StatusBadge tone="success">Vietnam only</StatusBadge>
+          {activeRegion ? (
+            <PillClassBadge pillClass="pill-primary">Focused: {activeRegion.regionName}</PillClassBadge>
+          ) : null}
+          <StatusBadge tone="info">Refreshes every {overview.refreshSeconds}s</StatusBadge>
         </>
       }
       contentClassName="vietnam-overview-page"
@@ -460,7 +463,7 @@ export default async function VietnamOverviewPage({
       </section>
 
       <AdminSection
-        actions={<span className="pill pill-info">Generated {lastGeneratedAt}</span>}
+        actions={<StatusBadge tone="info">Generated {lastGeneratedAt}</StatusBadge>}
         bodyClassName="vietnam-overview-map-layout"
         className="vietnam-overview-map-card"
         title="Realtime Vietnam operating map"
@@ -488,11 +491,14 @@ export default async function VietnamOverviewPage({
         actions={
           <>
             {activeRegion ? (
-              <a className="pill pill-primary vietnam-overview-clear-focus" href={clearRegionHref}>
+              <PillClassBadgeLink
+                href={clearRegionHref}
+                pillClass="pill pill-primary vietnam-overview-clear-focus"
+              >
                 Clear {activeRegion.shortName}
-              </a>
+              </PillClassBadgeLink>
             ) : null}
-            <span className="pill pill-info">{overview.rangeLabel}</span>
+            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
           </>
         }
         bodyClassName="vietnam-overview-filter-body"
@@ -531,7 +537,7 @@ export default async function VietnamOverviewPage({
 
       {activeRegion ? (
         <AdminSection
-          actions={<span className="pill pill-primary">{activeRegion.shortName}</span>}
+          actions={<PillClassBadge pillClass="pill-primary">{activeRegion.shortName}</PillClassBadge>}
           bodyClassName="vietnam-region-focus-summary-grid"
           className="vietnam-region-focus-summary-card"
           description={`Focused operating readout for realtime signals and ${overview.rangeLabel} totals.`}
@@ -573,8 +579,8 @@ export default async function VietnamOverviewPage({
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{overview.rangeLabel}</span>
-            <span className="pill pill-success">Stored totals</span>
+            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
+            <StatusBadge tone="success">Stored totals</StatusBadge>
           </>
         }
         bodyClassName="vietnam-overview-metric-grid"
@@ -604,10 +610,10 @@ export default async function VietnamOverviewPage({
       <AdminSection
         actions={
           <div className="actions vietnam-overview-region-actions">
-            <span className="pill pill-info">{overview.rangeLabel}</span>
-            <span className={activeRegion ? 'pill pill-primary' : 'pill pill-neutral'}>
+            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
+            <PillClassBadge pillClass={activeRegion ? 'pill-primary' : 'pill-neutral'}>
               {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
-            </span>
+            </PillClassBadge>
           </div>
         }
         bodyClassName="vietnam-overview-region-card-body"

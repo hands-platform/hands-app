@@ -70,6 +70,17 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('Ho Chi Minh metrics');
     expect(markup).toContain('card admin-section vietnam-region-focus-summary-card');
   });
+
+  it('uses shared badge atoms for Vietnam overview status chips', () => {
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('PillClassBadge');
+    expect(pageSource).toContain('PillClassBadgeLink');
+    expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">Generated {lastGeneratedAt}</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-success">Stored totals</span>');
+    expect(pageSource).not.toContain('<a className="pill pill-primary vietnam-overview-clear-focus" href={clearRegionHref}>');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
