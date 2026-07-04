@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
-describe('Admin form control button CSS', () => {
+describe('Admin form control CSS', () => {
   it('lets Vuexy button tone classes override the base form action shell', () => {
     const baseIndex = globalsCss.indexOf('.admin-form-control-button,');
     const primaryIndex = globalsCss.indexOf('.admin-form-control-button.button-primary');
@@ -14,5 +14,19 @@ describe('Admin form control button CSS', () => {
     expect(secondaryIndex).toBeGreaterThan(baseIndex);
     expect(outlineIndex).toBeGreaterThan(baseIndex);
     expect(globalsCss.slice(primaryIndex, secondaryIndex)).toContain('border: 1px solid var(--admin-accent)');
+  });
+
+  it('styles shared checkboxes through the Vuexy mark layer instead of the browser default control', () => {
+    const baseIndex = globalsCss.indexOf('.admin-form-checkbox {');
+    const inputIndex = globalsCss.indexOf('.admin-form-checkbox-input');
+    const markIndex = globalsCss.indexOf('.admin-form-checkbox-mark');
+    const checkedIndex = globalsCss.indexOf('.admin-form-checkbox-input:checked + .admin-form-checkbox-mark');
+
+    expect(baseIndex).toBeGreaterThan(-1);
+    expect(inputIndex).toBeGreaterThan(baseIndex);
+    expect(markIndex).toBeGreaterThan(inputIndex);
+    expect(checkedIndex).toBeGreaterThan(markIndex);
+    expect(globalsCss.slice(markIndex, checkedIndex)).toContain('border-radius: 4px');
+    expect(globalsCss.slice(checkedIndex, checkedIndex + 240)).toContain('background: var(--admin-accent)');
   });
 });

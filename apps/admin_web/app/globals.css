@@ -14892,6 +14892,85 @@ textarea:focus-visible {
   color: var(--admin-disabled);
 }
 
+.admin-form-checkbox {
+  align-items: center;
+  color: var(--admin-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 8px;
+  line-height: 1.35;
+  min-height: 32px;
+  position: relative;
+  user-select: none;
+}
+
+.admin-form-checkbox-input {
+  block-size: 1px;
+  inline-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.admin-form-checkbox-mark {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1.5px solid var(--admin-input-border);
+  border-radius: 4px;
+  display: inline-flex;
+  flex: 0 0 18px;
+  block-size: 18px;
+  inline-size: 18px;
+  justify-content: center;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-form-checkbox-mark::after {
+  border: solid var(--admin-inverse-text);
+  border-width: 0 2px 2px 0;
+  block-size: 9px;
+  content: '';
+  inline-size: 5px;
+  margin-block-start: -2px;
+  opacity: 0;
+  transform: rotate(45deg) scale(0.75);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-form-checkbox-input:checked + .admin-form-checkbox-mark {
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+}
+
+.admin-form-checkbox-input:checked + .admin-form-checkbox-mark::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+
+.admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark {
+  border-color: var(--admin-accent);
+  box-shadow:
+    0 0 0 1px var(--admin-accent),
+    var(--admin-focus-ring);
+}
+
+.admin-form-checkbox:has(.admin-form-checkbox-input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.admin-form-checkbox-label {
+  min-width: 0;
+}
+
 .admin-form-control-button,
 .admin-form-control-link,
 .vuexy-customer-button,

@@ -389,6 +389,7 @@ export function AdminFormCheckbox({
       <input
         aria-label={children ? undefined : label}
         checked={checked}
+        className="admin-form-checkbox-input"
         defaultChecked={defaultChecked}
         disabled={disabled}
         name={name}
@@ -396,7 +397,12 @@ export function AdminFormCheckbox({
         type="checkbox"
         value={value}
       />
-      {children ?? <span className="sr-only">{label}</span>}
+      <span aria-hidden="true" className="admin-form-checkbox-mark" />
+      {children ? (
+        <span className="admin-form-checkbox-label">{children}</span>
+      ) : (
+        <span className="sr-only">{label}</span>
+      )}
     </label>
   );
 }

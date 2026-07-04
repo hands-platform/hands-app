@@ -253,11 +253,17 @@ describe('Admin form controls', () => {
     expect(checkbox.props.className).toBe('admin-form-checkbox service-enabled-toggle');
     expect(textContent(checkbox)).toContain('Enabled');
     expect(checkbox.props.children[0].props).toMatchObject({
+      className: 'admin-form-checkbox-input',
       defaultChecked: true,
       name: 'active60',
       type: 'checkbox',
       value: 'true',
     });
+    expect(checkbox.props.children[1].props).toMatchObject({
+      'aria-hidden': 'true',
+      className: 'admin-form-checkbox-mark',
+    });
+    expect(checkbox.props.children[2].props.className).toBe('admin-form-checkbox-label');
   });
 
   it('renders link and button controls without owning behavior', () => {
