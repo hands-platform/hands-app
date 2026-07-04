@@ -17,11 +17,16 @@ describe('StatusBadge', () => {
   });
 
   it('renders a stable span with optional title text', () => {
-    const badge = StatusBadge({ children: 'Ready', tone: 'success', title: 'Ready for review' });
+    const badge = StatusBadge({
+      children: 'Ready',
+      className: 'vietnam-map-cluster-panel-badge',
+      tone: 'success',
+      title: 'Ready for review',
+    });
 
     expect(badge.type).toBe('span');
     expect(badge.props).toMatchObject({
-      className: 'pill pill-success',
+      className: 'pill pill-success vietnam-map-cluster-panel-badge',
       title: 'Ready for review',
       children: 'Ready',
     });
@@ -31,11 +36,15 @@ describe('StatusBadge', () => {
     expect(pillClassBadgeClassName('pill-danger')).toBe('pill pill-danger');
     expect(pillClassBadgeClassName('pill pill-warn')).toBe('pill pill-warn');
 
-    const badge = PillClassBadge({ children: 'High debt', pillClass: 'pill-danger' });
+    const badge = PillClassBadge({
+      children: 'High debt',
+      className: 'vietnam-map-cluster-panel-badge is-region',
+      pillClass: 'pill-danger',
+    });
 
     expect(badge.type).toBe('span');
     expect(badge.props).toMatchObject({
-      className: 'pill pill-danger',
+      className: 'pill pill-danger vietnam-map-cluster-panel-badge is-region',
       children: 'High debt',
     });
   });

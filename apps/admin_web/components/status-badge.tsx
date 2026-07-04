@@ -13,12 +13,14 @@ export type StatusBadgeTone = keyof typeof STATUS_BADGE_CLASS_BY_TONE;
 
 type StatusBadgeProps = {
   readonly children: ReactNode;
+  readonly className?: string;
   readonly tone: StatusBadgeTone;
   readonly title?: string;
 };
 
 type PillClassBadgeProps = {
   readonly children: ReactNode;
+  readonly className?: string;
   readonly pillClass: string;
   readonly title?: string;
 };
@@ -45,17 +47,21 @@ export function pillClassBadgeClassName(pillClass: string) {
   return pillClass.startsWith('pill ') ? pillClass : `pill ${pillClass}`;
 }
 
-export function StatusBadge({ children, tone, title }: StatusBadgeProps) {
+function mergeBadgeClassName(baseClassName: string, className?: string) {
+  return [baseClassName, className].filter(Boolean).join(' ');
+}
+
+export function StatusBadge({ children, className, tone, title }: StatusBadgeProps) {
   return (
-    <span className={statusBadgeClassName(tone)} title={title}>
+    <span className={mergeBadgeClassName(statusBadgeClassName(tone), className)} title={title}>
       {children}
     </span>
   );
 }
 
-export function PillClassBadge({ children, pillClass, title }: PillClassBadgeProps) {
+export function PillClassBadge({ children, className, pillClass, title }: PillClassBadgeProps) {
   return (
-    <span className={pillClassBadgeClassName(pillClass)} title={title}>
+    <span className={mergeBadgeClassName(pillClassBadgeClassName(pillClass), className)} title={title}>
       {children}
     </span>
   );
@@ -65,6 +71,7 @@ export function StatusBadgeLink({
   ariaCurrent,
   ariaLabel,
   children,
+  className,
   download,
   href,
   title,
@@ -74,7 +81,7 @@ export function StatusBadgeLink({
     <Link
       aria-current={ariaCurrent}
       aria-label={ariaLabel}
-      className={statusBadgeClassName(tone)}
+      className={mergeBadgeClassName(statusBadgeClassName(tone), className)}
       download={download}
       href={href}
       title={title}
@@ -88,6 +95,7 @@ export function PillClassBadgeLink({
   ariaCurrent,
   ariaLabel,
   children,
+  className,
   download,
   href,
   pillClass,
@@ -97,7 +105,7 @@ export function PillClassBadgeLink({
     <Link
       aria-current={ariaCurrent}
       aria-label={ariaLabel}
-      className={pillClassBadgeClassName(pillClass)}
+      className={mergeBadgeClassName(pillClassBadgeClassName(pillClass), className)}
       download={download}
       href={href}
       title={title}
