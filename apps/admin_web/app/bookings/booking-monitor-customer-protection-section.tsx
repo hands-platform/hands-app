@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
@@ -34,9 +35,9 @@ export function BookingMonitorCustomerProtectionSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${hasOpenCloseout ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={hasOpenCloseout ? 'warning' : 'success'}>
           {openCloseoutCount} open closeout
-        </span>
+        </StatusBadge>
       }
       className="admin-mt-16 booking-monitor-customer-protection-card"
       description="Only unresolved customer money or evidence lanes are shown here."
@@ -49,8 +50,8 @@ export function BookingMonitorCustomerProtectionSection({
             <h3>{lane.title}</h3>
             <p>{lane.detail}</p>
             <div className="participant-list">
-              <span className="pill">{lane.status}</span>
-              <span className="pill">{lane.bookings.length} booking(s)</span>
+              <PillClassBadge pillClass="pill-neutral">{lane.status}</PillClassBadge>
+              <PillClassBadge pillClass="pill-neutral">{lane.bookings.length} booking(s)</PillClassBadge>
             </div>
             {lane.bookings.length > 0 ? (
               <div className="stack">

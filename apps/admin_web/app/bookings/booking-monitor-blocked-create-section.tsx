@@ -3,6 +3,7 @@ import { Filter, ScrollText, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormSelect } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass } from './booking-command-display';
@@ -102,7 +103,7 @@ export function BookingMonitorBlockedCreateSection({
                 <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
               </td>
               <td>
-                <span className="pill">{item.count} attempt(s)</span>
+                <PillClassBadge pillClass="pill-neutral">{item.count} attempt(s)</PillClassBadge>
               </td>
               <td>
                 <span className="muted">{item.latestAge}</span>
@@ -184,8 +185,10 @@ export function BookingMonitorBlockedCreateSection({
                     </td>
                     <td>
                       <div className="stack">
-                        <span className="pill">{evidence.customerDistanceLabel}</span>
-                        <span className="pill">{evidence.preferredPartnerDistanceLabel}</span>
+                        <PillClassBadge pillClass="pill-neutral">{evidence.customerDistanceLabel}</PillClassBadge>
+                        <PillClassBadge pillClass="pill-neutral">
+                          {evidence.preferredPartnerDistanceLabel}
+                        </PillClassBadge>
                       </div>
                     </td>
                     <td>

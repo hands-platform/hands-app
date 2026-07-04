@@ -104,4 +104,16 @@ describe('BookingMonitorBlockedCreateSection', () => {
     expect(source).not.toContain('<select');
     expect(source).not.toContain('<button className="button button-secondary" type="button"');
   });
+
+  it('uses shared Vuexy badge atoms for attempt and distance evidence chips', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill">{item.count} attempt(s)</span>');
+    expect(source).not.toContain('<span className="pill">{evidence.customerDistanceLabel}</span>');
+    expect(source).not.toContain('<span className="pill">{evidence.preferredPartnerDistanceLabel}</span>');
+  });
 });

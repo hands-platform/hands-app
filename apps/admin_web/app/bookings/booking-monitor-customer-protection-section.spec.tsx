@@ -1,8 +1,19 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
 
 describe('BookingMonitorCustomerProtectionSection', () => {
+  it('uses shared Vuexy badge atoms for closeout and lane status chips', () => {
+    const source = readFileSync('app/bookings/booking-monitor-customer-protection-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${hasOpenCloseout ?');
+    expect(source).not.toContain('<span className="pill">{lane.status}</span>');
+    expect(source).not.toContain('<span className="pill">{lane.bookings.length} booking(s)</span>');
+  });
+
   it('renders closeout lane counts and booking samples', () => {
     const booking = {
       id: 'booking_123456789',
