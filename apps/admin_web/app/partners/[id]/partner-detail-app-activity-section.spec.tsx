@@ -9,6 +9,13 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(source).not.toContain('<strong>No activity matched this date filter</strong>');
   });
 
+  it('uses the shared Vuexy badge atom for activity type', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{record.type}</span>');
+  });
+
   it('renders recent app activity as a Vuexy table', () => {
     const section = PartnerDetailAppActivitySection({
       summary: [

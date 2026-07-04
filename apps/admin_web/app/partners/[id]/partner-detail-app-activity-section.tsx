@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -59,7 +60,7 @@ export function PartnerDetailAppActivitySection({
           {rows.map((record) => (
             <tr key={record.key}>
               <td>
-                <span className="pill pill-info">{record.type}</span>
+                <StatusBadge tone="info">{record.type}</StatusBadge>
               </td>
               <td>
                 <strong>{record.title}</strong>
