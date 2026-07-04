@@ -593,7 +593,7 @@ function SupplyServiceCard({
 
 function PartnerFunnelStep({ step }: { readonly step: AdminPartnerOverviewFunnelStep }) {
   return (
-    <article className={`usage-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}>
+    <AdminCard className={`usage-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}>
       <div className="usage-overview-funnel-step-header">
         <span>{step.label}</span>
         <strong>{step.count === null ? 'Needs event' : formatNumber(step.count)}</strong>
@@ -606,7 +606,7 @@ function PartnerFunnelStep({ step }: { readonly step: AdminPartnerOverviewFunnel
           ? `${step.conversionRate ?? 0}% from signup · ${step.dropoffRate ?? 0}% drop`
           : 'Add mobile event logging'}
       </small>
-    </article>
+    </AdminCard>
   );
 }
 

@@ -176,7 +176,7 @@ export default async function UsageOverviewPage({
         title="Customer app-to-booking funnel"
       >
         {funnelSteps.map((step, index) => (
-          <article key={step.label} className={`usage-overview-funnel-step is-${step.tone}`}>
+          <AdminCard key={step.label} className={`usage-overview-funnel-step is-${step.tone}`}>
             <div className="usage-overview-funnel-step-header">
               <span>{step.label}</span>
               <strong>{formatNumber(step.value)}</strong>
@@ -188,7 +188,7 @@ export default async function UsageOverviewPage({
             {index < funnelSteps.length - 1 ? (
               <ChevronRight className="usage-overview-funnel-arrow" size={18} aria-hidden="true" />
             ) : null}
-          </article>
+          </AdminCard>
         ))}
       </AdminSection>
 

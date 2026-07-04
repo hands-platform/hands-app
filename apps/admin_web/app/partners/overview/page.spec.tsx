@@ -107,6 +107,8 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Auto-offline follow-up queue for approved partners');
     expect(markup).toContain('Partner operations priority');
     expect(markup).toContain('Ready supply');
+    expect(markup).toContain('card admin-card usage-overview-funnel-step');
+    expect(markup).not.toContain('<article class="usage-overview-funnel-step');
     expect(markup).toContain('Selection drop-off');
     expect(markup).toContain('2 issues');
     expect(markup).toContain('Wallet risk');
@@ -272,7 +274,16 @@ const partnerOverviewFixture: AdminPartnerOverview = {
     ],
   },
   funnel: {
-    steps: [],
+    steps: [
+      {
+        key: 'signed-up',
+        label: 'Signed Up',
+        count: 21,
+        conversionRate: 100,
+        dropoffRate: 0,
+        dataStatus: 'available',
+      },
+    ],
   },
   activityRetention: {
     cards: [],

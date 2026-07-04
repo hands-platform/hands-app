@@ -39,6 +39,8 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel');
     expect(markup).toContain('card admin-section usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body usage-overview-funnel-steps');
+    expect(markup).toContain('card admin-card usage-overview-funnel-step');
+    expect(markup).not.toContain('<article class="usage-overview-funnel-step');
     expect(markup).toContain('card admin-section usage-overview-segment-board-card');
     expect(markup).toContain('admin-section-body usage-overview-segment-board-grid');
     expect(markup).toContain('card admin-section usage-overview-action-card');
