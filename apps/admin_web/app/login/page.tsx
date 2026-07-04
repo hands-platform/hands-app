@@ -3,6 +3,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
+import { AdminCard } from '../../components/admin-surface';
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -26,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="admin-auth-illustration" aria-hidden="true" />
       </section>
 
-      <section className="admin-auth-card" aria-label="Admin sign in form">
+      <AdminCard className="admin-auth-card" ariaLabel="Admin sign in form">
         <div className="admin-auth-brand">
           <strong>HANDS Admin</strong>
           <span>Secure operator workspace</span>
@@ -59,7 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Sign in
           </AdminFormControlButton>
         </form>
-      </section>
+      </AdminCard>
     </main>
   );
 }

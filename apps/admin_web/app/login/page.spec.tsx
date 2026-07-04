@@ -30,7 +30,7 @@ describe('LoginPage', () => {
 
     expect(markup).toContain('admin-auth-page');
     expect(markup).toContain('admin-auth-visual');
-    expect(markup).toContain('admin-auth-card');
+    expect(markup).toContain('card admin-card admin-auth-card');
     expect(markup).not.toContain('Welcome to HANDS Admin');
     expect(markup).toContain('Sign in failed. Check your admin credentials and try again.');
     expect(markup).toContain('class="admin-inline-notice admin-inline-notice-danger admin-auth-notice"');
