@@ -5,10 +5,9 @@ import type {
   AdminCouponFinanceSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -63,13 +62,13 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             withholdingFilters,
           })}
         >
-          <AdminFormControlLink
-            className="pill pill-success"
+          <PillClassBadgeLink
             download={`hands-coupon-finance-${filters.range}-${filters.review}.csv`}
             href={csvHref}
+            pillClass="pill-success"
           >
             Export visible CSV
-          </AdminFormControlLink>
+          </PillClassBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Company-funded coupon expense and coupon settlement policy snapshots from immutable booking settlements."

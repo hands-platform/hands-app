@@ -399,11 +399,13 @@ describe('finance list pages', () => {
     ['partner withholding tax CSV', 'app/finance-tax/partner-withholding-tax/page.tsx'],
     ['payment fees CSV', 'app/finance-tax/payment-fees/page.tsx'],
     ['platform VAT CSV', 'app/finance-tax/platform-vat/page.tsx'],
-  ] as const)('uses shared AdminFormControlLink for %s downloads', (_name, sourcePath) => {
+  ] as const)('uses shared PillClassBadgeLink for %s downloads', (_name, sourcePath) => {
     const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toMatch(/<a\s+className="pill [^"]+"\s+download/s);
+    expect(source).not.toMatch(/className="pill pill-success"/);
   });
 
   it.each([

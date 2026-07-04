@@ -7,9 +7,9 @@ import type {
   AdminPartnerWithholdingTaxSummary,
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { PillClassBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -67,13 +67,13 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             withholdingFilters: filters,
           })}
         >
-          <AdminFormControlLink
-            className="pill pill-success"
+          <PillClassBadgeLink
             download={`hands-partner-withholding-tax-${filters.period}.csv`}
             href={csvHref}
+            pillClass="pill-success"
           >
             Export partner tax CSV
-          </AdminFormControlLink>
+          </PillClassBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."

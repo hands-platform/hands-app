@@ -2,10 +2,9 @@ import { AlertTriangle, CircleDollarSign, ReceiptText, ShieldCheck } from 'lucid
 
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -49,13 +48,13 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             withholdingFilters,
           })}
         >
-          <AdminFormControlLink
-            className="pill pill-success"
+          <PillClassBadgeLink
             download={`hands-platform-vat-${filters.period}.csv`}
             href={csvHref}
+            pillClass="pill-success"
           >
             Export company VAT CSV
-          </AdminFormControlLink>
+          </PillClassBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Company output VAT from HANDS platform fee. Customer payment amount is not company revenue."
