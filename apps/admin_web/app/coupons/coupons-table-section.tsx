@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -10,7 +14,6 @@ import {
   AdminFormDateTime,
   AdminFormInput,
 } from '../../components/admin-form-controls';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
@@ -253,19 +256,16 @@ function CouponUsageBookingTable({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter className="coupon-usage-table-footer">
-        <span>
-          Showing {pageFrom} to {pageTo} of {totalCount} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={activePage}
-          ariaLabel="Coupon booking usage pages"
-          className="vuexy-booking-pagination"
-          hrefForPage={hrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={activePage}
+        ariaLabel="Coupon booking usage pages"
+        className="coupon-usage-table-footer"
+        from={pageFrom}
+        hrefForPage={hrefForPage}
+        to={pageTo}
+        totalPages={totalPages}
+        totalRows={totalCount}
+      />
     </div>
   );
 }

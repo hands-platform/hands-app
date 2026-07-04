@@ -52,6 +52,13 @@ describe('CustomerBookingOperationBoard', () => {
     expect(boardSource).not.toContain('<span className="pill');
     expect(boardSource).not.toContain('<span className={`pill');
   });
+
+  it('uses the shared table pagination footer for customer booking operation groups', () => {
+    expect(boardSource).toContain('AdminTablePaginationFooter');
+    expect(boardSource).toContain('className="customer-booking-operation-footer"');
+    expect(boardSource).not.toContain('<AdminTableFooter');
+    expect(boardSource).not.toContain('Showing {pageFrom} to {pageTo} of {group.rows.length} entries');
+  });
 });
 
 function buildMetrics(): readonly CustomerBookingOperationMetric[] {

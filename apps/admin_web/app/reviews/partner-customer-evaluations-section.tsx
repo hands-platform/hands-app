@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -10,7 +14,6 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge } from '../../components/status-badge';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
@@ -221,19 +224,18 @@ export function PartnerCustomerEvaluationsSection({
           </AdminDataTable>
         </AdminTableScroll>
 
-        <AdminTableFooter className="vuexy-review-footer">
-          <span>
-            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={pagination.page}
-            ariaLabel="Partner customer evaluation pages"
-            className="vuexy-review-pagination"
-            hrefForPage={(page) => buildPartnerCustomerEvaluationListHref(filters, { page })}
-            pageLinkClassName="vuexy-review-page-link"
-            totalPages={pagination.totalPages}
-          />
-        </AdminTableFooter>
+        <AdminTablePaginationFooter
+          activePage={pagination.page}
+          ariaLabel="Partner customer evaluation pages"
+          className="vuexy-review-footer"
+          from={pagination.from}
+          hrefForPage={(page) => buildPartnerCustomerEvaluationListHref(filters, { page })}
+          pageLinkClassName="vuexy-review-page-link"
+          paginationClassName="vuexy-review-pagination"
+          to={pagination.to}
+          totalPages={pagination.totalPages}
+          totalRows={pagination.totalRows}
+        />
       </AdminFilterPanel>
     </>
   );

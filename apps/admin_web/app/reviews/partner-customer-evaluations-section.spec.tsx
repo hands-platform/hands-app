@@ -17,6 +17,20 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
   });
 
+  it('uses the shared table pagination footer while preserving review classes', () => {
+    const source = readFileSync(
+      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('className="vuexy-review-footer"');
+    expect(source).toContain('paginationClassName="vuexy-review-pagination"');
+    expect(source).toContain('pageLinkClassName="vuexy-review-page-link"');
+    expect(source).not.toContain('<AdminTableFooter');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders partner-written customer evaluations as a text-only review board', () => {
     const section = PartnerCustomerEvaluationsSection({
       filters: filters(),

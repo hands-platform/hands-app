@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { AdminDataTable, AdminTableFooter } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -181,21 +180,18 @@ function CustomerBookingOperationSection({
         ))}
       </AdminDataTable>
 
-      <AdminTableFooter className="customer-booking-operation-footer">
-        <span>
-          Showing {pageFrom} to {pageTo} of {group.rows.length} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={activePage}
-          ariaLabel={`${group.title} pages`}
-          className="vuexy-booking-pagination"
-          hrefForPage={(page) =>
-            buildCustomerBookingOperationPageHref(basePath, searchParams, group.pageParam, page, sectionId)
-          }
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={activePage}
+        ariaLabel={`${group.title} pages`}
+        className="customer-booking-operation-footer"
+        from={pageFrom}
+        hrefForPage={(page) =>
+          buildCustomerBookingOperationPageHref(basePath, searchParams, group.pageParam, page, sectionId)
+        }
+        to={pageTo}
+        totalPages={totalPages}
+        totalRows={group.rows.length}
+      />
     </AdminFilterPanel>
   );
 }

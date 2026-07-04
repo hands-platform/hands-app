@@ -51,6 +51,10 @@ describe('CouponsTableSection', () => {
     expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');
     expect(sectionSource).not.toContain('<span className="pill pill-neutral">{booking.statusLabel}</span>');
     expect(sectionSource).not.toContain("booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'");
+    expect(sectionSource).toContain('AdminTablePaginationFooter');
+    expect(sectionSource).toContain('className="coupon-usage-table-footer"');
+    expect(sectionSource).not.toContain('<AdminTableFooter');
+    expect(sectionSource).not.toContain('Showing {pageFrom} to {pageTo} of {totalCount} entries');
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });
 
