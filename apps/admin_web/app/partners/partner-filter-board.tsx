@@ -7,6 +7,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { StatusBadge } from '../../components/status-badge';
 
 import { buildPartnerListHref, partnerSortLabel, type ProviderFilters } from './partner-filters';
 
@@ -49,9 +50,9 @@ export function PartnerFilterBoard({
           {activeFilters.length > 0 ? (
             <div className="vuexy-partner-active-filters" aria-label="Active partner filters">
               {activeFilters.map((filter) => (
-                <span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>
+                <StatusBadge key={`${filter.kind}-${filter.value}`} tone="warning">
                   {filter.label}
-                </span>
+                </StatusBadge>
               ))}
             </div>
           ) : null}

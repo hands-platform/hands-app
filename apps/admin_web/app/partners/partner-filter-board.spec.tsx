@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { buildProviderActiveFilters, buildProviderFilters, type ProviderFilters } from './partner-filters';
 import { PartnerFilterBoard } from './partner-filter-board';
 
 describe('PartnerFilterBoard', () => {
+  it('uses shared Vuexy badge atoms for active filter chips', () => {
+    const source = readFileSync('app/partners/partner-filter-board.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>');
+  });
+
   it('renders a compact Vuexy-style partner filter panel', () => {
     const filters = providerFilters({
       providerStatus: 'ONLINE_AVAILABLE',
