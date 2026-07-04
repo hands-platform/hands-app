@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
@@ -13,6 +14,18 @@ import {
 } from './booking-operating-sections';
 
 describe('Booking operating sections', () => {
+  it('uses shared Vuexy badge atoms instead of raw operating pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operating-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${marketplaceWalletEvidence.tone}`}>');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{operatingLedger.length} record areas</span>');
+    expect(source).not.toContain('<span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>');
+  });
+
   it('renders marketplace wallet evidence rows as compact ledgers', () => {
     const section = BookingMarketplaceWalletEvidenceSection({
       marketplaceWalletEvidence: {
@@ -86,7 +99,12 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('Service address snapshot retained.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#address']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['card admin-section admin-mb-16', 'admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+      expect.arrayContaining([
+        'card admin-section admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table',
+        'text-link',
+      ]),
     );
   });
 

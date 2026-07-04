@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { formatDate } from './booking-formatters';
 
 type SummaryCard = {
@@ -126,9 +127,9 @@ export function BookingMarketplaceWalletEvidenceSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${marketplaceWalletEvidence.tone}`}>
+        <PillClassBadge pillClass={marketplaceWalletEvidence.tone}>
           {marketplaceWalletEvidence.status}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Participant, customer choice, alert, and wallet evidence for this booking."
@@ -163,7 +164,7 @@ export function BookingMarketplaceWalletEvidenceSection({
               <span className="booking-settlement-ledger-label">{row.lane}</span>
               <p className="muted">{row.scope}</p>
             </div>
-            <span className={`pill ${row.tone}`}>{row.status}</span>
+            <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
             <p>{row.record}</p>
             <p>{row.operatorUse}</p>
           </div>
@@ -182,7 +183,7 @@ export function BookingOperatingLedgerSection({
 }: BookingOperatingLedgerSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{operatingLedger.length} record areas</span>}
+      actions={<StatusBadge tone="info">{operatingLedger.length} record areas</StatusBadge>}
       className="admin-mb-16"
       description="Compact operator ledger for the full booking record. Every row links to the deeper factual section below."
       id="booking-operating-ledger"
@@ -218,7 +219,7 @@ export function BookingCloseoutReadinessSection({
 }: BookingCloseoutReadinessSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>}
+      actions={<PillClassBadge pillClass={closeoutReadiness.tone}>{closeoutReadiness.status}</PillClassBadge>}
       className="admin-mb-16"
       description="Factual completeness check for booking closeout."
       id="booking-closeout-readiness"
@@ -235,11 +236,11 @@ export function BookingCloseoutReadinessSection({
               Only items that still need admin attention are shown here.
             </p>
           </div>
-          <span className={`pill ${closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}`}>
+          <PillClassBadge pillClass={closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}>
             {closeoutReadiness.openItems.length > 0
               ? `${closeoutReadiness.openItems.length} open`
               : 'No exceptions'}
-          </span>
+          </PillClassBadge>
         </div>
         {closeoutReadiness.openItems.length > 0 ? (
           <div className="setup-stage-list admin-mt-12">
@@ -281,7 +282,7 @@ export function BookingOperatingSnapshotSection({
 }: BookingOperatingSnapshotSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>}
+      actions={<PillClassBadge pillClass={operatingSnapshot.tone}>{operatingSnapshot.status}</PillClassBadge>}
       className="admin-mb-16"
       description="Same-shift control view for the confirmed address, customer choice, Partner participation, chat, payment, wallet, and next operator action."
       id="operating-snapshot"
@@ -320,7 +321,7 @@ export function BookingOperatingTimelineSection({
 }: BookingOperatingTimelineSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{operatingTimeline.length} step(s)</span>}
+      actions={<StatusBadge tone="info">{operatingTimeline.length} step(s)</StatusBadge>}
       className="admin-mb-16"
       description="Time-ordered operating trail for address confirmation, Partner participation, customer final choice, chat, location, payment, wallet, tax, fee, and audit events."
       id="operating-timeline"
@@ -391,7 +392,9 @@ function BookingVuexyTimelineList({ items }: { readonly items: readonly BookingV
             <div className="vuexy-basic-timeline-content">
               <div className="vuexy-basic-timeline-title-row">
                 <div>
-                  <span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>
+                  <PillClassBadge pillClass={operatingTimelinePillTone(tone)}>
+                    {item.status}
+                  </PillClassBadge>
                   <h3>{item.title}</h3>
                 </div>
                 <time>{item.at ? formatDate(item.at) : item.status}</time>
@@ -421,7 +424,7 @@ export function BookingHandoffChecklistSection({
 }: BookingHandoffChecklistSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{handoffChecklist.length} stage(s)</span>}
+      actions={<StatusBadge tone="info">{handoffChecklist.length} stage(s)</StatusBadge>}
       className="admin-mb-16"
       description="One-row-per-stage view of the customer app, Partner app, admin archive, location, and finance handoff. This is factual state tracking only."
       id="booking-handoff-checklist"
@@ -459,9 +462,9 @@ export function BookingCommunicationMovementHandoffSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${communicationMovementHandoff.tone}`}>
+        <PillClassBadge pillClass={communicationMovementHandoff.tone}>
           {communicationMovementHandoff.status}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This helps support confirm whether the assigned Partner and customer are connected."
@@ -560,7 +563,7 @@ export function BookingChatLifecycleSection({
 
   return (
     <AdminSection
-      actions={<span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>}
+      actions={<PillClassBadge pillClass={chatLifecycle.tone}>{chatLifecycle.status}</PillClassBadge>}
       className="admin-mb-16"
       description="Chat is a required operational handoff after matching/service start. Mobile apps may hide it after service closeout, but admin keeps the full archive for support and dispute review."
       id="structured-ops-status"
