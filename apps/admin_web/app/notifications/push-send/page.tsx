@@ -14,7 +14,7 @@ import {
   AdminFormStaticValue,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -173,13 +173,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
           }
         >
-          <div className="ops-section-header">
-            <div>
-              <h2>{notice.title}</h2>
-              <p className="muted">{notice.detail}</p>
-            </div>
-            <StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>
-          </div>
+          <AdminSectionHeader
+            actions={<StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>}
+            description={notice.detail}
+            title={notice.title}
+          />
         </AdminNoticeCard>
       ) : null}
 

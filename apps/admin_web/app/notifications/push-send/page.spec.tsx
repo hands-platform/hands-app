@@ -64,6 +64,8 @@ describe('PushSendPage', () => {
 
   it('uses the shared Vuexy notice card atom for send results', () => {
     expect(pageSource).toContain('AdminNoticeCard');
+    expect(pageSource).toContain('AdminSectionHeader');
+    expect(pageSource).not.toContain('<div className="ops-section-header">');
     expect(pageSource).not.toContain('className={`card admin-notice-card');
   });
 
