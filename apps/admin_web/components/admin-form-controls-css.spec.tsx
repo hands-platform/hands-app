@@ -103,6 +103,36 @@ describe('Admin form control CSS', () => {
     expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
     expect(focusBlock).not.toContain('var(--admin-focus-ring)');
   });
+
+  it.each([
+    [
+      'native root fields',
+      ":root\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,",
+    ],
+    [
+      'files and referral compact fields',
+      ".files-page\n  .filter-bar\n  .compact-form\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,",
+    ],
+  ])('keeps %s on the Vuexy focused field model', (_label, selector) => {
+    const focusIndex = globalsCss.indexOf(selector);
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('border-width: 2px');
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+    expect(focusBlock).not.toContain('var(--admin-focus-ring)');
+  });
+
+  it('gives native placeholders the same transition contract as shared atoms', () => {
+    const placeholderIndex = globalsCss.indexOf('input::placeholder,\ntextarea::placeholder');
+    const placeholderBlock = cssRuleBlockAt(placeholderIndex);
+    const rootPlaceholderIndex = globalsCss.indexOf(':root input::placeholder,');
+    const rootPlaceholderBlock = cssRuleBlockAt(rootPlaceholderIndex);
+
+    expect(placeholderBlock).toContain('transform var(--admin-transition)');
+    expect(rootPlaceholderBlock).toContain('transform var(--admin-transition)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

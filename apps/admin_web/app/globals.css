@@ -14245,6 +14245,9 @@ input::placeholder,
 textarea::placeholder {
   color: var(--admin-disabled);
   opacity: 1;
+  transition:
+    opacity var(--admin-transition),
+    transform var(--admin-transition);
 }
 
 select {
@@ -17049,9 +17052,8 @@ textarea:focus-visible {
 :root select:focus,
 :root textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
@@ -17069,6 +17071,9 @@ textarea:focus-visible {
 :root textarea::placeholder {
   color: var(--admin-disabled);
   opacity: 1;
+  transition:
+    opacity var(--admin-transition),
+    transform var(--admin-transition);
 }
 
 .calendar-field > span:first-child,
@@ -17525,9 +17530,8 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']):focus {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
