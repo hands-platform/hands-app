@@ -601,7 +601,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         </div>
       </div>
       <div className="vuexy-customer-filter-actions referral-policy-actions">
-        <AdminFormControlButton className="vuexy-customer-button referral-policy-save-button">
+        <AdminFormControlButton className="referral-policy-save-button">
           Save referral policy
         </AdminFormControlButton>
       </div>

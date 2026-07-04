@@ -15030,7 +15030,6 @@ textarea:focus-visible {
 .admin-form-control-link,
 .admin-directory-filter-button,
 .admin-directory-filter-export,
-.vuexy-customer-button,
 .customer-detail-action-primary,
 .customer-detail-action-link {
   align-items: center;
@@ -15052,7 +15051,6 @@ textarea:focus-visible {
 .admin-form-control-link:hover,
 .admin-directory-filter-button:hover,
 .admin-directory-filter-export:hover,
-.vuexy-customer-button:hover,
 .customer-detail-action-primary:hover,
 .customer-detail-action-link:hover {
   background: var(--admin-action-hover);
