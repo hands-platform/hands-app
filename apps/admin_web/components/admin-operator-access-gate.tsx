@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminFormControlLink } from './admin-form-controls';
 import { AdminSection } from './admin-surface';
 import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';
 
@@ -34,9 +34,9 @@ export async function AdminOperatorAccessGate({ children }: { readonly children:
       >
         <strong>Page content is hidden.</strong>
         <p className="muted">The denied page visit was recorded in the operator audit log.</p>
-        <Link className="button button-secondary" href="/">
+        <AdminFormControlLink href="/">
           Back to command center
-        </Link>
+        </AdminFormControlLink>
       </AdminSection>
     </main>
   );

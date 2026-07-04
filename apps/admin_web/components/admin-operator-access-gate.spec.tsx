@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -16,6 +17,7 @@ vi.mock('../lib/admin-operator-access', () => ({
 
 const mockedHeaders = vi.mocked(headers);
 const mockedGetAccess = vi.mocked(getAdminOperatorPageAccess);
+const gateSource = readFileSync('components/admin-operator-access-gate.tsx', 'utf8');
 
 describe('AdminOperatorAccessGate', () => {
   beforeEach(() => {
@@ -50,5 +52,10 @@ describe('AdminOperatorAccessGate', () => {
 
     expect(markup).toContain('Login page');
     expect(mockedGetAccess).not.toHaveBeenCalled();
+  });
+
+  it('uses the shared Vuexy form control link for denied-page actions', () => {
+    expect(gateSource).toContain('AdminFormControlLink');
+    expect(gateSource).not.toContain('<Link className="button button-secondary"');
   });
 });
