@@ -16,8 +16,8 @@ describe('PartnerChecklistWorkQueueSection', () => {
   it('uses shared Vuexy badge atoms instead of raw work queue pill spans', () => {
     const source = readFileSync('app/partners/partner-checklist-work-queue-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${queue.blockedCount ? \'pill-warn\' : \'pill-success\'}`}>');
     expect(source).not.toContain('<span className="pill pill-info">{queue.dispatchReadyCount} dispatch-ready</span>');
     expect(source).not.toContain('<span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>');

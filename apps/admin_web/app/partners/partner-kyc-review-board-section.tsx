@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 
 type PartnerKycReviewTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -42,9 +42,9 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
     <AdminSection
       actions={
         <>
-          <PillClassBadge pillClass={board.openCount > 0 ? 'pill-warn' : 'pill-success'}>
+          <StatusBadge tone={board.openCount > 0 ? 'warning' : 'success'}>
             {board.openCount} KYC item(s)
-          </PillClassBadge>
+          </StatusBadge>
           <StatusBadge tone="success">{board.readyToApprove} ready to approve</StatusBadge>
           <StatusBadge tone="danger">{board.blockedByDocuments} blocked by docs</StatusBadge>
         </>

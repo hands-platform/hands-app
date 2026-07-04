@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 
 type PartnerMarketplaceHoldBoardTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -30,13 +30,13 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
     <AdminSection
       actions={
         <>
-          <PillClassBadge pillClass={board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}>
+          <StatusBadge tone={board.hardBlocked > 0 ? 'danger' : 'success'}>
             {board.hardBlocked} direct request held
-          </PillClassBadge>
+          </StatusBadge>
           <StatusBadge tone="info">{board.eligibleNow} direct-ready</StatusBadge>
-          <PillClassBadge pillClass={board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}>
+          <StatusBadge tone={board.marketplaceBlocked > 0 ? 'warning' : 'success'}>
             {board.marketplaceBlocked} dispatch repair
-          </PillClassBadge>
+          </StatusBadge>
         </>
       }
       className="admin-mb-16 partner-marketplace-hold-board-card"

@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../compon
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import type { PartnerDailyActionQueue } from './partner-daily-action-queue';
@@ -42,9 +42,9 @@ export function PartnerChecklistWorkQueueSection({
       title="Partner checklist work queue"
     >
       <div className="participant-list admin-mb-12">
-        <PillClassBadge pillClass={queue.blockedCount ? 'pill-warn' : 'pill-success'}>
+        <StatusBadge tone={queue.blockedCount ? 'warning' : 'success'}>
           {queue.blockedCount} blocked
-        </PillClassBadge>
+        </StatusBadge>
         <StatusBadge tone="info">{queue.dispatchReadyCount} dispatch-ready</StatusBadge>
       </div>
       <AdminTableScroll>
@@ -57,7 +57,9 @@ export function PartnerChecklistWorkQueueSection({
           {queue.rows.map((row, index) => (
             <tr key={`${row.provider.id}-${row.action.status}`}>
               <td>
-                <PillClassBadge pillClass={partnerShiftPillClass(row.tone)}>#{index + 1}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(partnerShiftPillClass(row.tone))}>
+                  #{index + 1}
+                </StatusBadge>
               </td>
               <td>
                 <AdminPersonCell
