@@ -80,14 +80,14 @@ describe('audit log page model', () => {
       'Notification notifica / Duplicate send risk / Latest FCM SENT / Device android push-dev / Device enabled / Queued notification-send',
     );
     expect(rows[0]?.metadataHighlights).toEqual([
-      { className: 'pill pill-warn', label: 'Duplicate send risk' },
-      { className: 'pill pill-success', label: 'FCM sent evidence' },
-      { className: 'pill pill-success', label: 'Token freshness evidence' },
-      { className: 'pill pill-info', label: 'Already delivered before retry' },
-      { className: 'pill pill-info', label: 'Queued notification-send' },
-      { className: 'pill pill-success', label: 'Latest FCM SENT' },
-      { className: 'pill pill-info', label: 'Device android push-dev' },
-      { className: 'pill pill-success', label: 'Device enabled' },
+      { label: 'Duplicate send risk', tone: 'warning' },
+      { label: 'FCM sent evidence', tone: 'success' },
+      { label: 'Token freshness evidence', tone: 'success' },
+      { label: 'Already delivered before retry', tone: 'info' },
+      { label: 'Queued notification-send', tone: 'info' },
+      { label: 'Latest FCM SENT', tone: 'success' },
+      { label: 'Device android push-dev', tone: 'info' },
+      { label: 'Device enabled', tone: 'success' },
     ]);
   });
 
@@ -120,14 +120,14 @@ describe('audit log page model', () => {
       relatedBoardHref: '/notifications?review=failed#notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
-      { className: 'pill pill-warn', label: 'Failed delivery retry' },
-      { className: 'pill pill-warn', label: 'FCM failure evidence' },
-      { className: 'pill pill-info', label: 'Queued notification-send' },
-      { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
-      { className: 'pill pill-info', label: 'Device android' },
-      { className: 'pill pill-warn', label: 'Firebase project mismatch' },
-      { className: 'pill pill-warn', label: 'Next install matching Firebase Admin JSON' },
-      { className: 'pill pill-success', label: 'Device enabled' },
+      { label: 'Failed delivery retry', tone: 'warning' },
+      { label: 'FCM failure evidence', tone: 'warning' },
+      { label: 'Queued notification-send', tone: 'info' },
+      { label: 'Latest FCM FAILED', tone: 'warning' },
+      { label: 'Device android', tone: 'info' },
+      { label: 'Firebase project mismatch', tone: 'warning' },
+      { label: 'Next install matching Firebase Admin JSON', tone: 'warning' },
+      { label: 'Device enabled', tone: 'success' },
     ]);
   });
 
@@ -149,8 +149,8 @@ describe('audit log page model', () => {
     ]);
 
     expect(rows[0]?.metadataHighlights).toEqual([
-      { className: 'pill pill-info', label: 'No delivery evidence' },
-      { className: 'pill pill-info', label: 'Queued notification-send' },
+      { label: 'No delivery evidence', tone: 'info' },
+      { label: 'Queued notification-send', tone: 'info' },
     ]);
   });
 
@@ -183,14 +183,14 @@ describe('audit log page model', () => {
       relatedBoardHref: '/notifications?review=stale-device#notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
-      { className: 'pill pill-warn', label: 'Stale token retry' },
-      { className: 'pill pill-success', label: 'FCM sent evidence' },
-      { className: 'pill pill-warn', label: 'Stale token evidence' },
-      { className: 'pill pill-info', label: 'Already delivered before retry' },
-      { className: 'pill pill-info', label: 'Queued notification-send' },
-      { className: 'pill pill-success', label: 'Latest FCM SENT' },
-      { className: 'pill pill-info', label: 'Device android' },
-      { className: 'pill pill-success', label: 'Device enabled' },
+      { label: 'Stale token retry', tone: 'warning' },
+      { label: 'FCM sent evidence', tone: 'success' },
+      { label: 'Stale token evidence', tone: 'warning' },
+      { label: 'Already delivered before retry', tone: 'info' },
+      { label: 'Queued notification-send', tone: 'info' },
+      { label: 'Latest FCM SENT', tone: 'success' },
+      { label: 'Device android', tone: 'info' },
+      { label: 'Device enabled', tone: 'success' },
     ]);
   });
 

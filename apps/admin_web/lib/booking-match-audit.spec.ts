@@ -18,10 +18,10 @@ describe('booking match audit display', () => {
     });
 
     expect(bookingMatchAuditSource(log)).toEqual({
-      className: 'pill pill-success',
       detail: 'API matched the first-pick Partner before customer fallback selection was needed.',
       label: 'First-pick accepted first',
       source: 'FIRST_PICK_ACCEPTED_FIRST',
+      tone: 'success',
     });
     expect(bookingMatchAuditSummary(log)).toBe(
       'First-pick accepted first / Partner partner-1 / booking booking-1',
@@ -40,8 +40,8 @@ describe('booking match audit display', () => {
     });
 
     expect(bookingMatchAuditHighlights(log)).toEqual([
-      { className: 'pill pill-info', label: 'Customer selected Partner' },
-      { className: 'pill pill-info', label: 'Partner partner-2' },
+      { label: 'Customer selected Partner', tone: 'info' },
+      { label: 'Partner partner-2', tone: 'info' },
     ]);
     expect(bookingMatchAuditDetail(log)).toContain('customer selected from participating Partners');
   });

@@ -4,7 +4,7 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { StatusBadge } from '../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -29,7 +29,6 @@ import {
 } from './audit-log-command-board-section';
 import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-section';
 import {
-  notificationFailureCodeClassName,
   notificationFailureCodeLabel,
   notificationFailureRecoveryActionLabel,
 } from '../notifications/notification-failure-copy';
@@ -698,7 +697,7 @@ function notificationFailurePreview(failureCode: string | null) {
 
 type MetadataHighlight = {
   label: string;
-  className: string;
+  tone: StatusBadgeTone;
 };
 
 function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
@@ -732,7 +731,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
 
   const serviceLabel = serviceOptionLabel(service);
   if (serviceLabel) {
-    highlights.push({ label: serviceLabel, className: 'pill pill-info' });
+    highlights.push({ label: serviceLabel, tone: 'info' });
   }
 
   if (log.action === 'service.duration_set.create') {
@@ -740,7 +739,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
     if (durations.length > 0) {
       highlights.push({
         label: `Durations ${durations.map((duration) => `${duration}m`).join(', ')}`,
-        className: 'pill pill-success',
+        tone: 'success',
       });
     }
   }
@@ -754,7 +753,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
         previousCustomerPrice !== null && previousCustomerPrice !== customerPrice
           ? `Customer ${money(previousCustomerPrice, currency)} -> ${money(customerPrice, currency)}`
           : `Customer ${money(customerPrice, currency)}`,
-      className: 'pill pill-warn',
+      tone: 'warning',
     });
   }
 
@@ -766,7 +765,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
         previousProviderPayout !== null && previousProviderPayout !== providerPayout
           ? `Partner ${money(previousProviderPayout, currency)} -> ${money(providerPayout, currency)}`
           : `Partner ${money(providerPayout, currency)}`,
-      className: 'pill pill-success',
+      tone: 'success',
     });
   }
 
@@ -775,7 +774,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   if (vatBps !== null || otherCost !== null) {
     highlights.push({
       label: `VAT ${formatBps(vatBps)} / other ${money(otherCost ?? 0, currency)}`,
-      className: 'pill pill-info',
+      tone: 'info',
     });
   }
 
@@ -783,14 +782,14 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   if (adjustedProviderPrices !== null && adjustedProviderPrices > 0) {
     highlights.push({
       label: `${adjustedProviderPrices} Partner price(s) adjusted`,
-      className: 'pill pill-warn',
+      tone: 'warning',
     });
   }
 
   if (changedFields.length > 0) {
     highlights.push({
       label: `Changed ${changedFields.join(', ')}`,
-      className: 'pill pill-info',
+      tone: 'info',
     });
   }
 
@@ -820,39 +819,39 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
     highlights.push(tokenEvidence);
   }
   if (metadata.retryAlreadyDelivered === true) {
-    highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
+    highlights.push({ label: 'Already delivered before retry', tone: 'info' });
   }
   if (jobName) {
-    highlights.push({ label: `Queued ${jobName}`, className: 'pill pill-info' });
+    highlights.push({ label: `Queued ${jobName}`, tone: 'info' });
   }
   if (provider && status) {
     highlights.push({
       label: `Latest ${provider} ${status}`,
-      className: notificationStatusHighlightClass(status),
+      tone: notificationStatusHighlightTone(status),
     });
   }
   const pushDevice = notificationPushDevicePreview(latestDelivery);
   if (pushDevice) {
-    highlights.push({ label: pushDevice, className: 'pill pill-info' });
+    highlights.push({ label: pushDevice, tone: 'info' });
   }
   if (failureCode) {
     highlights.push({
       label: notificationFailureCodeLabel(failureCode),
-      className: notificationFailureCodeClassName(failureCode),
+      tone: notificationFailureCodeTone(failureCode),
     });
     const recoveryActionLabel = notificationFailureRecoveryActionLabel(failureCode);
     if (recoveryActionLabel) {
       highlights.push({
         label: recoveryActionLabel,
-        className: 'pill pill-warn',
+        tone: 'warning',
       });
     }
   }
   if (latestDelivery.pushDeviceEnabled === true) {
-    highlights.push({ label: 'Device enabled', className: 'pill pill-success' });
+    highlights.push({ label: 'Device enabled', tone: 'success' });
   }
   if (latestDelivery.pushDeviceEnabled === false) {
-    highlights.push({ label: 'Device disabled', className: 'pill pill-warn' });
+    highlights.push({ label: 'Device disabled', tone: 'warning' });
   }
 
   return highlights.slice(0, 8);
@@ -878,45 +877,57 @@ function notificationFcmOutcomeHighlight(
     return null;
   }
   if (status === 'SENT') {
-    return { label: 'FCM sent evidence', className: 'pill pill-success' };
+    return { label: 'FCM sent evidence', tone: 'success' };
   }
   if (status === 'FAILED') {
-    return { label: 'FCM failure evidence', className: 'pill pill-warn' };
+    return { label: 'FCM failure evidence', tone: 'warning' };
   }
   if (status === 'SKIPPED') {
-    return { label: 'FCM skipped evidence', className: 'pill pill-info' };
+    return { label: 'FCM skipped evidence', tone: 'info' };
   }
   return null;
 }
 
-function notificationStatusHighlightClass(status: string) {
+function notificationStatusHighlightTone(status: string): StatusBadgeTone {
   if (status === 'SENT') {
-    return 'pill pill-success';
+    return 'success';
   }
   if (status === 'FAILED') {
-    return 'pill pill-warn';
+    return 'warning';
   }
-  return 'pill pill-info';
+  return 'info';
+}
+
+function notificationFailureCodeTone(failureCode: string): StatusBadgeTone {
+  if (
+    failureCode === 'messaging/mismatched-credential' ||
+    failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED' ||
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return 'warning';
+  }
+  return 'info';
 }
 
 function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight | null {
   if (risk === 'DUPLICATE_SEND_RISK') {
-    return { label: 'Duplicate send risk', className: 'pill pill-warn' };
+    return { label: 'Duplicate send risk', tone: 'warning' };
   }
   if (risk === 'DEVICE_DISABLED') {
-    return { label: 'Device recovery needed', className: 'pill pill-warn' };
+    return { label: 'Device recovery needed', tone: 'warning' };
   }
   if (risk === 'FAILED_DELIVERY_RETRY') {
-    return { label: 'Failed delivery retry', className: 'pill pill-warn' };
+    return { label: 'Failed delivery retry', tone: 'warning' };
   }
   if (risk === 'STALE_PUSH_TOKEN') {
-    return { label: 'Stale token retry', className: 'pill pill-warn' };
+    return { label: 'Stale token retry', tone: 'warning' };
   }
   if (risk === 'NO_DELIVERY_EVIDENCE') {
-    return { label: 'No delivery evidence', className: 'pill pill-info' };
+    return { label: 'No delivery evidence', tone: 'info' };
   }
   if (risk === 'SKIPPED_DELIVERY_RETRY') {
-    return { label: 'Skipped delivery retry', className: 'pill pill-info' };
+    return { label: 'Skipped delivery retry', tone: 'info' };
   }
   return null;
 }
@@ -938,15 +949,15 @@ function notificationPushTokenEvidenceHighlight(
   }
 
   if (hasStaleRetryAuditPushToken(latestDelivery)) {
-    return { label: 'Stale token evidence', className: 'pill pill-warn' };
+    return { label: 'Stale token evidence', tone: 'warning' };
   }
 
-  return { label: 'Token freshness evidence', className: 'pill pill-success' };
+  return { label: 'Token freshness evidence', tone: 'success' };
 }
 
 function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const metadata = readMetadataObject(log.metadata);
-  const highlights: MetadataHighlight[] = [{ label: 'Booking gate rejected', className: 'pill pill-warn' }];
+  const highlights: MetadataHighlight[] = [{ label: 'Booking gate rejected', tone: 'warning' }];
   const reasonCode = readString(metadata.reasonCode);
   const customerDistance = readNumber(metadata.customerDistanceMeters);
   const customerLimit = readNumber(metadata.customerDistanceLimitMeters);
@@ -954,18 +965,18 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
   const preferredLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
 
   if (reasonCode) {
-    highlights.push({ label: bookingCreateGateReasonLabel(reasonCode, 'audit'), className: 'pill pill-info' });
+    highlights.push({ label: bookingCreateGateReasonLabel(reasonCode, 'audit'), tone: 'info' });
   }
   if (customerDistance !== null) {
     highlights.push({
       label: `Customer ${formatDistance(customerDistance)} / limit ${formatDistance(customerLimit ?? 0)}`,
-      className: 'pill pill-info',
+      tone: 'info',
     });
   }
   if (preferredDistance !== null) {
     highlights.push({
       label: `Partner ${formatDistance(preferredDistance)} / limit ${formatDistance(preferredLimit ?? 0)}`,
-      className: 'pill pill-info',
+      tone: 'info',
     });
   }
 
@@ -982,20 +993,20 @@ function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const enforced = metadata.enforced === true;
 
   if (key) {
-    highlights.push({ label: policyAuditKeyLabel(key), className: 'pill pill-info' });
+    highlights.push({ label: policyAuditKeyLabel(key), tone: 'info' });
   }
   highlights.push({
     label: enforced ? 'Live behavior' : 'Decision log',
-    className: enforced ? 'pill pill-success' : 'pill pill-warn',
+    tone: enforced ? 'success' : 'warning',
   });
   if (previousValue !== undefined || value !== undefined) {
     highlights.push({
       label: `${compactAuditValue(previousValue)} -> ${compactAuditValue(value)}`,
-      className: 'pill pill-warn',
+      tone: 'warning',
     });
   }
   if (reason) {
-    highlights.push({ label: `Reason: ${reason.slice(0, 72)}`, className: 'pill pill-success' });
+    highlights.push({ label: `Reason: ${reason.slice(0, 72)}`, tone: 'success' });
   }
 
   return highlights.slice(0, 6);

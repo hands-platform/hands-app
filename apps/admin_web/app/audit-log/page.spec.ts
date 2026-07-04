@@ -91,9 +91,9 @@ describe('audit log page model', () => {
     expect(row.relatedBoardLabel).toBe('Notification board');
     expect(row.metadataHighlights).toEqual(
       expect.arrayContaining([
-        { className: 'pill pill-success', label: 'FCM sent evidence' },
-        { className: 'pill pill-success', label: 'Latest FCM SENT' },
-        { className: 'pill pill-success', label: 'Device enabled' },
+        { label: 'FCM sent evidence', tone: 'success' },
+        { label: 'Latest FCM SENT', tone: 'success' },
+        { label: 'Device enabled', tone: 'success' },
       ]),
     );
   });
@@ -110,8 +110,8 @@ describe('audit log page model', () => {
     expect(row.relatedBoardHref).toBe('/notifications?review=failed#notification-failed');
     expect(row.metadataHighlights).toEqual(
       expect.arrayContaining([
-        { className: 'pill pill-warn', label: 'FCM failure evidence' },
-        { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
+        { label: 'FCM failure evidence', tone: 'warning' },
+        { label: 'Latest FCM FAILED', tone: 'warning' },
       ]),
     );
   });

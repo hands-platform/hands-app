@@ -1,34 +1,35 @@
 import type { AdminAuditLog } from './admin-api';
 import { readPlainRecord, shortId } from './admin-format';
+import type { StatusBadgeTone } from '../components/status-badge';
 
 export type BookingMatchAuditSource = {
-  readonly className: string;
   readonly detail: string;
   readonly label: string;
   readonly source: 'CUSTOMER_SELECTED_PARTNER' | 'FIRST_PICK_ACCEPTED_FIRST';
+  readonly tone: StatusBadgeTone;
 };
 
 export type BookingMatchAuditHighlight = {
-  readonly className: string;
   readonly label: string;
+  readonly tone: StatusBadgeTone;
 };
 
 export function bookingMatchAuditSource(log: AdminAuditLog): BookingMatchAuditSource | null {
   const source = bookingMatchSource(log);
   if (source === 'FIRST_PICK_ACCEPTED_FIRST') {
     return {
-      className: 'pill pill-success',
       detail: 'API matched the first-pick Partner before customer fallback selection was needed.',
       label: 'First-pick accepted first',
       source,
+      tone: 'success',
     };
   }
   if (source === 'CUSTOMER_SELECTED_PARTNER') {
     return {
-      className: 'pill pill-info',
       detail: 'Customer selected from participating Partners after first-pick did not validly win first.',
       label: 'Customer selected Partner',
       source,
+      tone: 'info',
     };
   }
   return null;
@@ -41,8 +42,8 @@ export function bookingMatchAuditHighlights(log: AdminAuditLog): BookingMatchAud
   }
   const providerId = bookingMatchProviderId(log);
   return [
-    { className: source.className, label: source.label },
-    providerId ? { className: 'pill pill-info', label: `Partner ${auditEntityId(providerId)}` } : null,
+    { label: source.label, tone: source.tone },
+    providerId ? { label: `Partner ${auditEntityId(providerId)}`, tone: 'info' } : null,
   ].filter((item): item is BookingMatchAuditHighlight => item !== null);
 }
 

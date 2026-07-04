@@ -40,10 +40,20 @@ describe('AuditLogTableSection', () => {
 
     expect(source).toContain('ActionMenu');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="pill pill-info" href={row.relatedBoardHref}>');
     expect(source).not.toContain('<span className={item.className} key={`${item.label}-${index}`}>');
+    expect(source).toContain('tone={item.tone}');
+  });
+
+  it('keeps audit metadata highlights on the shared StatusBadge tone model', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/audit-log/page-content.tsx'), 'utf8');
+
+    expect(pageSource).toContain('type MetadataHighlight = {');
+    expect(pageSource).toContain('tone: StatusBadgeTone;');
+    expect(pageSource).not.toContain("className: 'pill");
+    expect(pageSource).not.toContain('notificationStatusHighlightClass');
   });
 });
 
@@ -55,7 +65,7 @@ function buildRow(): AuditLogTableRow {
     bucketLabel: 'Dispatch',
     createdAtLabel: '2026-06-09 10:00',
     id: 'audit-1',
-    metadataHighlights: [{ className: 'pill pill-info', label: 'Changed status' }],
+    metadataHighlights: [{ label: 'Changed status', tone: 'info' }],
     metadataPreview: '{\n  "status": "MATCHED"\n}',
     opsDetail: 'Use the status to see which handoff checks are done, pending, or blocked.',
     opsHint: 'Structured booking handling status was updated by an operator.',
