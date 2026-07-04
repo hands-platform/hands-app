@@ -63,6 +63,21 @@ describe('Admin form control CSS', () => {
     expect(todayBlock).not.toContain('font-weight: 500');
   });
 
+  it('keeps time picker rows on Vuexy body typography and selected weight', () => {
+    const timeItemIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-list-item {');
+    const timeItemBlock = cssRuleBlockAt(timeItemIndex);
+    const selectedIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected,',
+    );
+    const selectedBlock = cssRuleBlockAt(selectedIndex);
+
+    expect(timeItemIndex).toBeGreaterThan(-1);
+    expect(selectedIndex).toBeGreaterThan(-1);
+    expect(timeItemBlock).toContain('font-size: 0.9375rem');
+    expect(timeItemBlock).not.toContain('font-size: 0.8125rem');
+    expect(selectedBlock).toContain('font-weight: 400');
+  });
+
   it('matches Vuexy text field focus weight on shared form controls', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const focusBlock = cssRuleBlockAt(focusIndex);

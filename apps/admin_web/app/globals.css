@@ -1658,7 +1658,7 @@ a {
   align-items: center;
   color: var(--admin-text);
   display: flex;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   border-radius: var(--admin-radius-sm);
   height: auto !important;
   justify-content: center;
@@ -1675,6 +1675,7 @@ a {
   background: var(--admin-accent) !important;
   color: var(--admin-inverse-text) !important;
   box-shadow: var(--admin-shadow-xs);
+  font-weight: 400;
 }
 
 .calendar-filter-list {
