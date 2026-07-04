@@ -51,7 +51,9 @@ describe('Admin form controls', () => {
       name: 'from',
     });
 
-    expect(date.props.className).toBe('admin-form-date admin-form-date-picker partner-date-filter');
+    expect(date.props.className).toBe(
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker partner-date-filter',
+    );
     expect(textContent(date)).toContain('From date');
   });
 
@@ -67,7 +69,7 @@ describe('Admin form controls', () => {
     });
 
     expect(month.props.className).toBe(
-      'admin-form-date admin-form-date-picker admin-form-control-labeled finance-period',
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled finance-period',
     );
     expect(month.props.children[1].props).toMatchObject({
       defaultValue: '2026-07',

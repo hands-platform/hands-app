@@ -18,7 +18,9 @@ describe('FinancePeriodFilterForm', () => {
     expect(markup).toContain('method="get"');
     expect(markup).toContain('name="range"');
     expect(markup).toContain('value="7d"');
-    expect(markup).toContain('class="admin-form-date admin-form-date-picker admin-form-control-labeled"');
+    expect(markup).toContain(
+      'class="admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled"',
+    );
     expect(markup).toContain('class="admin-form-label">Monthly tax period');
     expect(markup).toContain('type="month"');
     expect(markup).toContain('value="2026-07"');

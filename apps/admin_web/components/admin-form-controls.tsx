@@ -198,7 +198,15 @@ export function AdminFormDate({
   value,
 }: AdminFormDateProps) {
   return (
-    <label className={joinClassNames('admin-form-date', 'admin-form-date-picker', visibleLabelClass(labelVisibility), className)}>
+    <label
+      className={joinClassNames(
+        'admin-form-date',
+        'admin-form-date-picker',
+        'admin-form-input-date-picker',
+        visibleLabelClass(labelVisibility),
+        className,
+      )}
+    >
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
         defaultValue={defaultValue}
