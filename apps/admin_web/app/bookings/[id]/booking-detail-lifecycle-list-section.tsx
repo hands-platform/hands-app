@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
   isPostMatchCancellationReviewBooking,
@@ -62,7 +62,7 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
             <div className="vuexy-basic-timeline-content">
               <div className="vuexy-basic-timeline-title-row">
                 <div>
-                  <PillClassBadge pillClass={timelinePillTone(item.tone)}>{item.statusLabel}</PillClassBadge>
+                  <StatusBadge tone={timelineStatusBadgeTone(item.tone)}>{item.statusLabel}</StatusBadge>
                   <h3>{item.title}</h3>
                 </div>
                 <time>{item.timeLabel}</time>
@@ -486,15 +486,20 @@ function locationTimeValue(value?: string | null) {
   return new Date(value).getTime();
 }
 
-function timelinePillTone(tone: BookingDetailLifecycleTimelineItem['tone']) {
+function timelineStatusBadgeTone(
+  tone: BookingDetailLifecycleTimelineItem['tone'],
+): Exclude<StatusBadgeTone, 'neutral'> {
   if (tone === 'success') {
-    return 'pill-success';
+    return 'success';
   }
   if (tone === 'warning') {
-    return 'pill-warn';
+    return 'warning';
   }
   if (tone === 'danger') {
-    return 'pill-danger';
+    return 'danger';
   }
-  return 'pill-info';
+  if (tone === 'primary') {
+    return 'primary';
+  }
+  return 'info';
 }

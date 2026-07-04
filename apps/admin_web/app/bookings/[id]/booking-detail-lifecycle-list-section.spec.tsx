@@ -11,8 +11,8 @@ describe('bookingDetailLifecycleListRows', () => {
   it('uses shared Vuexy badge atoms instead of raw lifecycle pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-lifecycle-list-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">{timelineItems.length} stage(s)</span>');
     expect(source).not.toContain('<span className={`pill ${timelinePillTone(item.tone)}`}>{item.statusLabel}</span>');
   });
