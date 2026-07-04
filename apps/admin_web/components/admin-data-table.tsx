@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { AdminEmptyState } from './admin-empty-state';
+
 type AdminDataTableProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -49,13 +51,21 @@ export function AdminDataTable({
         {rowCount === 0 && emptyMessage !== null ? (
           <tr>
             <td className="admin-data-table-empty-cell" colSpan={headers.length}>
-              <div className="admin-data-table-empty">{emptyMessage}</div>
+              <div className="admin-data-table-empty">{renderEmptyMessage(emptyMessage)}</div>
             </td>
           </tr>
         ) : null}
       </tbody>
     </table>
   );
+}
+
+function renderEmptyMessage(emptyMessage: ReactNode) {
+  if (typeof emptyMessage === 'string') {
+    return AdminEmptyState({ framed: true, message: emptyMessage, title: null });
+  }
+
+  return emptyMessage;
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {

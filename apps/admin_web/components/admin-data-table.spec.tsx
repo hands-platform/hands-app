@@ -37,10 +37,14 @@ describe('AdminDataTable', () => {
       className: 'admin-data-table-empty-cell',
       colSpan: 3,
     });
-    expect(emptyRow.props.children.props.children.props).toMatchObject({
-      children: 'No feedback records loaded.',
+    const emptyContainer = emptyRow.props.children.props.children;
+    expect(emptyContainer.props).toMatchObject({
       className: 'admin-data-table-empty',
     });
+    expect(emptyContainer.props.children.props).toMatchObject({
+      className: 'empty-state',
+    });
+    expect(emptyContainer.props.children.props.children[1].props.children).toBe('No feedback records loaded.');
   });
 
   it('does not render an empty row when the caller provides no empty message', () => {
