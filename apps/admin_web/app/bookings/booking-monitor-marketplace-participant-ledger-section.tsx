@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminActionCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -67,11 +68,15 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {visibleMarketplaceOperationsCards.map((card) => (
-          <Link className="ops-task-card" href={card.href} key={card.title}>
-            <span className={`signal ${card.tone}`}>{card.title}</span>
-            <strong className="ops-task-card-value">{card.value}</strong>
-            <p>{card.detail}</p>
-          </Link>
+          <AdminActionCard
+            detail={card.detail}
+            href={card.href}
+            key={card.title}
+            signalClassName={card.tone}
+            signalLabel={card.title}
+            value={card.value}
+            variant="ops-task"
+          />
         ))}
         {marketplaceOperationsCards.length > 0 && visibleMarketplaceOperationsCards.length === 0 && (
           <div className="ops-task-card">

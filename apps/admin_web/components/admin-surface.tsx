@@ -46,7 +46,7 @@ type AdminActionCardProps = {
   readonly htmlTitle?: string;
   readonly signalClassName?: string;
   readonly signalLabel?: ReactNode;
-  readonly title: ReactNode;
+  readonly title?: ReactNode;
   readonly value?: ReactNode;
   readonly valueClassName?: string;
   readonly variant?: 'default' | 'ops-task';
@@ -153,14 +153,16 @@ export function AdminActionCard({
   variant = 'default',
 }: AdminActionCardProps) {
   if (variant === 'ops-task') {
+    const hasTitle = title !== undefined && title !== null;
     const hasValue = value !== undefined && value !== null;
 
     return (
       <Link className={joinClassNames('ops-task-card', className)} href={href} title={htmlTitle}>
         {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
-        <h3>{title}</h3>
-        {detail ? <p>{detail}</p> : null}
+        {hasTitle ? <h3>{title}</h3> : null}
+        {hasTitle && detail ? <p>{detail}</p> : null}
         {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
+        {!hasTitle && detail ? <p>{detail}</p> : null}
         {children}
         {actionLabel ? <small>{actionLabel}</small> : null}
       </Link>
@@ -169,7 +171,7 @@ export function AdminActionCard({
 
   return (
     <Link className={joinClassNames('card admin-action-card', className)} href={href} title={htmlTitle}>
-      <p>{title}</p>
+      {title !== undefined && title !== null ? <p>{title}</p> : null}
       {value !== undefined && value !== null ? (
         <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
       ) : null}

@@ -7,7 +7,9 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
   it('uses shared Vuexy badge atoms for participant summary and row chips', () => {
     const source = readFileSync('app/bookings/booking-monitor-marketplace-participant-ledger-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className={`pill ${pill.tone}`} key={pill.label}>');
     expect(source).not.toContain('<span className="pill">Participant evidence</span>');
     expect(source).not.toContain('<span className="pill">{row.roleLabel}</span>');

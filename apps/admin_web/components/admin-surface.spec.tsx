@@ -123,6 +123,20 @@ describe('Admin surface components', () => {
     expect(children[3].type).toBe('small');
   });
 
+  it('supports value-first ops task cards without forcing an empty heading', () => {
+    const card = AdminActionCard({
+      detail: 'No marketplace participant action is needed.',
+      href: '/bookings?view=marketplace',
+      signalClassName: 'pill-success',
+      signalLabel: 'Clear',
+      value: '0',
+      variant: 'ops-task',
+    });
+    const children = card.props.children.filter(Boolean);
+
+    expect(children.map((child: { type: unknown }) => child.type)).toEqual(['span', 'strong', 'p']);
+  });
+
   it('renders standard loading and error states with operational roles', () => {
     const loading = AdminLoadingState({ message: 'Checking latest booking records.' });
     const error = AdminErrorState({

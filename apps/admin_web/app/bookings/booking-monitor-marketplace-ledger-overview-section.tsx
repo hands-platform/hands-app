@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -45,15 +44,20 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
       </div>
       <div className="ops-task-grid admin-mt-12">
         {visibleOperatingQueue.map((item) => (
-          <Link className="ops-task-card" href={item.href} key={item.step}>
-            <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
+          <AdminActionCard
+            actionLabel={item.operatorAction}
+            detail={item.detail}
+            href={item.href}
+            key={item.step}
+            signalClassName={commandToneClass(item.tone)}
+            signalLabel={item.step}
+            title={item.title}
+            variant="ops-task"
+          >
             <div className="participant-list">
               <PillClassBadge pillClass={stagePillClass(item.tone)}>{item.status}</PillClassBadge>
               <PillClassBadge pillClass="pill-neutral">{item.value}</PillClassBadge>
             </div>
-            <small>{item.operatorAction}</small>
             {item.bookings.length > 0 && (
               <div className="stack admin-mt-10">
                 {item.bookings.slice(0, 3).map((booking) => (
@@ -64,7 +68,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
                 ))}
               </div>
             )}
-          </Link>
+          </AdminActionCard>
         ))}
         {visibleOperatingQueue.length === 0 && (
           <div className="ops-task-card">

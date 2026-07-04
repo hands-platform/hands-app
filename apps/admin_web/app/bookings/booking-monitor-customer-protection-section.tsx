@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -45,10 +44,16 @@ export function BookingMonitorCustomerProtectionSection({
     >
       <div className="ops-task-grid admin-mt-14">
         {visibleLanes.map((lane) => (
-          <Link className="ops-task-card" href={lane.href} key={lane.title}>
-            <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-            <h3>{lane.title}</h3>
-            <p>{lane.detail}</p>
+          <AdminActionCard
+            actionLabel={lane.operatorAction}
+            detail={lane.detail}
+            href={lane.href}
+            key={lane.title}
+            signalClassName={commandToneClass(lane.tone)}
+            signalLabel={commandToneLabel(lane.tone)}
+            title={lane.title}
+            variant="ops-task"
+          >
             <div className="participant-list">
               <PillClassBadge pillClass="pill-neutral">{lane.status}</PillClassBadge>
               <PillClassBadge pillClass="pill-neutral">{lane.bookings.length} booking(s)</PillClassBadge>
@@ -63,8 +68,7 @@ export function BookingMonitorCustomerProtectionSection({
                 ))}
               </div>
             ) : null}
-            <small>{lane.operatorAction}</small>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>
