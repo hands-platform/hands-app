@@ -297,9 +297,9 @@ function ReferralListFilterPanel({
         activeFilters.length > 0 ? (
           <div className="vuexy-customer-filter-footer">
             {activeFilters.map((filter) => (
-              <span className="pill pill-warn" key={filter}>
+              <StatusBadge key={filter} tone="warning">
                 {filter}
-              </span>
+              </StatusBadge>
             ))}
           </div>
         ) : null
@@ -1032,9 +1032,9 @@ function ReferralEmptyState({
         />
         <div className="participant-list admin-mt-8" aria-label="Active referral filters">
           {activeFilters.map((filter) => (
-            <span className="pill pill-warn" key={filter}>
+            <StatusBadge key={filter} tone="warning">
               {filter}
-            </span>
+            </StatusBadge>
           ))}
         </div>
         {clearHref ? (

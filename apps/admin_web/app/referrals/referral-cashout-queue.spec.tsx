@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminReferralCashoutQueueRow, AdminReferralCashoutQueueSummary } from '../../lib/admin-api';
@@ -82,7 +83,14 @@ const row: AdminReferralCashoutQueueRow = {
   walletLedgerReference: 'wallet-credit-ledger-1',
 };
 
+const cashoutQueueSource = readFileSync('app/referrals/referral-cashout-queue.tsx', 'utf8');
+
 describe('Referral cashout queue', () => {
+  it('uses the shared StatusBadge atom for the queue count chip', () => {
+    expect(cashoutQueueSource).toContain('StatusBadge');
+    expect(cashoutQueueSource).not.toContain('actions={<span className="pill">{rows.length} shown</span>}');
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 

@@ -215,6 +215,11 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Open referral link');
   });
 
+  it('uses the shared StatusBadge atom for active referral filter labels', () => {
+    expect(dashboardSource).toContain('StatusBadge');
+    expect(dashboardSource).not.toContain('<span className="pill pill-warn" key={filter}>');
+  });
+
   it('does not render NaN when referral totals come from an older API shape', () => {
     const [legacyRow] = rows.map((row) => ({
       ...row,

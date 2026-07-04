@@ -173,7 +173,7 @@ export function ReferralCashoutQueuePage({
       </AdminFilterPanel>
 
       <AdminSection
-        actions={<span className="pill">{rows.length} shown</span>}
+        actions={<StatusBadge tone="neutral">{rows.length} shown</StatusBadge>}
         bodyClassName="booking-monitor"
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="Open only the parent detail when deeper attribution evidence is needed."
