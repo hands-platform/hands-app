@@ -1,6 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailOperatingChecklistSection } from './partner-detail-operating-checklist-section';
 
 describe('PartnerDetailOperatingChecklistSection', () => {
+  it('uses the shared Vuexy badge atom for checklist status pills', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${pillClassForTone(item.tone)}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${pillClassForTone(item.tone)}`}>{item.nextAction}</span>');
+  });
+
   it('renders active-work checks as a Vuexy table', () => {
     const section = PartnerDetailOperatingChecklistSection({
       pillClassForTone: (tone) => `pill-${tone}`,
@@ -42,7 +52,7 @@ describe('PartnerDetailOperatingChecklistSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#booking-gates', '#app-activity']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
