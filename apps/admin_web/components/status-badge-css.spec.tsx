@@ -11,9 +11,11 @@ describe('Status badge CSS', () => {
     expect(chipBlock).toContain('border: 1px solid transparent');
     expect(chipBlock).toContain('box-sizing: border-box');
     expect(chipBlock).toContain('min-height: 24px');
+    expect(chipBlock).toContain('padding: 2px 10px');
     expect(chipBlock).toContain('text-decoration: none');
     expect(chipBlock).toContain('vertical-align: middle');
     expect(chipBlock).toContain('white-space: nowrap');
+    expect(chipBlock).not.toContain('padding: 5px 9px');
   });
 
   it('defines the primary pill tone used by admin page controls', () => {
