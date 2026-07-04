@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule as basePayoutRule } from '../../lib/service-base-payout-rule';
@@ -69,9 +70,9 @@ export function ServiceDurationPricingMatrixSection({
                 ))}
                 <td>
                   <div className="service-matrix-cell">
-                    <span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>
+                    <StatusBadge tone={matrix.blockedCount ? 'danger' : 'success'}>
                       {matrix.blockedCount ? `${matrix.blockedCount} blocked` : 'Bookable'}
-                    </span>
+                    </StatusBadge>
                     <small>{matrix.activeCount} active duration option(s)</small>
                     <small>{matrix.payoutRuleCount} payout rule(s)</small>
                     <small>
@@ -125,7 +126,7 @@ function ServiceDurationCell({ cell }: { readonly cell: DurationMatrixCell }) {
   if (!cell) {
     return (
       <td>
-        <span className="pill pill-neutral">Not configured</span>
+        <StatusBadge tone="neutral">Not configured</StatusBadge>
       </td>
     );
   }
@@ -139,9 +140,9 @@ function ServiceDurationCell({ cell }: { readonly cell: DurationMatrixCell }) {
     <td>
       <div className="service-matrix-cell">
         <strong>Customer {formatMoney(cell.service.basePrice, cellCurrency)}</strong>
-        <span className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}>
+        <StatusBadge tone={cell.baseRule ? 'success' : 'danger'}>
           {cell.baseRule ? 'Payout ready' : 'Payout missing'}
-        </span>
+        </StatusBadge>
         <small>
           Partner{' '}
           {cell.baseRule

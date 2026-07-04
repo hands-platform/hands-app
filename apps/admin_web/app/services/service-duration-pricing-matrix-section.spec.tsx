@@ -1,7 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminServiceCatalogItem, AdminServicePayoutRule } from '../../lib/admin-api';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 
 describe('ServiceDurationPricingMatrixSection', () => {
+  it('uses the shared Vuexy status badge atom for matrix state labels', () => {
+    const source = readFileSync('app/services/service-duration-pricing-matrix-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("<span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>");
+    expect(source).not.toContain('<span className="pill pill-neutral">Not configured</span>');
+    expect(source).not.toContain("className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}");
+  });
+
   it('renders the standard duration matrix, policy state, and hidden group copy', () => {
     const section = ServiceDurationPricingMatrixSection({
       activeTaxPolicy: undefined,
