@@ -98,6 +98,31 @@ describe('Admin surface components', () => {
     });
   });
 
+  it('renders the shared Vuexy ops task card surface for command boards', () => {
+    const card = AdminActionCard({
+      actionLabel: 'Open queue',
+      className: 'ops-task-pending',
+      detail: 'Operators can open this filtered queue.',
+      href: '/bookings?view=matching',
+      signalClassName: 'signal-warn',
+      signalLabel: 'Monitor',
+      title: 'Matching queue',
+      value: null,
+      variant: 'ops-task',
+    });
+
+    expect(card.props).toMatchObject({
+      className: 'ops-task-card ops-task-pending',
+      href: '/bookings?view=matching',
+    });
+    const children = card.props.children.filter(Boolean);
+
+    expect(children[0].props.className).toBe('signal signal-warn');
+    expect(children[1].type).toBe('h3');
+    expect(children[2].type).toBe('p');
+    expect(children[3].type).toBe('small');
+  });
+
   it('renders standard loading and error states with operational roles', () => {
     const loading = AdminLoadingState({ message: 'Checking latest booking records.' });
     const error = AdminErrorState({

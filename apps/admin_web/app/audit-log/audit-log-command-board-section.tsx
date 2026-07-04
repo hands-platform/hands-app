@@ -1,6 +1,4 @@
-import Link from 'next/link';
-
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type AuditCommandTone = 'warn' | 'info' | 'ok';
@@ -43,10 +41,16 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
       title="Audit command board"
     >
       {items.map((item) => (
-        <Link className="ops-task-card" href={item.href} key={item.title}>
-          <span className={`signal ${auditToneClass(item.tone)}`}>{auditToneLabel(item.tone)}</span>
-          <h3>{item.title}</h3>
-          <p>{item.detail}</p>
+        <AdminActionCard
+          actionLabel={item.operatorAction}
+          detail={item.detail}
+          href={item.href}
+          key={item.title}
+          signalClassName={auditToneClass(item.tone)}
+          signalLabel={auditToneLabel(item.tone)}
+          title={item.title}
+          variant="ops-task"
+        >
           <div className="participant-list">
             <StatusBadge tone="neutral">{item.status}</StatusBadge>
             <StatusBadge tone="neutral">{item.logs.length} event(s)</StatusBadge>
@@ -60,8 +64,7 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
               ))}
             </div>
           ) : null}
-          <small>{item.operatorAction}</small>
-        </Link>
+        </AdminActionCard>
       ))}
     </AdminSection>
   );

@@ -38,6 +38,7 @@ type AdminSectionProps = {
 type AdminKpiCardProps = MetricCardProps;
 
 type AdminActionCardProps = {
+  readonly actionLabel?: ReactNode;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly detail?: ReactNode;
@@ -46,8 +47,9 @@ type AdminActionCardProps = {
   readonly signalClassName?: string;
   readonly signalLabel?: ReactNode;
   readonly title: ReactNode;
-  readonly value: ReactNode;
+  readonly value?: ReactNode;
   readonly valueClassName?: string;
+  readonly variant?: 'default' | 'ops-task';
 };
 
 type AdminStateProps = {
@@ -137,6 +139,7 @@ export function AdminKpiCard(props: AdminKpiCardProps) {
 }
 
 export function AdminActionCard({
+  actionLabel,
   children,
   className,
   detail,
@@ -147,11 +150,29 @@ export function AdminActionCard({
   title,
   value,
   valueClassName,
+  variant = 'default',
 }: AdminActionCardProps) {
+  if (variant === 'ops-task') {
+    const hasValue = value !== undefined && value !== null;
+
+    return (
+      <Link className={joinClassNames('ops-task-card', className)} href={href} title={htmlTitle}>
+        {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+        <h3>{title}</h3>
+        {detail ? <p>{detail}</p> : null}
+        {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
+        {children}
+        {actionLabel ? <small>{actionLabel}</small> : null}
+      </Link>
+    );
+  }
+
   return (
     <Link className={joinClassNames('card admin-action-card', className)} href={href} title={htmlTitle}>
       <p>{title}</p>
-      <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
+      {value !== undefined && value !== null ? (
+        <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
+      ) : null}
       {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
       {detail ? <p className="muted admin-mt-8">{detail}</p> : null}
       {children}
