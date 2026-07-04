@@ -15041,10 +15041,10 @@ textarea:focus-visible {
   color: var(--admin-text);
   display: inline-flex;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   gap: 8px;
   justify-content: center;
-  min-height: 40px;
+  min-height: 38px;
   padding: 0 18px;
   text-decoration: none;
 }

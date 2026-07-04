@@ -16,6 +16,17 @@ describe('Admin form control CSS', () => {
     expect(globalsCss.slice(primaryIndex, secondaryIndex)).toContain('border: 1px solid var(--admin-accent)');
   });
 
+  it('keeps shared admin form buttons on the Vuexy medium button rhythm', () => {
+    const baseIndex = globalsCss.indexOf('.admin-form-control-button,');
+    const baseBlock = cssRuleBlockAt(baseIndex);
+
+    expect(baseIndex).toBeGreaterThan(-1);
+    expect(baseBlock).toContain('font-weight: 500');
+    expect(baseBlock).toContain('min-height: 38px');
+    expect(baseBlock).not.toContain('font-weight: 700');
+    expect(baseBlock).not.toContain('min-height: 40px');
+  });
+
   it('styles shared checkboxes through the Vuexy mark layer instead of the browser default control', () => {
     const baseIndex = globalsCss.indexOf('.admin-form-checkbox {');
     const inputIndex = globalsCss.indexOf('.admin-form-checkbox-input');
