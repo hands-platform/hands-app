@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { EarningsFinanceQueueSection } from './earnings-finance-queue-section';
 
 describe('EarningsFinanceQueueSection', () => {
@@ -50,6 +53,13 @@ describe('EarningsFinanceQueueSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-info');
     expect(classNamesIn(section)).not.toContain('pill pill pill-info');
+  });
+
+  it('keeps finance queue task cards on the shared Vuexy task surface', () => {
+    const source = readFileSync(join(process.cwd(), 'app/earnings/earnings-finance-queue-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card');
   });
 });
 

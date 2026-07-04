@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { FinanceCloseoutEvidenceChecklistSection } from './finance-closeout-evidence-checklist-section';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -60,9 +62,20 @@ describe('FinanceCloseoutEvidenceChecklistSection', () => {
     expect(markup).toContain('No finance closeout evidence item is visible for this range.');
     expect(markup).toContain('class="empty-state');
   });
+
+  it('keeps evidence task links on the shared Vuexy action surface', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-closeout/finance-closeout-evidence-checklist-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('className={`ops-task-card');
+  });
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -79,6 +92,7 @@ function textContent(value: unknown): string {
 }
 
 function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -90,6 +104,12 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn([props?.actions, props?.children])];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

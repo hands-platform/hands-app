@@ -1,5 +1,6 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
 export type PayoutCommandSignal = {
@@ -32,14 +33,14 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       {signals.length ? (
         <div className="ops-task-grid">
           {signals.map((signal) => (
-            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-              <div>
-                <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
-                <h3>{signal.title}</h3>
-                <p className="muted">{signal.detail}</p>
-              </div>
-              <small>{signal.action}</small>
-            </div>
+            <AdminTaskCard
+              actionLabel={signal.action}
+              className={signal.className}
+              detail={signal.detail}
+              key={signal.title}
+              leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+              title={signal.title}
+            />
           ))}
         </div>
       ) : (

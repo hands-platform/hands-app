@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
@@ -53,14 +54,14 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
       {checks.length ? (
         <div className="ops-task-grid admin-mt-16">
           {checks.map((check) => (
-            <div className={`ops-task-card ${check.className}`} key={check.title}>
-              <div>
-                <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
-                <h3>{check.title}</h3>
-                <p className="muted">{check.detail}</p>
-              </div>
-              <small>{check.action}</small>
-            </div>
+            <AdminTaskCard
+              actionLabel={check.action}
+              className={check.className}
+              detail={check.detail}
+              key={check.title}
+              leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+              title={check.title}
+            />
           ))}
         </div>
       ) : (

@@ -134,6 +134,17 @@ describe('CashSettlement board sections', () => {
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
   });
+
+  it('keeps cash settlement task cards on shared Vuexy surfaces', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-board-sections.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('className={`ops-task-card');
+  });
 });
 
 function groupedTableCardClassNamesIn(classNames: readonly string[]) {

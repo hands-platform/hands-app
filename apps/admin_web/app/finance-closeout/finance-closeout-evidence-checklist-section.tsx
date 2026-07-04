@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutEvidenceChecklistItem } from '../../lib/finance-closeout';
 
@@ -26,14 +26,16 @@ export function FinanceCloseoutEvidenceChecklistSection({
     >
       {items.length ? (
         items.map((item) => (
-          <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-            <div>
-              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-              <h3>{item.title}</h3>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <small>{item.operatorRule}</small>
-          </Link>
+          <AdminActionCard
+            actionLabel={item.operatorRule}
+            className={item.className}
+            detail={item.detail}
+            href={item.href}
+            key={item.title}
+            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            title={item.title}
+            variant="ops-task"
+          />
         ))
       ) : (
         <AdminEmptyState framed message="No finance closeout evidence item is visible for this range." />

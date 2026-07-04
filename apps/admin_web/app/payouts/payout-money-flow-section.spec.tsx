@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PayoutMoneyFlowSection } from './payout-money-flow-section';
 
 describe('PayoutMoneyFlowSection', () => {
@@ -66,6 +69,13 @@ describe('PayoutMoneyFlowSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
+
+  it('keeps payout money flow task cards on the shared Vuexy task surface', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-money-flow-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card');
   });
 });
 

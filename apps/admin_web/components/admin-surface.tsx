@@ -44,6 +44,7 @@ type AdminActionCardProps = {
   readonly detail?: ReactNode;
   readonly href: string;
   readonly htmlTitle?: string;
+  readonly leading?: ReactNode;
   readonly signalClassName?: string;
   readonly signalLabel?: ReactNode;
   readonly title?: ReactNode;
@@ -149,6 +150,7 @@ export function AdminActionCard({
   detail,
   href,
   htmlTitle,
+  leading,
   signalClassName,
   signalLabel,
   title,
@@ -162,6 +164,7 @@ export function AdminActionCard({
 
     return (
       <Link className={joinClassNames('ops-task-card', className)} href={href} title={htmlTitle}>
+        {leading}
         {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
         {hasTitle ? <h3>{title}</h3> : null}
         {hasTitle && detail ? <p>{detail}</p> : null}

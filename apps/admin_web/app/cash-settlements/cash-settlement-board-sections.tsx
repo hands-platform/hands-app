@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
@@ -200,14 +201,14 @@ function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) 
   return (
     <div className="ops-task-grid">
       {cards.map((card) => (
-        <div className={`ops-task-card ${card.className}`} key={card.title}>
-          <div>
-            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
-            <h3>{card.title}</h3>
-            <p className="muted">{card.detail}</p>
-          </div>
-          <small>{card.action}</small>
-        </div>
+        <AdminTaskCard
+          actionLabel={card.action}
+          className={card.className}
+          detail={card.detail}
+          key={card.title}
+          leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+          title={card.title}
+        />
       ))}
     </div>
   );
@@ -241,14 +242,16 @@ function LinkedCardSection({
       </div>
       <div className="ops-task-grid">
         {items.map((item) => (
-          <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-            <div>
-              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-              <h3>{item.title}</h3>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <small>{item.operatorRule}</small>
-          </Link>
+          <AdminActionCard
+            actionLabel={item.operatorRule}
+            className={item.className}
+            detail={item.detail}
+            href={item.href}
+            key={item.title}
+            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            title={item.title}
+            variant="ops-task"
+          />
         ))}
       </div>
     </AdminFilterPanel>

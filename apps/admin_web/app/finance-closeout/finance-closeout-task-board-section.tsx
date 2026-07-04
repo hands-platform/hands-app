@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutTask } from '../../lib/finance-closeout';
 
@@ -24,14 +24,16 @@ export function FinanceCloseoutTaskBoardSection({ tasks }: FinanceCloseoutTaskBo
     >
       {tasks.length ? (
         tasks.map((task) => (
-          <Link className={`ops-task-card ${task.className}`} href={task.href} key={task.title}>
-            <div>
-              <PillClassBadge pillClass={task.pillClass}>{task.status}</PillClassBadge>
-              <h3>{task.title}</h3>
-              <p className="muted">{task.detail}</p>
-            </div>
-            <small>{task.action}</small>
-          </Link>
+          <AdminActionCard
+            actionLabel={task.action}
+            className={task.className}
+            detail={task.detail}
+            href={task.href}
+            key={task.title}
+            leading={<PillClassBadge pillClass={task.pillClass}>{task.status}</PillClassBadge>}
+            title={task.title}
+            variant="ops-task"
+          />
         ))
       ) : (
         <AdminEmptyState framed message="No finance closeout task is visible for this range." />

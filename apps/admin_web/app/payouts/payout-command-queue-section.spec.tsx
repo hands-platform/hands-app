@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PayoutCommandQueueSection } from './payout-command-queue-section';
 
 describe('PayoutCommandQueueSection', () => {
@@ -52,6 +55,13 @@ describe('PayoutCommandQueueSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
+
+  it('keeps payout command task cards on the shared Vuexy task surface', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-command-queue-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card');
   });
 });
 
