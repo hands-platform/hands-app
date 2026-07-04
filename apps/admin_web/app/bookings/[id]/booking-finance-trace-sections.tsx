@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
+import { PillClassBadge } from '../../../components/status-badge';
 import { ActionLink } from './booking-operator-actions';
 
 type SummaryCard = {
@@ -94,9 +95,9 @@ function BookingAttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
     <div className={`ops-check-item ops-check-${flag.severity}`}>
       <div>
-        <span className={`pill ${attentionToneClass(flag.severity)}`}>
+        <PillClassBadge pillClass={attentionToneClass(flag.severity)}>
           {checkSeverityLabel(flag.severity)}
-        </span>
+        </PillClassBadge>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -213,7 +214,7 @@ export function BookingOperationsAuditTraceSection({
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <span className={`pill ${operationsTrace.statusTone}`}>{operationsTrace.status}</span>
+            <PillClassBadge pillClass={operationsTrace.statusTone}>{operationsTrace.status}</PillClassBadge>
             <strong>{operationsTrace.title}</strong>
             <p className="muted">{operationsTrace.detail}</p>
           </div>
@@ -255,7 +256,7 @@ export function BookingAttentionChecksSection({
 }: BookingAttentionChecksSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>}
+      actions={<PillClassBadge pillClass={attentionSummary.tone}>{attentionSummary.label}</PillClassBadge>}
       className="ops-watch admin-mb-16"
       description="Automatic operational checks for bookings that need operator attention."
       title="Attention checks"
@@ -285,9 +286,9 @@ export function BookingFinanceCommandCenterSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
+        <PillClassBadge pillClass={financeFlags.length ? 'pill-warn' : 'pill-success'}>
           {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
-        </span>
+        </PillClassBadge>
       }
       className="ops-watch admin-mb-16"
       description="Booking finance summary and required checks."
@@ -324,7 +325,11 @@ export function BookingPayoutBatchEligibilitySection({
 }: BookingPayoutBatchEligibilitySectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>}
+      actions={
+        <PillClassBadge pillClass={payoutBatchEligibility.tone}>
+          {payoutBatchEligibility.status}
+        </PillClassBadge>
+      }
       className="admin-mb-16"
       description="Booking readiness for Partner settlement batches."
       id="payout-batch-eligibility"
@@ -340,7 +345,7 @@ export function BookingPayoutBatchEligibilitySection({
               <span className="booking-settlement-ledger-label">{row.label}</span>
               <p className="muted">{row.operatorRule}</p>
             </div>
-            <span className={`pill ${row.pillClass}`}>{row.status}</span>
+            <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
             <p>{row.detail}</p>
             <ActionLink href={row.href} label="Open" />
           </div>
@@ -361,9 +366,9 @@ export function BookingServicePricingSnapshotSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
+        <PillClassBadge pillClass={financeFlags.length ? 'pill-warn' : 'pill-success'}>
           {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Booking price, payout, fee, and tax evidence."

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
@@ -10,6 +11,16 @@ import {
 } from './booking-finance-trace-sections';
 
 describe('BookingPayoutBatchEligibilitySection', () => {
+  it('uses shared Vuexy badge atoms instead of raw finance trace pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-finance-trace-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${attentionToneClass(flag.severity)}`}>');
+    expect(source).not.toContain('<span className={`pill ${operationsTrace.statusTone}`}>{operationsTrace.status}</span>');
+    expect(source).not.toContain('actions={<span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>}');
+    expect(source).not.toContain('<span className={`pill ${row.pillClass}`}>{row.status}</span>');
+  });
+
   it('renders payout checks as a compact settlement ledger', () => {
     const markup = renderToStaticMarkup(
       <BookingPayoutBatchEligibilitySection
