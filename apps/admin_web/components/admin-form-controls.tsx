@@ -461,6 +461,10 @@ function normalizeButtonClassNames(className: string | undefined, defaultClassNa
     return tokens;
   }, []);
 
+  if (mappedTokens.includes('text-link')) {
+    return mappedTokens.join(' ');
+  }
+
   if (!mappedTokens.length) {
     return defaultTokens.join(' ');
   }

@@ -325,6 +325,16 @@ describe('Admin form controls', () => {
     expect(button.props.className).toBe('admin-form-control-button button button-secondary setup-action');
   });
 
+  it('preserves inline text links without adding the button shell', () => {
+    const link = AdminFormControlLink({
+      children: 'Open payment ledger',
+      className: 'text-link customer-ledger-link',
+      href: '/payments',
+    });
+
+    expect(link.props.className).toBe('admin-form-control-link text-link customer-ledger-link');
+  });
+
   it('applies default Vuexy button tones when no class is supplied', () => {
     const link = AdminFormControlLink({
       children: 'Reset filters',
