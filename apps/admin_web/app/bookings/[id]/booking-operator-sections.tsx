@@ -1,6 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
@@ -194,13 +194,15 @@ export function BookingOpsCommandCenter({
       title="Operations command center"
     >
       <div className="ops-task-note admin-mt-14">
-        <div className={`ops-task-card ${finalGateReason.className}`} id="booking-gate-reason">
-          <div>
-            <PillClassBadge pillClass={finalGateReason.pillClass}>Booking gate reason</PillClassBadge>
-            <h3>{finalGateReason.title}</h3>
-            <p>{finalGateReason.detail}</p>
-          </div>
-          <small>{finalGateReason.operatorRule}</small>
+        <div id="booking-gate-reason">
+          <AdminTaskCard
+            className={finalGateReason.className}
+            detail={finalGateReason.detail}
+            leading={<PillClassBadge pillClass={finalGateReason.pillClass}>Booking gate reason</PillClassBadge>}
+            title={finalGateReason.title}
+          >
+            <small>{finalGateReason.operatorRule}</small>
+          </AdminTaskCard>
         </div>
       </div>
       <div className="ops-task-note admin-mt-14">
@@ -215,14 +217,17 @@ export function BookingOpsCommandCenter({
         </div>
         <div className="ops-task-grid admin-mt-12">
           {actionEvidenceGate.rows.map((row) => (
-            <a className={`ops-task-card ${row.className}`} href={row.href} key={row.action}>
-              <div>
-                <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
-                <h3>{row.action}</h3>
-                <p>{row.evidence}</p>
-              </div>
+            <AdminActionCard
+              className={row.className}
+              detail={row.evidence}
+              href={row.href}
+              key={row.action}
+              leading={<PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>}
+              title={row.action}
+              variant="ops-task"
+            >
               <small>{row.operatorRule}</small>
-            </a>
+            </AdminActionCard>
           ))}
         </div>
       </div>

@@ -27,6 +27,15 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">Locked</span>');
   });
 
+  it('uses shared Vuexy card atoms for booking operation gate cards', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card ${finalGateReason.className}`');
+    expect(source).not.toContain('<a className={`ops-task-card ${row.className}`');
+  });
+
   it('renders command queue and action availability table with shared table styling', () => {
     const section = BookingOperatorQueueSections({
       bookingId: 'booking-1',
