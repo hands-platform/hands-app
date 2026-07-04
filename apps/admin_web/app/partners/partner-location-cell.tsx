@@ -1,6 +1,6 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   hasProviderCoordinate,
   providerLocationAgeLabel,
@@ -22,7 +22,9 @@ export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCell
   return (
     <div>
       <div className="participant-list admin-mb-8">
-        <PillClassBadge pillClass={providerLocationPillClass(status)}>{providerLocationLabel(status)}</PillClassBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(providerLocationPillClass(status))}>
+          {providerLocationLabel(status)}
+        </StatusBadge>
       </div>
       <p className="muted admin-mb-4">
         {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}
