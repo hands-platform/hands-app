@@ -13,6 +13,13 @@ describe('PartnerChecklistLaneSection', () => {
     expect(source).not.toContain('<strong>No partners need immediate attention</strong>');
   });
 
+  it('uses the shared Vuexy badge atom for blocked count', () => {
+    const source = readFileSync('app/partners/partner-checklist-lane-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${blockedCount === 0 ? \'pill-success\' : \'pill-danger\'}`}>');
+  });
+
   it('renders ordered partner checklist items', () => {
     const section = PartnerChecklistLaneSection({
       blockedCount: 2,

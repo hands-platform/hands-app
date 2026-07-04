@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge } from '../../components/status-badge';
 
 type PartnerChecklistLaneTone = 'blocked' | 'done' | 'pending';
 
@@ -24,9 +25,9 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
   return (
     <AdminSection
       actions={
-        <span className={`pill ${blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
+        <PillClassBadge pillClass={blockedCount === 0 ? 'pill-success' : 'pill-danger'}>
           {blockedCount} blocked
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16 partner-checklist-lane-card"
       description="Suggested operator order for fixing factual blockers from profile, KYC, required documents, public media, wallet settlement, location, and push readiness."
