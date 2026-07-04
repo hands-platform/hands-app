@@ -126,18 +126,17 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       </div>
       {setting.options?.length ? (
         <>
-          <div className="calendar-field">
-            <span>Decision</span>
-            <AdminFormSelect
-              defaultValue={String(setting.value)}
-              label="Decision"
-              name="value"
-              options={setting.options.map((option) => ({
-                label: displayOperationalWording(option.label),
-                value: option.value,
-              }))}
-            />
-          </div>
+          <AdminFormSelect
+            className="operations-policy-form-field"
+            defaultValue={String(setting.value)}
+            label="Decision"
+            labelVisibility="visible"
+            name="value"
+            options={setting.options.map((option) => ({
+              label: displayOperationalWording(option.label),
+              value: option.value,
+            }))}
+          />
           <div className="booking-radar admin-mt-12">
             {setting.options.map((option) => (
               <AdminCard key={option.value} className="insight-card">
@@ -148,33 +147,30 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           </div>
         </>
       ) : (
-        <div className="calendar-field">
-          <span>
-            Value {setting.unit ? `(${setting.unit})` : ''}
-            {isNumber && setting.min !== undefined && setting.max !== undefined
+        <AdminFormInput
+          className="operations-policy-form-field"
+          defaultValue={String(setting.value)}
+          label={`Value ${setting.unit ? `(${setting.unit})` : ''}${
+            isNumber && setting.min !== undefined && setting.max !== undefined
               ? `, ${setting.min}-${setting.max}`
-              : ''}
-          </span>
-          <AdminFormInput
-            defaultValue={String(setting.value)}
-            label="Value"
-            max={isNumber ? (setting.max ?? undefined) : undefined}
-            min={isNumber ? (setting.min ?? undefined) : undefined}
-            name="value"
-            type={isNumber ? 'number' : 'text'}
-          />
-        </div>
-      )}
-      <div className="calendar-field">
-        <span>Change reason</span>
-        <AdminFormTextarea
-          label="Change reason"
-          minLength={12}
-          name="reason"
-          placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
-          required
+              : ''
+          }`}
+          labelVisibility="visible"
+          max={isNumber ? (setting.max ?? undefined) : undefined}
+          min={isNumber ? (setting.min ?? undefined) : undefined}
+          name="value"
+          type={isNumber ? 'number' : 'text'}
         />
-      </div>
+      )}
+      <AdminFormTextarea
+        className="operations-policy-form-field"
+        label="Change reason"
+        labelVisibility="visible"
+        minLength={12}
+        name="reason"
+        placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
+        required
+      />
       <AdminFormControlButton className="button-primary admin-mt-12" type="submit">
         <Save size={16} aria-hidden="true" />
         Save policy

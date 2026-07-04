@@ -10822,6 +10822,12 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
+.operations-policy-page .operations-policy-form-field {
+  margin-top: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
 .operations-policy-page .field select,
 .operations-policy-page .field input,
 .operations-policy-page .field textarea {
