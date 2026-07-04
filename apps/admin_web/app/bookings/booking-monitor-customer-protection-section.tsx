@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
@@ -55,8 +55,8 @@ export function BookingMonitorCustomerProtectionSection({
             variant="ops-task"
           >
             <div className="participant-list">
-              <PillClassBadge pillClass="pill-neutral">{lane.status}</PillClassBadge>
-              <PillClassBadge pillClass="pill-neutral">{lane.bookings.length} booking(s)</PillClassBadge>
+              <StatusBadge tone="neutral">{lane.status}</StatusBadge>
+              <StatusBadge tone="neutral">{lane.bookings.length} booking(s)</StatusBadge>
             </div>
             {lane.bookings.length > 0 ? (
               <div className="stack">

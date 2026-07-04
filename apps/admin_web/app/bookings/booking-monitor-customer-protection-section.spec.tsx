@@ -9,7 +9,7 @@ describe('BookingMonitorCustomerProtectionSection', () => {
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className={`pill ${hasOpenCloseout ?');
     expect(source).not.toContain('<span className="pill">{lane.status}</span>');
