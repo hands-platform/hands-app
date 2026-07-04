@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
@@ -99,7 +100,7 @@ export function BookingMonitorMatchingEscalationSection({
             snapshot.
           </p>
         </div>
-        <span className="pill pill-info">Live policy default</span>
+        <StatusBadge tone="info">Live policy default</StatusBadge>
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -146,9 +147,9 @@ export function BookingMonitorMatchingEscalationSection({
                 <td>
                   <div className="participant-list">
                     {lane.metrics.map((metricItem) => (
-                      <span className="pill" key={`${lane.title}-${metricItem.label}`}>
+                      <PillClassBadge pillClass="pill-neutral" key={`${lane.title}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
-                      </span>
+                      </PillClassBadge>
                     ))}
                   </div>
                 </td>
@@ -202,9 +203,9 @@ export function BookingMonitorMatchingEscalationSection({
                 <td>
                   <div className="participant-list">
                     {step.metrics.map((metricItem) => (
-                      <span className="pill" key={`${step.stage}-${metricItem.label}`}>
+                      <PillClassBadge pillClass="pill-neutral" key={`${step.stage}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
-                      </span>
+                      </PillClassBadge>
                     ))}
                   </div>
                 </td>
@@ -296,9 +297,9 @@ export function BookingMonitorMatchingEscalationSection({
                   <td>
                     <div className="participant-list">
                       {item.tags.map((tag) => (
-                        <span className="pill" key={`${item.booking.id}-${tag}`}>
+                        <PillClassBadge pillClass="pill-neutral" key={`${item.booking.id}-${tag}`}>
                           {tag}
-                        </span>
+                        </PillClassBadge>
                       ))}
                     </div>
                   </td>

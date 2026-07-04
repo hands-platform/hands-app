@@ -1,8 +1,20 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 
 describe('BookingMonitorMatchingEscalationSection', () => {
+  it('uses shared Vuexy badge atoms for policy defaults, metrics, and evidence tags', () => {
+    const source = readFileSync('app/bookings/booking-monitor-matching-escalation-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
+    expect(source).not.toContain('<span className="pill" key={`${lane.title}-${metricItem.label}`}>');
+    expect(source).not.toContain('<span className="pill" key={`${step.stage}-${metricItem.label}`}>');
+    expect(source).not.toContain('<span className="pill" key={`${item.booking.id}-${tag}`}>');
+  });
+
   it('renders policy, escalation lanes, timeline, shortcuts, and sample rows', () => {
     const booking = {
       id: 'booking_123456789',
