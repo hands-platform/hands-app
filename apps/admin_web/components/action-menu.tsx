@@ -64,19 +64,16 @@ export function ActionMenu({
   variant = 'pill-list',
 }: ActionMenuProps) {
   if (variant === 'dropdown') {
-    return (
-      <details className={joinClassNames('admin-action-dropdown', className ?? 'action-menu-dropdown')}>
-        <summary aria-label={label} className={joinClassNames('admin-action-trigger', triggerClassName ?? 'action-menu-trigger')}>
-          <MoreVertical aria-hidden="true" size={18} />
-        </summary>
-        <div className={joinClassNames('admin-action-menu', menuClassName ?? 'action-menu-panel')} role="menu">
-          {title ? <strong className="action-menu-title">{title}</strong> : null}
-          {actions.map((item) => (
-            <ActionMenuDropdownControl item={item} itemClassName={itemClassName} key={`${item.kind}:${item.label}`} />
-          ))}
-        </div>
-      </details>
-    );
+    return ActionMenuDropdownSurface({
+      children: actions.map((item) => (
+        <ActionMenuDropdownControl item={item} itemClassName={itemClassName} key={`${item.kind}:${item.label}`} />
+      )),
+      className: className ?? 'action-menu-dropdown',
+      label,
+      menuClassName: menuClassName ?? 'action-menu-panel',
+      title,
+      triggerClassName: triggerClassName ?? 'action-menu-trigger',
+    });
   }
 
   return (
@@ -88,6 +85,34 @@ export function ActionMenu({
         ))}
       </div>
     </nav>
+  );
+}
+
+export function ActionMenuDropdownSurface({
+  children,
+  className,
+  label,
+  menuClassName,
+  title,
+  triggerClassName,
+}: {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly label: string;
+  readonly menuClassName?: string;
+  readonly title?: ReactNode;
+  readonly triggerClassName?: string;
+}) {
+  return (
+    <details className={joinClassNames('admin-action-dropdown', className ?? 'action-menu-dropdown')}>
+      <summary aria-label={label} className={joinClassNames('admin-action-trigger', triggerClassName ?? 'action-menu-trigger')}>
+        <MoreVertical aria-hidden="true" size={18} />
+      </summary>
+      <div className={joinClassNames('admin-action-menu', menuClassName ?? 'action-menu-panel')} role="menu">
+        {title ? <strong className="action-menu-title">{title}</strong> : null}
+        {children}
+      </div>
+    </details>
   );
 }
 

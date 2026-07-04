@@ -1,7 +1,6 @@
 import Link from 'next/link';
 
-import { MoreVertical } from 'lucide-react';
-
+import { ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormInput } from '../../components/admin-form-controls';
@@ -531,65 +530,64 @@ function ReferralRewardActions({
   });
 
   return (
-    <details className="admin-action-dropdown referral-reward-action-dropdown">
-      <summary aria-label={`Referral reward actions for ${reward.id}`} className="admin-action-trigger action-menu-trigger">
-        <MoreVertical aria-hidden="true" size={18} />
-      </summary>
-      <div className="admin-action-menu action-menu-panel referral-reward-action-panel" role="menu">
-        <strong className="action-menu-title">Reward actions</strong>
-        <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
-          {hiddenInputs.map((input) => (
-            <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+    <ActionMenuDropdownSurface
+      className="referral-reward-action-dropdown"
+      label={`Referral reward actions for ${reward.id}`}
+      menuClassName="action-menu-panel referral-reward-action-panel"
+      title="Reward actions"
+    >
+      <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
+        {hiddenInputs.map((input) => (
+          <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+        ))}
+        <div className="referral-reward-action-reason">
+          <span>Reason</span>
+          <AdminFormInput
+            className="referral-reward-action-reason-input"
+            label="Reward decision reason"
+            name="reason"
+            placeholder="Operator decision reason"
+          />
+        </div>
+        {canMarkCashoutPaid ? (
+          <>
+            <div className="referral-reward-action-reason">
+              <span>Approving admin</span>
+              <AdminFormInput
+                className="referral-reward-action-reason-input"
+                label="Approving admin id"
+                name="approvalAdminId"
+                placeholder="Different admin user id"
+                required
+              />
+            </div>
+            <div className="referral-reward-action-reason">
+              <span>Transfer reference</span>
+              <AdminFormInput
+                className="referral-reward-action-reason-input"
+                label="Transfer reference"
+                name="transferRef"
+                placeholder="Bank transfer reference"
+                required
+              />
+            </div>
+          </>
+        ) : null}
+        <div className="referral-reward-action-button-list">
+          {actions.map((item) => (
+            <button
+              className="admin-action-item admin-action-button"
+              formAction={item.action}
+              key={item.label}
+              role="menuitem"
+              type="submit"
+            >
+              <span>{item.label}</span>
+            </button>
           ))}
-          <div className="referral-reward-action-reason">
-            <span>Reason</span>
-            <AdminFormInput
-              className="referral-reward-action-reason-input"
-              label="Reward decision reason"
-              name="reason"
-              placeholder="Operator decision reason"
-            />
-          </div>
-          {canMarkCashoutPaid ? (
-            <>
-              <div className="referral-reward-action-reason">
-                <span>Approving admin</span>
-                <AdminFormInput
-                  className="referral-reward-action-reason-input"
-                  label="Approving admin id"
-                  name="approvalAdminId"
-                  placeholder="Different admin user id"
-                  required
-                />
-              </div>
-              <div className="referral-reward-action-reason">
-                <span>Transfer reference</span>
-                <AdminFormInput
-                  className="referral-reward-action-reason-input"
-                  label="Transfer reference"
-                  name="transferRef"
-                  placeholder="Bank transfer reference"
-                  required
-                />
-              </div>
-            </>
-          ) : null}
-          <div className="referral-reward-action-button-list">
-            {actions.map((item) => (
-              <button
-                className="admin-action-item admin-action-button"
-                formAction={item.action}
-                key={item.label}
-                role="menuitem"
-                type="submit"
-              >
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </form>
-      </div>
-    </details>
+        </div>
+      </form>
+    </ActionMenuDropdownSurface>
   );
 }
 

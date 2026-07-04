@@ -1,4 +1,4 @@
-import { ActionMenu, actionMenuItemClassName, readActionMenuTitle } from './action-menu';
+import { ActionMenu, ActionMenuDropdownSurface, actionMenuItemClassName, readActionMenuTitle } from './action-menu';
 
 describe('ActionMenu', () => {
   it('maps disabled and danger actions to stable pill classes', () => {
@@ -74,7 +74,45 @@ describe('ActionMenu', () => {
       ]),
     );
   });
+
+  it('exposes the shared Vuexy dropdown surface for custom action forms', () => {
+    const dropdown = ActionMenuDropdownSurface({
+      children: <form className="custom-action-form" role="none" />,
+      className: 'referral-reward-action-dropdown',
+      label: 'Referral reward actions for reward-1',
+      menuClassName: 'referral-reward-action-panel',
+      title: 'Reward actions',
+    });
+
+    expect(dropdown.type).toBe('details');
+    expect(dropdown.props.className).toBe('admin-action-dropdown referral-reward-action-dropdown');
+    expect(classNamesIn(dropdown)).toEqual(
+      expect.arrayContaining([
+        'admin-action-trigger action-menu-trigger',
+        'admin-action-menu referral-reward-action-panel',
+        'custom-action-form',
+      ]),
+    );
+    expect(textContent(dropdown)).toContain('Reward actions');
+  });
 });
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
 
 function classNamesIn(value: unknown): string[] {
   value = resolveElement(value);

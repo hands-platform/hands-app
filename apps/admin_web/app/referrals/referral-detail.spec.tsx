@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminCustomerReferralParent } from '../../lib/admin-api';
@@ -259,6 +260,13 @@ describe('Referral detail presentation', () => {
     expect(markup).not.toContain('placeholder="Operator reason for reversal"');
     expect(markup).not.toContain('Hold referral reward for admin review from detail page.');
     expect(markup).not.toContain('Reverse referral reward from detail review.');
+  });
+
+  it('uses the shared Vuexy action dropdown surface for reward decision forms', () => {
+    const source = readFileSync('app/referrals/referral-detail.tsx', 'utf8');
+
+    expect(source).toContain('ActionMenuDropdownSurface');
+    expect(source).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
   });
 
   it('renders a wallet credit action only for available uncredited reward candidates', () => {

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 
-import { MoreVertical } from 'lucide-react';
-
+import { ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -313,67 +312,66 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
   const bankAccountId = referralCashoutBankCorrectionAccountId(row);
 
   return (
-    <details className="admin-action-dropdown referral-reward-action-dropdown">
-      <summary aria-label={`Referral cashout actions for ${row.id}`} className="admin-action-trigger action-menu-trigger">
-        <MoreVertical aria-hidden="true" size={18} />
-      </summary>
-      <div className="admin-action-menu action-menu-panel referral-reward-action-panel" role="menu">
-        <strong className="action-menu-title">Cashout actions</strong>
-        <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
-          <input name="audience" type="hidden" value={row.audience === 'PARTNER' ? 'partner' : 'customer'} />
-          <input name="parentId" type="hidden" value={row.parent.id} />
-          <input name="rewardId" type="hidden" value={row.id} />
-          {bankAccountId ? <input name="bankAccountId" type="hidden" value={bankAccountId} /> : null}
-          <div className="referral-reward-action-reason">
-            <span>Reason</span>
-            <AdminFormInput
-              className="referral-reward-action-reason-input"
-              label="Cashout decision reason"
-              name="reason"
-              placeholder="Operator decision reason"
-            />
-          </div>
-          {row.status === 'CASHOUT_APPROVED' ? (
-            <>
-              <div className="referral-reward-action-reason">
-                <span>Approving admin</span>
-                <AdminFormInput
-                  className="referral-reward-action-reason-input"
-                  label="Approving admin id"
-                  name="approvalAdminId"
-                  placeholder="Different admin user id"
-                  required
-                />
-              </div>
-              <div className="referral-reward-action-reason">
-                <span>Transfer reference</span>
-                <AdminFormInput
-                  className="referral-reward-action-reason-input"
-                  label="Transfer reference"
-                  name="transferRef"
-                  placeholder="Bank transfer reference"
-                  required
-                />
-              </div>
-            </>
-          ) : null}
-          <div className="referral-reward-action-button-list">
-            {actions.map((item) => (
-              <button
-                className="admin-action-item admin-action-button"
-                formAction={item.action}
-                formNoValidate={item.formNoValidate}
-                key={item.label}
-                role="menuitem"
-                type="submit"
-              >
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </form>
-      </div>
-    </details>
+    <ActionMenuDropdownSurface
+      className="referral-reward-action-dropdown"
+      label={`Referral cashout actions for ${row.id}`}
+      menuClassName="action-menu-panel referral-reward-action-panel"
+      title="Cashout actions"
+    >
+      <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
+        <input name="audience" type="hidden" value={row.audience === 'PARTNER' ? 'partner' : 'customer'} />
+        <input name="parentId" type="hidden" value={row.parent.id} />
+        <input name="rewardId" type="hidden" value={row.id} />
+        {bankAccountId ? <input name="bankAccountId" type="hidden" value={bankAccountId} /> : null}
+        <div className="referral-reward-action-reason">
+          <span>Reason</span>
+          <AdminFormInput
+            className="referral-reward-action-reason-input"
+            label="Cashout decision reason"
+            name="reason"
+            placeholder="Operator decision reason"
+          />
+        </div>
+        {row.status === 'CASHOUT_APPROVED' ? (
+          <>
+            <div className="referral-reward-action-reason">
+              <span>Approving admin</span>
+              <AdminFormInput
+                className="referral-reward-action-reason-input"
+                label="Approving admin id"
+                name="approvalAdminId"
+                placeholder="Different admin user id"
+                required
+              />
+            </div>
+            <div className="referral-reward-action-reason">
+              <span>Transfer reference</span>
+              <AdminFormInput
+                className="referral-reward-action-reason-input"
+                label="Transfer reference"
+                name="transferRef"
+                placeholder="Bank transfer reference"
+                required
+              />
+            </div>
+          </>
+        ) : null}
+        <div className="referral-reward-action-button-list">
+          {actions.map((item) => (
+            <button
+              className="admin-action-item admin-action-button"
+              formAction={item.action}
+              formNoValidate={item.formNoValidate}
+              key={item.label}
+              role="menuitem"
+              type="submit"
+            >
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </form>
+    </ActionMenuDropdownSurface>
   );
 }
 

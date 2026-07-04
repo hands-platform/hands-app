@@ -91,6 +91,11 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('actions={<span className="pill">{rows.length} shown</span>}');
   });
 
+  it('uses the shared Vuexy action dropdown surface for cashout decision forms', () => {
+    expect(cashoutQueueSource).toContain('ActionMenuDropdownSurface');
+    expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 
