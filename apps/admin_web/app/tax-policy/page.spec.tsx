@@ -44,12 +44,14 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-field');
-    expect(markup).toContain('admin-form-select admin-form-control-labeled calendar-field');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-field full-span');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled tax-policy-form-field');
+    expect(markup).toContain('admin-form-select admin-form-control-labeled tax-policy-form-field');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled tax-policy-form-field full-span');
+    expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('class="form-grid"><label>');
     expect(markup).not.toContain('<div class="calendar-field"><span>');
     expect(markup).not.toContain('<div class="calendar-field full-span"><span>');
+    expect(pageSource).not.toContain('className="calendar-field');
   });
 
   it('uses shared admin form atoms for policy and rule edit forms', async () => {

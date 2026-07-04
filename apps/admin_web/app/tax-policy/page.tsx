@@ -110,7 +110,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         <form className="form-grid" method="get">
           <AdminFormInput
-            className="calendar-field"
+            className="tax-policy-form-field"
             defaultValue={preview.serviceType}
             label="Service type"
             labelVisibility="visible"
@@ -118,7 +118,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             placeholder="leg_massage"
           />
           <AdminFormInput
-            className="calendar-field"
+            className="tax-policy-form-field"
             defaultValue={preview.grossAmount}
             label="Gross amount"
             labelVisibility="visible"
@@ -176,7 +176,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         <form action={createTaxPolicyVersion} className="form-grid">
           <AdminFormInput
-            className="calendar-field"
+            className="tax-policy-form-field"
             label="Name"
             labelVisibility="visible"
             name="name"
@@ -184,7 +184,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             required
           />
           <AdminFormSelect
-            className="calendar-field"
+            className="tax-policy-form-field"
             defaultValue="DRAFT"
             label="Status"
             labelVisibility="visible"
@@ -192,14 +192,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             options={statusSelectOptions}
           />
           <AdminFormDateTime
-            className="calendar-field"
+            className="tax-policy-form-field"
             label="Effective from"
             labelVisibility="visible"
             name="effectiveFrom"
             required
           />
           <AdminFormInput
-            className="calendar-field"
+            className="tax-policy-form-field"
             label="Default rate bps"
             labelVisibility="visible"
             max="10000"
@@ -209,7 +209,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             type="number"
           />
           <AdminFormInput
-            className="calendar-field full-span"
+            className="tax-policy-form-field full-span"
             label="Notes"
             labelVisibility="visible"
             name="notes"
@@ -243,7 +243,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <form action={updateTaxPolicyVersion} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
               <AdminFormSelect
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue={policy.status}
                 label="Status"
                 labelVisibility="visible"
@@ -251,21 +251,21 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 options={statusSelectOptions}
               />
               <AdminFormDateTime
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue={toDateTimeLocal(policy.effectiveFrom)}
                 label="Effective from"
                 labelVisibility="visible"
                 name="effectiveFrom"
               />
               <AdminFormDateTime
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue={toDateTimeLocal(policy.effectiveTo)}
                 label="Effective to"
                 labelVisibility="visible"
                 name="effectiveTo"
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue={policy.notes ?? ''}
                 label="Notes"
                 labelVisibility="visible"
@@ -300,7 +300,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     <form action={updateTaxRule} className="form-grid compact-form">
                       <input type="hidden" name="ruleId" value={rule.id} />
                       <AdminFormSelect
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.scope}
                         label="Scope"
                         labelVisibility="visible"
@@ -308,14 +308,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                         options={scopeSelectOptions}
                       />
                       <AdminFormInput
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.serviceType ?? ''}
                         label="Service type"
                         labelVisibility="visible"
                         name="serviceType"
                       />
                       <AdminFormInput
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.minGrossAmount ?? ''}
                         label="Min amount"
                         labelVisibility="visible"
@@ -324,7 +324,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                         type="number"
                       />
                       <AdminFormInput
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.maxGrossAmount ?? ''}
                         label="Max amount"
                         labelVisibility="visible"
@@ -333,7 +333,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                         type="number"
                       />
                       <AdminFormInput
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.rateBps}
                         label="Rate bps"
                         labelVisibility="visible"
@@ -343,7 +343,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                         type="number"
                       />
                       <AdminFormInput
-                        className="calendar-field"
+                        className="tax-policy-form-field"
                         defaultValue={rule.fixedAmount}
                         label="Fixed amount"
                         labelVisibility="visible"
@@ -372,7 +372,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <form action={createTaxRule} className="form-grid compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
               <AdminFormSelect
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue="DEFAULT"
                 label="Scope"
                 labelVisibility="visible"
@@ -380,14 +380,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 options={scopeSelectOptions}
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 label="Service type"
                 labelVisibility="visible"
                 name="serviceType"
                 placeholder="optional"
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 label="Min amount"
                 labelVisibility="visible"
                 min="0"
@@ -396,7 +396,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 type="number"
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 label="Max amount"
                 labelVisibility="visible"
                 min="0"
@@ -405,7 +405,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 type="number"
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue="0"
                 label="Rate bps"
                 labelVisibility="visible"
@@ -415,7 +415,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 type="number"
               />
               <AdminFormInput
-                className="calendar-field"
+                className="tax-policy-form-field"
                 defaultValue="0"
                 label="Fixed amount"
                 labelVisibility="visible"
