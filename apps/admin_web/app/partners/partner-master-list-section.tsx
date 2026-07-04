@@ -6,7 +6,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import {
@@ -179,7 +179,7 @@ function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow 
 function renderStateCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <PillClassBadge pillClass={row.online ? 'pill-success' : 'pill-neutral'}>{row.status}</PillClassBadge>
+      <StatusBadge tone={row.online ? 'success' : 'neutral'}>{row.status}</StatusBadge>
       <small>{row.latestSessionPlatform}</small>
     </div>
   );
@@ -289,11 +289,9 @@ function renderApprovalNeedsCell(row: PartnerMasterListSectionRow) {
   }
 
   return (
-    <PillClassBadge
-      pillClass={row.approvalIssues.some((issue) => issue.severity === 'high') ? 'pill-danger' : 'pill-warn'}
-    >
+    <StatusBadge tone={row.approvalIssues.some((issue) => issue.severity === 'high') ? 'danger' : 'warning'}>
       {row.approvalIssues.length} approval need(s)
-    </PillClassBadge>
+    </StatusBadge>
   );
 }
 
@@ -305,9 +303,9 @@ function renderAccountCell(
 
   return (
     <div className="vuexy-partner-stack">
-      <PillClassBadge pillClass={row.accountBlocked ? 'pill-danger' : 'pill-success'}>
+      <StatusBadge tone={row.accountBlocked ? 'danger' : 'success'}>
         {row.accountBlocked ? 'Account blocked' : 'Account clear'}
-      </PillClassBadge>
+      </StatusBadge>
       <small>{row.accountNote}</small>
       {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}
       <small>{row.auditLogCount} memo/event(s)</small>

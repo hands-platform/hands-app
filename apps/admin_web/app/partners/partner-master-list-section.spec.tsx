@@ -13,8 +13,8 @@ describe('PartnerMasterListSection', () => {
   it('uses shared Vuexy badge atoms instead of raw partner master list pill spans', () => {
     const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.online ? \'pill-success\' : \'pill-neutral\'}`}>');
     expect(source).not.toContain('<span className="pill pill-warn">Withdrawal action</span>');
     expect(source).not.toContain('<span className="pill pill-info">Withdrawal pending</span>');
