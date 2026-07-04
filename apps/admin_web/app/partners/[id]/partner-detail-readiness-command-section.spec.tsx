@@ -12,7 +12,8 @@ describe('partner detail readiness command sections', () => {
       'utf8',
     );
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${partnerOpsPillClass(badge.tone)}`}');
     expect(source).not.toContain(
       '<span className={`pill ${partnerOpsPillClass(snapshot.tone)}`}>{snapshot.gate.label}</span>',

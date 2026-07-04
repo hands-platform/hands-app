@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
@@ -82,9 +82,13 @@ export function PartnerDetailReadinessSnapshotSection({
     >
       <div className="participant-list admin-mt-12">
         {snapshot.badges.map((badge) => (
-          <PillClassBadge key={badge.label} pillClass={partnerOpsPillClass(badge.tone)} title={badge.detail}>
+          <StatusBadge
+            key={badge.label}
+            title={badge.detail}
+            tone={statusBadgeToneFromPillClass(partnerOpsPillClass(badge.tone))}
+          >
             {badge.label}
-          </PillClassBadge>
+          </StatusBadge>
         ))}
       </div>
       <div className="admin-mt-16">
@@ -97,9 +101,9 @@ export function PartnerDetailReadinessSnapshotSection({
           >
             <tr>
               <td>
-                <PillClassBadge pillClass={partnerOpsPillClass(snapshot.tone)}>
+                <StatusBadge tone={statusBadgeToneFromPillClass(partnerOpsPillClass(snapshot.tone))}>
                   {snapshot.gate.label}
-                </PillClassBadge>
+                </StatusBadge>
               </td>
               <td>
                 <strong>{snapshot.gate.title}</strong>
@@ -175,9 +179,9 @@ export function PartnerAcceptanceRepairCommandSection({
                   <p className="muted">{step.operatorAction}</p>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={partnerOpsPillClass(step.tone)}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(partnerOpsPillClass(step.tone))}>
                     {partnerOpsStepLabel(step.tone)}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>
                   <Link className="text-link" href={step.href}>
