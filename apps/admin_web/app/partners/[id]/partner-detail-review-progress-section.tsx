@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
 import {
   PartnerDetailVuexyTableFooter,
@@ -154,7 +155,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
                 </p>
               </td>
               <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
+                <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
               </td>
               <td>
                 <p className="muted">{row.detail}</p>
@@ -217,19 +218,16 @@ export function PartnerDetailReviewControlPanelSection({
       </div>
       <div className="participant-list admin-mt-12" aria-label="Current approval issues">
         <span className="muted">Current approval issues</span>
-        <span className={`pill ${panel.reviewIssues.length ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={panel.reviewIssues.length ? 'warning' : 'success'}>
           {panel.reviewIssues.length ? `${panel.reviewIssues.length} approval need(s)` : 'Approval clear'}
-        </span>
+        </StatusBadge>
         {panel.reviewIssues.slice(0, 5).map((issue) => (
-          <span
-            className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
-            key={issue.label}
-          >
+          <StatusBadge key={issue.label} tone={issue.severity === 'high' ? 'danger' : 'warning'}>
             {issue.label}
-          </span>
+          </StatusBadge>
         ))}
         {panel.reviewIssues.length > 5 ? (
-          <span className="pill pill-neutral">+{panel.reviewIssues.length - 5} more</span>
+          <StatusBadge tone="neutral">+{panel.reviewIssues.length - 5} more</StatusBadge>
         ) : null}
       </div>
       <div className="partner-review-correction-loop" aria-label="Partner correction loop">
@@ -239,7 +237,7 @@ export function PartnerDetailReviewControlPanelSection({
               <span>{label}</span>
               <strong>{item?.title ?? fallback}</strong>
             </div>
-            {item ? <span className={`pill ${item.tone}`}>{item.status}</span> : null}
+            {item ? <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge> : null}
             <p className="muted">{item?.detail ?? fallback}</p>
             {item?.href ? (
               <Link className="text-link" href={item.href}>
@@ -265,7 +263,7 @@ export function PartnerDetailReviewControlPanelSection({
                 </p>
               </td>
               <td>
-                <span className={`pill ${item.tone}`}>{item.status}</span>
+                <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -310,7 +308,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
                 <strong>{item.level}</strong>
               </td>
               <td>
-                <span className={`pill ${levelPathPill(item)}`}>{item.status}</span>
+                <PillClassBadge pillClass={levelPathPill(item)}>{item.status}</PillClassBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -357,7 +355,7 @@ export function PartnerDetailResubmissionGuidanceSection({
                 <strong>{item.target}</strong>
               </td>
               <td>
-                <span className={`pill ${resubmissionPill(item.status)}`}>{item.status}</span>
+                <PillClassBadge pillClass={resubmissionPill(item.status)}>{item.status}</PillClassBadge>
               </td>
               <td>
                 <p className="muted">{item.reason}</p>
@@ -404,7 +402,9 @@ export function PartnerDetailReviewHistorySection({
                 <strong>{row.title}</strong>
               </td>
               <td>
-                <span className={`pill ${reviewHistoryPill(row.statusLabel)}`}>{row.statusLabel}</span>
+                <PillClassBadge pillClass={reviewHistoryPill(row.statusLabel)}>
+                  {row.statusLabel}
+                </PillClassBadge>
               </td>
               <td>
                 <span className="muted">{row.atLabel}</span>

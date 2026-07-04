@@ -14,7 +14,28 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No records found</strong>');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
+    expect(source).not.toContain(
+      "<span className={`pill ${panel.reviewIssues.length ? 'pill-warn' : 'pill-success'}`}>",
+    );
+    expect(source).not.toContain(
+      "className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}",
+    );
+    expect(source).not.toContain('<span className="pill pill-neutral">+{panel.reviewIssues.length - 5} more</span>');
+    expect(source).not.toContain(
+      '{item ? <span className={`pill ${item.tone}`}>{item.status}</span> : null}',
+    );
+    expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${levelPathPill(item)}`}>{item.status}</span>');
+    expect(source).not.toContain(
+      '<span className={`pill ${resubmissionPill(item.status)}`}>{item.status}</span>',
+    );
+    expect(source).not.toContain(
+      '<span className={`pill ${reviewHistoryPill(row.statusLabel)}`}>{row.statusLabel}</span>',
+    );
   });
 
   it('renders submitted dossier, hold, resubmission, and review history summary', () => {
