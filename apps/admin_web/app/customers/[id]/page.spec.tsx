@@ -70,6 +70,11 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain('AdminFormControlLink');
     expect(customerDetailSource).not.toContain('<Link className="button button-secondary"');
   });
+
+  it('uses the shared Vuexy card surface for customer chat history rooms', () => {
+    expect(customerDetailSource).toContain('AdminCard');
+    expect(customerDetailSource).not.toContain('<div className="card customer-chat-history-room-card">');
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

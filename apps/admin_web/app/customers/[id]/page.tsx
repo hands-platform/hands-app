@@ -23,7 +23,7 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   AdminAppSession,
@@ -892,7 +892,7 @@ function CustomerChatHistoryRoomCard({
   const partnerName = bookingPartnerDisplayName(booking);
 
   return (
-    <div className="card customer-chat-history-room-card">
+    <AdminCard className="customer-chat-history-room-card">
       <div className="ops-section-header">
         <div>
           <strong>
@@ -921,7 +921,7 @@ function CustomerChatHistoryRoomCard({
         subtitle={`${partnerName} / ${booking.status}`}
         title={`${customerName} chat evidence`}
       />
-    </div>
+    </AdminCard>
   );
 }
 
