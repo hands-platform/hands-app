@@ -4,6 +4,11 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./partner-detail-finance-follow-up-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailFinanceFollowUpSection', () => {
+  it('uses the shared Vuexy badge atom for finance follow-up item state', () => {
+    expect(sectionSource).toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>');
+  });
+
   it('renders finance follow-up rows with Vuexy table styling', () => {
     const section = PartnerDetailFinanceFollowUpSection({
       rows: [

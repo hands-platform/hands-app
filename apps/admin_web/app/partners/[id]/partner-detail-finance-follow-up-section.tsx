@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 import type {
   PartnerFinanceFollowUpRow,
   PartnerFinanceFollowUpTone,
@@ -41,7 +42,7 @@ export function PartnerDetailFinanceFollowUpSection({
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>
+                <PillClassBadge pillClass={pillClassForTone(row.tone)}>{row.title}</PillClassBadge>
                 <p className="muted">{row.detail}</p>
               </td>
               <td>
