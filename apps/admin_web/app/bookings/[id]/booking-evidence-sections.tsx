@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
@@ -118,7 +118,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.title}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.nextStep}</p>
               <Link className="text-link" href={row.href}>
@@ -130,7 +130,11 @@ export function BookingEvidenceSections({
       </AdminSection>
 
       <AdminSection
-        actions={<PillClassBadge pillClass={evidencePacket.tone}>{evidencePacket.status}</PillClassBadge>}
+        actions={
+          <StatusBadge tone={statusBadgeToneFromPillClass(evidencePacket.tone)}>
+            {evidencePacket.status}
+          </StatusBadge>
+        }
         className="admin-mb-16"
         description="Cancellation, no-show, refund, and settlement decisions should use retained booking evidence. This packet groups chat, location, payment, alerts, notes, and audit records as factual decision context for the Customer and Partner."
         id="booking-evidence-packet"
@@ -168,9 +172,9 @@ export function BookingEvidenceSections({
 
       <AdminSection
         actions={
-          <PillClassBadge pillClass={chatEvidenceDecisionBoard.tone}>
+          <StatusBadge tone={statusBadgeToneFromPillClass(chatEvidenceDecisionBoard.tone)}>
             {chatEvidenceDecisionBoard.status}
-          </PillClassBadge>
+          </StatusBadge>
         }
         className="admin-mb-16"
         description="Retained chat evidence is the first place operators should look before cancellation, no-show, refund, release, or completed-work closeout. This board keeps the view limited to factual records and operator context."
@@ -196,7 +200,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <PillClassBadge pillClass={row.tone}>{row.state}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.state}</StatusBadge>
               <p>{row.record}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>
@@ -228,7 +232,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>
@@ -276,7 +280,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.recordLabel}</p>
               </div>
-              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>
