@@ -17,6 +17,7 @@ import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
+import { AdminAttentionBadge } from './status-badge';
 
 type AdminWorkspaceHeaderProps = {
   readonly sections: readonly AdminNavSection[];
@@ -159,7 +160,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
             type="button"
           >
             <Bell aria-hidden="true" size={18} />
-            {totalAttentionCount > 0 ? <span className="topbar-attention-badge">{totalAttentionCount}</span> : null}
+            {totalAttentionCount > 0 ? <AdminAttentionBadge>{totalAttentionCount}</AdminAttentionBadge> : null}
           </button>
           {notificationsOpen ? (
             <div className="topbar-dropdown topbar-notification-menu" role="dialog" aria-label="Operation alerts">

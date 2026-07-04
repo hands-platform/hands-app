@@ -1,4 +1,5 @@
 import {
+  AdminAttentionBadge,
   PillClassBadge,
   PillClassBadgeLink,
   StatusBadge,
@@ -110,6 +111,20 @@ describe('StatusBadge', () => {
       className: 'pill pill-warn',
       href: '/notifications?review=failed',
       children: 'Failed sends',
+    });
+  });
+
+  it('renders admin attention counts with the Vuexy topbar badge class', () => {
+    const badge = AdminAttentionBadge({
+      children: 7,
+      title: 'Operation alerts',
+    });
+
+    expect(badge.type).toBe('span');
+    expect(badge.props).toMatchObject({
+      className: 'topbar-attention-badge',
+      title: 'Operation alerts',
+      children: 7,
     });
   });
 });

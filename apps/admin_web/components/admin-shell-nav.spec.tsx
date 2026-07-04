@@ -108,4 +108,9 @@ describe('admin shell navigation', () => {
     expect(topbarSearchInputSource).not.toContain('<input');
     expect(topbarSearchInputSource).not.toContain('topbar-search-input');
   });
+
+  it('keeps topbar notification counts inside the shared Vuexy badge atom', () => {
+    expect(workspaceHeaderSource).toContain('AdminAttentionBadge');
+    expect(workspaceHeaderSource).not.toContain('<span className="topbar-attention-badge">{totalAttentionCount}</span>');
+  });
 });

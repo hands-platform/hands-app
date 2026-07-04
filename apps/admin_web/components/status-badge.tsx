@@ -25,6 +25,12 @@ type PillClassBadgeProps = {
   readonly title?: string;
 };
 
+type AdminAttentionBadgeProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly title?: string;
+};
+
 type StatusBadgeLinkProps = StatusBadgeProps & {
   readonly ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
   readonly ariaLabel?: string;
@@ -62,6 +68,14 @@ export function StatusBadge({ children, className, tone, title }: StatusBadgePro
 export function PillClassBadge({ children, className, pillClass, title }: PillClassBadgeProps) {
   return (
     <span className={mergeBadgeClassName(pillClassBadgeClassName(pillClass), className)} title={title}>
+      {children}
+    </span>
+  );
+}
+
+export function AdminAttentionBadge({ children, className, title }: AdminAttentionBadgeProps) {
+  return (
+    <span className={mergeBadgeClassName('topbar-attention-badge', className)} title={title}>
       {children}
     </span>
   );
