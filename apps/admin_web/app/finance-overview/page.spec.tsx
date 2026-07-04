@@ -192,6 +192,7 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${kpi.tone}`');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-command-card is-');
     expect(markup).toContain('card admin-card finance-overview-principle-card');
+    expect(markup).toContain('money-text money-text-positive');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
@@ -215,6 +216,19 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).not.toContain('<label class="admin-form-control"><span>Monthly tax period</span>');
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain(
+      '<strong>{formatMoney(settlementSummary.customerPaymentAmount, settlementSummary.currency)}</strong>',
+    );
+    expect(pageSource).not.toContain(
+      '<strong>{formatMoney(settlementSummary.platformFeeNetRevenue, settlementSummary.currency)}</strong>',
+    );
+    expect(pageSource).not.toContain(
+      '<strong>{formatMoney(settlementSummary.partnerPayoutAmount, settlementSummary.currency)}</strong>',
+    );
+    expect(pageSource).not.toContain(
+      '<strong>{formatMoney(netRevenueEstimate, settlementSummary.currency)}</strong>',
+    );
   });
 
   it('uses shared Vuexy badge atoms for page header status chips', () => {

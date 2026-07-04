@@ -14,8 +14,8 @@ import type {
   AdminFinanceOverviewSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
+import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -135,7 +135,12 @@ export default async function FinanceOverviewPage({
           </span>
           <div>
             <span>Gross customer payment</span>
-            <strong>{formatMoney(settlementSummary.customerPaymentAmount, settlementSummary.currency)}</strong>
+            <strong>
+              <MoneyText
+                amount={settlementSummary.customerPaymentAmount}
+                currency={settlementSummary.currency}
+              />
+            </strong>
             <small>Customer paid amount is not company revenue.</small>
           </div>
         </AdminCard>
@@ -145,7 +150,12 @@ export default async function FinanceOverviewPage({
           </span>
           <div>
             <span>Actual company revenue</span>
-            <strong>{formatMoney(settlementSummary.platformFeeNetRevenue, settlementSummary.currency)}</strong>
+            <strong>
+              <MoneyText
+                amount={settlementSummary.platformFeeNetRevenue}
+                currency={settlementSummary.currency}
+              />
+            </strong>
             <small>Platform fee net revenue is the revenue base.</small>
           </div>
         </AdminCard>
@@ -155,7 +165,12 @@ export default async function FinanceOverviewPage({
           </span>
           <div>
             <span>Partner payable</span>
-            <strong>{formatMoney(settlementSummary.partnerPayoutAmount, settlementSummary.currency)}</strong>
+            <strong>
+              <MoneyText
+                amount={settlementSummary.partnerPayoutAmount}
+                currency={settlementSummary.currency}
+              />
+            </strong>
             <small>Partner payout stays payable until payout or withdrawal closeout.</small>
           </div>
         </AdminCard>
@@ -165,7 +180,9 @@ export default async function FinanceOverviewPage({
           </span>
           <div>
             <span>Net estimate</span>
-            <strong>{formatMoney(netRevenueEstimate, settlementSummary.currency)}</strong>
+            <strong>
+              <MoneyText amount={netRevenueEstimate} currency={settlementSummary.currency} />
+            </strong>
             <small>Net revenue estimate excludes gross pass-through payment volume.</small>
           </div>
         </AdminCard>
