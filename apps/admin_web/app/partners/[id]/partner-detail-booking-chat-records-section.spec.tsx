@@ -9,6 +9,15 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(source).not.toContain('<strong>No booking records matched this date filter</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw chat record pill spans', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${row.hasChatRoom ? \'pill-success\' : \'pill-danger\'}`}>');
+    expect(source).not.toContain('<span className="pill pill-info">{row.chatMessages.length} message(s)</span>');
+  });
+
   it('renders booking chat records as a Vuexy table', () => {
     const section = PartnerDetailBookingChatRecordsSection({
       openBookingsHref: '/bookings',

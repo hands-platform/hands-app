@@ -7,6 +7,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -64,9 +65,9 @@ export function PartnerDetailBookingChatRecordsSection({
           {rows.map((row) => (
             <tr key={row.key}>
               <td>
-                <span className={`pill ${row.hasChatRoom ? 'pill-success' : 'pill-danger'}`}>
+                <PillClassBadge pillClass={row.hasChatRoom ? 'pill-success' : 'pill-danger'}>
                   {row.relation}
-                </span>
+                </PillClassBadge>
               </td>
               <td>
                 <strong>{row.heading}</strong>
@@ -87,7 +88,7 @@ export function PartnerDetailBookingChatRecordsSection({
                           Mobile chat hides after service completion. Admin keeps this booking transcript.
                         </p>
                       </div>
-                      <span className="pill pill-info">{row.chatMessages.length} message(s)</span>
+                      <StatusBadge tone="info">{row.chatMessages.length} message(s)</StatusBadge>
                     </summary>
                     <AdminChatWindow
                       avatarLabel={row.customerLine}
