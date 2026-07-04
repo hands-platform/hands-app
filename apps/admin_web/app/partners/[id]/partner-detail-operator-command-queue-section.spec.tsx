@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailOperatorCommandQueueSection } from './partner-detail-operator-command-queue-section';
 
 describe('PartnerDetailOperatorCommandQueueSection', () => {
+  it('uses shared Vuexy badge atoms for command shortcuts and owners', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operator-command-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('className={`pill ${pillClassForTone(command.tone)}`}');
+    expect(source).not.toContain('<span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>');
+  });
+
   it('renders operator commands as a Vuexy table', () => {
     const section = PartnerDetailOperatorCommandQueueSection({
       pillClassForTone: (tone) => `pill-${tone}`,
@@ -89,7 +100,7 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
