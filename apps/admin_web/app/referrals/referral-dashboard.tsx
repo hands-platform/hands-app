@@ -7,6 +7,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGridFields,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
@@ -465,7 +466,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
       className="vuexy-customer-form referral-policy-form admin-mt-16"
     >
       <input name="audience" type="hidden" value={audience} />
-      <div className="referral-policy-form-grid">
+      <AdminFormGridFields className="referral-policy-form-grid">
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Policy status</span>
           <AdminFormSelect
@@ -588,7 +589,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
             placeholder="Why this referral policy is being changed"
           />
         </div>
-      </div>
+      </AdminFormGridFields>
       <div className="vuexy-customer-filter-actions referral-policy-actions">
         <AdminFormControlButton className="referral-policy-save-button">
           Save referral policy
