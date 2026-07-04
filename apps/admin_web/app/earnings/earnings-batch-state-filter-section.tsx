@@ -1,5 +1,5 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadgeLink } from '../../components/status-badge';
+import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsBatchStateCard = {
@@ -33,14 +33,14 @@ export function EarningsBatchStateFilterSection({
     >
       <div className="filter-row admin-mt-12">
         {cards.map((card) => (
-          <PillClassBadgeLink
+          <StatusBadgeLink
             ariaCurrent={card.state === activeState ? 'page' : undefined}
             href={card.href}
             key={card.state}
-            pillClass={activeBatchStateFilterClassName(card.state, activeState)}
+            tone={statusBadgeToneFromPillClass(activeBatchStateFilterClassName(card.state, activeState))}
           >
             {card.label} / {card.count}
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         ))}
       </div>
       <div className="service-trace-summary admin-mt-16">

@@ -1,6 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
   readonly amountLabel: string;
@@ -44,7 +44,7 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             <td>{row.createdAtLabel}</td>
             <td>{row.method}</td>
             <td>
-              <PillClassBadge pillClass={row.pillClass}>{row.outcome}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>
               <div className="muted">{row.errorMessage ?? 'No processing error recorded.'}</div>
             </td>
             <td>
@@ -72,14 +72,14 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             <td>
               <div className="setup-stage-list">
                 <div className="setup-stage-item">
-                  <PillClassBadge pillClass="pill pill-info">Signature</PillClassBadge>
+                  <StatusBadge tone="info">Signature</StatusBadge>
                   <div>
                     <strong>{row.signatureLabel}</strong>
                     <p className="muted">Mode: {row.verificationMode}</p>
                   </div>
                 </div>
                 <div className="setup-stage-item">
-                  <PillClassBadge pillClass="pill pill-neutral">Gateway</PillClassBadge>
+                  <StatusBadge tone="neutral">Gateway</StatusBadge>
                   <div>
                     <strong>{row.providerStatus}</strong>
                     <p className="muted">Amount: {row.amountLabel}</p>

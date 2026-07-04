@@ -3,10 +3,10 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import {
   AdminSignal,
-  PillClassBadge,
   StatusBadge,
   StatusBadgeLink,
   adminSignalToneFromClassName,
+  statusBadgeToneFromPillClass,
 } from '../../components/status-badge';
 
 export type EarningsLedgerRow = {
@@ -122,11 +122,13 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                 </AdminSignal>
                 {row.cancellationDecisionLabel ? (
                   <div className="participant-list admin-mt-6">
-                    <PillClassBadge pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(row.cancellationDecisionTone ?? 'pill-neutral')}>
                       {row.cancellationDecisionLabel}
-                    </PillClassBadge>
+                    </StatusBadge>
                     {row.cancellationFeeLabel ? (
-                      <PillClassBadge pillClass={row.cancellationFeeTone ?? 'pill-neutral'}>{row.cancellationFeeLabel}</PillClassBadge>
+                      <StatusBadge tone={statusBadgeToneFromPillClass(row.cancellationFeeTone ?? 'pill-neutral')}>
+                        {row.cancellationFeeLabel}
+                      </StatusBadge>
                     ) : null}
                   </div>
                 ) : null}

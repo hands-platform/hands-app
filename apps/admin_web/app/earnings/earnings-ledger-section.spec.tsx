@@ -14,10 +14,11 @@ describe('EarningsLedgerSection', () => {
   it('uses shared badge atoms for cancellation and payout state chips', () => {
     const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={row.signalClassName}>{row.statusLabel}</span>');
     expect(source).not.toContain('<span className={`pill ${row.cancellationDecisionTone}`}>');
     expect(source).not.toContain('<span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>');

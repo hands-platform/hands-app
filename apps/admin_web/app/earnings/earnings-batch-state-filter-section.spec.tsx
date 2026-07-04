@@ -6,7 +6,9 @@ describe('EarningsBatchStateFilterSection', () => {
   it('uses the shared Vuexy pill link surface for active filter tone', () => {
     const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('filter-pill');
   });
 
