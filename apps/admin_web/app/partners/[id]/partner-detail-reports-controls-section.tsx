@@ -406,7 +406,7 @@ function PartnerReportCommandPanel({
           </form>
         </>
       ) : (
-        <p className="muted">No report commands are available until a report is recorded.</p>
+        <ReportsControlsEmptyState message="No report commands are available until a report is recorded." />
       )}
     </div>
   );
@@ -470,5 +470,5 @@ function controlStatusPill(status: string) {
 }
 
 function ReportsControlsEmptyState({ message }: { readonly message: string }) {
-  return <AdminEmptyState message={message} />;
+  return <AdminEmptyState framed message={message} title={null} />;
 }

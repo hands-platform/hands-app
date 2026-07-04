@@ -131,8 +131,10 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(rendered).toContain('No active payout hold is currently applied.');
     expect(rendered).toContain('No Partner reports recorded yet.');
     expect(rendered).toContain('No active or historical account control recorded yet.');
+    expect(rendered).toContain('No report commands are available until a report is recorded.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'empty-state',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

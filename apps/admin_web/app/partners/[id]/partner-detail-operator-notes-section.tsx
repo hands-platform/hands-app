@@ -1,5 +1,6 @@
 import { Save } from 'lucide-react';
 
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import {
   AdminFormControlButton,
   AdminFormSelect,
@@ -67,7 +68,11 @@ export function PartnerDetailOperatorNotesSection({
             </div>
           ))
         ) : (
-          <p className="muted">No manual partner operation notes have been saved yet.</p>
+          <AdminEmptyState
+            framed
+            message="No manual partner operation notes have been saved yet."
+            title={null}
+          />
         )}
       </div>
       <form action={addProviderOpsNote} className="ops-note-form">

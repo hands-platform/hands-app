@@ -34,6 +34,19 @@ describe('PartnerDetailOperatorNotesSection', () => {
     expect(rendered).toContain('Save partner operation note');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['card ops-note-panel admin-mb-16', 'pill pill-info']));
   });
+
+  it('renders empty partner operation notes with the shared Vuexy empty state', () => {
+    const section = PartnerDetailOperatorNotesSection({
+      notes: [],
+      providerId: 'partner-1',
+      totalCount: 0,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('No manual partner operation notes have been saved yet.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['empty-state']));
+  });
 });
 
 function textContent(value: unknown): string {
