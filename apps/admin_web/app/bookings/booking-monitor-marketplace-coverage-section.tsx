@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -42,9 +42,9 @@ export function BookingMonitorMarketplaceCoverageSection({
       actions={
         <>
           {marketplaceBookingCoveragePills.map((pill) => (
-            <PillClassBadge pillClass={pill.tone} key={pill.label}>
+            <StatusBadge tone={statusBadgeToneFromPillClass(pill.tone)} key={pill.label}>
               {pill.label}
-            </PillClassBadge>
+            </StatusBadge>
           ))}
         </>
       }
@@ -53,9 +53,9 @@ export function BookingMonitorMarketplaceCoverageSection({
       title="Marketplace booking coverage board"
     >
       <div className="participant-list admin-mt-12">
-        <PillClassBadge pillClass="pill-neutral">
+        <StatusBadge tone="neutral">
           Final Partner selected {marketplaceBookingCoverageSummary.selected}
-        </PillClassBadge>
+        </StatusBadge>
       </div>
       {marketplaceBookingCoverageRows.length === 0 ? (
         <AdminEmptyState
@@ -83,7 +83,9 @@ export function BookingMonitorMarketplaceCoverageSection({
                   <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.firstPickTone}>{row.firstPickLabel}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.firstPickTone)}>
+                    {row.firstPickLabel}
+                  </StatusBadge>
                   <div className="muted">{getMatchingWindowLabel(row.booking)}</div>
                 </td>
                 <td>
@@ -93,22 +95,24 @@ export function BookingMonitorMarketplaceCoverageSection({
                   </div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.selectedPartnerTone}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.selectedPartnerTone)}>
                     {row.selectedPartnerLabel}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.alertTone} title={row.alertDetail}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.alertTone)} title={row.alertDetail}>
                     {row.alertLabel}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.walletTone}>{row.walletLabel}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.walletTone)}>
+                    {row.walletLabel}
+                  </StatusBadge>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.nextActionTone} title={row.nextAction}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.nextActionTone)} title={row.nextAction}>
                     {compactCoverageNextActionLabel(row.nextAction)}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
               </tr>
             ))}
