@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminCard } from '../../../components/admin-surface';
+import { AdminCard, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
@@ -49,14 +49,14 @@ export function PartnerDetailOpsCommandCenterSection({
       </div>
       <div className="ops-task-grid">
         {summary.cards.map((card) => (
-          <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
-            <div>
-              <PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>
-              <h3>{card.title}</h3>
-              <p className="muted">{card.detail}</p>
-            </div>
-            <small>{card.action}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.action}
+            className={cardClassForTone(card.tone)}
+            detail={card.detail}
+            key={card.title}
+            leading={<PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>}
+            title={card.title}
+          />
         ))}
       </div>
     </AdminCard>

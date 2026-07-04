@@ -4,6 +4,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTaskCard } from '../../../components/admin-surface';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -132,7 +133,7 @@ export function PartnerDetailReportsControlsSection({
           <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
         </div>
       </form>
-      <div className="ops-task-card ops-task-pending admin-mb-16">
+      <AdminTaskCard className="ops-task-pending admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h3>Manual account control</h3>
@@ -206,7 +207,7 @@ export function PartnerDetailReportsControlsSection({
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
           </div>
         </form>
-      </div>
+      </AdminTaskCard>
       <div className="detail-grid">
         <div>
           <h3>Recent reports</h3>

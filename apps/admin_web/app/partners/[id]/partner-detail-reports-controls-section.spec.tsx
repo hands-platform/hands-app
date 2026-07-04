@@ -8,8 +8,10 @@ describe('PartnerDetailReportsControlsSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className="ops-task-card');
     expect(source).not.toContain('<strong>No records found</strong>');
     expect(source).not.toContain("<span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>");
     expect(source).not.toContain('<span className="pill pill-danger">ACTIVE</span>');

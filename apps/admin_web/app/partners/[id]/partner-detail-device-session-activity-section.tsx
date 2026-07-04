@@ -2,6 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -80,14 +81,14 @@ export function PartnerDetailDeviceSessionActivitySection({
     >
       <div className="ops-task-grid">
         {securityCards.map((card) => (
-          <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
-            <div>
-              <PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>
-              <h3>{card.title}</h3>
-              <p className="muted">{card.detail}</p>
-            </div>
-            <small>{card.action}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.action}
+            className={cardClassForTone(card.tone)}
+            detail={card.detail}
+            key={card.title}
+            leading={<PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>}
+            title={card.title}
+          />
         ))}
       </div>
       <div className="detail-grid admin-mt-16">

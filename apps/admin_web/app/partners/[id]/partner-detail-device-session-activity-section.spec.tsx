@@ -10,6 +10,8 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
     expect(sectionSource).toContain('PillClassBadge');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('AdminTaskCard');
+    expect(sectionSource).not.toContain('className={`ops-task-card');
     expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>');
     expect(sectionSource).not.toContain('<span className="pill pill-info">{device.statusLabel}</span>');
     expect(sectionSource).not.toContain('<span className="pill pill-warn">SHARED</span>');
