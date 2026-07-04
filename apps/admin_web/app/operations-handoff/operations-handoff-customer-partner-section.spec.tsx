@@ -16,6 +16,16 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     expect(source).not.toContain('<span className={partner.className}>{partner.status}</span>');
   });
 
+  it('uses the shared AdminFormControlLink atom for list actions', () => {
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-customer-partner-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders Customer and Partner handoff cards with links', () => {
     const section = OperationsHandoffCustomerPartnerSection({
       customers: [

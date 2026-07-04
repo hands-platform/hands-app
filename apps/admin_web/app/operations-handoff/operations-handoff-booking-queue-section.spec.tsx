@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffBookingQueueSection } from './operations-handoff-booking-queue-section';
 
 describe('OperationsHandoffBookingQueueSection', () => {
+  it('uses the shared AdminFormControlLink atom for booking queue actions', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-booking-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders booking handoff rows and monitor links', () => {
     const section = OperationsHandoffBookingQueueSection({
       bookings: [
@@ -49,7 +58,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
         'card admin-section admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
         'admin-table-scroll',
         'table-link',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-person',
       ]),
     );

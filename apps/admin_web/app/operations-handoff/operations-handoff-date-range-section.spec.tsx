@@ -11,6 +11,13 @@ describe('OperationsHandoffDateRangeSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{dateRangeLabel(range)}</span>');
   });
 
+  it('uses the shared AdminFormControlLink atom for range actions', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-date-range-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders the selected range label and handoff range links', () => {
     const section = OperationsHandoffDateRangeSection({ range: 'today' });
 

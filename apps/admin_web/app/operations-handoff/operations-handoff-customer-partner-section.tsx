@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Briefcase, Users } from 'lucide-react';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
@@ -26,10 +27,10 @@ export function OperationsHandoffCustomerPartnerSection({
       {visibleCustomers.length > 0 ? (
         <AdminSection
           actions={
-            <Link className="button button-secondary" href="/customers">
+            <AdminFormControlLink className="button-secondary" href="/customers">
               <Users aria-hidden="true" size={16} />
               Customer list
-            </Link>
+            </AdminFormControlLink>
           }
           description="Recent customers with booking, payment, address, and chat evidence."
           title="Customer handoff"
@@ -55,10 +56,10 @@ export function OperationsHandoffCustomerPartnerSection({
       {visiblePartners.length > 0 ? (
         <AdminSection
           actions={
-            <Link className="button button-secondary" href="/partners">
+            <AdminFormControlLink className="button-secondary" href="/partners">
               <Briefcase aria-hidden="true" size={16} />
               Partner list
-            </Link>
+            </AdminFormControlLink>
           }
           description="Partners that need location, identity, bank, or wallet follow-up."
           title="Partner handoff"

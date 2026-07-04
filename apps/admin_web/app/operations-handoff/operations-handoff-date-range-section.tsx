@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { CalendarDays } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
@@ -29,10 +29,10 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
     >
       <div className="actions">
         {handoffRangeLinks.map(([label, href]) => (
-          <Link className="button button-secondary" href={href} key={href}>
+          <AdminFormControlLink className="button-secondary" href={href} key={href}>
             <CalendarDays aria-hidden="true" size={16} />
             {label}
-          </Link>
+          </AdminFormControlLink>
         ))}
       </div>
     </AdminSection>

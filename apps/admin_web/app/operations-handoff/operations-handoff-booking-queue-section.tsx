@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSection } from '../../components/admin-surface';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
@@ -27,14 +27,14 @@ export function OperationsHandoffBookingQueueSection({
     <AdminSection
       actions={
         <div className="actions">
-          <Link className="button button-secondary" href="/bookings?view=attention">
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=attention">
             <ClipboardList aria-hidden="true" size={16} />
             Booking monitor
-          </Link>
-          <Link className="button button-secondary" href="/chat-archive">
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href="/chat-archive">
             <MessageSquare aria-hidden="true" size={16} />
             Chat archive
-          </Link>
+          </AdminFormControlLink>
         </div>
       }
       className="admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group"
@@ -50,10 +50,13 @@ export function OperationsHandoffBookingQueueSection({
           {bookings.map((booking) => (
             <tr key={booking.id}>
               <td>
-                <Link className="button button-secondary admin-inline-action" href={`/bookings/${booking.id}`}>
+                <AdminFormControlLink
+                  className="button-secondary admin-inline-action"
+                  href={`/bookings/${booking.id}`}
+                >
                   <ExternalLink aria-hidden="true" size={14} />
                   {shortDisplayId(booking.id)}
-                </Link>
+                </AdminFormControlLink>
                 <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
               </td>
               <td>
