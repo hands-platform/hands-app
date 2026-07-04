@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerBookingOperationMetric = {
@@ -173,7 +173,7 @@ function CustomerBookingOperationSection({
             </td>
             <td>{row.addressLabel}</td>
             <td>
-              <PillClassBadge pillClass={row.stateTone}>{row.stateLabel}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(row.stateTone)}>{row.stateLabel}</StatusBadge>
               <p className="muted">{row.stateDetail}</p>
             </td>
           </tr>
