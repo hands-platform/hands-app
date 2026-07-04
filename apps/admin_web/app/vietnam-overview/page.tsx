@@ -550,11 +550,11 @@ export default async function VietnamOverviewPage({
               </div>
               <div className="vietnam-region-focus-summary-items is-realtime">
                 {regionRealtimeSummary.map((item) => (
-                  <article key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
+                  <AdminCard key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
                     <small>Realtime</small>
                     <strong>{item.value}</strong>
                     <span>{item.label}</span>
-                  </article>
+                  </AdminCard>
                 ))}
               </div>
             </div>
@@ -565,11 +565,11 @@ export default async function VietnamOverviewPage({
               </div>
               <div className="vietnam-region-focus-summary-items is-period">
                 {regionPeriodSummary.map((item) => (
-                  <article key={item.label} className="vietnam-region-focus-summary-item">
+                  <AdminCard key={item.label} className="vietnam-region-focus-summary-item">
                     <small>{overview.rangeLabel}</small>
                     <strong>{item.value}</strong>
                     <span>{item.label}</span>
-                  </article>
+                  </AdminCard>
                 ))}
               </div>
             </div>
@@ -627,11 +627,11 @@ export default async function VietnamOverviewPage({
       >
         <div className="vietnam-overview-region-insight-grid" aria-label="Regional operations highlights">
           {periodRegionalInsights.map((item) => (
-            <article key={item.label} className={`vietnam-overview-region-insight-card is-${item.tone}`}>
+            <AdminCard key={item.label} className={`vietnam-overview-region-insight-card is-${item.tone}`}>
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.detail}</small>
-            </article>
+            </AdminCard>
           ))}
         </div>
         <AdminTableScroll className="vietnam-overview-table-wrap">
