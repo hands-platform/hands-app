@@ -2,7 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
+import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 
 import { formatDate } from './partner-detail-format';
 import {
@@ -64,9 +64,9 @@ export function PartnerDetailKycDecisionSection({
       title="KYC decision"
     >
       <div className="participant-list admin-mb-10">
-        <span className={`pill ${evidence.allRequiredApproved ? 'pill-success' : 'pill-danger'}`}>
+        <StatusBadge tone={evidence.allRequiredApproved ? 'success' : 'danger'}>
           {evidence.allRequiredApproved ? 'Evidence complete' : 'Evidence incomplete'}
-        </span>
+        </StatusBadge>
       </div>
       <p className="muted">CCCD last 4: {cccdNumberLast4 ? `****${cccdNumberLast4}` : 'Missing'}</p>
       <p className="muted">Submitted: {submittedLabel}</p>
@@ -103,9 +103,9 @@ export function PartnerDetailKycDecisionSection({
                 <strong>{item.label}</strong>
               </td>
               <td>
-                <span className={`pill ${item.ok ? 'pill-success' : 'pill-danger'}`}>
+                <StatusBadge tone={item.ok ? 'success' : 'danger'}>
                   {item.ok ? 'OK' : 'FIX'}
-                </span>
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -132,7 +132,7 @@ export function PartnerDetailKycDecisionSection({
                 <p className="muted">{row.type}</p>
               </td>
               <td>
-                <span className={`pill ${kycEvidencePill(row.status)}`}>{row.status}</span>
+                <PillClassBadge pillClass={kycEvidencePill(row.status)}>{row.status}</PillClassBadge>
               </td>
               <td>
                 <span className="muted">{row.fileLabel}</span>

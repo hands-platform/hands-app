@@ -6,7 +6,11 @@ describe('PartnerDetailKycDecisionSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<strong>No records found</strong>');
+    expect(source).not.toContain("<span className={`pill ${item.ok ? 'pill-success' : 'pill-danger'}`}>");
+    expect(source).not.toContain('<span className={`pill ${kycEvidencePill(row.status)}`}>{row.status}</span>');
   });
 
   it('renders KYC checklist and evidence as Vuexy tables', () => {
