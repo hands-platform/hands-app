@@ -1,5 +1,5 @@
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
@@ -16,9 +16,11 @@ export function OperationsPolicyRecommendedValueReviewSection({
       className="admin-mb-16"
       description="Compares current policy values with the HANDS recommended baseline. Differences are allowed, but operators should know the likely tradeoff before keeping them."
       status={
-        <PillClassBadge pillClass={review.warningCount ? 'pill-warn' : 'pill-success'}>
+        <StatusBadge
+          tone={statusBadgeToneFromPillClass(review.warningCount ? 'pill-warn' : 'pill-success')}
+        >
           {review.warningCount ? `${review.warningCount} owner choice(s)` : 'Aligned'}
-        </PillClassBadge>
+        </StatusBadge>
       }
       title="Recommended value review"
     >
@@ -38,7 +40,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
             className={card.className}
             detail={card.detail}
             key={card.key}
-            leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
             title={card.label}
           />
         ))}

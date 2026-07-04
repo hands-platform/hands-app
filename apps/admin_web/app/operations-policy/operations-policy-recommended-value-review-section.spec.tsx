@@ -11,6 +11,8 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
     );
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-success">Aligned</span>');
   });
 
