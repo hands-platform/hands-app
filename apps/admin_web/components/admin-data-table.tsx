@@ -27,6 +27,7 @@ type AdminTablePaginationFooterProps = {
   readonly className?: string;
   readonly from: number;
   readonly hrefForPage?: (page: number) => string;
+  readonly itemLabel?: string;
   readonly onPageChange?: (page: number) => void;
   readonly pageLinkClassName?: string;
   readonly paginationClassName?: string;
@@ -49,6 +50,7 @@ export function AdminTablePaginationFooter({
   className,
   from,
   hrefForPage,
+  itemLabel = 'entries',
   onPageChange,
   pageLinkClassName = 'vuexy-booking-page-link',
   paginationClassName,
@@ -61,7 +63,7 @@ export function AdminTablePaginationFooter({
     children: (
       <>
         <span>
-          Showing {from} to {to} of {totalRows} entries
+          Showing {from} to {to} of {totalRows} {itemLabel}
         </span>
         <AdminRoundedPagination
           activePage={activePage}

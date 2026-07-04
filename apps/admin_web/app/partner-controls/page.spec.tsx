@@ -77,4 +77,11 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('partner-control-form-field');
     expect(partnerControlsSource).not.toContain('<div className="calendar-field');
   });
+
+  it('uses the shared table pagination footer for reports and account controls', () => {
+    expect(partnerControlsSource).toContain('AdminTablePaginationFooter');
+    expect(partnerControlsSource).toContain('className="vuexy-partner-table-footer"');
+    expect(partnerControlsSource).not.toContain('<AdminTableFooter');
+    expect(partnerControlsSource).not.toContain('partnerControlPagedListFooterLabel(');
+  });
 });

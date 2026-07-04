@@ -119,6 +119,20 @@ describe('AdminDataTable', () => {
       expect.arrayContaining(['/finance-tax/general-ledger?page=1', '/finance-tax/general-ledger?page=2']),
     );
   });
+
+  it('allows callers to preserve a domain-specific pagination item label', () => {
+    const footer = AdminTablePaginationFooter({
+      activePage: 1,
+      ariaLabel: 'Customer chat history pages',
+      from: 1,
+      itemLabel: 'rooms',
+      to: 5,
+      totalPages: 2,
+      totalRows: 7,
+    });
+
+    expect(normalizeText(textContent(footer))).toContain('Showing 1 to 5 of 7 rooms');
+  });
 });
 
 function hrefsIn(value: unknown): string[] {

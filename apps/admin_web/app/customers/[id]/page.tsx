@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
@@ -22,7 +26,6 @@ import {
   type AdminChatWindowMessage,
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
@@ -780,27 +783,25 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <AdminEmptyState framed message="No chat rooms matched this date filter." title={null} />
           )}
         </div>
-        <AdminTableFooter className="customer-chat-history-footer">
-          <span>
-            Showing {chatHistoryPageFrom} to {chatHistoryPageTo} of {filteredChatBookings.length} rooms
-          </span>
-          <AdminRoundedPagination
-            activePage={chatHistoryActivePage}
-            ariaLabel="Customer chat history pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) =>
-              buildCustomerDetailPageHref(
-                `/customers/${id}`,
-                detailSearchParams,
-                'chatHistoryPage',
-                page,
-                'chat-history',
-              )
-            }
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={chatHistoryTotalPages}
-          />
-        </AdminTableFooter>
+        <AdminTablePaginationFooter
+          activePage={chatHistoryActivePage}
+          ariaLabel="Customer chat history pages"
+          className="customer-chat-history-footer"
+          from={chatHistoryPageFrom}
+          hrefForPage={(page) =>
+            buildCustomerDetailPageHref(
+              `/customers/${id}`,
+              detailSearchParams,
+              'chatHistoryPage',
+              page,
+              'chat-history',
+            )
+          }
+          itemLabel="rooms"
+          to={chatHistoryPageTo}
+          totalPages={chatHistoryTotalPages}
+          totalRows={filteredChatBookings.length}
+        />
       </AdminFilterPanel>
 
       <AdminSection

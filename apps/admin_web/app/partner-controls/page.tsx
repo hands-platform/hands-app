@@ -22,7 +22,7 @@ import {
 import { readSearchParam } from '../../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
 import { ActionMenu } from '../../components/action-menu';
-import { AdminDataTable, AdminTableFooter } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter } from '../../components/admin-data-table';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -33,7 +33,6 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
@@ -809,17 +808,20 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-        <AdminTableFooter className="vuexy-partner-table-footer">
-          <span>{partnerControlPagedListFooterLabel('report', visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}</span>
-          <AdminRoundedPagination
-            activePage={loadPlan.reportsPage}
-            ariaLabel="Partner reports pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => partnerControlListHref(params, 'reportPage', page)}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={reportTotalPages}
-          />
-        </AdminTableFooter>
+        <AdminTablePaginationFooter
+          activePage={loadPlan.reportsPage}
+          ariaLabel="Partner reports pages"
+          className="vuexy-partner-table-footer"
+          from={partnerControlPagedListFrom(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}
+          hrefForPage={(page) => partnerControlListHref(params, 'reportPage', page)}
+          to={partnerControlPagedListTo(visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}
+          totalPages={reportTotalPages}
+          totalRows={partnerControlPagedListTotalRows(
+            visibleReports.length,
+            loadPlan.reportsPage,
+            loadPlan.listTake,
+          )}
+        />
       </AdminSection>
 
       <AdminSection
@@ -896,17 +898,20 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-        <AdminTableFooter className="vuexy-partner-table-footer">
-          <span>{partnerControlPagedListFooterLabel('account control', visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}</span>
-          <AdminRoundedPagination
-            activePage={loadPlan.sanctionsPage}
-            ariaLabel="Partner account control pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => partnerControlListHref(params, 'sanctionPage', page)}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={sanctionTotalPages}
-          />
-        </AdminTableFooter>
+        <AdminTablePaginationFooter
+          activePage={loadPlan.sanctionsPage}
+          ariaLabel="Partner account control pages"
+          className="vuexy-partner-table-footer"
+          from={partnerControlPagedListFrom(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}
+          hrefForPage={(page) => partnerControlListHref(params, 'sanctionPage', page)}
+          to={partnerControlPagedListTo(visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}
+          totalPages={sanctionTotalPages}
+          totalRows={partnerControlPagedListTotalRows(
+            visibleSanctions.length,
+            loadPlan.sanctionsPage,
+            loadPlan.listTake,
+          )}
+        />
       </AdminSection>
       </AdminPageTemplate>
     </>
@@ -1793,22 +1798,19 @@ function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: 
   return `No ${subject} match the active filters. Clear filters or switch investigation lane.`;
 }
 
-function partnerControlPagedListFooterLabel(
-  kind: 'report' | 'account control',
-  rowCount: number,
-  activePage: number,
-  pageSize: number,
-) {
-  const subject = kind === 'report' ? 'report(s)' : 'account control(s)';
+function partnerControlPagedListFrom(rowCount: number, activePage: number, pageSize: number) {
+  if (rowCount <= 0) return 0;
+  return (activePage - 1) * pageSize + 1;
+}
 
-  if (rowCount <= 0) {
-    return `Showing 0 ${subject} on page ${activePage}`;
-  }
+function partnerControlPagedListTo(rowCount: number, activePage: number, pageSize: number) {
+  if (rowCount <= 0) return 0;
+  return partnerControlPagedListFrom(rowCount, activePage, pageSize) + rowCount - 1;
+}
 
-  const from = (activePage - 1) * pageSize + 1;
-  const to = from + rowCount - 1;
-
-  return `Showing ${from} to ${to} ${subject}`;
+function partnerControlPagedListTotalRows(rowCount: number, activePage: number, pageSize: number) {
+  if (rowCount <= 0) return 0;
+  return partnerControlPagedListTo(rowCount, activePage, pageSize);
 }
 
 function partnerControlEstimatedTotalPages(rowCount: number, activePage: number, pageSize: number) {

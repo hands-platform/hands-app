@@ -77,6 +77,15 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain('AdminCard');
     expect(customerDetailSource).not.toContain('<div className="card customer-chat-history-room-card">');
   });
+
+  it('uses the shared table pagination footer for customer chat history', () => {
+    expect(customerDetailSource).toContain('AdminTablePaginationFooter');
+    expect(customerDetailSource).toContain('className="customer-chat-history-footer"');
+    expect(customerDetailSource).not.toContain('<AdminTableFooter');
+    expect(customerDetailSource).not.toContain(
+      'Showing {chatHistoryPageFrom} to {chatHistoryPageTo} of {filteredChatBookings.length} rooms',
+    );
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {
