@@ -78,6 +78,13 @@ describe('EarningsMoneyFlowSection', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
   });
+
+  it('uses shared money atoms for money flow card amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/earnings/earnings-money-flow-section.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(card.amount, currency)}</strong>');
+  });
 });
 
 function textContent(value: unknown): string {

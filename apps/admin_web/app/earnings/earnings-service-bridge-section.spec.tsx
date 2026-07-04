@@ -12,6 +12,21 @@ describe('EarningsServiceBridgeSection', () => {
     );
   });
 
+  it('uses shared money atoms for service bridge money cells', () => {
+    const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<td>{formatMoney(item.grossAmount, item.currency)}</td>');
+    expect(source).not.toContain('<strong>{formatMoney(item.providerPayoutAmount, item.currency)}</strong>');
+    expect(source).not.toContain('<td>{formatMoney(item.netAmount, item.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(item.platformFee, item.currency)}</td>');
+    expect(source).not.toContain('<small>VAT {formatMoney(item.vatAmount, item.currency)}</small>');
+    expect(source).not.toContain('<small>Cost {formatMoney(item.otherCostAmount, item.currency)}</small>');
+    expect(source).not.toContain('<td>{formatMoney(item.withholdingAmount, item.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(item.netCompanyFee, item.currency)}</td>');
+    expect(source).not.toContain("<strong>{value ?? formatMoney(amount ?? 0, currency ?? 'VND')}</strong>");
+  });
+
   it('renders service bridge summary and rows', () => {
     const section = EarningsServiceBridgeSection({
       currency: 'VND',

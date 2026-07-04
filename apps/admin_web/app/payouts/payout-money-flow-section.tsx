@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutMoneyFlowCard = {
   readonly amount: number;
@@ -46,7 +46,9 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
         {cards.map((card) => (
           <div key={card.label}>
             <span>{card.label}</span>
-            <strong>{formatMoney(card.amount, currency)}</strong>
+            <strong>
+              <MoneyText amount={card.amount} currency={currency} />
+            </strong>
             <small>{card.detail}</small>
           </div>
         ))}

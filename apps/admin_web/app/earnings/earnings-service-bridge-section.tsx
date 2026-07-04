@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsServiceBridgeItem = {
   readonly batchedCount: number;
@@ -89,26 +89,42 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
                   <strong>{item.bookingCount}</strong>
                   <p className="muted">{item.cashBookingCount} cash booking(s)</p>
                 </td>
-                <td>{formatMoney(item.grossAmount, item.currency)}</td>
+                <td>
+                  <MoneyText amount={item.grossAmount} currency={item.currency} />
+                </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <strong>{formatMoney(item.providerPayoutAmount, item.currency)}</strong>
+                    <strong>
+                      <MoneyText amount={item.providerPayoutAmount} currency={item.currency} />
+                    </strong>
                     <small>{item.matrixBackedCount} matrix-backed booking(s)</small>
                   </div>
                 </td>
-                <td>{formatMoney(item.netAmount, item.currency)}</td>
-                <td>{formatMoney(item.platformFee, item.currency)}</td>
+                <td>
+                  <MoneyText amount={item.netAmount} currency={item.currency} />
+                </td>
+                <td>
+                  <MoneyText amount={item.platformFee} currency={item.currency} />
+                </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <small>VAT {formatMoney(item.vatAmount, item.currency)}</small>
-                    <small>Cost {formatMoney(item.otherCostAmount, item.currency)}</small>
+                    <small>
+                      VAT <MoneyText amount={item.vatAmount} currency={item.currency} />
+                    </small>
+                    <small>
+                      Cost <MoneyText amount={item.otherCostAmount} currency={item.currency} />
+                    </small>
                   </div>
                 </td>
-                <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
-                <td>{formatMoney(item.netCompanyFee, item.currency)}</td>
+                <td>
+                  <MoneyText amount={item.withholdingAmount} currency={item.currency} />
+                </td>
+                <td>
+                  <MoneyText amount={item.netCompanyFee} currency={item.currency} />
+                </td>
                 <td>
                   <StatusBadge tone={item.cashDebtAmount ? 'danger' : 'success'}>
-                    {formatMoney(item.cashDebtAmount, item.currency)}
+                    <MoneyText amount={item.cashDebtAmount} currency={item.currency} />
                   </StatusBadge>
                 </td>
                 <td>
@@ -140,7 +156,7 @@ function ServiceBridgeMetric({
   return (
     <div>
       <span>{label}</span>
-      <strong>{value ?? formatMoney(amount ?? 0, currency ?? 'VND')}</strong>
+      <strong>{value ?? <MoneyText amount={amount ?? 0} currency={currency ?? 'VND'} />}</strong>
     </div>
   );
 }

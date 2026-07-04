@@ -58,6 +58,20 @@ describe('PayoutServiceEvidenceSection', () => {
       "<span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>",
     );
   });
+
+  it('uses shared money atoms for payout service evidence amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-service-evidence-section.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain("<strong>{formatMoney(sumEvidence(items, 'grossAmount'), currency)}</strong>");
+    expect(source).not.toContain("<strong>{formatMoney(sumEvidence(items, 'netAmount'), currency)}</strong>");
+    expect(source).not.toContain("<strong>{formatMoney(sumEvidence(items, 'platformFee'), currency)}</strong>");
+    expect(source).not.toContain("<strong>{formatMoney(sumEvidence(items, 'withholdingAmount'), currency)}</strong>");
+    expect(source).not.toContain('<td>{formatMoney(item.grossAmount, item.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(item.netAmount, item.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(item.platformFee, item.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(item.withholdingAmount, item.currency)}</td>');
+  });
 });
 
 function textContent(value: unknown): string {

@@ -1,6 +1,6 @@
-import { formatMoney } from '../../lib/admin-format';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
 export type PayoutServiceEvidenceItem = {
@@ -52,19 +52,27 @@ export function PayoutServiceEvidenceSection({
         </div>
         <div>
           <span>Gross</span>
-          <strong>{formatMoney(sumEvidence(items, 'grossAmount'), currency)}</strong>
+          <strong>
+            <MoneyText amount={sumEvidence(items, 'grossAmount')} currency={currency} />
+          </strong>
         </div>
         <div>
           <span>Partner net</span>
-          <strong>{formatMoney(sumEvidence(items, 'netAmount'), currency)}</strong>
+          <strong>
+            <MoneyText amount={sumEvidence(items, 'netAmount')} currency={currency} />
+          </strong>
         </div>
         <div>
           <span>Platform fee</span>
-          <strong>{formatMoney(sumEvidence(items, 'platformFee'), currency)}</strong>
+          <strong>
+            <MoneyText amount={sumEvidence(items, 'platformFee')} currency={currency} />
+          </strong>
         </div>
         <div>
           <span>Tax withheld</span>
-          <strong>{formatMoney(sumEvidence(items, 'withholdingAmount'), currency)}</strong>
+          <strong>
+            <MoneyText amount={sumEvidence(items, 'withholdingAmount')} currency={currency} />
+          </strong>
         </div>
       </div>
       <AdminTableScroll>
@@ -91,13 +99,21 @@ export function PayoutServiceEvidenceSection({
               </td>
               <td>{item.batchCount}</td>
               <td>{item.earningCount}</td>
-              <td>{formatMoney(item.grossAmount, item.currency)}</td>
-              <td>{formatMoney(item.netAmount, item.currency)}</td>
-              <td>{formatMoney(item.platformFee, item.currency)}</td>
-              <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+              <td>
+                <MoneyText amount={item.grossAmount} currency={item.currency} />
+              </td>
+              <td>
+                <MoneyText amount={item.netAmount} currency={item.currency} />
+              </td>
+              <td>
+                <MoneyText amount={item.platformFee} currency={item.currency} />
+              </td>
+              <td>
+                <MoneyText amount={item.withholdingAmount} currency={item.currency} />
+              </td>
               <td>
                 <StatusBadge tone={item.cashDebtAmount ? 'danger' : 'success'}>
-                  {formatMoney(item.cashDebtAmount, item.currency)}
+                  <MoneyText amount={item.cashDebtAmount} currency={item.currency} />
                 </StatusBadge>
               </td>
             </tr>
