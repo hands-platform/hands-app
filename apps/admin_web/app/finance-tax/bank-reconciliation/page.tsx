@@ -21,6 +21,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../components/admin-surface';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -289,7 +290,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 <div className="muted">{transaction.description ?? '-'}</div>
               </td>
               <td>
-                <strong>{formatMoney(transaction.amount, transaction.currency)}</strong>
+                <strong>
+                  <MoneyText amount={transaction.amount} currency={transaction.currency} />
+                </strong>
                 <div className="muted">{transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}</div>
               </td>
               <td>

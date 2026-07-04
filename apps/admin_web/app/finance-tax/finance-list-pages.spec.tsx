@@ -322,6 +322,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Bank command board');
       expect(markup).toContain('Unmatched ratio');
       expect(markup).toContain('Needs match');
+      expect(markup).toContain('money-text money-text-positive');
     }
 
     if (_name === 'settlement reversals') {
@@ -387,6 +388,13 @@ describe('finance list pages', () => {
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(transaction.status)}`}');
+  });
+
+  it('uses shared money atoms for bank reconciliation amount cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(transaction.amount, transaction.currency)}</strong>');
   });
 
   it('uses shared badge atoms for general ledger status pills', () => {

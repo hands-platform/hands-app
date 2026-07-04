@@ -22,6 +22,7 @@ import {
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
+import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
@@ -406,7 +407,9 @@ export default async function BankReconciliationDetailPage({
                   <ReconciliationPayoutCell match={match} />
                 </td>
                 <td>
-                  <strong>{formatMoney(match.amount, match.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={match.amount} currency={match.currency} />
+                  </strong>
                 </td>
                 <td>
                   <StatusBadge tone={statusBadgeToneFromPillClass(financeBankReconciliationStatusPill(match.status))}>
