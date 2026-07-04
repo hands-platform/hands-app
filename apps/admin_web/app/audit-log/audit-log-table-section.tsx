@@ -1,6 +1,6 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type AuditLogMetadataHighlight = {
   readonly className: string;
@@ -75,9 +75,9 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             {row.metadataHighlights.length > 0 ? (
               <div className="participant-list admin-mb-8">
                 {row.metadataHighlights.map((item, index) => (
-                  <PillClassBadge pillClass={item.className} key={`${item.label}-${index}`}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(item.className)} key={`${item.label}-${index}`}>
                     {item.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                 ))}
               </div>
             ) : null}

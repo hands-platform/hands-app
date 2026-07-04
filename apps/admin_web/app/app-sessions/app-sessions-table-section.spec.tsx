@@ -44,10 +44,12 @@ describe('AppSessionsTableSection', () => {
     expect(textContent(section)).toContain('No app sessions loaded.');
   });
 
-  it('uses the shared PillClassBadge atom for session state chips', () => {
+  it('uses the shared StatusBadge atom for session state chips', () => {
     const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-table-section.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>');
   });
 });
