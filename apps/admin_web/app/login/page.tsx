@@ -40,7 +40,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <form action={action} className="admin-auth-form" method="post">
           <AdminFormInput
             autoComplete="username"
-            className="admin-auth-field"
+            className="admin-form-control-fluid"
             label="Email"
             labelVisibility="visible"
             name="email"
@@ -49,7 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           />
           <AdminFormInput
             autoComplete="current-password"
-            className="admin-auth-field"
+            className="admin-form-control-fluid"
             label="Password"
             labelVisibility="visible"
             name="password"

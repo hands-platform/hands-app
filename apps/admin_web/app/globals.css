@@ -504,33 +504,6 @@ a {
   gap: 16px;
 }
 
-.admin-auth-field {
-  color: var(--admin-muted);
-  display: grid;
-  font-size: 13px;
-  font-weight: 500;
-  gap: 7px;
-}
-
-.admin-auth-field input {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  color: var(--admin-text);
-  font: inherit;
-  min-height: 44px;
-  outline: none;
-  padding: 0 14px;
-  transition:
-    border-color var(--admin-transition),
-    box-shadow var(--admin-transition);
-}
-
-.admin-auth-field input:focus {
-  border-color: var(--admin-accent);
-  box-shadow: 0 0 0 3px rgb(var(--admin-primary-channel) / 0.14);
-}
-
 .admin-auth-submit {
   min-height: 44px;
   width: 100%;

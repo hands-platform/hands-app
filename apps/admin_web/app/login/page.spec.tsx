@@ -12,7 +12,7 @@ describe('LoginPage', () => {
     expect(markup).toContain('name="email"');
     expect(markup).toContain('name="password"');
     expect(markup).not.toContain('class="admin-auth-field"');
-    expect(markup).toContain('class="admin-form-input admin-form-control-labeled admin-auth-field"');
+    expect(markup).toContain('class="admin-form-input admin-form-control-labeled admin-form-control-fluid"');
     expect(markup).toContain('class="admin-form-control-button button button-primary admin-auth-submit"');
     expect(markup).not.toContain('Review bookings, Partners, finance approvals, notifications, and audit evidence');
     expect(markup).not.toContain('Welcome to HANDS Admin');
