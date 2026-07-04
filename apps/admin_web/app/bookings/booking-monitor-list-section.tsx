@@ -14,7 +14,7 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -697,11 +697,13 @@ function BookingStateChangedCell({
       {closureState && (
         <div className="vuexy-booking-closure-evidence">
           <div className="vuexy-booking-closure-pills">
-            <PillClassBadge pillClass={closureState.tone}>{closureState.label}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(closureState.tone)}>
+              {closureState.label}
+            </StatusBadge>
             {cancellationReviewSignal && (
-              <PillClassBadge pillClass={cancellationReviewSignal.tone}>
+              <StatusBadge tone={statusBadgeToneFromPillClass(cancellationReviewSignal.tone)}>
                 {cancellationReviewSignal.label}
-              </PillClassBadge>
+              </StatusBadge>
             )}
           </div>
           <div className="muted">{closureState.detail}</div>
@@ -710,9 +712,13 @@ function BookingStateChangedCell({
       {reviewReasonPills.length > 0 && (
         <div className="vuexy-booking-review-reasons" aria-label="Cancellation review reasons">
           {reviewReasonPills.map((reason) => (
-            <PillClassBadge key={reason.label} pillClass={reason.tone} title={reason.title}>
+            <StatusBadge
+              key={reason.label}
+              tone={statusBadgeToneFromPillClass(reason.tone)}
+              title={reason.title}
+            >
               {reason.label}
-            </PillClassBadge>
+            </StatusBadge>
           ))}
         </div>
       )}

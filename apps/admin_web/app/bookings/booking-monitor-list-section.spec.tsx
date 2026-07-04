@@ -14,8 +14,9 @@ describe('BookingMonitorListSection', () => {
   it('uses shared Vuexy badge atoms instead of raw booking monitor pill spans', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">{evidenceLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{senderRole}</span>');
     expect(source).not.toContain('<span className={`pill ${closureState.tone}`}>{closureState.label}</span>');
