@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { formatMoney } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
 
 export type EarningsCashDebtTotals = {
   readonly bookingAmount: number;
@@ -63,16 +63,16 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
               <div>
                 <strong>{item.providerName}</strong>
                 <p className="muted">
-                  Owes {formatMoney(item.debtAmount, item.currency)} from booking{' '}
+                  Owes <MoneyText amount={item.debtAmount} currency={item.currency} /> from booking{' '}
                   <Link className="text-link" href={item.bookingHref}>
                     {item.bookingShortId}
                   </Link>
                   {' / '}payment {item.paymentMethod}
                 </p>
                 <p className="muted">
-                  Booking cash {formatMoney(item.bookingAmount, item.currency)}
-                  {' / '}HANDS fee {formatMoney(item.platformFee, item.currency)}
-                  {' / '}tax {formatMoney(item.taxAmount, item.currency)}
+                  Booking cash <MoneyText amount={item.bookingAmount} currency={item.currency} />
+                  {' / '}HANDS fee <MoneyText amount={item.platformFee} currency={item.currency} />
+                  {' / '}tax <MoneyText amount={item.taxAmount} currency={item.currency} />
                 </p>
                 <div className="service-matrix-cell">
                   {item.settlementChecklist.map((step) => (
@@ -141,7 +141,7 @@ function CashDebtMetric({
   return (
     <div>
       <span>{label}</span>
-      <strong>{value ?? formatMoney(amount ?? 0, currency ?? 'VND')}</strong>
+      <strong>{value ?? <MoneyText amount={amount ?? 0} currency={currency ?? 'VND'} />}</strong>
     </div>
   );
 }

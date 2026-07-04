@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { EarningsPartnerPayoutQueueSection } from './earnings-partner-payout-queue-section';
 
 describe('EarningsPartnerPayoutQueueSection', () => {
+  it('uses the shared Vuexy money atom for visible amounts', () => {
+    const source = readFileSync('app/earnings/earnings-partner-payout-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders Partner payout queue rows and review action', () => {
     const section = EarningsPartnerPayoutQueueSection({
       groups: [

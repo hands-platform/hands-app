@@ -1,6 +1,6 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsBatchStateCard = {
   readonly amount: number;
@@ -50,7 +50,9 @@ export function EarningsBatchStateFilterSection({
             <div key={card.state}>
               <span>{card.label}</span>
               <strong>{card.count}</strong>
-              <small>{formatMoney(card.amount, currency)}</small>
+              <small>
+                <MoneyText amount={card.amount} currency={currency} />
+              </small>
             </div>
           ))}
       </div>

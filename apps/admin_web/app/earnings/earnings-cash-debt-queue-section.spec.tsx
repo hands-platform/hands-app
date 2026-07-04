@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { EarningsCashDebtQueueSection } from './earnings-cash-debt-queue-section';
 
 describe('EarningsCashDebtQueueSection', () => {
+  it('uses the shared Vuexy money atom for visible amounts', () => {
+    const source = readFileSync('app/earnings/earnings-cash-debt-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders cash debt totals, links, and settlement review action', () => {
     const section = EarningsCashDebtQueueSection({
       currency: 'VND',

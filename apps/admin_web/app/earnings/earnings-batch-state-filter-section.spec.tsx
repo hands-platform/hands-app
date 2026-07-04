@@ -12,6 +12,13 @@ describe('EarningsBatchStateFilterSection', () => {
     expect(source).not.toContain('filter-pill');
   });
 
+  it('uses the shared Vuexy money atom for visible amounts', () => {
+    const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders filter cards and selected state', () => {
     const section = EarningsBatchStateFilterSection({
       activeState: 'ready',

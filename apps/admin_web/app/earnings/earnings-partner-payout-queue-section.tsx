@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
-import { formatMoney } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
 
 export type EarningsPartnerPayoutQueueGroup = {
   readonly activeBatchSummary: string | null;
@@ -44,14 +44,19 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                 <strong>{group.providerName}</strong>
                 <p className="muted">
                   {group.unbatchedCount} unbatched earning(s) / net{' '}
-                  {formatMoney(group.unbatchedNet, group.currency)}
-                  {' / '}withholding {formatMoney(group.withholdingAmount, group.currency)}
+                  <MoneyText amount={group.unbatchedNet} currency={group.currency} />
+                  {' / '}withholding <MoneyText amount={group.withholdingAmount} currency={group.currency} />
                 </p>
                 <p className="muted">
-                  Wallet balance {formatMoney(group.walletBalance, group.currency)}
-                  {group.cashDebtAmount > 0
-                    ? ` / cash debt ${formatMoney(group.cashDebtAmount, group.currency)} blocks payout batching`
-                    : ' / no cash debt'}
+                  Wallet balance <MoneyText amount={group.walletBalance} currency={group.currency} />
+                  {group.cashDebtAmount > 0 ? (
+                    <>
+                      {' / '}cash debt <MoneyText amount={group.cashDebtAmount} currency={group.currency} /> blocks payout
+                      batching
+                    </>
+                  ) : (
+                    ' / no cash debt'
+                  )}
                 </p>
                 <p className="muted">{group.activeBatchSummary ?? group.nextAction}</p>
               </div>
