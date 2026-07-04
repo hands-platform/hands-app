@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   NotificationDeliveryOpsQueueSection,
   type NotificationDeliveryOpsQueueItem,
@@ -29,7 +32,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
         'ops-section-header admin-section-header',
         'ops-task-card',
         'pill pill-warn',
-        'admin-form-control-link pill pill-neutral',
+        'pill pill-neutral',
       ]),
     );
     expect(classNamesIn(section)).not.toContain('card soft-card admin-mb-16');
@@ -44,6 +47,21 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(rendered).toContain('Delivery path is clean');
     expect(rendered).toContain('FCM credentials and mobile token registration');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-success']));
+  });
+
+  it('uses shared badge atoms for delivery queue status and links', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/notifications/notification-delivery-ops-queue-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('<span className={`pill ${items.length ?');
+    expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.label}</span>');
+    expect(source).not.toContain('<AdminFormControlLink className="pill pill-neutral" href={item.href}>');
+    expect(source).not.toContain('<span className="pill pill-success">Ready</span>');
   });
 });
 

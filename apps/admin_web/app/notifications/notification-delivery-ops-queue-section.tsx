@@ -1,5 +1,5 @@
-import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
 
 export type NotificationDeliveryOpsQueueItem = {
   readonly count: number;
@@ -20,9 +20,9 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
       className="soft-card admin-mb-16"
       description="Fix current delivery blockers before retrying, so alert sends do not loop."
       status={
-        <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={items.length ? 'warning' : 'success'}>
           {items.length ? `${items.length} issue(s)` : 'No delivery blockers'}
-        </span>
+        </StatusBadge>
       }
       title="Delivery operations queue"
     >
@@ -30,17 +30,17 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
         {items.length ? (
           items.map((item) => (
             <div className="ops-task-card" key={item.key}>
-              <span className={`pill ${item.tone}`}>{item.label}</span>
+              <PillClassBadge pillClass={item.tone}>{item.label}</PillClassBadge>
               <h3 className="admin-mt-10">{item.count}</h3>
               <p className="muted">{item.detail}</p>
-              <AdminFormControlLink className="pill pill-neutral" href={item.href}>
+              <PillClassBadgeLink href={item.href} pillClass="pill-neutral">
                 Open queue
-              </AdminFormControlLink>
+              </PillClassBadgeLink>
             </div>
           ))
         ) : (
           <div className="ops-task-card">
-            <span className="pill pill-success">Ready</span>
+            <StatusBadge tone="success">Ready</StatusBadge>
             <h3 className="admin-mt-10">Delivery path is clean</h3>
             <p className="muted">
               Keep monitoring failed sends after FCM credentials and mobile token registration are enabled.
