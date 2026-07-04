@@ -8,7 +8,12 @@ describe('ServiceBookingFinanceTraceSection', () => {
     const source = readFileSync('app/services/service-booking-finance-trace-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<p className="muted">No recent booking service rows were found');
+    expect(source).not.toContain('<span className="pill pill-warn">No payment</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">No earning</span>');
+    expect(source).not.toContain('<span className={`pill ${row.traceTone}`}>{row.traceStatus}</span>');
   });
 
   it('renders finance trace summary and booking rows', () => {

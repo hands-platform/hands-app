@@ -1,6 +1,7 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 
@@ -103,7 +104,7 @@ export function ServiceBookingFinanceTraceSection({
                       </small>
                     </div>
                   ) : (
-                    <span className="pill pill-warn">No payment</span>
+                    <StatusBadge tone="warning">No payment</StatusBadge>
                   )}
                 </td>
                 <td>
@@ -123,7 +124,7 @@ export function ServiceBookingFinanceTraceSection({
                       </small>
                     </div>
                   ) : (
-                    <span className="pill pill-warn">No earning</span>
+                    <StatusBadge tone="warning">No earning</StatusBadge>
                   )}
                 </td>
                 <td>
@@ -141,7 +142,7 @@ export function ServiceBookingFinanceTraceSection({
                   </div>
                 </td>
                 <td>
-                  <span className={`pill ${row.traceTone}`}>{row.traceStatus}</span>
+                  <PillClassBadge pillClass={row.traceTone}>{row.traceStatus}</PillClassBadge>
                 </td>
               </tr>
             ))}
