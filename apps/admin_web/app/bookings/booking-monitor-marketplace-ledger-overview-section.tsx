@@ -1,6 +1,6 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { MarketplaceOperatingQueueItem } from '../../lib/marketplace-operating-queue';
@@ -26,9 +26,9 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}>
+        <StatusBadge tone={marketplaceLedgerSummary.total > 0 ? 'info' : 'neutral'}>
           All participant records {marketplaceLedgerSummary.total}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mt-14"
       description="Participant evidence for first-pick, marketplace, declined, and final-choice rows."
@@ -52,8 +52,10 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             variant="ops-task"
           >
             <div className="participant-list">
-              <PillClassBadge pillClass={stagePillClass(item.tone)}>{item.status}</PillClassBadge>
-              <PillClassBadge pillClass="pill-neutral">{item.value}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(stagePillClass(item.tone))}>
+                {item.status}
+              </StatusBadge>
+              <StatusBadge tone="neutral">{item.value}</StatusBadge>
             </div>
             {item.bookings.length > 0 && (
               <div className="stack admin-mt-10">

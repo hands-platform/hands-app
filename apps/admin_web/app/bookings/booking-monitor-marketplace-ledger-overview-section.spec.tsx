@@ -10,7 +10,9 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-task-card">');
     expect(source).not.toContain('<div className="ops-section-header">');
