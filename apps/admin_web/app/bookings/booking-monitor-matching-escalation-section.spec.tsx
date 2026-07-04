@@ -9,8 +9,8 @@ describe('BookingMonitorMatchingEscalationSection', () => {
 
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminSectionHeader');
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(lane.tone)}`}>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(step.tone)}`}>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(item.tone)}`}>');

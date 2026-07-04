@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { AdminSignal, PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
@@ -144,9 +144,9 @@ export function BookingMonitorMatchingEscalationSection({
                 <td>
                   <div className="participant-list">
                     {lane.metrics.map((metricItem) => (
-                      <PillClassBadge pillClass="pill-neutral" key={`${lane.title}-${metricItem.label}`}>
+                      <StatusBadge tone="neutral" key={`${lane.title}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
-                      </PillClassBadge>
+                      </StatusBadge>
                     ))}
                   </div>
                 </td>
@@ -200,9 +200,9 @@ export function BookingMonitorMatchingEscalationSection({
                 <td>
                   <div className="participant-list">
                     {step.metrics.map((metricItem) => (
-                      <PillClassBadge pillClass="pill-neutral" key={`${step.stage}-${metricItem.label}`}>
+                      <StatusBadge tone="neutral" key={`${step.stage}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
-                      </PillClassBadge>
+                      </StatusBadge>
                     ))}
                   </div>
                 </td>
@@ -294,9 +294,9 @@ export function BookingMonitorMatchingEscalationSection({
                   <td>
                     <div className="participant-list">
                       {item.tags.map((tag) => (
-                        <PillClassBadge pillClass="pill-neutral" key={`${item.booking.id}-${tag}`}>
+                        <StatusBadge tone="neutral" key={`${item.booking.id}-${tag}`}>
                           {tag}
-                        </PillClassBadge>
+                        </StatusBadge>
                       ))}
                     </div>
                   </td>
