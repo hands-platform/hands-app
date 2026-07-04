@@ -20,6 +20,8 @@ describe('visibleReviewActionItems', () => {
     expect(source).toContain('AdminFormSelect');
     expect(source).toContain('AdminFormTextarea');
     expect(source).toContain('AdminFormControlButton');
+    expect(source).toContain('AdminDrawerFormGrid');
+    expect(source).not.toContain('<form action={moderateReview} className="calendar-form-grid review-edit-drawer-form">');
     expect(source).not.toContain('<select defaultValue={String(editReview.rating)} name="rating">');
     expect(source).not.toContain('<textarea');
     expect(source).not.toContain('<button className="button button-primary" type="submit">');

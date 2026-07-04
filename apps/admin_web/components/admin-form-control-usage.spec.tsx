@@ -106,6 +106,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps drawer form grid class tokens inside the shared Vuexy drawer grid atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => hasRawDrawerFormGridClassToken(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -149,6 +158,16 @@ function hasRawGenericFormGridClassToken(source: string) {
   for (const match of source.matchAll(rawClassNamePattern)) {
     const className = match.groups?.className ?? '';
     if (className.split(/\s+/).includes('form-grid')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasRawDrawerFormGridClassToken(source: string) {
+  for (const match of source.matchAll(rawClassNamePattern)) {
+    const className = match.groups?.className ?? '';
+    if (className.split(/\s+/).includes('calendar-form-grid')) {
       return true;
     }
   }

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -41,5 +44,12 @@ describe('CalendarEventDrawer', () => {
     expect(markup).not.toContain('<div class="calendar-field"><span>Title</span><label class="admin-form-input');
     expect(markup).not.toContain('<div class="calendar-field"><span>Hashtags</span><label class="admin-form-input');
     expect(markup).not.toContain('<label class="calendar-field calendar-field-toggle"><span>All day</span><input');
+  });
+
+  it('uses the shared Vuexy drawer form grid surface', () => {
+    const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDrawerFormGridFields');
+    expect(source).not.toContain('<div className="calendar-form-grid">');
   });
 });

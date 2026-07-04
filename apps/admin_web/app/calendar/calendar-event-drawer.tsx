@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import {
+  AdminDrawerFormGridFields,
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormDatePickerInput,
@@ -119,7 +120,7 @@ export function CalendarEventDrawer({
               {readonlyReason}
             </AdminInlineNotice>
           ) : null}
-          <div className="calendar-form-grid">
+          <AdminDrawerFormGridFields>
             <AdminFormInput
               className="calendar-drawer-field"
               disabled={!canEdit}
@@ -232,7 +233,7 @@ export function CalendarEventDrawer({
               rows={5}
               value={draft.description}
             />
-          </div>
+          </AdminDrawerFormGridFields>
         </div>
 
         {canEdit ? (

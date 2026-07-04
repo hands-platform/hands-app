@@ -2,6 +2,7 @@ import { Edit3, Plus, Save, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import {
+  AdminDrawerFormGrid,
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
@@ -176,7 +177,7 @@ function ServiceDurationPanel({
 function NewServiceDialog() {
   return (
     <ServiceDialogFrame eyebrow="Service setup" returnHref={servicesReturnHref()} title="Add service menu">
-      <form action={createServiceDurationSet} className="calendar-form-grid service-menu-dialog-form">
+      <AdminDrawerFormGrid action={createServiceDurationSet} className="service-menu-dialog-form">
         <ServiceIdentityFields />
         {SERVICE_DURATIONS.map((duration) => (
           <DurationInputRow duration={duration} key={duration} />
@@ -194,7 +195,7 @@ function NewServiceDialog() {
             Cancel
           </AdminFormControlLink>
         </div>
-      </form>
+      </AdminDrawerFormGrid>
     </ServiceDialogFrame>
   );
 }
@@ -206,7 +207,7 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
       returnHref={servicesReturnHref()}
       title={`Edit ${group.label}`}
     >
-      <form action={saveServiceDurationMenu} className="calendar-form-grid service-menu-dialog-form">
+      <AdminDrawerFormGrid action={saveServiceDurationMenu} className="service-menu-dialog-form">
         <ServiceIdentityFields group={group} />
         {SERVICE_DURATIONS.map((duration) => {
           const service = group.items.find((item) => item.durationMin === duration);
@@ -221,7 +222,7 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
             Cancel
           </AdminFormControlLink>
         </div>
-      </form>
+      </AdminDrawerFormGrid>
     </ServiceDialogFrame>
   );
 }

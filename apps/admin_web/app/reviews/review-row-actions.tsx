@@ -6,6 +6,7 @@ import { CheckCircle2, EyeOff, Flag, MoreVertical, Pencil, Save, Star, X } from 
 import { useEffect, useRef, useState } from 'react';
 
 import {
+  AdminDrawerFormGrid,
   AdminFormControlButton,
   AdminFormSelect,
   AdminFormTextarea,
@@ -216,7 +217,7 @@ function ReviewEditDrawer({
             <blockquote className="review-edit-original-copy">{editReview.commentLabel}</blockquote>
           </AdminCard>
 
-          <form action={moderateReview} className="calendar-form-grid review-edit-drawer-form">
+          <AdminDrawerFormGrid action={moderateReview} className="review-edit-drawer-form">
             <input name="reviewId" type="hidden" value={editReview.reviewId} />
             <input name="status" type="hidden" value={editReview.status} />
             <input name="reportReason" type="hidden" value={editReview.reportReasonValue} />
@@ -253,7 +254,7 @@ function ReviewEditDrawer({
                 Cancel
               </AdminFormControlButton>
             </div>
-          </form>
+          </AdminDrawerFormGrid>
         </div>
       </aside>
     </>

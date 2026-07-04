@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
+  AdminDrawerFormGrid,
+  AdminDrawerFormGridFields,
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
@@ -42,6 +44,27 @@ describe('Admin form controls', () => {
     expect(fields.type).toBe('div');
     expect(fields.props.className).toBe('form-grid compact-form operator-note-lanes');
     expect(textContent(fields)).toBe('Two selects');
+  });
+
+  it('renders drawer form grids through the shared Vuexy drawer surface', () => {
+    const form = AdminDrawerFormGrid({
+      action: '/services',
+      children: 'Drawer form',
+      className: 'service-menu-dialog-form',
+    });
+    const fields = AdminDrawerFormGridFields({
+      children: 'Drawer fields',
+      className: 'calendar-event-fields',
+    });
+
+    expect(form.props).toMatchObject({
+      action: '/services',
+      className: 'calendar-form-grid service-menu-dialog-form',
+    });
+    expect(fields.type).toBe('div');
+    expect(fields.props.className).toBe('calendar-form-grid calendar-event-fields');
+    expect(textContent(form)).toBe('Drawer form');
+    expect(textContent(fields)).toBe('Drawer fields');
   });
 
   it('renders Vuexy-style select and search controls with stable labels', () => {

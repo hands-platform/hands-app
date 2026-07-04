@@ -139,6 +139,16 @@ type AdminFormGridFieldsProps = {
   readonly className?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
+type AdminDrawerFormGridProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
+
+type AdminDrawerFormGridFieldsProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
 export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
   return (
     <form {...formProps} className={joinClassNames('form-grid', className)}>
@@ -150,6 +160,22 @@ export function AdminFormGrid({ children, className, ...formProps }: AdminFormGr
 export function AdminFormGridFields({ children, className, ...divProps }: AdminFormGridFieldsProps) {
   return (
     <div {...divProps} className={joinClassNames('form-grid', className)}>
+      {children}
+    </div>
+  );
+}
+
+export function AdminDrawerFormGrid({ children, className, ...formProps }: AdminDrawerFormGridProps) {
+  return (
+    <form {...formProps} className={joinClassNames('calendar-form-grid', className)}>
+      {children}
+    </form>
+  );
+}
+
+export function AdminDrawerFormGridFields({ children, className, ...divProps }: AdminDrawerFormGridFieldsProps) {
+  return (
+    <div {...divProps} className={joinClassNames('calendar-form-grid', className)}>
       {children}
     </div>
   );
