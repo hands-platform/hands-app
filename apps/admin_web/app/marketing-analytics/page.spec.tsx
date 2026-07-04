@@ -89,6 +89,15 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).not.toContain('bodyClassName="empty-state"');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw marketing pill spans', () => {
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-success">No live ad API</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
+    expect(pageSource).not.toContain('actions={<span className="pill pill-info">{overview.rangeLabel}</span>}');
+    expect(pageSource).not.toContain('actions={<span className="pill pill-warning">Manual input</span>}');
+    expect(pageSource).not.toContain('<span className="pill pill-info">');
+  });
+
   it('renders breakdown tables with shared Vuexy table atoms when requested', async () => {
     const page = await MarketingAnalyticsPage({
       searchParams: Promise.resolve({
