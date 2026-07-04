@@ -17,10 +17,12 @@ import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
+  AdminSignal,
   PillClassBadge,
   PillClassBadgeLink,
   StatusBadge,
   StatusBadgeLink,
+  adminSignalToneFromClassName,
 } from '../components/status-badge';
 import {
   AdminAuditLog,
@@ -1172,9 +1174,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <span className={`signal ${fullDashboardData.shiftBriefing.signalClass}`}>
+              <AdminSignal
+                className={fullDashboardData.shiftBriefing.signalClass}
+                tone={adminSignalToneFromClassName(fullDashboardData.shiftBriefing.signalClass)}
+              >
                 {fullDashboardData.shiftBriefing.label}
-              </span>
+              </AdminSignal>
             }
             className="admin-mt-20"
             description="Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt, notification, and payout pressure into one operating handoff."
@@ -1238,19 +1243,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <span
-                className={`signal ${
+              <AdminSignal
+                tone={
                   fullDashboardData.operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
-                    ? 'signal-warn'
-                    : 'signal-ok'
-                }`}
+                    ? 'warn'
+                    : 'ok'
+                }
               >
                 {
                   fullDashboardData.operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success')
                     .length
                 }{' '}
                 action(s)
-              </span>
+              </AdminSignal>
             }
             className="admin-mt-20"
             description="A simple order for the first admin pass: protect waiting customers, confirm Partner supply, clear money blockers, then check external integrations."
@@ -2016,11 +2021,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <span
-                className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
-              >
+              <AdminSignal tone={queue.some((item) => item.severity === 'high') ? 'warn' : 'ok'}>
                 {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
-              </span>
+              </AdminSignal>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card"
             description="High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and setup."
@@ -2090,13 +2093,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <section className="detail-grid admin-mt-20 dashboard-queue-grid">
             <AdminSection
               actions={
-                <span
-                  className={`signal ${fullDashboardData.queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}
-                >
+                <AdminSignal tone={fullDashboardData.queueSummary.high > 0 ? 'warn' : 'ok'}>
                   {fullDashboardData.queueSummary.high > 0
                     ? `${fullDashboardData.queueSummary.high} same-shift`
                     : 'No same-shift queue'}
-                </span>
+                </AdminSignal>
               }
               className="dashboard-card-scroll dashboard-checklist-card"
               description="Generated from the latest admin API snapshot. It groups customer protection, Partner controls, payment release, cash debt, and payout recovery together."
@@ -2180,9 +2181,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
             <AdminSection
               actions={
-                <span className={`signal ${externalReadiness.ok ? 'signal-ok' : 'signal-warn'}`}>
+                <AdminSignal tone={externalReadiness.ok ? 'ok' : 'warn'}>
                   {externalReadiness.ok ? 'Ready' : 'Needs setup'}
-                </span>
+                </AdminSignal>
               }
               className="dashboard-card-scroll dashboard-setup-card"
               description="Live API environment check. Secrets are never shown, only configured/missing status."

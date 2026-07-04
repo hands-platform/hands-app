@@ -319,10 +319,12 @@ describe('DashboardPage', () => {
     expect(dashboardSource).toContain('AdminSectionHeader');
     expect(dashboardSource).toContain('StatusBadge');
     expect(dashboardSource).toContain('PillClassBadge');
+    expect(dashboardSource).toContain('AdminSignal');
     expect(dashboardSource).toContain('StatusBadgeLink');
     expect(dashboardSource).toContain('PillClassBadgeLink');
     expect(dashboardSource).not.toContain('<span className="pill');
     expect(dashboardSource).not.toContain('<span className={`pill');
+    expect(dashboardSource).not.toContain('<span className={`signal');
     expect(dashboardSource).not.toContain('<Link className="pill');
     expect(dashboardSource).not.toContain('<Link\n                          className={`pill');
     expect(dashboardSource).not.toContain('<div className="ops-section-header">');
