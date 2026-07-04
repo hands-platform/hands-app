@@ -6809,18 +6809,18 @@ a.action-button-card:hover {
 .vietnam-map-event-point::after {
   background: rgb(var(--admin-surface-channel) / 0.96);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-sm);
   bottom: calc(100% + 12px);
   box-shadow: var(--admin-shadow-sm);
   color: var(--admin-text);
   content: attr(data-tooltip);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 0.8125rem;
+  font-weight: 500;
   left: 50%;
-  line-height: 18px;
+  line-height: 1.539;
   max-width: 260px;
   min-width: 190px;
-  padding: 10px 12px;
+  padding: 5px 12px;
   text-align: left;
   transform: translate(-50%, 6px);
   white-space: pre-line;
