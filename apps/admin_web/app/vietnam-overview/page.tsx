@@ -27,7 +27,7 @@ import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
 
 export const dynamic = 'force-dynamic';
@@ -385,7 +385,7 @@ export default async function VietnamOverviewPage({
       <section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">
         <div className="vietnam-realtime-widget-grid">
           {realtimeOperatorCards.map(({ label, value, detail, icon: Icon, tone, progress }) => (
-            <article key={label} className={`vietnam-realtime-widget is-${tone}`}>
+            <AdminCard key={label} className={`vietnam-realtime-widget is-${tone}`}>
               <div className="vietnam-realtime-widget-icon">
                 <Icon size={22} aria-hidden="true" />
               </div>
@@ -397,7 +397,7 @@ export default async function VietnamOverviewPage({
               <div className="vietnam-realtime-widget-meter" aria-hidden="true">
                 <i style={{ width: `${progress}%` }} />
               </div>
-            </article>
+            </AdminCard>
           ))}
         </div>
 
@@ -526,11 +526,11 @@ export default async function VietnamOverviewPage({
           </div>
           <div className="vietnam-overview-filter-summary-grid" aria-label="Selected Vietnam overview filters">
             {periodFilterSummary.map((item) => (
-              <article key={item.label} className={`vietnam-overview-filter-summary-card is-${item.tone}`}>
+              <AdminCard key={item.label} className={`vietnam-overview-filter-summary-card is-${item.tone}`}>
                 <span>{item.label}</span>
                 <strong>{item.value}</strong>
                 <small>{item.detail}</small>
-              </article>
+              </AdminCard>
             ))}
           </div>
       </AdminSection>
