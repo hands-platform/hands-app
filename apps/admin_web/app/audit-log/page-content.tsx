@@ -111,7 +111,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
         >
           <form className="form-grid" action="/audit-log">
             <AdminFormInput
-              className="calendar-field"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search"
               labelVisibility="visible"
@@ -119,7 +119,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               placeholder="Action, target, actor, metadata"
             />
             <AdminFormSelect
-              className="calendar-field"
+              className="admin-directory-filter-select"
               defaultValue={filters.range}
               label="Date range"
               labelVisibility="visible"
@@ -132,7 +132,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               ]}
             />
             <AdminFormSelect
-              className="calendar-field"
+              className="admin-directory-filter-select"
               defaultValue={filters.bucket}
               label="Bucket"
               labelVisibility="visible"
@@ -151,7 +151,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               ]}
             />
             <AdminFormSelect
-              className="calendar-field"
+              className="admin-directory-filter-select"
               defaultValue={filters.priority}
               label="Priority"
               labelVisibility="visible"
