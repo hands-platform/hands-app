@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Eye } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormCheckbox,
@@ -99,7 +100,7 @@ export function CouponsTableSection({
                 />
               ))
             ) : (
-              <p className="muted">No coupons in this state.</p>
+              <AdminEmptyState framed message="No coupons in this state." />
             )}
           </div>
         </AdminFilterPanel>

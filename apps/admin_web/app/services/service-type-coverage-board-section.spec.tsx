@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 import { ServiceTypeCoverageBoardSection } from './service-type-coverage-board-section';
@@ -69,7 +70,10 @@ describe('ServiceTypeCoverageBoardSection', () => {
       visibleRows: [],
     });
 
-    expect(JSON.stringify(section)).toContain('No service type matches the current catalog search.');
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('No service type matches the current catalog search.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

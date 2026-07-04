@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
@@ -137,7 +138,7 @@ export function ServiceTypeCoverageBoardSection({
           </AdminDataTable>
         </div>
       ) : (
-        <p className="muted">No service type matches the current catalog search.</p>
+        <AdminEmptyState framed message="No service type matches the current catalog search." />
       )}
       {hiddenRowCount ? (
         <p className="muted">

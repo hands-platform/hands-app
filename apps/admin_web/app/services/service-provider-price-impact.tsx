@@ -2,6 +2,7 @@ import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/a
 import { formatMoney } from '../../lib/admin-format';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { StatusBadge } from '../../components/status-badge';
 
 type ServiceProviderPriceImpactProps = {
@@ -68,7 +69,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
           ))}
         </div>
       ) : (
-        <p className="muted">No Partner has configured a price for this duration yet.</p>
+        <AdminEmptyState framed message="No Partner has configured a price for this duration yet." />
       )}
     </div>
   );

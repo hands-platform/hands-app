@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -72,7 +73,7 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
           </AdminDataTable>
         </AdminTableScroll>
       ) : (
-        <p className="muted">No policy change has been audited yet.</p>
+        <AdminEmptyState framed message="No policy change has been audited yet." />
       )}
     </AdminSection>
   );

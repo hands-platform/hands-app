@@ -51,8 +51,10 @@ describe('OperationsPolicyAuditTrailSection', () => {
   });
 
   it('renders empty audit state', () => {
-    const rendered = normalizedTextContent(OperationsPolicyAuditTrailSection({ rows: [] }));
+    const section = OperationsPolicyAuditTrailSection({ rows: [] });
+    const rendered = normalizedTextContent(section);
 
     expect(rendered).toContain('No policy change has been audited yet.');
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 });

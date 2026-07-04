@@ -59,6 +59,7 @@ describe('CouponsTableSection', () => {
     });
 
     expect(textContent(section)).toContain('No coupons in this state.');
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 });
 
