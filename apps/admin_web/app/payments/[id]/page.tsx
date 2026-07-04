@@ -6,7 +6,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminKpiCard } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminKpiCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -445,7 +445,7 @@ function PayloadDetails({ value }: { value: unknown }) {
   }
   const keys = Object.keys(record).sort();
   return (
-    <details className="admin-disclosure">
+    <AdminDisclosure>
       <summary>{keys.length} key(s)</summary>
       <div className="setup-stage-list">
         {keys.slice(0, 12).map((key) => (
@@ -457,7 +457,7 @@ function PayloadDetails({ value }: { value: unknown }) {
           </div>
         ))}
       </div>
-    </details>
+    </AdminDisclosure>
   );
 }
 

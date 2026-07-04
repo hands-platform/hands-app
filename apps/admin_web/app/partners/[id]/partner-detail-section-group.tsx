@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AdminDisclosure } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailSectionGroupProps = {
@@ -58,7 +59,7 @@ export function PartnerDetailReferenceDetails({
   status,
 }: PartnerDetailReferenceDetailsProps) {
   return (
-    <details className="admin-disclosure partner-detail-reference-details" open={defaultOpen ? true : undefined}>
+    <AdminDisclosure className="partner-detail-reference-details" open={defaultOpen ? true : undefined}>
       <summary>
         <span>
           <strong>{label}</strong>
@@ -67,7 +68,7 @@ export function PartnerDetailReferenceDetails({
         <em>{status}</em>
       </summary>
       <div className="partner-detail-reference-details-body">{children}</div>
-    </details>
+    </AdminDisclosure>
   );
 }
 

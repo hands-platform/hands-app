@@ -7,6 +7,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminDisclosure } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -80,7 +81,7 @@ export function PartnerDetailBookingChatRecordsSection({
               <td>
                 <p className="muted">{row.chatLine}</p>
                 {row.hasChatRoom ? (
-                  <details className="admin-disclosure admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
+                  <AdminDisclosure className="admin-chat-transcript-disclosure partner-chat-window-disclosure admin-mt-10">
                     <summary className="admin-chat-transcript-summary">
                       <div>
                         <strong>Admin chat archive</strong>
@@ -97,7 +98,7 @@ export function PartnerDetailBookingChatRecordsSection({
                       subtitle={row.heading}
                       title="Booking chat evidence"
                     />
-                  </details>
+                  </AdminDisclosure>
                 ) : (
                   <div className="ops-task-note admin-mt-10">
                     <strong>Chat room missing</strong>

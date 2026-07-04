@@ -7,6 +7,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormInput } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   type AdminCustomerReferralParent,
@@ -680,7 +681,7 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
       {decisionSummary ? <p className="muted">{decisionSummary}</p> : null}
-      <details className="admin-disclosure referral-reward-evidence-details">
+      <AdminDisclosure className="referral-reward-evidence-details">
         <summary>Decision evidence</summary>
         <div className="participant-list referral-reward-decision-evidence">
           {evidenceItems.map((item) => (
@@ -689,7 +690,7 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
             </span>
           ))}
         </div>
-      </details>
+      </AdminDisclosure>
     </div>
   );
 }

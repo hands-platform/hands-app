@@ -1,5 +1,6 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
@@ -174,10 +175,10 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
         </div>
       </div>
       {callback.rawKeys.length ? (
-        <details className="admin-disclosure admin-mt-8">
+        <AdminDisclosure className="admin-mt-8">
           <summary>Callback payload keys</summary>
           <p className="muted">{callback.rawKeys.join(', ')}</p>
-        </details>
+        </AdminDisclosure>
       ) : null}
     </div>
   );

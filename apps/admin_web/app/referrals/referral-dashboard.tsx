@@ -16,6 +16,7 @@ import {
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   type AdminCustomerReferralParent,
@@ -887,13 +888,13 @@ function ReferralRewardCell({
           <p className="muted">
             Latest {referralRewardDecisionLabel(latestDecision.action)} by {userLabel(latestDecision.actor, 'Unknown admin')}
           </p>
-          <details className="admin-disclosure referral-parent-reward-decision-details">
+          <AdminDisclosure className="referral-parent-reward-decision-details">
             <summary>Decision details</summary>
             <div className="participant-list referral-parent-reward-decision-evidence">
               {latestDecision.reason ? <span className="muted">{latestDecision.reason}</span> : null}
               <span className="muted">{formatDateTime(latestDecision.createdAt)}</span>
             </div>
-          </details>
+          </AdminDisclosure>
         </>
       ) : null}
     </div>

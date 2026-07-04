@@ -1,3 +1,4 @@
+import { AdminDisclosure } from '../../components/admin-surface';
 import { PillClassBadge, PillClassBadgeLink } from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
@@ -37,7 +38,7 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
   const hiddenAttempts = Math.max(0, attempts - deliveryRows.length);
 
   return (
-    <details className="admin-disclosure notification-delivery-disclosure">
+    <AdminDisclosure className="notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
         <PillClassBadge pillClass={latest.statusClassName}>{latest.status}</PillClassBadge>{' '}
         <strong>{attempts} attempts</strong>{' '}
@@ -56,7 +57,7 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
           </p>
         ) : null}
       </div>
-    </details>
+    </AdminDisclosure>
   );
 }
 

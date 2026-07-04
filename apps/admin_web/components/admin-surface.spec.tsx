@@ -2,6 +2,7 @@ import {
   AdminActionCard,
   AdminAsideCard,
   AdminCard,
+  AdminDisclosure,
   AdminDialogCard,
   AdminDisclosureCard,
   AdminErrorState,
@@ -127,6 +128,20 @@ describe('Admin surface components', () => {
     expect(disclosure.props).toMatchObject({
       className: 'card admin-card admin-disclosure chat-transcript-room',
       id: 'chat-room-1',
+      open: true,
+    });
+  });
+
+  it('renders a reusable Vuexy disclosure surface without adding nested card chrome', () => {
+    const disclosure = AdminDisclosure({
+      children: <summary>Open inline evidence</summary>,
+      className: 'payment-payload-keys',
+      open: true,
+    });
+
+    expect(disclosure.type).toBe('details');
+    expect(disclosure.props).toMatchObject({
+      className: 'admin-disclosure payment-payload-keys',
       open: true,
     });
   });

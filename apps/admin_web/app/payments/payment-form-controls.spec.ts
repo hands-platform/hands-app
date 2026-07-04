@@ -17,8 +17,10 @@ describe('payment cash debt form controls', () => {
     expect(detailPageSource).toContain('AdminEmptyState');
     expect(presenterSource).toContain('AdminFormInput');
     expect(presenterSource).toContain('AdminFormControlButton');
-    expect(detailPageSource).toContain('<details className="admin-disclosure">');
-    expect(presenterSource).toContain('<details className="admin-disclosure admin-mt-8">');
+    expect(detailPageSource).toContain('AdminDisclosure');
+    expect(presenterSource).toContain('AdminDisclosure');
+    expect(detailPageSource).not.toContain('<details className="admin-disclosure">');
+    expect(presenterSource).not.toContain('<details className="admin-disclosure admin-mt-8">');
     expect(detailPageSource).not.toContain('aria-label="Cash fee settlement reference"');
     expect(presenterSource).not.toContain('aria-label="Cash debt settlement reference"');
     expect(detailPageSource).not.toContain('<strong>No retained messages</strong>');

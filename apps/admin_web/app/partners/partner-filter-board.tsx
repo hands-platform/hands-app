@@ -7,6 +7,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 import { buildPartnerListHref, partnerSortLabel, type ProviderFilters } from './partner-filters';
@@ -122,7 +123,7 @@ export function PartnerFilterBoard({
           </div>
         </div>
         {showAdvancedFilters ? (
-          <details className="admin-disclosure vuexy-partner-filter-details" open>
+          <AdminDisclosure className="vuexy-partner-filter-details" open>
             <summary>
               <span>More filters</span>
               <small>Location, device/session, booking flow, and review lane</small>
@@ -164,7 +165,7 @@ export function PartnerFilterBoard({
                 options={partnerReviewLaneFilterOptions}
               />
             </div>
-          </details>
+          </AdminDisclosure>
         ) : null}
         <div className="vuexy-partner-filter-meta" aria-label="Partner filter status">
           <span className="muted">
