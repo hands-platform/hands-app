@@ -20,6 +20,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminDisclosureCard } from '../../../components/admin-surface';
 import { PillClassBadge } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -203,9 +204,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         resultTone={importNotice === '1' ? 'success' : importError ? 'danger' : 'info'}
         title="Manual bank transaction import"
       >
-        <details className="admin-disclosure finance-reconciliation-import-disclosure"
-          open={shouldOpenImportDisclosure}
-        >
+        <AdminDisclosureCard className="finance-reconciliation-import-disclosure" open={shouldOpenImportDisclosure}>
           <summary>
             <span>Bank import form</span>
             <small>Open only when a bank statement row is missing from the reconciliation list.</small>
@@ -254,7 +253,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
               </AdminFormControlButton>
             </div>
           </AdminFormGrid>
-        </details>
+        </AdminDisclosureCard>
       </AdminFilterPanel>
 
       <FinanceTablePanel

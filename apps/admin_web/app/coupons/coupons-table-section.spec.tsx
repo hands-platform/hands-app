@@ -40,10 +40,14 @@ describe('CouponsTableSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button', 'button-primary']),
     );
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['card', 'admin-card', 'admin-disclosure', 'coupon-section-disclosure']),
+    );
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
     expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminDisclosureCard');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('<details className="admin-disclosure coupon-section-disclosure"');
     expect(sectionSource).not.toContain('coupon-active-field');
     expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');
     expect(sectionSource).not.toContain('<span className="pill pill-neutral">{booking.statusLabel}</span>');
