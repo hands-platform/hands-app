@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { ExternalLink, Filter, X } from 'lucide-react';
 import {
   AdminOperationalPolicySetting,
@@ -35,7 +36,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   buildPartnerControlDeskActionConfirmation,
@@ -89,6 +90,31 @@ const DEFAULT_PARTNER_CONTROL_POLICY: PartnerControlPolicy = {
   invitationLimit: 50,
   locationFreshnessMinutes: 90,
 };
+
+function PartnerControlStatusBadge({
+  children,
+  pillClass,
+}: {
+  readonly children: ReactNode;
+  readonly pillClass: string;
+}) {
+  return (
+    <StatusBadge
+      className={partnerControlStatusBadgeExtraClassName(pillClass)}
+      tone={statusBadgeToneFromPillClass(pillClass)}
+    >
+      {children}
+    </StatusBadge>
+  );
+}
+
+function partnerControlStatusBadgeExtraClassName(pillClass: string) {
+  const extraClassName = pillClass
+    .split(/\s+/)
+    .filter((className) => className && className !== 'pill' && !className.startsWith('pill-'))
+    .join(' ');
+  return extraClassName || undefined;
+}
 
 export default async function PartnerControlsPage({
   searchParams,
@@ -162,9 +188,9 @@ export default async function PartnerControlsPage({
       <AdminSection
         actions={
           <>
-          <PillClassBadge pillClass={commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}>
+          <PartnerControlStatusBadge pillClass={commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
-          </PillClassBadge>
+          </PartnerControlStatusBadge>
           <AdminFormControlLink className="button-secondary partner-control-inline-action" href="/operations-policy">
             <ExternalLink aria-hidden="true" size={14} />
             {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
@@ -222,9 +248,9 @@ export default async function PartnerControlsPage({
                   <p className="muted">{action.operatorAction}</p>
                   <div className="participant-list">
                     {action.tags.map((tag) => (
-                      <PillClassBadge key={`${action.id}-${tag.label}`} pillClass={tag.tone}>
+                      <PartnerControlStatusBadge key={`${action.id}-${tag.label}`} pillClass={tag.tone}>
                         {tag.label}
-                      </PillClassBadge>
+                      </PartnerControlStatusBadge>
                     ))}
                   </div>
                 </div>
@@ -278,12 +304,12 @@ export default async function PartnerControlsPage({
                   <p className="muted">{item.operatorAction}</p>
                   <div className="participant-list">
                     {item.controls.map((control) => (
-                      <PillClassBadge
+                      <PartnerControlStatusBadge
                         key={`${item.provider.id}-${control.label}`}
                         pillClass={control.className}
                       >
                         {control.label}
-                      </PillClassBadge>
+                      </PartnerControlStatusBadge>
                     ))}
                   </div>
                 </div>
@@ -308,13 +334,13 @@ export default async function PartnerControlsPage({
         description="Shows which Partners cannot participate in marketplace bookings now, which issues only affect payout, and exactly where staff should clear the blocker."
         id="partner-control-unblock-board"
         status={
-          <PillClassBadge
+          <PartnerControlStatusBadge
             pillClass={
               acceptanceUnblockBoard.some((item) => item.blockingCount > 0) ? 'pill-danger' : 'pill-success'
             }
           >
             {acceptanceUnblockBoard.reduce((sum, item) => sum + item.blockingCount, 0)} blocking partner(s)
-          </PillClassBadge>
+          </PartnerControlStatusBadge>
         }
         title="Marketplace and payout unblock board"
       >
@@ -363,13 +389,13 @@ export default async function PartnerControlsPage({
         description="Step-by-step operating order for restoring Partner marketplace and payout gates without mixing payout-only gates into customer discovery or marketplace participation decisions."
         id="partner-control-unblock-playbook"
         status={
-          <PillClassBadge
+          <PartnerControlStatusBadge
             pillClass={
               acceptanceUnblockPlaybook.some((step) => step.blockingCount) ? 'pill-warn' : 'pill-success'
             }
           >
             {acceptanceUnblockPlaybook.reduce((sum, step) => sum + step.blockingCount, 0)} active blocker(s)
-          </PillClassBadge>
+          </PartnerControlStatusBadge>
         }
         title="Marketplace and payout unblock playbook"
       >
@@ -390,7 +416,7 @@ export default async function PartnerControlsPage({
                   <strong>Customer impact:</strong> {step.customerImpact}
                 </p>
                 <div className="participant-list">
-                  <PillClassBadge pillClass={step.pillClass}>{step.status}</PillClassBadge>
+                  <PartnerControlStatusBadge pillClass={step.pillClass}>{step.status}</PartnerControlStatusBadge>
                   <StatusBadge tone="info">{step.owner}</StatusBadge>
                   {step.partnerSamples.map((partner) => (
                     <StatusBadge key={`${step.id}-${partner}`} tone="neutral">
@@ -412,9 +438,9 @@ export default async function PartnerControlsPage({
         description="Explains why a Partner may be held from paid work, payout, or dispatch-sensitive work, with the exact screen an operator should open next."
         id="partner-control-block-matrix"
         status={
-          <PillClassBadge pillClass={operatingBlocks.length ? 'pill-warn' : 'pill-success'}>
+          <PartnerControlStatusBadge pillClass={operatingBlocks.length ? 'pill-warn' : 'pill-success'}>
             {operatingBlocks.length ? `${operatingBlocks.length} block record(s)` : 'No block record'}
-          </PillClassBadge>
+          </PartnerControlStatusBadge>
         }
         title="Partner operating block matrix"
       >
@@ -428,7 +454,7 @@ export default async function PartnerControlsPage({
                   <p className="muted">{block.reason}</p>
                   <p className="muted">{block.operatorAction}</p>
                   <div className="participant-list">
-                    <PillClassBadge pillClass={block.tone}>{block.severity}</PillClassBadge>
+                    <PartnerControlStatusBadge pillClass={block.tone}>{block.severity}</PartnerControlStatusBadge>
                     <StatusBadge tone="info">{block.partner}</StatusBadge>
                   </div>
                 </div>
@@ -458,9 +484,9 @@ export default async function PartnerControlsPage({
         description="Dashboard links land here with the exact review lane already selected."
         id="partner-control-filters"
         status={
-          <PillClassBadge pillClass={activeFilters.length ? 'pill-warn' : 'pill-success'}>
+          <PartnerControlStatusBadge pillClass={activeFilters.length ? 'pill-warn' : 'pill-success'}>
             Showing {visibleReports.length} report(s), {visibleSanctions.length} account control(s)
-          </PillClassBadge>
+          </PartnerControlStatusBadge>
         }
         title="Control filters"
       >
@@ -563,16 +589,16 @@ export default async function PartnerControlsPage({
               <tr key={item.provider.id}>
                 <td>
                   <PartnerControlProviderCell provider={item.provider} />
-                  <PillClassBadge pillClass={watchSeverityPill(item.severity)}>
+                  <PartnerControlStatusBadge pillClass={watchSeverityPill(item.severity)}>
                     {item.severity}
-                  </PillClassBadge>
+                  </PartnerControlStatusBadge>
                 </td>
                 <td>
                   <div className="participant-list">
                     {item.signals.map((signal) => (
-                      <PillClassBadge key={signal.label} pillClass={watchSignalPill(signal.kind)}>
+                      <PartnerControlStatusBadge key={signal.label} pillClass={watchSignalPill(signal.kind)}>
                         {signal.label}
-                      </PillClassBadge>
+                      </PartnerControlStatusBadge>
                     ))}
                   </div>
                   <p className="muted">{item.detail}</p>
@@ -733,10 +759,12 @@ export default async function PartnerControlsPage({
                   />
                 </td>
                 <td>
-                  <PillClassBadge pillClass={severityPill(report.severity)}>{report.severity}</PillClassBadge>
-                  <PillClassBadge pillClass={`${statusPill(report.status)} admin-ml-6`}>
+                  <PartnerControlStatusBadge pillClass={severityPill(report.severity)}>
+                    {report.severity}
+                  </PartnerControlStatusBadge>
+                  <PartnerControlStatusBadge pillClass={`${statusPill(report.status)} admin-ml-6`}>
                     {report.status}
-                  </PillClassBadge>
+                  </PartnerControlStatusBadge>
                   {report.resolutionNote ? (
                     <p className="muted">{partnerDisplayText(report.resolutionNote)}</p>
                   ) : null}
@@ -839,9 +867,9 @@ export default async function PartnerControlsPage({
             {visibleSanctions.map((sanction) => (
               <tr key={sanction.id}>
                 <td>
-                  <PillClassBadge pillClass={sanction.status === 'ACTIVE' ? 'pill-danger' : 'pill-neutral'}>
+                  <PartnerControlStatusBadge pillClass={sanction.status === 'ACTIVE' ? 'pill-danger' : 'pill-neutral'}>
                     {sanction.status}
-                  </PillClassBadge>
+                  </PartnerControlStatusBadge>
                   <p>
                     <strong>{sanction.type}</strong>
                   </p>
