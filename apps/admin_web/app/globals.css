@@ -13371,7 +13371,7 @@ a.ops-task-card {
 .vuexy-basic-timeline {
   display: grid;
   gap: 0;
-  padding: 2px 0 0;
+  padding: 0;
 }
 
 .booking-operating-timeline-list {
@@ -13396,7 +13396,7 @@ a.ops-task-card {
   display: block;
   flex: 0 0 auto;
   height: 12px;
-  margin: 6px 0 8px;
+  margin: 12px 0;
   width: 12px;
 }
 
@@ -13435,7 +13435,7 @@ a.ops-task-card {
 
 .vuexy-basic-timeline-content {
   min-width: 0;
-  padding: 0 0 22px 12px;
+  padding: 0 0 1rem 16px;
 }
 
 .vuexy-basic-timeline-item:last-child .vuexy-basic-timeline-content {
