@@ -11,7 +11,6 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeLink } from '../../../components/status-badge';
-import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -92,22 +91,22 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         {
           helper: 'Customer payment total for this period.',
           label: 'Gross service revenue',
-          value: formatMoney(summary.grossServiceRevenue, summary.currency),
+          value: <MoneyText amount={summary.grossServiceRevenue} currency={summary.currency} />,
         },
         {
           helper: 'Partner payout total before payout batch execution.',
           label: 'Partner payout',
-          value: formatMoney(summary.partnerPayoutTotal, summary.currency),
+          value: <MoneyText amount={summary.partnerPayoutTotal} currency={summary.currency} />,
         },
         {
           helper: 'Partner VAT withholding total.',
           label: 'VAT withheld',
-          value: formatMoney(summary.partnerVatWithheldTotal, summary.currency),
+          value: <MoneyText amount={summary.partnerVatWithheldTotal} currency={summary.currency} />,
         },
         {
           helper: 'Partner PIT withholding total.',
           label: 'PIT withheld',
-          value: formatMoney(summary.partnerPitWithheldTotal, summary.currency),
+          value: <MoneyText amount={summary.partnerPitWithheldTotal} currency={summary.currency} />,
         },
       ]}
       title="Partner Withholding Tax"
@@ -119,7 +118,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           icon={ReceiptText}
           label="Partner tax payable"
           tone={summary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
-          value={formatMoney(summary.totalPartnerTaxWithheld, summary.currency)}
+          value={<MoneyText amount={summary.totalPartnerTaxWithheld} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Partners with taxable completed booking revenue in this period."
@@ -143,7 +142,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           icon={WalletCards}
           label="Partner payout base"
           tone={summary.partnerPayoutTotal > 0 ? 'success' : 'neutral'}
-          value={formatMoney(summary.partnerPayoutTotal, summary.currency)}
+          value={<MoneyText amount={summary.partnerPayoutTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail={withholdingRemittanceDetail(monthlyClosingSummary)}

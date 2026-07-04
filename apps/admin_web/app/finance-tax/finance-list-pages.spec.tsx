@@ -434,6 +434,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>');
   });
@@ -452,6 +453,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(reversal.customerPaymentAmount, reversal.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>');
   });
@@ -514,6 +516,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/partner-withholding-tax/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<td>{formatMoney(row.grossServiceRevenue, row.currency)}</td>');
     expect(source).not.toContain('<td>{formatMoney(row.partnerPayoutTotal, row.currency)}</td>');
     expect(source).not.toContain('<strong>{formatMoney(row.partnerVatWithheldTotal, row.currency)}</strong>');
@@ -525,6 +528,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-fees/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>');
     expect(source).not.toContain(
       '<strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>',
@@ -535,6 +539,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<td>{formatMoney(row.platformFeeGrossTotal, summary.currency)}</td>');
     expect(source).not.toContain('<strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>');
     expect(source).not.toContain('<td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>');

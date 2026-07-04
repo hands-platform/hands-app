@@ -10,7 +10,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
@@ -76,12 +76,12 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
         {
           helper: 'Platform fee revenue reversed in this scope.',
           label: 'Revenue reversal',
-          value: formatMoney(summary.platformFeeNetRevenue, summary.currency),
+          value: <MoneyText amount={summary.platformFeeNetRevenue} currency={summary.currency} />,
         },
         {
           helper: 'Company output VAT reversed in this scope.',
           label: 'VAT reversal',
-          value: formatMoney(summary.companyOutputVat, summary.currency),
+          value: <MoneyText amount={summary.companyOutputVat} currency={summary.currency} />,
         },
       ]}
       title="Settlement Reversals"
@@ -93,7 +93,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           icon={RotateCcw}
           label="Reversal amount"
           tone={summary.count > 0 ? 'warning' : 'success'}
-          value={formatMoney(summary.customerPaymentAmount, summary.currency)}
+          value={<MoneyText amount={summary.customerPaymentAmount} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail={`${summary.cashCount} cash reversal row(s) may affect partner wallet receivable and manual settlement follow-up.`}
@@ -117,7 +117,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           icon={BadgePercent}
           label="Tax reversal impact"
           tone={taxReversalImpact > 0 ? 'danger' : 'success'}
-          value={formatMoney(taxReversalImpact, summary.currency)}
+          value={<MoneyText amount={taxReversalImpact} currency={summary.currency} />}
         />
       </FinanceListCommandBoard>
 

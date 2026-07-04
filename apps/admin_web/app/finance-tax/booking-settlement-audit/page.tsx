@@ -12,7 +12,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -88,17 +88,17 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         {
           helper: 'Partner VAT/PIT withheld in these snapshots.',
           label: 'Withheld',
-          value: formatMoney(summary.partnerWithholdingTotal, summary.currency),
+          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
         },
         {
           helper: 'Company output VAT from HANDS platform fee.',
           label: 'Company VAT',
-          value: formatMoney(summary.companyOutputVat, summary.currency),
+          value: <MoneyText amount={summary.companyOutputVat} currency={summary.currency} />,
         },
         {
           helper: 'Payment processing fees recorded by settlement.',
           label: 'Payment fees',
-          value: formatMoney(summary.paymentProcessingFee, summary.currency),
+          value: <MoneyText amount={summary.paymentProcessingFee} currency={summary.currency} />,
         },
       ]}
       title="Booking Settlement Audit"
@@ -126,7 +126,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           icon={ShieldCheck}
           label="Withholding evidence"
           tone={summary.partnerWithholdingTotal > 0 ? 'primary' : 'neutral'}
-          value={formatMoney(summary.partnerWithholdingTotal, summary.currency)}
+          value={<MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Open detail rows when payment fee, coupon, VAT/PIT, or journal evidence must be checked."

@@ -6,14 +6,12 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
-  buildPlatformVatMetrics,
   buildPlatformVatSummaryCsvHref,
   buildPlatformVatSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
@@ -59,7 +57,33 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         </TaxFinanceWorkflowActions>
       }
       description="Company output VAT from HANDS platform fee. Customer payment amount is not company revenue."
-      metrics={buildPlatformVatMetrics(summary)}
+      metrics={[
+        {
+          helper: 'Settlement snapshots included in this platform VAT period.',
+          label: 'Settlements',
+          value: summary.settlementCount,
+        },
+        {
+          helper: 'HANDS platform fee including company output VAT.',
+          label: 'Platform fee gross',
+          value: <MoneyText amount={summary.platformFeeGrossTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'VAT payable from HANDS platform fee gross.',
+          label: 'Company output VAT',
+          value: <MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Company revenue after removing output VAT.',
+          label: 'Net revenue',
+          value: <MoneyText amount={summary.platformFeeNetRevenueTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Platform fee gross minus output VAT and net revenue.',
+          label: 'Formula delta',
+          value: <MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />,
+        },
+      ]}
       title="Platform VAT"
     >
       <FinanceListCommandBoard ariaLabel="VAT command board">
@@ -69,7 +93,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           icon={ReceiptText}
           label="Output VAT"
           tone={summary.companyOutputVatTotal > 0 ? 'warning' : 'neutral'}
-          value={formatMoney(summary.companyOutputVatTotal, summary.currency)}
+          value={<MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Company revenue after removing output VAT from platform fee gross."
@@ -77,7 +101,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           icon={CircleDollarSign}
           label="Net revenue"
           tone={summary.platformFeeNetRevenueTotal > 0 ? 'success' : 'neutral'}
-          value={formatMoney(summary.platformFeeNetRevenueTotal, summary.currency)}
+          value={<MoneyText amount={summary.platformFeeNetRevenueTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Must be 0 before monthly closeout."
@@ -85,7 +109,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           icon={AlertTriangle}
           label="Formula delta"
           tone={summary.netRevenueDelta === 0 ? 'success' : 'danger'}
-          value={formatMoney(summary.netRevenueDelta, summary.currency)}
+          value={<MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="VAT rate buckets from immutable booking settlement snapshots."

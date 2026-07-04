@@ -6,14 +6,12 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeLink } from '../../../components/status-badge';
-import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
-  buildPaymentFeeMetrics,
   buildPaymentFeeSummaryCsvHref,
   buildPaymentFeeSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
@@ -60,7 +58,23 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         </TaxFinanceWorkflowActions>
       }
       description="Payment processing fees are tracked separately from Partner VAT/PIT and company output VAT."
-      metrics={buildPaymentFeeMetrics(summary)}
+      metrics={[
+        {
+          helper: 'Settlement snapshots included in this payment fee period.',
+          label: 'Settlements',
+          value: summary.settlementCount,
+        },
+        {
+          helper: 'Customer payment volume used to audit payment fee cost.',
+          label: 'Customer paid',
+          value: <MoneyText amount={summary.customerPaymentAmountTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Processing fees. This is not Partner withholding tax or company output VAT.',
+          label: 'Payment fees',
+          value: <MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />,
+        },
+      ]}
       title="Payment Fees"
     >
       <FinanceListCommandBoard ariaLabel="Fee command board">
@@ -70,7 +84,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
           icon={CreditCard}
           label="Processing fee"
           tone={summary.paymentProcessingFeeTotal > 0 ? 'warning' : 'neutral'}
-          value={formatMoney(summary.paymentProcessingFeeTotal, summary.currency)}
+          value={<MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Processing fee as a share of customer payment volume for the selected period."
@@ -86,7 +100,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
           icon={WalletCards}
           label="Customer paid"
           tone={summary.customerPaymentAmountTotal > 0 ? 'primary' : 'neutral'}
-          value={formatMoney(summary.customerPaymentAmountTotal, summary.currency)}
+          value={<MoneyText amount={summary.customerPaymentAmountTotal} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Payment methods with fee aggregation rows in this period."
