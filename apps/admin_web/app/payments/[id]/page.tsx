@@ -6,7 +6,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { MetricCard } from '../../../components/metric-card';
+import { AdminKpiCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -111,14 +111,14 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       title="Payment operation detail"
     >
       <section className="grid admin-mb-16">
-        <MetricCard label="Payment status" value={payment.status} helper={paymentStatusHint(payment)} />
-        <MetricCard label="Method" value={payment.method} helper={gatewayReferenceLabel(payment)} />
-        <MetricCard label="Amount" value={money(payment.amount, payment.currency)} helper={serviceLabel} />
-        <MetricCard label="Booking" value={booking?.status ?? 'Not linked'} helper={bookingAddress} />
-        <MetricCard label="Callbacks" value={`${callbacks.length} attempt(s)`} helper={`${callbackReviewCount} review item(s)`} />
-        <MetricCard label="Accepted callbacks" value={`${acceptedCallbackCount}`} helper="Accepted or replayed with verified signature." />
-        <MetricCard label="Cash fee gate" value={cashDebt ? 'Blocked' : 'Clear'} helper={cashDebtHint(payment)} />
-        <MetricCard label="Audit trail" value={`${auditRows.length} event(s)`} helper="Payment and linked booking operation logs." />
+        <AdminKpiCard label="Payment status" value={payment.status} helper={paymentStatusHint(payment)} />
+        <AdminKpiCard label="Method" value={payment.method} helper={gatewayReferenceLabel(payment)} />
+        <AdminKpiCard label="Amount" value={money(payment.amount, payment.currency)} helper={serviceLabel} />
+        <AdminKpiCard label="Booking" value={booking?.status ?? 'Not linked'} helper={bookingAddress} />
+        <AdminKpiCard label="Callbacks" value={`${callbacks.length} attempt(s)`} helper={`${callbackReviewCount} review item(s)`} />
+        <AdminKpiCard label="Accepted callbacks" value={`${acceptedCallbackCount}`} helper="Accepted or replayed with verified signature." />
+        <AdminKpiCard label="Cash fee gate" value={cashDebt ? 'Blocked' : 'Clear'} helper={cashDebtHint(payment)} />
+        <AdminKpiCard label="Audit trail" value={`${auditRows.length} event(s)`} helper="Payment and linked booking operation logs." />
       </section>
 
       <PaymentDetailActionMapSection

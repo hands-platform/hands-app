@@ -1,4 +1,4 @@
-import { MetricCard } from '../../components/metric-card';
+import { AdminKpiCard } from '../../components/admin-surface';
 import type { AdminCashSettlementSummary } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 
@@ -37,55 +37,55 @@ export function OperationsHandoffMetricGridSection({
 }: OperationsHandoffMetricGridSectionProps) {
   return (
     <section className="grid admin-mt-16 admin-mb-16">
-      <MetricCard
+      <AdminKpiCard
         label="Active bookings"
         value={activeBookingCount}
         helper="Matching, on the way, arrived, or in service"
         href="/bookings?view=attention"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Matching wait"
         value={matchingBookingCount}
         helper="Customer can still receive marketplace participants"
         href="/bookings?view=matching"
       />
-      <MetricCard
+      <AdminKpiCard
         label="In service"
         value={inServiceBookingCount}
         helper="Chat should be live until Partner completion"
         href="/bookings?view=closeout"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Cash fee debt"
         value={cashSummary.providerCount}
         helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across Partner wallet gates`}
         href="/cash-settlements"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Customer app online"
         value={presence.customerLive}
         helper={`${presence.customerRecent} customer session(s) seen recently`}
         href="/app-sessions?role=CUSTOMER&state=live"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Partner app online"
         value={presence.partnerLive}
         helper={`${presence.partnerRecent} Partner session(s) seen recently`}
         href="/app-sessions?role=PROVIDER&state=live"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Chat rooms"
         value={chatSignals.roomCount}
         helper={`${chatSignals.recentMessageCount} recent message(s) visible to admin`}
         href="/chat-archive"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Failed notifications"
         value={failedNotificationCount}
         helper="Push/SMS/app delivery rows needing retry or device check"
         href="/notifications?review=failed"
       />
-      <MetricCard
+      <AdminKpiCard
         label="Recent FCM sent"
         value={latestFcmSent?.value ?? 'No send'}
         helper={latestFcmSent?.helper ?? 'No FCM SENT delivery recorded yet'}

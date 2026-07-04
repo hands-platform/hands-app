@@ -3,8 +3,7 @@ import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
-import { MetricCard } from '../../../components/metric-card';
+import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
@@ -224,7 +223,7 @@ export function BookingMetricGridSection({ metrics }: BookingMetricGridSectionPr
   return (
     <section className="grid admin-mb-16">
       {metrics.map((metric) => (
-        <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
+        <AdminKpiCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
       ))}
     </section>
   );

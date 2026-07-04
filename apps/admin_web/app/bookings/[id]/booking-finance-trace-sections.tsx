@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminSection } from '../../../components/admin-surface';
-import { MetricCard } from '../../../components/metric-card';
+import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge } from '../../../components/status-badge';
 import { ActionLink } from './booking-operator-actions';
 
@@ -302,7 +301,7 @@ export function BookingFinanceCommandCenterSection({
     >
       <div className="grid admin-mt-12">
         {financeSummaryCards.map((card) => (
-          <MetricCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
+          <AdminKpiCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
         ))}
       </div>
       {financeFlags.length > 0 ? (

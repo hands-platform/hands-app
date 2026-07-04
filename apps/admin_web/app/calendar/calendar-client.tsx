@@ -16,8 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminAsideCard, AdminCard } from '../../components/admin-surface';
-import { MetricCard } from '../../components/metric-card';
+import { AdminAsideCard, AdminCard, AdminKpiCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import {
   buildCalendarMetrics,
@@ -241,18 +240,18 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
   return (
     <div className="calendar-page">
       <section className="admin-metric-grid">
-        <MetricCard
+        <AdminKpiCard
           helper="Filtered across the active calendar categories."
           label="Visible events"
           value={metrics.total}
         />
-        <MetricCard helper="Events scheduled for the current day." label="Today" value={metrics.today} />
-        <MetricCard
+        <AdminKpiCard helper="Events scheduled for the current day." label="Today" value={metrics.today} />
+        <AdminKpiCard
           helper="Upcoming working blocks and operator reminders."
           label="Next 7 days"
           value={metrics.upcoming}
         />
-        <MetricCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
+        <AdminKpiCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
       </section>
 
       {mutationError ? (
