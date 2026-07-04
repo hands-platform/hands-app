@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 type SummaryCard = {
@@ -129,7 +129,11 @@ type MarketplaceSupply = {
 export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnapshotSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={stageSnapshot.pillClass}>{stageSnapshot.stage}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(stageSnapshot.pillClass)}>
+          {stageSnapshot.stage}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="Current stage, blocking signal, and next operator action for this booking."
       id="alerts"
@@ -161,7 +165,11 @@ export function BookingCustomerWaitPanelSection({
 }: BookingCustomerWaitPanelSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={customerWaitPanel.signalTone}>{customerWaitPanel.signalStatus}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(customerWaitPanel.signalTone)}>
+          {customerWaitPanel.signalStatus}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="Customer waiting signal, matching evidence, and the next action while assignment is unresolved."
       id="audit"
@@ -205,7 +213,9 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <PillClassBadge pillClass={policySnapshot.decisionTone}>{policySnapshot.decisionStatus}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(policySnapshot.decisionTone)}>
+              {policySnapshot.decisionStatus}
+            </StatusBadge>
             <strong>{policySnapshot.decisionTitle}</strong>
             <p className="muted">{policySnapshot.decisionDetail}</p>
           </div>
@@ -220,7 +230,11 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             className={decision.className}
             detail={decision.value}
             key={decision.key}
-            leading={<PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(decision.pillClass)}>
+                {decision.status}
+              </StatusBadge>
+            }
             title={decision.label}
           >
             <small title={decision.helper}>{compactPolicyDecisionHelper(decision.helper)}</small>
@@ -254,7 +268,11 @@ export function BookingAddressRadiusContractSection({
 }: BookingAddressRadiusContractSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={addressRadiusContract.tone}>{addressRadiusContract.status}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(addressRadiusContract.tone)}>
+          {addressRadiusContract.status}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="The immutable booking address snapshot is the source of truth for 10km marketplace eligibility."
       id="address-radius-contract"
@@ -276,9 +294,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={marketplaceSupply.candidateCommand.tone}>
+        <StatusBadge tone={statusBadgeToneFromPillClass(marketplaceSupply.candidateCommand.tone)}>
           {marketplaceSupply.candidateCommand.status}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Usable Partner supply and operational blockers for this booking pin."
@@ -370,9 +388,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}>
+        <StatusBadge tone={marketplaceSupply.eligibleCount ? 'success' : 'warning'}>
           {marketplaceSupply.eligibleCount} eligible
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Full Partner supply rows for the booking pin, with eligibility and exclusion evidence."
@@ -383,9 +401,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <PillClassBadge pillClass={marketplaceSupply.decisionTone}>
+            <StatusBadge tone={statusBadgeToneFromPillClass(marketplaceSupply.decisionTone)}>
               {marketplaceSupply.decisionStatus}
-            </PillClassBadge>
+            </StatusBadge>
             <strong>{marketplaceSupply.decisionTitle}</strong>
             <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
@@ -410,9 +428,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
               <p className="muted">{row.detail}</p>
             </div>
             <div>
-              <PillClassBadge pillClass={row.eligible ? 'pill-success' : 'pill-warn'}>
+              <StatusBadge tone={row.eligible ? 'success' : 'warning'}>
                 {row.eligible ? 'Can participate' : 'Excluded'}
-              </PillClassBadge>
+              </StatusBadge>
               <div className="muted">{row.distance}</div>
             </div>
           </div>
@@ -474,13 +492,13 @@ function PillBadgeList({
   return (
     <div className="participant-list admin-mt-8">
       {badges.map((badge) => (
-        <PillClassBadge
+        <StatusBadge
           key={badge.label}
-          pillClass={badge.tone}
+          tone={statusBadgeToneFromPillClass(badge.tone)}
           title={showDetailTitle ? badge.detail : undefined}
         >
           {badge.label}
-        </PillClassBadge>
+        </StatusBadge>
       ))}
     </div>
   );
@@ -494,7 +512,7 @@ function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
           className={card.className}
           detail={card.detail}
           key={card.title}
-          leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+          leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
           title={card.title}
         >
           <small>{card.action}</small>
