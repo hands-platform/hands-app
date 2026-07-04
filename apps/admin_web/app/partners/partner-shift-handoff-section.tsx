@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { PartnerCommandLane } from './partner-command-center';
 import {
   partnerShiftCardClass,
@@ -25,7 +26,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <span className="pill pill-info">Next best partner move</span>
+            <StatusBadge tone="info">Next best partner move</StatusBadge>
             <strong>{handoff.headline}</strong>
             <p className="muted">{handoff.detail}</p>
           </div>
@@ -54,19 +55,19 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             href={item.href}
             key={item.title}
           >
-            <span className={`pill ${partnerShiftPillClass(item.tone)}`}>{item.scope}</span>
+            <PillClassBadge pillClass={partnerShiftPillClass(item.tone)}>{item.scope}</PillClassBadge>
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <small>{item.operatorAction}</small>
             <div className="participant-list admin-mt-10">
               {item.samples.length ? (
                 item.samples.map((sample) => (
-                  <span className="pill" key={`${item.title}-${sample}`}>
+                  <StatusBadge key={`${item.title}-${sample}`} tone="neutral">
                     {sample}
-                  </span>
+                  </StatusBadge>
                 ))
               ) : (
-                <span className="pill pill-success">No immediate partner sample</span>
+                <StatusBadge tone="success">No immediate partner sample</StatusBadge>
               )}
             </div>
           </Link>
