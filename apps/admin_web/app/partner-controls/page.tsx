@@ -516,7 +516,7 @@ export default async function PartnerControlsPage({
             />
           </div>
           <div className="actions full-span">
-            <AdminFormControlButton className="button button-primary" type="submit">
+            <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>
@@ -683,7 +683,7 @@ export default async function PartnerControlsPage({
             />
           </div>
           <div className="actions full-span">
-            <AdminFormControlButton className="button button-primary" type="submit">
+            <AdminFormControlButton className="button-primary" type="submit">
               Create report
             </AdminFormControlButton>
           </div>
@@ -759,7 +759,7 @@ export default async function PartnerControlsPage({
                       minLength={12}
                       maxLength={500}
                     />
-                    <AdminFormControlButton className="button button-primary" type="submit">
+                    <AdminFormControlButton className="button-primary" type="submit">
                       Apply
                     </AdminFormControlButton>
                   </form>
@@ -795,7 +795,7 @@ export default async function PartnerControlsPage({
                       name="resolutionNote"
                       placeholder="Resolution or follow-up note"
                     />
-                    <AdminFormControlButton className="button button-primary" type="submit">
+                    <AdminFormControlButton className="button-primary" type="submit">
                       Update
                     </AdminFormControlButton>
                   </form>

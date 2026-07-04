@@ -17,7 +17,7 @@ describe('RefundsTableSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/payments#payment-payment-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

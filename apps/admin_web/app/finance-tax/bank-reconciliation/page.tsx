@@ -248,7 +248,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             <AdminFormInput label="Counterparty" labelVisibility="visible" name="counterpartyName" />
             <AdminFormTextarea className="admin-grid-span-2" label="Description" labelVisibility="visible" name="description" rows={2} />
             <div className="form-actions form-grid-wide">
-              <AdminFormControlButton className="button button-primary" disabled={!companyBankAccounts.length}>
+              <AdminFormControlButton className="button-primary" disabled={!companyBankAccounts.length}>
                 Import bank transaction
               </AdminFormControlButton>
             </div>

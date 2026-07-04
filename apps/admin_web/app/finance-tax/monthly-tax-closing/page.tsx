@@ -219,7 +219,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               name="remittanceEvidenceUrl"
               placeholder="Tax portal receipt or retained evidence URL"
             />
-            <AdminFormControlButton className="button button-primary" type="submit">
+            <AdminFormControlButton className="button-primary" type="submit">
               Save closing status
             </AdminFormControlButton>
             <p className="muted">{nextStatusOptions[0]?.helper}</p>

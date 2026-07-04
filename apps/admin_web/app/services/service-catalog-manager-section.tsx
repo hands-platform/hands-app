@@ -186,7 +186,7 @@ function NewServiceDialog() {
         <input name="vatBps" type="hidden" value="0" />
         <input name="otherCostAmount" type="hidden" value="0" />
         <div className="calendar-drawer-footer service-menu-dialog-footer">
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save service
           </AdminFormControlButton>
@@ -213,7 +213,7 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
           return <DurationInputRow duration={duration} key={duration} service={service} />;
         })}
         <div className="calendar-drawer-footer service-menu-dialog-footer">
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save changes
           </AdminFormControlButton>

@@ -186,7 +186,7 @@ export function BookingMonitorFiltersSection({
               onChange={(event) => onCustomDateToChange(event.target.value)}
               value={customDateTo}
             />
-            <AdminFormControlButton className="button button-primary booking-date-apply-button">
+            <AdminFormControlButton className="button-primary booking-date-apply-button">
               Apply dates
             </AdminFormControlButton>
           </form>

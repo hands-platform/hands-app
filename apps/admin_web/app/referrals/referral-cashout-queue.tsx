@@ -148,7 +148,7 @@ export function ReferralCashoutQueuePage({
               { label: 'Paid', value: 'paid' },
             ]}
           />
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             Apply filters
           </AdminFormControlButton>
           <AdminFormControlLink className="button-secondary" href="/referrals/cashouts">

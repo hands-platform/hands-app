@@ -2,18 +2,20 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 describe('Admin form control usage', () => {
-  it('keeps legacy full secondary button class names out of production TSX', () => {
+  it('keeps legacy full tone button class names out of production TSX', () => {
     const offenders = ['app', 'components']
       .flatMap((directory) => listTsxFiles(join(process.cwd(), directory)))
       .filter((filePath) => !filePath.endsWith('.spec.tsx'))
-      .filter((filePath) => legacySecondaryButtonClassNamePattern.test(readFileSync(filePath, 'utf8')))
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => legacyToneButtonClassNamePattern.test(readFileSync(filePath, 'utf8')))
       .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
 
     expect(offenders).toEqual([]);
   });
 });
 
-const legacySecondaryButtonClassNamePattern = /className="[^"]*\bbutton\s+button-secondary\b/;
+const legacyToneButtonClassNamePattern =
+  /className="[^"]*\bbutton\s+button-(?:danger|info|outline|primary|secondary|success)\b/;
 
 function listTsxFiles(directory: string): string[] {
   if (!existsSync(directory)) {

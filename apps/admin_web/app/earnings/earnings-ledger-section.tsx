@@ -156,7 +156,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                       name="settlementRef"
                       placeholder="Deposit ref or offset memo"
                     />
-                    <AdminFormControlButton className="button button-primary" type="submit">
+                    <AdminFormControlButton className="button-primary" type="submit">
                       Review fee settlement
                     </AdminFormControlButton>
                   </form>
@@ -166,7 +166,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
                     <input type="hidden" name="transferRef" value={row.transferRef} />
-                    <AdminFormControlButton className="button button-primary" type="submit">
+                    <AdminFormControlButton className="button-primary" type="submit">
                       Review payout batch
                     </AdminFormControlButton>
                   </form>

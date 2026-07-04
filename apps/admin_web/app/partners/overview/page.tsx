@@ -165,7 +165,7 @@ export default async function PartnerOverviewPage({
             name="riskStatus"
             options={riskStatusOptions}
           />
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             Apply filters
           </AdminFormControlButton>
         </form>

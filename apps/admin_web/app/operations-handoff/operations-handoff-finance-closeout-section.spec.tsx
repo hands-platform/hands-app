@@ -40,7 +40,7 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
       expect.arrayContaining([
         'card admin-section operations-handoff-finance-closeout-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
       ]),
     );
   });

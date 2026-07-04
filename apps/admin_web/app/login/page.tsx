@@ -54,7 +54,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             required
             type="password"
           />
-          <AdminFormControlButton className="button button-primary admin-auth-submit" type="submit">
+          <AdminFormControlButton className="button-primary admin-auth-submit" type="submit">
             Sign in
           </AdminFormControlButton>
         </form>

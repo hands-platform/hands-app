@@ -77,7 +77,7 @@ export function CashSettlementFilterSection({
             { label: 'Payment evidence check', value: 'payment-check' },
           ]}
         />
-        <AdminFormControlButton className="button button-primary" type="submit">
+        <AdminFormControlButton className="button-primary" type="submit">
           Apply
         </AdminFormControlButton>
         <Link className="text-link" href="/cash-settlements">

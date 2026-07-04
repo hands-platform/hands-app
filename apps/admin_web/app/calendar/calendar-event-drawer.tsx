@@ -232,7 +232,7 @@ export function CalendarEventDrawer({
 
         {canEdit ? (
           <div className="calendar-drawer-footer">
-            <AdminFormControlButton className="button button-primary" onClick={onSubmit} type="button">
+            <AdminFormControlButton className="button-primary" onClick={onSubmit} type="button">
               <Save aria-hidden="true" size={16} />
               {mode === 'create' ? 'Add Event' : 'Update Event'}
             </AdminFormControlButton>

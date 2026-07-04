@@ -85,7 +85,7 @@ export function OperationsHandoffOperatorNotesSection({
             placeholder="Write the factual shift handoff note for the next operator."
           />
         </div>
-        <AdminFormControlButton className="button button-primary" type="submit">
+        <AdminFormControlButton className="button-primary" type="submit">
           <Save aria-hidden="true" size={16} />
           Save handoff note
         </AdminFormControlButton>

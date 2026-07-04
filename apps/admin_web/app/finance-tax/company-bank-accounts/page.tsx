@@ -15,7 +15,7 @@ export default async function CompanyBankAccountsPage() {
   return (
     <AdminPageTemplate
       actions={
-        <AdminFormControlLink className="button button-outline" href="/finance-tax/bank-reconciliation">
+        <AdminFormControlLink className="button-outline" href="/finance-tax/bank-reconciliation">
           Open bank reconciliation
         </AdminFormControlLink>
       }

@@ -174,7 +174,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           required
         />
       </div>
-      <AdminFormControlButton className="button button-primary admin-mt-12" type="submit">
+      <AdminFormControlButton className="button-primary admin-mt-12" type="submit">
         <Save size={16} aria-hidden="true" />
         Save policy
       </AdminFormControlButton>

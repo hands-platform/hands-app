@@ -127,7 +127,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             step="100000"
             type="number"
           />
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             Preview withholding
           </AdminFormControlButton>
         </form>
@@ -215,7 +215,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             name="notes"
             placeholder="Policy source, approval note, or internal memo"
           />
-          <AdminFormControlButton className="button button-primary" type="submit">
+          <AdminFormControlButton className="button-primary" type="submit">
             Create policy
           </AdminFormControlButton>
         </form>
@@ -271,7 +271,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 labelVisibility="visible"
                 name="notes"
               />
-              <AdminFormControlButton className="button button-primary" type="submit">
+              <AdminFormControlButton className="button-primary" type="submit">
                 Update policy
               </AdminFormControlButton>
             </form>
@@ -358,7 +358,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                       >
                         <span>Active</span>
                       </AdminFormCheckbox>
-                      <AdminFormControlButton className="button button-primary" type="submit">
+                      <AdminFormControlButton className="button-primary" type="submit">
                         Update rule
                       </AdminFormControlButton>
                     </form>
@@ -423,7 +423,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 name="fixedAmount"
                 type="number"
               />
-              <AdminFormControlButton className="button button-primary" type="submit">
+              <AdminFormControlButton className="button-primary" type="submit">
                 Add rule
               </AdminFormControlButton>
             </form>

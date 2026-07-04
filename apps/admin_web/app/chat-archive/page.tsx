@@ -253,7 +253,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             name="to"
           />
           <div className="actions full-span">
-            <AdminFormControlButton className="button button-primary" type="submit">
+            <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>

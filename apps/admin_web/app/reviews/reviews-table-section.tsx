@@ -153,7 +153,7 @@ export function ReviewsTableSection({
               <input name="dateRange" type="hidden" value="custom" />
               <AdminFormDate defaultValue={filters.dateFrom} label="Date from" name="dateFrom" />
               <AdminFormDate defaultValue={filters.dateTo} label="Date to" name="dateTo" />
-              <AdminFormControlButton className="button button-primary booking-date-apply-button">
+              <AdminFormControlButton className="button-primary booking-date-apply-button">
                 Apply dates
               </AdminFormControlButton>
             </form>

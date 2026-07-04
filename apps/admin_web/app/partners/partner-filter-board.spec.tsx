@@ -91,7 +91,7 @@ describe('PartnerFilterBoard', () => {
 
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('href="/partners"');
-    expect(rendered).toContain('admin-form-control-link vuexy-partner-button is-ghost');
+    expect(rendered).toContain('admin-form-control-link button button-secondary vuexy-partner-button is-ghost');
   });
 
   it('opens advanced filters for non-primary operational review lanes', () => {

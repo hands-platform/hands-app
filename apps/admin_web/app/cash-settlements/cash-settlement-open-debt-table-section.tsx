@@ -202,7 +202,7 @@ export function CashSettlementOpenDebtTableSection({
                       placeholder="Finance approver admin id"
                       required
                     />
-                    <AdminFormControlButton className="button button-primary" type="submit">
+                    <AdminFormControlButton className="button-primary" type="submit">
                       Record bank deposit
                     </AdminFormControlButton>
                   </form>
@@ -236,7 +236,7 @@ export function CashSettlementOpenDebtTableSection({
                   name="settlementNotes"
                   placeholder="Evidence note"
                 />
-                <AdminFormControlButton className="button button-outline" type="submit">
+                <AdminFormControlButton className="button-outline" type="submit">
                   Review settlement
                 </AdminFormControlButton>
               </form>

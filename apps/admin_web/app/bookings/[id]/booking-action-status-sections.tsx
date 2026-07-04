@@ -205,7 +205,7 @@ function BookingOutcomePostMatchDecision({
           <form action={approvePostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.approveNote} />
-            <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
               Approve cancellation
             </AdminFormControlButton>
           </form>
@@ -395,7 +395,7 @@ function BookingOperatorNotesSection({
             <small className="booking-action-note-help">Use one short note per action or decision.</small>
           </div>
           <div className="booking-action-note-actions">
-            <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
               Add note
             </AdminFormControlButton>
           </div>
@@ -435,7 +435,7 @@ function BookingCompletedCloseoutSection({
               <small className="booking-action-note-help">Use retained chat, payment, and Partner evidence.</small>
             </div>
             <div className="booking-action-note-actions">
-              <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
                 Reconcile booking
               </AdminFormControlButton>
             </div>

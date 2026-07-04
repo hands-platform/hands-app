@@ -207,7 +207,7 @@ function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment })
         name="settlementNotes"
         placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
       />
-      <AdminFormControlButton className="button button-primary" type="submit">
+      <AdminFormControlButton className="button-primary" type="submit">
         Settle cash debt
       </AdminFormControlButton>
     </form>

@@ -259,7 +259,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
         <aside className="calendar-sidebar card">
           <div className="calendar-sidebar-section">
             <AdminFormControlButton
-              className="button button-primary calendar-add-button"
+              className="button-primary calendar-add-button"
               onClick={() => openCreateDrawer(new Date())}
               type="button"
             >

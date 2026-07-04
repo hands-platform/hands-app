@@ -242,7 +242,7 @@ function ReviewEditDrawer({
               />
             </section>
             <div className="calendar-drawer-footer review-edit-drawer-footer">
-              <AdminFormControlButton className="button button-primary" type="submit">
+              <AdminFormControlButton className="button-primary" type="submit">
                 <Save aria-hidden="true" size={16} />
                 Save review
               </AdminFormControlButton>

@@ -89,7 +89,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             </div>
             <CategoryCheckboxGrid defaults={['BOOKINGS_REALTIME', 'CUSTOMERS_DIRECTORY', 'PARTNERS_DIRECTORY', 'NOTIFICATIONS_PUSH']} />
             <AdminFormInput label="Reason" name="reason" placeholder="Access request reason" />
-            <AdminFormControlButton className="button button-primary" type="submit">
+            <AdminFormControlButton className="button-primary" type="submit">
               Add operator
             </AdminFormControlButton>
           </form>
@@ -235,7 +235,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                       <form action={revokeAdminOperatorAccess} className="admin-operator-inline-delete-form">
                         <input name="userId" type="hidden" value={user.id} />
                         <input name="reason" type="hidden" value="Master Admin row action" />
-                        <AdminFormControlButton className="button button-danger admin-inline-action" type="submit">
+                        <AdminFormControlButton className="button-danger admin-inline-action" type="submit">
                           Delete operator
                         </AdminFormControlButton>
                       </form>

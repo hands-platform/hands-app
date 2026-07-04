@@ -68,7 +68,7 @@ export function BookingDetailPostMatchDecisionSection({
             <form action={approvePostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.approveNote} />
-              <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
                 Approve cancellation
               </AdminFormControlButton>
               <small>Restore eligible fee impact</small>

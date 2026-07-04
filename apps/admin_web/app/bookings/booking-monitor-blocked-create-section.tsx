@@ -118,7 +118,7 @@ export function BookingMonitorBlockedCreateSection({
               <td>
                 <div className="actions">
                   <AdminFormControlButton
-                    className="button button-primary"
+                    className="button-primary"
                     type="button"
                     onClick={() => onGateFilterChange(item.filter)}
                   >

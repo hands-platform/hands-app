@@ -344,7 +344,7 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
         defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
         placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
       />
-      <AdminFormControlButton className="button button-primary" type="submit">
+      <AdminFormControlButton className="button-primary" type="submit">
         Settle cash fee debt
       </AdminFormControlButton>
     </form>

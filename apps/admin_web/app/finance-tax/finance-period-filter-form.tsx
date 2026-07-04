@@ -56,7 +56,7 @@ export function FinancePeriodFilterForm({
           }))}
         />
       ) : null}
-      <AdminFormControlButton className="button button-primary" type="submit">
+      <AdminFormControlButton className="button-primary" type="submit">
         {submitLabel}
       </AdminFormControlButton>
     </form>
