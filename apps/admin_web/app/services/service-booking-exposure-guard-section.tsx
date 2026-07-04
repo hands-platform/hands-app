@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CalendarClock, FileClock } from 'lucide-react';
 
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 type ServiceBookingExposureGuardSectionProps = {
   readonly activeServiceCount: number;
@@ -26,12 +27,12 @@ export function ServiceBookingExposureGuardSection({
       description="Customer and Partner apps only expose service options backed by an active payout rule. Use this guard before opening a new service type or changing Partner prices."
       status={
         <div className="actions">
-          <span className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
+          <StatusBadge tone={blockedCount ? 'danger' : 'success'}>
             {blockedCount} blocked
-          </span>
-          <span className={warningCount ? 'pill pill-warn' : 'pill pill-success'}>
+          </StatusBadge>
+          <StatusBadge tone={warningCount ? 'warning' : 'success'}>
             {warningCount} warning
-          </span>
+          </StatusBadge>
         </div>
       }
       title="Customer booking exposure guard"

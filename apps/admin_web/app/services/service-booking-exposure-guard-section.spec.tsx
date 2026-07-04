@@ -1,0 +1,11 @@
+import { readFileSync } from 'node:fs';
+
+describe('ServiceBookingExposureGuardSection source', () => {
+  it('uses the shared Vuexy status badge atom for exposure guard counters', () => {
+    const source = readFileSync('app/services/service-booking-exposure-guard-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}");
+    expect(source).not.toContain("className={warningCount ? 'pill pill-warn' : 'pill pill-success'}");
+  });
+});

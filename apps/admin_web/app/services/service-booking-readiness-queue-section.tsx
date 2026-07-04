@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { ServiceBookingReadinessItem } from '../../lib/service-booking-readiness-queue';
 
 type ServiceBookingReadinessQueueSectionProps = {
@@ -20,12 +21,12 @@ export function ServiceBookingReadinessQueueSection({
       description="Shows services that can block customer booking or create a negative finance result before Partners start using those prices."
       status={
         <div className="actions">
-          <span className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
+          <StatusBadge tone={blockedCount ? 'danger' : 'success'}>
             {blockedCount} blocked
-          </span>
-          <span className={warningCount ? 'pill pill-warn' : 'pill pill-success'}>
+          </StatusBadge>
+          <StatusBadge tone={warningCount ? 'warning' : 'success'}>
             {warningCount} warning
-          </span>
+          </StatusBadge>
         </div>
       }
       title="Booking readiness queue"
