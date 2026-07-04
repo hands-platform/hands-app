@@ -13,7 +13,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
@@ -189,14 +189,14 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             { href: '/payouts?range=7d', label: 'Last 7 days', range: '7d' },
             { href: '/payouts?range=30d', label: 'Last 30 days', range: '30d' },
           ].map((option) => (
-            <PillClassBadgeLink
+            <StatusBadgeLink
               ariaCurrent={option.range === filters.range ? 'page' : undefined}
               href={option.href}
               key={option.range}
-              pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+              tone={option.range === filters.range ? 'info' : 'neutral'}
             >
               {option.label}
-            </PillClassBadgeLink>
+            </StatusBadgeLink>
           ))}
         </div>
       </AdminFilterPanel>
@@ -234,7 +234,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               className={signal.className}
               detail={signal.detail}
               key={signal.title}
-              leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+              leading={<StatusBadge tone={statusBadgeToneFromPillClass(signal.pillClass)}>{signal.status}</StatusBadge>}
               title={signal.title}
             />
           ))}
@@ -263,7 +263,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                   <div className="muted">{item.timing}</div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>
                   <div className="muted">{item.queue}</div>
                 </td>
                 <td>{item.operatorCheck}</td>
@@ -290,7 +290,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               detail={item.detail}
               href={item.href}
               key={item.title}
-              leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+              leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>}
               title={item.title}
               variant="ops-task"
             />

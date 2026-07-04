@@ -146,7 +146,10 @@ describe('PayoutsPage', () => {
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<div className="ops-section-header admin-mt-14">');
     expect(source).not.toContain('<div className="ops-section-header admin-mt-16">');
