@@ -59,7 +59,7 @@ describe('NotificationsTableSection', () => {
         'vuexy-booking-person',
         'notification-delivery-attempt admin-mb-10',
         'admin-avatar-status-dot is-app-deleted',
-        'admin-form-control-link pill pill-warn admin-mt-6',
+        'pill pill-warn admin-mt-6',
       ]),
     );
     expect(hrefsIn(section)).toEqual(
@@ -116,6 +116,17 @@ describe('NotificationsTableSection', () => {
         'pill pill-success',
       ]),
     );
+  });
+
+  it('uses shared badge atoms for delivery status and recovery links', () => {
+    const source = readFileSync('app/notifications/notification-delivery-cell.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('AdminFormControlLink');
+    expect(source).not.toContain('<span className={latest.statusClassName}>{latest.status}</span>');
+    expect(source).not.toContain('<span className={delivery.statusClassName}>{delivery.status}</span>');
+    expect(source).not.toContain('<AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>');
   });
 
   it('keeps failure evidence visible inside multi-attempt delivery disclosures', () => {

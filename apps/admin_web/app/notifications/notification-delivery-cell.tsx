@@ -1,4 +1,4 @@
-import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { PillClassBadge, PillClassBadgeLink } from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
   readonly attemptedAtLabel: string;
@@ -39,7 +39,7 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
   return (
     <details className="admin-disclosure notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
-        <span className={latest.statusClassName}>{latest.status}</span>{' '}
+        <PillClassBadge pillClass={latest.statusClassName}>{latest.status}</PillClassBadge>{' '}
         <strong>{attempts} attempts</strong>{' '}
         <span className="muted">
           / latest {latest.provider} / {latest.platformLabel} / {latest.attemptedAtLabel}
@@ -72,7 +72,7 @@ function NotificationDeliveryAttempt({
       <div>
         {sequenceLabel ? <strong>{sequenceLabel} / </strong> : null}
         <strong>{delivery.provider}</strong>{' '}
-        <span className={delivery.statusClassName}>{delivery.status}</span>{' '}
+        <PillClassBadge pillClass={delivery.statusClassName}>{delivery.status}</PillClassBadge>{' '}
         <span className="muted">/ {delivery.platformLabel}</span>
       </div>
       <div className="muted admin-mt-4">
@@ -89,9 +89,9 @@ function NotificationDeliveryAttempt({
         <div className="muted admin-mt-4">Next {delivery.recoveryHintLabel}</div>
       ) : null}
       {delivery.enableDeviceHref ? (
-        <AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
+        <PillClassBadgeLink href={delivery.enableDeviceHref} pillClass="pill pill-warn admin-mt-6">
           Re-enable device
-        </AdminFormControlLink>
+        </PillClassBadgeLink>
       ) : null}
     </div>
   );
