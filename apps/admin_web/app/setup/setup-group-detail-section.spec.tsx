@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, textContent } from './setup-section-test-utils';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
 import {
@@ -10,6 +12,17 @@ import {
 } from '../notifications/fcm-smoke-commands';
 
 describe('SetupGroupDetailSection', () => {
+  it('uses shared badge atoms instead of raw pill markup', () => {
+    const source = readFileSync(new URL('./setup-group-detail-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<span className={env.className} key={env.name}>');
+    expect(source).not.toContain('<span className={env.className} key={`attention-${env.name}`}>');
+    expect(source).not.toContain('<span className="pill pill-success">No env blockers shown</span>');
+    expect(source).not.toContain('<a className="pill pill-neutral"');
+  });
+
   it('renders setup group details with environment pills and commands', () => {
     const section = SetupGroupDetailSection({
       groups: [

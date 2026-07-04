@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 import { SetupGroupDetailSummaryLink } from './page';
 
 describe('SetupGroupDetailSummaryLink', () => {
+  it('uses a shared badge link atom instead of a raw pill anchor', () => {
+    const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<a className="pill pill-neutral" href="/setup?details=all">');
+  });
+
   it('renders the collapsed setup group details link as a shared section surface', () => {
     const section = SetupGroupDetailSummaryLink({ groupCount: 4 });
     const rendered = textContent(section).replace(/\s+/g, ' ');

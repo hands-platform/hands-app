@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 
 type SetupRegistrationHandoffItem = {
   readonly id: string;
@@ -34,14 +35,14 @@ export function SetupRegistrationHandoffSection({
             <strong>{item.title}</strong>
             <p className="muted">{item.detail}</p>
             <div className="participant-list">
-              <span className={`pill ${item.statusClass}`}>{item.status}</span>
-              <span className="pill pill-neutral">{item.owner}</span>
+              <PillClassBadge pillClass={item.statusClass}>{item.status}</PillClassBadge>
+              <StatusBadge tone="neutral">{item.owner}</StatusBadge>
             </div>
             <div className="participant-list admin-mt-8">
               {item.env.map((name) => (
-                <span className="pill pill-info" key={`${item.id}-${name}`}>
+                <StatusBadge key={`${item.id}-${name}`} tone="info">
                   {name}
-                </span>
+                </StatusBadge>
               ))}
             </div>
           </a>

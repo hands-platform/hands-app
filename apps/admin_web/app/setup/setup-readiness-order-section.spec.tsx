@@ -1,7 +1,21 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 import { SetupReadinessOrderSection } from './setup-readiness-order-section';
 
 describe('SetupReadinessOrderSection', () => {
+  it('uses shared badge atoms instead of raw pill markup', () => {
+    const source = readFileSync(new URL('./setup-readiness-order-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-warn">BLOCKED</span>');
+    expect(source).not.toContain('<span className={`pill ${isCurrentStage ?');
+    expect(source).not.toContain('<span className="pill pill-neutral">Secret-safe</span>');
+    expect(source).not.toContain('<a className="pill pill-neutral"');
+    expect(source).not.toContain('<span className={`pill ${readinessStatusPillClass(check.status)}`}>');
+  });
+
   it('renders live readiness rows and recommended order links', () => {
     const section = SetupReadinessOrderSection({
       readinessChecks: [

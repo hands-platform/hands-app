@@ -1,6 +1,7 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
 
@@ -37,7 +38,7 @@ export function SetupReadinessOrderSection({
                 <strong>Readiness API unavailable</strong>
                 <p className="muted">Start the HANDS API and refresh this page.</p>
               </div>
-              <span className="pill pill-warn">BLOCKED</span>
+              <StatusBadge tone="warning">BLOCKED</StatusBadge>
             </div>
           )}
         </div>
@@ -78,10 +79,10 @@ function ReadinessRow({
         <strong>{setupReadinessDisplayText(check.name)}</strong>
         <p className="muted">{setupReadinessDisplayText(check.detail)}</p>
         <div className="participant-list admin-mb-8">
-          <span className={`pill ${isCurrentStage ? 'pill-info' : 'pill-neutral'}`}>
+          <StatusBadge tone={isCurrentStage ? 'info' : 'neutral'}>
             {isCurrentStage ? 'Current stage' : 'Deferred'}
-          </span>
-          {check.secretSafe && <span className="pill pill-neutral">Secret-safe</span>}
+          </StatusBadge>
+          {check.secretSafe && <StatusBadge tone="neutral">Secret-safe</StatusBadge>}
         </div>
         {check.operatorAction && (
           <p className="muted">
@@ -97,14 +98,14 @@ function ReadinessRow({
               <CommandCopyRow command={command} key={`${check.category}-${command}`} />
             ))}
             {commandMode === 'summary' && allCommands.length > commands.length ? (
-              <a className="pill pill-neutral" href={`/setup?commands=all#${setupAnchorForReadinessCheck(check)}`}>
+              <StatusBadgeLink tone="neutral" href={`/setup?commands=all#${setupAnchorForReadinessCheck(check)}`}>
                 Show {allCommands.length - commands.length} more command(s)
-              </a>
+              </StatusBadgeLink>
             ) : null}
           </div>
         )}
       </div>
-      <span className={`pill ${readinessStatusPillClass(check.status)}`}>{check.status}</span>
+      <PillClassBadge pillClass={readinessStatusPillClass(check.status)}>{check.status}</PillClassBadge>
     </div>
   );
 }

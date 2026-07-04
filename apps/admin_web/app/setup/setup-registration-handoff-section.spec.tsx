@@ -1,7 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import { SetupRegistrationHandoffSection } from './setup-registration-handoff-section';
 import { hrefsIn, textContent } from './setup-section-test-utils';
 
 describe('SetupRegistrationHandoffSection', () => {
+  it('uses shared badge atoms instead of raw pill markup', () => {
+    const source = readFileSync(new URL('./setup-registration-handoff-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${item.statusClass}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{item.owner}</span>');
+    expect(source).not.toContain('<span className="pill pill-info" key={`${item.id}-${name}`}>');
+  });
+
   it('renders registration handoff cards with status, owner, env, and anchors', () => {
     const section = SetupRegistrationHandoffSection({
       registrationPlan: [

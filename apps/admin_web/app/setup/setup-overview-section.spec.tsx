@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { SetupOverviewSection } from './setup-overview-section';
 import { textContent } from './setup-section-test-utils';
 
 describe('SetupOverviewSection', () => {
+  it('uses the shared StatusBadge atom for the readiness timestamp', () => {
+    const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">');
+  });
+
   it('renders setup readiness labels and summary metrics', () => {
     const section = SetupOverviewSection({
       readinessOk: false,

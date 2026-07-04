@@ -1,5 +1,6 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
 
 export type SetupGroupDetail = {
@@ -48,9 +49,9 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                 <h3>Environment values</h3>
                 <div className="participant-list">
                   {group.envPills.map((env) => (
-                    <span className={env.className} key={env.name}>
+                    <PillClassBadge key={env.name} pillClass={env.className}>
                       {env.name}
-                    </span>
+                    </PillClassBadge>
                   ))}
                 </div>
               </div>
@@ -79,12 +80,12 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                   <div className="participant-list">
                     {attentionEnvPills.length ? (
                       attentionEnvPills.map((env) => (
-                        <span className={env.className} key={`attention-${env.name}`}>
+                        <PillClassBadge key={`attention-${env.name}`} pillClass={env.className}>
                           {env.name}
-                        </span>
+                        </PillClassBadge>
                       ))
                     ) : (
-                      <span className="pill pill-success">No env blockers shown</span>
+                      <StatusBadge tone="success">No env blockers shown</StatusBadge>
                     )}
                   </div>
                 </div>
@@ -127,9 +128,9 @@ function SetupCommandSummary({
         Full command packs are hidden from the default setup payload. Use the first command above for the
         immediate check, or open the full command list when you are actively working this setup group.
       </p>
-      <a className="pill pill-neutral" href={`/setup?commands=all#${groupId}`}>
+      <StatusBadgeLink tone="neutral" href={`/setup?commands=all#${groupId}`}>
         Show full command set ({commands.length})
-      </a>
+      </StatusBadgeLink>
     </div>
   );
 }

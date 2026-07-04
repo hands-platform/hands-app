@@ -1,5 +1,6 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadgeLink } from '../../components/status-badge';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
@@ -107,9 +108,9 @@ export function SetupGroupDetailSummaryLink({ groupCount }: { readonly groupCoun
   return (
     <AdminSection
       actions={
-        <a className="pill pill-neutral" href="/setup?details=all">
+        <StatusBadgeLink tone="neutral" href="/setup?details=all">
           Show {groupCount} setup group(s)
-        </a>
+        </StatusBadgeLink>
       }
       className="admin-mt-16"
       description="Full environment notes and command packs are kept out of the default setup payload."
