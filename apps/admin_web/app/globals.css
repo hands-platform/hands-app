@@ -14515,7 +14515,7 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--admin-border);
   min-width: 0;
   padding: 8px 16px;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .table.vuexy-data-table th:first-child,
