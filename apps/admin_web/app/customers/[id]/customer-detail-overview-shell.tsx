@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { AdminCard } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerDetailOverviewFact = {
@@ -83,9 +84,9 @@ export function CustomerDetailOverviewShell({
 
         <div className="participant-list customer-detail-badges">
           {statusBadges.map((badge) => (
-            <span className="pill pill-info" key={badge}>
+            <StatusBadge tone="info" key={badge}>
               {badge}
-            </span>
+            </StatusBadge>
           ))}
         </div>
       </div>

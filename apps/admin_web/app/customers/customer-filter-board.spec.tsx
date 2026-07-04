@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { CustomerFilterBoard } from './customer-filter-board';
 import type { CustomerFilters } from './customer-filters';
 
 describe('CustomerFilterBoard', () => {
+  it('uses the shared Vuexy badge atom for active filter chips', () => {
+    const source = readFileSync('app/customers/customer-filter-board.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-warn" key={filter}>');
+  });
+
   it('renders the shared filter panel with customer filters and active chips', () => {
     const section = CustomerFilterBoard({
       activeFilters: ['Search: linh', 'Last login date: Last month'],

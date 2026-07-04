@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   CustomerDetailSectionBand,
   CustomerDetailShortcutStrip,
@@ -5,6 +7,13 @@ import {
 } from './customer-detail-section-shell';
 
 describe('CustomerDetailSectionShell', () => {
+  it('uses the shared Vuexy badge atom for shortcut lane counts', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-section-shell.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{items.length} lanes</span>');
+  });
+
   it('renders customer shortcut lanes with hrefs and values', () => {
     const section = CustomerDetailShortcutStrip({
       items: [

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Grid2x2, MessageSquareText, ScrollText, UserRound, Wallet } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../../components/admin-page-template';
+import { StatusBadge } from '../../../components/status-badge';
 
 export type CustomerDetailShortcut = {
   readonly detail: string;
@@ -30,7 +31,7 @@ export function CustomerDetailShortcutStrip({ items }: CustomerDetailShortcutStr
       <AdminSectionHeader
         title="Customer workspace"
         description="Jump between the same factual areas without scrolling through the full record from the top each time."
-        status={<span className="pill pill-info">{items.length} lanes</span>}
+        status={<StatusBadge tone="info">{items.length} lanes</StatusBadge>}
       />
       <div className="customer-detail-shortcut-grid admin-mt-14">
         {items.map((item) => (

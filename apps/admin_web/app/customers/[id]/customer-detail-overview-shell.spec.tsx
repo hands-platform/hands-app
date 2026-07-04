@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   CustomerDetailOverviewShell,
   type CustomerDetailOverviewFact,
@@ -7,6 +9,13 @@ import {
 } from './customer-detail-overview-shell';
 
 describe('CustomerDetailOverviewShell', () => {
+  it('uses the shared Vuexy badge atom for status badges', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-overview-shell.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info" key={badge}>');
+  });
+
   it('renders a focused one-card customer overview', () => {
     const section = CustomerDetailOverviewShell({
       avatarStatus: 'online',
