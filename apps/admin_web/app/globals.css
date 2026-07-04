@@ -10177,6 +10177,10 @@ a.action-button-card:hover {
   gap: 6px;
 }
 
+.marketing-analytics-form-field {
+  min-width: 0;
+}
+
 .marketing-analytics-campaign-form label span {
   color: var(--admin-muted);
   font-size: 12px;

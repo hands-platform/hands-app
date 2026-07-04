@@ -58,6 +58,8 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
+    expect(markup).toContain('marketing-analytics-form-field');
+    expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('<div class="calendar-field"><span>Date</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Campaign ID</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Spend amount</span>');

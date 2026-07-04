@@ -320,7 +320,7 @@ export default async function MarketingAnalyticsPage({
           {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
           {filters.regionCode ? <input type="hidden" name="regionCode" value={filters.regionCode} /> : null}
           <AdminFormInput
-            className="calendar-field"
+            className="marketing-analytics-form-field"
             defaultValue={filters.campaignId ?? ''}
             label="Campaign ID"
             labelVisibility="visible"
@@ -424,7 +424,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
     >
       <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
         <AdminFormDate
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue={defaultSpendDate}
           label="Date"
           labelVisibility="visible"
@@ -432,7 +432,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           required
         />
         <AdminFormSelect
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue={filters.source ?? 'google'}
           label="Source"
           labelVisibility="visible"
@@ -442,7 +442,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
             .map((option) => ({ label: option.label, value: option.value }))}
         />
         <AdminFormSelect
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue={filters.platform ?? 'android'}
           label="Platform"
           labelVisibility="visible"
@@ -452,7 +452,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
             .map((option) => ({ label: option.label, value: option.value }))}
         />
         <AdminFormSelect
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue={filters.regionCode ?? 'all'}
           label="Region"
           labelVisibility="visible"
@@ -463,7 +463,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           }))}
         />
         <AdminFormInput
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue={filters.campaignId ?? ''}
           label="Campaign ID"
           labelVisibility="visible"
@@ -471,14 +471,14 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           placeholder="launch-hcm"
         />
         <AdminFormInput
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           label="Campaign name"
           labelVisibility="visible"
           name="campaignName"
           placeholder="Launch HCMC"
         />
         <AdminFormInput
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           label="Spend amount"
           labelVisibility="visible"
           name="spendAmount"
@@ -486,14 +486,14 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           required
         />
         <AdminFormInput
-          className="calendar-field"
+          className="marketing-analytics-form-field"
           defaultValue="VND"
           label="Currency"
           labelVisibility="visible"
           name="currency"
         />
         <AdminFormInput
-          className="calendar-field marketing-spend-notes"
+          className="marketing-analytics-form-field marketing-spend-notes"
           label="Notes"
           labelVisibility="visible"
           name="notes"
