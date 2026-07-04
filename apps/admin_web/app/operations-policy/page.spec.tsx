@@ -53,4 +53,10 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).toContain('AdminFormControlLink');
     expect(pageSource).not.toContain('<Link className="button button-secondary"');
   });
+
+  it('uses the shared empty-state atom for missing policy setup copy', () => {
+    expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('<h3>No matching policies loaded</h3>');
+    expect(pageSource).not.toContain('<p className="muted">\n                Seed operational policies');
+  });
 });

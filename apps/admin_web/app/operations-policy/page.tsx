@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
@@ -179,11 +180,10 @@ export default async function OperationsPolicyPage({
           ))}
           {matchingSettings.length === 0 ? (
             <div className="ops-task-note admin-m-0">
-              <h3>No matching policies loaded</h3>
-              <p className="muted">
-                Seed operational policies from the API setup before editing live matching rules. Each policy
-                update will require a Change reason so operators can audit why the value changed.
-              </p>
+              <AdminEmptyState
+                message="Seed operational policies from the API setup before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
+                title="No matching policies loaded"
+              />
               <AdminFormControlLink className="button-secondary" href="/setup">
                 <Settings size={16} aria-hidden="true" />
                 Open setup checks
