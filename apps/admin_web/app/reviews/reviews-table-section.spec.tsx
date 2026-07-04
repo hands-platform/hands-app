@@ -15,6 +15,9 @@ describe('ReviewsTableSection', () => {
 
   it('uses shared Vuexy card atoms for review editor drawer cards', () => {
     expect(reviewRowActionsSource).toContain('AdminCard');
+    expect(reviewRowActionsSource).toContain('review-edit-form-field');
+    expect(reviewRowActionsSource).toContain('labelVisibility="visible"');
+    expect(reviewRowActionsSource).not.toContain('className="calendar-field');
     expect(reviewRowActionsSource).not.toContain('<section className="review-edit-original-card"');
     expect(reviewRowActionsSource).not.toContain('<section className="review-edit-form-card"');
   });

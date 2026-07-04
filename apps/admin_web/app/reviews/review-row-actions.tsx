@@ -227,16 +227,18 @@ function ReviewEditDrawer({
                 <strong>Edited review</strong>
               </div>
               <AdminFormSelect
-                className="calendar-field"
+                className="review-edit-form-field"
                 defaultValue={String(editReview.rating)}
                 label="Revised rating"
+                labelVisibility="visible"
                 name="rating"
                 options={reviewRatingOptions}
               />
               <AdminFormTextarea
-                className="calendar-field calendar-field-wide"
+                className="review-edit-form-field review-edit-form-field-wide"
                 defaultValue={editReview.commentValue}
                 label="Revised review content"
+                labelVisibility="visible"
                 name="comment"
                 placeholder="Write the review copy that should be shown across the admin and app surfaces."
                 rows={7}
