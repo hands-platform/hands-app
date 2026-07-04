@@ -14125,8 +14125,11 @@ a.ops-task-card {
 }
 
 .confirm-dialog-actions {
-  align-items: flex-start;
-  margin-top: 12px;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
 }
 
 .confirm-dialog-form {
