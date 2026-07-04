@@ -10,7 +10,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
@@ -212,16 +212,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Batch policy
           </Link>
         </div>
-        <div className="ops-section-header admin-mt-14">
-          <div>
-            <h3>Applied operations policy</h3>
-            <p className="muted">
-              Live Admin policy values used by finance before payout release, cash-fee clearance, and final
-              acceptance, service start, and payout release reopening.
-            </p>
-          </div>
-          <StatusBadge tone="info">Live policy default</StatusBadge>
-        </div>
+        <AdminSectionHeader
+          className="admin-mt-14"
+          description="Live Admin policy values used by finance before payout release, cash-fee clearance, and final acceptance, service start, and payout release reopening."
+          status={<StatusBadge tone="info">Live policy default</StatusBadge>}
+          title="Applied operations policy"
+        />
         <div className="service-trace-summary admin-mt-12">
           {appliedPayoutPolicyCards.map((card) => (
             <div key={card.label}>
@@ -243,18 +239,16 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             />
           ))}
         </div>
-        <div className="ops-section-header admin-mt-16">
-          <div>
-            <h3>Payout release cycle board</h3>
-            <p className="muted">
-              Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays
-              out of payout release until cleared.
-            </p>
-          </div>
-          <Link className="text-link" href="/cash-settlements">
-            Cash settlements
-          </Link>
-        </div>
+        <AdminSectionHeader
+          actions={
+            <Link className="text-link" href="/cash-settlements">
+              Cash settlements
+            </Link>
+          }
+          className="admin-mt-16"
+          description="Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays out of payout release until cleared."
+          title="Payout release cycle board"
+        />
         <AdminTableScroll>
           <AdminDataTable
             className="vuexy-booking-table payout-release-cycle-table"
@@ -278,18 +272,16 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <div className="ops-section-header admin-mt-16">
-          <div>
-            <h3>Marketplace and payout unblock bridge</h3>
-            <p className="muted">
-              Connects Partner cash-fee debt to the gates operators care about: final acceptance, service
-              start, and payout release. Partners can see marketplace requests while the wallet is negative.
-            </p>
-          </div>
-          <Link className="text-link" href="/bookings?view=marketplace">
-            Marketplace monitor
-          </Link>
-        </div>
+        <AdminSectionHeader
+          actions={
+            <Link className="text-link" href="/bookings?view=marketplace">
+              Marketplace monitor
+            </Link>
+          }
+          className="admin-mt-16"
+          description="Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start, and payout release. Partners can see marketplace requests while the wallet is negative."
+          title="Marketplace and payout unblock bridge"
+        />
         <div className="ops-task-grid admin-mt-12">
           {marketplaceUnblockBridge.map((item) => (
             <AdminActionCard

@@ -143,10 +143,13 @@ describe('PayoutsPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-14">');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-16">');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
     expect(source).not.toContain('<span className={`pill ${signal.pillClass}`}>{signal.status}</span>');
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
