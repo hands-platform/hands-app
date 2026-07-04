@@ -33,7 +33,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -180,10 +180,16 @@ export default async function PartnerControlsPage({
       >
         <div className="ops-task-grid admin-mt-12">
           {commandCenter.lanes.map((lane) => (
-            <Link className={`ops-task-card ${lane.className}`} href={lane.href} key={lane.title}>
-              <small>{lane.status}</small>
-              <h3>{lane.title}</h3>
-              <p>{lane.detail}</p>
+            <AdminActionCard
+              actionLabel={lane.action}
+              className={lane.className}
+              detail={lane.detail}
+              href={lane.href}
+              key={lane.title}
+              leading={<small>{lane.status}</small>}
+              title={lane.title}
+              variant="ops-task"
+            >
               <div className="ops-task-breakdown">
                 {lane.metrics.map((metric) => (
                   <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
@@ -192,8 +198,7 @@ export default async function PartnerControlsPage({
                   </span>
                 ))}
               </div>
-              <span className="ops-task-card-action">{lane.action}</span>
-            </Link>
+            </AdminActionCard>
           ))}
         </div>
       </AdminSection>
@@ -246,16 +251,18 @@ export default async function PartnerControlsPage({
       >
         <div className="ops-task-grid admin-mt-12">
           {partnerControlBoard.metrics.map((controlMetric) => (
-            <div className="ops-task-card" key={controlMetric.label}>
-              <small>{controlMetric.label}</small>
-              <h3>{controlMetric.value}</h3>
+            <AdminTaskCard
+              key={controlMetric.label}
+              leading={<small>{controlMetric.label}</small>}
+              title={controlMetric.value}
+            >
               <div className="ops-task-breakdown">
                 <span className={`ops-task-breakdown-item ${controlMetric.tone}`}>
                   <span>Control type</span>
                   <strong>{controlMetric.label}</strong>
                 </span>
               </div>
-            </div>
+            </AdminTaskCard>
           ))}
         </div>
         {partnerControlBoard.items.length ? (
@@ -313,10 +320,16 @@ export default async function PartnerControlsPage({
       >
         <div className="ops-task-grid admin-mt-12">
           {acceptanceUnblockBoard.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
-              <small>{item.status}</small>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+            <AdminActionCard
+              actionLabel={item.action}
+              className={item.className}
+              detail={item.detail}
+              href={item.href}
+              key={item.id}
+              leading={<small>{item.status}</small>}
+              title={item.title}
+              variant="ops-task"
+            >
               <p className="muted">
                 <strong>Operator script:</strong> {item.operatorScript}
               </p>
@@ -340,8 +353,7 @@ export default async function PartnerControlsPage({
                   ))}
                 </div>
               ) : null}
-              <span className="ops-task-card-action">{item.action}</span>
-            </Link>
+            </AdminActionCard>
           ))}
         </div>
       </AdminSection>

@@ -57,4 +57,12 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('<span className="pill');
     expect(partnerControlsSource).not.toContain('<span className={`pill');
   });
+
+  it('keeps Partner control command cards on shared Vuexy task surfaces', () => {
+    expect(partnerControlsSource).toContain('AdminActionCard');
+    expect(partnerControlsSource).toContain('AdminTaskCard');
+    expect(partnerControlsSource).not.toContain('className={`ops-task-card');
+    expect(partnerControlsSource).not.toContain('className="ops-task-card"');
+    expect(partnerControlsSource).not.toContain('ops-task-card-action');
+  });
 });
