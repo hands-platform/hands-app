@@ -1021,12 +1021,22 @@ function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayou
       {
         label: 'Ready unbatched',
         value: `${ready.length}`,
-        helper: `${formatMoney(sumEarnings(ready, 'netAmount'), currency)} can move into the next batch.`,
+        helper: (
+          <>
+            <MoneyText amount={sumEarnings(ready, 'netAmount')} currency={currency} /> can move into the next
+            batch.
+          </>
+        ),
       },
       {
         label: 'Cash debt held',
         value: `${cashDebt.length}`,
-        helper: `${formatMoney(Math.abs(sumEarnings(cashDebt, 'netAmount')), currency)} company-fee debt stays out.`,
+        helper: (
+          <>
+            <MoneyText amount={Math.abs(sumEarnings(cashDebt, 'netAmount'))} currency={currency} /> company-fee debt
+            stays out.
+          </>
+        ),
       },
       {
         label: 'Closeout review',
@@ -1036,7 +1046,12 @@ function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayou
       {
         label: 'Already batched',
         value: `${alreadyBatched.length}`,
-        helper: `${formatMoney(sumEarnings(alreadyBatched, 'netAmount'), currency)} already attached to batches.`,
+        helper: (
+          <>
+            <MoneyText amount={sumEarnings(alreadyBatched, 'netAmount')} currency={currency} /> already attached to
+            batches.
+          </>
+        ),
       },
     ],
     rows,
@@ -1069,7 +1084,11 @@ function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditR
   return {
     id: earning.id,
     status,
-    title: `${providerLabel} / ${formatMoney(earning.netAmount, earning.currency)}`,
+    title: (
+      <>
+        {providerLabel} / <MoneyText amount={earning.netAmount} currency={earning.currency} />
+      </>
+    ),
     detail: `${serviceLabel} / ${earning.status} / created ${
       earning.createdAt
         ? formatRelativeTime(earning.createdAt, { justNow: 'Updated just now' })

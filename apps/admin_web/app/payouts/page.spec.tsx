@@ -165,4 +165,11 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('value: formatMoney(summary.totalNetAmount, summary.currency)');
     expect(source).not.toContain('value: formatMoney(summary.withholdingAmount, summary.currency)');
   });
+
+  it('uses shared money atoms for payout inclusion audit amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).not.toContain('helper: `${formatMoney(sumEarnings');
+    expect(source).not.toContain('title: `${providerLabel} / ${formatMoney');
+  });
 });

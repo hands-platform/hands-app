@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
+
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
 export type PayoutInclusionAuditCard = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly label: string;
   readonly value: string;
 };
@@ -13,7 +15,7 @@ export type PayoutInclusionAuditRow = {
   readonly id: string;
   readonly operatorRule: string;
   readonly status: 'Batched' | 'Hold' | 'Ready';
-  readonly title: string;
+  readonly title: ReactNode;
 };
 
 export type PayoutInclusionAudit = {
