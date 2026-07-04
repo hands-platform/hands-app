@@ -31,7 +31,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
@@ -328,7 +328,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={row.pillClass}>{row.issue}</PillClassBadge>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.issue}</StatusBadge>
                     <p className="muted">{row.detail}</p>
                   </td>
                   <td>
@@ -415,9 +415,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <p className="muted">Room {shortId(room.roomId)}</p>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={statusPillClass(room.booking.status)}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(room.booking.status))}>
                     {room.booking.status}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>
                   <ChatArchivePersonCell
