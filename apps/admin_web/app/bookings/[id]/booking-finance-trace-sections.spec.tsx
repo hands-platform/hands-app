@@ -15,7 +15,8 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     const source = readFileSync('app/bookings/[id]/booking-finance-trace-sections.tsx', 'utf8');
 
     expect(source).toContain('AdminSignal');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="signal signal-info">{batch.signal}</span>');
     expect(source).not.toContain('<span className={`signal ${row.signalClass}`}>{row.signal}</span>');
     expect(source).not.toContain('<span className={`pill ${attentionToneClass(flag.severity)}`}>');

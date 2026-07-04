@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
-import { AdminSignal, PillClassBadge, type AdminSignalTone } from '../../../components/status-badge';
+import {
+  AdminSignal,
+  StatusBadge,
+  statusBadgeToneFromPillClass,
+  type AdminSignalTone,
+} from '../../../components/status-badge';
 import { ActionLink } from './booking-operator-actions';
 
 type SummaryCard = {
@@ -95,9 +100,9 @@ function BookingAttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
     <div className={`ops-check-item ops-check-${flag.severity}`}>
       <div>
-        <PillClassBadge pillClass={attentionToneClass(flag.severity)}>
+        <StatusBadge tone={statusBadgeToneFromPillClass(attentionToneClass(flag.severity))}>
           {checkSeverityLabel(flag.severity)}
-        </PillClassBadge>
+        </StatusBadge>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -214,7 +219,9 @@ export function BookingOperationsAuditTraceSection({
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <PillClassBadge pillClass={operationsTrace.statusTone}>{operationsTrace.status}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(operationsTrace.statusTone)}>
+              {operationsTrace.status}
+            </StatusBadge>
             <strong>{operationsTrace.title}</strong>
             <p className="muted">{operationsTrace.detail}</p>
           </div>
@@ -256,7 +263,11 @@ export function BookingAttentionChecksSection({
 }: BookingAttentionChecksSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={attentionSummary.tone}>{attentionSummary.label}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(attentionSummary.tone)}>
+          {attentionSummary.label}
+        </StatusBadge>
+      }
       className="ops-watch admin-mb-16"
       description="Automatic operational checks for bookings that need operator attention."
       title="Attention checks"
@@ -290,9 +301,9 @@ export function BookingFinanceCommandCenterSection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={financeFlags.length ? 'pill-warn' : 'pill-success'}>
+        <StatusBadge tone={financeFlags.length ? 'warning' : 'success'}>
           {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="ops-watch admin-mb-16"
       description="Booking finance summary and required checks."
@@ -330,9 +341,9 @@ export function BookingPayoutBatchEligibilitySection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={payoutBatchEligibility.tone}>
+        <StatusBadge tone={statusBadgeToneFromPillClass(payoutBatchEligibility.tone)}>
           {payoutBatchEligibility.status}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Booking readiness for Partner settlement batches."
@@ -349,7 +360,7 @@ export function BookingPayoutBatchEligibilitySection({
               <span className="booking-settlement-ledger-label">{row.label}</span>
               <p className="muted">{row.operatorRule}</p>
             </div>
-            <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.status}</StatusBadge>
             <p>{row.detail}</p>
             <ActionLink href={row.href} label="Open" />
           </div>
@@ -370,9 +381,9 @@ export function BookingServicePricingSnapshotSection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={financeFlags.length ? 'pill-warn' : 'pill-success'}>
+        <StatusBadge tone={financeFlags.length ? 'warning' : 'success'}>
           {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Booking price, payout, fee, and tax evidence."
