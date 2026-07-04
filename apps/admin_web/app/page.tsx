@@ -16,6 +16,12 @@ import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminSection } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
+  PillClassBadge,
+  PillClassBadgeLink,
+  StatusBadge,
+  StatusBadgeLink,
+} from '../components/status-badge';
+import {
   AdminAuditLog,
   AdminBooking,
   AdminCashSettlementSummary,
@@ -800,15 +806,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               key={item.lane}
             >
               <small>{item.owner}</small>
-              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
+              <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
               <div className="participant-list admin-mt-10">
                 {item.checks.map((check) => (
-                  <span className="pill pill-neutral" key={check}>
+                  <StatusBadge key={check} tone="neutral">
                     {check}
-                  </span>
+                  </StatusBadge>
                 ))}
               </div>
             </Link>
@@ -999,7 +1005,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               key={item.lane}
             >
               <small>{item.owner}</small>
-              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
+              <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
@@ -1012,9 +1018,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               ) : null}
               <div className="participant-list admin-mt-10">
                 {item.checks.map((check) => (
-                  <span className="pill pill-neutral" key={check}>
+                  <StatusBadge key={check} tone="neutral">
                     {check}
-                  </span>
+                  </StatusBadge>
                 ))}
               </div>
             </Link>
@@ -1023,7 +1029,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </AdminSection>
 
       <AdminSection
-        actions={<span className="pill pill-info">{selectedRangeLabel}</span>}
+        actions={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
         className="admin-mt-20"
         description={
           <>
@@ -1037,13 +1043,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       >
         <div className="actions admin-mt-12">
           {dashboardRangeLinks.map((link) => (
-            <Link
-              className={filters.range === link.range ? 'pill pill-info' : 'text-link'}
-              href={link.href}
-              key={link.range}
-            >
-              {link.label}
-            </Link>
+            filters.range === link.range ? (
+              <StatusBadgeLink href={link.href} key={link.range} tone="info">
+                {link.label}
+              </StatusBadgeLink>
+            ) : (
+              <Link className="text-link" href={link.href} key={link.range}>
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
         <div className="service-trace-summary admin-mt-12">
@@ -1091,15 +1099,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <small>
                     {item.owner} / {item.lane}
                   </small>
-                  <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
+                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>
+                    {item.status}
+                  </PillClassBadge>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>
                   <div className="participant-list admin-mt-10">
-                    <span className="pill pill-neutral">{item.value}</span>
+                    <StatusBadge tone="neutral">{item.value}</StatusBadge>
                     {item.checks.slice(0, 3).map((check) => (
-                      <span className="pill pill-info" key={check}>
+                      <StatusBadge key={check} tone="info">
                         {check}
-                      </span>
+                      </StatusBadge>
                     ))}
                   </div>
                 </Link>
@@ -1131,7 +1141,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policyOutcome.cards.map((card) => (
                 <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
-                  <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+                  <PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>
                   <h3>{card.title}</h3>
                   <p>{card.detail}</p>
                   <small>{card.operatorAction}</small>
@@ -1154,7 +1164,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-note admin-mt-14">
               <div className="ops-row">
                 <div>
-                  <span className="pill pill-warn">Next best move</span>
+                  <StatusBadge tone="warning">Next best move</StatusBadge>
                   <strong>{fullDashboardData.shiftBriefing.headline}</strong>
                   <p className="muted">{fullDashboardData.shiftBriefing.detail}</p>
                 </div>
@@ -1231,7 +1241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               {fullDashboardData.operatorStartChecklist.map((item, index) => (
                 <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
                   <small>Step {index + 1}</small>
-                  <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                  <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>
                   <span className="ops-task-card-action">{item.action}</span>
@@ -1277,9 +1287,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       expires.
                     </p>
                   </div>
-                  <span className={`pill ${matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}`}>
+                  <PillClassBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
                     {matchingControl.openRows.length} shown
-                  </span>
+                  </PillClassBadge>
                 </div>
                 <div className="stack admin-mt-10">
                   {matchingControl.openRows.map((row) => (
@@ -1290,13 +1300,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         </Link>
                         <p className="muted">{row.detail}</p>
                         <div className="participant-list admin-mt-8">
-                          <span className={`pill ${row.customerPillClass}`}>{row.customerState}</span>
-                          <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
-                          <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
+                          <PillClassBadge pillClass={row.customerPillClass}>{row.customerState}</PillClassBadge>
+                          <PillClassBadge pillClass={row.backupPillClass}>{row.backupState}</PillClassBadge>
+                          <PillClassBadge pillClass={row.supplyPillClass}>{row.supplyState}</PillClassBadge>
                         </div>
                         <p className="muted admin-mt-6">Next: {row.nextAction}</p>
                       </div>
-                      <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                      <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
                     </div>
                   ))}
                   {matchingControl.openRows.length === 0 ? (
@@ -1312,14 +1322,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       The most likely reason matching will feel slow before operators touch a booking.
                     </p>
                   </div>
-                  <span className={`pill ${matchingControl.healthPillClass}`}>
+                  <PillClassBadge pillClass={matchingControl.healthPillClass}>
                     {matchingControl.healthLabel}
-                  </span>
+                  </PillClassBadge>
                 </div>
                 <div className="ops-task-grid admin-grid-single admin-mt-12">
                   {matchingControl.checks.map((check) => (
                     <div className={`ops-task-card ${check.className}`} key={check.title}>
-                      <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                      <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
                       <h3>{check.title}</h3>
                       <p>{check.detail}</p>
                       <small>{check.operatorAction}</small>
@@ -1380,13 +1390,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         These owner choices are currently different from the recommended operating baseline.
                       </p>
                     </div>
-                    <span
-                      className={`pill ${
+                    <PillClassBadge
+                      pillClass={
                         fullDashboardData.policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'
-                      }`}
+                      }
                     >
                       {fullDashboardData.policySummary.activeOverrideCount} override(s)
-                    </span>
+                    </PillClassBadge>
                   </div>
                   <div className="stack admin-mt-10">
                     {fullDashboardData.policySummary.activeOverrides.slice(0, 4).map((override) => (
@@ -1397,9 +1407,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             Current {override.current} / recommended {override.recommended}
                           </p>
                         </div>
-                        <Link className="pill pill-info" href={override.href}>
+                        <StatusBadgeLink href={override.href} tone="info">
                           {override.category}
-                        </Link>
+                        </StatusBadgeLink>
                       </div>
                     ))}
                     {fullDashboardData.policySummary.activeOverrides.length === 0 ? (
@@ -1432,12 +1442,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             {change.current} changed {change.changedAtLabel}
                           </p>
                         </div>
-                        <Link
-                          className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}
+                        <PillClassBadgeLink
                           href={change.href}
+                          pillClass={change.enforced ? 'pill-success' : 'pill-warn'}
                         >
                           {change.enforced ? 'Live' : 'Planning'}
-                        </Link>
+                        </PillClassBadgeLink>
                       </div>
                     ))}
                     {fullDashboardData.policySummary.recentChanges.length === 0 ? (
@@ -1450,7 +1460,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policySummary.decisions.map((decision) => (
                 <div className={`ops-task-card ${decision.className}`} key={decision.key}>
-                  <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
+                  <PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>
                   <h3>{decision.label}</h3>
                   <p>{decision.current}</p>
                   <small>{decision.recommendation}</small>
@@ -1555,7 +1565,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             {item.active} active / {item.completed} completed / avg {money(item.averagePrice)}
                           </p>
                         </div>
-                        <span className="pill pill-info">{item.total}</span>
+                        <StatusBadge tone="info">{item.total}</StatusBadge>
                       </div>
                     ))}
                     {fullDashboardData.bookingDeepDive.serviceDemand.length === 0 ? (
@@ -1575,9 +1585,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             {item.pending} pending
                           </p>
                         </div>
-                        <span className={`pill ${item.checkCount ? 'pill-warn' : 'pill-info'}`}>
+                        <PillClassBadge pillClass={item.checkCount ? 'pill-warn' : 'pill-info'}>
                           {item.count} payment(s)
-                        </span>
+                        </PillClassBadge>
                       </div>
                     ))}
                     {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
@@ -1645,7 +1655,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminSection>
 
             <AdminSection
-              actions={<span className="pill pill-info">Presence proxy</span>}
+              actions={<StatusBadge tone="info">Presence proxy</StatusBadge>}
               description="Current customer activity proxy until dedicated customer session tracking is added."
               id="dashboard-customer-app-presence"
               title="Customer app presence"
@@ -1707,7 +1717,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <section className="detail-grid admin-mt-20">
             <AdminSection
-              actions={<span className="pill pill-info">Asia/Ho_Chi_Minh</span>}
+              actions={<StatusBadge tone="info">Asia/Ho_Chi_Minh</StatusBadge>}
               description="Bookings grouped by request hour in Vietnam time."
               id="dashboard-hourly-booking-demand"
               title="Hourly booking demand"
@@ -1721,7 +1731,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         {item.active} active / {item.completed} completed / {item.cancelled} cancelled
                       </p>
                     </div>
-                    <span className={`pill ${item.total ? 'pill-info' : 'pill-neutral'}`}>{item.total}</span>
+                    <PillClassBadge pillClass={item.total ? 'pill-info' : 'pill-neutral'}>
+                      {item.total}
+                    </PillClassBadge>
                   </div>
                 ))}
               </div>
@@ -1746,9 +1758,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         {item.active} active / {item.completed} completed / {item.cancelled} cancelled
                       </p>
                     </div>
-                    <span className={`pill ${item.noShowSignal ? 'pill-warn' : 'pill-info'}`}>
+                    <PillClassBadge pillClass={item.noShowSignal ? 'pill-warn' : 'pill-info'}>
                       {item.total} booking(s)
-                    </span>
+                    </PillClassBadge>
                   </div>
                 ))}
                 {fullDashboardData.regionalDemand.length === 0 && (
@@ -1936,7 +1948,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-grid admin-mt-12">
               {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
                 <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
-                  <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
+                  <PillClassBadge pillClass={step.pillClass}>Step {step.step}</PillClassBadge>
                   <h3>{step.title}</h3>
                   <p>{step.detail}</p>
                   <div className="ops-task-breakdown">
@@ -1972,7 +1984,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <div className="ops-task-note admin-mt-14">
                 <div className="ops-row">
                   <div>
-                    <span className={`pill ${fullDashboardData.topCommandSignal.pillClass}`}>First move</span>
+                    <PillClassBadge pillClass={fullDashboardData.topCommandSignal.pillClass}>
+                      First move
+                    </PillClassBadge>
                     <strong>{fullDashboardData.topCommandSignal.title}</strong>
                     <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
                   </div>
@@ -1986,7 +2000,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               {fullDashboardData.commandSignals.map((signal) => (
                 <div className={`ops-task-card ${signal.className}`} key={signal.title}>
                   <div>
-                    <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                    <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
                     <h3>{signal.title}</h3>
                     <p className="muted">{signal.detail}</p>
                     <div className="ops-task-breakdown">
@@ -2066,13 +2080,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               {fullDashboardData.queueSummary.first && (
                 <div className="ops-task-note admin-mt-14">
                   <div>
-                    <span
-                      className={`pill ${
-                        fullDashboardData.queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'
-                      }`}
+                    <PillClassBadge
+                      pillClass={
+                        fullDashboardData.queueSummary.first.severity === 'high'
+                          ? 'pill-danger'
+                          : 'pill-warn'
+                      }
                     >
                       First action
-                    </span>
+                    </PillClassBadge>
                     <h3>{fullDashboardData.queueSummary.first.label}</h3>
                     <p>{fullDashboardData.queueSummary.first.recommendedAction}</p>
                     <p className="muted">
@@ -2134,7 +2150,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       <strong>API external readiness unavailable</strong>
                       <p className="muted">Start the HANDS API and refresh this dashboard.</p>
                     </div>
-                    <span className="pill pill-warn">BLOCKED</span>
+                    <StatusBadge tone="warning">BLOCKED</StatusBadge>
                   </div>
                 )}
               </div>
@@ -2241,9 +2257,9 @@ function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks
         {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
       </div>
       <div className="actions">
-        <span className={`pill ${check.status === 'READY' ? 'pill-success' : 'pill-warn'}`}>
+        <PillClassBadge pillClass={check.status === 'READY' ? 'pill-success' : 'pill-warn'}>
           {check.status}
-        </span>
+        </PillClassBadge>
         <Link className="text-link" href={href}>
           Related page
         </Link>

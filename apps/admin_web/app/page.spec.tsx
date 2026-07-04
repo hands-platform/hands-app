@@ -306,6 +306,18 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('<strong>No Partner blocker is currently visible.</strong>');
   });
 
+  it('uses shared Vuexy status badge atoms instead of raw dashboard pill markup', () => {
+    expect(dashboardSource).toContain("from '../components/status-badge'");
+    expect(dashboardSource).toContain('StatusBadge');
+    expect(dashboardSource).toContain('PillClassBadge');
+    expect(dashboardSource).toContain('StatusBadgeLink');
+    expect(dashboardSource).toContain('PillClassBadgeLink');
+    expect(dashboardSource).not.toContain('<span className="pill');
+    expect(dashboardSource).not.toContain('<span className={`pill');
+    expect(dashboardSource).not.toContain('<Link className="pill');
+    expect(dashboardSource).not.toContain('<Link\n                          className={`pill');
+  });
+
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],
