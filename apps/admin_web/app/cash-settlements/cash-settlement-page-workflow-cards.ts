@@ -1,4 +1,6 @@
-import { formatMoney } from '../../lib/admin-format';
+import { createElement, Fragment, type ReactNode } from 'react';
+
+import { MoneyText } from '../../components/money-text';
 import type {
   CashSettlementHandoffItem,
   CashSettlementProviderGroup,
@@ -20,10 +22,11 @@ export function buildWalletRecoverySteps(
   return [
     {
       detail: hasOpenDebt
-        ? `${summary.providerCount} Partner wallet(s) are negative because cash bookings created ${formatMoney(
-            summary.debtAmount,
-            summary.currency,
-          )} of unpaid HANDS fee or withholding debt.`
+        ? detailWithMoney(
+            `${summary.providerCount} Partner wallet(s) are negative because cash bookings created `,
+            moneyText(summary.debtAmount, summary.currency),
+            ' of unpaid HANDS fee or withholding debt.',
+          )
         : 'No Partner wallet is currently negative because of cash-fee debt.',
       operatorRule:
         'Use booking, payment, earning, and chat evidence. Record facts only; do not turn this into a Partner or customer label.',
@@ -43,10 +46,11 @@ export function buildWalletRecoverySteps(
     },
     {
       detail: highestDebt
-        ? `Start with ${highestDebt.providerName}, currently ${formatMoney(
-            highestDebt.debtAmount,
-            highestDebt.currency,
-          )} open.`
+        ? detailWithMoney(
+            `Start with ${highestDebt.providerName}, currently `,
+            moneyText(highestDebt.debtAmount, highestDebt.currency),
+            ' open.',
+          )
         : 'There is no open row waiting for confirmation.',
       operatorRule:
         'Submitting the settlement form marks the negative earning paid and creates the wallet ledger trace.',
@@ -82,10 +86,10 @@ export function buildCashSettlementHandoffMap(
     {
       className: cashRows.length ? 'ops-task-pending' : 'ops-task-done',
       detail: cashRows.length
-        ? `${formatMoney(
-            cashRows.reduce((sum, row) => sum + row.bookingAmount, 0),
-            summary.currency,
-          )} was collected by Partners as customer cash.`
+        ? detailWithMoney(
+            moneyText(cashRows.reduce((sum, row) => sum + row.bookingAmount, 0), summary.currency),
+            ' was collected by Partners as customer cash.',
+          )
         : 'No visible row is currently linked to a CASH payment method.',
       href: '/bookings?view=cash-debt',
       operatorRule: 'Use booking detail for payment, chat, and marketplace participant evidence.',
@@ -96,10 +100,11 @@ export function buildCashSettlementHandoffMap(
     {
       className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
       detail: highestDebt
-        ? `${highestDebt.providerName} has the largest open wallet debt: ${formatMoney(
-            highestDebt.debtAmount,
-            highestDebt.currency,
-          )}.`
+        ? detailWithMoney(
+            `${highestDebt.providerName} has the largest open wallet debt: `,
+            moneyText(highestDebt.debtAmount, highestDebt.currency),
+            '.',
+          )
         : 'No Partner wallet has cash-fee debt in the current queue.',
       href: '/partner-controls?review=cash-debt',
       operatorRule: 'Negative wallet applies only to Partners; customers never carry negative wallet debt.',
@@ -132,7 +137,7 @@ export function buildCashSettlementHandoffMap(
     {
       className: hasOpenDebt ? 'ops-task-pending' : 'ops-task-done',
       detail: hasOpenDebt
-        ? `${formatMoney(summary.debtAmount, summary.currency)} must be settled before payout release.`
+        ? detailWithMoney(moneyText(summary.debtAmount, summary.currency), ' must be settled before payout release.')
         : 'Payout release can continue through normal weekly, monthly, or admin-selected batch checks.',
       href: '/payouts',
       operatorRule: 'Cash debt settlement should be visible before finance approves payout release.',
@@ -141,6 +146,14 @@ export function buildCashSettlementHandoffMap(
       title: 'Payout release gate',
     },
   ];
+}
+
+function detailWithMoney(...children: ReactNode[]): ReactNode {
+  return createElement(Fragment, null, ...children);
+}
+
+function moneyText(amount: number, currency: string): ReactNode {
+  return createElement(MoneyText, { amount, currency });
 }
 
 export function buildCashSettlementEvidenceChecklist(

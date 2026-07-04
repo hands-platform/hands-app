@@ -65,7 +65,7 @@ export type AppliedCashSettlementPolicyCard = {
 export type EvidenceChecklistItem = {
   title: string;
   status: string;
-  detail: string;
+  detail: ReactNode;
   operatorRule: string;
   href: string;
   className: string;
@@ -77,7 +77,7 @@ export type CashSettlementHandoffItem = EvidenceChecklistItem;
 export type WalletRecoveryStep = {
   title: string;
   status: string;
-  detail: string;
+  detail: ReactNode;
   operatorRule: string;
   pillClass: string;
 };

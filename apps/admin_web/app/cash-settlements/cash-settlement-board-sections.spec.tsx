@@ -163,6 +163,18 @@ describe('CashSettlement board sections', () => {
     expect(commandSource).toContain('MoneyText');
     expect(commandSource).not.toContain('formatMoney(');
   });
+
+  it('allows cash settlement workflow details to render shared money atoms', () => {
+    const typeSource = readFileSync(join(process.cwd(), 'app/cash-settlements/cash-settlement-page-types.ts'), 'utf8');
+    const workflowSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-page-workflow-cards.ts'),
+      'utf8',
+    );
+
+    expect(typeSource).not.toContain('detail: string;');
+    expect(workflowSource).toContain('MoneyText');
+    expect(workflowSource).not.toContain('formatMoney(');
+  });
 });
 
 function groupedTableCardClassNamesIn(classNames: readonly string[]) {
