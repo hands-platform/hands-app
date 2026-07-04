@@ -21,6 +21,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps react-datepicker instances on the shared Vuexy calendar skin', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => readFileSync(filePath, 'utf8').includes('<DatePicker'))
+      .filter((filePath) => !usesVuexyDatePickerSkin(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -31,6 +40,12 @@ function productionTsxFiles() {
   return ['app', 'components']
     .flatMap((directory) => listTsxFiles(join(process.cwd(), directory)))
     .filter((filePath) => !filePath.endsWith('.spec.tsx'));
+}
+
+function usesVuexyDatePickerSkin(source: string) {
+  const datePickerCount = source.match(/<DatePicker\b/g)?.length ?? 0;
+  const vuexySkinCount = source.match(/calendarClassName="[^"]*\bcalendar-vuexy-datepicker\b/g)?.length ?? 0;
+  return datePickerCount === vuexySkinCount;
 }
 
 function listTsxFiles(directory: string): string[] {
