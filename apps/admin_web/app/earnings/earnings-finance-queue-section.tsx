@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type EarningsFinanceSignal = {
   readonly action: string;
@@ -38,7 +38,11 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
             className={signal.className}
             detail={signal.detail}
             key={signal.title}
-            leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(signal.pillClass)}>
+                {signal.status}
+              </StatusBadge>
+            }
             title={signal.title}
           />
         ))}
