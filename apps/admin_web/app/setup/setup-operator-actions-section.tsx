@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminSignal } from '../../components/status-badge';
 
 type SetupOperatorAction = {
   readonly groupId: string;
@@ -22,9 +23,9 @@ export function SetupOperatorActionsSection({
   return (
     <AdminSection
       actions={
-        <span className={`signal ${nextActions.length === 0 ? 'signal-ok' : 'signal-warn'}`}>
+        <AdminSignal tone={nextActions.length === 0 ? 'ok' : 'warn'}>
           {nextActions.length === 0 ? 'No pending actions' : `${nextActions.length} pending`}
-        </span>
+        </AdminSignal>
       }
       description="These are the highest-priority human setup steps. Code checks can keep passing while these external values are pending."
       id="live-readiness"

@@ -1,7 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, textContent } from './setup-section-test-utils';
 import { SetupProgressControlSection } from './setup-progress-control-section';
 
 describe('SetupProgressControlSection', () => {
+  it('uses the shared AdminSignal atom for setup action chips', () => {
+    const source = readFileSync(new URL('./setup-progress-control-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('<span className="signal signal-info">');
+    expect(source).not.toContain('<span className="signal signal-ok">');
+  });
+
   it('renders the progress sequence and verified baseline commands', () => {
     const section = SetupProgressControlSection({
       sequence: [

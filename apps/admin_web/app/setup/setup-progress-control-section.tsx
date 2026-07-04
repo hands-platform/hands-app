@@ -1,6 +1,7 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
+import { AdminSignal } from '../../components/status-badge';
 
 type SetupProgressStep = {
   readonly phase: string;
@@ -21,7 +22,7 @@ export function SetupProgressControlSection({
   return (
     <section className="detail-grid admin-mb-16">
       <AdminSection
-        actions={<span className="signal signal-info">Roadmap locked</span>}
+        actions={<AdminSignal tone="info">Roadmap locked</AdminSignal>}
         description="This is the single operating order for HANDS MVP work. Keep new requests inside this sequence unless an urgent production blocker appears."
         title="Master progress control"
       >
@@ -38,7 +39,7 @@ export function SetupProgressControlSection({
       </AdminSection>
 
       <AdminSection
-        actions={<span className="signal signal-ok">{verifiedBaseline.length} checks</span>}
+        actions={<AdminSignal tone="ok">{verifiedBaseline.length} checks</AdminSignal>}
         description="These checks were used to reset the project state before continuing. If one fails later, fix it before moving to the next feature."
         title="Verified baseline"
       >

@@ -1,5 +1,5 @@
 import { AdminMetricGrid, AdminSectionHeader } from '../../components/admin-page-template';
-import { StatusBadge } from '../../components/status-badge';
+import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 
 type SetupOverviewSectionProps = {
@@ -32,15 +32,17 @@ export function SetupOverviewSection({
       <AdminSectionHeader
         actions={
           <>
-          <span className={`signal ${currentStage.ok ? 'signal-ok' : 'signal-warn'}`}>
-            {currentStage.label}
-          </span>
-          <span className={`signal ${readinessOk ? 'signal-ok' : 'signal-info'}`}>
-            {readinessUnavailable ? 'External status unknown' : readinessOk ? 'Production E2E ready' : 'Production deferred'}
-          </span>
-          <StatusBadge tone="info">
-            {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readinessTimestamp)}`}
-          </StatusBadge>
+            <AdminSignal tone={currentStage.ok ? 'ok' : 'warn'}>{currentStage.label}</AdminSignal>
+            <AdminSignal tone={readinessOk ? 'ok' : 'info'}>
+              {readinessUnavailable
+                ? 'External status unknown'
+                : readinessOk
+                  ? 'Production E2E ready'
+                  : 'Production deferred'}
+            </AdminSignal>
+            <StatusBadge tone="info">
+              {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readinessTimestamp)}`}
+            </StatusBadge>
           </>
         }
         description="One checklist for credentials, account setup, and external services needed before production-like E2E."

@@ -12,6 +12,13 @@ describe('SetupOverviewSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">');
   });
 
+  it('uses the shared AdminSignal atom for readiness action chips', () => {
+    const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('className={`signal');
+  });
+
   it('renders setup readiness labels and summary metrics', () => {
     const section = SetupOverviewSection({
       readinessOk: false,
@@ -38,10 +45,10 @@ describe('SetupOverviewSection', () => {
     expect(markup).not.toContain('class="toolbar"');
     expect(rendered).toContain('External setup');
     expect(rendered).toContain('Production deferred');
-    expect(rendered).toContain('Current blockers');
-    expect(rendered).toContain('Current setup gaps need attention.');
-    expect(rendered).toContain('Missing values');
-    expect(rendered).toContain('6');
+    expect(markup).toContain('Current blockers');
+    expect(markup).toContain('Current setup gaps need attention.');
+    expect(markup).toContain('Missing values');
+    expect(markup).toContain('6');
   });
 
   it('renders the unavailable readiness state without formatting a timestamp', () => {

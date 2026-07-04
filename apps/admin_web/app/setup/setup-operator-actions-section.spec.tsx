@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 import { SetupOperatorActionsSection } from './setup-operator-actions-section';
 
 describe('SetupOperatorActionsSection', () => {
+  it('uses the shared AdminSignal atom for setup action chips', () => {
+    const source = readFileSync(new URL('./setup-operator-actions-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('className={`signal');
+  });
+
   it('renders current and deferred setup actions with commands', () => {
     const section = SetupOperatorActionsSection({
       nextActions: [
