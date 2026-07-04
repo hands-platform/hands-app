@@ -11,6 +11,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
@@ -227,14 +228,14 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
         <div className="ops-task-grid">
           {releasePolicyDesk.map((signal) => (
-            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-              <div>
-                <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
-                <h3>{signal.title}</h3>
-                <p className="muted">{signal.detail}</p>
-              </div>
-              <small>{signal.action}</small>
-            </div>
+            <AdminTaskCard
+              actionLabel={signal.action}
+              className={signal.className}
+              detail={signal.detail}
+              key={signal.title}
+              leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+              title={signal.title}
+            />
           ))}
         </div>
         <div className="ops-section-header admin-mt-16">
@@ -286,14 +287,16 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
         <div className="ops-task-grid admin-mt-12">
           {marketplaceUnblockBridge.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <div>
-                <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-                <h3>{item.title}</h3>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.action}</small>
-            </Link>
+            <AdminActionCard
+              actionLabel={item.action}
+              className={item.className}
+              detail={item.detail}
+              href={item.href}
+              key={item.title}
+              leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+              title={item.title}
+              variant="ops-task"
+            />
           ))}
         </div>
       </AdminFilterPanel>

@@ -142,8 +142,11 @@ describe('PayoutsPage', () => {
   it('uses shared badge atoms for payout policy desk status labels', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
+    expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
     expect(source).not.toContain('<span className={`pill ${signal.pillClass}`}>{signal.status}</span>');
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
