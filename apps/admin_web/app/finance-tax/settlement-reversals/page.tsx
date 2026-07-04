@@ -8,6 +8,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -220,14 +221,27 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     <div className="muted">Reversal period {reversal.monthlyPeriod}</div>
                   </td>
                   <td>
-                    <strong>{formatMoney(reversal.customerPaymentAmount, reversal.currency)}</strong>
-                    <div className="muted">Partner {formatMoney(reversal.partnerPayoutAmount, reversal.currency)}</div>
-                    <div className="muted">Fee {formatMoney(reversal.platformFeeGross, reversal.currency)}</div>
+                    <strong>
+                      <MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />
+                    </strong>
+                    <div className="muted">
+                      Partner <MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />
+                    </div>
+                    <div className="muted">
+                      Fee <MoneyText amount={reversal.platformFeeGross} currency={reversal.currency} />
+                    </div>
                   </td>
                   <td>
-                    <strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>
-                    <div className="muted">VAT {formatMoney(reversal.companyOutputVat, reversal.currency)}</div>
-                    <div className="muted">Processing {formatMoney(reversal.paymentProcessingFee, reversal.currency)}</div>
+                    <strong>
+                      <MoneyText amount={reversal.partnerWithholdingTotal} currency={reversal.currency} />
+                    </strong>
+                    <div className="muted">
+                      VAT <MoneyText amount={reversal.companyOutputVat} currency={reversal.currency} />
+                    </div>
+                    <div className="muted">
+                      Processing{' '}
+                      <MoneyText amount={reversal.paymentProcessingFee} currency={reversal.currency} />
+                    </div>
                   </td>
                   <td>
                     <div className="admin-table-substack">

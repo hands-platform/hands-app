@@ -9,6 +9,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -221,9 +222,12 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                   <td>
                     <strong>{snapshot.paymentMethod}</strong>
                     <div className="muted">
-                      Customer {formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
+                      Customer <MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />
                     </div>
-                    <div className="muted">Processing {formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}</div>
+                    <div className="muted">
+                      Processing{' '}
+                      <MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />
+                    </div>
                   </td>
                   <td>
                     <Link className="text-link" href={bookingSettlementAuditDetailHref(snapshot.id)}>
@@ -232,14 +236,26 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted">Discount, expense, and funding source are loaded on detail.</div>
                   </td>
                   <td>
-                    <strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>
-                    <div className="muted">VAT {formatMoney(snapshot.partnerVatAmount, snapshot.currency)}</div>
-                    <div className="muted">PIT {formatMoney(snapshot.partnerPitAmount, snapshot.currency)}</div>
+                    <strong>
+                      <MoneyText amount={snapshot.partnerWithholdingTotal} currency={snapshot.currency} />
+                    </strong>
+                    <div className="muted">
+                      VAT <MoneyText amount={snapshot.partnerVatAmount} currency={snapshot.currency} />
+                    </div>
+                    <div className="muted">
+                      PIT <MoneyText amount={snapshot.partnerPitAmount} currency={snapshot.currency} />
+                    </div>
                   </td>
                   <td>
-                    <strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>
-                    <div className="muted">Net {formatMoney(snapshot.platformFeeNetRevenue, snapshot.currency)}</div>
-                    <div className="muted">VAT {formatMoney(snapshot.companyOutputVat, snapshot.currency)}</div>
+                    <strong>
+                      <MoneyText amount={snapshot.platformFeeGross} currency={snapshot.currency} />
+                    </strong>
+                    <div className="muted">
+                      Net <MoneyText amount={snapshot.platformFeeNetRevenue} currency={snapshot.currency} />
+                    </div>
+                    <div className="muted">
+                      VAT <MoneyText amount={snapshot.companyOutputVat} currency={snapshot.currency} />
+                    </div>
                   </td>
                   <td>
                     <StatusBadge tone={statusBadgeToneFromPillClass(financeTaxCloseoutStatusPill(snapshot.taxStatus))}>

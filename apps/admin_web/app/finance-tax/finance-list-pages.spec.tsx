@@ -309,6 +309,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Needs review');
       expect(markup).toContain('10 rows');
       expect(markup).toContain('/finance-tax/booking-settlement-audit?range=today&amp;review=open&amp;take=10');
+      expect(markup).toContain('money-text money-text-positive');
     }
 
     if (_name === 'general ledger') {
@@ -338,6 +339,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Journal POSTED · Clearing OPEN');
       expect(markup).toContain('/finance-tax/settlement-reversals/reversal-1');
       expect(markup).toContain('/finance-tax/booking-settlement-audit/snapshot-1');
+      expect(markup).toContain('money-text money-text-positive');
     }
   });
 
@@ -425,6 +427,14 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${statusPill(snapshot.taxStatus)}`}');
   });
 
+  it('uses shared money atoms for booking settlement audit tax and fee cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}</strong>');
+    expect(source).not.toContain('<strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>');
+  });
+
   it('uses shared badge atoms for settlement reversal status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
@@ -433,6 +443,14 @@ describe('finance list pages', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(reversal.taxStatus)}`}');
     expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
+  });
+
+  it('uses shared money atoms for settlement reversal amount cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(reversal.customerPaymentAmount, reversal.currency)}</strong>');
+    expect(source).not.toContain('<strong>{formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}</strong>');
   });
 
   it('uses shared badge atoms for coupon finance review pills', () => {
