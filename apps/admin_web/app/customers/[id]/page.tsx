@@ -22,7 +22,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
-import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
@@ -696,13 +696,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       >
         <div className="setup-stage-list admin-mt-12">
           <div className="ops-task-note ops-task-info">
-            <div className="ops-section-header">
-              <div>
-                <h3>Payment ledger</h3>
-                <p className="muted">{wallet.operatorNote}</p>
-              </div>
-              <StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>
-            </div>
+            <AdminSectionHeader
+              actions={<StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>}
+              description={wallet.operatorNote}
+              title="Payment ledger"
+            />
             <div className="ops-row">
               <strong>Captured payments</strong>
               <span>{formatMoney(wallet.capturedSpend)}</span>
@@ -725,13 +723,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           </div>
           <div className="ops-task-note ops-task-info" id="addresses">
-            <div className="ops-section-header">
-              <div>
-                <h3>Saved addresses</h3>
-                <p className="muted">Profile addresses and map pins selected in the customer app.</p>
-              </div>
-              <StatusBadge tone="neutral">{addresses.length} row(s)</StatusBadge>
-            </div>
+            <AdminSectionHeader
+              actions={<StatusBadge tone="neutral">{addresses.length} row(s)</StatusBadge>}
+              description="Profile addresses and map pins selected in the customer app."
+              title="Saved addresses"
+            />
             {addresses.length > 0 ? (
               addresses.slice(0, 6).map((address) => (
                 <div className="ops-row" key={address.key}>
@@ -817,14 +813,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         id="notifications"
         title="Notification and audit trace"
       >
-
-        <div className="ops-section-header admin-mt-16">
-          <div>
-            <h3>Recent customer notifications</h3>
-            <p className="muted">Delivery status for missed booking, payment, and chat updates.</p>
-          </div>
-          <StatusBadge tone="info">{filteredNotifications.length} rows</StatusBadge>
-        </div>
+        <AdminSectionHeader
+          actions={<StatusBadge tone="info">{filteredNotifications.length} rows</StatusBadge>}
+          className="admin-mt-16"
+          description="Delivery status for missed booking, payment, and chat updates."
+          title="Recent customer notifications"
+        />
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
@@ -844,14 +838,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-
-        <div className="ops-section-header admin-mt-16" id="audit-trail">
-          <div>
-            <h3>Customer audit trail</h3>
-            <p className="muted">Recent operator notes and system actions attached to this customer.</p>
-          </div>
-          <StatusBadge tone="info">{filteredAuditLogs.length} logs</StatusBadge>
-        </div>
+        <AdminSectionHeader
+          actions={<StatusBadge tone="info">{filteredAuditLogs.length} logs</StatusBadge>}
+          className="admin-mt-16"
+          description="Recent operator notes and system actions attached to this customer."
+          title="Customer audit trail"
+          titleId="audit-trail"
+        />
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
@@ -893,26 +886,22 @@ function CustomerChatHistoryRoomCard({
 
   return (
     <AdminCard className="customer-chat-history-room-card">
-      <div className="ops-section-header">
-        <div>
-          <strong>
-            {shortId(booking.id)} / {bookingServiceLabel(booking)}
-          </strong>
-          <p className="muted">
-            {booking.status} / Room {booking.chatRoom?.id}
-          </p>
-        </div>
-        <div className="customer-chat-history-actions">
-          <Link className="text-link" href={`/bookings/${booking.id}`}>
-            Open booking
-          </Link>
-          {booking.chatRoom ? (
-            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
-              Open full chat archive
+      <AdminSectionHeader
+        actions={(
+          <div className="customer-chat-history-actions">
+            <Link className="text-link" href={`/bookings/${booking.id}`}>
+              Open booking
             </Link>
-          ) : null}
-        </div>
-      </div>
+            {booking.chatRoom ? (
+              <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+                Open full chat archive
+              </Link>
+            ) : null}
+          </div>
+        )}
+        description={`${booking.status} / Room ${booking.chatRoom?.id}`}
+        title={`${shortId(booking.id)} / ${bookingServiceLabel(booking)}`}
+      />
       <AdminChatWindow
         avatarLabel={customerName}
         className="admin-mt-12"

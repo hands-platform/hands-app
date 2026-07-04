@@ -60,8 +60,10 @@ describe('CustomerDetailPage', () => {
 
   it('uses shared Vuexy status badge atoms instead of raw customer detail pill markup', () => {
     expect(customerDetailSource).toContain("from '../../../components/status-badge'");
+    expect(customerDetailSource).toContain('AdminSectionHeader');
     expect(customerDetailSource).toContain('StatusBadge');
     expect(customerDetailSource).toContain('PillClassBadge');
+    expect(customerDetailSource).not.toContain('<div className="ops-section-header');
     expect(customerDetailSource).not.toContain('<span className="pill');
     expect(customerDetailSource).not.toContain('<span className={`pill');
   });
