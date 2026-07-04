@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -62,7 +62,9 @@ export function PartnerDetailBookingOpsLedgerSection({
               <td>
                 <strong>{row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
-                <PillClassBadge pillClass={statusPillClass(row.status)}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
+                  {row.status}
+                </StatusBadge>
               </td>
               <td>{row.relation}</td>
               <td>

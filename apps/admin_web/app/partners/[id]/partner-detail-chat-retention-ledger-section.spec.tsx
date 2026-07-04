@@ -10,7 +10,8 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
   it('uses the shared Vuexy badge atom for booking status', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
   });
 
