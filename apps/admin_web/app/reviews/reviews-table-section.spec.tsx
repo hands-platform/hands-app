@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
 import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
 
 describe('ReviewsTableSection', () => {
+  it('uses the shared StatusBadge atom for active filter labels', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
+  });
+
   it('renders the Vuexy customer review board with controls, rating, status, and action links', () => {
     const section = ReviewsTableSection({
       csvHref: 'data:text/csv;charset=utf-8,Review',
@@ -75,8 +84,8 @@ describe('ReviewsTableSection', () => {
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
-        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-offline',
         'vuexy-booking-id-line',

@@ -11,6 +11,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { StatusBadge } from '../../components/status-badge';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
   REVIEW_DATE_RANGE_OPTIONS,
@@ -67,9 +68,9 @@ export function PartnerCustomerEvaluationsSection({
           activeFilterLabels.length > 0 ? (
             <div className="vuexy-review-filter-summary">
               {activeFilterLabels.map((label) => (
-                <span className="pill pill-warn" key={label}>
+                <StatusBadge key={label} tone="warning">
                   {label}
-                </span>
+                </StatusBadge>
               ))}
             </div>
           ) : null

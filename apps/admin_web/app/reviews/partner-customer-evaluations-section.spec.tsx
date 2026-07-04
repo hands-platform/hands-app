@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
 import {
   PartnerCustomerEvaluationsSection,
@@ -5,6 +7,16 @@ import {
 } from './partner-customer-evaluations-section';
 
 describe('PartnerCustomerEvaluationsSection', () => {
+  it('uses the shared StatusBadge atom for active filter labels', () => {
+    const source = readFileSync(
+      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
+  });
+
   it('renders partner-written customer evaluations as a text-only review board', () => {
     const section = PartnerCustomerEvaluationsSection({
       filters: filters(),
@@ -45,8 +57,8 @@ describe('PartnerCustomerEvaluationsSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
         'table vuexy-data-table vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table',
       ]),
     );
