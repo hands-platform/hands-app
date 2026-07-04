@@ -272,6 +272,11 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<span className="pill pill-info">Manual bank transfer pending</span>');
     expect(sectionSource).not.toContain('function statusPillClass');
   });
+
+  it('uses the shared money atom for withdrawal request amounts', () => {
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).not.toContain('<strong>{formatMoney(request.amount, request.currency)}</strong>');
+  });
 });
 
 function textContent(value: unknown): string {

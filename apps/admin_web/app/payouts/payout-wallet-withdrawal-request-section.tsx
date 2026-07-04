@@ -10,6 +10,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
 import type {
@@ -94,7 +95,9 @@ export function PayoutWalletWithdrawalRequestSection({
                 <p className="muted">{request.providerProfile?.user?.phone ?? 'No phone on file'}</p>
               </td>
               <td>
-                <strong>{formatMoney(request.amount, request.currency)}</strong>
+                <strong>
+                  <MoneyText amount={request.amount} currency={request.currency} />
+                </strong>
                 <p className="muted">Request {shortRecordId(request.id)}</p>
                 <AdminWithdrawalAccountingPreview request={request} />
               </td>
