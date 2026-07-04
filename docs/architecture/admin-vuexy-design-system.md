@@ -41,6 +41,8 @@ Official documentation:
 Figma file:
 
 - `GXtaFRMuqQ5A14DgdPPJAv` - Vuexy Figma Dashboard UI Kit and Builder v4.
+- Local source file:
+  `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig`.
 
 Confirmed Figma nodes:
 
@@ -310,7 +312,8 @@ page-specific markup:
 - `AdminDataTable`
 - `AdminTableScroll`
 - `AdminFilterPanel`
-- `AdminRoundedPagination`
+- `AdminTablePaginationFooter`
+- `AdminRoundedPagination` inside shared table pagination only
 - `AdminPersonCell`
 - booking/person avatar status classes
 - country/flag display classes
