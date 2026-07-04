@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge } from '../../../components/status-badge';
+import { AdminSignal, PillClassBadge, type AdminSignalTone } from '../../../components/status-badge';
 import { ActionLink } from './booking-operator-actions';
 
 type SummaryCard = {
@@ -140,7 +140,7 @@ export function BookingAlertTraceSection({
         <div className="ops-check-list">
           {notificationTrace.backupBatches.map((batch) => (
             <div className="ops-check-item" key={batch.id}>
-              <span className="signal signal-info">{batch.signal}</span>
+              <AdminSignal tone="info">{batch.signal}</AdminSignal>
               <div>
                 <h3>{batch.title}</h3>
                 <p>{batch.detail}</p>
@@ -155,7 +155,7 @@ export function BookingAlertTraceSection({
         <div className="ops-check-list">
           {notificationTrace.rows.map((row) => (
             <div className="ops-check-item" key={row.id}>
-              <span className={`signal ${row.signalClass}`}>{row.signal}</span>
+              <AdminSignal tone={signalToneFromClass(row.signalClass)}>{row.signal}</AdminSignal>
               <div>
                 <h3>{row.title}</h3>
                 <p>{row.detail}</p>
@@ -227,7 +227,7 @@ export function BookingOperationsAuditTraceSection({
         <div className="ops-check-list">
           {operationsTrace.rows.map((row) => (
             <div className="ops-check-item" key={row.id}>
-              <span className={`signal ${row.signalClass}`}>{row.signal}</span>
+              <AdminSignal tone={signalToneFromClass(row.signalClass)}>{row.signal}</AdminSignal>
               <div>
                 <h3>{row.title}</h3>
                 <p>{row.detail}</p>
@@ -396,3 +396,13 @@ export type BookingServicePricingSnapshotSectionProps = {
   financeFlags: AttentionFlag[];
   servicePricingSnapshotRows: SummaryCard[];
 };
+
+function signalToneFromClass(signalClass: string): AdminSignalTone {
+  if (signalClass.includes('warn') || signalClass.includes('danger')) {
+    return 'warn';
+  }
+  if (signalClass.includes('info')) {
+    return 'info';
+  }
+  return 'ok';
+}
