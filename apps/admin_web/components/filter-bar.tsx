@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { AdminFilterPanel } from './admin-filter-panel';
 import {
   AdminFormControlButton,
+  AdminFormGrid,
   AdminFormSearch,
 } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
@@ -48,7 +49,7 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <AdminFilterPanel className="filter-bar" resultLabel={resultLabel} resultTone="info" title={queryLabel}>
-      <form action={action} className="form-grid compact-form">
+      <AdminFormGrid action={action} className="compact-form">
         <AdminFormSearch defaultValue={defaultQuery} label={queryLabel} name={queryName} placeholder={placeholder} />
         <AdminFormControlButton type="submit">{submitLabel}</AdminFormControlButton>
         {resetHref ? (
@@ -56,7 +57,7 @@ export function FilterBar({
             Clear
           </PillClassBadgeLink>
         ) : null}
-      </form>
+      </AdminFormGrid>
       <div className="participant-list filter-bar-options">
         {options.map((option) => (
           <Link className={filterBarOptionClassName(option)} href={option.href} key={option.href}>

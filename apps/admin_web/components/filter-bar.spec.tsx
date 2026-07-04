@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { FilterBar, filterBarOptionClassName } from './filter-bar';
 import { AdminFilterPanel } from './admin-filter-panel';
+import { AdminFormGrid } from './admin-form-controls';
 
 describe('FilterBar', () => {
   it('maps active and neutral options to existing pill classes', () => {
@@ -33,7 +34,8 @@ describe('FilterBar', () => {
       resultTone: 'info',
       title: 'Find Partner',
     });
-    expect(filterBar.props.children[0].props.className).toBe('form-grid compact-form');
+    expect(filterBar.props.children[0].type).toBe(AdminFormGrid);
+    expect(filterBar.props.children[0].props.className).toBe('compact-form');
     expect(filterBar.props.children[1].props.className).toBe('participant-list filter-bar-options');
   });
 

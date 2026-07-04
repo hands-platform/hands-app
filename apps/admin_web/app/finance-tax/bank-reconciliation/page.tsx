@@ -14,6 +14,7 @@ import {
   AdminFormControlButton,
   AdminFormDate,
   AdminFormDateTime,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -215,7 +216,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
               trying again.
             </p>
           ) : null}
-          <form action={createCompanyBankTransactionAction} className="form-grid compact-form admin-mt-16">
+          <AdminFormGrid action={createCompanyBankTransactionAction} className="compact-form admin-mt-16">
             <input
               name="redirectTo"
               type="hidden"
@@ -252,7 +253,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 Import bank transaction
               </AdminFormControlButton>
             </div>
-          </form>
+          </AdminFormGrid>
         </details>
       </AdminFilterPanel>
 

@@ -15,6 +15,7 @@ import {
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -244,7 +245,7 @@ export default async function BankReconciliationDetailPage({
                   {paymentClearingOptions.length} candidate(s)
                 </PillClassBadge>
               </div>
-              <form action={createBankReconciliationMatchAction} className="form-grid compact-form">
+              <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form">
                 <input name="bankTransactionId" type="hidden" value={transaction.id} />
                 <input name="sourceType" type="hidden" value="payment-clearing" />
                 <AdminFormSelect
@@ -298,7 +299,7 @@ export default async function BankReconciliationDetailPage({
                     Suggested amount: {formatMoney(suggestedMatchAmount, transaction.currency)}
                   </span>
                 </div>
-              </form>
+              </AdminFormGrid>
             </div>
 
             <details className="admin-disclosure finance-reconciliation-import-disclosure admin-mt-16">
@@ -306,7 +307,7 @@ export default async function BankReconciliationDetailPage({
                 <span>Advanced source match</span>
                 <small>Use only for journal, withdrawal, or payout evidence that is not in payment clearing.</small>
               </summary>
-              <form action={createBankReconciliationMatchAction} className="form-grid compact-form admin-mt-16">
+              <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form admin-mt-16">
                 <input name="bankTransactionId" type="hidden" value={transaction.id} />
                 <AdminFormSelect
                   label="Match source"
@@ -358,7 +359,7 @@ export default async function BankReconciliationDetailPage({
                   <AdminFormControlButton>Create advanced match</AdminFormControlButton>
                   <span className="muted">Requires explicit source id and approver evidence.</span>
                 </div>
-              </form>
+              </AdminFormGrid>
             </details>
           </div>
         ) : (

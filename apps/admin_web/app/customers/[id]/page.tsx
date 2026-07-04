@@ -13,6 +13,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -524,7 +525,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         id="record-date-filter"
         title="Record date filter"
       >
-        <form className="form-grid admin-mt-14" action={`/customers/${customer.id}`}>
+        <AdminFormGrid className="admin-mt-14" action={`/customers/${customer.id}`}>
           <AdminFormSelect
             className="admin-directory-filter-select"
             defaultValue={dateFilters.range}
@@ -577,7 +578,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               Clear
             </AdminFormControlLink>
           </div>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <AdminSection
@@ -608,7 +609,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </Link>
           </div>
         </div>
-        <form action={addCustomerOpsNote} className="compact-form form-grid admin-mt-14">
+        <AdminFormGrid action={addCustomerOpsNote} className="compact-form admin-mt-14">
           <input type="hidden" name="customerId" value={customer.id} />
           <AdminFormSelect
             className="customer-note-preset"
@@ -643,7 +644,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <Save aria-hidden="true" size={16} />
             Save customer activity note
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <CustomerDetailSectionBand

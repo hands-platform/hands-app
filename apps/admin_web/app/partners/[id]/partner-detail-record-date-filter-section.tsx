@@ -4,6 +4,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
@@ -59,7 +60,7 @@ export function PartnerDetailRecordDateFilterSection({
         description="Narrow booking, chat, app, location, payout, and verification records without changing partner data."
         title="Record date filter"
       />
-      <form className="form-grid admin-mt-14" action={`/partners/${partnerId}`}>
+      <AdminFormGrid className="admin-mt-14" action={`/partners/${partnerId}`}>
         <AdminFormSelect
           className="admin-directory-filter-select"
           defaultValue={dateFilters.range}
@@ -111,7 +112,7 @@ export function PartnerDetailRecordDateFilterSection({
             Clear
           </AdminFormControlLink>
         </div>
-      </form>
+      </AdminFormGrid>
       <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Filtered booking archive</span>

@@ -8,6 +8,7 @@ import { adminGet } from '../../../lib/admin-api';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
@@ -168,7 +169,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         title="Monthly closing action"
       >
         {nextStatusOptions.length ? (
-          <form action={updateMonthlyTaxClosingStatus} className="form-grid compact-form admin-mt-12">
+          <AdminFormGrid action={updateMonthlyTaxClosingStatus} className="compact-form admin-mt-12">
             <input name="period" type="hidden" value={filters.period} />
             <input name="returnTo" type="hidden" value={returnTo} />
             <AdminFormSelect
@@ -223,7 +224,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               Save closing status
             </AdminFormControlButton>
             <p className="muted">{nextStatusOptions[0]?.helper}</p>
-          </form>
+          </AdminFormGrid>
         ) : (
           <p className="muted admin-mt-12">
             No direct status action is available. Closed or reversed periods require reversal entries, not direct edits.

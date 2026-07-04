@@ -97,6 +97,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps generic form-grid forms inside the shared Vuexy form grid atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => hasRawGenericFormGridForm(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -112,6 +121,7 @@ const rawTableFooterPattern = /<div\s+className=["'][^"']*\bvuexy-booking-table-
 const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"']*["']/;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
+const rawFormClassNamePattern = /<form\b[^>]*className=(["'])(?<className>.*?)\1/gs;
 
 function productionTsxFiles() {
   return ['app', 'components']
@@ -129,6 +139,16 @@ function hasRedundantSharedButtonBaseClass(source: string) {
   for (const match of source.matchAll(sharedFormButtonClassNamePattern)) {
     const className = match.groups?.className ?? '';
     if (className.split(/\s+/).includes('button')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasRawGenericFormGridForm(source: string) {
+  for (const match of source.matchAll(rawFormClassNamePattern)) {
+    const className = match.groups?.className ?? '';
+    if (className.split(/\s+/).includes('form-grid')) {
       return true;
     }
   }
