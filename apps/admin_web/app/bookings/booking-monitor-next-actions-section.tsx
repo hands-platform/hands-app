@@ -1,4 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -30,7 +31,7 @@ export function BookingMonitorNextActionsSection({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-warn">{nextActions.length} action(s)</span>}
+      actions={<StatusBadge tone="warning">{nextActions.length} action(s)</StatusBadge>}
       className="admin-mt-16 booking-monitor-next-actions-card"
       description="Flagged bookings that need operator review now; normal active bookings stay in the table."
       title="Next operator actions"
@@ -55,14 +56,14 @@ export function BookingMonitorNextActionsSection({
               {getCustomerLabel(item.booking)} / {marketplaceDisplayText(getProviderLabel(item.booking))}
             </p>
             <div className="participant-list admin-mt-10">
-              <span className="pill">{item.booking.status}</span>
-              <span className="pill">{item.owner}</span>
-              <span className="pill">{actionOrderLabel(item.priority)}</span>
-              <span className="pill">{bookingAgeLabel(item.booking, nowMs)}</span>
+              <PillClassBadge pillClass="pill-neutral">{item.booking.status}</PillClassBadge>
+              <PillClassBadge pillClass="pill-neutral">{item.owner}</PillClassBadge>
+              <PillClassBadge pillClass="pill-neutral">{actionOrderLabel(item.priority)}</PillClassBadge>
+              <PillClassBadge pillClass="pill-neutral">{bookingAgeLabel(item.booking, nowMs)}</PillClassBadge>
               {item.tags.map((tag) => (
-                <span className="pill" key={tag}>
+                <PillClassBadge pillClass="pill-neutral" key={tag}>
                   {tag}
-                </span>
+                </PillClassBadge>
               ))}
             </div>
           </AdminActionCard>

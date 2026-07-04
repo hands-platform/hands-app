@@ -1,8 +1,22 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 
 describe('BookingMonitorNextActionsSection', () => {
+  it('uses shared Vuexy badge atoms for action count, status, owner, priority, age, and tags', () => {
+    const source = readFileSync('app/bookings/booking-monitor-next-actions-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('actions={<span className="pill pill-warn">{nextActions.length} action(s)</span>}');
+    expect(source).not.toContain('<span className="pill">{item.booking.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.owner}</span>');
+    expect(source).not.toContain('<span className="pill">{actionOrderLabel(item.priority)}</span>');
+    expect(source).not.toContain('<span className="pill">{bookingAgeLabel(item.booking, nowMs)}</span>');
+    expect(source).not.toContain('<span className="pill" key={tag}>');
+  });
+
   it('renders prioritized operator action cards', () => {
     const nowMs = new Date('2026-06-12T10:00:00.000Z').getTime();
     const booking = {
