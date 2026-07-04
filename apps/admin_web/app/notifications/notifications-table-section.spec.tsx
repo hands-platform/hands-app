@@ -129,6 +129,13 @@ describe('NotificationsTableSection', () => {
     expect(source).not.toContain('<AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>');
   });
 
+  it('uses the shared AdminSignal atom for notification ops status chips', () => {
+    const source = readFileSync('app/notifications/notification-table-row.tsx', 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('<span className={row.signalClassName}>{row.opsSignal}</span>');
+  });
+
   it('keeps failure evidence visible inside multi-attempt delivery disclosures', () => {
     const row = buildRow();
     const section = NotificationsTableSection({

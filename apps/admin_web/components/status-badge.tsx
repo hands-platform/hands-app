@@ -61,6 +61,18 @@ export function pillClassBadgeClassName(pillClass: string) {
   return pillClass.startsWith('pill ') ? pillClass : `pill ${pillClass}`;
 }
 
+export function adminSignalToneFromClassName(className?: string): AdminSignalTone {
+  if (className?.includes('warn') || className?.includes('danger')) {
+    return 'warn';
+  }
+
+  if (className?.includes('ok') || className?.includes('success')) {
+    return 'ok';
+  }
+
+  return 'info';
+}
+
 function mergeBadgeClassName(baseClassName: string, className?: string) {
   return Array.from(
     new Set(

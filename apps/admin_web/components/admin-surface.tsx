@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 
 import { MetricCard, type MetricCardProps } from './metric-card';
-import { AdminSignal, type AdminSignalTone, StatusBadge, type StatusBadgeTone } from './status-badge';
+import { AdminSignal, StatusBadge, adminSignalToneFromClassName, type StatusBadgeTone } from './status-badge';
 
 type AdminCardProps = {
   readonly ariaLabel?: string;
@@ -437,22 +437,10 @@ function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
 }
 
-function signalToneFromClassName(signalClassName?: string): AdminSignalTone {
-  if (signalClassName?.includes('warn') || signalClassName?.includes('danger')) {
-    return 'warn';
-  }
-
-  if (signalClassName?.includes('ok') || signalClassName?.includes('success')) {
-    return 'ok';
-  }
-
-  return 'info';
-}
-
 function renderAdminSurfaceSignal(className: string | undefined, children: ReactNode) {
   return AdminSignal({
     children,
     className,
-    tone: signalToneFromClassName(className),
+    tone: adminSignalToneFromClassName(className),
   });
 }

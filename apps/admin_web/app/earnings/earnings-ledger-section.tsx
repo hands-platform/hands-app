@@ -2,7 +2,13 @@ import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../compon
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
+import {
+  AdminSignal,
+  PillClassBadge,
+  StatusBadge,
+  StatusBadgeLink,
+  adminSignalToneFromClassName,
+} from '../../components/status-badge';
 
 export type EarningsLedgerRow = {
   readonly bookingHref: string;
@@ -112,7 +118,9 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                 ) : null}
               </td>
               <td>
-                <span className={row.signalClassName}>{row.statusLabel}</span>
+                <AdminSignal className={row.signalClassName} tone={adminSignalToneFromClassName(row.signalClassName)}>
+                  {row.statusLabel}
+                </AdminSignal>
                 {row.cancellationDecisionLabel ? (
                   <div className="participant-list admin-mt-6">
                     <PillClassBadge pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>

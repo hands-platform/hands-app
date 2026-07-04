@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminSignal, adminSignalToneFromClassName } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { NotificationDeliveryCell, type NotificationDeliveryRow } from './notification-delivery-cell';
 
@@ -63,7 +64,9 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
         {row.bookingDataHint ? <div className="muted admin-mt-6">{row.bookingDataHint}</div> : null}
       </td>
       <td>
-        <span className={row.signalClassName}>{row.opsSignal}</span>
+        <AdminSignal className={row.signalClassName} tone={adminSignalToneFromClassName(row.signalClassName)}>
+          {row.opsSignal}
+        </AdminSignal>
         <div className="muted admin-mt-6">{row.opsHint}</div>
       </td>
       <td>
