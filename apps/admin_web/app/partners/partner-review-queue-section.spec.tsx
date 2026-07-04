@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerReviewQueueSection,
   type PartnerReviewQueueSectionQueue,
 } from './partner-review-queue-section';
 
 describe('PartnerReviewQueueSection', () => {
+  it('uses the shared Vuexy badge atom for queue status', () => {
+    const source = readFileSync('app/partners/partner-review-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${queue.totalOpen === 0 ? \'pill-success\' : \'pill-warn\'}`}>');
+  });
+
   it('renders review queue status and item links', () => {
     const section = PartnerReviewQueueSection({
       queue: buildQueue(),
