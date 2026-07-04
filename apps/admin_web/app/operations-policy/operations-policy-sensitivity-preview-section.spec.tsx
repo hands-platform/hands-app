@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
+const sectionSource = readFileSync(
+  new URL('./operations-policy-sensitivity-preview-section.tsx', import.meta.url),
+  'utf8',
+);
+
 describe('OperationsPolicySensitivityPreviewSection', () => {
+  it('uses shared Vuexy badge atoms for radius and freshness labels', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).not.toContain('PillClassBadge');
+  });
+
   it('renders radius and freshness sensitivity tables', () => {
     const section = OperationsPolicySensitivityPreviewSection({
       sensitivity: {
