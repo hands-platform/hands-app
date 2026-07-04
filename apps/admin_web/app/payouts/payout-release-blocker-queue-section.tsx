@@ -1,7 +1,7 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 
 export type PayoutReleaseBlockerReason = {
   readonly label: string;
@@ -39,7 +39,7 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
             <span>{item.severity}</span>
             <div>
               <strong>
-                {item.providerLabel} / {formatMoney(item.amount, item.currency)}
+                {item.providerLabel} / <MoneyText amount={item.amount} currency={item.currency} />
               </strong>
               <p className="muted">
                 {item.label}: {item.detail}

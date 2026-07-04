@@ -12,7 +12,7 @@ import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
-import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
+import { formatDateTime, shortRecordId } from '../../lib/admin-format';
 import type {
   AdminProviderWalletWithdrawalRequest,
   AdminProviderWalletWithdrawalRequestStatus,
@@ -415,15 +415,16 @@ function WithdrawalStatusChangeEvidence({
     : statusChange.lockedAmountRetained
       ? 'Lock retained'
       : 'Status changed';
-  const amountLabel =
-    typeof statusChange.evidenceAmount === 'number'
-      ? ` ${formatMoney(statusChange.evidenceAmount, request.currency)}`
-      : '';
 
   return (
     <p className="muted">
       {statusChange.transitionLabel} / {lockLabel}
-      {amountLabel}
+      {typeof statusChange.evidenceAmount === 'number' ? (
+        <>
+          {' '}
+          <MoneyText amount={statusChange.evidenceAmount} currency={request.currency} />
+        </>
+      ) : null}
     </p>
   );
 }

@@ -12,6 +12,13 @@ describe('PayoutReleaseBlockerQueueSection', () => {
     expect(source).not.toContain('<strong>No payout release blocker</strong>');
   });
 
+  it('uses the shared Vuexy money atom for visible amounts', () => {
+    const source = readFileSync('app/payouts/payout-release-blocker-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders release blockers with provider, reason, amount, and row link', () => {
     const section = PayoutReleaseBlockerQueueSection({
       items: [
