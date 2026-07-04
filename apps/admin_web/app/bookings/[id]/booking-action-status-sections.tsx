@@ -1,6 +1,6 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormTextarea } from '../../../components/admin-form-controls';
-import { AdminActionCard, AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
@@ -316,20 +316,21 @@ function BookingStructuredOpsStatusSection({
       {visibleTasks.length > 0 ? (
         <div className="ops-task-grid">
           {visibleTasks.map((task) => (
-            <div className={`ops-task-card ops-task-${task.status.toLowerCase()}`} key={task.type}>
-              <div>
-                <PillClassBadge pillClass={opsTaskTone(task.status)}>{task.status}</PillClassBadge>
-                <h3>{task.label}</h3>
-                <p title={task.helper}>{compactOpsTaskHelper(task.helper)}</p>
-                <small>{task.updatedBy}</small>
-                {task.note && <small className="ops-task-note">Note: {task.note}</small>}
-              </div>
+            <AdminTaskCard
+              className={`ops-task-${task.status.toLowerCase()}`}
+              detail={<span title={task.helper}>{compactOpsTaskHelper(task.helper)}</span>}
+              key={task.type}
+              leading={<PillClassBadge pillClass={opsTaskTone(task.status)}>{task.status}</PillClassBadge>}
+              title={task.label}
+            >
+              <small>{task.updatedBy}</small>
+              {task.note && <small className="ops-task-note">Note: {task.note}</small>}
               <div className="ops-task-actions">
                 <OpsTaskAction bookingId={bookingId} type={task.type} status="DONE" label="Mark done" />
                 <OpsTaskAction bookingId={bookingId} type={task.type} status="BLOCKED" label="Blocked" />
                 <OpsTaskAction bookingId={bookingId} type={task.type} status="PENDING" label="Reset" />
               </div>
-            </div>
+            </AdminTaskCard>
           ))}
         </div>
       ) : (
