@@ -7,6 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
@@ -206,7 +207,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                   </td>
                   <td>
                     <strong>{snapshot.paymentMethod}</strong>
-                    <div className="muted">Customer paid {formatMoney(coupon.customerPaid, snapshot.currency)}</div>
+                    <div className="muted">
+                      Customer paid <MoneyText amount={coupon.customerPaid} currency={snapshot.currency} />
+                    </div>
                   </td>
                   <td>
                     <strong>{coupon.code}</strong>
@@ -215,10 +218,18 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     <div className="muted">Base {coupon.settlementBasePolicy}</div>
                   </td>
                   <td>
-                    <strong>Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</strong>
-                    <div className="muted">Service {formatMoney(coupon.bookingServiceAmount, snapshot.currency)}</div>
-                    <div className="muted">Settlement {formatMoney(coupon.settlementBaseAmount, snapshot.currency)}</div>
-                    <div className="muted">Company expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>
+                    <strong>
+                      Discount <MoneyText amount={coupon.discountAmount} currency={snapshot.currency} />
+                    </strong>
+                    <div className="muted">
+                      Service <MoneyText amount={coupon.bookingServiceAmount} currency={snapshot.currency} />
+                    </div>
+                    <div className="muted">
+                      Settlement <MoneyText amount={coupon.settlementBaseAmount} currency={snapshot.currency} />
+                    </div>
+                    <div className="muted">
+                      Company expense <MoneyText amount={coupon.companyExpense} currency={snapshot.currency} />
+                    </div>
                   </td>
                   <td>
                     <StatusBadge tone={coupon.reviewFlag ? 'warning' : 'success'}>

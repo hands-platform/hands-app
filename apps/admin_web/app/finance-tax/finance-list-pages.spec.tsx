@@ -461,6 +461,25 @@ describe('finance list pages', () => {
     expect(source).not.toContain("className={`pill ${coupon.reviewFlag ? 'pill-warn' : 'pill-success'}`}");
   });
 
+  it('uses shared money atoms for coupon finance amount cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/coupon-finance/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain(
+      '<div className="muted">Customer paid {formatMoney(coupon.customerPaid, snapshot.currency)}</div>',
+    );
+    expect(source).not.toContain('<strong>Discount {formatMoney(coupon.discountAmount, snapshot.currency)}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">Service {formatMoney(coupon.bookingServiceAmount, snapshot.currency)}</div>',
+    );
+    expect(source).not.toContain(
+      '<div className="muted">Settlement {formatMoney(coupon.settlementBaseAmount, snapshot.currency)}</div>',
+    );
+    expect(source).not.toContain(
+      '<div className="muted">Company expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>',
+    );
+  });
+
   it('uses shared badge atoms for platform VAT category pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 

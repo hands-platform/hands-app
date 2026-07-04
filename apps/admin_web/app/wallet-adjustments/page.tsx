@@ -332,7 +332,9 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                   <strong>{formatAccountName(entry.accountCredit)}</strong>
                   <p className="muted">{entry.accountCredit}</p>
                 </td>
-                <td>{formatMoney(entry.amount, currency)}</td>
+                <td>
+                  <MoneyText amount={entry.amount} currency={currency} />
+                </td>
               </tr>
             ))}
           </FinanceDataTable>

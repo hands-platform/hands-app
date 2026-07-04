@@ -307,6 +307,7 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
+    expect(pageSource).not.toContain('<td>{formatMoney(entry.amount, currency)}</td>');
     expect(pageSource).not.toContain('AdminTableScroll');
     expect(pageSource).not.toContain('className="vuexy-booking-table"');
   });
