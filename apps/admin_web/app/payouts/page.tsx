@@ -12,6 +12,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
@@ -213,7 +214,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               acceptance, service start, and payout release reopening.
             </p>
           </div>
-          <span className="pill pill-info">Live policy default</span>
+          <StatusBadge tone="info">Live policy default</StatusBadge>
         </div>
         <div className="service-trace-summary admin-mt-12">
           {appliedPayoutPolicyCards.map((card) => (
@@ -228,7 +229,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           {releasePolicyDesk.map((signal) => (
             <div className={`ops-task-card ${signal.className}`} key={signal.title}>
               <div>
-                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                <PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>
                 <h3>{signal.title}</h3>
                 <p className="muted">{signal.detail}</p>
               </div>
@@ -262,7 +263,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                   <div className="muted">{item.timing}</div>
                 </td>
                 <td>
-                  <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                  <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                   <div className="muted">{item.queue}</div>
                 </td>
                 <td>{item.operatorCheck}</td>
@@ -287,7 +288,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           {marketplaceUnblockBridge.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <div>
-                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
                 <h3>{item.title}</h3>
                 <p className="muted">{item.detail}</p>
               </div>

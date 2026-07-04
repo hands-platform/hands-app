@@ -1,4 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 
 import type {
@@ -135,5 +137,15 @@ describe('PayoutsPage', () => {
 
     expect(markup).toContain('987.654 VND');
     expect(markup).toContain('45.678 VND');
+  });
+
+  it('uses shared badge atoms for payout policy desk status labels', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
+    expect(source).not.toContain('<span className={`pill ${signal.pillClass}`}>{signal.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
   });
 });
