@@ -11,6 +11,13 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{note.area}</span>');
   });
 
+  it('uses the shared AdminFormControlLink atom for audit actions', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-operator-notes-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders the note form, latest notes, and audit links', () => {
     const section = OperationsHandoffOperatorNotesSection({
       notes: [

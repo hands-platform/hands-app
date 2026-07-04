@@ -3,6 +3,7 @@ import { Save, ScrollText } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -22,10 +23,10 @@ export function OperationsHandoffOperatorNotesSection({
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary" href="/audit-log">
+        <AdminFormControlLink className="button-secondary" href="/audit-log">
           <ScrollText aria-hidden="true" size={16} />
           Open audit log
-        </Link>
+        </AdminFormControlLink>
       }
       description="Shift, Customer, Partner, and booking notes written by admins."
       title="Latest operator notes"
