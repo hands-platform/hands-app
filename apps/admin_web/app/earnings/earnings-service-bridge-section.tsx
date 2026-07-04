@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsServiceBridgeItem = {
@@ -106,9 +107,9 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
                 <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
                 <td>{formatMoney(item.netCompanyFee, item.currency)}</td>
                 <td>
-                  <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
+                  <StatusBadge tone={item.cashDebtAmount ? 'danger' : 'success'}>
                     {formatMoney(item.cashDebtAmount, item.currency)}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td>
                   <div className="service-matrix-cell">

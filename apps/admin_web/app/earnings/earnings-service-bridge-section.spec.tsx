@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { EarningsServiceBridgeSection } from './earnings-service-bridge-section';
 
 describe('EarningsServiceBridgeSection', () => {
+  it('uses the shared StatusBadge atom for cash debt chips', () => {
+    const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain(
+      "<span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>",
+    );
+  });
+
   it('renders service bridge summary and rows', () => {
     const section = EarningsServiceBridgeSection({
       currency: 'VND',
@@ -38,7 +49,7 @@ describe('EarningsServiceBridgeSection', () => {
     expect(hrefsIn(section)).toContain('/services');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

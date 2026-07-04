@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 
 export type EarningsLedgerRow = {
   readonly bookingHref: string;
@@ -114,11 +115,11 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                 <span className={row.signalClassName}>{row.statusLabel}</span>
                 {row.cancellationDecisionLabel ? (
                   <div className="participant-list admin-mt-6">
-                    <span className={`pill ${row.cancellationDecisionTone}`}>
+                    <PillClassBadge pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>
                       {row.cancellationDecisionLabel}
-                    </span>
+                    </PillClassBadge>
                     {row.cancellationFeeLabel ? (
-                      <span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>
+                      <PillClassBadge pillClass={row.cancellationFeeTone ?? 'pill-neutral'}>{row.cancellationFeeLabel}</PillClassBadge>
                     ) : null}
                   </div>
                 ) : null}
@@ -126,11 +127,11 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
               </td>
               <td>
                 {row.payoutBatchHref && row.payoutBatchLabel ? (
-                  <a className="pill pill-info" href={row.payoutBatchHref}>
+                  <StatusBadgeLink href={row.payoutBatchHref} tone="info">
                     {row.payoutBatchLabel}
-                  </a>
+                  </StatusBadgeLink>
                 ) : (
-                  <span className="pill pill-warn">Not batched</span>
+                  <StatusBadge tone="warning">Not batched</StatusBadge>
                 )}
               </td>
               <td>

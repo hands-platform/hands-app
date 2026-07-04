@@ -1,6 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { EarningsLedgerSection, type EarningsLedgerRow } from './earnings-ledger-section';
 
 describe('EarningsLedgerSection', () => {
+  it('uses shared badge atoms for cancellation and payout state chips', () => {
+    const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<span className={`pill ${row.cancellationDecisionTone}`}>');
+    expect(source).not.toContain('<span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>');
+    expect(source).not.toContain('<a className="pill pill-info" href={row.payoutBatchHref}>');
+    expect(source).not.toContain('<span className="pill pill-warn">Not batched</span>');
+  });
+
   it('renders recent earning ledger rows and available actions', () => {
     const section = EarningsLedgerSection({
       pagination: pagination(
@@ -66,7 +80,7 @@ describe('EarningsLedgerSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

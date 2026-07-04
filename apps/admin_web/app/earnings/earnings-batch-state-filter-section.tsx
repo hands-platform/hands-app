@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { statusBadgeClassName } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsBatchStateCard = {
@@ -17,6 +18,8 @@ type EarningsBatchStateFilterSectionProps = {
   readonly currency: string;
   readonly ledgerCount: number;
 };
+
+const batchStateFilterBaseClassName = 'filter-pill';
 
 export function EarningsBatchStateFilterSection({
   activeState,
@@ -35,7 +38,7 @@ export function EarningsBatchStateFilterSection({
       <div className="filter-row admin-mt-12">
         {cards.map((card) => (
           <Link
-            className={`filter-pill ${card.state === activeState ? 'pill-info' : ''}`}
+            className={`${batchStateFilterBaseClassName} ${activeBatchStateFilterClassName(card.state, activeState)}`}
             href={card.href}
             key={card.state}
           >
@@ -56,4 +59,8 @@ export function EarningsBatchStateFilterSection({
       </div>
     </AdminFilterPanel>
   );
+}
+
+function activeBatchStateFilterClassName(state: string, activeState: string) {
+  return state === activeState ? statusBadgeClassName('info').replace('pill ', '') : '';
 }

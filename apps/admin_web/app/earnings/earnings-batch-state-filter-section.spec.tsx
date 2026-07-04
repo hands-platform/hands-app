@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { EarningsBatchStateFilterSection } from './earnings-batch-state-filter-section';
 
 describe('EarningsBatchStateFilterSection', () => {
+  it('uses the shared status badge class helper for active filter tone', () => {
+    const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
+
+    expect(source).toContain('statusBadgeClassName');
+    expect(source).not.toContain("className={`filter-pill ${card.state === activeState ? 'pill-info' : ''}`}");
+  });
+
   it('renders filter cards and selected state', () => {
     const section = EarningsBatchStateFilterSection({
       activeState: 'ready',
@@ -34,7 +43,7 @@ describe('EarningsBatchStateFilterSection', () => {
     expect(hrefsIn(section)).toContain('/earnings?batchState=ready');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
   });
