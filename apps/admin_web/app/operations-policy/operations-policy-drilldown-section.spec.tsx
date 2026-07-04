@@ -8,6 +8,9 @@ describe('OperationsPolicyDrilldownSection', () => {
     const source = readFileSync('app/operations-policy/operations-policy-drilldown-section.tsx', 'utf8');
 
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<a className="button button-secondary policy-inline-action"');
   });
 
