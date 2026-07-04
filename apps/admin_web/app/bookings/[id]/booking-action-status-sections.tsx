@@ -525,11 +525,13 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
     >
       <div className="grid admin-mt-12">
         {liveSignals.map((signal) => (
-          <div className="ops-signal-card" key={signal.label}>
-            <PillClassBadge pillClass={signal.tone}>{signal.label}</PillClassBadge>
-            <strong>{signal.value}</strong>
-            <p className="muted">{signal.helper}</p>
-          </div>
+          <AdminTaskCard
+            className="ops-signal-card"
+            detail={signal.helper}
+            key={signal.label}
+            leading={<PillClassBadge pillClass={signal.tone}>{signal.label}</PillClassBadge>}
+            value={signal.value}
+          />
         ))}
       </div>
     </AdminSection>
