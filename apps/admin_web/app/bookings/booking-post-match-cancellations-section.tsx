@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
@@ -66,8 +67,8 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
       actions={
         <div className="booking-post-match-header-actions">
           <div className="booking-post-match-counts" aria-label="Post-match cancellation counts">
-            <span className="pill pill-info">{board.totalCount} total</span>
-            <span className="pill pill-neutral">{board.monthCount} this month</span>
+            <StatusBadge tone="info">{board.totalCount} total</StatusBadge>
+            <StatusBadge tone="neutral">{board.monthCount} this month</StatusBadge>
           </div>
           <AdminFormControlLink className="booking-action-button is-secondary" href="/bookings/post-match-cancellations">
             Open queue
@@ -99,7 +100,7 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
           {metrics.map((metric) => (
             <tr key={metric.label}>
               <td>
-                <span className={`pill ${metric.tone}`}>{metric.label}</span>
+                <PillClassBadge pillClass={metric.tone}>{metric.label}</PillClassBadge>
               </td>
               <td>
                 <strong>{metric.count}</strong>

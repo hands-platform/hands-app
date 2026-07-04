@@ -1,8 +1,19 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { normalizedText } from './booking-section-test-utils';
 import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';
 
 describe('BookingPostMatchCancellationsSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw post-match cancellation pill spans', () => {
+    const source = readFileSync('app/bookings/booking-post-match-cancellations-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{board.totalCount} total</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{board.monthCount} this month</span>');
+    expect(source).not.toContain('<span className={`pill ${metric.tone}`}>{metric.label}</span>');
+  });
+
   it('renders counts and admin handling guidance for post-match cancellations', () => {
     const markup = renderToStaticMarkup(
       <BookingPostMatchCancellationsSection
