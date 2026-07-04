@@ -46,7 +46,7 @@ export function PartnerFilterBoard({
       resultLabel={`${filteredCount} of ${totalCount}`}
       title="Filters"
       footer={
-        <div className="vuexy-partner-filter-footer">
+        <div className="vuexy-partner-filter-footer admin-directory-filter-footer">
           {activeFilters.length > 0 ? (
             <div className="vuexy-partner-active-filters" aria-label="Active partner filters">
               {activeFilters.map((filter) => (
@@ -56,54 +56,54 @@ export function PartnerFilterBoard({
               ))}
             </div>
           ) : null}
-          <AdminFormControlLink className="vuexy-partner-button is-ghost" href="/partners">
+          <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/partners">
             Clear filters
           </AdminFormControlLink>
         </div>
       }
     >
-      <form action="/partners" className="vuexy-partner-form">
+      <form action="/partners" className="vuexy-partner-form admin-directory-filter-form">
         <input name="sort" type="hidden" value={filters.sort} />
         {filters.review && !showAdvancedFilters ? (
           <input name="review" type="hidden" value={filters.review} />
         ) : null}
-        <div className="vuexy-partner-filter-grid">
-          <div className="vuexy-partner-filter-group is-primary" aria-label="Partner list filters">
+        <div className="vuexy-partner-filter-grid admin-directory-filter-grid">
+          <div className="vuexy-partner-filter-group admin-directory-filter-group is-primary" aria-label="Partner list filters">
             <AdminFormSearch
-              className="vuexy-partner-search"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search Partner"
               name="q"
               placeholder="Name, phone, city, partner id"
             />
             <AdminFormSelect
-              className="vuexy-partner-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.providerStatus}
               label="State"
               name="providerStatus"
               options={partnerStateFilterOptions}
             />
             <AdminFormSelect
-              className="vuexy-partner-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.verification}
               label="Verification"
               name="verification"
               options={partnerVerificationFilterOptions}
             />
             <AdminFormSelect
-              className="vuexy-partner-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.kyc}
               label="KYC"
               name="kyc"
               options={partnerKycFilterOptions}
             />
           </div>
-          <div className="vuexy-partner-filter-actions" aria-label="Partner filter actions">
-            <AdminFormControlLink className="vuexy-partner-export" download={csvDownloadName} href={csvHref}>
+          <div className="vuexy-partner-filter-actions admin-directory-filter-actions" aria-label="Partner filter actions">
+            <AdminFormControlLink className="admin-directory-filter-export" download={csvDownloadName} href={csvHref}>
               <Download aria-hidden="true" size={16} />
               Export
             </AdminFormControlLink>
-            <AdminFormControlButton className="vuexy-partner-button">Apply</AdminFormControlButton>
+            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
           </div>
         </div>
         <div className="booking-date-filter-bar vuexy-partner-filter-strip" aria-label="Partner sort filters">
@@ -129,35 +129,35 @@ export function PartnerFilterBoard({
             </summary>
             <div className="vuexy-partner-advanced-filter-grid">
               <AdminFormSelect
-                className="vuexy-partner-select"
+                className="admin-directory-filter-select"
                 defaultValue={filters.location}
                 label="Location"
                 name="location"
                 options={partnerLocationFilterOptions}
               />
               <AdminFormSelect
-                className="vuexy-partner-select"
+                className="admin-directory-filter-select"
                 defaultValue={filters.security}
                 label="Device/session"
                 name="security"
                 options={partnerDeviceSessionFilterOptions}
               />
               <AdminFormSelect
-                className="vuexy-partner-select"
+                className="admin-directory-filter-select"
                 defaultValue={filters.activity}
                 label="Activity"
                 name="activity"
                 options={partnerActivityFilterOptions}
               />
               <AdminFormSelect
-                className="vuexy-partner-select"
+                className="admin-directory-filter-select"
                 defaultValue={filters.bookingFlow}
                 label="Booking flow"
                 name="bookingFlow"
                 options={partnerBookingFlowFilterOptions}
               />
               <AdminFormSelect
-                className="vuexy-partner-select"
+                className="admin-directory-filter-select"
                 defaultValue={filters.review}
                 label="Review lane"
                 name="review"
@@ -171,7 +171,7 @@ export function PartnerFilterBoard({
             Showing {filteredCount} of {totalCount} matching partners
             {filters.sort !== 'ops-priority' ? ` - sorted by ${partnerSortLabel(filters.sort)}` : ''}
           </span>
-          <AdminFormControlLink className="vuexy-partner-button is-ghost" href="/operations-policy">
+          <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/operations-policy">
             <SlidersHorizontal aria-hidden="true" size={16} />
             {locationFreshnessLabel}
           </AdminFormControlLink>

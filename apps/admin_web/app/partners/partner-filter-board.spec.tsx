@@ -36,7 +36,11 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Filters');
     expect(rendered).toContain('4 of 12');
     expect(rendered).toContain('vuexy-partner-filter-grid');
-    expect(rendered).toContain('vuexy-partner-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-grid');
+    expect(rendered).toContain('vuexy-partner-filter-group admin-directory-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-search');
+    expect(rendered).toContain('admin-directory-filter-select');
     expect(rendered).toContain('Search Partner');
     expect(rendered).toContain('State');
     expect(rendered).toContain('Verification');
@@ -91,7 +95,7 @@ describe('PartnerFilterBoard', () => {
 
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('href="/partners"');
-    expect(rendered).toContain('admin-form-control-link button button-secondary vuexy-partner-button is-ghost');
+    expect(rendered).toContain('admin-form-control-link button button-secondary admin-directory-filter-button is-ghost');
   });
 
   it('opens advanced filters for non-primary operational review lanes', () => {

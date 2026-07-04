@@ -190,6 +190,11 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Tax policies are configurable and must be confirmed by accounting before production use');
     expect(markup).toContain('Referral link readiness');
     expect(markup).toContain('Customer referral links route visitors to the correct store before attribution starts.');
+    expect(markup).toContain('admin-directory-filter-form');
+    expect(markup).toContain('admin-directory-filter-grid');
+    expect(markup).toContain('admin-directory-filter-search');
+    expect(markup).toContain('admin-directory-filter-select');
+    expect(markup).toContain('admin-directory-filter-actions');
     expect(markup).not.toContain('Clear filters');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');

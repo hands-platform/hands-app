@@ -32,7 +32,7 @@ export function CustomerFilterBoard({
       resultLabel={`${filteredCount} of ${totalCount}`}
       title="Filters"
       footer={
-        <div className="vuexy-customer-filter-footer">
+        <div className="vuexy-customer-filter-footer admin-directory-filter-footer">
           {activeFilters.length > 0 ? (
             <>
               {activeFilters.map((filter) => (
@@ -42,49 +42,49 @@ export function CustomerFilterBoard({
               ))}
             </>
           ) : (
-            <AdminFormControlLink className="vuexy-customer-button is-ghost" href="/customers">
+            <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/customers">
               Clear filters
             </AdminFormControlLink>
           )}
         </div>
       }
     >
-      <form action="/customers" className="vuexy-customer-form">
+      <form action="/customers" className="vuexy-customer-form admin-directory-filter-form">
         <input name="pageSize" type="hidden" value={filters.pageSize} />
-        <div className="vuexy-customer-filter-grid">
-          <div className="vuexy-customer-filter-group is-primary" aria-label="Customer list filters">
+        <div className="vuexy-customer-filter-grid admin-directory-filter-grid">
+          <div className="vuexy-customer-filter-group admin-directory-filter-group is-primary" aria-label="Customer list filters">
             <AdminFormSelect
-              className="vuexy-customer-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.country}
               label="Country"
               name="country"
               options={countryFilterOptions}
             />
             <AdminFormSelect
-              className="vuexy-customer-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.gender}
               label="Gender"
               name="gender"
               options={genderFilterOptions}
             />
             <AdminFormSearch
-              className="vuexy-customer-search"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search customer"
               name="q"
               placeholder="Search Customer"
             />
           </div>
-          <div className="vuexy-customer-filter-actions" aria-label="Customer filter actions">
+          <div className="vuexy-customer-filter-actions admin-directory-filter-actions" aria-label="Customer filter actions">
             <AdminFormControlLink
-              className="vuexy-customer-export"
+              className="admin-directory-filter-export"
               download="hands-customers.csv"
               href={csvHref}
             >
               <Download aria-hidden="true" size={16} />
               Export
             </AdminFormControlLink>
-            <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
           </div>
         </div>
         <div className="vuexy-customer-date-filter-grid" aria-label="Customer date filters">

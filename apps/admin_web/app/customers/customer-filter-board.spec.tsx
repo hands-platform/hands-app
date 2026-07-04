@@ -26,8 +26,13 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Filters');
     expect(rendered).toContain('4 of 9');
     expect(rendered).toContain('vuexy-customer-filter-grid');
-    expect(rendered).toContain('vuexy-customer-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-grid');
+    expect(rendered).toContain('vuexy-customer-filter-group admin-directory-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-group is-primary');
+    expect(rendered).toContain('admin-directory-filter-search');
+    expect(rendered).toContain('admin-directory-filter-select');
     expect(rendered).toContain('vuexy-customer-filter-actions');
+    expect(rendered).toContain('admin-directory-filter-actions');
     expect(rendered).toContain('vuexy-customer-date-filter-grid');
     expect(rendered).toContain('Search Customer');
     expect(rendered).toContain('All countries');
@@ -65,7 +70,7 @@ describe('CustomerFilterBoard', () => {
 
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('href="/customers"');
-    expect(rendered).toContain('admin-form-control-link button button-secondary vuexy-customer-button is-ghost');
+    expect(rendered).toContain('admin-form-control-link button button-secondary admin-directory-filter-button is-ghost');
   });
 
   it('places custom date apply controls next to visible custom date fields', () => {

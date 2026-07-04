@@ -296,7 +296,7 @@ function ReferralListFilterPanel({
       title="Referral list filters"
       footer={
         activeFilters.length > 0 ? (
-          <div className="vuexy-customer-filter-footer">
+          <div className="vuexy-customer-filter-footer admin-directory-filter-footer">
             {activeFilters.map((filter) => (
               <StatusBadge key={filter} tone="warning">
                 {filter}
@@ -325,36 +325,36 @@ function ReferralListFilterPanel({
           ))}
         </div>
       </div>
-      <form action={referralListPath(audience)} className="vuexy-customer-form">
-        <div className="vuexy-customer-filter-grid">
-          <div className="vuexy-customer-filter-group is-primary" aria-label="Referral list filters">
+      <form action={referralListPath(audience)} className="vuexy-customer-form admin-directory-filter-form">
+        <div className="vuexy-customer-filter-grid admin-directory-filter-grid">
+          <div className="vuexy-customer-filter-group admin-directory-filter-group is-primary" aria-label="Referral list filters">
             <AdminFormSearch
-              className="vuexy-customer-search"
+              className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search referrals"
               name="q"
               placeholder="Search parent, code, referred account"
             />
             <AdminFormSelect
-              className="vuexy-customer-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.status}
               label="Referral status"
               name="status"
               options={referralStatusFilterOptions}
             />
             <AdminFormSelect
-              className="vuexy-customer-select"
+              className="admin-directory-filter-select"
               defaultValue={filters.reward}
               label="Reward state"
               name="reward"
               options={referralRewardFilterOptions}
             />
           </div>
-          <div className="vuexy-customer-filter-actions" aria-label="Referral filter actions">
-            <AdminFormControlLink className="vuexy-customer-button is-ghost" href={referralListPath(audience)}>
+          <div className="vuexy-customer-filter-actions admin-directory-filter-actions" aria-label="Referral filter actions">
+            <AdminFormControlLink className="admin-directory-filter-button is-ghost" href={referralListPath(audience)}>
               Clear
             </AdminFormControlLink>
-            <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+            <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
           </div>
         </div>
       </form>
