@@ -66,4 +66,16 @@ describe('CouponsPage', () => {
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Create coupons');
   });
+
+  it('renders coupon save feedback through the shared Vuexy inline notice atom', async () => {
+    const page = await CouponsPage({
+      searchParams: Promise.resolve({ couponNotice: 'created', created: '2' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('class="admin-inline-notice admin-inline-notice-success coupon-create-notice"');
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('Coupon created');
+    expect(markup).not.toContain('coupon-create-notice-success');
+  });
 });

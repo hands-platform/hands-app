@@ -11050,37 +11050,20 @@ a.action-button-card:hover {
 }
 
 .coupon-create-notice {
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
   display: grid;
   gap: 4px;
   margin: 0 24px 14px;
-  padding: 12px 14px;
 }
 
 .coupon-create-notice strong {
-  color: var(--admin-heading);
+  color: inherit;
   font-size: 13px;
 }
 
 .coupon-create-notice span {
-  color: var(--admin-muted);
+  color: inherit;
   font-size: 12px;
-}
-
-.coupon-create-notice-success {
-  background: var(--admin-success-soft);
-  border-color: rgb(var(--admin-success-channel) / 0.26);
-}
-
-.coupon-create-notice-warning {
-  background: var(--admin-warning-soft);
-  border-color: rgb(var(--admin-warning-channel) / 0.32);
-}
-
-.coupon-create-notice-danger {
-  background: var(--admin-danger-soft);
-  border-color: rgb(var(--admin-danger-channel) / 0.26);
+  opacity: 0.84;
 }
 
 .coupons-management-stack,

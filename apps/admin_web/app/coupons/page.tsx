@@ -7,6 +7,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -107,10 +108,10 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         title="Create coupons"
       >
         {createNotice ? (
-          <div className={`coupon-create-notice coupon-create-notice-${createNotice.tone}`} role="status">
+          <AdminInlineNotice className="coupon-create-notice" role="status" tone={createNotice.tone}>
             <strong>{createNotice.title}</strong>
             <span>{createNotice.detail}</span>
-          </div>
+          </AdminInlineNotice>
         ) : null}
         <form className="coupon-create-form" action={createCoupon}>
           <AdminFormTextarea
