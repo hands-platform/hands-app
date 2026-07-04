@@ -158,22 +158,20 @@ function CouponManagementCard({
         <form action={updateAction} className="coupon-edit-form">
           <input name="couponId" type="hidden" value={row.id} />
           <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
-          <div>
-            <AdminFormDateTime
-              defaultValue={row.startsAtInputValue}
-              label="Starts"
-              labelVisibility="visible"
-              name="startsAt"
-            />
-          </div>
-          <div>
-            <AdminFormDateTime
-              defaultValue={row.endsAtInputValue}
-              label="Ends"
-              labelVisibility="visible"
-              name="endsAt"
-            />
-          </div>
+          <AdminFormDateTime
+            className="admin-date-filter-field"
+            defaultValue={row.startsAtInputValue}
+            label="Starts"
+            labelVisibility="visible"
+            name="startsAt"
+          />
+          <AdminFormDateTime
+            className="admin-date-filter-field"
+            defaultValue={row.endsAtInputValue}
+            label="Ends"
+            labelVisibility="visible"
+            name="endsAt"
+          />
           <AdminFormCheckbox
             className="coupon-active-field"
             defaultChecked={row.active}

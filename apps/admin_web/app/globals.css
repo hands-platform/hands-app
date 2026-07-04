@@ -11263,10 +11263,6 @@ a.action-button-card:hover {
   line-height: var(--admin-input-label-line-height);
 }
 
-.coupon-date-field {
-  gap: 8px;
-}
-
 .coupon-create-form .calendar-field {
   color: var(--admin-muted);
   display: grid;
@@ -11277,7 +11273,6 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.coupon-date-field > span:first-child,
 .coupon-create-form .calendar-field > span:first-child,
 .coupon-edit-form label > span:first-child {
   color: var(--admin-text);

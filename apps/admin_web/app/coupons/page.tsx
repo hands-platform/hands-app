@@ -131,12 +131,18 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             required
             type="number"
           />
-          <div className="calendar-field coupon-date-field">
-            <AdminFormDateTime label="Starts" labelVisibility="visible" name="startsAt" />
-          </div>
-          <div className="calendar-field coupon-date-field">
-            <AdminFormDateTime label="Ends" labelVisibility="visible" name="endsAt" />
-          </div>
+          <AdminFormDateTime
+            className="admin-date-filter-field"
+            label="Starts"
+            labelVisibility="visible"
+            name="startsAt"
+          />
+          <AdminFormDateTime
+            className="admin-date-filter-field"
+            label="Ends"
+            labelVisibility="visible"
+            name="endsAt"
+          />
           <AdminFormControlButton className="button-primary" type="submit">
             Create coupons
           </AdminFormControlButton>
