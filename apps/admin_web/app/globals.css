@@ -2236,7 +2236,7 @@ a {
 }
 
 .calendar-field-toggle input:focus-visible {
-  box-shadow: var(--admin-focus-ring);
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
@@ -11897,7 +11897,7 @@ a.action-button-card:hover {
 }
 
 .service-menu-dialog .service-menu-enabled-toggle input[type='checkbox']:focus-visible {
-  box-shadow: var(--admin-focus-ring);
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
@@ -15003,9 +15003,7 @@ textarea:focus-visible {
 
 .admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  box-shadow: var(--admin-primary-shadow-sm);
 }
 
 .admin-form-checkbox:has(.admin-form-checkbox-input:disabled) {

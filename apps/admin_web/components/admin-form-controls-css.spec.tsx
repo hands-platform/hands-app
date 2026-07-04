@@ -133,6 +133,20 @@ describe('Admin form control CSS', () => {
     expect(placeholderBlock).toContain('transform var(--admin-transition)');
     expect(rootPlaceholderBlock).toContain('transform var(--admin-transition)');
   });
+
+  it.each([
+    ['calendar toggle', '.calendar-field-toggle input:focus-visible'],
+    ['service duration toggle', ".service-menu-dialog .service-menu-enabled-toggle input[type='checkbox']:focus-visible"],
+    ['shared checkbox mark', '.admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark'],
+  ])('keeps %s focus visible states on Vuexy primary shadow only', (_label, selector) => {
+    const focusIndex = globalsCss.indexOf(selector);
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+    expect(focusBlock).not.toContain('var(--admin-focus-ring)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
