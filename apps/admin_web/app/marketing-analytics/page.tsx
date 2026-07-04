@@ -24,6 +24,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -314,13 +315,12 @@ export default async function MarketingAnalyticsPage({
             })
           }
         />
-        <form className="marketing-analytics-campaign-form" action="/marketing-analytics">
+        <AdminFormGrid className="marketing-analytics-campaign-form" action="/marketing-analytics">
           <input type="hidden" name="range" value={filters.range} />
           {filters.source ? <input type="hidden" name="source" value={filters.source} /> : null}
           {filters.platform ? <input type="hidden" name="platform" value={filters.platform} /> : null}
           {filters.regionCode ? <input type="hidden" name="regionCode" value={filters.regionCode} /> : null}
           <AdminFormInput
-            className="marketing-analytics-form-field"
             defaultValue={filters.campaignId ?? ''}
             label="Campaign ID"
             labelVisibility="visible"
@@ -331,7 +331,7 @@ export default async function MarketingAnalyticsPage({
           <AdminFormControlButton className="booking-date-apply-button" type="submit">
             Apply campaign
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <ManualSpendForm filters={filters} />
@@ -422,9 +422,8 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
       description="Enter bounded daily spend by source, platform, region, and campaign. This keeps ad-network API costs out of the MVP while still enabling CPI, CPA, and ROAS checks."
       title="Manual daily spend"
     >
-      <form className="marketing-spend-form" action={upsertMarketingSpendDaily}>
+      <AdminFormGrid className="marketing-spend-form" action={upsertMarketingSpendDaily}>
         <AdminFormDate
-          className="marketing-analytics-form-field"
           defaultValue={defaultSpendDate}
           label="Date"
           labelVisibility="visible"
@@ -432,7 +431,6 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           required
         />
         <AdminFormSelect
-          className="marketing-analytics-form-field"
           defaultValue={filters.source ?? 'google'}
           label="Source"
           labelVisibility="visible"
@@ -442,7 +440,6 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
             .map((option) => ({ label: option.label, value: option.value }))}
         />
         <AdminFormSelect
-          className="marketing-analytics-form-field"
           defaultValue={filters.platform ?? 'android'}
           label="Platform"
           labelVisibility="visible"
@@ -452,7 +449,6 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
             .map((option) => ({ label: option.label, value: option.value }))}
         />
         <AdminFormSelect
-          className="marketing-analytics-form-field"
           defaultValue={filters.regionCode ?? 'all'}
           label="Region"
           labelVisibility="visible"
@@ -463,7 +459,6 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           }))}
         />
         <AdminFormInput
-          className="marketing-analytics-form-field"
           defaultValue={filters.campaignId ?? ''}
           label="Campaign ID"
           labelVisibility="visible"
@@ -471,14 +466,12 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           placeholder="launch-hcm"
         />
         <AdminFormInput
-          className="marketing-analytics-form-field"
           label="Campaign name"
           labelVisibility="visible"
           name="campaignName"
           placeholder="Launch HCMC"
         />
         <AdminFormInput
-          className="marketing-analytics-form-field"
           label="Spend amount"
           labelVisibility="visible"
           name="spendAmount"
@@ -486,14 +479,13 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           required
         />
         <AdminFormInput
-          className="marketing-analytics-form-field"
           defaultValue="VND"
           label="Currency"
           labelVisibility="visible"
           name="currency"
         />
         <AdminFormInput
-          className="marketing-analytics-form-field marketing-spend-notes"
+          className="admin-grid-span-2"
           label="Notes"
           labelVisibility="visible"
           name="notes"
@@ -505,7 +497,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
         >
           Save spend
         </AdminFormControlButton>
-      </form>
+      </AdminFormGrid>
     </AdminSection>
   );
 }

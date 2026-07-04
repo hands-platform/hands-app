@@ -53,12 +53,18 @@ describe('MarketingAnalyticsPage', () => {
     const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('form-grid marketing-analytics-campaign-form');
+    expect(markup).toContain('form-grid marketing-spend-form');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
-    expect(markup).toContain('marketing-analytics-form-field');
+    expect(markup).toContain('admin-grid-span-2');
+    expect(markup).not.toContain('marketing-analytics-form-field');
+    expect(markup).not.toContain('marketing-spend-notes');
+    expect(pageSource).not.toContain('marketing-analytics-form-field');
+    expect(pageSource).not.toContain('marketing-spend-notes');
     expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('<div class="calendar-field"><span>Date</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Campaign ID</span>');
