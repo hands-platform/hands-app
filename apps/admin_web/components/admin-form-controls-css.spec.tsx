@@ -217,7 +217,6 @@ describe('Admin form control CSS', () => {
   });
 
   it.each([
-    ['coupon forms', '.coupon-edit-form input:focus,'],
     ['operator notes', '.ops-note-form textarea:focus,'],
   ])('keeps %s focused inputs off the legacy double-ring treatment', (_label, selector) => {
     const focusIndex = globalsCss.indexOf(selector);
@@ -232,6 +231,15 @@ describe('Admin form control CSS', () => {
 
   it('keeps calendar drawer controls on shared Vuexy form atoms instead of page field wrappers', () => {
     expect(globalsCss).not.toContain('.calendar-drawer-field');
+  });
+
+  it('keeps page filters and edit forms from restyling shared input atoms', () => {
+    expect(globalsCss).not.toContain('.coupon-edit-form input');
+    expect(globalsCss).not.toContain('.service-catalog-page .form-grid input');
+    expect(globalsCss).not.toContain('.chat-archive-page .form-grid input');
+    expect(globalsCss).not.toContain('.partners-page .partner-filter-card .form-grid input');
+    expect(globalsCss).not.toContain('.audit-log-page .form-grid input');
+    expect(globalsCss).not.toContain('/* Page-scoped controls keep the same Vuexy atom baseline. */');
   });
 
   it.each([

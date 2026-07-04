@@ -4213,24 +4213,6 @@ a.action-button-card:hover {
   line-height: 1.25;
 }
 
-.chat-archive-page .form-grid input,
-.chat-archive-page .form-grid select {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-  min-height: 40px;
-}
-
-.chat-archive-page .form-grid input:focus,
-.chat-archive-page .form-grid select:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
-}
-
 .chat-archive-page .form-grid .actions.full-span {
   align-items: center;
   background: var(--admin-surface);
@@ -4431,24 +4413,6 @@ a.action-button-card:hover {
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
-}
-
-.partners-page .partner-filter-card .form-grid input,
-.partners-page .partner-filter-card .form-grid select {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-  min-height: 40px;
-}
-
-.partners-page .partner-filter-card .form-grid input:focus,
-.partners-page .partner-filter-card .form-grid select:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
 }
 
 .partners-page .partner-advanced-filter-group {
@@ -4990,24 +4954,6 @@ a.action-button-card:hover {
   line-height: 1.25;
 }
 
-.audit-log-page .form-grid input,
-.audit-log-page .form-grid select {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-  min-height: 40px;
-}
-
-.audit-log-page .form-grid input:focus,
-.audit-log-page .form-grid select:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
-}
-
 .audit-log-page .form-grid .actions.full-span {
   align-items: center;
   background: var(--admin-surface);
@@ -5244,23 +5190,6 @@ a.action-button-card:hover {
   font-weight: 700;
   gap: 6px;
   line-height: 1.25;
-}
-
-.operations-handoff-page .ops-note-form select,
-.operations-handoff-page .ops-note-form textarea {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-}
-
-.operations-handoff-page .ops-note-form select:focus,
-.operations-handoff-page .ops-note-form textarea:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
 }
 
 .operations-handoff-page .ops-note-form .button {
@@ -11103,47 +11032,6 @@ a.action-button-card:hover {
   line-height: var(--admin-input-label-line-height);
 }
 
-.coupon-edit-form input,
-.coupon-edit-form textarea {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-input-border);
-  border-radius: var(--admin-input-radius-sm);
-  box-shadow: none;
-  color: var(--admin-text);
-  font-size: var(--admin-input-font-md);
-  line-height: var(--admin-input-line-height);
-  min-height: var(--admin-control-height-sm);
-  padding: var(--admin-input-padding-sm);
-  transition:
-    border-color var(--admin-transition),
-    box-shadow var(--admin-transition),
-    background var(--admin-transition);
-  width: 100%;
-}
-
-.coupon-edit-form input:hover,
-.coupon-edit-form textarea:hover {
-  border-color: var(--admin-input-hover-border);
-}
-
-.coupon-edit-form input:focus,
-.coupon-edit-form textarea:focus {
-  border-color: var(--admin-accent);
-  border-width: 2px;
-  box-shadow: var(--admin-primary-shadow-sm);
-  outline: 0;
-}
-
-.coupon-edit-form input[type='number'] {
-  appearance: textfield;
-}
-
-.coupon-edit-form input[type='number']::-webkit-inner-spin-button,
-.coupon-edit-form input[type='number']::-webkit-outer-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
 .coupon-usage-list {
   display: grid;
   gap: 10px;
@@ -11267,32 +11155,6 @@ a.action-button-card:hover {
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
-}
-
-.service-catalog-page .form-grid input,
-.service-catalog-page .form-grid select,
-.service-catalog-page .form-grid textarea {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-  min-height: 40px;
-}
-
-.service-catalog-page .form-grid input:focus,
-.service-catalog-page .form-grid select:focus,
-.service-catalog-page .form-grid textarea:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
-}
-
-.service-catalog-page .form-grid input[type='checkbox'] {
-  box-shadow: none;
-  min-height: 18px;
-  width: 18px;
 }
 
 .service-catalog-page .form-grid .button {
@@ -17280,133 +17142,6 @@ textarea:focus-visible {
   box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
   padding: var(--admin-input-padding-focused-md);
-}
-
-/* Page-scoped controls keep the same Vuexy atom baseline. */
-.chat-archive-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.chat-archive-page .form-grid select,
-.chat-archive-page .form-grid textarea,
-.partners-page
-  .partner-filter-card
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.partners-page .partner-filter-card .form-grid select,
-.partners-page .partner-filter-card .form-grid textarea,
-.audit-log-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.audit-log-page .form-grid select,
-.audit-log-page .form-grid textarea,
-.operations-handoff-page
-  .ops-note-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.operations-handoff-page .ops-note-form select,
-.operations-handoff-page .ops-note-form textarea,
-.marketing-spend-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.marketing-spend-form select,
-.marketing-spend-form textarea,
-.marketing-analytics-campaign-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.marketing-analytics-campaign-form select,
-.marketing-analytics-campaign-form textarea,
-.service-catalog-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.service-catalog-page .form-grid select,
-.service-catalog-page .form-grid textarea,
-.coupon-edit-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.coupon-edit-form select,
-.coupon-edit-form textarea {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-input-border);
-  border-radius: var(--admin-input-radius-sm);
-  box-shadow: none;
-  color: var(--admin-text);
-  font: inherit;
-  font-size: var(--admin-input-font-md);
-  line-height: var(--admin-input-line-height);
-}
-
-.chat-archive-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.chat-archive-page .form-grid select,
-.partners-page
-  .partner-filter-card
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.partners-page .partner-filter-card .form-grid select,
-.audit-log-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.audit-log-page .form-grid select,
-.operations-handoff-page
-  .ops-note-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.operations-handoff-page .ops-note-form select,
-.marketing-spend-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.marketing-spend-form select,
-.marketing-analytics-campaign-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.marketing-analytics-campaign-form select,
-.service-catalog-page
-  .form-grid
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.service-catalog-page .form-grid select,
-.coupon-edit-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.coupon-edit-form select {
-  min-height: var(--admin-control-height-sm);
-  padding: var(--admin-input-padding-sm);
-}
-
-.chat-archive-page .form-grid textarea,
-.partners-page .partner-filter-card .form-grid textarea,
-.audit-log-page .form-grid textarea,
-.operations-handoff-page .ops-note-form textarea,
-.marketing-spend-form textarea,
-.marketing-analytics-campaign-form textarea,
-.service-catalog-page .form-grid textarea,
-.coupon-edit-form textarea {
-  min-height: 96px;
-  padding: var(--admin-input-padding-md);
 }
 
 .admin-form-search input,
