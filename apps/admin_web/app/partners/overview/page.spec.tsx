@@ -148,6 +148,14 @@ describe('PartnerOverviewPage', () => {
     mockedAdminGet.mockResolvedValue({
       ...partnerOverviewFixture,
       activityRetention: { cards: [] },
+      actionLists: [
+        {
+          ...partnerOverviewFixture.actionLists[0],
+          rows: [],
+          totalCount: 0,
+        },
+      ],
+      operatingStatus: { cards: [] },
       segments: [],
       summaryKpis: [],
     });
@@ -165,6 +173,9 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Partner operations priority');
     expect(markup).toContain('Partner operating status');
     expect(markup).toContain('Risk and action queues');
+    expect(markup).toContain('No operating status data is available yet.');
+    expect(markup).toContain('No Partners need this action right now.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

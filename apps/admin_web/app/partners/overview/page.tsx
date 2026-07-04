@@ -24,6 +24,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -376,7 +377,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
             </AdminLinkCard>
           ))
         ) : (
-          <p className="muted">No operating status data is available yet.</p>
+          <AdminEmptyState framed message="No operating status data is available yet." title={null} />
         )}
     </AdminSection>
   );
@@ -861,7 +862,7 @@ function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionLis
         {list.rows.length > 0 ? (
           list.rows.map((row) => <ActionRow key={`${list.key}-${row.partnerId}`} row={row} />)
         ) : (
-          <p className="muted">No Partners need this action right now.</p>
+          <AdminEmptyState framed message="No Partners need this action right now." title={null} />
         )}
       </div>
     </AdminCard>
