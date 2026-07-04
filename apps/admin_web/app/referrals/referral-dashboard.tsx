@@ -467,128 +467,117 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
     >
       <input name="audience" type="hidden" value={audience} />
       <AdminFormGridFields className="referral-policy-form-grid">
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Policy status</span>
-          <AdminFormSelect
-            defaultValue={policy.enabled ? 'on' : 'off'}
-            label="Policy status"
-            name="enabledState"
-            options={[
-              { label: 'Enabled', value: 'on' },
-              { label: 'Disabled', value: 'off' },
-            ]}
-          />
-        </div>
+        <AdminFormSelect
+          className="admin-form-control-fluid"
+          defaultValue={policy.enabled ? 'on' : 'off'}
+          label="Policy status"
+          labelVisibility="visible"
+          name="enabledState"
+          options={[
+            { label: 'Enabled', value: 'on' },
+            { label: 'Disabled', value: 'off' },
+          ]}
+        />
         {policy.audience === 'CUSTOMER' ? (
-          <div className="referral-policy-field">
-            <span className="referral-policy-field-label">Reward percent</span>
-            <AdminFormInput
-              defaultValue={commissionPercentValue}
-              label="Reward percent"
-              min="0"
-              name="commissionPercent"
-              placeholder="5"
-              step="0.01"
-              type="number"
-            />
-          </div>
-        ) : (
-          <div className="referral-policy-field">
-            <span className="referral-policy-field-label">Fixed reward amount</span>
-            <AdminFormInput
-              defaultValue={policy.fixedRewardAmount ?? ''}
-              label="Fixed reward amount"
-              min="0"
-              name="fixedRewardAmount"
-              placeholder="100000"
-              step="1000"
-              type="number"
-            />
-          </div>
-        )}
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Total reward cap</span>
           <AdminFormInput
-            defaultValue={policy.totalRewardCapAmount ?? ''}
-            label="Total reward cap"
+            className="admin-form-control-fluid"
+            defaultValue={commissionPercentValue}
+            label="Reward percent"
+            labelVisibility="visible"
             min="0"
-            name="totalRewardCapAmount"
-            placeholder="Optional"
-            step="1000"
-            type="number"
-          />
-        </div>
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Max rewarded referrals</span>
-          <AdminFormInput
-            defaultValue={policy.maxRewardedReferrals ?? ''}
-            label="Max rewarded referrals"
-            min="0"
-            name="maxRewardedReferrals"
-            placeholder="Optional"
-            type="number"
-          />
-        </div>
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Max rewards per referred</span>
-          <AdminFormInput
-            defaultValue={policy.maxRewardsPerReferred ?? ''}
-            label="Max rewards per referred"
-            min="0"
-            name="maxRewardsPerReferred"
-            placeholder="1"
-            type="number"
-          />
-        </div>
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Hold period days</span>
-          <AdminFormInput
-            defaultValue={policy.holdPeriodDays}
-            label="Hold period days"
-            min="0"
-            name="holdPeriodDays"
-            type="number"
-          />
-        </div>
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Platform fee VAT</span>
-          <AdminFormInput
-            defaultValue={platformFeeVatRateValue}
-            label="Platform fee VAT"
-            min="0"
-            max="100"
-            name="platformFeeVatRate"
+            name="commissionPercent"
+            placeholder="5"
             step="0.01"
             type="number"
           />
-        </div>
-        <div className="referral-policy-field">
-          <span className="referral-policy-field-label">Currency</span>
+        ) : (
           <AdminFormInput
-            defaultValue={policy.currency}
-            label="Currency"
-            maxLength={8}
-            name="currency"
+            className="admin-form-control-fluid"
+            defaultValue={policy.fixedRewardAmount ?? ''}
+            label="Fixed reward amount"
+            labelVisibility="visible"
+            min="0"
+            name="fixedRewardAmount"
+            placeholder="100000"
+            step="1000"
+            type="number"
           />
-        </div>
-        <div className="referral-policy-field referral-policy-field-full">
-          <span className="referral-policy-field-label">Policy notes</span>
-          <AdminFormTextarea
-            defaultValue={policy.notes ?? ''}
-            label="Policy notes"
-            name="notes"
-            placeholder={`${label} policy note for operators`}
-            rows={3}
-          />
-        </div>
-        <div className="referral-policy-field referral-policy-field-full">
-          <span className="referral-policy-field-label">Update reason</span>
-          <AdminFormInput
-            label="Update reason"
-            name="reason"
-            placeholder="Why this referral policy is being changed"
-          />
-        </div>
+        )}
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={policy.totalRewardCapAmount ?? ''}
+          label="Total reward cap"
+          labelVisibility="visible"
+          min="0"
+          name="totalRewardCapAmount"
+          placeholder="Optional"
+          step="1000"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={policy.maxRewardedReferrals ?? ''}
+          label="Max rewarded referrals"
+          labelVisibility="visible"
+          min="0"
+          name="maxRewardedReferrals"
+          placeholder="Optional"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={policy.maxRewardsPerReferred ?? ''}
+          label="Max rewards per referred"
+          labelVisibility="visible"
+          min="0"
+          name="maxRewardsPerReferred"
+          placeholder="1"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={policy.holdPeriodDays}
+          label="Hold period days"
+          labelVisibility="visible"
+          min="0"
+          name="holdPeriodDays"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={platformFeeVatRateValue}
+          label="Platform fee VAT"
+          labelVisibility="visible"
+          min="0"
+          max="100"
+          name="platformFeeVatRate"
+          step="0.01"
+          type="number"
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid"
+          defaultValue={policy.currency}
+          label="Currency"
+          labelVisibility="visible"
+          maxLength={8}
+          name="currency"
+        />
+        <AdminFormTextarea
+          className="admin-form-control-fluid admin-grid-span-2"
+          defaultValue={policy.notes ?? ''}
+          label="Policy notes"
+          labelVisibility="visible"
+          name="notes"
+          placeholder={`${label} policy note for operators`}
+          rows={3}
+        />
+        <AdminFormInput
+          className="admin-form-control-fluid admin-grid-span-2"
+          label="Update reason"
+          labelVisibility="visible"
+          name="reason"
+          placeholder="Why this referral policy is being changed"
+        />
       </AdminFormGridFields>
       <div className="vuexy-customer-filter-actions referral-policy-actions">
         <AdminFormControlButton className="referral-policy-save-button">
