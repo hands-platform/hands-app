@@ -10957,19 +10957,11 @@ a.action-button-card:hover {
 }
 
 .coupon-create-form {
-  align-items: end;
-  display: grid;
-  gap: 14px;
   grid-template-columns: minmax(260px, 0.9fr) 112px minmax(210px, 0.75fr) minmax(210px, 0.75fr) auto;
   padding: 0 24px 24px;
 }
 
-.coupon-create-form .coupon-create-form-field-wide {
-  grid-column: auto;
-  grid-row: auto;
-}
-
-.coupon-create-form textarea {
+.admin-form-textarea-compact {
   min-height: 38px;
   max-height: 72px;
   resize: vertical;
@@ -11204,17 +11196,6 @@ a.action-button-card:hover {
   line-height: var(--admin-input-label-line-height);
 }
 
-.coupon-create-form .coupon-create-form-field {
-  color: var(--admin-muted);
-  display: grid;
-  font-size: var(--admin-input-label-size);
-  font-weight: 500;
-  gap: 8px;
-  line-height: var(--admin-input-label-line-height);
-  min-width: 0;
-}
-
-.coupon-create-form .coupon-create-form-field > span:first-child,
 .coupon-edit-form label > span:first-child {
   color: var(--admin-text);
   font-size: var(--admin-input-label-size);
@@ -11223,8 +11204,7 @@ a.action-button-card:hover {
 }
 
 .coupon-edit-form input,
-.coupon-create-form input,
-.coupon-create-form textarea {
+.coupon-edit-form textarea {
   background: var(--admin-surface);
   border: 1px solid var(--admin-input-border);
   border-radius: var(--admin-input-radius-sm);
@@ -11241,35 +11221,25 @@ a.action-button-card:hover {
   width: 100%;
 }
 
-.coupon-create-form textarea {
-  max-height: 76px;
-  padding: 6px 14px;
-}
-
 .coupon-edit-form input:hover,
-.coupon-create-form input:hover,
-.coupon-create-form textarea:hover {
+.coupon-edit-form textarea:hover {
   border-color: var(--admin-input-hover-border);
 }
 
 .coupon-edit-form input:focus,
-.coupon-create-form input:focus,
-.coupon-create-form textarea:focus {
+.coupon-edit-form textarea:focus {
   border-color: var(--admin-accent);
   border-width: 2px;
   box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
-.coupon-edit-form input[type='number'],
-.coupon-create-form input[type='number'] {
+.coupon-edit-form input[type='number'] {
   appearance: textfield;
 }
 
 .coupon-edit-form input[type='number']::-webkit-inner-spin-button,
-.coupon-edit-form input[type='number']::-webkit-outer-spin-button,
-.coupon-create-form input[type='number']::-webkit-inner-spin-button,
-.coupon-create-form input[type='number']::-webkit-outer-spin-button {
+.coupon-edit-form input[type='number']::-webkit-outer-spin-button {
   appearance: none;
   margin: 0;
 }
@@ -17557,12 +17527,6 @@ textarea:focus-visible {
   ):not([type='color']),
 .service-menu-dialog select,
 .service-menu-dialog textarea,
-.coupon-create-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.coupon-create-form select,
-.coupon-create-form textarea,
 .coupon-edit-form
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
@@ -17636,11 +17600,6 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']),
 .service-menu-dialog select,
-.coupon-create-form
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.coupon-create-form select,
 .coupon-edit-form
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
@@ -17660,7 +17619,6 @@ textarea:focus-visible {
 .marketing-analytics-campaign-form textarea,
 .service-catalog-page .form-grid textarea,
 .service-menu-dialog textarea,
-.coupon-create-form textarea,
 .coupon-edit-form textarea {
   min-height: 96px;
   padding: var(--admin-input-padding-md);

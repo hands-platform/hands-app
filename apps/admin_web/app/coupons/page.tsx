@@ -3,6 +3,7 @@ import { adminGet } from '../../lib/admin-api';
 import {
   AdminFormDateTime,
   AdminFormControlButton,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -113,16 +114,16 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             <span>{createNotice.detail}</span>
           </AdminInlineNotice>
         ) : null}
-        <form className="coupon-create-form" action={createCoupon}>
+        <AdminFormGrid className="coupon-create-form" action={createCoupon}>
           <AdminFormTextarea
-            className="coupon-create-form-field coupon-create-form-field-wide"
+            className="admin-form-control-fluid"
             label="Coupon codes"
             name="codes"
             required
             rows={1}
+            textareaClassName="admin-form-textarea-compact"
           />
           <AdminFormInput
-            className="coupon-create-form-field"
             label="Discount %"
             max="100"
             min="1"
@@ -146,7 +147,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
           <AdminFormControlButton className="button-primary" type="submit">
             Create coupons
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
       </AdminFilterPanel>
       <CouponsTableSection
         rows={couponModel.couponRows}
