@@ -14,6 +14,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminCard');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No records found</strong>');
@@ -28,6 +29,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(source).not.toContain(
       '{item ? <span className={`pill ${item.tone}`}>{item.status}</span> : null}',
     );
+    expect(source).not.toContain('<div className="partner-review-correction-card"');
     expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.status}</span>');
     expect(source).not.toContain('<span className={`pill ${levelPathPill(item)}`}>{item.status}</span>');
     expect(source).not.toContain(
@@ -82,7 +84,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'partner-review-correction-loop',
-        'partner-review-correction-card',
+        'card admin-card partner-review-correction-card',
         'pill pill-danger',
         'pill pill-warn',
         'pill pill-info',

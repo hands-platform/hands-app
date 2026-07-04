@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
 import {
@@ -232,7 +233,7 @@ export function PartnerDetailReviewControlPanelSection({
       </div>
       <div className="partner-review-correction-loop" aria-label="Partner correction loop">
         {correctionLoopItems.map(({ fallback, item, label }) => (
-          <div className="partner-review-correction-card" key={label}>
+          <AdminCard className="partner-review-correction-card" key={label}>
             <div>
               <span>{label}</span>
               <strong>{item?.title ?? fallback}</strong>
@@ -244,7 +245,7 @@ export function PartnerDetailReviewControlPanelSection({
                 Open related section
               </Link>
             ) : null}
-          </div>
+          </AdminCard>
         ))}
       </div>
       <AdminTableScroll>
