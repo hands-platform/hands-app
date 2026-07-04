@@ -2344,19 +2344,19 @@ a {
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
   display: grid;
-  gap: 14px;
-  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 16px;
+  grid-template-columns: 30px minmax(0, 1fr);
   min-width: 0;
-  padding: 18px;
+  padding: 12px 16px;
 }
 
 .admin-state-icon {
   align-items: center;
   border-radius: var(--admin-radius);
   display: inline-flex;
-  height: 40px;
+  height: 30px;
   justify-content: center;
-  width: 40px;
+  width: 30px;
 }
 
 .admin-loading-state .admin-state-icon {

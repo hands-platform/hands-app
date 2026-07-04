@@ -17,6 +17,25 @@ describe('Admin surface CSS', () => {
     expect(footerBlock).toContain('justify-content: space-between');
     expect(footerBlock).not.toContain('display: grid');
   });
+
+  it('keeps AdminState panels on the Vuexy Alert rhythm', () => {
+    const stateIndex = globalsCss.indexOf('.admin-state {');
+    const stateBlock = cssRuleBlockAt(stateIndex);
+    const stateIconIndex = globalsCss.indexOf('.admin-state-icon {');
+    const stateIconBlock = cssRuleBlockAt(stateIconIndex);
+
+    expect(stateIndex).toBeGreaterThan(-1);
+    expect(stateBlock).toContain('gap: 16px');
+    expect(stateBlock).toContain('grid-template-columns: 30px minmax(0, 1fr)');
+    expect(stateBlock).toContain('padding: 12px 16px');
+    expect(stateBlock).not.toContain('grid-template-columns: 40px minmax(0, 1fr)');
+    expect(stateBlock).not.toContain('padding: 18px');
+    expect(stateIconIndex).toBeGreaterThan(-1);
+    expect(stateIconBlock).toContain('height: 30px');
+    expect(stateIconBlock).toContain('width: 30px');
+    expect(stateIconBlock).not.toContain('height: 40px');
+    expect(stateIconBlock).not.toContain('width: 40px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
