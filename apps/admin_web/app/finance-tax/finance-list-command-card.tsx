@@ -27,12 +27,12 @@ export function FinanceListCommandCard({
   tone,
   value,
 }: {
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly href: string;
   readonly icon: LucideIcon;
-  readonly label: string;
+  readonly label: ReactNode;
   readonly tone: FinanceListCommandTone;
-  readonly value: string;
+  readonly value: ReactNode;
 }) {
   return (
     <AdminOverviewCommandCard

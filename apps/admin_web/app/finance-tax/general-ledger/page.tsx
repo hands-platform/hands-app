@@ -8,7 +8,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
@@ -74,22 +74,38 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         { helper: 'Journal batches matching the current filters.', label: 'Batches', value: summary.count },
         { helper: 'Posted journal batches.', label: 'Posted', value: summary.postedCount },
         { helper: 'Reversed journal batches.', label: 'Reversed', value: summary.reversedCount },
-        { helper: 'Total debits in the selected scope.', label: 'Debits', value: formatMoney(summary.totalDebit, summary.currency) },
-        { helper: 'Total credits in the selected scope.', label: 'Credits', value: formatMoney(summary.totalCredit, summary.currency) },
+        {
+          helper: 'Total debits in the selected scope.',
+          label: 'Debits',
+          value: <MoneyText amount={summary.totalDebit} currency={summary.currency} />,
+        },
+        {
+          helper: 'Total credits in the selected scope.',
+          label: 'Credits',
+          value: <MoneyText amount={summary.totalCredit} currency={summary.currency} />,
+        },
       ]}
       title="General Ledger"
     >
       <FinanceListCommandBoard ariaLabel="Ledger command board">
         <FinanceListCommandCard
-          detail={`Debit ${formatMoney(summary.totalDebit, summary.currency)} / credit ${formatMoney(
-            summary.totalCredit,
-            summary.currency,
-          )}.`}
+          detail={
+            <>
+              Debit <MoneyText amount={summary.totalDebit} currency={summary.currency} /> / credit{' '}
+              <MoneyText amount={summary.totalCredit} currency={summary.currency} />.
+            </>
+          }
           href={generalLedgerHref({ ...filters, page: 1 })}
           icon={Scale}
           label="Debit/Credit delta"
           tone={isBalanced ? 'success' : 'danger'}
-          value={isBalanced ? 'Balanced' : formatMoney(Math.abs(debitCreditDelta), summary.currency)}
+          value={
+            isBalanced ? (
+              'Balanced'
+            ) : (
+              <MoneyText amount={Math.abs(debitCreditDelta)} currency={summary.currency} />
+            )
+          }
         />
         <FinanceListCommandCard
           detail={`${summary.postedCount} posted batch(es) in the selected range.`}

@@ -8,7 +8,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePaymentClearingStatusPill } from '../finance-status-badge-model';
@@ -73,7 +73,11 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         { helper: 'Clearing rows matching the current filters.', label: 'Entries', value: summary.count },
         { helper: 'Rows still waiting for clearing or reconciliation.', label: 'Open', value: summary.openCount },
         { helper: 'Rows cleared against finance evidence.', label: 'Cleared', value: summary.clearedCount },
-        { helper: 'Total amount in the selected clearing scope.', label: 'Amount', value: formatMoney(summary.amount, summary.currency) },
+        {
+          helper: 'Total amount in the selected clearing scope.',
+          label: 'Amount',
+          value: <MoneyText amount={summary.amount} currency={summary.currency} />,
+        },
       ]}
       title="Booking Payment Clearing"
     >
@@ -100,7 +104,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           icon={CircleDollarSign}
           label="Evidence amount"
           tone={summary.amount > 0 ? 'primary' : 'neutral'}
-          value={formatMoney(summary.amount, summary.currency)}
+          value={<MoneyText amount={summary.amount} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Open detail from the table when source, payment, settlement, or bank evidence needs review."

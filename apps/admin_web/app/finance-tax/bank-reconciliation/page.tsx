@@ -23,7 +23,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../components/admin-surface';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
@@ -111,7 +111,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         {
           helper: 'Total amount in the selected bank transaction scope.',
           label: 'Amount',
-          value: formatMoney(summary.amount, summary.currency),
+          value: <MoneyText amount={summary.amount} currency={summary.currency} />,
         },
       ]}
       title="Bank Reconciliation"
@@ -139,7 +139,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           icon={Landmark}
           label="Bank amount"
           tone={summary.amount > 0 ? 'primary' : 'neutral'}
-          value={formatMoney(summary.amount, summary.currency)}
+          value={<MoneyText amount={summary.amount} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Open transaction detail to match bank money against clearing, journal, withdrawal, or payout evidence."

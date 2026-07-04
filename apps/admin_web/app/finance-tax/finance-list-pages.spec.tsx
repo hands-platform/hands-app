@@ -356,6 +356,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
     expect(source).not.toContain(
       '<div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>',
@@ -398,6 +399,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(transaction.amount, transaction.currency)}</strong>');
   });
 
@@ -414,6 +416,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>');
     expect(source).not.toContain('<div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>');
   });
