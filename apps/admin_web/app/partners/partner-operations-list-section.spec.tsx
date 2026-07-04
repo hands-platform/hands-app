@@ -15,8 +15,11 @@ describe('PartnerOperationsListSection', () => {
   it('uses shared Vuexy badge atoms instead of raw operations list pill spans', () => {
     const source = readFileSync('app/partners/partner-operations-list-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminSignal');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`signal ${partnerOperationSignalClass(row.acceptanceTone)}`}>');
+    expect(source).not.toContain('<span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>');
     expect(source).not.toContain('<span className="pill pill-success">{directReadyCount} can receive direct requests</span>');
     expect(source).not.toContain('<span className="pill pill-warn">{settlementWarningCount} settlement warning</span>');
     expect(source).not.toContain('<span className="pill pill-info">{row.provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');

@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../compon
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { AdminSignal, PillClassBadge, StatusBadge, type AdminSignalTone } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -82,13 +82,13 @@ export function PartnerOperationsListSection({
                 </div>
               </td>
               <td>
-                <span className={`signal ${partnerOperationSignalClass(row.acceptanceTone)}`}>
+                <AdminSignal tone={partnerOperationSignalTone(row.acceptanceTone)}>
                   {row.acceptanceLabel}
-                </span>
+                </AdminSignal>
                 <p className="muted admin-mt-8">{row.acceptanceDetail}</p>
-                <span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>
+                <AdminSignal tone={partnerOperationSignalTone(row.marketplaceAccessTone)}>
                   {row.marketplaceAccessLabel}
-                </span>
+                </AdminSignal>
                 <p className="muted admin-mt-8">{row.marketplaceAccessDetail}</p>
                 {row.marketplacePartnerAppMessage ? (
                   <p className="muted admin-mt-8">Partner app message: {row.marketplacePartnerAppMessage}</p>
@@ -167,12 +167,12 @@ function PartnerOperationsEmptyState() {
   );
 }
 
-function partnerOperationSignalClass(tone: PartnerOperationRow['acceptanceTone']) {
+function partnerOperationSignalTone(tone: PartnerOperationRow['acceptanceTone']): AdminSignalTone {
   if (tone === 'danger' || tone === 'warn') {
-    return 'signal-warn';
+    return 'warn';
   }
   if (tone === 'info') {
-    return 'signal-info';
+    return 'info';
   }
-  return 'signal-ok';
+  return 'ok';
 }
