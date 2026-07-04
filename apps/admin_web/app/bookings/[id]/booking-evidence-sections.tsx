@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
@@ -103,7 +104,7 @@ export function BookingEvidenceSections({
   return (
     <>
       <AdminSection
-        actions={<span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>}
+        actions={<StatusBadge tone="info">{decisionEvidenceGuardrails.length} guardrail row(s)</StatusBadge>}
         className="admin-mb-16"
         description="Required, supporting, and finance records for admin-only outcome work. Use this before cancellation, no-show, refund, release, cash settlement, or completed-service closeout."
         id="booking-decision-evidence-guardrails"
@@ -116,7 +117,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.title}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <span className={`pill ${row.tone}`}>{row.status}</span>
+              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
               <p>{row.evidence}</p>
               <p>{row.nextStep}</p>
               <Link className="text-link" href={row.href}>
@@ -128,7 +129,7 @@ export function BookingEvidenceSections({
       </AdminSection>
 
       <AdminSection
-        actions={<span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>}
+        actions={<PillClassBadge pillClass={evidencePacket.tone}>{evidencePacket.status}</PillClassBadge>}
         className="admin-mb-16"
         description="Cancellation, no-show, refund, and settlement decisions should use retained booking evidence. This packet groups chat, location, payment, alerts, notes, and audit records as factual decision context for the Customer and Partner."
         id="booking-evidence-packet"
@@ -155,7 +156,7 @@ export function BookingEvidenceSections({
                 <p className="muted">{record.detail}</p>
               </div>
               <p>{record.evidence}</p>
-              <span className="pill pill-neutral">Record</span>
+              <StatusBadge tone="neutral">Record</StatusBadge>
               <a className="text-link" href={record.href}>
                 Open
               </a>
@@ -165,7 +166,11 @@ export function BookingEvidenceSections({
       </AdminSection>
 
       <AdminSection
-        actions={<span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>}
+        actions={
+          <PillClassBadge pillClass={chatEvidenceDecisionBoard.tone}>
+            {chatEvidenceDecisionBoard.status}
+          </PillClassBadge>
+        }
         className="admin-mb-16"
         description="Retained chat evidence is the first place operators should look before cancellation, no-show, refund, release, or completed-work closeout. This board keeps the view limited to factual records and operator context."
         id="booking-chat-evidence-decision-board"
@@ -190,7 +195,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <span className={`pill ${row.tone}`}>{row.state}</span>
+              <PillClassBadge pillClass={row.tone}>{row.state}</PillClassBadge>
               <p>{row.record}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>
@@ -207,7 +212,7 @@ export function BookingEvidenceSections({
             <Link className="text-link" href="/bookings?view=manual-decision">
               Open manual queue
             </Link>
-            <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
+            <StatusBadge tone="info">{manualDecisionReadiness.length} decision lane(s)</StatusBadge>
           </div>
         }
         className="admin-mb-16"
@@ -222,7 +227,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.scope}</p>
               </div>
-              <span className={`pill ${row.tone}`}>{row.status}</span>
+              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>
@@ -240,12 +245,12 @@ export function BookingEvidenceSections({
                 handling. Use these before changing booking outcomes.
               </p>
             </div>
-            <span className="pill pill-info">{decisionNotePresets.length} preset(s)</span>
+            <StatusBadge tone="info">{decisionNotePresets.length} preset(s)</StatusBadge>
           </div>
           <div className="booking-decision-preset-list admin-mt-12">
             {decisionNotePresets.map((preset) => (
               <div className="booking-decision-preset-card" key={preset.id}>
-                <span className="pill pill-neutral">{preset.label}</span>
+                <StatusBadge tone="neutral">{preset.label}</StatusBadge>
                 <div>
                   <strong>{preset.title}</strong>
                   <p className="muted">{preset.detail}</p>
@@ -262,7 +267,7 @@ export function BookingEvidenceSections({
       </AdminSection>
 
       <AdminSection
-        actions={<span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>}
+        actions={<StatusBadge tone="info">{bookingEvidenceBundleRows.length} evidence lane(s)</StatusBadge>}
         className="admin-mb-16"
         description="Single booking command view that ties the customer, Partner, address snapshot, chat archive, payment, earning, wallet, location, alerts, and operator notes into one factual bundle."
         id="booking-full-evidence-bundle"
@@ -275,7 +280,7 @@ export function BookingEvidenceSections({
                 <span className="booking-settlement-ledger-label">{row.lane}</span>
                 <p className="muted">{row.recordLabel}</p>
               </div>
-              <span className={`pill ${row.tone}`}>{row.status}</span>
+              <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
               <Link className="text-link" href={row.href}>

@@ -1,7 +1,25 @@
+import { readFileSync } from 'fs';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import { BookingEvidenceSections } from './booking-evidence-sections';
 
 describe('Booking evidence sections', () => {
+  it('uses shared Vuexy badge atoms instead of raw evidence pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-evidence-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
+    expect(source).not.toContain('actions={<span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>}');
+    expect(source).not.toContain('<span className="pill pill-neutral">Record</span>');
+    expect(source).not.toContain('actions={<span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>}');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.state}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{decisionNotePresets.length} preset(s)</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{preset.label}</span>');
+    expect(source).not.toContain('actions={<span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>}');
+  });
+
   it('renders evidence decision ledgers with compact styling and links', () => {
     const section = BookingEvidenceSections({
       bookingId: 'booking-1',
