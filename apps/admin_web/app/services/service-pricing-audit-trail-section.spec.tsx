@@ -1,7 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import type { ServicePricingAuditRow } from '../../lib/service-pricing-audit-rows';
 import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
 
 describe('ServicePricingAuditTrailSection', () => {
+  it('uses shared Vuexy badge atoms for pricing audit labels', () => {
+    const source = readFileSync('app/services/service-pricing-audit-trail-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>');
+    expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${field}`}>');
+  });
+
   it('renders audit rows with humanized action, changed fields, and pricing labels', () => {
     const section = ServicePricingAuditTrailSection({
       rows: [

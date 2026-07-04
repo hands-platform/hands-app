@@ -1,6 +1,7 @@
 import { FileClock } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   humanizeAuditAction,
@@ -49,7 +50,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
                   <p className="muted">{formatDateTime(row.createdAt)}</p>
                 </td>
                 <td>
-                  <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
+                  <StatusBadge tone="warning">{humanizeAuditAction(row.action)}</StatusBadge>
                 </td>
                 <td>{row.actorName}</td>
                 <td>
@@ -59,9 +60,9 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
                 <td>
                   <div className="participant-list">
                     {row.changedFields.map((field) => (
-                      <span className="pill pill-info" key={`${row.id}-${field}`}>
+                      <StatusBadge key={`${row.id}-${field}`} tone="info">
                         {field}
-                      </span>
+                      </StatusBadge>
                     ))}
                   </div>
                 </td>
