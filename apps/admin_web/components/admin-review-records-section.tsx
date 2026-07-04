@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { Eye, Star } from 'lucide-react';
 
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from './admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
-import { AdminRoundedPagination } from './admin-rounded-pagination';
 import { StatusBadge } from './status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -311,19 +314,18 @@ function ReviewRecordsPaginationFooter({
   readonly visibleTo: number;
 }) {
   return (
-    <AdminTableFooter className="vuexy-review-footer">
-      <span>
-        Showing {visibleFrom} to {visibleTo} of {totalRows} entries
-      </span>
-      <AdminRoundedPagination
-        activePage={activePage}
-        ariaLabel={ariaLabel}
-        className="vuexy-review-pagination"
-        hrefForPage={basePath ? (page) => buildReviewRecordPageHref(basePath, searchParams, pageKey, page) : undefined}
-        pageLinkClassName="vuexy-review-page-link"
-        totalPages={totalPages}
-      />
-    </AdminTableFooter>
+    <AdminTablePaginationFooter
+      activePage={activePage}
+      ariaLabel={ariaLabel}
+      className="vuexy-review-footer"
+      from={visibleFrom}
+      hrefForPage={basePath ? (page) => buildReviewRecordPageHref(basePath, searchParams, pageKey, page) : undefined}
+      pageLinkClassName="vuexy-review-page-link"
+      paginationClassName="vuexy-review-pagination"
+      to={visibleTo}
+      totalPages={totalPages}
+      totalRows={totalRows}
+    />
   );
 }
 

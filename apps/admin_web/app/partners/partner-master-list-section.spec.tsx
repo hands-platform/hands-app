@@ -23,6 +23,15 @@ describe('PartnerMasterListSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.accountBlocked ? \'pill-danger\' : \'pill-success\'}`}>');
   });
 
+  it('uses the shared table pagination footer for partner master pagination', () => {
+    const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('className="vuexy-partner-table-footer"');
+    expect(source).not.toContain('<AdminTableFooter');
+    expect(source).not.toContain('<span>{partnerMasterListFooterLabel(pagination)}</span>');
+  });
+
   it('renders partner master rows with operations facts and detail links', () => {
     const section = PartnerMasterListSection({
       filters: buildFilters({ review: 'unapproved' }),

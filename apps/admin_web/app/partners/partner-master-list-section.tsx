@@ -1,8 +1,11 @@
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -84,17 +87,16 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
           {rows.map((row) => renderPartnerMasterRow(row, mode))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter className="vuexy-partner-table-footer">
-        <span>{partnerMasterListFooterLabel(pagination)}</span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel={`${copy.title} pages`}
-          className="vuexy-booking-pagination"
-          hrefForPage={(page) => buildPartnerListHref(filters, { page })}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel={`${copy.title} pages`}
+        className="vuexy-partner-table-footer"
+        from={pagination.from}
+        hrefForPage={(page) => buildPartnerListHref(filters, { page })}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }
@@ -147,11 +149,6 @@ function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerM
       <td>{renderAccountCell(row)}</td>
     </tr>
   );
-}
-
-function partnerMasterListFooterLabel(pagination: PartnerPagination<unknown>) {
-  if (pagination.totalRows <= 0) return 'Showing 0 entries';
-  return `Showing ${pagination.from} to ${pagination.to} of ${pagination.totalRows} entries`;
 }
 
 function renderPartnerCell(row: PartnerMasterListSectionRow) {

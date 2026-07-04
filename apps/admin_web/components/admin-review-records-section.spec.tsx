@@ -254,4 +254,15 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>');
     expect(source).not.toContain('<div className="ops-section-header admin-review-records-heading">');
   });
+
+  it('uses the shared table pagination footer while preserving review classes', () => {
+    const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('className="vuexy-review-footer"');
+    expect(source).toContain('paginationClassName="vuexy-review-pagination"');
+    expect(source).toContain('pageLinkClassName="vuexy-review-page-link"');
+    expect(source).not.toContain('<AdminTableFooter');
+    expect(source).not.toContain('Showing {visibleFrom} to {visibleTo} of {totalRows} entries');
+  });
 });
