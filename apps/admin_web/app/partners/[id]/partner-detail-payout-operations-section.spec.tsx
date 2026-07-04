@@ -8,7 +8,9 @@ describe('PartnerDetailPayoutOperationsSection', () => {
 
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>');
     expect(source).not.toContain('<span className="pill pill-danger">HELD</span>');

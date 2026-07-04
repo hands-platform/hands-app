@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import {
@@ -160,9 +161,9 @@ export function PartnerDetailPayoutOperationsSection({
       ) : null}
       <div className="detail-grid admin-mt-16">
         <div>
-          <div className="ops-section-header">
-            <h3>Recent earnings</h3>
-            <div className="actions">
+          <AdminSectionHeader
+            actions={(
+              <div className="actions">
               {hasCashFeeDebt ? (
                 <Link className="text-link" href="/cash-settlements">
                   Cash debt queue
@@ -171,8 +172,10 @@ export function PartnerDetailPayoutOperationsSection({
               <Link className="text-link" href="/earnings">
                 Open earnings
               </Link>
-            </div>
-          </div>
+              </div>
+            )}
+            title="Recent earnings"
+          />
           <AdminTableScroll>
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
@@ -223,12 +226,14 @@ export function PartnerDetailPayoutOperationsSection({
           <PartnerDetailVuexyTableFooter rowCount={earningsRows.length} />
         </div>
         <div>
-          <div className="ops-section-header">
-            <h3>Recent payout batches</h3>
-            <Link className="text-link" href="/payouts">
-              Open payouts
-            </Link>
-          </div>
+          <AdminSectionHeader
+            actions={(
+              <Link className="text-link" href="/payouts">
+                Open payouts
+              </Link>
+            )}
+            title="Recent payout batches"
+          />
           <AdminTableScroll>
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
