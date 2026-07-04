@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -90,12 +90,12 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <EvidenceLine label="Updated" value={bank.updatedAtLabel} />
               </td>
               <td>
-                <PillClassBadge pillClass={financeEvidenceStatusTone(bank.status)}>{bank.status}</PillClassBadge>
+                <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>{bank.status}</StatusBadge>
                 {bank.reviewStateLabel ? (
                   <div className="admin-mt-8">
-                    <PillClassBadge pillClass={financeEvidenceStatusTone(bank.status)}>
+                    <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>
                       {bank.reviewStateLabel}
-                    </PillClassBadge>
+                    </StatusBadge>
                     {bank.reviewStateDetail ? <p className="muted">{bank.reviewStateDetail}</p> : null}
                   </div>
                 ) : null}
@@ -147,9 +147,9 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
                 <EvidenceLine label="Rejection reason" value={taxProfile.rejectionReason} />
               </td>
               <td>
-                <PillClassBadge pillClass={financeEvidenceStatusTone(taxProfile.status)}>
+                <StatusBadge tone={financeEvidenceStatusBadgeTone(taxProfile.status)}>
                   {taxProfile.status}
-                </PillClassBadge>
+                </StatusBadge>
               </td>
               <td>
                 <ActionMenu actions={taxProfile.reviewActions} label="Tax profile optional actions" variant="dropdown" />
@@ -219,13 +219,6 @@ function FinanceEvidenceEmptyState({
       <p className="muted">{message}</p>
     </>
   );
-}
-
-function financeEvidenceStatusTone(status?: string | null) {
-  if (status === 'APPROVED') return 'pill-success';
-  if (status === 'REJECTED' || status === 'MISSING') return 'pill-danger';
-  if (status === 'DEFERRED' || status === 'ON_REQUEST' || !status) return 'pill-neutral';
-  return 'pill-warn';
 }
 
 function financeEvidenceStatusBadgeTone(status?: string | null): StatusBadgeTone {

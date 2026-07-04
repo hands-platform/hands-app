@@ -2,7 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
 import { formatDate } from './partner-detail-format';
 import {
@@ -132,7 +132,9 @@ export function PartnerDetailKycDecisionSection({
                 <p className="muted">{row.type}</p>
               </td>
               <td>
-                <PillClassBadge pillClass={kycEvidencePill(row.status)}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(kycEvidencePill(row.status))}>
+                  {row.status}
+                </StatusBadge>
               </td>
               <td>
                 <span className="muted">{row.fileLabel}</span>

@@ -9,7 +9,8 @@ describe('partner detail finance gate sections', () => {
   it('uses the shared Vuexy badge atom for finance evidence status pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-finance-gate-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>');
     expect(source).not.toContain('<span className={`pill ${financeEvidenceStatusTone(taxProfile.status)}`}>');
   });
