@@ -272,15 +272,16 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
     >
       <div className="dispatch-checklist">
         {dispatchSteps.map((step) => (
-          <div className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`} key={step.title}>
-            <div>
-              <PillClassBadge pillClass={step.tone}>{step.priority}</PillClassBadge>
-              <h3>{step.title}</h3>
-              <p>{step.detail}</p>
-              <small>{step.owner}</small>
-            </div>
+          <AdminTaskCard
+            className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`}
+            key={step.title}
+            leading={<PillClassBadge pillClass={step.tone}>{step.priority}</PillClassBadge>}
+          >
+            <h3>{step.title}</h3>
+            <p>{step.detail}</p>
+            <small>{step.owner}</small>
             {step.actionHref && <ActionLink href={step.actionHref} label={step.actionLabel ?? 'Open'} />}
-          </div>
+          </AdminTaskCard>
         ))}
       </div>
     </AdminSection>
