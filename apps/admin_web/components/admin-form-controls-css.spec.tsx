@@ -88,6 +88,21 @@ describe('Admin form control CSS', () => {
     expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
     expect(placeholderBlock).toContain('transform var(--admin-transition)');
   });
+
+  it.each([
+    ['calendar field', '.calendar-field input:focus,'],
+    ['coupon forms', '.coupon-edit-form input:focus,'],
+    ['operator notes', '.ops-note-form textarea:focus,'],
+  ])('keeps %s focused inputs off the legacy double-ring treatment', (_label, selector) => {
+    const focusIndex = globalsCss.indexOf(selector);
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('border-width: 2px');
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+    expect(focusBlock).not.toContain('var(--admin-focus-ring)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

@@ -2177,7 +2177,8 @@ a {
 .calendar-field select:focus,
 .calendar-field textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow: var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
@@ -11313,9 +11314,8 @@ a.action-button-card:hover {
 .coupon-create-form input:focus,
 .coupon-create-form textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
@@ -13001,8 +13001,10 @@ a.action-button-card:hover {
 .ops-note-form textarea:focus,
 .ops-note-textarea:focus {
   border-color: var(--admin-accent);
-  box-shadow: var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: none;
+  padding: var(--admin-input-padding-focused-md);
 }
 
 #operator-notes .ops-note-history {
