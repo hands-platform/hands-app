@@ -2,6 +2,7 @@ import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/a
 import { formatMoney } from '../../lib/admin-format';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
+import { StatusBadge } from '../../components/status-badge';
 
 type ServiceProviderPriceImpactProps = {
   readonly activeTaxPolicy: AdminTaxPolicyVersion | undefined;
@@ -24,21 +25,21 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
             Shows which Partner prices are visible in the customer app for this exact duration option.
           </p>
         </div>
-        <span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>
+        <StatusBadge tone={impact.hiddenCount ? 'warning' : 'success'}>
           {impact.visibleCount} visible / {impact.hiddenCount} hidden
-        </span>
+        </StatusBadge>
       </div>
       <div className="participant-list">
-        <span className="pill pill-info">{impact.rows.length} loaded row(s)</span>
-        <span className={impact.unsupportedCount ? 'pill pill-warn' : 'pill pill-success'}>
+        <StatusBadge tone="info">{impact.rows.length} loaded row(s)</StatusBadge>
+        <StatusBadge tone={impact.unsupportedCount ? 'warning' : 'success'}>
           {impact.unsupportedCount} missing payout
-        </span>
-        <span className={impact.belowMinimumCount ? 'pill pill-danger' : 'pill pill-success'}>
+        </StatusBadge>
+        <StatusBadge tone={impact.belowMinimumCount ? 'danger' : 'success'}>
           {impact.belowMinimumCount} below minimum
-        </span>
-        <span className={impact.inactiveOrBlockedCount ? 'pill pill-neutral' : 'pill pill-success'}>
+        </StatusBadge>
+        <StatusBadge tone={impact.inactiveOrBlockedCount ? 'neutral' : 'success'}>
           {impact.inactiveOrBlockedCount} inactive/blocked
-        </span>
+        </StatusBadge>
       </div>
       {impact.rows.length ? (
         <div className="setup-stage-list">
