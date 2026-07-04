@@ -105,6 +105,16 @@ describe('BookingMonitorBlockedCreateSection', () => {
     expect(source).not.toContain('<button className="button button-secondary" type="button"');
   });
 
+  it('uses the shared AdminFormControlLink atom for audit action links', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('uses shared Vuexy badge atoms for attempt and distance evidence chips', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),

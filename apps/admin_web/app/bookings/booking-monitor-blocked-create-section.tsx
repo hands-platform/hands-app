@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Filter, ScrollText, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFormControlButton, AdminFormSelect } from '../../components/admin-form-controls';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
@@ -59,10 +63,10 @@ export function BookingMonitorBlockedCreateSection({
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary" href="/audit-log?query=booking.create.rejected">
+        <AdminFormControlLink className="button-secondary" href="/audit-log?query=booking.create.rejected">
           <ScrollText aria-hidden="true" size={16} />
           Open audit log
-        </Link>
+        </AdminFormControlLink>
       }
       className="admin-mt-16 booking-monitor-blocked-create-card"
       description="Booking create requests stopped before payment authorization and matching. These records are evidence for support follow-up, not customer or Partner priority decisions."
@@ -121,10 +125,10 @@ export function BookingMonitorBlockedCreateSection({
                     <Filter aria-hidden="true" size={16} />
                     Show this gate
                   </AdminFormControlButton>
-                  <Link className="button button-secondary" href={item.auditHref}>
+                  <AdminFormControlLink className="button-secondary" href={item.auditHref}>
                     <ScrollText aria-hidden="true" size={16} />
                     Audit evidence
-                  </Link>
+                  </AdminFormControlLink>
                 </div>
               </td>
             </tr>
