@@ -16,6 +16,7 @@ import {
 import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { AdminThemeToggle } from './admin-theme-toggle';
+import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 
 type AdminWorkspaceHeaderProps = {
   readonly sections: readonly AdminNavSection[];
@@ -116,18 +117,12 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           </button>
           {searchOpen ? (
             <div className="topbar-dropdown topbar-search-menu" role="dialog" aria-label="Search admin pages">
-              <label className="topbar-dropdown-header">
-                <Search aria-hidden="true" size={16} />
-                <input
-                  aria-label="Search admin pages"
-                  autoFocus
-                  className="topbar-search-input"
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search pages"
-                  type="search"
-                  value={searchQuery}
-                />
-              </label>
+              <AdminTopbarSearchInput
+                autoFocus
+                label="Search admin pages"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                value={searchQuery}
+              />
               <div className="topbar-dropdown-list">
                 {filteredLinks.length > 0 ? (
                   filteredLinks.map((link) => (

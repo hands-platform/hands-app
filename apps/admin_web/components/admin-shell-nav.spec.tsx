@@ -7,6 +7,7 @@ import { AdminShellNav } from './admin-shell-nav';
 import { AdminWorkspaceHeader } from './admin-workspace-header';
 
 const workspaceHeaderSource = readFileSync('components/admin-workspace-header.tsx', 'utf8');
+const topbarSearchInputSourcePath = 'components/admin-topbar-search-input.tsx';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/partners',
@@ -95,15 +96,14 @@ describe('admin shell navigation', () => {
   });
 
   it('keeps the topbar search input as a labeled Vuexy navbar control', () => {
-    const searchClassStart = workspaceHeaderSource.indexOf('className="topbar-search-input"');
-    const searchInputStart = workspaceHeaderSource.lastIndexOf('<input', searchClassStart);
-    const searchInputMarkup = workspaceHeaderSource.slice(
-      searchInputStart,
-      workspaceHeaderSource.indexOf('/>', searchInputStart),
-    );
+    expect(workspaceHeaderSource).toContain("import { AdminTopbarSearchInput } from './admin-topbar-search-input';");
+    expect(workspaceHeaderSource).toContain('<AdminTopbarSearchInput');
+    expect(workspaceHeaderSource).not.toContain('<input');
 
-    expect(searchInputStart).toBeGreaterThan(-1);
-    expect(searchInputMarkup).toContain('aria-label="Search admin pages"');
-    expect(searchInputMarkup).toContain('type="search"');
+    const topbarSearchInputSource = readFileSync(topbarSearchInputSourcePath, 'utf8');
+
+    expect(topbarSearchInputSource).toContain('aria-label={label}');
+    expect(topbarSearchInputSource).toContain('type="search"');
+    expect(topbarSearchInputSource).toContain('className="topbar-search-input"');
   });
 });

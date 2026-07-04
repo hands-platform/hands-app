@@ -22,6 +22,19 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps visible text inputs inside shared Vuexy input atoms', () => {
+    const allowedRawInputFiles = new Set([
+      'components/admin-form-controls.tsx',
+      'components/admin-topbar-search-input.tsx',
+    ]);
+    const offenders = productionTsxFiles()
+      .filter((filePath) => !allowedRawInputFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
+      .filter((filePath) => visibleRawInputPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps react-datepicker instances on the shared Vuexy calendar skin', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => readFileSync(filePath, 'utf8').includes('<DatePicker'))
@@ -35,6 +48,7 @@ describe('Admin form control usage', () => {
 const legacyToneButtonClassNamePattern =
   /className="[^"]*\bbutton\s+button-(?:danger|info|outline|primary|secondary|success)\b/;
 const nativeCalendarInputTypePattern = /<input\b[^>]*\btype=["'](?:date|datetime-local|month|time)["']/;
+const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
 
 function productionTsxFiles() {
   return ['app', 'components']
