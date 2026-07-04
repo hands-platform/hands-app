@@ -1,7 +1,12 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { AdminSignal, PillClassBadge, StatusBadge, type AdminSignalTone } from '../../components/status-badge';
+import {
+  AdminSignal,
+  StatusBadge,
+  statusBadgeToneFromPillClass,
+  type AdminSignalTone,
+} from '../../components/status-badge';
 import type { PartnerCommandLane } from './partner-command-center';
 import {
   partnerShiftCardClass,
@@ -56,7 +61,11 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<PillClassBadge pillClass={partnerShiftPillClass(item.tone)}>{item.scope}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(partnerShiftPillClass(item.tone))}>
+                {item.scope}
+              </StatusBadge>
+            }
             title={item.title}
             variant="ops-task"
           >
