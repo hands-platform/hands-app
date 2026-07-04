@@ -15,7 +15,8 @@ describe('SetupGroupDetailSection', () => {
   it('uses shared badge atoms instead of raw pill markup', () => {
     const source = readFileSync(new URL('./setup-group-detail-section.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('<span className={env.className} key={env.name}>');
     expect(source).not.toContain('<span className={env.className} key={`attention-${env.name}`}>');
