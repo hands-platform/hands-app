@@ -69,6 +69,16 @@ describe('Admin form control CSS', () => {
     expect(activeBlock).toContain('color: var(--admin-inverse-text)');
   });
 
+  it('keeps shared date/filter toggle buttons on the Vuexy rounded control radius', () => {
+    const filterButtonIndex = globalsCss.indexOf('.booking-date-filter-buttons :is(a, button) {');
+    const filterButtonBlock = cssRuleBlockAt(filterButtonIndex);
+
+    expect(filterButtonIndex).toBeGreaterThan(-1);
+    expect(filterButtonBlock).toContain('border-radius: var(--admin-radius)');
+    expect(filterButtonBlock).toContain('min-height: 38px');
+    expect(filterButtonBlock).not.toContain('border-radius: 999px');
+  });
+
   it('limits calendar view tab hover treatment to inactive tabs', () => {
     const inactiveHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:not(.is-active):hover,');
     const legacyHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:hover,');

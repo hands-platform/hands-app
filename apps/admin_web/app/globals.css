@@ -2889,7 +2889,7 @@ a.action-button-card:hover {
   align-items: center;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-strong);
-  border-radius: 999px;
+  border-radius: var(--admin-radius);
   color: rgb(var(--admin-main-channel) / 0.78);
   cursor: pointer;
   display: inline-flex;
