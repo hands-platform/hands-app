@@ -1,8 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import {
   AdminAttentionBadge,
   AdminSignal,
-  PillClassBadge,
-  PillClassBadgeLink,
   StatusBadge,
   StatusBadgeLink,
   pillClassBadgeClassName,
@@ -39,18 +39,15 @@ describe('StatusBadge', () => {
   it('normalizes existing pillClass values for gradual shared badge migration', () => {
     expect(pillClassBadgeClassName('pill-danger')).toBe('pill pill-danger');
     expect(pillClassBadgeClassName('pill pill-warn')).toBe('pill pill-warn');
+  });
 
-    const badge = PillClassBadge({
-      children: 'High debt',
-      className: 'vietnam-map-cluster-panel-badge is-region',
-      pillClass: 'pill-danger',
-    });
+  it('does not export legacy pill-class badge components', () => {
+    const source = readFileSync('components/status-badge.tsx', 'utf8');
 
-    expect(badge.type).toBe('span');
-    expect(badge.props).toMatchObject({
-      className: 'pill pill-danger vietnam-map-cluster-panel-badge is-region',
-      children: 'High debt',
-    });
+    expect(source).not.toContain('export function PillClassBadge');
+    expect(source).not.toContain('export function PillClassBadgeLink');
+    expect(source).not.toContain('type PillClassBadgeProps');
+    expect(source).not.toContain('type PillClassBadgeLinkProps');
   });
 
   it('maps legacy pill classes to tone-based badge atoms', () => {
@@ -82,12 +79,12 @@ describe('StatusBadge', () => {
     });
   });
 
-  it('renders existing pill class badge links during gradual migration', () => {
-    const link = PillClassBadgeLink({
+  it('keeps aria-label on tone-based badge links for blocked record navigation', () => {
+    const link = StatusBadgeLink({
       ariaLabel: 'Open blocked record',
       children: 'Open',
       href: '/bookings?view=blocked-create',
-      pillClass: 'pill-warn',
+      tone: 'warning',
     });
 
     expect(link.props).toMatchObject({
@@ -99,11 +96,11 @@ describe('StatusBadge', () => {
   });
 
   it('keeps download attributes on shared badge links for export actions', () => {
-    const link = PillClassBadgeLink({
+    const link = StatusBadgeLink({
       children: 'Export CSV',
       download: 'finance-export.csv',
       href: '/finance-tax/export.csv',
-      pillClass: 'pill-success',
+      tone: 'success',
     });
 
     expect(link.props).toMatchObject({
@@ -115,11 +112,11 @@ describe('StatusBadge', () => {
   });
 
   it('keeps aria-current on shared badge links for active filter navigation', () => {
-    const link = PillClassBadgeLink({
+    const link = StatusBadgeLink({
       ariaCurrent: 'page',
       children: 'Failed sends',
       href: '/notifications?review=failed',
-      pillClass: 'pill-warn',
+      tone: 'warning',
     });
 
     expect(link.props).toMatchObject({

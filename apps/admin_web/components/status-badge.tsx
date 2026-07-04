@@ -20,13 +20,6 @@ type StatusBadgeProps = {
   readonly title?: string;
 };
 
-type PillClassBadgeProps = {
-  readonly children: ReactNode;
-  readonly className?: string;
-  readonly pillClass: string;
-  readonly title?: string;
-};
-
 type AdminAttentionBadgeProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -41,13 +34,6 @@ type AdminSignalProps = {
 };
 
 type StatusBadgeLinkProps = StatusBadgeProps & {
-  readonly ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
-  readonly ariaLabel?: string;
-  readonly download?: string;
-  readonly href: string;
-};
-
-type PillClassBadgeLinkProps = PillClassBadgeProps & {
   readonly ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
   readonly ariaLabel?: string;
   readonly download?: string;
@@ -111,14 +97,6 @@ export function StatusBadge({ children, className, tone, title }: StatusBadgePro
   );
 }
 
-export function PillClassBadge({ children, className, pillClass, title }: PillClassBadgeProps) {
-  return (
-    <span className={mergeBadgeClassName(pillClassBadgeClassName(pillClass), className)} title={title}>
-      {children}
-    </span>
-  );
-}
-
 export function AdminAttentionBadge({ children, className, title }: AdminAttentionBadgeProps) {
   return (
     <span className={mergeBadgeClassName('topbar-attention-badge', className)} title={title}>
@@ -150,30 +128,6 @@ export function StatusBadgeLink({
       aria-current={ariaCurrent}
       aria-label={ariaLabel}
       className={mergeBadgeClassName(statusBadgeClassName(tone), className)}
-      download={download}
-      href={href}
-      title={title}
-    >
-      {children}
-    </Link>
-  );
-}
-
-export function PillClassBadgeLink({
-  ariaCurrent,
-  ariaLabel,
-  children,
-  className,
-  download,
-  href,
-  pillClass,
-  title,
-}: PillClassBadgeLinkProps) {
-  return (
-    <Link
-      aria-current={ariaCurrent}
-      aria-label={ariaLabel}
-      className={mergeBadgeClassName(pillClassBadgeClassName(pillClass), className)}
       download={download}
       href={href}
       title={title}
