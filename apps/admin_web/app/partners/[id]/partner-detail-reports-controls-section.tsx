@@ -12,6 +12,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   createProviderReport,
   createProviderSanction,
@@ -139,9 +140,9 @@ export function PartnerDetailReportsControlsSection({
               Use this for immediate operating controls when a report is not yet required.
             </p>
           </div>
-          <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
+          <StatusBadge tone={payoutHold ? 'danger' : 'success'}>
             {payoutHold ? 'Payout locked' : 'No payout hold'}
-          </span>
+          </StatusBadge>
         </div>
         <div className="admin-mb-12">
           <AdminTableScroll>
@@ -156,7 +157,7 @@ export function PartnerDetailReportsControlsSection({
               {payoutHold ? (
                 <tr>
                   <td>
-                    <span className="pill pill-danger">ACTIVE</span>
+                    <StatusBadge tone="danger">ACTIVE</StatusBadge>
                   </td>
                   <td>
                     <strong>{payoutHold.type}</strong>
@@ -229,10 +230,14 @@ export function PartnerDetailReportsControlsSection({
                     ) : null}
                   </td>
                   <td>
-                    <span className={`pill ${reportSeverityPill(report.severity)}`}>{report.severity}</span>
+                    <PillClassBadge pillClass={reportSeverityPill(report.severity)}>
+                      {report.severity}
+                    </PillClassBadge>
                   </td>
                   <td>
-                    <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
+                    <PillClassBadge pillClass={reportStatusPill(report.status)}>
+                      {report.status}
+                    </PillClassBadge>
                   </td>
                   <td>
                     {report.bookingHref && report.bookingLabel ? (
@@ -269,7 +274,9 @@ export function PartnerDetailReportsControlsSection({
                     {control.reportLine ? <p className="muted">{control.reportLine}</p> : null}
                   </td>
                   <td>
-                    <span className={`pill ${controlStatusPill(control.status)}`}>{control.status}</span>
+                    <PillClassBadge pillClass={controlStatusPill(control.status)}>
+                      {control.status}
+                    </PillClassBadge>
                   </td>
                   <td>
                     <span className="muted">{control.timeline}</span>

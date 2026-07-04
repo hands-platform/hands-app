@@ -8,7 +8,20 @@ describe('PartnerDetailReportsControlsSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No records found</strong>');
+    expect(source).not.toContain("<span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>");
+    expect(source).not.toContain('<span className="pill pill-danger">ACTIVE</span>');
+    expect(source).not.toContain(
+      '<span className={`pill ${reportSeverityPill(report.severity)}`}>{report.severity}</span>',
+    );
+    expect(source).not.toContain(
+      '<span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>',
+    );
+    expect(source).not.toContain(
+      '<span className={`pill ${controlStatusPill(control.status)}`}>{control.status}</span>',
+    );
   });
 
   it('renders reports and account controls as Vuexy tables', () => {
