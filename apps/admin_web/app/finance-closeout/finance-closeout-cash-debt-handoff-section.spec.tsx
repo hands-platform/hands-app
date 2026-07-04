@@ -1,6 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { FinanceCloseoutCashDebtHandoffSection } from './finance-closeout-cash-debt-handoff-section';
 
 describe('FinanceCloseoutCashDebtHandoffSection', () => {
+  it('uses shared money atoms for cash debt handoff amounts', () => {
+    const source = readFileSync(
+      new URL('./finance-closeout-cash-debt-handoff-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders wallet gate counts, debt amount, oldest open age, and settlement link', () => {
     const section = FinanceCloseoutCashDebtHandoffSection({
       cashDebtAmount: 450000,
@@ -11,6 +24,7 @@ describe('FinanceCloseoutCashDebtHandoffSection', () => {
     });
 
     const rendered = textContent(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
@@ -22,7 +36,7 @@ describe('FinanceCloseoutCashDebtHandoffSection', () => {
     expect(rendered).toContain('Wallet-gated Partners');
     expect(rendered).toContain('2');
     expect(rendered).toContain('5');
-    expect(rendered).toContain('450.000 VND');
+    expect(markup).toContain('450.000 VND');
     expect(hrefsIn(section)).toContain('/cash-settlements');
   });
 

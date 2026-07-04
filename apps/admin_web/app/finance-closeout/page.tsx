@@ -12,8 +12,8 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import {
   buildCloseoutTasks,
   buildFinanceCloseoutApiHrefs,
@@ -87,8 +87,16 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       metrics={[
         { label: 'Open payment items', value: reconciliation.openPaymentCount, helper: 'Authorization holds and pending cash rows.' },
         { label: 'Refund items', value: reconciliation.openRefundCount, helper: 'Refund cases still open in this range.' },
-        { label: 'Cash debt', value: formatMoney(reconciliation.cashDebtAmount, currency), helper: 'Partner cash-fee debt needing settlement evidence.' },
-        { label: 'Available payout', value: formatMoney(filteredEarningsSummary.availableNetAmount, currency), helper: 'Partner net available for payout batching.' },
+        {
+          label: 'Cash debt',
+          value: <MoneyText amount={reconciliation.cashDebtAmount} currency={currency} />,
+          helper: 'Partner cash-fee debt needing settlement evidence.',
+        },
+        {
+          label: 'Available payout',
+          value: <MoneyText amount={filteredEarningsSummary.availableNetAmount} currency={currency} />,
+          helper: 'Partner net available for payout batching.',
+        },
         { label: 'Open payout batches', value: reconciliation.openPayoutCount, helper: 'Payout batches not yet paid or cancelled.' },
         { label: 'Missing refs', value: reconciliation.missingReferenceCount, helper: 'Payment or payout references to complete.' },
       ]}

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../components/admin-surface';
-import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
+import { formatRelativeTime } from '../../lib/admin-format';
 
 type FinanceCloseoutCashDebtHandoffSectionProps = {
   readonly cashDebtAmount: number;
@@ -40,7 +41,9 @@ export function FinanceCloseoutCashDebtHandoffSection({
       </div>
       <div>
         <span className="muted">Wallet debt</span>
-        <h3>{formatMoney(cashDebtAmount, currency)}</h3>
+        <h3>
+          <MoneyText amount={cashDebtAmount} currency={currency} />
+        </h3>
       </div>
       <div>
         <span className="muted">Oldest open</span>

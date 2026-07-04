@@ -204,4 +204,9 @@ describe('FinanceCloseoutPage', () => {
     expect(pageSource).toContain('StatusBadgeLink');
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
+
+  it('uses shared money atoms for closeout page KPI amounts', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain('formatMoney(');
+  });
 });

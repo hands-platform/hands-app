@@ -1,6 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { FinanceCloseoutPaymentEarningSection } from './finance-closeout-payment-earning-section';
 
 describe('FinanceCloseoutPaymentEarningSection', () => {
+  it('uses shared money atoms for payment-to-earning amounts', () => {
+    const source = readFileSync(
+      new URL('./finance-closeout-payment-earning-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders earning summary totals and the earnings link', () => {
     const section = FinanceCloseoutPaymentEarningSection({
       currency: 'VND',
@@ -18,6 +31,7 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
     });
 
     const rendered = textContent(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
@@ -26,7 +40,7 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
       title: 'Payment-to-earning checks',
     });
     expect(rendered).toContain('Payment-to-earning checks');
-    expect(rendered).toContain('900.000 VND');
+    expect(markup).toContain('900.000 VND');
     expect(rendered).toContain('3');
     expect(rendered).toContain('earning record(s)');
     expect(rendered).toContain('Pending Partner net');

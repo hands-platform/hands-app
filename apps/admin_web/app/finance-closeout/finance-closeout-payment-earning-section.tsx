@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import type { AdminEarningSummary } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 
 type FinanceCloseoutPaymentEarningSectionProps = {
   readonly currency: string;
@@ -27,22 +27,30 @@ export function FinanceCloseoutPaymentEarningSection({
     >
       <div>
         <span>Gross represented</span>
-        <strong>{formatMoney(summary.grossAmount, currency)}</strong>
+        <strong>
+          <MoneyText amount={summary.grossAmount} currency={currency} />
+        </strong>
         <small>{summary.count} earning record(s)</small>
       </div>
       <div>
         <span>HANDS fee</span>
-        <strong>{formatMoney(summary.platformFee, currency)}</strong>
+        <strong>
+          <MoneyText amount={summary.platformFee} currency={currency} />
+        </strong>
         <small>Before VAT, withholding, and other cost views.</small>
       </div>
       <div>
         <span>Tax withheld</span>
-        <strong>{formatMoney(summary.withholdingAmount, currency)}</strong>
+        <strong>
+          <MoneyText amount={summary.withholdingAmount} currency={currency} />
+        </strong>
         <small>Stored from active tax policy snapshots.</small>
       </div>
       <div>
         <span>Pending Partner net</span>
-        <strong>{formatMoney(summary.pendingNetAmount, currency)}</strong>
+        <strong>
+          <MoneyText amount={summary.pendingNetAmount} currency={currency} />
+        </strong>
         <small>Positive payout or negative cash-fee debt.</small>
       </div>
     </AdminSection>
