@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { formatDate } from './partner-list-ops';
 import { maskToken } from './partner-list-profile';
@@ -27,9 +27,9 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
   return (
     <div>
       <div className="participant-list admin-mb-8">
-        <PillClassBadge pillClass={partnerSecurityPillClass(status)}>
+        <StatusBadge tone={statusBadgeToneFromPillClass(partnerSecurityPillClass(status))}>
           {providerSecurityLabel(status)}
-        </PillClassBadge>
+        </StatusBadge>
       </div>
       <p className="muted admin-mb-4">
         {latestDevice

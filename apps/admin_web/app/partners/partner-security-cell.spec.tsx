@@ -7,7 +7,8 @@ describe('PartnerSecurityCell', () => {
   it('uses the shared Vuexy badge atom for account security state', () => {
     const source = readFileSync('app/partners/partner-security-cell.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${partnerSecurityPillClass(status)}`}>');
   });
 

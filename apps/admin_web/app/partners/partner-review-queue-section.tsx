@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 
 type PartnerReviewQueueSectionItem = {
   readonly count: number;
@@ -23,9 +23,9 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={queue.totalOpen === 0 ? 'pill-success' : 'pill-warn'}>
+        <StatusBadge tone={queue.totalOpen === 0 ? 'success' : 'warning'}>
           {queue.totalOpen} open item(s)
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16 partner-review-queue-card"
       description="Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch location freshness."
