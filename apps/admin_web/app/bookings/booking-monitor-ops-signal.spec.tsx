@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBooking } from '../../lib/admin-api';
 import {
@@ -6,6 +7,13 @@ import {
 } from './booking-monitor-ops-signal';
 
 describe('booking monitor ops signal', () => {
+  it('uses the shared AdminSignal atom for row signal chips', () => {
+    const source = readFileSync(new URL('./booking-monitor-ops-signal.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('<span className={`signal signal-${tone}`}>');
+  });
+
   it('maps booking facts into the ops signal state', () => {
     expect(
       bookingMonitorOpsSignalStateForBooking({

@@ -1,4 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
+import { AdminSignal } from '../../components/status-badge';
 import { bookingMarketplaceParticipantCount } from './booking-marketplace-count-facts';
 import { bookingMatchingChatReady } from './booking-chat-handoff-state';
 import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
@@ -26,5 +27,5 @@ export function bookingMonitorOpsSignalStateForBooking(booking: AdminBooking) {
 }
 
 function bookingOpsSignal(tone: BookingOpsSignalTone, label: string) {
-  return <span className={`signal signal-${tone}`}>{label}</span>;
+  return <AdminSignal tone={tone}>{label}</AdminSignal>;
 }
