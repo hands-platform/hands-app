@@ -2,6 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -81,7 +82,7 @@ export function PartnerDetailDeviceSessionActivitySection({
         {securityCards.map((card) => (
           <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
             <div>
-              <span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>
+              <PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>
               <h3>{card.title}</h3>
               <p className="muted">{card.detail}</p>
             </div>
@@ -104,7 +105,7 @@ export function PartnerDetailDeviceSessionActivitySection({
               {deviceRows.map((device) => (
                 <tr key={device.id}>
                   <td>
-                    <span className="pill pill-info">{device.statusLabel}</span>
+                    <StatusBadge tone="info">{device.statusLabel}</StatusBadge>
                   </td>
                   <td>
                     <strong>{device.title}</strong>
@@ -137,7 +138,7 @@ export function PartnerDetailDeviceSessionActivitySection({
               {sessionRows.map((session) => (
                 <tr key={session.id}>
                   <td>
-                    <span className="pill pill-info">{session.statusLabel}</span>
+                    <StatusBadge tone="info">{session.statusLabel}</StatusBadge>
                   </td>
                   <td>
                     <strong>{session.title}</strong>
@@ -168,7 +169,7 @@ export function PartnerDetailDeviceSessionActivitySection({
               {sharedDeviceRows.map((match) => (
                 <tr key={match.id}>
                   <td>
-                    <span className="pill pill-warn">SHARED</span>
+                    <StatusBadge tone="warning">SHARED</StatusBadge>
                   </td>
                   <td>
                     <strong>{match.title}</strong>
