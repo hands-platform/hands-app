@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   Briefcase,
   CalendarCheck,
@@ -145,18 +144,18 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/audit-log?bucket=Booking">
+          <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Booking">
             <MessageSquare aria-hidden="true" size={16} />
             Audit log
-          </Link>
-          <Link className="button button-secondary" href="/customers">
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href="/customers">
             <User aria-hidden="true" size={16} />
             Customers
-          </Link>
-          <Link className="button button-secondary" href="/partners">
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href="/partners">
             <Users aria-hidden="true" size={16} />
             Partners
-          </Link>
+          </AdminFormControlLink>
         </>
       }
       contentClassName="chat-archive-page"
@@ -258,12 +257,12 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>
-            <AdminFormControlLink className="button button-secondary" href="/chat-archive">
+            <AdminFormControlLink className="button-secondary" href="/chat-archive">
               <X aria-hidden="true" size={16} />
               Clear
             </AdminFormControlLink>
             <AdminFormControlLink
-              className="button button-secondary"
+              className="button-secondary"
               download="hands-chat-archive.csv"
               href={messageCsvHref}
             >
@@ -279,10 +278,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
 
       <AdminSection
         actions={
-          <Link className="button button-secondary" href="/bookings?view=chat-repair">
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat-repair">
             <Wrench aria-hidden="true" size={16} />
             Booking chat repair
-          </Link>
+          </AdminFormControlLink>
         }
         className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
         description="Matched and completed bookings should have retained chat evidence. Use this audit queue to find missing rooms or rooms where no message has been stored yet."
@@ -344,30 +343,30 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <td>{row.operatorAction}</td>
                   <td>
                     <div className="actions">
-                      <Link
-                        className="button button-secondary chat-inline-action"
+                      <AdminFormControlLink
+                        className="button-secondary chat-inline-action"
                         href={`/bookings/${row.booking.id}#chat`}
                       >
                         <CalendarCheck aria-hidden="true" size={14} />
                         Booking
-                      </Link>
+                      </AdminFormControlLink>
                       {row.customerId ? (
-                        <Link
-                          className="button button-secondary chat-inline-action"
+                        <AdminFormControlLink
+                          className="button-secondary chat-inline-action"
                           href={`/customers/${row.customerId}#chat-history`}
                         >
                           <User aria-hidden="true" size={14} />
                           Customer
-                        </Link>
+                        </AdminFormControlLink>
                       ) : null}
                       {row.partnerId ? (
-                        <Link
-                          className="button button-secondary chat-inline-action"
+                        <AdminFormControlLink
+                          className="button-secondary chat-inline-action"
                           href={`/partners/${row.partnerId}#booking-chat-records`}
                         >
                           <Briefcase aria-hidden="true" size={14} />
                           Partner
-                        </Link>
+                        </AdminFormControlLink>
                       ) : null}
                     </div>
                   </td>
@@ -433,37 +432,37 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                 <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
                 <td>
                   <div className="actions">
-                    <Link
-                      className="button button-secondary chat-inline-action"
+                    <AdminFormControlLink
+                      className="button-secondary chat-inline-action"
                       href={`#${chatRoomDomId(room.roomId)}`}
                     >
                       <MessageSquare aria-hidden="true" size={14} />
                       Chat
-                    </Link>
-                    <Link
-                      className="button button-secondary chat-inline-action"
+                    </AdminFormControlLink>
+                    <AdminFormControlLink
+                      className="button-secondary chat-inline-action"
                       href={`/bookings/${room.booking.id}#chat`}
                     >
                       <CalendarCheck aria-hidden="true" size={14} />
                       Booking
-                    </Link>
+                    </AdminFormControlLink>
                     {room.customerId ? (
-                      <Link
-                        className="button button-secondary chat-inline-action"
+                      <AdminFormControlLink
+                        className="button-secondary chat-inline-action"
                         href={`/customers/${room.customerId}#chat-history`}
                       >
                         <User aria-hidden="true" size={14} />
                         Customer
-                      </Link>
+                      </AdminFormControlLink>
                     ) : null}
                     {room.partnerId ? (
-                      <Link
-                        className="button button-secondary chat-inline-action"
+                      <AdminFormControlLink
+                        className="button-secondary chat-inline-action"
                         href={`/partners/${room.partnerId}#booking-chat-records`}
                       >
                         <Briefcase aria-hidden="true" size={14} />
                         Partner
-                      </Link>
+                      </AdminFormControlLink>
                     ) : null}
                   </div>
                 </td>

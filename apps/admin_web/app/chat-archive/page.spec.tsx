@@ -122,6 +122,12 @@ describe('ChatArchivePage', () => {
     expect(markup).not.toContain('<label>Booking status<select');
   });
 
+  it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {
+    expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).not.toContain('<Link className="button button-secondary"');
+    expect(pageSource).not.toContain('className="button button-secondary chat-inline-action"');
+  });
+
   it('keeps visible chat status chips on shared badge atoms', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('PillClassBadge');
