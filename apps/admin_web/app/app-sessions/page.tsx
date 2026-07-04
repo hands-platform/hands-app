@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Bell, LayoutDashboard } from 'lucide-react';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -120,7 +121,7 @@ export default async function AppSessionsPage({
       <AdminSection
         className="vuexy-booking-table-card vuexy-booking-table-group"
         description="Sorted by last heartbeat. Live means the session expiry is still in the future."
-        status={<span className="pill pill-info">{sessions.length} loaded</span>}
+        status={<StatusBadge tone="info">{sessions.length} loaded</StatusBadge>}
         title="Latest app sessions"
       >
         <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />

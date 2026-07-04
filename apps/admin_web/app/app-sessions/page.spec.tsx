@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -78,5 +80,12 @@ describe('AppSessionsPage', () => {
     expect(markup).toContain('>4<');
     expect(markup).toContain('>2<');
     expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
+  });
+
+  it('uses the shared StatusBadge atom for the loaded session count', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/page.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{sessions.length} loaded</span>');
   });
 });
