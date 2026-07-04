@@ -7,8 +7,8 @@ describe('BookingDetailDisclosureGroup', () => {
   it('uses shared Vuexy badge atoms instead of raw disclosure pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-disclosure-group.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">{label}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{summaryItems.length} groups</span>');
     expect(source).not.toContain("<span className={`pill ${item.tone ?? 'pill-neutral'}`} key={item.label}>");

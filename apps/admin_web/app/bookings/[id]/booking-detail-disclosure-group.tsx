@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AdminDisclosure } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 export type BookingDetailDisclosureSummaryItem = {
   readonly label: string;
@@ -43,9 +43,9 @@ export function BookingDetailDisclosureGroup({
           <span className="booking-detail-section-summary-meta">
             <StatusBadge tone="neutral">{summaryItems.length} groups</StatusBadge>
             {summaryItems.map((item) => (
-              <PillClassBadge pillClass={item.tone ?? 'pill-neutral'} key={item.label}>
+              <StatusBadge key={item.label} tone={statusBadgeToneFromPillClass(item.tone ?? 'pill-neutral')}>
                 {item.label}
-              </PillClassBadge>
+              </StatusBadge>
             ))}
           </span>
         )}
