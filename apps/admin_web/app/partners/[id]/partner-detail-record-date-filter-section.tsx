@@ -83,13 +83,13 @@ export function PartnerDetailRecordDateFilterSection({
           options={DETAIL_ACTIVITY_ORDER_OPTIONS}
         />
         <AdminFormDate
-          className="admin-date-filter-field"
+          className="admin-form-control-fluid"
           defaultValue={dateFilters.from}
           label="From"
           name="from"
         />
         <AdminFormDate
-          className="admin-date-filter-field"
+          className="admin-form-control-fluid"
           defaultValue={dateFilters.to}
           label="To"
           name="to"

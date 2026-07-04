@@ -111,7 +111,7 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-form-input admin-form-control-labeled admin-directory-filter-search');
     expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
     expect(markup).toContain(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled admin-date-filter-field',
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled admin-form-control-fluid',
     );
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-link');

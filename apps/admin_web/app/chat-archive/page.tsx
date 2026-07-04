@@ -240,14 +240,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             options={detailDateRangeOptions}
           />
           <AdminFormDate
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={dateFilters.from}
             label="From"
             labelVisibility="visible"
             name="from"
           />
           <AdminFormDate
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={dateFilters.to}
             label="To"
             labelVisibility="visible"

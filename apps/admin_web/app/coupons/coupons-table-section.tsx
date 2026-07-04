@@ -159,14 +159,14 @@ function CouponManagementCard({
           <input name="couponId" type="hidden" value={row.id} />
           <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
           <AdminFormDateTime
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={row.startsAtInputValue}
             label="Starts"
             labelVisibility="visible"
             name="startsAt"
           />
           <AdminFormDateTime
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={row.endsAtInputValue}
             label="Ends"
             labelVisibility="visible"

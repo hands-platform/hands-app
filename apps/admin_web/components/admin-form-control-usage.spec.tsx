@@ -115,6 +115,14 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps date filter width tweaks on the shared Vuexy form control token', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => readFileSync(filePath, 'utf8').includes('admin-date-filter-field'))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =

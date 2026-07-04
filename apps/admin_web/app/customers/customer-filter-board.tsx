@@ -172,13 +172,13 @@ function CustomerDateButtonGroup({
       {showCustomDateRange && (
         <div className="booking-custom-date-grid vuexy-customer-custom-date-grid">
           <AdminFormDate
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={customerCustomDateValue(activeRange, filters[fromKey])}
             label={fromLabel}
             name={fromKey}
           />
           <AdminFormDate
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             defaultValue={customerCustomDateValue(activeRange, filters[toKey])}
             label={toLabel}
             name={toKey}

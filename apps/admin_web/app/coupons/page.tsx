@@ -132,13 +132,13 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             type="number"
           />
           <AdminFormDateTime
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             label="Starts"
             labelVisibility="visible"
             name="startsAt"
           />
           <AdminFormDateTime
-            className="admin-date-filter-field"
+            className="admin-form-control-fluid"
             label="Ends"
             labelVisibility="visible"
             name="endsAt"
