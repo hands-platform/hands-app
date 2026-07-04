@@ -1334,9 +1334,11 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
     {
       title: 'Review amount',
       status: `${needsReview.length} BATCH(ES)`,
-      detail: formatMoney(
-        needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
-        currency,
+      detail: (
+        <MoneyText
+          amount={needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0)}
+          currency={currency}
+        />
       ),
       action: needsReview.length
         ? 'Check failed and draft batches before starting bank transfer.'
@@ -1347,9 +1349,11 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
     {
       title: 'Banking in motion',
       status: `${processing.length} PROCESSING`,
-      detail: formatMoney(
-        processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
-        currency,
+      detail: (
+        <MoneyText
+          amount={processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0)}
+          currency={currency}
+        />
       ),
       action: processing.length
         ? 'Confirm transfer results, then mark paid or failed.'

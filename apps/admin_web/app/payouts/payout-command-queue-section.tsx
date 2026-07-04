@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
@@ -6,7 +8,7 @@ import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/stat
 export type PayoutCommandSignal = {
   readonly action: string;
   readonly className: string;
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly pillClass: string;
   readonly status: string;
   readonly title: string;

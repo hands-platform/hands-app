@@ -172,4 +172,10 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('helper: `${formatMoney(sumEarnings');
     expect(source).not.toContain('title: `${providerLabel} / ${formatMoney');
   });
+
+  it('uses shared money atoms for payout command signal amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).not.toContain('detail: formatMoney(');
+  });
 });
