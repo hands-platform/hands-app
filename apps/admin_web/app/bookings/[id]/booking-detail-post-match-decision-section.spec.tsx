@@ -14,6 +14,17 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw post-match decision pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.label}</span>');
+    expect(source).not.toContain('<span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>');
+  });
+
   it('renders evidence checklist and clear fee decision actions', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailPostMatchDecisionSection bookingId="booking-1" outcomeReview={outcomeReview()} />,

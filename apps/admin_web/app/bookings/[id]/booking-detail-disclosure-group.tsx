@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 
 export type BookingDetailDisclosureSummaryItem = {
   readonly label: string;
@@ -30,7 +31,7 @@ export function BookingDetailDisclosureGroup({
         aria-label={`${label}: ${title}. ${helper}${summaryLabel}`}
         className="booking-detail-section-summary"
       >
-        <span className="pill pill-info">{label}</span>
+        <StatusBadge tone="info">{label}</StatusBadge>
         {' '}
         <span className="booking-detail-section-summary-copy">
           <strong>{title}</strong>
@@ -39,11 +40,11 @@ export function BookingDetailDisclosureGroup({
         </span>
         {summaryItems.length > 0 && (
           <span className="booking-detail-section-summary-meta">
-            <span className="pill pill-neutral">{summaryItems.length} groups</span>
+            <StatusBadge tone="neutral">{summaryItems.length} groups</StatusBadge>
             {summaryItems.map((item) => (
-              <span className={`pill ${item.tone ?? 'pill-neutral'}`} key={item.label}>
+              <PillClassBadge pillClass={item.tone ?? 'pill-neutral'} key={item.label}>
                 {item.label}
-              </span>
+              </PillClassBadge>
             ))}
           </span>
         )}
