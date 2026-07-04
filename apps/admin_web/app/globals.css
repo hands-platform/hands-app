@@ -533,8 +533,40 @@ a {
   width: 100%;
 }
 
-.admin-auth-error {
+.admin-auth-notice {
   margin: 0;
+}
+
+.admin-inline-notice {
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
+.admin-inline-notice-info {
+  background: var(--admin-info-soft);
+  border-color: rgb(var(--admin-info-channel) / 0.28);
+  color: var(--admin-info-text);
+}
+
+.admin-inline-notice-success {
+  background: var(--admin-success-soft);
+  border-color: rgb(var(--admin-success-channel) / 0.28);
+  color: var(--admin-success-text);
+}
+
+.admin-inline-notice-warning {
+  background: var(--admin-warning-soft);
+  border-color: rgb(var(--admin-warning-channel) / 0.32);
+  color: var(--admin-warning-text);
+}
+
+.admin-inline-notice-danger {
+  background: var(--admin-danger-soft);
+  border-color: rgb(var(--admin-danger-channel) / 0.3);
+  color: var(--admin-danger-text);
 }
 
 .topbar {
@@ -2104,14 +2136,8 @@ a {
   padding: 20px 24px;
 }
 
-.calendar-readonly-alert {
-  background: var(--admin-warning-soft);
-  border: 1px solid color-mix(in srgb, var(--admin-warning) 34%, transparent);
-  border-radius: var(--admin-radius);
-  color: #9a4f00;
-  font-size: 0.875rem;
+.calendar-readonly-notice {
   margin-bottom: 16px;
-  padding: 10px 12px;
 }
 
 .calendar-form-grid {

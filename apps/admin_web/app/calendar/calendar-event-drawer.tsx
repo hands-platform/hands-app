@@ -11,6 +11,7 @@ import {
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { calendarTagsToInputValue, parseCalendarTags, type CalendarEventDraft } from './calendar-model';
 
 type CalendarEventDrawerProps = {
@@ -113,7 +114,11 @@ export function CalendarEventDrawer({
         </div>
 
         <div className="calendar-drawer-body">
-          {readonlyReason ? <div className="calendar-readonly-alert">{readonlyReason}</div> : null}
+          {readonlyReason ? (
+            <AdminInlineNotice className="calendar-readonly-notice" tone="warning">
+              {readonlyReason}
+            </AdminInlineNotice>
+          ) : null}
           <div className="calendar-form-grid">
             <AdminFormInput
               className="calendar-field"

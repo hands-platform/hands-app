@@ -33,6 +33,7 @@ describe('LoginPage', () => {
     expect(markup).toContain('admin-auth-card');
     expect(markup).not.toContain('Welcome to HANDS Admin');
     expect(markup).toContain('Sign in failed. Check your admin credentials and try again.');
+    expect(markup).toContain('class="admin-inline-notice admin-inline-notice-danger admin-auth-notice"');
     expect(markup).toContain('action="/api/admin/session/login?redirectTo=%2Fvietnam-overview"');
     expect(markup).not.toContain('card admin-filter-panel');
     expect(markup).not.toContain('admin-filter-panel-body');

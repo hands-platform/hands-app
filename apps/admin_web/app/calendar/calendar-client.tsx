@@ -14,6 +14,7 @@ import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { MetricCard } from '../../components/metric-card';
 import { PillClassBadge } from '../../components/status-badge';
@@ -253,7 +254,11 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
         <MetricCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
       </section>
 
-      {mutationError ? <div className="admin-form-error calendar-error-banner">{mutationError}</div> : null}
+      {mutationError ? (
+        <AdminInlineNotice className="calendar-error-banner" role="alert" tone="danger">
+          {mutationError}
+        </AdminInlineNotice>
+      ) : null}
 
       <div className="calendar-shell">
         <aside className="calendar-sidebar card">

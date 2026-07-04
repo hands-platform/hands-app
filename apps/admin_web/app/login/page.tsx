@@ -2,6 +2,7 @@ import {
   AdminFormControlButton,
   AdminFormInput,
 } from '../../components/admin-form-controls';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -31,9 +32,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <span>Secure operator workspace</span>
         </div>
         {params?.error ? (
-          <p className="form-error admin-auth-error" role="alert">
+          <AdminInlineNotice className="admin-auth-notice" role="alert" tone="danger">
             Sign in failed. Check your admin credentials and try again.
-          </p>
+          </AdminInlineNotice>
         ) : null}
         <form action={action} className="admin-auth-form" method="post">
           <AdminFormInput

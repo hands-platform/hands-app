@@ -35,6 +35,19 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps inline alert copy inside shared Vuexy notice atoms', () => {
+    const allowedNoticeFiles = new Set([
+      'components/admin-inline-notice.tsx',
+      'components/admin-surface.tsx',
+    ]);
+    const offenders = productionTsxFiles()
+      .filter((filePath) => !allowedNoticeFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
+      .filter((filePath) => rawInlineNoticePattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps react-datepicker instances on the shared Vuexy calendar skin', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => readFileSync(filePath, 'utf8').includes('<DatePicker'))
@@ -49,6 +62,8 @@ const legacyToneButtonClassNamePattern =
   /className="[^"]*\bbutton\s+button-(?:danger|info|outline|primary|secondary|success)\b/;
 const nativeCalendarInputTypePattern = /<input\b[^>]*\btype=["'](?:date|datetime-local|month|time)["']/;
 const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
+const rawInlineNoticePattern =
+  /className=["'][^"']*(?:admin-form-error|form-error|calendar-readonly-alert|admin-auth-error)[^"']*["']/;
 
 function productionTsxFiles() {
   return ['app', 'components']
