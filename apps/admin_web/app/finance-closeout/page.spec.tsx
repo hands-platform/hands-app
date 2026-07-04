@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import type {
@@ -24,6 +25,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('FinanceCloseoutPage', () => {
   beforeEach(() => {
@@ -196,5 +198,10 @@ describe('FinanceCloseoutPage', () => {
     expect(markup).toContain('12 HOLD(S)');
     expect(markup).toContain('3 CASH');
     expect(markup).toContain('4 OPEN');
+  });
+
+  it('uses shared status links for closeout range filters', () => {
+    expect(pageSource).toContain('StatusBadgeLink');
+    expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 });

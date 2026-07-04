@@ -12,7 +12,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadgeLink } from '../../components/status-badge';
+import { StatusBadgeLink } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import {
   buildCloseoutTasks,
@@ -117,14 +117,14 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           { href: '/finance-closeout?range=7d', label: 'Last 7 days', range: '7d' },
           { href: '/finance-closeout?range=30d', label: 'Last 30 days', range: '30d' },
         ].map((option) => (
-          <PillClassBadgeLink
+          <StatusBadgeLink
             ariaCurrent={option.range === filters.range ? 'page' : undefined}
             href={option.href}
             key={option.range}
-            pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+            tone={option.range === filters.range ? 'info' : 'neutral'}
           >
             {option.label}
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         ))}
       </AdminSection>
 
