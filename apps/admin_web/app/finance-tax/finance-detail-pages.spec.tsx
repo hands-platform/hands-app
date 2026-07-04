@@ -964,6 +964,19 @@ describe('finance detail pages', () => {
     );
   });
 
+  it('uses shared money atoms for payment clearing detail match amounts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/payment-clearing/[id]/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(match.amount, match.currency)}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">Bank {formatMoney(match.bankTransaction.amount, match.bankTransaction.currency)}</div>',
+    );
+  });
+
   it.each([
     ['booking settlement audit detail', 'app/finance-tax/booking-settlement-audit/[id]/page.tsx'],
     ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],

@@ -5,6 +5,7 @@ import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/adm
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
@@ -258,9 +259,17 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 </td>
                 <td>{match.bankTransaction?.counterpartyName ?? '-'}</td>
                 <td>
-                  <strong>{formatMoney(match.amount, match.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={match.amount} currency={match.currency} />
+                  </strong>
                   {match.bankTransaction ? (
-                    <div className="muted">Bank {formatMoney(match.bankTransaction.amount, match.bankTransaction.currency)}</div>
+                    <div className="muted">
+                      Bank{' '}
+                      <MoneyText
+                        amount={match.bankTransaction.amount}
+                        currency={match.bankTransaction.currency}
+                      />
+                    </div>
                   ) : null}
                 </td>
                 <td>{formatDateTime(match.matchedAt)}</td>
