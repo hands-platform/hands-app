@@ -61,7 +61,12 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).toContain('card admin-card service-menu-duration-panel');
     expect(classNames).toContain('card admin-card service-menu-duration-panel is-empty');
     expect(classNames).toContain('admin-form-control-button button button-primary');
+    expect(classNames).toContain('admin-form-control-link button button-primary');
+    expect(classNames).toContain('admin-form-control-link button button-secondary');
+    expect(classNames).toContain('admin-form-control-link button button-secondary service-table-action');
     expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).not.toContain('<a className="button');
     expect(sectionSource).not.toContain('<div className="card admin-card service-menu-duration-panel');
   });
 

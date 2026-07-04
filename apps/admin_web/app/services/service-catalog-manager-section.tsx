@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -42,10 +43,10 @@ export function ServiceCatalogManagerSection({
     <>
       <AdminSection
         actions={
-          <a className="button button-primary" href={serviceDialogHref('new', null)}>
+          <AdminFormControlLink className="button-primary" href={serviceDialogHref('new', null)}>
             <Plus aria-hidden="true" size={16} />
             Add service
-          </a>
+          </AdminFormControlLink>
         }
         className="service-catalog-manager-card"
         description="Register the service menu that Partners can opt into. Customer app partner details only show services selected by that Partner."
@@ -100,13 +101,13 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
             </div>
           ) : null}
         </div>
-        <a
-          className="button button-secondary service-table-action"
+        <AdminFormControlLink
+          className="button-secondary service-table-action"
           href={serviceDialogHref('edit', group.key)}
         >
           <Edit3 aria-hidden="true" size={15} />
           Edit
-        </a>
+        </AdminFormControlLink>
       </div>
 
       <div className="service-menu-inline-pills">
@@ -189,9 +190,9 @@ function NewServiceDialog() {
             <Save aria-hidden="true" size={16} />
             Save service
           </AdminFormControlButton>
-          <a className="button button-secondary" href={servicesReturnHref()}>
+          <AdminFormControlLink className="button-secondary" href={servicesReturnHref()}>
             Cancel
-          </a>
+          </AdminFormControlLink>
         </div>
       </form>
     </ServiceDialogFrame>
@@ -216,9 +217,9 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
             <Save aria-hidden="true" size={16} />
             Save changes
           </AdminFormControlButton>
-          <a className="button button-secondary" href={servicesReturnHref()}>
+          <AdminFormControlLink className="button-secondary" href={servicesReturnHref()}>
             Cancel
-          </a>
+          </AdminFormControlLink>
         </div>
       </form>
     </ServiceDialogFrame>
