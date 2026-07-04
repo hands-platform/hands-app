@@ -11,12 +11,14 @@ describe('PartnerFilesCell', () => {
   it('uses shared Vuexy badge atoms instead of raw file review pill spans', () => {
     const source = readFileSync('app/partners/partner-files-cell.tsx', 'utf8');
 
+    expect(source).toContain('AdminEmptyState');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{file.purpose ?? \'Partner verification\'}</span>');
     expect(source).not.toContain('<span className={`pill ${file.uploadStatus === \'UPLOADED\' ? \'pill-success\' : \'pill-warn\'}`}>');
     expect(source).not.toContain('<span className="pill pill-info">{file.purpose}</span>');
     expect(source).not.toContain('<span className={`pill ${publicMediaReviewPillClass(file.reviewStatus)}`}>');
+    expect(source).not.toContain('<p className="muted">No private verification files.</p>');
   });
 
   it('renders private verification files and public media review actions', () => {

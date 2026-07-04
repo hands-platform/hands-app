@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { PillClassBadge } from '../../components/status-badge';
 import {
   hasProviderCoordinate,
@@ -29,7 +30,7 @@ export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCell
       {hasCoordinate ? (
         <p className="muted">Partner location saved for dispatch checks.</p>
       ) : (
-        <p className="muted">No saved location yet.</p>
+        <AdminEmptyState message="No saved location yet." title={null} />
       )}
     </div>
   );

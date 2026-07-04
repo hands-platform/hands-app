@@ -51,8 +51,10 @@ describe('OperationsHandoffOperatorNotesSection', () => {
   });
 
   it('renders the empty state when there are no notes', () => {
-    const rendered = textContent(OperationsHandoffOperatorNotesSection({ notes: [] }));
+    const section = OperationsHandoffOperatorNotesSection({ notes: [] });
+    const rendered = textContent(section);
 
     expect(rendered).toContain('No operator note has been written yet.');
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 });

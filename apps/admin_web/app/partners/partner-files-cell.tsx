@@ -1,4 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -54,7 +55,7 @@ export function PartnerFilesCell({
           </div>
         ))
       ) : (
-        <p className="muted">No private verification files.</p>
+        <AdminEmptyState message="No private verification files." title={null} />
       )}
       <PartnerPublicMediaQueue
         partnerName={partnerName}
@@ -72,11 +73,7 @@ function PartnerPublicMediaQueue({
 }: PartnerFilesCellProps) {
   const media = providerPublicMedia(provider);
   if (!media.length) {
-    return (
-      <p className="muted admin-mt-8">
-        No public profile media uploaded.
-      </p>
-    );
+    return <AdminEmptyState className="admin-mt-8" message="No public profile media uploaded." title={null} />;
   }
 
   return (

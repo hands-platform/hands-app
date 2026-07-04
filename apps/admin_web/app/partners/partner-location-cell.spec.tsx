@@ -8,8 +8,10 @@ describe('PartnerLocationCell', () => {
   it('uses the shared Vuexy badge atom for location status', () => {
     const source = readFileSync('app/partners/partner-location-cell.tsx', 'utf8');
 
+    expect(source).toContain('AdminEmptyState');
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${providerLocationPillClass(status)}`}>');
+    expect(source).not.toContain('<p className="muted">No saved location yet.</p>');
   });
 
   it('renders recent partner location status without exposing raw coordinates', () => {

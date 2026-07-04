@@ -65,6 +65,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminAvatarStatusDot',
       'AdminCard',
       'AdminDataTable',
+      'AdminEmptyState',
       'AdminPersonCell',
       'AdminSection',
       'MetricCard',

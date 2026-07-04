@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Save, ScrollText } from 'lucide-react';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
   AdminFormControlButton,
   AdminFormSelect,
@@ -98,7 +99,7 @@ export function OperationsHandoffOperatorNotesSection({
             </small>
           </Link>
         ))}
-        {notes.length === 0 ? <p className="muted">No operator note has been written yet.</p> : null}
+        {notes.length === 0 ? <AdminEmptyState framed message="No operator note has been written yet." /> : null}
       </div>
     </AdminSection>
   );
