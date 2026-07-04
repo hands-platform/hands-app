@@ -129,8 +129,8 @@ describe('BookingMonitorCommandRouteSections', () => {
   it('uses shared badge atoms for command summary and primary queue chips', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<span className="pill pill-info">');
     expect(source).not.toContain('<div className="ops-section-header admin-mt-16">');

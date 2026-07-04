@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortId } from '../../lib/admin-format';
 import type { BookingCommandRouteCard } from '../../lib/booking-command-route-cards';
 import type { BookingPrimaryCommandSummaryItem } from '../../lib/booking-primary-command-summary';
@@ -71,7 +71,7 @@ export function BookingMonitorCommandRouteSections({
                 <strong>{item.value}</strong>
               </td>
               <td>
-                <PillClassBadge pillClass="pill">{item.owner}</PillClassBadge>
+                <StatusBadge tone="neutral">{item.owner}</StatusBadge>
               </td>
               <td>
                 <span className="muted">{item.action}</span>
@@ -95,7 +95,7 @@ export function BookingMonitorCommandRouteSections({
           {visiblePrimaryCommandQueue.map((item) => (
             <tr key={`${item.status}-${item.primaryAction}`}>
               <td>
-                <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(item.tone)}>{item.status}</StatusBadge>
               </td>
               <td>
                 <Link className="text-link" href={item.href}>
@@ -109,9 +109,9 @@ export function BookingMonitorCommandRouteSections({
               <td>
                 <div className="participant-list">
                   {item.sampleBookingIds.map((bookingId) => (
-                    <PillClassBadge pillClass="pill" key={bookingId}>
+                    <StatusBadge tone="neutral" key={bookingId}>
                       {shortId(bookingId)}
-                    </PillClassBadge>
+                    </StatusBadge>
                   ))}
                 </div>
               </td>
