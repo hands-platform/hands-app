@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import {
   AdminEarning,
@@ -589,7 +590,7 @@ type PayoutReleaseCycleItem = {
 type PayoutMarketplaceUnblockItem = {
   title: string;
   status: string;
-  detail: string;
+  detail: ReactNode;
   action: string;
   href: string;
   className: string;
@@ -809,7 +810,12 @@ function buildPayoutReleasePolicyDesk(
       title: 'Cash debt exclusion',
       status: cashDebtRows.length ? `${cashDebtRows.length} held` : 'Clear',
       detail: cashDebtRows.length
-        ? `${formatMoney(cashDebtAmount, currency)} partner cash-fee debt is held outside payout release.`
+        ? (
+            <>
+              <MoneyText amount={cashDebtAmount} currency={currency} /> partner cash-fee debt is held outside payout
+              release.
+            </>
+          )
         : 'No unbatched partner cash-fee debt is waiting in the current earning range.',
       action: cashDebtRows.length
         ? 'Clear deposit or approved offset in Cash Settlements before payout release.'
@@ -956,7 +962,12 @@ function buildPayoutMarketplaceUnblockBridge(
       title: 'Final acceptance gate',
       status: unbatchedCashDebt.length ? `${cashDebtPartnerCount} partner wallet(s)` : 'Clear',
       detail: unbatchedCashDebt.length
-        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks final acceptance and service start.`
+        ? (
+            <>
+              <MoneyText amount={cashDebtAmount} currency={cashDebtCurrency} /> unpaid HANDS fee or withholding blocks
+              final acceptance and service start.
+            </>
+          )
         : 'No negative Partner wallet is blocking final acceptance or service start from the current earning range.',
       action: unbatchedCashDebt.length
         ? 'Partner can see marketplace requests, but final acceptance, service start, and payout release are blocked until fee deposit or approved offset is posted.'

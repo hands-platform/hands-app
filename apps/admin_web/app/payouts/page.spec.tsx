@@ -185,4 +185,11 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('Batch net versus service evidence gap: ${formatMoney');
     expect(source).not.toContain('${formatMoney(cashDebtEvidence, currency)} negative wallet amount');
   });
+
+  it('uses shared money atoms for payout release and marketplace cash debt amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).not.toContain('${formatMoney(cashDebtAmount, currency)} partner cash-fee debt');
+    expect(source).not.toContain('${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee');
+  });
 });
