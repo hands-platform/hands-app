@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
@@ -104,19 +103,15 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Refund pagination"
-          className="vuexy-booking-pagination"
-          hrefForPage={pagination.hrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Refund pagination"
+        from={pagination.from}
+        hrefForPage={pagination.hrefForPage}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }

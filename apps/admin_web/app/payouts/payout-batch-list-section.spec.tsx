@@ -78,6 +78,14 @@ describe('PayoutBatchListSection', () => {
     expect(source).not.toContain('<span className="pill pill-warn">Reconciliation</span>');
     expect(source).not.toContain('<a className="pill" href="/earnings">');
   });
+
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-list-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
 });
 
 function textContent(value: unknown): string {

@@ -1,7 +1,6 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
-import { AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { PayoutServerPagination } from './payouts-page-model';
 
@@ -40,19 +39,15 @@ export function PayoutBatchListSection({
       <AdminTableScroll>
         <PayoutBatchTable rows={rows} updateTransferRefAction={updateTransferRefAction} />
       </AdminTableScroll>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Payout batch pages"
-          className="vuexy-booking-pagination"
-          hrefForPage={paginationHrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Payout batch pages"
+        from={pagination.from}
+        hrefForPage={paginationHrefForPage}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }

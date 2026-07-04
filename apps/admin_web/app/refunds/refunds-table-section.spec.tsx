@@ -1,6 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { RefundsTableSection, type RefundTableRow } from './refunds-table-section';
 
 describe('RefundsTableSection', () => {
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders refund rows with links and action execution evidence', () => {
     const section = RefundsTableSection({
       emptyMessage: 'No refunds loaded.',

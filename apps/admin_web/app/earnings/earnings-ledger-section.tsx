@@ -1,7 +1,6 @@
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import {
   AdminSignal,
   PillClassBadge,
@@ -187,19 +186,15 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Earnings ledger pagination"
-          className="vuexy-booking-pagination"
-          hrefForPage={pagination.hrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Earnings ledger pagination"
+        from={pagination.from}
+        hrefForPage={pagination.hrefForPage}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }

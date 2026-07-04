@@ -1,6 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { PaymentOperationsTableSection, type PaymentOperationsTableRow } from './payment-operations-table-section';
 
 describe('PaymentOperationsTableSection', () => {
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync('app/payments/payment-operations-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders payment rows with operation evidence and action links', () => {
     const section = PaymentOperationsTableSection({
       emptyMessage: 'No payments loaded.',

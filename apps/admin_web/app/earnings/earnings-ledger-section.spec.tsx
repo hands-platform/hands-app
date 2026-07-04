@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { EarningsLedgerSection, type EarningsLedgerRow } from './earnings-ledger-section';
 
 describe('EarningsLedgerSection', () => {
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('uses shared badge atoms for cancellation and payout state chips', () => {
     const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
 

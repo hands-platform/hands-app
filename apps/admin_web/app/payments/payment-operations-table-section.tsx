@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
@@ -133,19 +132,15 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Payment pagination"
-          className="vuexy-booking-pagination"
-          hrefForPage={pagination.hrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Payment pagination"
+        from={pagination.from}
+        hrefForPage={pagination.hrefForPage}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }
