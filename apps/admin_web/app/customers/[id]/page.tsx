@@ -526,21 +526,21 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       >
         <form className="form-grid admin-mt-14" action={`/customers/${customer.id}`}>
           <AdminFormSelect
-            className="customer-detail-filter-select"
+            className="admin-directory-filter-select"
             defaultValue={dateFilters.range}
             label="Preset"
             name="range"
             options={detailDateRangeOptions}
           />
           <AdminFormSelect
-            className="customer-detail-filter-select"
+            className="admin-directory-filter-select"
             defaultValue={activityType}
             label="Record type"
             name="type"
             options={CUSTOMER_ACTIVITY_TYPE_OPTIONS}
           />
           <AdminFormSelect
-            className="customer-detail-filter-select"
+            className="admin-directory-filter-select"
             defaultValue={activityOrder}
             label="Sort order"
             name="order"
@@ -559,12 +559,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             name="to"
           />
           <div className="actions">
-            <AdminFormControlButton className="customer-detail-filter-button">
+            <AdminFormControlButton className="admin-directory-filter-button">
               <Filter aria-hidden="true" size={16} />
               Apply filter
             </AdminFormControlButton>
             <AdminFormControlLink
-              className="customer-detail-filter-link"
+              className="admin-directory-filter-export"
               download={`hands-customer-${shortId(customer.id)}-activity.csv`}
               href={filteredActivityCsvHref}
               title={`Exports the first ${CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT} filtered activity rows`}
@@ -572,7 +572,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <Download aria-hidden="true" size={16} />
               Export activity CSV
             </AdminFormControlLink>
-            <AdminFormControlLink className="customer-detail-filter-link" href={`/customers/${customer.id}`}>
+            <AdminFormControlLink className="admin-directory-filter-button is-ghost" href={`/customers/${customer.id}`}>
               <X aria-hidden="true" size={16} />
               Clear
             </AdminFormControlLink>

@@ -61,21 +61,21 @@ export function PartnerDetailRecordDateFilterSection({
       />
       <form className="form-grid admin-mt-14" action={`/partners/${partnerId}`}>
         <AdminFormSelect
-          className="partner-detail-filter-select"
+          className="admin-directory-filter-select"
           defaultValue={dateFilters.range}
           label="Preset"
           name="range"
           options={detailDateRangeOptions}
         />
         <AdminFormSelect
-          className="partner-detail-filter-select"
+          className="admin-directory-filter-select"
           defaultValue={activityType}
           label="Record type"
           name="type"
           options={PARTNER_ACTIVITY_TYPE_OPTIONS}
         />
         <AdminFormSelect
-          className="partner-detail-filter-select"
+          className="admin-directory-filter-select"
           defaultValue={activityOrder}
           label="Sort order"
           name="order"
@@ -94,19 +94,19 @@ export function PartnerDetailRecordDateFilterSection({
           name="to"
         />
         <div className="actions">
-          <AdminFormControlButton className="partner-detail-filter-button">
+          <AdminFormControlButton className="admin-directory-filter-button">
             <Filter aria-hidden="true" size={16} />
             Apply filter
           </AdminFormControlButton>
           <AdminFormControlLink
-            className="partner-detail-filter-link"
+            className="admin-directory-filter-export"
             download={activityCsvDownloadName}
             href={filteredActivityCsvHref}
           >
             <Download aria-hidden="true" size={16} />
             Export activity CSV
           </AdminFormControlLink>
-          <AdminFormControlLink className="partner-detail-filter-link" href={`/partners/${partnerId}`}>
+          <AdminFormControlLink className="admin-directory-filter-button is-ghost" href={`/partners/${partnerId}`}>
             <X aria-hidden="true" size={16} />
             Clear
           </AdminFormControlLink>
