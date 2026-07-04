@@ -12,6 +12,9 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
 
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(source).not.toContain('<Link className="button button-secondary"');
   });

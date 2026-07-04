@@ -2,7 +2,7 @@ import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
   readonly blockingCount: number;
@@ -49,7 +49,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
             className={card.className}
             detail={card.detail}
             key={card.title}
-            leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
             title={card.title}
           />
         ))}
@@ -70,10 +70,10 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           <div key={item.label}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
-          <small>{item.helper}</small>
-        </div>
-      ))}
-    </div>
+            <small>{item.helper}</small>
+          </div>
+        ))}
+      </div>
     </AdminSection>
   );
 }
