@@ -127,7 +127,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       {setting.options?.length ? (
         <>
           <AdminFormSelect
-            className="operations-policy-form-field"
+            className="admin-form-control-fluid admin-mt-12"
             defaultValue={String(setting.value)}
             label="Decision"
             labelVisibility="visible"
@@ -148,7 +148,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         </>
       ) : (
         <AdminFormInput
-          className="operations-policy-form-field"
+          className="admin-form-control-fluid admin-mt-12"
           defaultValue={String(setting.value)}
           label={`Value ${setting.unit ? `(${setting.unit})` : ''}${
             isNumber && setting.min !== undefined && setting.max !== undefined
@@ -163,7 +163,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         />
       )}
       <AdminFormTextarea
-        className="operations-policy-form-field"
+        className="admin-form-control-fluid admin-mt-12"
         label="Change reason"
         labelVisibility="visible"
         minLength={12}
