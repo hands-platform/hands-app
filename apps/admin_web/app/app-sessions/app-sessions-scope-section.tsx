@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { X } from 'lucide-react';
 
 import { ActionMenu } from '../../components/action-menu';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 
 export type AppSessionQuickFilter = {
@@ -27,10 +27,10 @@ export function AppSessionsScopeSection({
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary" href="/app-sessions">
+        <AdminFormControlLink className="button-secondary" href="/app-sessions">
           <X aria-hidden="true" size={16} />
           Clear filters
-        </Link>
+        </AdminFormControlLink>
       }
       bodyClassName="actions admin-mt-12 admin-justify-start"
       className="admin-mb-16"

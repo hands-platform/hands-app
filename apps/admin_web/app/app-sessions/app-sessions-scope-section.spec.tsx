@@ -38,6 +38,13 @@ describe('AppSessionsScopeSection', () => {
     expect(source).toContain('ActionMenu');
     expect(source).not.toContain('className={`pill ${item.href === activeFilterHref ?');
   });
+
+  it('uses the shared AdminFormControlLink atom for the clear filter action', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-scope-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
 });
 
 function buildQuickFilters(): AppSessionQuickFilter[] {

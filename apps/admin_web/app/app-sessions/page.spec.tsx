@@ -88,4 +88,11 @@ describe('AppSessionsPage', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{sessions.length} loaded</span>');
   });
+
+  it('uses the shared AdminFormControlLink atom for page header actions', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
 });

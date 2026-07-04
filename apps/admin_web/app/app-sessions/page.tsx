@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { Bell, LayoutDashboard } from 'lucide-react';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -85,14 +85,14 @@ export default async function AppSessionsPage({
       contentClassName="app-sessions-page"
       actions={
         <>
-          <Link className="button button-secondary" href="/">
+          <AdminFormControlLink className="button-secondary" href="/">
             <LayoutDashboard aria-hidden="true" size={16} />
             Dashboard
-          </Link>
-          <Link className="button button-secondary" href="/notifications">
+          </AdminFormControlLink>
+          <AdminFormControlLink className="button-secondary" href="/notifications">
             <Bell aria-hidden="true" size={16} />
             Notifications
-          </Link>
+          </AdminFormControlLink>
         </>
       }
       description="Customer and Partner app heartbeat view for live operations, support, and version follow-up."
