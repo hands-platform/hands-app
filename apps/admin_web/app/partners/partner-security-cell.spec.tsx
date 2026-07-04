@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminProvider } from '../../lib/admin-api';
 import { PartnerSecurityCell } from './partner-security-cell';
 
 describe('PartnerSecurityCell', () => {
+  it('uses the shared Vuexy badge atom for account security state', () => {
+    const source = readFileSync('app/partners/partner-security-cell.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${partnerSecurityPillClass(status)}`}>');
+  });
+
   it('renders account block, latest device, latest session, and issue counters', () => {
     const cell = PartnerSecurityCell({
       provider: {

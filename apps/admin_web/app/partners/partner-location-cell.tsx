@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { PillClassBadge } from '../../components/status-badge';
 import {
   hasProviderCoordinate,
   providerLocationAgeLabel,
@@ -20,7 +21,7 @@ export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCell
   return (
     <div>
       <div className="participant-list admin-mb-8">
-        <span className={`pill ${providerLocationPillClass(status)}`}>{providerLocationLabel(status)}</span>
+        <PillClassBadge pillClass={providerLocationPillClass(status)}>{providerLocationLabel(status)}</PillClassBadge>
       </div>
       <p className="muted admin-mb-4">
         {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}

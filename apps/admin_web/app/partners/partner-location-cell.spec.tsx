@@ -1,8 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminProvider } from '../../lib/admin-api';
 import { DEFAULT_PROVIDER_OPS_POLICY } from './partner-list-ops';
 import { PartnerLocationCell } from './partner-location-cell';
 
 describe('PartnerLocationCell', () => {
+  it('uses the shared Vuexy badge atom for location status', () => {
+    const source = readFileSync('app/partners/partner-location-cell.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${providerLocationPillClass(status)}`}>');
+  });
+
   it('renders recent partner location status without exposing raw coordinates', () => {
     const cell = PartnerLocationCell({
       opsPolicy: DEFAULT_PROVIDER_OPS_POLICY,
