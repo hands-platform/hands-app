@@ -173,14 +173,14 @@ export function BookingMonitorFiltersSection({
               ))}
             <input type="hidden" name="dateRange" value="custom" />
             <AdminFormDate
-              className="booking-monitor-date"
+              className="admin-date-filter-field"
               label="Custom date from"
               name="dateFrom"
               onChange={(event) => onCustomDateFromChange(event.target.value)}
               value={customDateFrom}
             />
             <AdminFormDate
-              className="booking-monitor-date"
+              className="admin-date-filter-field"
               label="Custom date to"
               name="dateTo"
               onChange={(event) => onCustomDateToChange(event.target.value)}

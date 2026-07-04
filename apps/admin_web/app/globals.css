@@ -14871,6 +14871,10 @@ textarea:focus-visible {
   min-width: 160px;
 }
 
+.admin-date-filter-field {
+  min-width: 0;
+}
+
 .admin-form-select select,
 .admin-directory-filter-select select {
   appearance: none;

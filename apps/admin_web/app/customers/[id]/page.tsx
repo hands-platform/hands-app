@@ -547,13 +547,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             options={DETAIL_ACTIVITY_ORDER_OPTIONS}
           />
           <AdminFormDate
-            className="customer-detail-filter-date"
+            className="admin-date-filter-field"
             defaultValue={dateFilters.from}
             label="From"
             name="from"
           />
           <AdminFormDate
-            className="customer-detail-filter-date"
+            className="admin-date-filter-field"
             defaultValue={dateFilters.to}
             label="To"
             name="to"
