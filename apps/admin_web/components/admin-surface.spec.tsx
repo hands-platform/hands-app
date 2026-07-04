@@ -5,6 +5,7 @@ import {
   AdminKpiCard,
   AdminLinkCard,
   AdminLoadingState,
+  AdminNoticeCard,
   AdminSection,
   AdminTaskCard,
 } from './admin-surface';
@@ -79,6 +80,20 @@ describe('Admin surface components', () => {
       'aria-label': 'Open payment clearing',
       className: 'card admin-card finance-overview-control-card',
       href: '/finance-tax/payment-clearing',
+    });
+  });
+
+  it('renders a reusable Vuexy notice card surface', () => {
+    const notice = AdminNoticeCard({
+      children: <strong>Saved</strong>,
+      className: 'admin-mb-16 admin-notice-success',
+      role: 'status',
+    });
+
+    expect(notice.type).toBe('section');
+    expect(notice.props).toMatchObject({
+      className: 'card admin-card admin-notice-card admin-mb-16 admin-notice-success',
+      role: 'status',
     });
   });
 

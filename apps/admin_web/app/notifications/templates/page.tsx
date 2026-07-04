@@ -9,6 +9,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { compactValue } from '../../../lib/admin-format';
 import { updateNotificationTemplate } from './actions';
@@ -58,10 +59,10 @@ export default async function NotificationTemplatesPage({
       title="Notification Templates"
     >
       {notice ? (
-        <section
-          className={`card admin-notice-card ${
+        <AdminNoticeCard
+          className={
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }`}
+          }
         >
           <div className="ops-section-header">
             <div>
@@ -70,7 +71,7 @@ export default async function NotificationTemplatesPage({
             </div>
             <StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>
           </div>
-        </section>
+        </AdminNoticeCard>
       ) : null}
 
       <AdminFilterPanel

@@ -9,6 +9,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminNoticeCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type {
   AdminManualWalletAdjustmentDirection,
@@ -97,8 +98,8 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       title="Wallet Adjustments"
     >
       {notice ? (
-        <section
-          className={`card admin-mb-16 admin-notice-card ${
+        <AdminNoticeCard
+          className={`admin-mb-16 ${
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
           }`}
           role="status"
@@ -108,7 +109,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             <p className="muted">{notice.detail}</p>
           </div>
           <StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>
-        </section>
+        </AdminNoticeCard>
       ) : null}
 
       <AdminFilterPanel

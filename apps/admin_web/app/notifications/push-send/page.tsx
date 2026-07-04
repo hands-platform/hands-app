@@ -16,6 +16,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
+import { AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
@@ -167,10 +168,10 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       title="Push Send"
     >
       {notice ? (
-        <section
-          className={`card admin-notice-card ${
+        <AdminNoticeCard
+          className={
             notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }`}
+          }
         >
           <div className="ops-section-header">
             <div>
@@ -179,7 +180,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             </div>
             <StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>
           </div>
-        </section>
+        </AdminNoticeCard>
       ) : null}
 
       <AdminFilterPanel

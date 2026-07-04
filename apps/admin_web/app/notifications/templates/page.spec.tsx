@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
@@ -14,6 +15,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync('app/notifications/templates/page.tsx', 'utf8');
 
 describe('NotificationTemplatesPage', () => {
   beforeEach(() => {
@@ -34,5 +36,10 @@ describe('NotificationTemplatesPage', () => {
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('href="/notifications"');
     expect(markup).toContain('href="/notifications/push-send"');
+  });
+
+  it('uses the shared Vuexy notice card atom for template results', () => {
+    expect(pageSource).toContain('AdminNoticeCard');
+    expect(pageSource).not.toContain('className={`card admin-notice-card');
   });
 });

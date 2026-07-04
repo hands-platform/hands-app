@@ -14,6 +14,10 @@ type AdminCardProps = {
   readonly id?: string;
 };
 
+type AdminNoticeCardProps = AdminCardProps & {
+  readonly role?: 'alert' | 'status';
+};
+
 type AdminLinkCardProps = AdminCardProps & {
   readonly href: string;
   readonly htmlTitle?: string;
@@ -71,6 +75,27 @@ export function AdminCard({ ariaLabel, ariaLabelledBy, children, className, id }
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('card admin-card', className)}
       id={id}
+    >
+      {children}
+    </section>
+  );
+}
+
+export function AdminNoticeCard({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+  role,
+}: AdminNoticeCardProps) {
+  return (
+    <section
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card admin-notice-card', className)}
+      id={id}
+      role={role}
     >
       {children}
     </section>

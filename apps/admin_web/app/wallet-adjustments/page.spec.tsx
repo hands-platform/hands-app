@@ -308,6 +308,11 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain('className="vuexy-booking-table"');
   });
 
+  it('uses the shared Vuexy notice card atom for action notices', () => {
+    expect(pageSource).toContain('AdminNoticeCard');
+    expect(pageSource).not.toContain('className={`card admin-mb-16 admin-notice-card');
+  });
+
   it('uses server pagination for manual wallet adjustment history', async () => {
     mockedAdminGet.mockResolvedValueOnce([]);
     mockedAdminGet.mockResolvedValueOnce({ total: 62 });

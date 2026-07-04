@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet, adminPost } from '../../../lib/admin-api';
@@ -18,6 +19,7 @@ vi.mock('../../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedAdminPost = vi.mocked(adminPost);
+const pageSource = readFileSync('app/notifications/push-send/page.tsx', 'utf8');
 
 describe('PushSendPage', () => {
   beforeEach(() => {
@@ -58,5 +60,10 @@ describe('PushSendPage', () => {
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('href="/notifications"');
     expect(markup).toContain('href="/notifications/templates"');
+  });
+
+  it('uses the shared Vuexy notice card atom for send results', () => {
+    expect(pageSource).toContain('AdminNoticeCard');
+    expect(pageSource).not.toContain('className={`card admin-notice-card');
   });
 });
