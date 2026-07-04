@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import {
   providerDocumentLabel,
@@ -62,14 +63,14 @@ export function PartnerOnboardingCell({
   return (
     <div>
       <div className="participant-list admin-mb-8">
-        <span className="pill pill-info">{provider.level ?? 'LEVEL_1_SIGNUP'}</span>
-        <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
+        <StatusBadge tone="info">{provider.level ?? 'LEVEL_1_SIGNUP'}</StatusBadge>
+        <PillClassBadge pillClass={provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}>
           KYC {provider.kyc?.status ?? 'DRAFT'}
-        </span>
-        <span className={`pill ${primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-neutral'}`}>
+        </PillClassBadge>
+        <PillClassBadge pillClass={primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-neutral'}>
           Withdrawal details {primaryBank?.status ?? 'MISSING'}
-        </span>
-        <span className={`pill ${partnerTaxPillClass(provider)}`}>Tax optional {taxStatus}</span>
+        </PillClassBadge>
+        <PillClassBadge pillClass={partnerTaxPillClass(provider)}>Tax optional {taxStatus}</PillClassBadge>
       </div>
       <p className="muted admin-mb-8">
         {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
@@ -79,9 +80,9 @@ export function PartnerOnboardingCell({
         {ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((documentType) => {
           const documentStatus = providerKycDocumentStatus(provider, documentType);
           return (
-            <span className={`pill ${kycDocumentPillClass(documentStatus)}`} key={documentType}>
+            <PillClassBadge key={documentType} pillClass={kycDocumentPillClass(documentStatus)}>
               {providerDocumentLabel(documentType)} {documentStatus}
-            </span>
+            </PillClassBadge>
           );
         })}
       </div>
@@ -121,10 +122,10 @@ export function PartnerOnboardingCell({
           {documents.map((document) => (
             <div key={document.id} className="provider-file-row">
               <div className="participant-list admin-mb-6">
-                <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
-                <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
+                <StatusBadge tone="info">{providerDocumentLabel(document.type)}</StatusBadge>
+                <PillClassBadge pillClass={document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}>
                   {document.status}
-                </span>
+                </PillClassBadge>
               </div>
               <p className="muted admin-mb-6">
                 {providerDocumentReviewHint(document.type)}

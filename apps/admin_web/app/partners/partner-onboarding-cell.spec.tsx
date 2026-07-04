@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import type { ActionMenuItem } from '../../components/action-menu';
 import type { AdminProvider } from '../../lib/admin-api';
 import {
@@ -7,6 +9,20 @@ import {
 } from './partner-onboarding-cell';
 
 describe('PartnerOnboardingCell', () => {
+  it('uses shared Vuexy badge atoms instead of raw onboarding pill spans', () => {
+    const source = readFileSync('app/partners/partner-onboarding-cell.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');
+    expect(source).not.toContain('<span className={`pill ${provider.kyc?.status === \'APPROVED\' ? \'pill-success\' : \'pill-warn\'}`}>');
+    expect(source).not.toContain('<span className={`pill ${primaryBank?.status === \'APPROVED\' ? \'pill-success\' : \'pill-neutral\'}`}>');
+    expect(source).not.toContain('<span className={`pill ${partnerTaxPillClass(provider)}`}>Tax optional {taxStatus}</span>');
+    expect(source).not.toContain('<span className={`pill ${kycDocumentPillClass(documentStatus)}`} key={documentType}>');
+    expect(source).not.toContain('<span className="pill pill-info">{providerDocumentLabel(document.type)}</span>');
+    expect(source).not.toContain('<span className={`pill ${document.status === \'APPROVED\' ? \'pill-success\' : \'pill-warn\'}`}>');
+  });
+
   it('renders Partner onboarding status, documents, bank, tax, and review actions', () => {
     const cell = PartnerOnboardingCell({
       bankActions: bankActions,
