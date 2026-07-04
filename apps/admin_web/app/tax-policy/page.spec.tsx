@@ -107,6 +107,20 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<strong>No recent tax policy audit entries</strong>');
     expect(pageSource).not.toContain('<strong>No recent earning tax snapshots</strong>');
   });
+
+  it('uses shared Vuexy badge atoms instead of raw tax policy pill spans', () => {
+    expect(pageSource).toContain('PillClassBadge');
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{ruleCount} rule(s)</span>');
+    expect(pageSource).not.toContain('<span className={`pill ${notice.tone === \'success\' ? \'pill-success\' : \'pill-danger\'}`}>');
+    expect(pageSource).not.toContain('<span className={`pill ${healthItems.every((item) => item.ok) ? \'pill-success\' : \'pill-warn\'}`}>');
+    expect(pageSource).not.toContain('<span className={`pill ${preview.policy ? \'pill-success\' : \'pill-warn\'}`}>');
+    expect(pageSource).not.toContain('<span className={`pill ${policy.status === \'ACTIVE\' ? \'pill-success\' : \'pill-neutral\'}`}>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{auditSummary.totalChangeCount} recent</span>');
+    expect(pageSource).not.toContain('<span className={`pill ${row.toneClassName}`}>{row.actionLabel.split(\' \')[0].toUpperCase()}</span>');
+    expect(pageSource).not.toContain('<span className={snapshotConsistency.warningCount ? \'pill pill-warn\' : \'pill pill-neutral\'}>');
+    expect(pageSource).not.toContain('<span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>');
+  });
 });
 
 function taxPolicyFixture(): AdminTaxPolicyVersion {

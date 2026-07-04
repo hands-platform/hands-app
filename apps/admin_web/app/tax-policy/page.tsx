@@ -10,6 +10,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
@@ -51,7 +52,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <span className={`signal ${activePolicies.length === 1 ? 'signal-ok' : 'signal-warn'}`}>
             {activePolicies.length} active
           </span>
-          <span className="pill pill-info">{ruleCount} rule(s)</span>
+          <StatusBadge tone="info">{ruleCount} rule(s)</StatusBadge>
         </>
       }
       contentClassName="tax-policy-page"
@@ -67,18 +68,18 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           title={notice.title}
           description={notice.detail}
           actions={
-            <span className={`pill ${notice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
+            <PillClassBadge pillClass={notice.tone === 'success' ? 'pill-success' : 'pill-danger'}>
               {notice.badge}
-            </span>
+            </PillClassBadge>
           }
         />
       ) : null}
 
       <AdminSection
         actions={
-          <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
+          <PillClassBadge pillClass={healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}>
             {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
-          </span>
+          </PillClassBadge>
         }
         bodyClassName="setup-stage-list"
         className="admin-mb-16 tax-policy-checklist-card"
@@ -99,9 +100,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
       <AdminSection
         actions={
-          <span className={`pill ${preview.policy ? 'pill-success' : 'pill-warn'}`}>
+          <PillClassBadge pillClass={preview.policy ? 'pill-success' : 'pill-warn'}>
             {preview.policy ? preview.policy.name : 'No effective active policy'}
-          </span>
+          </PillClassBadge>
         }
         className="admin-mb-16 tax-policy-withholding-preview-card"
         description="Check the active rule result before changing partner payout or service pricing. This is only a calculation preview; completed earnings still store their own immutable rule snapshot."
@@ -231,9 +232,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 </>
               }
               status={
-                <span className={`pill ${policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}`}>
+                <PillClassBadge pillClass={policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}>
                   {policy.status}
-                </span>
+                </PillClassBadge>
               }
               title={policy.name}
             />
@@ -433,9 +434,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{auditSummary.totalChangeCount} recent</span>
-            <span className="pill pill-neutral">{auditSummary.policyChangeCount} policy</span>
-            <span className="pill pill-neutral">{auditSummary.ruleChangeCount} rule</span>
+            <StatusBadge tone="info">{auditSummary.totalChangeCount} recent</StatusBadge>
+            <StatusBadge tone="neutral">{auditSummary.policyChangeCount} policy</StatusBadge>
+            <StatusBadge tone="neutral">{auditSummary.ruleChangeCount} rule</StatusBadge>
           </>
         }
         bodyClassName="setup-stage-list"
@@ -445,7 +446,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         {auditSummary.rows.map((row) => (
           <div className="setup-stage-item" key={row.id}>
-            <span className={`pill ${row.toneClassName}`}>{row.actionLabel.split(' ')[0].toUpperCase()}</span>
+            <PillClassBadge pillClass={row.toneClassName}>
+              {row.actionLabel.split(' ')[0].toUpperCase()}
+            </PillClassBadge>
             <div>
               <strong>{row.actionLabel}</strong>
               <p className="muted">
@@ -472,11 +475,11 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{snapshotConsistency.sampleCount} sampled</span>
-            <span className="pill pill-success">{snapshotConsistency.consistentCount} aligned</span>
-            <span className={snapshotConsistency.warningCount ? 'pill pill-warn' : 'pill pill-neutral'}>
+            <StatusBadge tone="info">{snapshotConsistency.sampleCount} sampled</StatusBadge>
+            <StatusBadge tone="success">{snapshotConsistency.consistentCount} aligned</StatusBadge>
+            <PillClassBadge pillClass={snapshotConsistency.warningCount ? 'pill-warn' : 'pill-neutral'}>
               {snapshotConsistency.warningCount} check
-            </span>
+            </PillClassBadge>
           </>
         }
         bodyClassName="setup-stage-list"
@@ -486,7 +489,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         {snapshotConsistency.rows.map((row) => (
           <div className="setup-stage-item" key={row.id}>
-            <span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>
+            <PillClassBadge pillClass={row.toneClassName}>{row.statusLabel}</PillClassBadge>
             <div>
               <strong>
                 <Link className="text-link" href={row.bookingHref}>
