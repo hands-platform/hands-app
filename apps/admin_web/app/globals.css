@@ -10379,6 +10379,15 @@ a.action-button-card:hover {
   min-width: min(100%, 920px);
 }
 
+.partner-controls-page .partner-control-form-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.partner-controls-page .partner-control-form-field.full-span {
+  grid-column: 1 / -1;
+}
+
 .earnings-page,
 .app-sessions-page,
 .files-page {

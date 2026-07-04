@@ -65,4 +65,14 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('className="ops-task-card"');
     expect(partnerControlsSource).not.toContain('ops-task-card-action');
   });
+
+  it('uses shared labeled form atoms for partner control forms', async () => {
+    const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('partner-control-form-field');
+    expect(markup).toContain('admin-form-control-labeled partner-control-form-field');
+    expect(markup).not.toContain('calendar-field');
+    expect(partnerControlsSource).not.toContain('<div className="calendar-field');
+  });
 });

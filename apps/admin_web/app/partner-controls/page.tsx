@@ -473,60 +473,56 @@ export default async function PartnerControlsPage({
         )}
         <form className="form-grid" action="/partner-controls">
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
-          <div className="calendar-field">
-            <span>Search</span>
-            <AdminFormInput
-              defaultValue={filters.q}
-              label="Search"
-              name="q"
-              placeholder="Partner, phone, category, reason"
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Report status</span>
-            <AdminFormSelect
-              defaultValue={filters.status}
-              label="Report status"
-              name="status"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Open', value: 'OPEN' },
-                { label: 'Investigating', value: 'INVESTIGATING' },
-                { label: 'Resolved', value: 'RESOLVED' },
-                { label: 'Dismissed', value: 'DISMISSED' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Report level</span>
-            <AdminFormSelect
-              defaultValue={filters.severity}
-              label="Report level"
-              name="severity"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Urgent + major reports', value: 'HIGH_PLUS' },
-                { label: 'Urgent', value: 'CRITICAL' },
-                { label: 'Major', value: 'HIGH' },
-                { label: 'Medium', value: 'MEDIUM' },
-                { label: 'Low', value: 'LOW' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Account control</span>
-            <AdminFormSelect
-              defaultValue={filters.sanction}
-              label="Account control"
-              name="sanction"
-              options={[
-                { label: 'All', value: '' },
-                { label: 'Active', value: 'ACTIVE' },
-                { label: 'Lifted', value: 'LIFTED' },
-                { label: 'Expired', value: 'EXPIRED' },
-              ]}
-            />
-          </div>
+          <AdminFormInput
+            className="partner-control-form-field"
+            defaultValue={filters.q}
+            label="Search"
+            labelVisibility="visible"
+            name="q"
+            placeholder="Partner, phone, category, reason"
+          />
+          <AdminFormSelect
+            className="partner-control-form-field"
+            defaultValue={filters.status}
+            label="Report status"
+            labelVisibility="visible"
+            name="status"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Open', value: 'OPEN' },
+              { label: 'Investigating', value: 'INVESTIGATING' },
+              { label: 'Resolved', value: 'RESOLVED' },
+              { label: 'Dismissed', value: 'DISMISSED' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-control-form-field"
+            defaultValue={filters.severity}
+            label="Report level"
+            labelVisibility="visible"
+            name="severity"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Urgent + major reports', value: 'HIGH_PLUS' },
+              { label: 'Urgent', value: 'CRITICAL' },
+              { label: 'Major', value: 'HIGH' },
+              { label: 'Medium', value: 'MEDIUM' },
+              { label: 'Low', value: 'LOW' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-control-form-field"
+            defaultValue={filters.sanction}
+            label="Account control"
+            labelVisibility="visible"
+            name="sanction"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Lifted', value: 'LIFTED' },
+              { label: 'Expired', value: 'EXPIRED' },
+            ]}
+          />
           <div className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
@@ -624,76 +620,73 @@ export default async function PartnerControlsPage({
         title="Create partner report"
       >
         <form className="form-grid" action={createProviderReport}>
-          <div className="calendar-field">
-            <span>Partner</span>
-            <AdminFormSelect
-              label="Partner"
-              name="providerProfileId"
-              options={[
-                { label: 'Choose partner', value: '' },
-                ...providerOptions.map((provider) => ({ label: provider.label, value: provider.id })),
-              ]}
-              required
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Category</span>
-            <AdminFormInput
-              label="Category"
-              name="category"
-              placeholder="safety, payout, behavior, identity"
-              required
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Report level</span>
-            <AdminFormSelect
-              defaultValue="MEDIUM"
-              label="Report level"
-              name="severity"
-              options={[
-                { label: 'Low', value: 'LOW' },
-                { label: 'Medium', value: 'MEDIUM' },
-                { label: 'Major', value: 'HIGH' },
-                { label: 'Urgent', value: 'CRITICAL' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Source</span>
-            <AdminFormSelect
-              defaultValue="ADMIN"
-              label="Source"
-              name="source"
-              options={[
-                { label: 'Admin', value: 'ADMIN' },
-                { label: 'Customer', value: 'CUSTOMER' },
-                { label: 'Partner', value: 'PROVIDER' },
-                { label: 'System', value: 'SYSTEM' },
-              ]}
-            />
-          </div>
-          <div className="calendar-field">
-            <span>Booking ID</span>
-            <AdminFormInput label="Booking ID" name="bookingId" placeholder="Optional booking id" />
-          </div>
-          <div className="calendar-field full-span">
-            <span>Summary</span>
-            <AdminFormInput
-              label="Summary"
-              name="summary"
-              placeholder="Short operator-readable report summary"
-              required
-            />
-          </div>
-          <div className="calendar-field full-span">
-            <span>Details</span>
-            <AdminFormTextarea
-              label="Details"
-              name="details"
-              placeholder="Evidence, timeline, customer/partner statements, next step"
-            />
-          </div>
+          <AdminFormSelect
+            className="partner-control-form-field"
+            label="Partner"
+            labelVisibility="visible"
+            name="providerProfileId"
+            options={[
+              { label: 'Choose partner', value: '' },
+              ...providerOptions.map((provider) => ({ label: provider.label, value: provider.id })),
+            ]}
+            required
+          />
+          <AdminFormInput
+            className="partner-control-form-field"
+            label="Category"
+            labelVisibility="visible"
+            name="category"
+            placeholder="safety, payout, behavior, identity"
+            required
+          />
+          <AdminFormSelect
+            className="partner-control-form-field"
+            defaultValue="MEDIUM"
+            label="Report level"
+            labelVisibility="visible"
+            name="severity"
+            options={[
+              { label: 'Low', value: 'LOW' },
+              { label: 'Medium', value: 'MEDIUM' },
+              { label: 'Major', value: 'HIGH' },
+              { label: 'Urgent', value: 'CRITICAL' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-control-form-field"
+            defaultValue="ADMIN"
+            label="Source"
+            labelVisibility="visible"
+            name="source"
+            options={[
+              { label: 'Admin', value: 'ADMIN' },
+              { label: 'Customer', value: 'CUSTOMER' },
+              { label: 'Partner', value: 'PROVIDER' },
+              { label: 'System', value: 'SYSTEM' },
+            ]}
+          />
+          <AdminFormInput
+            className="partner-control-form-field"
+            label="Booking ID"
+            labelVisibility="visible"
+            name="bookingId"
+            placeholder="Optional booking id"
+          />
+          <AdminFormInput
+            className="partner-control-form-field full-span"
+            label="Summary"
+            labelVisibility="visible"
+            name="summary"
+            placeholder="Short operator-readable report summary"
+            required
+          />
+          <AdminFormTextarea
+            className="partner-control-form-field full-span"
+            label="Details"
+            labelVisibility="visible"
+            name="details"
+            placeholder="Evidence, timeline, customer/partner statements, next step"
+          />
           <div className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               Create report
