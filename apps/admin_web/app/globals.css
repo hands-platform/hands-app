@@ -785,19 +785,6 @@ a {
   padding: 0 10px;
 }
 
-.topbar-search-input {
-  background: transparent;
-  border: 0;
-  color: var(--admin-text);
-  font: inherit;
-  min-width: 0;
-  outline: 0;
-}
-
-.topbar-search-input::placeholder {
-  color: var(--admin-disabled);
-}
-
 .topbar-dropdown-title {
   color: var(--admin-text);
   font-size: 14px;
@@ -17312,8 +17299,7 @@ textarea:focus-visible {
 .vuexy-customer-search input,
 .vuexy-customer-select select,
 .vuexy-partner-search input,
-.vuexy-partner-select select,
-.topbar-search-input {
+.vuexy-partner-select select {
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -17585,8 +17571,7 @@ textarea:focus-visible {
 .vuexy-customer-search input:focus,
 .vuexy-customer-select select:focus,
 .vuexy-partner-search input:focus,
-.vuexy-partner-select select:focus,
-.topbar-search-input:focus {
+.vuexy-partner-select select:focus {
   border: 0;
   box-shadow: none;
 }
@@ -17861,8 +17846,7 @@ textarea:focus-visible {
 .vuexy-customer-search input,
 .vuexy-customer-select select,
 .vuexy-partner-search input,
-.vuexy-partner-select select,
-.topbar-search-input {
+.vuexy-partner-select select {
   background: transparent;
   border: 0;
   box-shadow: none;
