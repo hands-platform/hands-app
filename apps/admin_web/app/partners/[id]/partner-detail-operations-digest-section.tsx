@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 import {
   PartnerDetailVuexyTableFooter,
@@ -64,9 +64,9 @@ export function PartnerDetailOperationsDigestSection({
                 <td>
                   <div className="participant-list">
                     {row.evidence.map((item) => (
-                      <PillClassBadge key={item} pillClass={row.tone}>
+                      <StatusBadge key={item} tone={statusBadgeToneFromPillClass(row.tone)}>
                         {item}
-                      </PillClassBadge>
+                      </StatusBadge>
                     ))}
                   </div>
                 </td>

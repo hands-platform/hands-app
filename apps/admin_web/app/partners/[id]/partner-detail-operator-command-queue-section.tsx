@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 import {
   partnerOperatorCommandActionHref,
@@ -102,13 +102,13 @@ export function PartnerDetailOperatorCommandQueueSection({
           <div className="participant-list">
             <span className="muted">Decision shortcuts</span>
             {shortcutCommands.map((command) => (
-              <PillClassBadgeLink
+              <StatusBadgeLink
                 href={partnerOperatorCommandActionHref(providerId, command.action)}
                 key={command.id}
-                pillClass={pillClassForTone(command.tone)}
+                tone={statusBadgeToneFromPillClass(pillClassForTone(command.tone))}
               >
                 {command.action.label}
-              </PillClassBadgeLink>
+              </StatusBadgeLink>
             ))}
           </div>
           <p className="muted admin-mt-8">
@@ -134,7 +134,9 @@ export function PartnerDetailOperatorCommandQueueSection({
                   <p className="muted">{command.detail}</p>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={pillClassForTone(command.tone)}>{command.owner}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(command.tone))}>
+                    {command.owner}
+                  </StatusBadge>
                 </td>
                 <td>
                   <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>

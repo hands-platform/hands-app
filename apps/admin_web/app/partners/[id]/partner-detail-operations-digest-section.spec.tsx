@@ -9,7 +9,8 @@ describe('PartnerDetailOperationsDigestSection', () => {
   it('uses the shared Vuexy badge atom for digest evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}');
   });
 

@@ -6,8 +6,10 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
   it('uses shared Vuexy badge atoms for command shortcuts and owners', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-command-queue-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className={`pill ${pillClassForTone(command.tone)}`}');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>');
   });
@@ -107,8 +109,8 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
         'partner-command-decision-bar is-pending',
         'partner-command-decision-button is-pending',
         'partner-command-decision-link',
-        'pill pill-blocked',
-        'pill pill-pending',
+        'pill pill-danger',
+        'pill pill-warn',
         'text-link',
       ]),
     );
