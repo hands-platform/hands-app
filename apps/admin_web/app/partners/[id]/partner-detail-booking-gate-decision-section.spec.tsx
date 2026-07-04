@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailBookingGateDecisionSection } from './partner-detail-booking-gate-decision-section';
 
 describe('PartnerDetailBookingGateDecisionSection', () => {
+  it('uses the shared Vuexy badge atoms for decision policy pills', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">First response window:');
+    expect(source).not.toContain('<span className={`pill ${bookingGatePillClass(gate)}`}>');
+  });
+
   it('renders marketplace booking gate decisions as a Vuexy table', () => {
     const section = PartnerDetailBookingGateDecisionSection({
       cardClassForTone: (tone) => `card-${tone}`,
@@ -61,7 +72,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-pending admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-pending admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -99,7 +110,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
     expect(rendered).toContain('No marketplace booking gate rows.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-done admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-done admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

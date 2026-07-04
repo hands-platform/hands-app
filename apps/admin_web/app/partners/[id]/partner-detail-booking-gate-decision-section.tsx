@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -81,9 +82,9 @@ export function PartnerDetailBookingGateDecisionSection({
         </div>
       </div>
       <div className="participant-list admin-mt-12">
-        <span className="pill pill-info">First response window: {decision.responseWindowLabel}</span>
-        <span className="pill pill-info">Marketplace radius: {decision.backupRadiusLabel}</span>
-        <span className="pill pill-info">Marketplace location: {decision.locationFreshnessLabel} fresh</span>
+        <StatusBadge tone="info">First response window: {decision.responseWindowLabel}</StatusBadge>
+        <StatusBadge tone="info">Marketplace radius: {decision.backupRadiusLabel}</StatusBadge>
+        <StatusBadge tone="info">Marketplace location: {decision.locationFreshnessLabel} fresh</StatusBadge>
         <Link className="text-link" href="/operations-policy">
           Edit matching policy
         </Link>
@@ -101,7 +102,7 @@ export function PartnerDetailBookingGateDecisionSection({
                 <strong>{gate.label}</strong>
               </td>
               <td>
-                <span className={`pill ${bookingGatePillClass(gate)}`}>{bookingGateStatusLabel(gate)}</span>
+                <PillClassBadge pillClass={bookingGatePillClass(gate)}>{bookingGateStatusLabel(gate)}</PillClassBadge>
               </td>
               <td>
                 <p className="muted">{gate.detail}</p>
