@@ -70,7 +70,7 @@ export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
 
 export function AdminSectionHeader({ actions, description, status, title }: AdminSectionHeaderProps) {
   return (
-    <div className="ops-section-header">
+    <div className="ops-section-header admin-section-header">
       <div>
         <h2>{title}</h2>
         {description ? <p className="muted">{description}</p> : null}

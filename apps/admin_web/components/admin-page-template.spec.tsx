@@ -39,7 +39,7 @@ describe('AdminPageTemplate', () => {
 
     expect(header.type).toBe('div');
     expect(header.props).toMatchObject({
-      className: 'ops-section-header',
+      className: 'ops-section-header admin-section-header',
     });
     expect(header.props.children).toHaveLength(2);
   });
