@@ -1,4 +1,5 @@
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { StatusBadge } from '../../components/status-badge';
 import { adminGet, type AdminServiceCatalogItem } from '../../lib/admin-api';
 import { groupServices, readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceActionNotice } from '../../lib/service-action-notice';
@@ -28,9 +29,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
     <AdminPageTemplate
       actions={
         <div className="service-catalog-page-actions">
-          <span className="pill pill-info">{groupedServices.length} service type(s)</span>
-          <span className="pill pill-success">{activeServices.length} active option(s)</span>
-          <span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>
+          <StatusBadge tone="info">{groupedServices.length} service type(s)</StatusBadge>
+          <StatusBadge tone="success">{activeServices.length} active option(s)</StatusBadge>
+          <StatusBadge tone="neutral">{payoutRuleCount} payout rule(s)</StatusBadge>
         </div>
       }
       description="Manage the base service menu, duration options, base customer prices, and Partner payout amounts."
