@@ -50,6 +50,17 @@ describe('AppSessionsCheckQueueSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className={`pill ${items.length ?');
   });
+
+  it('keeps session check task cards on the shared Vuexy task surface', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/app-sessions/app-sessions-check-queue-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card');
+    expect(source).not.toContain('ops-task-card-action');
+  });
 });
 
 function buildItems(): SessionCheckQueueItem[] {

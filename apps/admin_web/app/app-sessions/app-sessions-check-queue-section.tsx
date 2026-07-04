@@ -1,5 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCheckQueueItem = {
@@ -30,12 +30,14 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
       {items.length ? (
         <div className="ops-task-grid admin-mt-12">
           {items.slice(0, 12).map((item) => (
-            <div className={`ops-task-card ${item.tone}`} key={item.key}>
-              <small>{item.status}</small>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <span className="ops-task-card-action">{item.action}</span>
-            </div>
+            <AdminTaskCard
+              actionLabel={item.action}
+              className={item.tone}
+              detail={item.detail}
+              key={item.key}
+              leading={<small>{item.status}</small>}
+              title={item.title}
+            />
           ))}
         </div>
       ) : (

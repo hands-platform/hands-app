@@ -1,4 +1,4 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCommandCard = {
@@ -31,15 +31,18 @@ export function AppSessionsCommandBoardSection({
       }
       title="Session command board"
     >
-        {cards.map((card) => (
-          <div className={`ops-task-card ${card.tone}`} key={card.title}>
-            <small>{card.status}</small>
-            <h3>{card.title}</h3>
-            <strong>{card.value}</strong>
-            <p>{card.detail}</p>
-            <span className="ops-task-card-action">{card.action}</span>
-          </div>
-        ))}
+      {cards.map((card) => (
+        <AdminTaskCard
+          actionLabel={card.action}
+          className={card.tone}
+          key={card.title}
+          leading={<small>{card.status}</small>}
+          title={card.title}
+        >
+          <strong>{card.value}</strong>
+          <p>{card.detail}</p>
+        </AdminTaskCard>
+      ))}
     </AdminSection>
   );
 }
