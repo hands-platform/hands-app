@@ -5,6 +5,15 @@ import { ServiceCatalogManagerSection } from './service-catalog-manager-section'
 const sectionSource = readFileSync(new URL('./service-catalog-manager-section.tsx', import.meta.url), 'utf8');
 
 describe('ServiceCatalogManagerSection', () => {
+  it('uses shared Vuexy badge atoms for service catalog labels', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('<span className="pill pill-info">{group.items.length} option(s)</span>');
+    expect(sectionSource).not.toContain("<span className={activeCount ? 'pill pill-success' : 'pill pill-neutral'}>");
+    expect(sectionSource).not.toContain('<span className="pill pill-neutral">');
+    expect(sectionSource).not.toContain('<span className="pill pill-neutral">Not set</span>');
+    expect(sectionSource).not.toContain("<span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>");
+  });
+
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {
     const section = ServiceCatalogManagerSection({
       dialogMode: 'new',

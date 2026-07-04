@@ -9,6 +9,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
@@ -109,13 +110,13 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
       </div>
 
       <div className="service-menu-inline-pills">
-        <span className="pill pill-info">{group.items.length} option(s)</span>
-        <span className={activeCount ? 'pill pill-success' : 'pill pill-neutral'}>
+        <StatusBadge tone="info">{group.items.length} option(s)</StatusBadge>
+        <StatusBadge tone={activeCount ? 'success' : 'neutral'}>
           {activeCount ? `${activeCount} active` : 'Inactive'}
-        </span>
-        <span className="pill pill-neutral">
+        </StatusBadge>
+        <StatusBadge tone="neutral">
           Missing {SERVICE_DURATIONS.filter((duration) => !durationSet.has(duration)).join(', ') || 'none'}
-        </span>
+        </StatusBadge>
       </div>
 
       <div className="service-menu-duration-grid">
@@ -142,7 +143,7 @@ function ServiceDurationPanel({
     return (
       <AdminCard className="service-menu-duration-panel is-empty">
         <strong>{duration} min</strong>
-        <span className="pill pill-neutral">Not set</span>
+        <StatusBadge tone="neutral">Not set</StatusBadge>
       </AdminCard>
     );
   }
@@ -153,9 +154,9 @@ function ServiceDurationPanel({
     <AdminCard className="service-menu-duration-panel">
       <div>
         <strong>{duration} min</strong>
-        <span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>
+        <StatusBadge tone={service.active ? 'success' : 'neutral'}>
           {service.active ? 'Active' : 'Off'}
-        </span>
+        </StatusBadge>
       </div>
       <dl>
         <div>
