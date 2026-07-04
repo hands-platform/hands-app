@@ -15,6 +15,7 @@ import {
 
 import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
+import { AdminEmptyState } from './admin-empty-state';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
@@ -138,7 +139,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
                     </Link>
                   ))
                 ) : (
-                  <span className="topbar-empty">No matching admin pages</span>
+                  <AdminEmptyState className="topbar-empty" message="No matching admin pages" title={null} />
                 )}
               </div>
             </div>
@@ -179,7 +180,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
                     </Link>
                   ))
                 ) : (
-                  <span className="topbar-empty">No operation alerts</span>
+                  <AdminEmptyState className="topbar-empty" message="No operation alerts" title={null} />
                 )}
               </div>
             </div>

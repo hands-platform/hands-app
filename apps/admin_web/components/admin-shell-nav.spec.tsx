@@ -113,4 +113,10 @@ describe('admin shell navigation', () => {
     expect(workspaceHeaderSource).toContain('AdminAttentionBadge');
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-attention-badge">{totalAttentionCount}</span>');
   });
+
+  it('keeps topbar empty states inside the shared Vuexy empty-state atom', () => {
+    expect(workspaceHeaderSource).toContain('AdminEmptyState');
+    expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No matching admin pages</span>');
+    expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No operation alerts</span>');
+  });
 });
