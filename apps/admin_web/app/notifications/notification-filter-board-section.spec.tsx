@@ -3,6 +3,8 @@ import {
   type NotificationDateRangeLink,
   type NotificationFilterLink,
 } from './notification-filter-board-section';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   ariaCurrentValuesIn,
   classNamesIn,
@@ -53,8 +55,8 @@ describe('NotificationFilterBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-form-control-link is-active',
-        'admin-form-control-link pill pill-success',
-        'admin-form-control-link pill pill-warn',
+        'pill pill-success',
+        'pill pill-warn',
       ]),
     );
   });
@@ -81,8 +83,23 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-control-link is-active', 'admin-form-control-link pill pill-warn']),
+      expect.arrayContaining(['admin-form-control-link is-active', 'pill pill-warn']),
     );
+  });
+
+  it('uses shared badge atoms for runbook and review filter chips', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/notifications/notification-filter-board-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('<span className="pill pill-info">{activeReviewRunbook.title}</span>');
+    expect(source).not.toContain('<AdminFormControlLink className="pill pill-success" href={clearHref}>');
+    expect(source).not.toContain('{activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}');
+    expect(source).not.toContain("className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}");
   });
 });
 

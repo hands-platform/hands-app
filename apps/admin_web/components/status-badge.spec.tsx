@@ -87,4 +87,20 @@ describe('StatusBadge', () => {
       children: 'Export CSV',
     });
   });
+
+  it('keeps aria-current on shared badge links for active filter navigation', () => {
+    const link = PillClassBadgeLink({
+      ariaCurrent: 'page',
+      children: 'Failed sends',
+      href: '/notifications?review=failed',
+      pillClass: 'pill-warn',
+    });
+
+    expect(link.props).toMatchObject({
+      'aria-current': 'page',
+      className: 'pill pill-warn',
+      href: '/notifications?review=failed',
+      children: 'Failed sends',
+    });
+  });
 });

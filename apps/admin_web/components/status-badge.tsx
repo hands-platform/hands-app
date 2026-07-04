@@ -24,12 +24,14 @@ type PillClassBadgeProps = {
 };
 
 type StatusBadgeLinkProps = StatusBadgeProps & {
+  readonly ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
   readonly ariaLabel?: string;
   readonly download?: string;
   readonly href: string;
 };
 
 type PillClassBadgeLinkProps = PillClassBadgeProps & {
+  readonly ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
   readonly ariaLabel?: string;
   readonly download?: string;
   readonly href: string;
@@ -59,15 +61,31 @@ export function PillClassBadge({ children, pillClass, title }: PillClassBadgePro
   );
 }
 
-export function StatusBadgeLink({ ariaLabel, children, download, href, title, tone }: StatusBadgeLinkProps) {
+export function StatusBadgeLink({
+  ariaCurrent,
+  ariaLabel,
+  children,
+  download,
+  href,
+  title,
+  tone,
+}: StatusBadgeLinkProps) {
   return (
-    <Link aria-label={ariaLabel} className={statusBadgeClassName(tone)} download={download} href={href} title={title}>
+    <Link
+      aria-current={ariaCurrent}
+      aria-label={ariaLabel}
+      className={statusBadgeClassName(tone)}
+      download={download}
+      href={href}
+      title={title}
+    >
       {children}
     </Link>
   );
 }
 
 export function PillClassBadgeLink({
+  ariaCurrent,
   ariaLabel,
   children,
   download,
@@ -77,6 +95,7 @@ export function PillClassBadgeLink({
 }: PillClassBadgeLinkProps) {
   return (
     <Link
+      aria-current={ariaCurrent}
       aria-label={ariaLabel}
       className={pillClassBadgeClassName(pillClass)}
       download={download}

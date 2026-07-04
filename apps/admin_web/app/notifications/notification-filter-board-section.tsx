@@ -1,5 +1,6 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { PillClassBadgeLink, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { NotificationDateRange } from './notification-page-model';
 
 export type NotificationFilterLink = {
@@ -100,7 +101,7 @@ export function NotificationFilterBoardSection({
           </div>
           {activeReviewRunbook ? (
             <div className="admin-mt-10">
-              <span className="pill pill-info">{activeReviewRunbook.title}</span>
+              <StatusBadge tone="info">{activeReviewRunbook.title}</StatusBadge>
               <p className="muted admin-mt-6">{activeReviewRunbook.detail}</p>
               <p className="muted admin-mt-6">
                 <strong>Next action:</strong> {activeReviewRunbook.primaryAction}
@@ -109,20 +110,20 @@ export function NotificationFilterBoardSection({
           ) : null}
           <div className="participant-list">
             {isFiltered ? (
-              <AdminFormControlLink className="pill pill-success" href={clearHref}>
+              <StatusBadgeLink href={clearHref} tone="success">
                 Clear filter
-              </AdminFormControlLink>
+              </StatusBadgeLink>
             ) : null}
-            {activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}
+            {activeBookingLabel ? <StatusBadge tone="info">Booking {activeBookingLabel}</StatusBadge> : null}
             {links.map((link) => (
-              <AdminFormControlLink
-                aria-current={activeReview === link.review ? 'page' : undefined}
-                className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}
+              <PillClassBadgeLink
+                ariaCurrent={activeReview === link.review ? 'page' : undefined}
                 href={link.href}
                 key={link.href}
+                pillClass={activeReview === link.review ? 'pill-warn' : 'pill-neutral'}
               >
                 {link.label}
-              </AdminFormControlLink>
+              </PillClassBadgeLink>
             ))}
           </div>
         </>
