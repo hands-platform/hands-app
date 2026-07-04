@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailStatusCardsSection } from './partner-detail-status-cards-section';
 
 describe('PartnerDetailStatusCardsSection', () => {
@@ -10,9 +12,12 @@ describe('PartnerDetailStatusCardsSection', () => {
     });
 
     const classNames = classNamesIn(section);
+    const source = readFileSync('app/partners/[id]/partner-detail-status-cards-section.tsx', 'utf8');
 
     expect(classNames).toContain('partner-detail-metric-grid admin-mb-16');
-    expect(classNames).toContain('card admin-kpi-card partner-detail-metric-card');
+    expect(classNames).toContain('card admin-card admin-kpi-card partner-detail-metric-card');
+    expect(source).toContain('AdminCard');
+    expect(source).not.toContain('<div className="card admin-kpi-card partner-detail-metric-card"');
     expect(textContent(section)).toContain('Bookings done');
     expect(textContent(section)).toContain('450.000 VND');
   });

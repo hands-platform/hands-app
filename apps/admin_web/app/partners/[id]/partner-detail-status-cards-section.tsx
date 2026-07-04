@@ -1,3 +1,5 @@
+import { AdminCard } from '../../../components/admin-surface';
+
 export type PartnerStatusCard = {
   readonly label: string;
   readonly value: string;
@@ -11,10 +13,10 @@ export function PartnerDetailStatusCardsSection({ cards }: PartnerDetailStatusCa
   return (
     <section className="partner-detail-metric-grid admin-mb-16" aria-label="Partner status summary">
       {cards.map((card) => (
-        <div className="card admin-kpi-card partner-detail-metric-card" key={card.label}>
+        <AdminCard className="admin-kpi-card partner-detail-metric-card" key={card.label}>
           <span>{card.label}</span>
           <h2>{card.value}</h2>
-        </div>
+        </AdminCard>
       ))}
     </section>
   );
