@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   PaymentFilterBoardSection,
   type PaymentFilterLink,
@@ -30,7 +33,7 @@ describe('PaymentFilterBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/payments?range=all&review=all', '/payments?range=7d', '/payments?review=capture&range=7d']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'pill pill-warn',
         'pill pill-info',
       ]),
@@ -55,6 +58,16 @@ describe('PaymentFilterBoardSection', () => {
     expect(rendered).toContain('Showing 12 of 12');
     expect(rendered).not.toContain('Clear filters');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+  });
+
+  it('uses shared badge link atoms for payment filter shortcuts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/payment-filter-board-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('import Link from');
+    expect(source).not.toContain('className={`pill ${activeRange === item.range');
+    expect(source).not.toContain('<Link className="pill pill-success" href="/payments?range=all&review=all">');
+    expect(source).not.toContain('className={`pill ${review === item.review');
   });
 });
 

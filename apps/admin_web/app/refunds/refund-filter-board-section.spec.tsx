@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   RefundFilterBoardSection,
   type RefundFilterLink,
@@ -29,7 +32,7 @@ describe('RefundFilterBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?range=all&review=all', '/refunds?range=30d', '/refunds?review=requested&range=30d']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'pill pill-warn',
         'pill pill-info',
       ]),
@@ -54,6 +57,16 @@ describe('RefundFilterBoardSection', () => {
     expect(rendered).toContain('Showing 9 of 9');
     expect(rendered).not.toContain('Clear filters');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+  });
+
+  it('uses shared badge link atoms for refund filter shortcuts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/refunds/refund-filter-board-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('import Link from');
+    expect(source).not.toContain('className={`pill ${activeRange === item.range');
+    expect(source).not.toContain('<Link className="pill pill-success" href="/refunds?range=all&review=all">');
+    expect(source).not.toContain('className={`pill ${review === item.review');
   });
 });
 

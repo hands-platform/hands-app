@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 
 export type PaymentFilterLink = {
@@ -55,29 +54,31 @@ export function PaymentFilterBoardSection({
       ) : null}
       <div className="participant-list admin-mb-12">
         {rangeLinks.map((item) => (
-          <Link
-            className={`pill ${activeRange === item.range ? 'pill-info' : 'pill-neutral'}`}
+          <StatusBadgeLink
+            ariaCurrent={activeRange === item.range ? 'page' : undefined}
             href={item.href}
             key={item.label}
+            tone={activeRange === item.range ? 'info' : 'neutral'}
           >
             {item.label}
-          </Link>
+          </StatusBadgeLink>
         ))}
       </div>
       <div className="participant-list">
         {isFiltered ? (
-          <Link className="pill pill-success" href="/payments?range=all&review=all">
+          <StatusBadgeLink href="/payments?range=all&review=all" tone="success">
             Clear filters
-          </Link>
+          </StatusBadgeLink>
         ) : null}
         {reviewLinks.map((item) => (
-          <Link
-            className={`pill ${review === item.review ? 'pill-warn' : 'pill-neutral'}`}
+          <StatusBadgeLink
+            ariaCurrent={review === item.review ? 'page' : undefined}
             href={item.href}
             key={item.label}
+            tone={review === item.review ? 'warning' : 'neutral'}
           >
             {item.label}
-          </Link>
+          </StatusBadgeLink>
         ))}
       </div>
     </AdminFilterPanel>
