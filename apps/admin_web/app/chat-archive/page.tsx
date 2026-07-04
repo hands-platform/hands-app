@@ -21,6 +21,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -193,7 +194,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     >
 
       <AdminSection className="admin-mb-16" title="Chat evidence filters">
-        <form className="form-grid" action="/chat-archive">
+        <AdminFormGrid action="/chat-archive">
           <AdminFormInput
             className="admin-directory-filter-search"
             defaultValue={filters.q}
@@ -273,7 +274,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               {rooms.length} room(s), {summary.messageCount} message(s)
             </span>
           </div>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <AdminSection

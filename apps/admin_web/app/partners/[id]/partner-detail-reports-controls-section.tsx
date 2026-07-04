@@ -9,6 +9,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDateTime,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -89,7 +90,7 @@ export function PartnerDetailReportsControlsSection({
       resultTone={payoutHold ? 'danger' : 'info'}
       title="Reports and account controls"
     >
-      <form className="form-grid admin-mb-16" action={createProviderReport}>
+      <AdminFormGrid action={createProviderReport} className="admin-mb-16">
         <input type="hidden" name="providerProfileId" value={providerId} />
         <AdminFormInput
           className="partner-report-form-field"
@@ -133,7 +134,7 @@ export function PartnerDetailReportsControlsSection({
         <div className="actions full-span">
           <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
         </div>
-      </form>
+      </AdminFormGrid>
       <AdminTaskCard className="ops-task-pending admin-mb-16">
         <AdminSectionHeader
           actions={(
@@ -175,7 +176,7 @@ export function PartnerDetailReportsControlsSection({
           </AdminTableScroll>
           <PartnerDetailVuexyTableFooter rowCount={payoutHold ? 1 : 0} />
         </div>
-        <form className="form-grid" action={createProviderSanction}>
+        <AdminFormGrid action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
           <AdminFormSelect
             className="partner-report-form-field"
@@ -205,7 +206,7 @@ export function PartnerDetailReportsControlsSection({
             <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
           </div>
-        </form>
+        </AdminFormGrid>
       </AdminTaskCard>
       <div className="detail-grid">
         <div>
@@ -332,7 +333,7 @@ function PartnerReportCommandPanel({
       </div>
       {firstReport ? (
         <>
-          <form className="form-grid compact-form partner-report-command-form" action={updateProviderReport}>
+          <AdminFormGrid action={updateProviderReport} className="compact-form partner-report-command-form">
             <input type="hidden" name="providerProfileId" value={providerId} />
             <AdminFormSelect
               className="partner-report-form-field"
@@ -368,11 +369,8 @@ function PartnerReportCommandPanel({
             <div className="actions full-span">
               <AdminFormControlButton type="submit">Update report</AdminFormControlButton>
             </div>
-          </form>
-          <form
-            className="form-grid compact-form partner-report-command-form"
-            action={createProviderSanction}
-          >
+          </AdminFormGrid>
+          <AdminFormGrid action={createProviderSanction} className="compact-form partner-report-command-form">
             <input type="hidden" name="providerProfileId" value={providerId} />
             <AdminFormSelect
               className="partner-report-form-field"
@@ -403,7 +401,7 @@ function PartnerReportCommandPanel({
             <div className="actions full-span">
               <AdminFormControlButton type="submit">Apply linked control</AdminFormControlButton>
             </div>
-          </form>
+          </AdminFormGrid>
         </>
       ) : (
         <ReportsControlsEmptyState message="No report commands are available until a report is recorded." />

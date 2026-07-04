@@ -26,6 +26,7 @@ import { AdminDataTable, AdminTableFooter } from '../../components/admin-data-ta
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -471,7 +472,7 @@ export default async function PartnerControlsPage({
         ) : (
           <p className="muted admin-mb-12">No control filter is active. Showing every report and account-control lane.</p>
         )}
-        <form className="form-grid" action="/partner-controls">
+        <AdminFormGrid action="/partner-controls">
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
           <AdminFormInput
             className="partner-control-form-field"
@@ -543,7 +544,7 @@ export default async function PartnerControlsPage({
               ))}
             </div>
           ) : null}
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <AdminSection
@@ -619,7 +620,7 @@ export default async function PartnerControlsPage({
         id="partner-control-create-report"
         title="Create partner report"
       >
-        <form className="form-grid" action={createProviderReport}>
+        <AdminFormGrid action={createProviderReport}>
           <AdminFormSelect
             className="partner-control-form-field"
             label="Partner"
@@ -692,7 +693,7 @@ export default async function PartnerControlsPage({
               Create report
             </AdminFormControlButton>
           </div>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <AdminSection

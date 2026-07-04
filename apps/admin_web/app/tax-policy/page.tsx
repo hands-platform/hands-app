@@ -4,6 +4,7 @@ import {
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormDateTime,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -108,7 +109,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         description="Check the active rule result before changing partner payout or service pricing. This is only a calculation preview; completed earnings still store their own immutable rule snapshot."
         title="Withholding preview"
       >
-        <form className="form-grid" method="get">
+        <AdminFormGrid method="get">
           <AdminFormInput
             className="tax-policy-form-field"
             defaultValue={preview.serviceType}
@@ -130,7 +131,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <AdminFormControlButton className="button-primary" type="submit">
             Preview withholding
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
         <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
             <span>{preview.policy ? 'POLICY' : 'MISSING'}</span>
@@ -174,7 +175,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         description="Use basis points for percentage rates. Example: 500 bps = 5%."
         title="Create policy version"
       >
-        <form action={createTaxPolicyVersion} className="form-grid">
+        <AdminFormGrid action={createTaxPolicyVersion}>
           <AdminFormInput
             className="tax-policy-form-field"
             label="Name"
@@ -218,7 +219,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <AdminFormControlButton className="button-primary" type="submit">
             Create policy
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
       </AdminSection>
 
       <section className="grid tax-policy-version-grid">
@@ -240,7 +241,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             />
             {policy.notes ? <p className="muted">{policy.notes}</p> : null}
 
-            <form action={updateTaxPolicyVersion} className="form-grid compact-form">
+            <AdminFormGrid action={updateTaxPolicyVersion} className="compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
               <AdminFormSelect
                 className="tax-policy-form-field"
@@ -274,7 +275,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <AdminFormControlButton className="button-primary" type="submit">
                 Update policy
               </AdminFormControlButton>
-            </form>
+            </AdminFormGrid>
 
             <h3>Rules</h3>
             <p className="muted admin-mb-12">
@@ -297,7 +298,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                         ? ` / ${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : 'no max'}`
                         : ''}
                     </p>
-                    <form action={updateTaxRule} className="form-grid compact-form">
+                    <AdminFormGrid action={updateTaxRule} className="compact-form">
                       <input type="hidden" name="ruleId" value={rule.id} />
                       <AdminFormSelect
                         className="tax-policy-form-field"
@@ -361,7 +362,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                       <AdminFormControlButton className="button-primary" type="submit">
                         Update rule
                       </AdminFormControlButton>
-                    </form>
+                    </AdminFormGrid>
                   </div>
                   <small>{rule.id.slice(0, 8)}</small>
                 </div>
@@ -369,7 +370,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               {(policy.rules ?? []).length === 0 ? <span className="muted">No rules yet.</span> : null}
             </div>
 
-            <form action={createTaxRule} className="form-grid compact-form">
+            <AdminFormGrid action={createTaxRule} className="compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
               <AdminFormSelect
                 className="tax-policy-form-field"
@@ -426,7 +427,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <AdminFormControlButton className="button-primary" type="submit">
                 Add rule
               </AdminFormControlButton>
-            </form>
+            </AdminFormGrid>
           </AdminCard>
         ))}
       </section>

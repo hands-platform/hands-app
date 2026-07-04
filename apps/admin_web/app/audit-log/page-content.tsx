@@ -9,6 +9,7 @@ import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -109,7 +110,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           className="admin-mb-16"
           title="Audit filters"
         >
-          <form className="form-grid" action="/audit-log">
+          <AdminFormGrid action="/audit-log">
             <AdminFormInput
               className="admin-directory-filter-search"
               defaultValue={filters.q}
@@ -177,7 +178,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 Showing {logs.length} of {totalEvents} events / {dateRangeLabel(filters.range)}
               </span>
             </div>
-          </form>
+          </AdminFormGrid>
         </AdminSection>
 
         <AdminSection

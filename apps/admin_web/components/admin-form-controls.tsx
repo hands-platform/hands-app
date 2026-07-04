@@ -2,6 +2,7 @@ import {
   forwardRef,
   type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
+  type FormHTMLAttributes,
   type InputHTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
@@ -126,6 +127,19 @@ type AdminFormControlButtonProps = {
   readonly className?: string;
   readonly type?: 'button' | 'submit';
 } & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled' | 'onClick'>;
+
+type AdminFormGridProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
+
+export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
+  return (
+    <form {...formProps} className={joinClassNames('form-grid', className)}>
+      {children}
+    </form>
+  );
+}
 
 export function AdminFormSelect({
   className,

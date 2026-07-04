@@ -7,6 +7,7 @@ import {
   AdminFormDate,
   AdminFormDatePickerInput,
   AdminFormDateTime,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
@@ -15,6 +16,22 @@ import {
 } from './admin-form-controls';
 
 describe('Admin form controls', () => {
+  it('renders form grids through the shared Vuexy form surface', () => {
+    const grid = AdminFormGrid({
+      action: '/audit-log',
+      children: 'Filters',
+      className: 'compact-form audit-filter-form',
+      method: 'get',
+    });
+
+    expect(grid.props).toMatchObject({
+      action: '/audit-log',
+      className: 'form-grid compact-form audit-filter-form',
+      method: 'get',
+    });
+    expect(textContent(grid)).toBe('Filters');
+  });
+
   it('renders Vuexy-style select and search controls with stable labels', () => {
     const select = AdminFormSelect({
       className: 'customer-select',
