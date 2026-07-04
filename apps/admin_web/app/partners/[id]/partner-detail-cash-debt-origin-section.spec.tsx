@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailCashDebtOriginSection } from './partner-detail-cash-debt-origin-section';
 
 describe('PartnerDetailCashDebtOriginSection', () => {
+  it('uses the shared Vuexy badge atoms for cash debt pills', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-danger">HANDS fee');
+    expect(source).not.toContain('<span className="pill pill-warn">Tax');
+    expect(source).not.toContain('<span className="pill pill-info">{row.evidenceLabel}</span>');
+  });
+
   it('renders cash debt origins as a Vuexy table', () => {
     const section = PartnerDetailCashDebtOriginSection({
       hasCashFeeDebt: true,
@@ -49,7 +60,7 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/cash-settlements']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-danger admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-danger admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -79,7 +90,7 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(rendered).toContain('No open cash-service fee debt is visible for this partner.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',

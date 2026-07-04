@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -110,8 +111,8 @@ export function PartnerDetailCashDebtOriginSection({
                 </td>
                 <td>
                   <div className="participant-list">
-                    <span className="pill pill-danger">HANDS fee {row.handsFeeLabel}</span>
-                    <span className="pill pill-warn">Tax {row.taxLabel}</span>
+                    <StatusBadge tone="danger">HANDS fee {row.handsFeeLabel}</StatusBadge>
+                    <StatusBadge tone="warning">Tax {row.taxLabel}</StatusBadge>
                   </div>
                 </td>
                 <td>
@@ -120,8 +121,8 @@ export function PartnerDetailCashDebtOriginSection({
                     acceptance, service start, and payout release can resume.
                   </p>
                   <div className="participant-list">
-                    <span className="pill pill-info">{row.evidenceLabel}</span>
-                    <span className="pill pill-info">Direct first-pick not wallet-blocked</span>
+                    <StatusBadge tone="info">{row.evidenceLabel}</StatusBadge>
+                    <StatusBadge tone="info">Direct first-pick not wallet-blocked</StatusBadge>
                   </div>
                 </td>
                 <td>
