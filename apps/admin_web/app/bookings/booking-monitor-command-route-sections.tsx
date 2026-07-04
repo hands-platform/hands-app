@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { shortId } from '../../lib/admin-format';
@@ -79,13 +80,11 @@ export function BookingMonitorCommandRouteSections({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="ops-section-header admin-mt-16">
-        <div>
-          <h3>Primary command queue</h3>
-          <p className="muted">Open the lane that needs action; detailed evidence stays in booking detail.</p>
-        </div>
-        <StatusBadge tone="info">{visiblePrimaryCommandCount} booking(s)</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        description="Open the lane that needs action; detailed evidence stays in booking detail."
+        status={<StatusBadge tone="info">{visiblePrimaryCommandCount} booking(s)</StatusBadge>}
+        title="Primary command queue"
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table admin-mt-12"

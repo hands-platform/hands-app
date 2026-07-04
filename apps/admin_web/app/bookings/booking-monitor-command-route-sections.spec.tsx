@@ -131,7 +131,9 @@ describe('BookingMonitorCommandRouteSections', () => {
 
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<span className="pill pill-info">');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-16">');
     expect(source).not.toContain('<span className="pill">{item.owner}</span>');
     expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill" key={bookingId}>');
