@@ -1,6 +1,6 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { PillClassBadgeLink, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { NotificationDateRange } from './notification-page-model';
 
 export type NotificationFilterLink = {
@@ -116,14 +116,14 @@ export function NotificationFilterBoardSection({
             ) : null}
             {activeBookingLabel ? <StatusBadge tone="info">Booking {activeBookingLabel}</StatusBadge> : null}
             {links.map((link) => (
-              <PillClassBadgeLink
+              <StatusBadgeLink
                 ariaCurrent={activeReview === link.review ? 'page' : undefined}
                 href={link.href}
                 key={link.href}
-                pillClass={activeReview === link.review ? 'pill-warn' : 'pill-neutral'}
+                tone={activeReview === link.review ? 'warning' : 'neutral'}
               >
                 {link.label}
-              </PillClassBadgeLink>
+              </StatusBadgeLink>
             ))}
           </div>
         </>

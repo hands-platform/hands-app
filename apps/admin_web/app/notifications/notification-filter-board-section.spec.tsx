@@ -95,7 +95,7 @@ describe('NotificationFilterBoardSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<span className="pill pill-info">{activeReviewRunbook.title}</span>');
     expect(source).not.toContain('<AdminFormControlLink className="pill pill-success" href={clearHref}>');
     expect(source).not.toContain('{activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}');
