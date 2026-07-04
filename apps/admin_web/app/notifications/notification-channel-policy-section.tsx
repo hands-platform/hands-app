@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Settings2 } from 'lucide-react';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
@@ -93,7 +94,7 @@ export function NotificationChannelPolicySection({
                 <p className="muted admin-mt-6">{latestFcmSentDetail}</p>
               </>
             ) : (
-              <p className="muted admin-mt-6">No FCM SENT delivery recorded yet.</p>
+              <AdminEmptyState framed message="No FCM SENT delivery recorded yet." title={null} />
             )}
           </div>
           <div className="ops-task-card">

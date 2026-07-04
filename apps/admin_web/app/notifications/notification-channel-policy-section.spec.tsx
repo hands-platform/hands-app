@@ -96,7 +96,7 @@ describe('NotificationChannelPolicySection', () => {
         '/notifications?review=pending',
       ]),
     );
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['empty-state', 'pill pill-neutral']));
   });
 
   it('shows the suggested standard notification smoke id when partner-alert policy blocks FCM', () => {
