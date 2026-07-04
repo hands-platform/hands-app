@@ -468,25 +468,21 @@ function PartnerPriorityBoard({
           const Icon = card.icon;
 
           return (
-            <AdminLinkCard
+            <AdminOverviewCommandCard
               ariaLabel={`${card.label}, ${card.value}. ${card.action}`}
-              className={`usage-overview-command-card partner-overview-priority-card is-${card.tone}`}
+              className={`partner-overview-priority-card is-${card.tone}`}
+              detail={card.detail}
               href={card.href}
+              icon={<Icon size={20} aria-hidden="true" />}
               key={card.key}
+              label={card.label}
+              value={card.value}
             >
-              <span className="usage-overview-command-icon">
-                <Icon size={20} aria-hidden="true" />
-              </span>
-              <div>
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-                <small>{card.detail}</small>
-                <em>
-                  {card.action}
-                  <ChevronRight size={14} aria-hidden="true" />
-                </em>
-              </div>
-            </AdminLinkCard>
+              <em>
+                {card.action}
+                <ChevronRight size={14} aria-hidden="true" />
+              </em>
+            </AdminOverviewCommandCard>
           );
         })}
     </AdminSection>

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminCard, AdminLinkCard } from './admin-surface';
 
 type AdminOverviewCommandCardProps = {
+  readonly ariaLabel?: string;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly detail?: ReactNode;
@@ -10,10 +11,12 @@ type AdminOverviewCommandCardProps = {
   readonly htmlTitle?: string;
   readonly icon: ReactNode;
   readonly label: ReactNode;
+  readonly trailing?: ReactNode;
   readonly value: ReactNode;
 };
 
 export function AdminOverviewCommandCard({
+  ariaLabel,
   children,
   className,
   detail,
@@ -21,6 +24,7 @@ export function AdminOverviewCommandCard({
   htmlTitle,
   icon,
   label,
+  trailing,
   value,
 }: AdminOverviewCommandCardProps) {
   const content = (
@@ -32,20 +36,21 @@ export function AdminOverviewCommandCard({
         {detail ? <small>{detail}</small> : null}
         {children}
       </div>
+      {trailing}
     </>
   );
   const cardClassName = joinClassNames('usage-overview-command-card', className);
 
   if (href) {
     return (
-      <AdminLinkCard className={cardClassName} href={href} htmlTitle={htmlTitle}>
+      <AdminLinkCard ariaLabel={ariaLabel} className={cardClassName} href={href} htmlTitle={htmlTitle}>
         {content}
       </AdminLinkCard>
     );
   }
 
   return (
-    <AdminCard className={cardClassName}>
+    <AdminCard ariaLabel={ariaLabel} className={cardClassName}>
       {content}
     </AdminCard>
   );

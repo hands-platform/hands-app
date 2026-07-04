@@ -292,20 +292,15 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <AdminLinkCard
-      className={`usage-overview-command-card finance-overview-priority-card is-${item.tone}`}
+    <AdminOverviewCommandCard
+      className={`finance-overview-priority-card is-${item.tone}`}
+      detail={item.detail}
       href={item.href}
-    >
-      <span className="usage-overview-command-icon">
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{item.label}</span>
-        <strong>{item.countLabel}</strong>
-        <small>{item.detail}</small>
-      </div>
-      <em>{item.amountLabel}</em>
-    </AdminLinkCard>
+      icon={<Icon size={18} aria-hidden="true" />}
+      label={item.label}
+      trailing={<em>{item.amountLabel}</em>}
+      value={item.countLabel}
+    />
   );
 }
 

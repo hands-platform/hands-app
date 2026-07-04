@@ -45,6 +45,7 @@ describe('AdminOverviewCommandCard', () => {
         href="/finance-tax/payment-clearing"
         icon={<svg aria-hidden="true" />}
         label="Payment clearing"
+        trailing={<em>120.000 VND</em>}
         value="3"
       />,
     );
@@ -52,5 +53,6 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('class="card admin-card usage-overview-command-card is-warning"');
     expect(markup).toContain('href="/finance-tax/payment-clearing"');
     expect(markup).toContain('<strong>3</strong>');
+    expect(markup).toContain('<em>120.000 VND</em>');
   });
 });
