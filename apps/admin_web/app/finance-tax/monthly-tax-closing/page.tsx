@@ -16,7 +16,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, formatMoney } from '../../../lib/admin-format';
+import { formatDateTime } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -32,7 +32,6 @@ import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
   buildMonthlyTaxClosingAccountingJournalCsvHref,
-  buildMonthlyTaxClosingMetrics,
   buildMonthlyTaxClosingRemittanceEvidenceState,
   buildMonthlyTaxClosingRiskLinks,
   buildMonthlyTaxClosingRowsCsvHref,
@@ -114,7 +113,53 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
-      metrics={buildMonthlyTaxClosingMetrics(summary)}
+      metrics={[
+        {
+          helper: 'Current stored closing status, or draft preview when no closing row exists yet.',
+          label: 'Period status',
+          value: summary.status,
+        },
+        {
+          helper: 'Settlement snapshots included in this monthly tax period.',
+          label: 'Settlements',
+          value: summary.settlementCount,
+        },
+        {
+          helper: 'Customer payment total. This is not company revenue.',
+          label: 'Customer paid',
+          value: <MoneyText amount={summary.customerPaymentAmountTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Partner VAT plus PIT withheld for the month.',
+          label: 'Partner withholding',
+          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Company VAT payable from platform fee gross.',
+          label: 'Company output VAT',
+          value: <MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Processing fees tracked separately from tax.',
+          label: 'Payment fees',
+          value: <MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Company-funded coupon expense for this period. It does not reduce platform revenue or VAT.',
+          label: 'Coupon expense',
+          value: <MoneyText amount={summary.companyCouponExpenseTotal} currency={summary.currency} />,
+        },
+        {
+          helper: 'Customer payment minus payout, withholding, payment fees, and platform fee gross.',
+          label: 'Formula delta',
+          value: <MoneyText amount={summary.reconciliationDelta} currency={summary.currency} />,
+        },
+        {
+          helper: 'Platform fee gross minus company output VAT and net revenue.',
+          label: 'Net revenue delta',
+          value: <MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />,
+        },
+      ]}
       title="Monthly Tax Closing"
     >
       <FinanceListCommandBoard ariaLabel="Closeout command board">
@@ -132,7 +177,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           icon={Scale}
           label="Formula delta"
           tone={formulaDelta === 0 ? 'success' : 'danger'}
-          value={formatMoney(formulaDelta, summary.currency)}
+          value={<MoneyText amount={formulaDelta} currency={summary.currency} />}
         />
         <FinanceListCommandCard
           detail="Open tax rows, coupon review flags, cash debt, or formula mismatch still blocking closeout."
@@ -264,14 +309,14 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               key: 'customer-payment-reconciliation',
               label: 'Customer payment reconciliation',
               signal: '1',
-              value: formatMoney(summary.reconciliationDelta, summary.currency),
+              value: <MoneyText amount={summary.reconciliationDelta} currency={summary.currency} />,
             },
             {
               helper: 'Platform fee gross - company output VAT = platform fee net revenue.',
               key: 'platform-vat-split',
               label: 'Platform VAT split',
               signal: '2',
-              value: formatMoney(summary.netRevenueDelta, summary.currency),
+              value: <MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />,
             },
             {
               helper: (
@@ -283,7 +328,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               key: 'coupon-expense-closeout',
               label: 'Coupon expense closeout',
               signal: '3',
-              value: formatMoney(summary.companyCouponExpenseTotal, summary.currency),
+              value: <MoneyText amount={summary.companyCouponExpenseTotal} currency={summary.currency} />,
             },
             {
               helper: (
@@ -295,7 +340,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
               key: 'partner-withholding-closeout',
               label: 'Partner withholding closeout',
               signal: '4',
-              value: formatMoney(summary.partnerWithholdingTotal, summary.currency),
+              value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
             },
           ]}
         />

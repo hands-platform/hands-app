@@ -10,7 +10,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
-import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -77,32 +77,32 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         {
           helper: 'Coupon discount amount applied to customer payment in the current bounded queue.',
           label: 'Coupon gross discount',
-          value: formatMoney(summary.couponDiscountAmount, summary.currency),
+          value: <MoneyText amount={summary.couponDiscountAmount} currency={summary.currency} />,
         },
         {
           helper: 'Customer-paid amount after coupon discount. This is clearing, not company revenue.',
           label: 'Customer paid',
-          value: formatMoney(summary.customerPaidAmount, summary.currency),
+          value: <MoneyText amount={summary.customerPaidAmount} currency={summary.currency} />,
         },
         {
           helper: 'Pre-coupon service base used for Partner tax, payout, and platform fee unless policy says otherwise.',
           label: 'Settlement base',
-          value: formatMoney(summary.settlementBaseAmount || summary.bookingServiceAmount, summary.currency),
+          value: <MoneyText amount={summary.settlementBaseAmount || summary.bookingServiceAmount} currency={summary.currency} />,
         },
         {
           helper: 'Company-funded coupon amount. This is marketing expense, not reduced platform revenue.',
           label: 'Company coupon expense',
-          value: formatMoney(summary.companyCouponExpense, summary.currency),
+          value: <MoneyText amount={summary.companyCouponExpense} currency={summary.currency} />,
         },
         {
           helper: 'Partner-funded coupon amount from settlement metadata.',
           label: 'Partner-funded coupon',
-          value: formatMoney(summary.partnerFundedCouponAmount, summary.currency),
+          value: <MoneyText amount={summary.partnerFundedCouponAmount} currency={summary.currency} />,
         },
         {
           helper: 'Coupons explicitly treated as platform-fee discount.',
           label: 'Platform fee discount',
-          value: formatMoney(summary.platformFeeDiscountAmount, summary.currency),
+          value: <MoneyText amount={summary.platformFeeDiscountAmount} currency={summary.currency} />,
         },
         {
           helper: 'Completed settlement rows with coupon metadata.',
@@ -117,7 +117,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         {
           helper: 'Coupon discount already reversed through refund or settlement reversal metadata.',
           label: 'Reversed coupon',
-          value: formatMoney(summary.reversedCouponDiscountAmount, summary.currency),
+          value: <MoneyText amount={summary.reversedCouponDiscountAmount} currency={summary.currency} />,
         },
       ]}
       title="Coupon Finance"

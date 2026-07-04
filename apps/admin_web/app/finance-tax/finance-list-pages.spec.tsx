@@ -470,6 +470,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/coupon-finance/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain(
       '<div className="muted">Customer paid {formatMoney(coupon.customerPaid, snapshot.currency)}</div>',
     );
@@ -498,6 +499,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>');
     expect(source).not.toContain(
