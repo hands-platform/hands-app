@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { Briefcase, Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
@@ -37,8 +36,14 @@ export function OperationsHandoffCustomerPartnerSection({
         >
           <div className="stack">
             {visibleCustomers.map((customer) => (
-              <Link className="ops-signal-card" href={`/customers/${customer.id}`} key={customer.id}>
-                <StatusBadge tone="success">{customer.completedCount} completed</StatusBadge>
+              <AdminActionCard
+                actionLabel={customer.lastWorkLabel}
+                className="ops-signal-card"
+                href={`/customers/${customer.id}`}
+                key={customer.id}
+                leading={<StatusBadge tone="success">{customer.completedCount} completed</StatusBadge>}
+                variant="ops-task"
+              >
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar"
                   avatarStatus={customer.avatarStatus}
@@ -46,8 +51,7 @@ export function OperationsHandoffCustomerPartnerSection({
                   helper={customer.detail}
                   label={customer.name}
                 />
-                <small>{customer.lastWorkLabel}</small>
-              </Link>
+              </AdminActionCard>
             ))}
           </div>
         </AdminSection>
@@ -66,8 +70,14 @@ export function OperationsHandoffCustomerPartnerSection({
         >
           <div className="stack">
             {visiblePartners.map((partner) => (
-              <Link className="ops-signal-card" href={`/partners/${partner.id}`} key={partner.id}>
-                <PillClassBadge pillClass={partner.className}>{partner.status}</PillClassBadge>
+              <AdminActionCard
+                actionLabel={partner.action}
+                className="ops-signal-card"
+                href={`/partners/${partner.id}`}
+                key={partner.id}
+                leading={<PillClassBadge pillClass={partner.className}>{partner.status}</PillClassBadge>}
+                variant="ops-task"
+              >
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar is-partner"
                   avatarStatus={partner.avatarStatus}
@@ -75,8 +85,7 @@ export function OperationsHandoffCustomerPartnerSection({
                   helper={partner.detail}
                   label={partner.name}
                 />
-                <small>{partner.action}</small>
-              </Link>
+              </AdminActionCard>
             ))}
           </div>
         </AdminSection>

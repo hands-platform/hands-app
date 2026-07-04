@@ -10,10 +10,12 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-success">{customer.completedCount} completed</span>');
     expect(source).not.toContain('<span className={partner.className}>{partner.status}</span>');
+    expect(source).not.toContain('<Link className="ops-signal-card"');
   });
 
   it('uses the shared AdminFormControlLink atom for list actions', () => {
@@ -81,6 +83,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
         'admin-avatar-status-dot is-working',
         'card admin-section',
         'ops-section-header admin-section-header',
+        'ops-task-card ops-signal-card',
       ]),
     );
     expect(hrefsIn(section)).toEqual(
