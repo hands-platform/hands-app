@@ -96,6 +96,14 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
   });
 
+  it('uses the shared table pagination footer for the cashout queue', () => {
+    expect(cashoutQueueSource).toContain('AdminTablePaginationFooter');
+    expect(cashoutQueueSource).not.toContain('<AdminTableFooter>');
+    expect(cashoutQueueSource).not.toContain(
+      'Showing {startItem} to {endItem} of {summary.totalCount} entries',
+    );
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 

@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Eye, X } from 'lucide-react';
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -9,7 +13,6 @@ import {
   AdminPersonCell,
   adminPersonInitials,
 } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import {
@@ -375,19 +378,15 @@ function BookingMonitorTableGroup({
         </AdminDataTable>
       </AdminTableScroll>
 
-      <AdminTableFooter>
-        <span>
-          Showing {pageFrom} to {pageTo} of {group.rows.length} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={activePage}
-          ariaLabel={`${group.title} pages`}
-          className="vuexy-booking-pagination"
-          onPageChange={setPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={activePage}
+        ariaLabel={`${group.title} pages`}
+        from={pageFrom}
+        onPageChange={setPage}
+        to={pageTo}
+        totalPages={totalPages}
+        totalRows={group.rows.length}
+      />
     </AdminFilterPanel>
   );
 }

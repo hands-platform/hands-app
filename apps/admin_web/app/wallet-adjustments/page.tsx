@@ -1,5 +1,5 @@
 import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
-import { AdminTableFooter } from '../../components/admin-data-table';
+import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -9,7 +9,6 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type {
@@ -246,19 +245,15 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             </tr>
           ))}
         </FinanceDataTable>
-        <AdminTableFooter>
-          <span>
-            Showing {historyPagination.from} to {historyPagination.to} of {historyPagination.totalRows} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={historyPagination.page}
-            ariaLabel="Manual wallet adjustment history pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => walletAdjustmentHistoryPageHref(formState, historyFilters, page)}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={historyPagination.totalPages}
-          />
-        </AdminTableFooter>
+        <AdminTablePaginationFooter
+          activePage={historyPagination.page}
+          ariaLabel="Manual wallet adjustment history pages"
+          from={historyPagination.from}
+          hrefForPage={(page) => walletAdjustmentHistoryPageHref(formState, historyFilters, page)}
+          to={historyPagination.to}
+          totalPages={historyPagination.totalPages}
+          totalRows={historyPagination.totalRows}
+        />
       </AdminFilterPanel>
 
       <AdminFilterPanel

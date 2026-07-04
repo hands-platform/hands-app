@@ -1,7 +1,11 @@
 import Link from 'next/link';
 
 import { ActionMenuDropdownSurface } from '../../components/action-menu';
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -11,7 +15,6 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
@@ -190,19 +193,15 @@ export function ReferralCashoutQueuePage({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
-          <AdminTableFooter>
-            <span>
-              Showing {startItem} to {endItem} of {summary.totalCount} entries
-            </span>
-            <AdminRoundedPagination
-              activePage={activePage}
-              ariaLabel="Referral cashout queue pages"
-              className="vuexy-booking-pagination"
-              hrefForPage={(page) => buildReferralCashoutListHref(filters, {}, page)}
-              pageLinkClassName="vuexy-booking-page-link"
-              totalPages={totalPages}
-            />
-          </AdminTableFooter>
+          <AdminTablePaginationFooter
+            activePage={activePage}
+            ariaLabel="Referral cashout queue pages"
+            from={startItem}
+            hrefForPage={(page) => buildReferralCashoutListHref(filters, {}, page)}
+            to={endItem}
+            totalPages={totalPages}
+            totalRows={summary.totalCount}
+          />
       </AdminSection>
     </AdminPageTemplate>
   );

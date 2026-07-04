@@ -315,6 +315,14 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
   });
 
+  it('uses the shared table pagination footer for adjustment history', () => {
+    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).not.toContain('<AdminTableFooter>');
+    expect(pageSource).not.toContain(
+      'Showing {historyPagination.from} to {historyPagination.to} of {historyPagination.totalRows} entries',
+    );
+  });
+
   it('uses server pagination for manual wallet adjustment history', async () => {
     mockedAdminGet.mockResolvedValueOnce([]);
     mockedAdminGet.mockResolvedValueOnce({ total: 62 });

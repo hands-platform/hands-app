@@ -35,6 +35,14 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
   });
 
+  it('uses the shared table pagination footer for booking status groups', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('<AdminTableFooter>');
+    expect(source).not.toContain('Showing {pageFrom} to {pageTo} of {group.rows.length} entries');
+  });
+
   it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
       id: 'booking_123456789',
