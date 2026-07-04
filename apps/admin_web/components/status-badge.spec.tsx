@@ -144,4 +144,17 @@ describe('StatusBadge', () => {
       children: 'Cash fee debt',
     });
   });
+
+  it('deduplicates class names when legacy signal classes are passed during migration', () => {
+    const signal = AdminSignal({
+      children: 'Monitor',
+      className: 'signal-warn ops-signal',
+      tone: 'warn',
+    });
+
+    expect(signal.props).toMatchObject({
+      className: 'signal signal-warn ops-signal',
+      children: 'Monitor',
+    });
+  });
 });

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 
 import { MetricCard, type MetricCardProps } from './metric-card';
-import { StatusBadge, type StatusBadgeTone } from './status-badge';
+import { AdminSignal, type AdminSignalTone, StatusBadge, type StatusBadgeTone } from './status-badge';
 
 type AdminCardProps = {
   readonly ariaLabel?: string;
@@ -336,7 +336,7 @@ export function AdminActionCard({
     return (
       <Link className={joinClassNames('ops-task-card', className)} href={href} title={htmlTitle}>
         {leading}
-        {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+        {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
         {hasTitle ? <h3>{title}</h3> : null}
         {hasTitle && detail ? <p>{detail}</p> : null}
         {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
@@ -353,7 +353,7 @@ export function AdminActionCard({
       {value !== undefined && value !== null ? (
         <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
       ) : null}
-      {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+      {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
       {detail ? <p className="muted admin-mt-8">{detail}</p> : null}
       {children}
     </Link>
@@ -378,7 +378,7 @@ export function AdminTaskCard({
   return (
     <div className={joinClassNames('ops-task-card', className)}>
       {leading}
-      {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+      {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
       {hasTitle ? <h3>{title}</h3> : null}
       {hasTitle && detail ? <p>{detail}</p> : null}
       {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
@@ -435,4 +435,24 @@ export function AdminErrorState({
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
+}
+
+function signalToneFromClassName(signalClassName?: string): AdminSignalTone {
+  if (signalClassName?.includes('warn') || signalClassName?.includes('danger')) {
+    return 'warn';
+  }
+
+  if (signalClassName?.includes('ok') || signalClassName?.includes('success')) {
+    return 'ok';
+  }
+
+  return 'info';
+}
+
+function renderAdminSurfaceSignal(className: string | undefined, children: ReactNode) {
+  return AdminSignal({
+    children,
+    className,
+    tone: signalToneFromClassName(className),
+  });
 }

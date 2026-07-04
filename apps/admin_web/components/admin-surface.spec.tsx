@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   AdminActionCard,
   AdminActionFormCard,
@@ -17,6 +19,13 @@ import {
 } from './admin-surface';
 
 describe('Admin surface components', () => {
+  it('uses the shared AdminSignal atom for surface signal labels', () => {
+    const source = readFileSync('components/admin-surface.tsx', 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain("<span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span>");
+  });
+
   it('renders a Vuexy-aligned card shell with stable aria hooks', () => {
     const card = AdminCard({
       ariaLabelledBy: 'finance-title',

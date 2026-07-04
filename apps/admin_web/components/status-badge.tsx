@@ -62,7 +62,13 @@ export function pillClassBadgeClassName(pillClass: string) {
 }
 
 function mergeBadgeClassName(baseClassName: string, className?: string) {
-  return [baseClassName, className].filter(Boolean).join(' ');
+  return Array.from(
+    new Set(
+      [baseClassName, className].flatMap((value) =>
+        value ? value.split(/\s+/).filter(Boolean) : [],
+      ),
+    ),
+  ).join(' ');
 }
 
 export function StatusBadge({ children, className, tone, title }: StatusBadgeProps) {
