@@ -1,5 +1,6 @@
 import {
   AdminActionCard,
+  AdminAsideCard,
   AdminCard,
   AdminDisclosureCard,
   AdminErrorState,
@@ -26,6 +27,20 @@ describe('Admin surface components', () => {
       'aria-labelledby': 'finance-title',
       className: 'card admin-card finance-card',
       id: 'finance-card',
+    });
+  });
+
+  it('renders a Vuexy-aligned aside card shell for secondary panels', () => {
+    const aside = AdminAsideCard({
+      ariaLabel: 'Calendar filters',
+      children: <p>Filters</p>,
+      className: 'calendar-sidebar',
+    });
+
+    expect(aside.type).toBe('aside');
+    expect(aside.props).toMatchObject({
+      'aria-label': 'Calendar filters',
+      className: 'card admin-card calendar-sidebar',
     });
   });
 

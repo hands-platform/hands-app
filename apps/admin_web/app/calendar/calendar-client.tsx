@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminAsideCard, AdminCard } from '../../components/admin-surface';
 import { MetricCard } from '../../components/metric-card';
 import { PillClassBadge } from '../../components/status-badge';
 import {
@@ -261,7 +262,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
       ) : null}
 
       <div className="calendar-shell">
-        <aside className="calendar-sidebar card">
+        <AdminAsideCard className="calendar-sidebar">
           <div className="calendar-sidebar-section">
             <AdminFormControlButton
               className="button-primary calendar-add-button"
@@ -325,9 +326,9 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
               )}
             </div>
           </div>
-        </aside>
+        </AdminAsideCard>
 
-        <section className="calendar-board card">
+        <AdminCard className="calendar-board">
           <div className="calendar-board-toolbar">
             <div>
               <span className="calendar-board-eyebrow">Shared operations planning</span>
@@ -432,7 +433,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
               Quick add
             </AdminFormControlButton>
           </div>
-        </section>
+        </AdminCard>
       </div>
 
       <CalendarEventDrawer

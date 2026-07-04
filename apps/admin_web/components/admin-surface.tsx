@@ -90,6 +90,19 @@ export function AdminCard({ ariaLabel, ariaLabelledBy, children, className, id }
   );
 }
 
+export function AdminAsideCard({ ariaLabel, ariaLabelledBy, children, className, id }: AdminCardProps) {
+  return (
+    <aside
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card', className)}
+      id={id}
+    >
+      {children}
+    </aside>
+  );
+}
+
 export function AdminNoticeCard({
   ariaLabel,
   ariaLabelledBy,

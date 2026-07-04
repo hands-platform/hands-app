@@ -26,6 +26,15 @@ describe('calendar client structure', () => {
     expect(clientSource).not.toContain('CALENDAR_CATEGORIES.map');
   });
 
+  it('uses shared Vuexy card surfaces for the calendar shell panels', () => {
+    const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
+
+    expect(clientSource).toContain('AdminAsideCard');
+    expect(clientSource).toContain('AdminCard');
+    expect(clientSource).not.toContain('<aside className="calendar-sidebar card">');
+    expect(clientSource).not.toContain('<section className="calendar-board card">');
+  });
+
   it('renders author metadata and blocks non-author mutations', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
