@@ -13,7 +13,7 @@ import {
 import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
-import { AdminPageTemplate } from '../components/admin-page-template';
+import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
@@ -1307,18 +1307,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
             <div className="detail-grid admin-mt-14">
               <div className="ops-task-note">
-                <div className="ops-section-header">
-                  <div>
-                    <h3>Open matching queue</h3>
-                    <p className="muted">
-                      Bookings that may require dispatch intervention before the customer cancels or the timer
-                      expires.
-                    </p>
-                  </div>
-                  <PillClassBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
-                    {matchingControl.openRows.length} shown
-                  </PillClassBadge>
-                </div>
+                <AdminSectionHeader
+                  actions={(
+                    <PillClassBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
+                      {matchingControl.openRows.length} shown
+                    </PillClassBadge>
+                  )}
+                  description="Bookings that may require dispatch intervention before the customer cancels or the timer expires."
+                  title="Open matching queue"
+                />
                 <div className="stack admin-mt-10">
                   {matchingControl.openRows.map((row) => (
                     <div className="ops-row" key={row.id}>
@@ -1347,17 +1344,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               </div>
               <div className="ops-task-note">
-                <div className="ops-section-header">
-                  <div>
-                    <h3>Supply and policy checks</h3>
-                    <p className="muted">
-                      The most likely reason matching will feel slow before operators touch a booking.
-                    </p>
-                  </div>
-                  <PillClassBadge pillClass={matchingControl.healthPillClass}>
-                    {matchingControl.healthLabel}
-                  </PillClassBadge>
-                </div>
+                <AdminSectionHeader
+                  actions={(
+                    <PillClassBadge pillClass={matchingControl.healthPillClass}>
+                      {matchingControl.healthLabel}
+                    </PillClassBadge>
+                  )}
+                  description="The most likely reason matching will feel slow before operators touch a booking."
+                  title="Supply and policy checks"
+                />
                 <div className="ops-task-grid admin-grid-single admin-mt-12">
                   {matchingControl.checks.map((check) => (
                     <AdminTaskCard

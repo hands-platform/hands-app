@@ -34,6 +34,7 @@ describe('AdminPageTemplate', () => {
       actions: <a href="/operations-policy">Open policy</a>,
       className: 'admin-mt-16',
       description: 'Reusable section title for command boards and tables.',
+      descriptionId: 'command-board-description',
       status: <span className="pill pill-success">Ready</span>,
       title: 'Command board',
       titleId: 'command-board-title',
@@ -44,6 +45,7 @@ describe('AdminPageTemplate', () => {
       className: 'ops-section-header admin-section-header admin-mt-16',
     });
     expect(header.props.children[0].props.children[0].props.id).toBe('command-board-title');
+    expect(header.props.children[0].props.children[1].props.id).toBe('command-board-description');
     expect(header.props.children).toHaveLength(2);
   });
 });

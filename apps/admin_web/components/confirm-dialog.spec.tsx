@@ -62,11 +62,17 @@ describe('ConfirmDialog', () => {
       href: '/audit-log?q=booking-1',
       title: 'Open the audit trail before confirming.',
     });
+
+    const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('id="booking-cancel-title"');
+    expect(markup).toContain('id="booking-cancel-description"');
   });
 
   it('uses the shared Vuexy dialog card surface', () => {
     expect(source).toContain('AdminDialogCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('className="card admin-dialog-card"');
+    expect(source).not.toContain('<div className="ops-section-header"');
   });
 
   it('disables the confirm action while loading without changing the form action', () => {

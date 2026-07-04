@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFormInput } from './admin-form-controls';
+import { AdminSectionHeader } from './admin-page-template';
 import { AdminDialogCard } from './admin-surface';
 import type { StatusBadgeTone } from './status-badge';
 import { statusBadgeClassName } from './status-badge';
@@ -100,15 +101,14 @@ export function ConfirmDialog({
     className: 'admin-dialog-card',
     loading,
     children: [
-      <div className="ops-section-header" key="header">
-        <div>
-          <h2 id={titleId}>{title}</h2>
-          <p className="muted" id={descriptionId}>
-            {description}
-          </p>
-        </div>
-        <span className={statusBadgeClassName(tone)}>Review</span>
-      </div>,
+      <AdminSectionHeader
+        actions={<span className={statusBadgeClassName(tone)}>Review</span>}
+        description={description}
+        descriptionId={descriptionId}
+        key="header"
+        title={title}
+        titleId={titleId}
+      />,
       <div className="actions confirm-dialog-actions" key="actions">
         <form action={action} className="confirm-dialog-form">
           {hiddenInputs.map((input) => (

@@ -26,6 +26,7 @@ type AdminSectionHeaderProps = {
   readonly actions?: ReactNode;
   readonly className?: string;
   readonly description?: ReactNode;
+  readonly descriptionId?: string;
   readonly status?: ReactNode;
   readonly title: string;
   readonly titleId?: string;
@@ -74,6 +75,7 @@ export function AdminSectionHeader({
   actions,
   className,
   description,
+  descriptionId,
   status,
   title,
   titleId,
@@ -82,7 +84,11 @@ export function AdminSectionHeader({
     <div className={joinClassNames('ops-section-header admin-section-header', className)}>
       <div>
         <h2 id={titleId}>{title}</h2>
-        {description ? <p className="muted">{description}</p> : null}
+        {description ? (
+          <p className="muted" id={descriptionId}>
+            {description}
+          </p>
+        ) : null}
       </div>
       {actions || status ? (
         <div className="participant-list">
