@@ -13,7 +13,9 @@ describe('CustomerDetailOverviewShell', () => {
     const source = readFileSync('app/customers/[id]/customer-detail-overview-shell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('<span className="pill pill-info" key={badge}>');
+    expect(source).not.toContain('<p className="customer-detail-partner-empty">{rail.emptyMessage}</p>');
   });
 
   it('renders a focused one-card customer overview', () => {
@@ -52,6 +54,7 @@ describe('CustomerDetailOverviewShell', () => {
         'customer-detail-usage-summary',
         'customer-detail-usage-region-list',
         'customer-detail-partner-rail-grid',
+        'empty-state customer-detail-partner-empty',
         'vuexy-booking-avatar is-partner',
       ]),
     );

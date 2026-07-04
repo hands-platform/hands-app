@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -181,7 +182,12 @@ export function CustomerDetailOverviewShell({
                     ))}
                   </div>
                 ) : (
-                  <p className="customer-detail-partner-empty">{rail.emptyMessage}</p>
+                  <AdminEmptyState
+                    className="customer-detail-partner-empty"
+                    framed
+                    message={rail.emptyMessage}
+                    title={null}
+                  />
                 )}
               </section>
             );
