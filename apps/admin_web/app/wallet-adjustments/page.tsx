@@ -21,7 +21,7 @@ import type {
   AdminManualWalletAdjustmentType,
 } from '../../lib/admin-api';
 import { adminGet, adminPost } from '../../lib/admin-api';
-import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { formatDateTime } from '../../lib/admin-format';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { createManualWalletAdjustment } from './actions';
 
@@ -271,13 +271,15 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         {preview ? (
           <div className="setup-stage-list">
             <PreviewFact
-              helper={`${formatMoney(preview.beforeBalance, currency)} to ${formatMoney(
-                preview.afterBalance,
-                currency,
-              )}`}
+              helper={
+                <>
+                  <MoneyText amount={preview.beforeBalance} currency={currency} /> to{' '}
+                  <MoneyText amount={preview.afterBalance} currency={currency} />
+                </>
+              }
               icon={<ShieldCheck aria-hidden="true" size={18} />}
               label="Wallet balance"
-              value={formatMoney(preview.walletDelta, currency)}
+              value={<MoneyText amount={preview.walletDelta} currency={currency} />}
             />
             <PreviewFact
               helper="Manual wallet adjustment only"
@@ -286,10 +288,20 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               value={preview.affects.bankCash ? 'Review required' : 'No bank/cash movement'}
             />
             <PreviewFact
-              helper={`Platform revenue: ${formatMoney(preview.platformRevenueAmount, currency)}`}
+              helper={
+                <>
+                  Platform revenue: <MoneyText amount={preview.platformRevenueAmount} currency={currency} />
+                </>
+              }
               icon={<CheckCircle2 aria-hidden="true" size={18} />}
               label="Output VAT"
-              value={preview.companyOutputVat > 0 ? formatMoney(preview.companyOutputVat, currency) : 'No output VAT'}
+              value={
+                preview.companyOutputVat > 0 ? (
+                  <MoneyText amount={preview.companyOutputVat} currency={currency} />
+                ) : (
+                  'No output VAT'
+                )
+              }
             />
             <PreviewFact
               helper={preview.requiresAttachment ? 'Attach approval/evidence before create' : 'Approval id still required'}
@@ -375,10 +387,10 @@ function PreviewFact({
   label,
   value,
 }: {
-  readonly helper: string;
+  readonly helper: React.ReactNode;
   readonly icon: React.ReactNode;
   readonly label: string;
-  readonly value: string;
+  readonly value: React.ReactNode;
 }) {
   return (
     <div className="setup-stage-item">
@@ -636,7 +648,12 @@ function formatBalanceChange(row: AdminManualWalletAdjustmentRow) {
     return 'Balance preview unavailable';
   }
 
-  return `${formatMoney(row.beforeBalance, row.currency)} -> ${formatMoney(row.afterBalance, row.currency)}`;
+  return (
+    <>
+      <MoneyText amount={row.beforeBalance} currency={row.currency} /> -&gt;{' '}
+      <MoneyText amount={row.afterBalance} currency={row.currency} />
+    </>
+  );
 }
 
 function walletImpactLabel(row: AdminManualWalletAdjustmentRow) {
