@@ -70,9 +70,11 @@ describe('PartnerControlsPage', () => {
     const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('partner-control-form-field');
-    expect(markup).toContain('admin-form-control-labeled partner-control-form-field');
+    expect(markup).toContain('admin-form-control-labeled admin-form-control-fluid');
+    expect(markup).toContain('admin-grid-span-2');
+    expect(markup).not.toContain('partner-control-form-field');
     expect(markup).not.toContain('calendar-field');
+    expect(partnerControlsSource).not.toContain('partner-control-form-field');
     expect(partnerControlsSource).not.toContain('<div className="calendar-field');
   });
 });

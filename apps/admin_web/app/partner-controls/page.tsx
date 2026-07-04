@@ -475,7 +475,7 @@ export default async function PartnerControlsPage({
         <AdminFormGrid action="/partner-controls">
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
           <AdminFormInput
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue={filters.q}
             label="Search"
             labelVisibility="visible"
@@ -483,7 +483,7 @@ export default async function PartnerControlsPage({
             placeholder="Partner, phone, category, reason"
           />
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue={filters.status}
             label="Report status"
             labelVisibility="visible"
@@ -497,7 +497,7 @@ export default async function PartnerControlsPage({
             ]}
           />
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue={filters.severity}
             label="Report level"
             labelVisibility="visible"
@@ -512,7 +512,7 @@ export default async function PartnerControlsPage({
             ]}
           />
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue={filters.sanction}
             label="Account control"
             labelVisibility="visible"
@@ -622,7 +622,7 @@ export default async function PartnerControlsPage({
       >
         <AdminFormGrid action={createProviderReport}>
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             label="Partner"
             labelVisibility="visible"
             name="providerProfileId"
@@ -633,7 +633,7 @@ export default async function PartnerControlsPage({
             required
           />
           <AdminFormInput
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             label="Category"
             labelVisibility="visible"
             name="category"
@@ -641,7 +641,7 @@ export default async function PartnerControlsPage({
             required
           />
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue="MEDIUM"
             label="Report level"
             labelVisibility="visible"
@@ -654,7 +654,7 @@ export default async function PartnerControlsPage({
             ]}
           />
           <AdminFormSelect
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             defaultValue="ADMIN"
             label="Source"
             labelVisibility="visible"
@@ -667,14 +667,14 @@ export default async function PartnerControlsPage({
             ]}
           />
           <AdminFormInput
-            className="partner-control-form-field"
+            className="admin-form-control-fluid"
             label="Booking ID"
             labelVisibility="visible"
             name="bookingId"
             placeholder="Optional booking id"
           />
           <AdminFormInput
-            className="partner-control-form-field full-span"
+            className="admin-form-control-fluid admin-grid-span-2"
             label="Summary"
             labelVisibility="visible"
             name="summary"
@@ -682,7 +682,7 @@ export default async function PartnerControlsPage({
             required
           />
           <AdminFormTextarea
-            className="partner-control-form-field full-span"
+            className="admin-form-control-fluid admin-grid-span-2"
             label="Details"
             labelVisibility="visible"
             name="details"
