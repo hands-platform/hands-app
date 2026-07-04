@@ -1,6 +1,11 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
-import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
+import {
+  AdminSignal,
+  StatusBadge,
+  adminSignalToneFromClassName,
+  type StatusBadgeTone,
+} from '../../components/status-badge';
 
 export type AuditLogMetadataHighlight = {
   readonly label: string;
@@ -46,7 +51,9 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
           </td>
           <td>
             <div className="admin-mb-6">{row.actionLabel}</div>
-            <span className={row.bucketClassName}>{row.bucketLabel}</span>
+            <AdminSignal className={row.bucketClassName} tone={adminSignalToneFromClassName(row.bucketClassName)}>
+              {row.bucketLabel}
+            </AdminSignal>
           </td>
           <td>{row.actorLabel}</td>
           <td>

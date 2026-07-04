@@ -39,10 +39,12 @@ describe('AuditLogTableSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/audit-log/audit-log-table-section.tsx'), 'utf8');
 
     expect(source).toContain('ActionMenu');
+    expect(source).toContain('AdminSignal');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="pill pill-info" href={row.relatedBoardHref}>');
+    expect(source).not.toContain('<span className={row.bucketClassName}>{row.bucketLabel}</span>');
     expect(source).not.toContain('<span className={item.className} key={`${item.label}-${index}`}>');
     expect(source).toContain('tone={item.tone}');
   });
