@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -78,8 +79,8 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
                 </td>
                 <td>
                   <div className="participant-list">
-                    <span className={`pill ${pillClassForTone(step.tone)}`}>{step.status}</span>
-                    <span className="pill pill-info">{step.owner}</span>
+                    <PillClassBadge pillClass={pillClassForTone(step.tone)}>{step.status}</PillClassBadge>
+                    <StatusBadge tone="info">{step.owner}</StatusBadge>
                   </div>
                 </td>
                 <td>

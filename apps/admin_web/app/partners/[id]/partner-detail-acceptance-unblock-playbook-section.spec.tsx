@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailAcceptanceUnblockPlaybookSection } from './partner-detail-acceptance-unblock-playbook-section';
 
 describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw unblock playbook pill spans', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-acceptance-unblock-playbook-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${pillClassForTone(step.tone)}`}>{step.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{step.owner}</span>');
+  });
+
   it('renders active-work repair steps as a Vuexy table', () => {
     const section = PartnerDetailAcceptanceUnblockPlaybookSection({
       pillClassForTone: (tone) => `pill-${tone}`,
@@ -62,7 +73,7 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#wallet', '#kyc']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
