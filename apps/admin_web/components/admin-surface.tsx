@@ -71,6 +71,7 @@ type AdminKpiCardProps = MetricCardProps;
 
 type AdminActionCardProps = {
   readonly actionLabel?: ReactNode;
+  readonly actionLabelClassName?: string;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly detail?: ReactNode;
@@ -342,6 +343,7 @@ export function AdminKpiCard(props: AdminKpiCardProps) {
 
 export function AdminActionCard({
   actionLabel,
+  actionLabelClassName,
   children,
   className,
   detail,
@@ -368,7 +370,7 @@ export function AdminActionCard({
         {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
         {!hasTitle && detail ? <p>{detail}</p> : null}
         {children}
-        {actionLabel ? <small>{actionLabel}</small> : null}
+        {actionLabel ? <small className={actionLabelClassName}>{actionLabel}</small> : null}
       </Link>
     );
   }

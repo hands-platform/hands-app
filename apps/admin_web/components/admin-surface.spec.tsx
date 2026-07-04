@@ -242,6 +242,7 @@ describe('Admin surface components', () => {
   it('renders the shared Vuexy ops task card surface for command boards', () => {
     const card = AdminActionCard({
       actionLabel: 'Open queue',
+      actionLabelClassName: 'button button-secondary admin-inline-action',
       className: 'ops-task-pending',
       detail: 'Operators can open this filtered queue.',
       href: '/bookings?view=matching',
@@ -262,6 +263,7 @@ describe('Admin surface components', () => {
     expect(children[1].type).toBe('h3');
     expect(children[2].type).toBe('p');
     expect(children[3].type).toBe('small');
+    expect(children[3].props.className).toBe('button button-secondary admin-inline-action');
   });
 
   it('supports value-first ops task cards without forcing an empty heading', () => {

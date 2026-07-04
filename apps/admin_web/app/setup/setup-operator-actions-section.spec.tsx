@@ -11,6 +11,14 @@ describe('SetupOperatorActionsSection', () => {
     expect(source).not.toContain('className={`signal');
   });
 
+  it('uses the shared AdminActionCard surface for pending setup action cards', () => {
+    const source = readFileSync(new URL('./setup-operator-actions-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('<a className="setup-action-item"');
+    expect(source).not.toContain('<span className="button-secondary setup-card-action">');
+  });
+
   it('renders current and deferred setup actions with commands', () => {
     const section = SetupOperatorActionsSection({
       nextActions: [
@@ -46,6 +54,8 @@ describe('SetupOperatorActionsSection', () => {
       expect.arrayContaining([
         'card admin-section',
         'ops-section-header admin-section-header',
+        'ops-task-card setup-action-item',
+        'button button-secondary setup-card-action',
       ]),
     );
     expect(classNamesIn(section)).toContain('command-copy-row');

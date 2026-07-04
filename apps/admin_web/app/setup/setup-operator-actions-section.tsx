@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminSignal } from '../../components/status-badge';
 
@@ -33,10 +33,22 @@ export function SetupOperatorActionsSection({
     >
       <div className="setup-action-list">
         {nextActions.slice(0, 6).map((item) => (
-          <a className="setup-action-item" href={`#${item.groupId}`} key={`${item.groupId}-${item.name}`}>
-            <span>{item.phase}</span>
-            <strong>{item.name}</strong>
-            <p className="muted">{item.action}</p>
+          <AdminActionCard
+            actionLabel={
+              <>
+                <ArrowRight size={16} aria-hidden="true" />
+                Open setup group
+              </>
+            }
+            actionLabelClassName="button button-secondary setup-card-action"
+            className="setup-action-item"
+            detail={item.action}
+            href={`#${item.groupId}`}
+            key={`${item.groupId}-${item.name}`}
+            leading={<span>{item.phase}</span>}
+            title={item.name}
+            variant="ops-task"
+          >
             {item.commands.length > 0 && (
               <div className="setup-command-list admin-mt-8">
                 {item.commands.slice(0, 2).map((command) => (
@@ -44,11 +56,7 @@ export function SetupOperatorActionsSection({
                 ))}
               </div>
             )}
-            <span className="button-secondary setup-card-action">
-              <ArrowRight size={16} aria-hidden="true" />
-              Open setup group
-            </span>
-          </a>
+          </AdminActionCard>
         ))}
         {nextActions.length === 0 && (
           <p className="muted">
