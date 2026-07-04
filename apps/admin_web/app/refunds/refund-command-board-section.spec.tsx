@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   RefundCommandBoardSection,
   type RefundCommandItem,
@@ -22,7 +25,7 @@ describe('RefundCommandBoardSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?review=requested']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'pill pill-warn',
         'signal signal-warn',
       ]),
@@ -49,6 +52,14 @@ describe('RefundCommandBoardSection', () => {
     expect(rendered).toContain('0 refund record(s)');
     expect(rendered).toContain('Quiet refunds');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'signal signal-ok']));
+  });
+
+  it('uses shared badge atoms for command board status labels', () => {
+    const source = readFileSync(join(process.cwd(), 'app/refunds/refund-command-board-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill">{item.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.refunds.length} case(s)</span>');
   });
 });
 

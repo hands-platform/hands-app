@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { StatusBadge } from '../../components/status-badge';
 
 export type RefundCommandTone = 'warn' | 'info' | 'ok';
 
@@ -43,8 +44,8 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <div className="participant-list">
-              <span className="pill">{item.status}</span>
-              <span className="pill">{item.refunds.length} case(s)</span>
+              <StatusBadge tone={refundStatusBadgeTone(item.tone)}>{item.status}</StatusBadge>
+              <StatusBadge tone="neutral">{item.refunds.length} case(s)</StatusBadge>
             </div>
             {item.refunds.length > 0 ? (
               <div className="stack">
@@ -81,4 +82,14 @@ function refundToneLabel(tone: RefundCommandTone) {
     return 'Clear';
   }
   return 'Monitor';
+}
+
+function refundStatusBadgeTone(tone: RefundCommandTone) {
+  if (tone === 'warn') {
+    return 'warning';
+  }
+  if (tone === 'ok') {
+    return 'success';
+  }
+  return 'info';
 }
