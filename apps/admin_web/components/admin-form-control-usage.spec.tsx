@@ -32,10 +32,7 @@ describe('Admin form control usage', () => {
   });
 
   it('keeps visible text inputs inside shared Vuexy input atoms', () => {
-    const allowedRawInputFiles = new Set([
-      'components/admin-form-controls.tsx',
-      'components/admin-topbar-search-input.tsx',
-    ]);
+    const allowedRawInputFiles = new Set(['components/admin-form-controls.tsx']);
     const offenders = productionTsxFiles()
       .filter((filePath) => !allowedRawInputFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
       .filter((filePath) => visibleRawInputPattern.test(readFileSync(filePath, 'utf8')))

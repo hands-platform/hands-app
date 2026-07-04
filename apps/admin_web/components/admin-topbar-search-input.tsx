@@ -1,6 +1,6 @@
 import type { ChangeEventHandler } from 'react';
 
-import { Search } from 'lucide-react';
+import { AdminFormSearch } from './admin-form-controls';
 
 type AdminTopbarSearchInputProps = {
   readonly autoFocus?: boolean;
@@ -18,17 +18,13 @@ export function AdminTopbarSearchInput({
   value,
 }: AdminTopbarSearchInputProps) {
   return (
-    <label className="topbar-dropdown-header">
-      <Search aria-hidden="true" size={16} />
-      <input
-        aria-label={label}
-        autoFocus={autoFocus}
-        className="topbar-search-input"
-        onChange={onChange}
-        placeholder={placeholder}
-        type="search"
-        value={value}
-      />
-    </label>
+    <AdminFormSearch
+      autoFocus={autoFocus}
+      className="topbar-dropdown-header"
+      label={label}
+      onChange={onChange}
+      placeholder={placeholder}
+      value={value}
+    />
   );
 }

@@ -102,8 +102,10 @@ describe('admin shell navigation', () => {
 
     const topbarSearchInputSource = readFileSync(topbarSearchInputSourcePath, 'utf8');
 
-    expect(topbarSearchInputSource).toContain('aria-label={label}');
-    expect(topbarSearchInputSource).toContain('type="search"');
-    expect(topbarSearchInputSource).toContain('className="topbar-search-input"');
+    expect(topbarSearchInputSource).toContain('AdminFormSearch');
+    expect(topbarSearchInputSource).toContain('autoFocus={autoFocus}');
+    expect(topbarSearchInputSource).toContain('className="topbar-dropdown-header"');
+    expect(topbarSearchInputSource).not.toContain('<input');
+    expect(topbarSearchInputSource).not.toContain('topbar-search-input');
   });
 });

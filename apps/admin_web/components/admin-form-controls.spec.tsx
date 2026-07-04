@@ -43,6 +43,26 @@ describe('Admin form controls', () => {
     expect(textContent(search)).toContain('Search customer');
   });
 
+  it('supports shell search controls without submitting a named query field', () => {
+    const search = AdminFormSearch({
+      autoFocus: true,
+      className: 'topbar-dropdown-header',
+      label: 'Search pages',
+      onChange: () => undefined,
+      placeholder: 'Search pages',
+      value: 'book',
+    });
+
+    expect(search.props.className).toBe('admin-form-search topbar-dropdown-header');
+    expect(search.props.children[2].props).toMatchObject({
+      autoFocus: true,
+      placeholder: 'Search pages',
+      type: 'search',
+      value: 'book',
+    });
+    expect(search.props.children[2].props.name).toBeUndefined();
+  });
+
   it('renders date controls with the same field contract', () => {
     const date = AdminFormDate({
       className: 'partner-date-filter',

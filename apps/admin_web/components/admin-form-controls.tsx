@@ -29,8 +29,8 @@ type AdminFormSelectProps = {
 type AdminFormSearchProps = {
   readonly className?: string;
   readonly label: string;
-  readonly name: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
+  readonly name?: string;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
 
 type AdminFormDateProps = {
   readonly className?: string;
@@ -161,6 +161,7 @@ export function AdminFormSelect({
 }
 
 export function AdminFormSearch({
+  autoFocus,
   className,
   defaultValue,
   label,
@@ -174,6 +175,7 @@ export function AdminFormSearch({
       <Search aria-hidden="true" size={18} />
       <span className="sr-only">{label}</span>
       <input
+        autoFocus={autoFocus}
         defaultValue={defaultValue}
         name={name}
         onChange={onChange}
