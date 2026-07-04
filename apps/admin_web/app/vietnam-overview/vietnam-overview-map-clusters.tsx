@@ -10,7 +10,7 @@ import {
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
 import { AdminCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
 
 export type VietnamOverviewMapPointCluster = {
@@ -207,12 +207,12 @@ function ClusterDetailPanel({
           <StatusBadge className="vietnam-map-cluster-panel-badge" tone="success">
             Live now
           </StatusBadge>
-          <PillClassBadge
+          <StatusBadge
             className="vietnam-map-cluster-panel-badge is-region"
-            pillClass="pill-primary"
+            tone="primary"
           >
             {formatRegionCode(latestPoint.regionCode)}
-          </PillClassBadge>
+          </StatusBadge>
         </div>
         <button
           aria-label="Close selected map signals"

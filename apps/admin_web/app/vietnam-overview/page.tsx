@@ -28,7 +28,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 
 export const dynamic = 'force-dynamic';
 
@@ -372,7 +372,7 @@ export default async function VietnamOverviewPage({
         <>
           <StatusBadge tone="success">Vietnam only</StatusBadge>
           {activeRegion ? (
-            <PillClassBadge pillClass="pill-primary">Focused: {activeRegion.regionName}</PillClassBadge>
+            <StatusBadge tone="primary">Focused: {activeRegion.regionName}</StatusBadge>
           ) : null}
           <StatusBadge tone="info">Refreshes every {overview.refreshSeconds}s</StatusBadge>
         </>
@@ -491,12 +491,13 @@ export default async function VietnamOverviewPage({
         actions={
           <>
             {activeRegion ? (
-              <PillClassBadgeLink
+              <StatusBadgeLink
+                className="vietnam-overview-clear-focus"
                 href={clearRegionHref}
-                pillClass="pill pill-primary vietnam-overview-clear-focus"
+                tone="primary"
               >
                 Clear {activeRegion.shortName}
-              </PillClassBadgeLink>
+              </StatusBadgeLink>
             ) : null}
             <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
           </>
@@ -537,7 +538,7 @@ export default async function VietnamOverviewPage({
 
       {activeRegion ? (
         <AdminSection
-          actions={<PillClassBadge pillClass="pill-primary">{activeRegion.shortName}</PillClassBadge>}
+          actions={<StatusBadge tone="primary">{activeRegion.shortName}</StatusBadge>}
           bodyClassName="vietnam-region-focus-summary-grid"
           className="vietnam-region-focus-summary-card"
           description={`Focused operating readout for realtime signals and ${overview.rangeLabel} totals.`}
@@ -611,9 +612,9 @@ export default async function VietnamOverviewPage({
         actions={
           <div className="actions vietnam-overview-region-actions">
             <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
-            <PillClassBadge pillClass={activeRegion ? 'pill-primary' : 'pill-neutral'}>
+            <StatusBadge tone={activeRegion ? 'primary' : 'neutral'}>
               {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
-            </PillClassBadge>
+            </StatusBadge>
           </div>
         }
         bodyClassName="vietnam-overview-region-card-body"

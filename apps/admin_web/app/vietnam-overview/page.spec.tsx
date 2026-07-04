@@ -88,10 +88,11 @@ describe('VietnamOverviewPage', () => {
 
   it('uses shared badge atoms for Vietnam overview status chips', () => {
     expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain('PillClassBadge');
-    expect(pageSource).toContain('PillClassBadgeLink');
+    expect(pageSource).toContain('StatusBadgeLink');
+    expect(pageSource).not.toContain('PillClassBadge');
+    expect(pageSource).not.toContain('PillClassBadgeLink');
     expect(mapClustersSource).toContain('StatusBadge');
-    expect(mapClustersSource).toContain('PillClassBadge');
+    expect(mapClustersSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {lastGeneratedAt}</span>');
