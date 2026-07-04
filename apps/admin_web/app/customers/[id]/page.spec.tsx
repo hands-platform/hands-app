@@ -62,7 +62,7 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain("from '../../../components/status-badge'");
     expect(customerDetailSource).toContain('AdminSectionHeader');
     expect(customerDetailSource).toContain('StatusBadge');
-    expect(customerDetailSource).toContain('PillClassBadge');
+    expect(customerDetailSource).not.toContain('PillClassBadge');
     expect(customerDetailSource).not.toContain('<div className="ops-section-header');
     expect(customerDetailSource).not.toContain('<span className="pill');
     expect(customerDetailSource).not.toContain('<span className={`pill');

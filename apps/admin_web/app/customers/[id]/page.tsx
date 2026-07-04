@@ -28,7 +28,7 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -432,11 +432,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <PillClassBadge
-              pillClass={filteredBookingCreateGateAttempts.length > 0 ? 'pill-warn' : 'pill-neutral'}
-            >
+            <StatusBadge tone={filteredBookingCreateGateAttempts.length > 0 ? 'warning' : 'neutral'}>
               {filteredBookingCreateGateAttempts.length} filtered
-            </PillClassBadge>
+            </StatusBadge>
             <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
             <Link className="text-link" href="/bookings?view=blocked-create">
               Open gate queue
@@ -463,7 +461,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   </Link>
                   <p className="muted">{attempt.detail}</p>
                   <div className="participant-list admin-mt-8">
-                    <PillClassBadge pillClass={attempt.tone}>{attempt.gateLabel}</PillClassBadge>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(attempt.tone)}>
+                      {attempt.gateLabel}
+                    </StatusBadge>
                     <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
                     <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
                   </div>
@@ -488,9 +488,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
         id="customer-operator-command-queue"
         status={
-          <PillClassBadge pillClass={customerSupportPillClass(customerOperatorCommandQueue.tone)}>
+          <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(customerOperatorCommandQueue.tone))}>
             {customerOperatorCommandQueue.status}
-          </PillClassBadge>
+          </StatusBadge>
         }
         title="Customer operator command queue"
       >
@@ -499,9 +499,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
                 <div>
-                  <PillClassBadge pillClass={customerSupportPillClass(command.tone)}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(command.tone))}>
                     {command.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                   <h3>{command.title}</h3>
                   <p className="muted">{command.detail}</p>
                   <small className="muted">Owner: {command.owner}</small>
@@ -588,9 +588,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         className="admin-mb-16"
         description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
         status={
-          <PillClassBadge pillClass={customerSupportPillClass(activityPlan.tone)}>
+          <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(activityPlan.tone))}>
             {activityPlan.status}
-          </PillClassBadge>
+          </StatusBadge>
         }
         title="Customer activity action panel"
       >
@@ -601,9 +601,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <p className="muted">{activityPlan.detail}</p>
               <div className="participant-list admin-mt-8">
                 {activityPlan.badges.map((badge) => (
-                  <PillClassBadge key={badge.label} pillClass={customerSupportPillClass(badge.tone)}>
+                  <StatusBadge
+                    key={badge.label}
+                    tone={statusBadgeToneFromPillClass(customerSupportPillClass(badge.tone))}
+                  >
                     {badge.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                 ))}
               </div>
             </div>
@@ -660,11 +663,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         actions={
           <>
             <StatusBadge tone="info">{accountFacts.length} field(s)</StatusBadge>
-            <PillClassBadge
-              pillClass={pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}
-            >
+            <StatusBadge tone={pushDevices.some((device) => device.enabled) ? 'success' : 'neutral'}>
               {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
-            </PillClassBadge>
+            </StatusBadge>
           </>
         }
         className="admin-mb-16"
