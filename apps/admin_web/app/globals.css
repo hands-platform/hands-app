@@ -13877,12 +13877,18 @@ a.ops-task-card {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  border: 1px solid transparent;
   border-radius: var(--admin-radius);
+  box-sizing: border-box;
   padding: 5px 9px;
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.2;
   max-width: 100%;
+  min-height: 24px;
+  text-decoration: none;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .status-badge {
@@ -14122,6 +14128,11 @@ a.ops-task-card {
 .pill {
   background: var(--admin-secondary-soft);
   color: var(--admin-muted);
+}
+
+.pill-primary {
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .pill-success {
