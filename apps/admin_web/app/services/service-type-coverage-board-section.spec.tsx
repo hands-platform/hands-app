@@ -1,7 +1,23 @@
+import { readFileSync } from 'node:fs';
+
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 import { ServiceTypeCoverageBoardSection } from './service-type-coverage-board-section';
 
 describe('ServiceTypeCoverageBoardSection', () => {
+  it('uses shared Vuexy badge atoms for service type coverage labels', () => {
+    const source = readFileSync('app/services/service-type-coverage-board-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("<span className={summary.blockedCount ? 'pill pill-danger' : 'pill pill-success'}>");
+    expect(source).not.toContain("<span className={summary.warningCount ? 'pill pill-warn' : 'pill pill-success'}>");
+    expect(source).not.toContain('<span className="pill pill-info">{summary.readyCount} ready</span>');
+    expect(source).not.toContain("<span className={`pill ${row.missingDurations.length ? 'pill-warn' : 'pill-success'}`}>");
+    expect(source).not.toContain("<span className={`pill ${row.missingBasePayoutCount ? 'pill-danger' : 'pill-success'}`}>");
+    expect(source).not.toContain("<span className={`pill ${row.hiddenPartnerPriceCount ? 'pill-warn' : 'pill-success'}`}>");
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.statusLabel}</span>');
+  });
+
   it('renders coverage summary, visible rows, and hidden row copy', () => {
     const section = ServiceTypeCoverageBoardSection({
       hiddenRowCount: 3,

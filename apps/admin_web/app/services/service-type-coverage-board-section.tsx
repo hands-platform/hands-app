@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 
@@ -42,13 +43,13 @@ export function ServiceTypeCoverageBoardSection({
       description="Checks each service name as one operating unit: duration options, minimum-price payout rules, Partner price visibility, and projected company commission."
       status={
         <div className="actions">
-          <span className={summary.blockedCount ? 'pill pill-danger' : 'pill pill-success'}>
+          <StatusBadge tone={summary.blockedCount ? 'danger' : 'success'}>
             {summary.blockedCount} blocked
-          </span>
-          <span className={summary.warningCount ? 'pill pill-warn' : 'pill pill-success'}>
+          </StatusBadge>
+          <StatusBadge tone={summary.warningCount ? 'warning' : 'success'}>
             {summary.warningCount} warning
-          </span>
-          <span className="pill pill-info">{summary.readyCount} ready</span>
+          </StatusBadge>
+          <StatusBadge tone="info">{summary.readyCount} ready</StatusBadge>
         </div>
       }
       title="Service type coverage board"
@@ -91,9 +92,9 @@ export function ServiceTypeCoverageBoardSection({
                 </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <span className={`pill ${row.missingDurations.length ? 'pill-warn' : 'pill-success'}`}>
+                    <StatusBadge tone={row.missingDurations.length ? 'warning' : 'success'}>
                       {row.activeDurationLabels || 'No active duration'}
-                    </span>
+                    </StatusBadge>
                     <small>
                       Missing duration options:{' '}
                       {row.missingDurations.length
@@ -104,18 +105,18 @@ export function ServiceTypeCoverageBoardSection({
                 </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <span className={`pill ${row.missingBasePayoutCount ? 'pill-danger' : 'pill-success'}`}>
+                    <StatusBadge tone={row.missingBasePayoutCount ? 'danger' : 'success'}>
                       {row.missingBasePayoutCount} missing base payout
-                    </span>
+                    </StatusBadge>
                     <small>{row.activeOptionCount} active option(s)</small>
                     <small>{row.payoutRuleCount} payout rule(s)</small>
                   </div>
                 </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <span className={`pill ${row.hiddenPartnerPriceCount ? 'pill-warn' : 'pill-success'}`}>
+                    <StatusBadge tone={row.hiddenPartnerPriceCount ? 'warning' : 'success'}>
                       {row.visiblePartnerPriceCount} visible / {row.hiddenPartnerPriceCount} hidden
-                    </span>
+                    </StatusBadge>
                     <small>{row.belowMinimumCount} below minimum</small>
                     <small>{row.missingPayoutPriceCount} missing payout rule</small>
                   </div>
@@ -128,7 +129,7 @@ export function ServiceTypeCoverageBoardSection({
                   </div>
                 </td>
                 <td>
-                  <span className={`pill ${row.tone}`}>{row.statusLabel}</span>
+                  <PillClassBadge pillClass={row.tone}>{row.statusLabel}</PillClassBadge>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>
