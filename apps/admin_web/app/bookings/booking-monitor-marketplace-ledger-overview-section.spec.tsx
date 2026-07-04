@@ -1,8 +1,19 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceLedgerOverviewSection } from './booking-monitor-marketplace-ledger-overview-section';
 
 describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
+  it('uses shared Vuexy badge atoms for ledger summary and operating queue chips', () => {
+    const source = readFileSync('app/bookings/booking-monitor-marketplace-ledger-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${marketplaceLedgerSummary.total > 0 ?');
+    expect(source).not.toContain('<span className="pill pill-info">No auto assignment</span>');
+    expect(source).not.toContain('<span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.value}</span>');
+  });
+
   it('renders ledger summary and operating queue cards', () => {
     const booking = {
       id: 'booking_123456789',

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { MarketplaceOperatingQueueItem } from '../../lib/marketplace-operating-queue';
@@ -25,9 +26,9 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
+        <PillClassBadge pillClass={marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}>
           All participant records {marketplaceLedgerSummary.total}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mt-14"
       description="Participant evidence for first-pick, marketplace, declined, and final-choice rows."
@@ -40,7 +41,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             Only marketplace lanes with current operator work are shown here.
           </p>
         </div>
-        <span className="pill pill-info">No auto assignment</span>
+        <StatusBadge tone="info">No auto assignment</StatusBadge>
       </div>
       <div className="ops-task-grid admin-mt-12">
         {visibleOperatingQueue.map((item) => (
@@ -49,8 +50,8 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <div className="participant-list">
-              <span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>
-              <span className="pill">{item.value}</span>
+              <PillClassBadge pillClass={stagePillClass(item.tone)}>{item.status}</PillClassBadge>
+              <PillClassBadge pillClass="pill-neutral">{item.value}</PillClassBadge>
             </div>
             <small>{item.operatorAction}</small>
             {item.bookings.length > 0 && (

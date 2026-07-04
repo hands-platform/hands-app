@@ -1,8 +1,25 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceParticipantLedgerSection } from './booking-monitor-marketplace-participant-ledger-section';
 
 describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
+  it('uses shared Vuexy badge atoms for participant summary and row chips', () => {
+    const source = readFileSync('app/bookings/booking-monitor-marketplace-participant-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${pill.tone}`} key={pill.label}>');
+    expect(source).not.toContain('<span className="pill">Participant evidence</span>');
+    expect(source).not.toContain('<span className="pill">{row.roleLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.evidenceTone}`} title={row.evidenceDetail}>');
+    expect(source).not.toContain('<span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.distancePolicyTone}`} title={row.distancePolicyHelper}>');
+    expect(source).not.toContain('<span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.choiceTone}`} title={row.choiceReason}>');
+    expect(source).not.toContain('<span className={`pill ${row.chatHandoffTone}`} title={row.choiceNextStep}>');
+  });
+
   it('renders participant ledger pills, operations cards, and row details', () => {
     const booking = {
       id: 'booking_123456789',
@@ -89,7 +106,7 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
       expect.arrayContaining([
         'admin-avatar-status-dot is-matching',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
         'text-link',
         'vuexy-booking-person',
       ]),

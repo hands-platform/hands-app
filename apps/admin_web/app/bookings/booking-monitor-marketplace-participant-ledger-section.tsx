@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { PillClassBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { shortId } from '../../lib/admin-format';
@@ -56,11 +57,13 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
     <>
       <div className="participant-list admin-mt-12">
         {marketplaceLedgerPills.map((pill) => (
-          <span className={`pill ${pill.tone}`} key={pill.label}>
+          <PillClassBadge pillClass={pill.tone} key={pill.label}>
             {pill.label}
-          </span>
+          </PillClassBadge>
         ))}
-        {marketplaceLedgerPills.length === 0 && <span className="pill">Participant evidence</span>}
+        {marketplaceLedgerPills.length === 0 && (
+          <PillClassBadge pillClass="pill-neutral">Participant evidence</PillClassBadge>
+        )}
       </div>
       <div className="ops-task-grid admin-mt-14">
         {visibleMarketplaceOperationsCards.map((card) => (
@@ -117,44 +120,44 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                     label={row.partnerLabel}
                     linkClassName="vuexy-booking-person-link"
                   />
-                  <span className="pill">{row.roleLabel}</span>
+                  <PillClassBadge pillClass="pill-neutral">{row.roleLabel}</PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.evidenceTone}`} title={row.evidenceDetail}>
+                  <PillClassBadge pillClass={row.evidenceTone} title={row.evidenceDetail}>
                     {row.evidenceLabel}
-                  </span>
+                  </PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>
+                  <PillClassBadge pillClass={row.statusTone}>{row.statusLabel}</PillClassBadge>
                   <div className="muted">{row.participant.providerStatusAtJoin ?? 'Partner state not saved'}</div>
                 </td>
                 <td>
                   <strong>{row.distanceLabel}</strong>
                   <div>
-                    <span className={`pill ${row.distancePolicyTone}`} title={row.distancePolicyHelper}>
+                    <PillClassBadge pillClass={row.distancePolicyTone} title={row.distancePolicyHelper}>
                       {row.distancePolicyLabel}
-                    </span>
+                    </PillClassBadge>
                   </div>
                 </td>
                 <td>
                   <div>{row.windowLabel}</div>
-                  <span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>
+                  <PillClassBadge pillClass={row.alertTone}>{row.alertLabel}</PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
+                  <PillClassBadge pillClass={row.walletTone}>{row.walletLabel}</PillClassBadge>
                 </td>
                 <td>
                   <div>{row.joinedLabel}</div>
                   <div className="muted">{row.respondedLabel}</div>
                 </td>
                 <td>
-                  <span className={`pill ${row.choiceTone}`} title={row.choiceReason}>
+                  <PillClassBadge pillClass={row.choiceTone} title={row.choiceReason}>
                     {row.choiceLabel}
-                  </span>
+                  </PillClassBadge>
                   <div className="participant-list admin-mt-6">
-                    <span className={`pill ${row.chatHandoffTone}`} title={row.choiceNextStep}>
+                    <PillClassBadge pillClass={row.chatHandoffTone} title={row.choiceNextStep}>
                       {row.chatHandoffLabel}
-                    </span>
+                    </PillClassBadge>
                   </div>
                 </td>
               </tr>

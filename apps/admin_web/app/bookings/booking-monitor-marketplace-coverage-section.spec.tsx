@@ -1,8 +1,22 @@
+import { readFileSync } from 'node:fs';
 import type { AdminBooking } from '../../lib/admin-api';
 import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceCoverageSection } from './booking-monitor-marketplace-coverage-section';
 
 describe('BookingMonitorMarketplaceCoverageSection', () => {
+  it('uses shared Vuexy badge atoms for coverage summary and row chips', () => {
+    const source = readFileSync('app/bookings/booking-monitor-marketplace-coverage-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${pill.tone}`} key={pill.label}>');
+    expect(source).not.toContain('<span className="pill">Final Partner selected');
+    expect(source).not.toContain('<span className={`pill ${row.firstPickTone}`}>{row.firstPickLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.selectedPartnerTone}`}>');
+    expect(source).not.toContain('<span className={`pill ${row.alertTone}`} title={row.alertDetail}>');
+    expect(source).not.toContain('<span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.nextActionTone}`} title={row.nextAction}>');
+  });
+
   it('renders coverage rows, pills, and booking links', () => {
     const booking = {
       id: 'booking_123456789',
@@ -70,7 +84,7 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
         'card admin-section admin-card-scroll admin-mt-14',
         'ops-section-header admin-section-header',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table',
         'text-link',
       ]),
     );

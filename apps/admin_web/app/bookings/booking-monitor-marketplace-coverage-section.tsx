@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -41,9 +42,9 @@ export function BookingMonitorMarketplaceCoverageSection({
       actions={
         <>
           {marketplaceBookingCoveragePills.map((pill) => (
-            <span className={`pill ${pill.tone}`} key={pill.label}>
+            <PillClassBadge pillClass={pill.tone} key={pill.label}>
               {pill.label}
-            </span>
+            </PillClassBadge>
           ))}
         </>
       }
@@ -52,7 +53,9 @@ export function BookingMonitorMarketplaceCoverageSection({
       title="Marketplace booking coverage board"
     >
       <div className="participant-list admin-mt-12">
-        <span className="pill">Final Partner selected {marketplaceBookingCoverageSummary.selected}</span>
+        <PillClassBadge pillClass="pill-neutral">
+          Final Partner selected {marketplaceBookingCoverageSummary.selected}
+        </PillClassBadge>
       </div>
       {marketplaceBookingCoverageRows.length === 0 ? (
         <AdminEmptyState
@@ -80,7 +83,7 @@ export function BookingMonitorMarketplaceCoverageSection({
                   <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
                 </td>
                 <td>
-                  <span className={`pill ${row.firstPickTone}`}>{row.firstPickLabel}</span>
+                  <PillClassBadge pillClass={row.firstPickTone}>{row.firstPickLabel}</PillClassBadge>
                   <div className="muted">{getMatchingWindowLabel(row.booking)}</div>
                 </td>
                 <td>
@@ -90,22 +93,22 @@ export function BookingMonitorMarketplaceCoverageSection({
                   </div>
                 </td>
                 <td>
-                  <span className={`pill ${row.selectedPartnerTone}`}>
+                  <PillClassBadge pillClass={row.selectedPartnerTone}>
                     {row.selectedPartnerLabel}
-                  </span>
+                  </PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.alertTone}`} title={row.alertDetail}>
+                  <PillClassBadge pillClass={row.alertTone} title={row.alertDetail}>
                     {row.alertLabel}
-                  </span>
+                  </PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
+                  <PillClassBadge pillClass={row.walletTone}>{row.walletLabel}</PillClassBadge>
                 </td>
                 <td>
-                  <span className={`pill ${row.nextActionTone}`} title={row.nextAction}>
+                  <PillClassBadge pillClass={row.nextActionTone} title={row.nextAction}>
                     {compactCoverageNextActionLabel(row.nextAction)}
-                  </span>
+                  </PillClassBadge>
                 </td>
               </tr>
             ))}
