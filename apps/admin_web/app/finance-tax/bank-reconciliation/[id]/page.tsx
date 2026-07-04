@@ -108,7 +108,11 @@ export default async function BankReconciliationDetailPage({
       description="Bank transaction evidence for manual reconciliation against payment clearing, journal, withdrawal, and payout records."
       metrics={[
         { helper: 'Bank transaction state.', label: 'Status', value: transaction.status },
-        { helper: 'Bank transaction amount.', label: 'Amount', value: formatMoney(transaction.amount, transaction.currency) },
+        {
+          helper: 'Bank transaction amount.',
+          label: 'Amount',
+          value: <MoneyText amount={transaction.amount} currency={transaction.currency} />,
+        },
         { helper: 'Linked reconciliation matches.', label: 'Matches', value: matches.length },
         { helper: 'Bank flow direction.', label: 'Type', value: transaction.type },
       ]}
@@ -128,8 +132,11 @@ export default async function BankReconciliationDetailPage({
           <FinanceDetailInfoItem label="Transfer reference" value={transaction.transferRef ?? '-'} />
           <FinanceDetailInfoItem label="Source key" value={transaction.sourceKey} />
           <FinanceDetailInfoItem label="Description" value={transaction.description ?? '-'} />
-          <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, transaction.currency)} />
-          <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, transaction.currency)} />
+          <FinanceDetailInfoItem label="Matched amount" value={<MoneyText amount={matchedAmount} currency={transaction.currency} />} />
+          <FinanceDetailInfoItem
+            label="Remaining amount"
+            value={<MoneyText amount={remainingAmount} currency={transaction.currency} />}
+          />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
@@ -145,7 +152,7 @@ export default async function BankReconciliationDetailPage({
             {
               detail: transaction.status,
               label: 'Bank row',
-              value: formatMoney(transaction.amount, transaction.currency),
+              value: <MoneyText amount={transaction.amount} currency={transaction.currency} />,
             },
             {
               detail: latestActiveMatch ? latestActiveMatch.status : 'Waiting for match',
@@ -160,7 +167,12 @@ export default async function BankReconciliationDetailPage({
             {
               detail: bankReconciliationNextAction(transaction.status, remainingAmount, latestReversedMatch),
               label: 'Closeout state',
-              value: remainingAmount > 0 ? formatMoney(remainingAmount, transaction.currency) : 'Clear',
+              value:
+                remainingAmount > 0 ? (
+                  <MoneyText amount={remainingAmount} currency={transaction.currency} />
+                ) : (
+                  'Clear'
+                ),
             },
           ]}
         />
@@ -215,7 +227,10 @@ export default async function BankReconciliationDetailPage({
             label="Reversal reason"
             value={latestReversedMatch ? (reversalReasonFromMatch(latestReversedMatch) ?? '-') : '-'}
           />
-          <FinanceDetailInfoItem label="Unmatched remainder" value={formatMoney(remainingAmount, transaction.currency)} />
+          <FinanceDetailInfoItem
+            label="Unmatched remainder"
+            value={<MoneyText amount={remainingAmount} currency={transaction.currency} />}
+          />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
@@ -298,7 +313,7 @@ export default async function BankReconciliationDetailPage({
                 <div className="finance-reconciliation-form-actions admin-grid-span-2">
                   <AdminFormControlButton disabled={!paymentClearingOptions.length}>Create match</AdminFormControlButton>
                   <span className="muted">
-                    Suggested amount: {formatMoney(suggestedMatchAmount, transaction.currency)}
+                    Suggested amount: <MoneyText amount={suggestedMatchAmount} currency={transaction.currency} />
                   </span>
                 </div>
               </AdminFormGrid>

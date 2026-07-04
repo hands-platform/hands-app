@@ -7,7 +7,7 @@ import { AdminFormControlLink } from '../../../../components/admin-form-controls
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
-import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { formatDateTime, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -61,7 +61,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       description="Evidence for one booking payment clearing row. Open this only when finance needs source, settlement, or bank matching detail."
       metrics={[
         { helper: 'Clearing state.', label: 'Status', value: entry.status },
-        { helper: 'Clearing row amount.', label: 'Amount', value: formatMoney(entry.amount, entry.currency) },
+        { helper: 'Clearing row amount.', label: 'Amount', value: <MoneyText amount={entry.amount} currency={entry.currency} /> },
         { helper: 'Bank reconciliation evidence linked to this row.', label: 'Matches', value: matches.length },
         { helper: 'Clearing source type.', label: 'Type', value: entry.type },
       ]}
@@ -89,7 +89,10 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             value={
               entry.settlementSnapshot ? (
                 <>
-                  {formatMoney(entry.settlementSnapshot.paymentProcessingFee, entry.settlementSnapshot.currency ?? entry.currency)}
+                  <MoneyText
+                    amount={entry.settlementSnapshot.paymentProcessingFee}
+                    currency={entry.settlementSnapshot.currency ?? entry.currency}
+                  />
                   <span className="muted admin-block">
                     {paymentFeeBasisLabel(
                       settlementPaymentFee,
@@ -138,8 +141,8 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
-          <FinanceDetailInfoItem label="Matched amount" value={formatMoney(matchedAmount, entry.currency)} />
-          <FinanceDetailInfoItem label="Remaining amount" value={formatMoney(remainingAmount, entry.currency)} />
+          <FinanceDetailInfoItem label="Matched amount" value={<MoneyText amount={matchedAmount} currency={entry.currency} />} />
+          <FinanceDetailInfoItem label="Remaining amount" value={<MoneyText amount={remainingAmount} currency={entry.currency} />} />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
@@ -160,7 +163,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             {
               detail: entry.status,
               label: 'Clearing row',
-              value: formatMoney(entry.amount, entry.currency),
+              value: <MoneyText amount={entry.amount} currency={entry.currency} />,
             },
             {
               detail: settlementPaymentFee.policyVersionId,
@@ -208,7 +211,14 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               )
             }
           />
-          <FinanceDetailInfoItem label="Bank match status" value={`${matches.length} match(es) · ${formatMoney(remainingAmount, entry.currency)} remaining`} />
+          <FinanceDetailInfoItem
+            label="Bank match status"
+            value={
+              <>
+                {matches.length} match(es) · <MoneyText amount={remainingAmount} currency={entry.currency} /> remaining
+              </>
+            }
+          />
           <FinanceDetailInfoItem
             label="Latest bank match"
             value={
@@ -310,7 +320,7 @@ function paymentClearingBankMatchLabel(
   if (remainingAmount <= 0) {
     return 'Fully matched';
   }
-  return formatMoney(remainingAmount, currency);
+  return <MoneyText amount={remainingAmount} currency={currency} />;
 }
 
 function paymentClearingNextAction(
@@ -357,7 +367,12 @@ function paymentFeeBasisLabel(
   if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
     return `${paymentFee.method} · legacy/manual fee evidence`;
   }
-  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
+  return (
+    <>
+      {paymentFee.method} · {paymentFee.rateBps} bps +{' '}
+      <MoneyText amount={paymentFee.fixedAmount} currency={currency} />
+    </>
+  );
 }
 
 function jsonRecord(value: unknown) {

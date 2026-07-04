@@ -7,7 +7,7 @@ import { AdminFormControlLink } from '../../../../components/admin-form-controls
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge } from '../../../../components/status-badge';
-import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { formatDateTime, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -54,8 +54,8 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       metrics={[
         { helper: 'Journal batch status.', label: 'Status', value: batch.status },
         { helper: 'Monthly tax/accounting period.', label: 'Period', value: batch.monthlyPeriod ?? '-' },
-        { helper: 'Batch debit total.', label: 'Debit', value: formatMoney(batch.totalDebit, batch.currency) },
-        { helper: 'Batch credit total.', label: 'Credit', value: formatMoney(batch.totalCredit, batch.currency) },
+        { helper: 'Batch debit total.', label: 'Debit', value: <MoneyText amount={batch.totalDebit} currency={batch.currency} /> },
+        { helper: 'Batch credit total.', label: 'Credit', value: <MoneyText amount={batch.totalCredit} currency={batch.currency} /> },
       ]}
       title="General Ledger Detail"
     >
@@ -70,11 +70,19 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
           <FinanceDetailInfoItem
             label="Monthly close blocker"
-            value={formulaDelta === 0 ? 'No formula delta' : `Formula delta ${formatMoney(formulaDelta, batch.currency)}`}
+            value={
+              formulaDelta === 0 ? (
+                'No formula delta'
+              ) : (
+                <>
+                  Formula delta <MoneyText amount={formulaDelta} currency={batch.currency} />
+                </>
+              )
+            }
           />
-          <FinanceDetailInfoItem label="Debit total" value={formatMoney(batch.totalDebit, batch.currency)} />
-          <FinanceDetailInfoItem label="Credit total" value={formatMoney(batch.totalCredit, batch.currency)} />
-          <FinanceDetailInfoItem label="Balance delta" value={formatMoney(balanceDelta, batch.currency)} />
+          <FinanceDetailInfoItem label="Debit total" value={<MoneyText amount={batch.totalDebit} currency={batch.currency} />} />
+          <FinanceDetailInfoItem label="Credit total" value={<MoneyText amount={batch.totalCredit} currency={batch.currency} />} />
+          <FinanceDetailInfoItem label="Balance delta" value={<MoneyText amount={balanceDelta} currency={batch.currency} />} />
           <FinanceDetailInfoItem
             label="Booking"
             value={
@@ -170,7 +178,10 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             value={
               batch.settlementSnapshot ? (
                 <>
-                  {formatMoney(batch.settlementSnapshot.paymentProcessingFee, batch.settlementSnapshot.currency)}
+                  <MoneyText
+                    amount={batch.settlementSnapshot.paymentProcessingFee}
+                    currency={batch.settlementSnapshot.currency}
+                  />
                   <span className="muted admin-block">
                     {paymentFeeBasisLabel(
                       settlementPaymentFee,
@@ -265,10 +276,18 @@ function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlement
 
 function journalCloseoutLabel(balanceDelta: number, formulaDelta: number, currency: string) {
   if (balanceDelta > 0) {
-    return `Balance delta ${formatMoney(balanceDelta, currency)}`;
+    return (
+      <>
+        Balance delta <MoneyText amount={balanceDelta} currency={currency} />
+      </>
+    );
   }
   if (formulaDelta > 0) {
-    return `Formula delta ${formatMoney(formulaDelta, currency)}`;
+    return (
+      <>
+        Formula delta <MoneyText amount={formulaDelta} currency={currency} />
+      </>
+    );
   }
   return 'Clear';
 }
@@ -289,7 +308,11 @@ function journalBalanceLabel(batch: AdminAccountingJournalBatchDetail) {
     return 'Balanced';
   }
 
-  return `Delta ${formatMoney(Math.abs(delta), batch.currency)}`;
+  return (
+    <>
+      Delta <MoneyText amount={Math.abs(delta)} currency={batch.currency} />
+    </>
+  );
 }
 
 function journalFormulaDelta(batch: AdminAccountingJournalBatchDetail) {
@@ -359,7 +382,12 @@ function paymentFeeBasisLabel(
   if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
     return `${paymentFee.method} · legacy/manual fee evidence`;
   }
-  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
+  return (
+    <>
+      {paymentFee.method} · {paymentFee.rateBps} bps +{' '}
+      <MoneyText amount={paymentFee.fixedAmount} currency={currency} />
+    </>
+  );
 }
 
 function stringValue(value: unknown) {

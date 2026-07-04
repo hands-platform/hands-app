@@ -449,7 +449,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('payment:payment-1:capture');
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('10.000 VND');
-    expect(markup).toContain('CARD · 150 bps + 1.000 VND');
+    expect(markup).toContain('CARD · 150 bps +');
+    expect(markup).toContain('1.000 VND');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('/payments/payment-1');
     expect(markup).toContain('/bookings/booking-1');
@@ -625,13 +626,15 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('10.000 VND');
-    expect(markup).toContain('CARD · 150 bps + 1.000 VND');
+    expect(markup).toContain('CARD · 150 bps +');
+    expect(markup).toContain('1.000 VND');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('Bank reconciliation evidence');
     expect(markup).toContain('Double-entry check');
     expect(markup).toContain('Balanced');
     expect(markup).toContain('Monthly close blocker');
-    expect(markup).toContain('Formula delta 42.000 VND');
+    expect(markup).toContain('Formula delta');
+    expect(markup).toContain('42.000 VND');
     expect(markup).toContain('Closeout readiness');
     expect(markup).toContain('Resolve formula delta before monthly close');
     expect(markup).toContain('Debit total');
@@ -842,7 +845,8 @@ describe('finance detail pages', () => {
     expect(markup).toContain('type="hidden" name="sourceType" value="payment-clearing"');
     expect(markup).toContain('name="sourceId"');
     expect(markup).toContain('Create match');
-    expect(markup).toContain('Suggested amount: 650.000 VND');
+    expect(markup).toContain('Suggested amount:');
+    expect(markup).toContain('650.000 VND');
     expect(markup).toContain('Requires explicit source id and approver evidence.');
     expect(markup).not.toContain('This bank transaction is already fully reconciled.');
   });
