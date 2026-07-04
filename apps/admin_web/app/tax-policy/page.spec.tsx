@@ -113,10 +113,13 @@ describe('TaxPolicyPage', () => {
   });
 
   it('uses shared Vuexy badge atoms instead of raw tax policy pill spans', () => {
+    expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('PillClassBadge');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
     expect(pageSource).not.toContain('<span className="pill pill-info">{ruleCount} rule(s)</span>');
     expect(pageSource).not.toContain('<span className={`pill ${notice.tone === \'success\' ? \'pill-success\' : \'pill-danger\'}`}>');
+    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
     expect(pageSource).not.toContain('<span className={`pill ${healthItems.every((item) => item.ok) ? \'pill-success\' : \'pill-warn\'}`}>');
     expect(pageSource).not.toContain('<span className={`pill ${preview.policy ? \'pill-success\' : \'pill-warn\'}`}>');
     expect(pageSource).not.toContain('<span className={`pill ${policy.status === \'ACTIVE\' ? \'pill-success\' : \'pill-neutral\'}`}>');

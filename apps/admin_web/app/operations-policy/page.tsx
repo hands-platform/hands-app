@@ -1,8 +1,8 @@
 import { Settings } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminAuditLog,
@@ -134,15 +134,17 @@ export default async function OperationsPolicyPage({
     >
 
       {notice ? (
-        <AdminSection
-          className={`admin-notice-card ${
-            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }`}
-          description={notice.detail}
-          statusLabel={notice.tone === 'success' ? 'Saved' : 'Blocked'}
-          statusTone={notice.tone === 'success' ? 'success' : 'danger'}
-          title={notice.title}
-        />
+        <AdminNoticeCard role="status" tone={notice.tone === 'success' ? 'success' : 'danger'}>
+          <AdminSectionHeader
+            description={notice.detail}
+            status={
+              <StatusBadge tone={notice.tone === 'success' ? 'success' : 'danger'}>
+                {notice.tone === 'success' ? 'Saved' : 'Blocked'}
+              </StatusBadge>
+            }
+            title={notice.title}
+          />
+        </AdminNoticeCard>
       ) : null}
 
       <OperationsPolicyAuthorityBaselineSection />

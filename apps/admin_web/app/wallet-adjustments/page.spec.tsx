@@ -310,7 +310,9 @@ describe('WalletAdjustmentsPage', () => {
 
   it('uses the shared Vuexy notice card atom for action notices', () => {
     expect(pageSource).toContain('AdminNoticeCard');
+    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
     expect(pageSource).not.toContain('className={`card admin-mb-16 admin-notice-card');
+    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
   });
 
   it('uses server pagination for manual wallet adjustment history', async () => {

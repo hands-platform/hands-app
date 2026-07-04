@@ -100,10 +100,9 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
     >
       {notice ? (
         <AdminNoticeCard
-          className={`admin-mb-16 ${
-            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }`}
+          className="admin-mb-16"
           role="status"
+          tone={notice.tone === 'success' ? 'success' : 'danger'}
         >
           <div>
             <h2>{notice.title}</h2>

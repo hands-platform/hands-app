@@ -117,6 +117,20 @@ describe('Admin surface components', () => {
     });
   });
 
+  it('maps notice tones to the shared Vuexy notice classes', () => {
+    const notice = AdminNoticeCard({
+      children: <strong>Blocked</strong>,
+      className: 'admin-mb-16',
+      role: 'alert',
+      tone: 'danger',
+    });
+
+    expect(notice.props).toMatchObject({
+      className: 'card admin-card admin-notice-card admin-notice-danger admin-mb-16',
+      role: 'alert',
+    });
+  });
+
   it('renders a reusable Vuexy disclosure card surface', () => {
     const disclosure = AdminDisclosureCard({
       children: <summary>Open record</summary>,

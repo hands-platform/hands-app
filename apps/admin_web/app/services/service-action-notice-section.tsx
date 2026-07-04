@@ -1,4 +1,6 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminNoticeCard } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { ServiceActionNotice } from '../../lib/service-action-notice';
 
 type ServiceActionNoticeSectionProps = {
@@ -10,16 +12,21 @@ export function ServiceActionNoticeSection({ notice }: ServiceActionNoticeSectio
     return null;
   }
 
-  const isSuccess = notice.tone === 'success';
-  const noticeClassName = isSuccess ? 'admin-notice-success' : 'admin-notice-danger';
-
   return (
-    <AdminSection
-      className={`admin-mb-16 admin-notice-card ${noticeClassName}`}
-      description={notice.detail}
-      statusLabel={isSuccess ? 'Saved' : 'Blocked'}
-      statusTone={isSuccess ? 'success' : 'danger'}
-      title={notice.title}
-    />
+    <AdminNoticeCard
+      className="admin-mb-16"
+      role="status"
+      tone={notice.tone === 'success' ? 'success' : 'danger'}
+    >
+      <AdminSectionHeader
+        description={notice.detail}
+        status={
+          <StatusBadge tone={notice.tone === 'success' ? 'success' : 'danger'}>
+            {notice.tone === 'success' ? 'Saved' : 'Blocked'}
+          </StatusBadge>
+        }
+        title={notice.title}
+      />
+    </AdminNoticeCard>
   );
 }

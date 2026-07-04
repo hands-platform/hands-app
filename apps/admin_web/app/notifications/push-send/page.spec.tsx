@@ -65,8 +65,10 @@ describe('PushSendPage', () => {
   it('uses the shared Vuexy notice card atom for send results', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('AdminSectionHeader');
+    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
     expect(pageSource).not.toContain('<div className="ops-section-header">');
     expect(pageSource).not.toContain('className={`card admin-notice-card');
+    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
   });
 
   it('uses the shared Vuexy card atom for push preview results', () => {

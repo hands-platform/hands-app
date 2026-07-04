@@ -16,7 +16,10 @@ type AdminCardProps = {
 
 type AdminNoticeCardProps = AdminCardProps & {
   readonly role?: 'alert' | 'status';
+  readonly tone?: AdminNoticeTone;
 };
+
+type AdminNoticeTone = 'danger' | 'info' | 'success' | 'warning';
 
 type AdminDisclosureCardProps = AdminCardProps & {
   readonly open?: boolean;
@@ -126,12 +129,17 @@ export function AdminNoticeCard({
   className,
   id,
   role,
+  tone,
 }: AdminNoticeCardProps) {
   return (
     <section
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
-      className={joinClassNames('card admin-card admin-notice-card', className)}
+      className={joinClassNames(
+        'card admin-card admin-notice-card',
+        tone ? `admin-notice-${tone}` : undefined,
+        className,
+      )}
       id={id}
       role={role}
     >

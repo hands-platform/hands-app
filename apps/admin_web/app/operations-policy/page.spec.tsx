@@ -43,10 +43,13 @@ describe('OperationsPolicyPage', () => {
   });
 
   it('uses shared Vuexy badge atoms for page header counters', () => {
+    expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
     expect(pageSource).not.toContain('<span className="pill pill-success">{matchingSettings.length} enforced policy</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">{decisionSettings.length} decision item(s)</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">{savedCount} saved override(s)</span>');
+    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
   });
 
   it('uses the shared AdminFormControlLink atom for page-level actions', () => {

@@ -10,7 +10,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
@@ -62,18 +62,21 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
     >
 
       {notice ? (
-        <AdminSection
-          className={`admin-mb-16 admin-notice-card ${
-            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }`}
-          title={notice.title}
-          description={notice.detail}
-          actions={
-            <PillClassBadge pillClass={notice.tone === 'success' ? 'pill-success' : 'pill-danger'}>
-              {notice.badge}
-            </PillClassBadge>
-          }
-        />
+        <AdminNoticeCard
+          className="admin-mb-16"
+          role="status"
+          tone={notice.tone === 'success' ? 'success' : 'danger'}
+        >
+          <AdminSectionHeader
+            actions={
+              <PillClassBadge pillClass={notice.tone === 'success' ? 'pill-success' : 'pill-danger'}>
+                {notice.badge}
+              </PillClassBadge>
+            }
+            description={notice.detail}
+            title={notice.title}
+          />
+        </AdminNoticeCard>
       ) : null}
 
       <AdminSection

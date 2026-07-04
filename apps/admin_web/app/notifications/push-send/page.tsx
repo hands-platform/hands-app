@@ -169,9 +169,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
     >
       {notice ? (
         <AdminNoticeCard
-          className={
-            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
-          }
+          tone={notice.tone === 'success' ? 'success' : 'danger'}
         >
           <AdminSectionHeader
             actions={<StatusBadge tone={notice.tone}>{notice.badge}</StatusBadge>}
