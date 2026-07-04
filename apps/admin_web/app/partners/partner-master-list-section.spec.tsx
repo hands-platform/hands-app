@@ -10,6 +10,19 @@ describe('PartnerMasterListSection', () => {
     expect(source).not.toContain('<strong>No partner rows found</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw partner master list pill spans', () => {
+    const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${row.online ? \'pill-success\' : \'pill-neutral\'}`}>');
+    expect(source).not.toContain('<span className="pill pill-warn">Withdrawal action</span>');
+    expect(source).not.toContain('<span className="pill pill-info">Withdrawal pending</span>');
+    expect(source).not.toContain('<span className="pill pill-success">Approval clear</span>');
+    expect(source).not.toContain('className={`pill ${');
+    expect(source).not.toContain('<span className={`pill ${row.accountBlocked ? \'pill-danger\' : \'pill-success\'}`}>');
+  });
+
   it('renders partner master rows with operations facts and detail links', () => {
     const section = PartnerMasterListSection({
       filters: buildFilters({ review: 'unapproved' }),

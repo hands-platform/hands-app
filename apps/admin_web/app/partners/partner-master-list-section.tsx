@@ -3,6 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import {
@@ -181,7 +182,7 @@ function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow 
 function renderStateCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>
+      <PillClassBadge pillClass={row.online ? 'pill-success' : 'pill-neutral'}>{row.status}</PillClassBadge>
       <small>{row.latestSessionPlatform}</small>
     </div>
   );
@@ -248,7 +249,7 @@ function renderWalletWithdrawalSignal(row: PartnerMasterListSectionRow) {
   if (row.walletWithdrawalAdminActionCount > 0) {
     return (
       <small>
-        <span className="pill pill-warn">Withdrawal action</span>{' '}
+        <StatusBadge tone="warning">Withdrawal action</StatusBadge>{' '}
         {row.walletWithdrawalLatestAmount === null
           ? row.walletWithdrawalLatestStatus
           : formatProviderMoney(row.walletWithdrawalLatestAmount)}
@@ -259,7 +260,7 @@ function renderWalletWithdrawalSignal(row: PartnerMasterListSectionRow) {
   if (row.walletWithdrawalOpenCount > 0) {
     return (
       <small>
-        <span className="pill pill-info">Withdrawal pending</span> {row.walletWithdrawalLatestStatus}
+        <StatusBadge tone="info">Withdrawal pending</StatusBadge> {row.walletWithdrawalLatestStatus}
       </small>
     );
   }
@@ -287,17 +288,15 @@ function renderPayoutCell(row: PartnerMasterListSectionRow) {
 
 function renderApprovalNeedsCell(row: PartnerMasterListSectionRow) {
   if (!row.approvalIssues.length) {
-    return <span className="pill pill-success">Approval clear</span>;
+    return <StatusBadge tone="success">Approval clear</StatusBadge>;
   }
 
   return (
-    <span
-      className={`pill ${
-        row.approvalIssues.some((issue) => issue.severity === 'high') ? 'pill-danger' : 'pill-warn'
-      }`}
+    <PillClassBadge
+      pillClass={row.approvalIssues.some((issue) => issue.severity === 'high') ? 'pill-danger' : 'pill-warn'}
     >
       {row.approvalIssues.length} approval need(s)
-    </span>
+    </PillClassBadge>
   );
 }
 
@@ -309,9 +308,9 @@ function renderAccountCell(
 
   return (
     <div className="vuexy-partner-stack">
-      <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
+      <PillClassBadge pillClass={row.accountBlocked ? 'pill-danger' : 'pill-success'}>
         {row.accountBlocked ? 'Account blocked' : 'Account clear'}
-      </span>
+      </PillClassBadge>
       <small>{row.accountNote}</small>
       {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}
       <small>{row.auditLogCount} memo/event(s)</small>
