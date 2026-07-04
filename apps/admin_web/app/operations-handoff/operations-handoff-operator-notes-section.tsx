@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Save, ScrollText } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
@@ -7,7 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { formatRelativeTime } from '../../lib/admin-format';
 import { addOperationsHandoffNote } from './actions';
@@ -92,13 +91,15 @@ export function OperationsHandoffOperatorNotesSection({
       </form>
       <div className="stack">
         {notes.slice(0, 8).map((note) => (
-          <Link className="ops-signal-card" href={note.href} key={note.id}>
-            <StatusBadge tone="info">{note.area}</StatusBadge>
-            <strong>{note.note}</strong>
-            <small>
-              {note.actor} / {relativeTime(note.createdAt)}
-            </small>
-          </Link>
+          <AdminActionCard
+            actionLabel={`${note.actor} / ${relativeTime(note.createdAt)}`}
+            className="ops-signal-card"
+            href={note.href}
+            key={note.id}
+            leading={<StatusBadge tone="info">{note.area}</StatusBadge>}
+            value={note.note}
+            variant="ops-task"
+          />
         ))}
         {notes.length === 0 ? <AdminEmptyState framed message="No operator note has been written yet." /> : null}
       </div>

@@ -7,8 +7,10 @@ describe('OperationsHandoffOperatorNotesSection', () => {
   it('uses shared Vuexy badge atoms for operator note labels', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-operator-notes-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{note.area}</span>');
+    expect(source).not.toContain('<Link className="ops-signal-card"');
   });
 
   it('uses the shared AdminFormControlLink atom for audit actions', () => {
@@ -43,6 +45,7 @@ describe('OperationsHandoffOperatorNotesSection', () => {
       expect.arrayContaining([
         'card admin-section',
         'ops-section-header admin-section-header',
+        'ops-task-card ops-signal-card',
       ]),
     );
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/audit-log', '/partners/partner-1']));
