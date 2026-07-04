@@ -12,6 +12,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadgeLink } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import {
   buildCloseoutTasks,
@@ -111,14 +112,18 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
         title="Finance date range"
       >
         {[
-          ['All records', '/finance-closeout?range=all'],
-          ['Today', '/finance-closeout?range=today'],
-          ['Last 7 days', '/finance-closeout?range=7d'],
-          ['Last 30 days', '/finance-closeout?range=30d'],
-        ].map(([label, href]) => (
-          <Link className="filter-pill" href={href} key={href}>
-            {label}
-          </Link>
+          { href: '/finance-closeout?range=all', label: 'All records', range: 'all' },
+          { href: '/finance-closeout?range=today', label: 'Today', range: 'today' },
+          { href: '/finance-closeout?range=7d', label: 'Last 7 days', range: '7d' },
+          { href: '/finance-closeout?range=30d', label: 'Last 30 days', range: '30d' },
+        ].map((option) => (
+          <PillClassBadgeLink
+            href={option.href}
+            key={option.range}
+            pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+          >
+            {option.label}
+          </PillClassBadgeLink>
         ))}
       </AdminSection>
 

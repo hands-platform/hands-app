@@ -13,7 +13,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
@@ -184,14 +184,18 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
         <div className="filter-row admin-mt-12">
           {[
-            ['All dates', '/payouts?range=all'],
-            ['Today', '/payouts?range=today'],
-            ['Last 7 days', '/payouts?range=7d'],
-            ['Last 30 days', '/payouts?range=30d'],
-          ].map(([label, href]) => (
-            <Link className="filter-pill" href={href} key={href}>
-              {label}
-            </Link>
+            { href: '/payouts?range=all', label: 'All dates', range: 'all' },
+            { href: '/payouts?range=today', label: 'Today', range: 'today' },
+            { href: '/payouts?range=7d', label: 'Last 7 days', range: '7d' },
+            { href: '/payouts?range=30d', label: 'Last 30 days', range: '30d' },
+          ].map((option) => (
+            <PillClassBadgeLink
+              href={option.href}
+              key={option.range}
+              pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+            >
+              {option.label}
+            </PillClassBadgeLink>
           ))}
         </div>
       </AdminFilterPanel>

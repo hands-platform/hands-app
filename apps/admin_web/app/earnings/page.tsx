@@ -3,6 +3,7 @@ import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '.
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { PillClassBadgeLink } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
@@ -174,14 +175,18 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         </div>
         <div className="filter-row admin-mt-12">
           {[
-            ['All dates', '/earnings?range=all'],
-            ['Today', '/earnings?range=today'],
-            ['Last 7 days', '/earnings?range=7d'],
-            ['Last 30 days', '/earnings?range=30d'],
-          ].map(([label, href]) => (
-            <Link className="filter-pill" href={href} key={href}>
-              {label}
-            </Link>
+            { href: '/earnings?range=all', label: 'All dates', range: 'all' },
+            { href: '/earnings?range=today', label: 'Today', range: 'today' },
+            { href: '/earnings?range=7d', label: 'Last 7 days', range: '7d' },
+            { href: '/earnings?range=30d', label: 'Last 30 days', range: '30d' },
+          ].map((option) => (
+            <PillClassBadgeLink
+              href={option.href}
+              key={option.range}
+              pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+            >
+              {option.label}
+            </PillClassBadgeLink>
           ))}
         </div>
       </AdminFilterPanel>

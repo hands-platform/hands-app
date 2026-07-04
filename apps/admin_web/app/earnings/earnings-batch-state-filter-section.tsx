@@ -1,7 +1,5 @@
-import Link from 'next/link';
-
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { statusBadgeClassName } from '../../components/status-badge';
+import { PillClassBadgeLink } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 
 export type EarningsBatchStateCard = {
@@ -19,8 +17,6 @@ type EarningsBatchStateFilterSectionProps = {
   readonly ledgerCount: number;
 };
 
-const batchStateFilterBaseClassName = 'filter-pill';
-
 export function EarningsBatchStateFilterSection({
   activeState,
   cards,
@@ -37,13 +33,13 @@ export function EarningsBatchStateFilterSection({
     >
       <div className="filter-row admin-mt-12">
         {cards.map((card) => (
-          <Link
-            className={`${batchStateFilterBaseClassName} ${activeBatchStateFilterClassName(card.state, activeState)}`}
+          <PillClassBadgeLink
             href={card.href}
             key={card.state}
+            pillClass={activeBatchStateFilterClassName(card.state, activeState)}
           >
             {card.label} / {card.count}
-          </Link>
+          </PillClassBadgeLink>
         ))}
       </div>
       <div className="service-trace-summary admin-mt-16">
@@ -62,5 +58,5 @@ export function EarningsBatchStateFilterSection({
 }
 
 function activeBatchStateFilterClassName(state: string, activeState: string) {
-  return state === activeState ? statusBadgeClassName('info').replace('pill ', '') : '';
+  return state === activeState ? 'pill-info' : 'pill-neutral';
 }

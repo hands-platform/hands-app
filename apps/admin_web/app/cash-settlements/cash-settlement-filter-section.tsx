@@ -5,6 +5,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { PillClassBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
   cashSettlementHref,
@@ -45,15 +46,24 @@ export function CashSettlementFilterSection({
       title="Cash settlement date range"
     >
       <div className="filter-row admin-mt-12">
-        {[
-          ['All dates', cashSettlementHref({ range: 'all', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
-          ['Today', cashSettlementHref({ range: 'today', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
-          ['Last 7 days', cashSettlementHref({ range: '7d', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
-          ['Last 30 days', cashSettlementHref({ range: '30d', pageSize: filters.pageSize, queue: filters.queue, q: filters.q })],
-        ].map(([label, href]) => (
-          <Link className="filter-pill" href={href} key={href}>
-            {label}
-          </Link>
+        {([
+          { label: 'All dates', range: 'all' },
+          { label: 'Today', range: 'today' },
+          { label: 'Last 7 days', range: '7d' },
+          { label: 'Last 30 days', range: '30d' },
+        ] as const).map((option) => (
+          <PillClassBadgeLink
+            href={cashSettlementHref({
+              range: option.range,
+              pageSize: filters.pageSize,
+              queue: filters.queue,
+              q: filters.q,
+            })}
+            key={option.range}
+            pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+          >
+            {option.label}
+          </PillClassBadgeLink>
         ))}
       </div>
       <form className="inline-form admin-mt-12" action="/cash-settlements">
@@ -86,13 +96,13 @@ export function CashSettlementFilterSection({
       </form>
       <div className="filter-row admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
-          <Link
-            className="filter-pill"
+          <PillClassBadgeLink
             href={cashSettlementHref({ range: filters.range, pageSize: filters.pageSize, queue: option.value, q: filters.q })}
             key={option.value}
+            pillClass={option.value === filters.queue ? 'pill-info' : 'pill-neutral'}
           >
             {option.label}
-          </Link>
+          </PillClassBadgeLink>
         ))}
       </div>
       <p className="muted admin-mt-10">
