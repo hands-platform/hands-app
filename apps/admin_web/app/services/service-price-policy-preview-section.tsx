@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
@@ -120,7 +121,7 @@ export function ServicePricePolicyPreviewSection({
           </AdminDataTable>
         </div>
       ) : (
-        <p className="muted">No active service option is available for price policy preview.</p>
+        <AdminEmptyState framed message="No active service option is available for price policy preview." />
       )}
       {hiddenRowCount ? (
         <p className="muted">

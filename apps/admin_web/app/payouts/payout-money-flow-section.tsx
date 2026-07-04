@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
@@ -63,7 +64,7 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
           ))}
         </div>
       ) : (
-        <p className="muted">No payout money flow check is visible for this range.</p>
+        <AdminEmptyState framed message="No payout money flow check is visible for this range." />
       )}
     </AdminFilterPanel>
   );

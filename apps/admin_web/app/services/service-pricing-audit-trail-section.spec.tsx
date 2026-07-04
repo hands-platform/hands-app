@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { ServicePricingAuditRow } from '../../lib/service-pricing-audit-rows';
 import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
@@ -44,7 +45,10 @@ describe('ServicePricingAuditTrailSection', () => {
   it('renders an empty state when there are no recent service pricing audit events', () => {
     const section = ServicePricingAuditTrailSection({ rows: [] });
 
-    expect(JSON.stringify(section)).toContain('No recent service pricing audit event has been recorded yet.');
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('No recent service pricing audit event has been recorded yet.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

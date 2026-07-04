@@ -1,5 +1,6 @@
 import { FileClock } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -79,7 +80,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
           </AdminDataTable>
         </div>
       ) : (
-        <p className="muted">No recent service pricing audit event has been recorded yet.</p>
+        <AdminEmptyState framed message="No recent service pricing audit event has been recorded yet." />
       )}
     </AdminSection>
   );

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminServiceCatalogItem, AdminServicePayoutRule } from '../../lib/admin-api';
 import type { ServicePricePolicyPreviewRow } from '../../lib/service-price-policy-preview-rows';
@@ -64,7 +65,10 @@ describe('ServicePricePolicyPreviewSection', () => {
       visibleRows: [],
     });
 
-    expect(JSON.stringify(section)).toContain('No active service option is available for price policy preview.');
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup).toContain('No active service option is available for price policy preview.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

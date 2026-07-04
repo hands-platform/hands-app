@@ -24,7 +24,7 @@ describe('PayoutCommandQueueSection', () => {
     expect(hrefsIn(section)).toContain('/earnings');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
   });
@@ -33,6 +33,7 @@ describe('PayoutCommandQueueSection', () => {
     const section = PayoutCommandQueueSection({ signals: [] });
 
     expect(textContent(section)).toContain('No payout command signal is visible for this range.');
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 
   it('does not duplicate the base pill class for command signal badges', () => {

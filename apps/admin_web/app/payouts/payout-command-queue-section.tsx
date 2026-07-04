@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { PillClassBadge } from '../../components/status-badge';
 
@@ -42,7 +43,7 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
           ))}
         </div>
       ) : (
-        <p className="muted">No payout command signal is visible for this range.</p>
+        <AdminEmptyState framed message="No payout command signal is visible for this range." />
       )}
     </AdminFilterPanel>
   );
