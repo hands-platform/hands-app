@@ -30,7 +30,7 @@ import { AdminOverviewCommandCard } from '../../../components/admin-overview-car
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -534,7 +534,9 @@ function SupplyAreaCard({
                 <StatusBadge tone="info">{formatDurationSeconds(row.averageResponseSeconds)}</StatusBadge>
               </td>
               <td>
-                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(riskPillClass(row.riskLevel))}>
+                  {row.status}
+                </StatusBadge>
               </td>
             </tr>
           ))}
@@ -575,7 +577,9 @@ function SupplyServiceCard({
               <td>{row.completionRate}%</td>
               <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
               <td>
-                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(riskPillClass(row.riskLevel))}>
+                  {row.status}
+                </StatusBadge>
               </td>
             </tr>
           ))}
@@ -820,7 +824,9 @@ function SelectionFrictionCard({
               <td>{row.selectionRate}% selected</td>
               <td>{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : '-'}</td>
               <td>
-                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.mainReason}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(riskPillClass(row.riskLevel))}>
+                  {row.mainReason}
+                </StatusBadge>
                 <small>{row.readinessFlags.join(' · ')}</small>
               </td>
               <td>
@@ -882,7 +888,9 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
         </small>
       </span>
       <span className="partner-overview-action-reason">
-        <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.mainReason}</PillClassBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(riskPillClass(row.riskLevel))}>
+          {row.mainReason}
+        </StatusBadge>
         <small>{row.recommendedAction}</small>
       </span>
     </a>

@@ -67,6 +67,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('AdminFormControlLink');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
@@ -144,7 +145,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
     expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain('PillClassBadge');
+    expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam supply</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>');
