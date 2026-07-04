@@ -5,6 +5,7 @@ import { AdminRoundedPagination } from '../../components/admin-rounded-paginatio
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTableScroll } from '../../components/admin-data-table';
+import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -184,9 +185,9 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           className="vuexy-booking-table-card vuexy-booking-table-group"
           status={
             <div className="participant-list">
-              <span className="pill pill-success">Newest first</span>
-              <span className="pill pill-info">Action grouped</span>
-              <span className="pill pill-warn">Metadata preview</span>
+              <StatusBadge tone="success">Newest first</StatusBadge>
+              <StatusBadge tone="info">Action grouped</StatusBadge>
+              <StatusBadge tone="warning">Metadata preview</StatusBadge>
             </div>
           }
           title="Audit records"
