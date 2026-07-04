@@ -1,13 +1,16 @@
 import { ExternalLink } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -54,6 +57,12 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
   const rows = filterFileReviewRows(allRows, filters);
   const summary = serverSummary ?? { ...buildFileReviewSummary(allRows), totalProviders: providers.length };
   const totalPages = Math.max(1, Math.ceil(summary.totalProviders / FILE_REVIEW_PROVIDER_PAGE_SIZE));
+  const visibleFrom =
+    summary.totalProviders === 0 || rows.length === 0 ? 0 : (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + 1;
+  const visibleTo =
+    summary.totalProviders === 0 || rows.length === 0
+      ? 0
+      : Math.min(summary.totalProviders, (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + rows.length);
   const confirmation = buildPartnerReviewActionConfirmation(
     providers,
     readPartnerReviewConfirmationAction(readSearchParam(params.reviewAction)),
@@ -124,13 +133,15 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <AdminRoundedPagination
+        <AdminTablePaginationFooter
           activePage={activePage}
           ariaLabel="File review provider pages"
-          className="vuexy-booking-pagination admin-mt-16"
+          from={visibleFrom}
           hrefForPage={(page) => buildFileReviewPageHref(params, page)}
-          pageLinkClassName="vuexy-booking-page-link"
+          paginationClassName="admin-mt-16"
+          to={visibleTo}
           totalPages={totalPages}
+          totalRows={summary.totalProviders}
         />
       </AdminSection>
     </AdminPageTemplate>

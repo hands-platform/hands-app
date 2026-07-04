@@ -1,10 +1,9 @@
 import { Filter, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -69,6 +68,11 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
   const summary = buildSummary(logs, serverSummary);
   const totalEvents = serverSummary?.totalCount ?? logs.length;
   const totalPages = Math.max(1, Math.ceil(totalEvents / AUDIT_LOG_PAGE_SIZE));
+  const visibleFrom = totalEvents === 0 || logs.length === 0 ? 0 : (activePage - 1) * AUDIT_LOG_PAGE_SIZE + 1;
+  const visibleTo =
+    totalEvents === 0 || logs.length === 0
+      ? 0
+      : Math.min(totalEvents, (activePage - 1) * AUDIT_LOG_PAGE_SIZE + logs.length);
   const commandBoard = buildAuditCommandBoard(logs, filters.range);
   const auditLogRows = buildAuditLogTableRows(logs);
 
@@ -201,13 +205,15 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <AdminTableScroll>
             <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
           </AdminTableScroll>
-          <AdminRoundedPagination
+          <AdminTablePaginationFooter
             activePage={activePage}
             ariaLabel="Audit log pagination"
-            className="vuexy-booking-pagination admin-mt-16"
+            from={visibleFrom}
             hrefForPage={(page) => buildAuditLogPageHref(filters, page)}
-            pageLinkClassName="vuexy-booking-page-link"
+            paginationClassName="admin-mt-16"
+            to={visibleTo}
             totalPages={totalPages}
+            totalRows={totalEvents}
           />
         </AdminSection>
       </div>

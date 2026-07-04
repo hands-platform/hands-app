@@ -16,4 +16,11 @@ describe('audit log page content', () => {
     expect(source).toContain('className="admin-directory-filter-select"');
     expect(source).not.toContain('className="calendar-field"');
   });
+
+  it('uses the shared table pagination footer for audit records', () => {
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('ariaLabel="Audit log pagination"');
+    expect(source).not.toContain('import { AdminRoundedPagination }');
+    expect(source).not.toContain('<AdminRoundedPagination');
+  });
 });

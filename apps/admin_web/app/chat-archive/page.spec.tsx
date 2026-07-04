@@ -139,6 +139,13 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('<span className={`pill ${row.pillClass}`}>{row.issue}</span>');
     expect(pageSource).not.toContain('<span className={`pill ${statusPillClass(room.booking.status)}`}>');
   });
+
+  it('uses the shared table pagination footer for the chat evidence index', () => {
+    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).toContain('ariaLabel="Chat evidence pages"');
+    expect(pageSource).not.toContain('import { AdminRoundedPagination }');
+    expect(pageSource).not.toContain('<AdminRoundedPagination');
+  });
 });
 
 function chatArchiveBooking({

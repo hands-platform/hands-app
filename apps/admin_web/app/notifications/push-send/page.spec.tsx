@@ -76,8 +76,11 @@ describe('PushSendPage', () => {
     expect(pageSource).not.toContain('<section className="notification-push-preview-card">');
   });
 
-  it('uses the shared rounded pagination page-link class for recent campaigns', () => {
+  it('uses the shared table pagination footer for recent campaigns', () => {
+    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).toContain('ariaLabel="Push campaign pagination"');
     expect(pageSource).toContain('pageLinkClassName="vuexy-booking-page-link"');
+    expect(pageSource).not.toContain('className="admin-table-pagination-footer"');
     expect(pageSource).not.toContain('pageLinkClassName="vuexy-booking-pagination-link"');
   });
 });

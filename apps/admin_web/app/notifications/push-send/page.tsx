@@ -4,7 +4,11 @@ import type {
   AdminPushCampaignSummary,
 } from '../../../lib/admin-api';
 import { adminGet, adminPost } from '../../../lib/admin-api';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -15,7 +19,6 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
@@ -365,19 +368,16 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <div className="admin-table-pagination-footer">
-          <span>
-            Showing {visibleFrom} to {visibleTo} of {totalCampaigns} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={campaignPage}
-            ariaLabel="Push campaign pagination"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) => buildPushCampaignPageHref(page, params)}
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={campaignTotalPages}
-          />
-        </div>
+        <AdminTablePaginationFooter
+          activePage={campaignPage}
+          ariaLabel="Push campaign pagination"
+          from={visibleFrom}
+          hrefForPage={(page) => buildPushCampaignPageHref(page, params)}
+          pageLinkClassName="vuexy-booking-page-link"
+          to={visibleTo}
+          totalPages={campaignTotalPages}
+          totalRows={totalCampaigns}
+        />
       </AdminFilterPanel>
     </AdminPageTemplate>
   );

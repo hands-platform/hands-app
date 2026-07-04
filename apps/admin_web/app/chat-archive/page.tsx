@@ -14,7 +14,11 @@ import {
   type AdminChatWindowMessage,
   type AdminChatWindowMessageRole,
 } from '../../components/admin-chat-window';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
 import {
@@ -27,7 +31,6 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -101,6 +104,11 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   const summary = buildChatArchiveSummaryView(archiveSummaryResponse, pageSummary, rooms.length);
   const totalRooms = summary.totalCount;
   const totalPages = Math.max(1, Math.ceil(totalRooms / archivePageSize));
+  const visibleFrom = totalRooms === 0 || rooms.length === 0 ? 0 : (activePage - 1) * archivePageSize + 1;
+  const visibleTo =
+    totalRooms === 0 || rooms.length === 0
+      ? 0
+      : Math.min(totalRooms, (activePage - 1) * archivePageSize + rooms.length);
   const repairRows = filterChatRepairRows(
     buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
     filters,
@@ -471,13 +479,16 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        <AdminRoundedPagination
+        <AdminTablePaginationFooter
           activePage={activePage}
           ariaLabel="Chat evidence pages"
-          className="vuexy-booking-pagination admin-mt-16"
+          from={visibleFrom}
           hrefForPage={archivePageHref}
-          pageLinkClassName="vuexy-booking-page-link"
+          itemLabel="rooms"
+          paginationClassName="admin-mt-16"
+          to={visibleTo}
           totalPages={totalPages}
+          totalRows={totalRooms}
         />
       </AdminSection>
 
