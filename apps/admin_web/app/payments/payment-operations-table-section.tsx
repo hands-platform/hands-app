@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
   readonly action: string;
@@ -109,7 +109,9 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((executionRow) => (
                       <div className="setup-stage-item" key={`${row.id}-${executionRow.action}`}>
-                        <PillClassBadge pillClass={executionRow.pillClass}>{executionRow.status}</PillClassBadge>
+                        <StatusBadge tone={statusBadgeToneFromPillClass(executionRow.pillClass)}>
+                          {executionRow.status}
+                        </StatusBadge>
                         <div>
                           <strong>{executionRow.action}</strong>
                           <p className="muted">{executionRow.reason}</p>

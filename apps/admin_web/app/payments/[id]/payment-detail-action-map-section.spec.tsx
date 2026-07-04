@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 
 describe('PaymentDetailActionMapSection', () => {
+  it('uses shared Vuexy status badge atoms for action labels', () => {
+    const source = readFileSync('app/payments/[id]/payment-detail-action-map-section.tsx', 'utf8');
+
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
+  });
+
   it('renders action rows, confirmation content, and menu actions', () => {
     const section = PaymentDetailActionMapSection({
       actionLabel: 'Payment detail actions for paymen',
