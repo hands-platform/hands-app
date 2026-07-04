@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
@@ -24,7 +24,9 @@ export function BookingDetailPostMatchDecisionSection({
     <AdminSection
       actions={
         <div className="booking-outcome-review-actions">
-          <PillClassBadge pillClass={outcomeReview.tone}>{outcomeReview.status}</PillClassBadge>
+          <StatusBadge tone={statusBadgeToneFromPillClass(outcomeReview.tone)}>
+            {outcomeReview.status}
+          </StatusBadge>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
             <AdminFormControlLink className="button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
               {outcomeReview.primaryLabel}
@@ -44,7 +46,7 @@ export function BookingDetailPostMatchDecisionSection({
       >
         {outcomeReview.rows.map((row) => (
           <AdminLinkCard className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
-            <PillClassBadge pillClass={row.tone}>{row.label}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.label}</StatusBadge>
             <strong>{row.value}</strong>
             <small>{row.helper}</small>
           </AdminLinkCard>
@@ -54,9 +56,15 @@ export function BookingDetailPostMatchDecisionSection({
       <AdminCard className="booking-outcome-decision-panel">
         <div className="booking-outcome-decision-main">
           <div className="booking-outcome-decision-copy">
-            <PillClassBadge pillClass={decision.resolutionTone}>{decision.resolutionLabel}</PillClassBadge>
-            <PillClassBadge pillClass={decision.feeTone}>{decision.feeLabel}</PillClassBadge>
-            <PillClassBadge pillClass={decision.timingTone}>{decision.timingLabel}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(decision.resolutionTone)}>
+              {decision.resolutionLabel}
+            </StatusBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(decision.feeTone)}>
+              {decision.feeLabel}
+            </StatusBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(decision.timingTone)}>
+              {decision.timingLabel}
+            </StatusBadge>
           </div>
           <p className="muted">
             Approve restores the eligible Partner fee impact. Hold keeps the existing Partner fee deduction
