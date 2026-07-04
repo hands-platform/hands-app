@@ -3,6 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGridFields,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -31,7 +32,7 @@ export function OperationsHandoffOperatorNotesSection({
       title="Latest operator notes"
     >
       <form action={addOperationsHandoffNote} className="ops-note-form admin-mb-14">
-        <div className="form-grid compact-form">
+        <AdminFormGridFields className="compact-form">
           <AdminFormSelect
             defaultValue="Shift handoff"
             label="Owner lane"
@@ -71,7 +72,7 @@ export function OperationsHandoffOperatorNotesSection({
               },
             ]}
           />
-        </div>
+        </AdminFormGridFields>
         <AdminFormTextarea
           label="Shift note"
           labelVisibility="visible"

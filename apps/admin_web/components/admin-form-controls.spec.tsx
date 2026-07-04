@@ -8,6 +8,7 @@ import {
   AdminFormDatePickerInput,
   AdminFormDateTime,
   AdminFormGrid,
+  AdminFormGridFields,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
@@ -30,6 +31,17 @@ describe('Admin form controls', () => {
       method: 'get',
     });
     expect(textContent(grid)).toBe('Filters');
+  });
+
+  it('renders nested form field grids without creating another form element', () => {
+    const fields = AdminFormGridFields({
+      children: 'Two selects',
+      className: 'compact-form operator-note-lanes',
+    });
+
+    expect(fields.type).toBe('div');
+    expect(fields.props.className).toBe('form-grid compact-form operator-note-lanes');
+    expect(textContent(fields)).toBe('Two selects');
   });
 
   it('renders Vuexy-style select and search controls with stable labels', () => {

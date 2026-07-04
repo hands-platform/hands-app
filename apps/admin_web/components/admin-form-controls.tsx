@@ -3,6 +3,7 @@ import {
   type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
   type FormHTMLAttributes,
+  type HTMLAttributes,
   type InputHTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
@@ -133,11 +134,24 @@ type AdminFormGridProps = {
   readonly className?: string;
 } & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
 
+type AdminFormGridFieldsProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
 export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
   return (
     <form {...formProps} className={joinClassNames('form-grid', className)}>
       {children}
     </form>
+  );
+}
+
+export function AdminFormGridFields({ children, className, ...divProps }: AdminFormGridFieldsProps) {
+  return (
+    <div {...divProps} className={joinClassNames('form-grid', className)}>
+      {children}
+    </div>
   );
 }
 
