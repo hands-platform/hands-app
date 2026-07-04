@@ -90,6 +90,11 @@ describe('BookingActionStatusSections', () => {
     expect(source).not.toContain('<div className={`dispatch-step-card');
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
     expect(source).not.toContain('className="card admin-card booking-action-note-panel"');
+    expect(source).toContain('admin-form-control-stack admin-form-control-fluid');
+    expect(source).toContain('admin-form-control-help');
+    expect(source).not.toContain('booking-action-note-field');
+    expect(source).not.toContain('booking-action-note-label');
+    expect(source).not.toContain('booking-action-note-help');
   });
 
   it('uses shared Vuexy badge atoms instead of raw action status pill spans', () => {
@@ -340,8 +345,10 @@ describe('BookingActionStatusSections', () => {
   it('renders operator notes with a simple text area', () => {
     const markup = render();
 
-    expect(markup).toContain('class="sr-only">Operator note</span>');
-    expect(markup).toContain('class="admin-form-textarea"');
+    expect(markup).toContain('class="admin-form-label">Operator note</span>');
+    expect(markup).toContain('class="admin-form-textarea admin-form-control-labeled"');
+    expect(markup).toContain('class="admin-form-control-stack admin-form-control-fluid"');
+    expect(markup).toContain('class="admin-form-control-help"');
     expect(markup).toContain('class="ops-note-textarea"');
     expect(markup).toContain('placeholder="Add a short operator note."');
     expect(markup).toContain('Keep short internal notes for the booking audit trail.');

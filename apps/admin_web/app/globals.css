@@ -3908,25 +3908,6 @@ a.action-button-card:hover {
   padding: 10px 12px;
 }
 
-.booking-action-note-field {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.booking-action-note-label {
-  color: var(--admin-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.booking-action-note-help {
-  color: var(--admin-muted);
-  font-size: 12px;
-  line-height: 18px;
-}
-
 .booking-action-note-actions {
   display: flex;
   justify-content: flex-end;
@@ -14715,6 +14696,18 @@ textarea:focus-visible {
 
 .admin-form-control-fluid {
   min-width: 0;
+}
+
+.admin-form-control-stack {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.admin-form-control-help {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .admin-form-select select,

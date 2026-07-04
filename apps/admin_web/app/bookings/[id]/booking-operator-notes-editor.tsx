@@ -6,6 +6,7 @@ export function BookingOperatorNotesEditor() {
   return (
     <AdminFormTextarea
       label="Operator note"
+      labelVisibility="visible"
       name="note"
       placeholder="Add a short operator note."
       rows={3}

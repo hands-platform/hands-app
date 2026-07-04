@@ -392,10 +392,9 @@ function BookingOperatorNotesSection({
       <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
         <AdminCard className="booking-action-note-panel">
-          <div className="booking-action-note-field">
-            <span className="booking-action-note-label">Operator note</span>
+          <div className="admin-form-control-stack admin-form-control-fluid">
             <BookingOperatorNotesEditor />
-            <small className="booking-action-note-help">Use one short note per action or decision.</small>
+            <small className="admin-form-control-help">Use one short note per action or decision.</small>
           </div>
           <div className="booking-action-note-actions">
             <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
@@ -427,15 +426,16 @@ function BookingCompletedCloseoutSection({
         <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminCard className="booking-action-note-panel">
-            <div className="booking-action-note-field">
-              <span className="booking-action-note-label">Closeout note</span>
+            <div className="admin-form-control-stack admin-form-control-fluid">
               <AdminFormTextarea
+                className="admin-form-control-fluid"
                 label="Closeout note"
+                labelVisibility="visible"
                 name="note"
                 placeholder="Add a short reconciliation note."
                 rows={3}
               />
-              <small className="booking-action-note-help">Use retained chat, payment, and Partner evidence.</small>
+              <small className="admin-form-control-help">Use retained chat, payment, and Partner evidence.</small>
             </div>
             <div className="booking-action-note-actions">
               <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
