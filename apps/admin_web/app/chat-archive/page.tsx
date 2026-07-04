@@ -195,7 +195,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       <AdminSection className="admin-mb-16" title="Chat evidence filters">
         <form className="form-grid" action="/chat-archive">
           <AdminFormInput
-            className="calendar-field"
+            className="admin-directory-filter-search"
             defaultValue={filters.q}
             label="Search"
             labelVisibility="visible"
@@ -203,7 +203,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             placeholder="Booking, room, customer, Partner, message"
           />
           <AdminFormSelect
-            className="calendar-field"
+            className="admin-directory-filter-select"
             defaultValue={filters.status}
             label="Booking status"
             labelVisibility="visible"
@@ -218,7 +218,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             ]}
           />
           <AdminFormSelect
-            className="calendar-field"
+            className="admin-directory-filter-select"
             defaultValue={filters.sender}
             label="Sender"
             labelVisibility="visible"
@@ -231,7 +231,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             ]}
           />
           <AdminFormSelect
-            className="calendar-field"
+            className="admin-directory-filter-select"
             defaultValue={dateFilters.range}
             label="Preset"
             labelVisibility="visible"
@@ -239,14 +239,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             options={detailDateRangeOptions}
           />
           <AdminFormDate
-            className="calendar-field"
+            className="admin-date-filter-field"
             defaultValue={dateFilters.from}
             label="From"
             labelVisibility="visible"
             name="from"
           />
           <AdminFormDate
-            className="calendar-field"
+            className="admin-date-filter-field"
             defaultValue={dateFilters.to}
             label="To"
             labelVisibility="visible"

@@ -108,13 +108,14 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-date');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-field');
-    expect(markup).toContain('admin-form-select admin-form-control-labeled calendar-field');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled admin-directory-filter-search');
+    expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
     expect(markup).toContain(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-field',
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled admin-date-filter-field',
     );
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-link');
+    expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('<div class="calendar-field"><span>Search</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Booking status</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>From</span>');
