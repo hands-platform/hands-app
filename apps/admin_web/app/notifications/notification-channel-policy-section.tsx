@@ -2,7 +2,7 @@ import { Settings2 } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
 import type {
@@ -72,22 +72,21 @@ export function NotificationChannelPolicySection({
         </div>
       ) : (
         <div className="ops-task-grid">
-          <div className="ops-task-card">
-            <StatusBadge tone="info">Partner booking alerts</StatusBadge>
-            <h3 className="admin-mt-10">{partnerAlertCount}</h3>
-            <p className="muted">
-              Direct requests, marketplace participation alerts, matching, and payout setup.
-            </p>
-          </div>
-          <div className="ops-task-card">
-            <StatusBadge tone="success">In-app route</StatusBadge>
-            <h3 className="admin-mt-10">{inAppDeliveries}</h3>
-            <p className="muted">Delivery attempts intentionally kept inside the app inbox.</p>
-          </div>
-          <div className="ops-task-card">
-            <StatusBadge tone={fcmDeliveries ? 'warning' : 'neutral'}>FCM route</StatusBadge>
-            <h3 className="admin-mt-10">{fcmDeliveries}</h3>
-            <p className="muted">FCM push delivery attempts created by the active policy.</p>
+          <AdminTaskCard
+            detail="Direct requests, marketplace participation alerts, matching, and payout setup."
+            leading={<StatusBadge tone="info">Partner booking alerts</StatusBadge>}
+            title={partnerAlertCount}
+          />
+          <AdminTaskCard
+            detail="Delivery attempts intentionally kept inside the app inbox."
+            leading={<StatusBadge tone="success">In-app route</StatusBadge>}
+            title={inAppDeliveries}
+          />
+          <AdminTaskCard
+            detail="FCM push delivery attempts created by the active policy."
+            leading={<StatusBadge tone={fcmDeliveries ? 'warning' : 'neutral'}>FCM route</StatusBadge>}
+            title={fcmDeliveries}
+          >
             {latestFcmSentAttemptLabel ? (
               <>
                 <p className="muted admin-mt-6">Recent FCM SENT: {latestFcmSentAttemptLabel}</p>
@@ -96,15 +95,16 @@ export function NotificationChannelPolicySection({
             ) : (
               <AdminEmptyState framed message="No FCM SENT delivery recorded yet." title={null} />
             )}
-          </div>
-          <div className="ops-task-card">
-            <StatusBadge tone={fcmSmokeReadinessTone(fcmSmokeReadiness.status)}>
-              {fcmSmokeReadiness.statusLabel}
-            </StatusBadge>
-            <h3 className="admin-mt-10">
-              {fcmSmokeReadiness.selectedNotificationLabel ?? 'No candidate'}
-            </h3>
-            <p className="muted">{fcmSmokeReadiness.detail}</p>
+          </AdminTaskCard>
+          <AdminTaskCard
+            detail={fcmSmokeReadiness.detail}
+            leading={
+              <StatusBadge tone={fcmSmokeReadinessTone(fcmSmokeReadiness.status)}>
+                {fcmSmokeReadiness.statusLabel}
+              </StatusBadge>
+            }
+            title={fcmSmokeReadiness.selectedNotificationLabel ?? 'No candidate'}
+          >
             {fcmSmokeReadiness.pushDeviceLabel ? (
               <p className="muted admin-mt-6">Enabled device: {fcmSmokeReadiness.pushDeviceLabel}</p>
             ) : null}
@@ -173,16 +173,17 @@ export function NotificationChannelPolicySection({
                 />
               </>
             ) : null}
-          </div>
+          </AdminTaskCard>
           {partnerAlertSmokeFallback ? (
-            <div className="ops-task-card">
-              <StatusBadge tone="warning">FCM smoke fallback</StatusBadge>
-              <h3 className="admin-mt-10">
-                {partnerAlertSmokeFallback.suggestedNotificationId
+            <AdminTaskCard
+              detail={partnerAlertSmokeFallback.detail}
+              leading={<StatusBadge tone="warning">FCM smoke fallback</StatusBadge>}
+              title={
+                partnerAlertSmokeFallback.suggestedNotificationId
                   ? partnerAlertSmokeFallback.suggestedType
-                  : 'Needs candidate'}
-              </h3>
-              <p className="muted">{partnerAlertSmokeFallback.detail}</p>
+                  : 'Needs candidate'
+              }
+            >
               <p className="muted admin-mt-6">
                 {partnerAlertSmokeFallback.partnerAlertTypeLabel} remains on the current Partner alert policy
                 route.
@@ -193,7 +194,7 @@ export function NotificationChannelPolicySection({
                   label="Copy preflight command"
                 />
               ) : null}
-            </div>
+            </AdminTaskCard>
           ) : null}
         </div>
       )}

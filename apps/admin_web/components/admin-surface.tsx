@@ -52,7 +52,9 @@ type AdminActionCardProps = {
   readonly variant?: 'default' | 'ops-task';
 };
 
-type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'variant'>;
+type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'variant'> & {
+  readonly leading?: ReactNode;
+};
 
 type AdminStateProps = {
   readonly action?: ReactNode;
@@ -189,6 +191,7 @@ export function AdminTaskCard({
   children,
   className,
   detail,
+  leading,
   signalClassName,
   signalLabel,
   title,
@@ -200,6 +203,7 @@ export function AdminTaskCard({
 
   return (
     <div className={joinClassNames('ops-task-card', className)}>
+      {leading}
       {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
       {hasTitle ? <h3>{title}</h3> : null}
       {hasTitle && detail ? <p>{detail}</p> : null}

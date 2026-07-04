@@ -1,4 +1,4 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
 
 export type NotificationDeliveryOpsQueueItem = {
@@ -29,23 +29,23 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
       <div className="ops-task-grid">
         {items.length ? (
           items.map((item) => (
-            <div className="ops-task-card" key={item.key}>
-              <PillClassBadge pillClass={item.tone}>{item.label}</PillClassBadge>
-              <h3 className="admin-mt-10">{item.count}</h3>
-              <p className="muted">{item.detail}</p>
+            <AdminTaskCard
+              detail={item.detail}
+              key={item.key}
+              leading={<PillClassBadge pillClass={item.tone}>{item.label}</PillClassBadge>}
+              title={item.count}
+            >
               <PillClassBadgeLink href={item.href} pillClass="pill-neutral">
                 Open queue
               </PillClassBadgeLink>
-            </div>
+            </AdminTaskCard>
           ))
         ) : (
-          <div className="ops-task-card">
-            <StatusBadge tone="success">Ready</StatusBadge>
-            <h3 className="admin-mt-10">Delivery path is clean</h3>
-            <p className="muted">
-              Keep monitoring failed sends after FCM credentials and mobile token registration are enabled.
-            </p>
-          </div>
+          <AdminTaskCard
+            detail="Keep monitoring failed sends after FCM credentials and mobile token registration are enabled."
+            leading={<StatusBadge tone="success">Ready</StatusBadge>}
+            title="Delivery path is clean"
+          />
         )}
       </div>
     </AdminSection>
