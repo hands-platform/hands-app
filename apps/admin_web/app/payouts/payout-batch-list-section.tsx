@@ -1,5 +1,5 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
@@ -40,7 +40,7 @@ export function PayoutBatchListSection({
       <AdminTableScroll>
         <PayoutBatchTable rows={rows} updateTransferRefAction={updateTransferRefAction} />
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -52,7 +52,7 @@ export function PayoutBatchListSection({
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

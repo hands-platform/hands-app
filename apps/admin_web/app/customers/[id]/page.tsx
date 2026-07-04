@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
@@ -783,7 +783,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <AdminEmptyState framed message="No chat rooms matched this date filter." title={null} />
           )}
         </div>
-        <div className="vuexy-booking-table-footer customer-chat-history-footer">
+        <AdminTableFooter className="customer-chat-history-footer">
           <span>
             Showing {chatHistoryPageFrom} to {chatHistoryPageTo} of {filteredChatBookings.length} rooms
           </span>
@@ -803,7 +803,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={chatHistoryTotalPages}
           />
-        </div>
+        </AdminTableFooter>
       </AdminFilterPanel>
 
       <AdminSection

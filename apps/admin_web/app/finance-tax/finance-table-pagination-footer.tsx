@@ -1,4 +1,5 @@
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminTableFooter } from '../../components/admin-data-table';
 
 type FinanceTablePagination = {
   readonly from: number;
@@ -20,7 +21,7 @@ export function FinanceTablePaginationFooter({
   pagination,
 }: FinanceTablePaginationFooterProps) {
   return (
-    <div className="vuexy-booking-table-footer">
+    <AdminTableFooter>
       <span>
         Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
       </span>
@@ -32,6 +33,6 @@ export function FinanceTablePaginationFooter({
         pageLinkClassName="vuexy-booking-page-link"
         totalPages={pagination.totalPages}
       />
-    </div>
+    </AdminTableFooter>
   );
 }

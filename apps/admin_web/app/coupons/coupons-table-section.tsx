@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -256,7 +256,7 @@ function CouponUsageBookingTable({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer coupon-usage-table-footer">
+      <AdminTableFooter className="coupon-usage-table-footer">
         <span>
           Showing {pageFrom} to {pageTo} of {totalCount} entries
         </span>
@@ -268,7 +268,7 @@ function CouponUsageBookingTable({
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { AdminDataTable } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
@@ -181,7 +181,7 @@ function CustomerBookingOperationSection({
         ))}
       </AdminDataTable>
 
-      <div className="vuexy-booking-table-footer customer-booking-operation-footer">
+      <AdminTableFooter className="customer-booking-operation-footer">
         <span>
           Showing {pageFrom} to {pageTo} of {group.rows.length} entries
         </span>
@@ -195,7 +195,7 @@ function CustomerBookingOperationSection({
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

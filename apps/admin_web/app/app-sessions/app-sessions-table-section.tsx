@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { RoleBadge } from '../../components/role-badge';
@@ -80,7 +80,7 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -92,7 +92,7 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </>
   );
 }

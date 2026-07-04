@@ -1,4 +1,5 @@
 import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
+import { AdminTableFooter } from '../../components/admin-data-table';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -246,7 +247,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             </tr>
           ))}
         </FinanceDataTable>
-        <div className="vuexy-booking-table-footer">
+        <AdminTableFooter>
           <span>
             Showing {historyPagination.from} to {historyPagination.to} of {historyPagination.totalRows} entries
           </span>
@@ -258,7 +259,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={historyPagination.totalPages}
           />
-        </div>
+        </AdminTableFooter>
       </AdminFilterPanel>
 
       <AdminFilterPanel

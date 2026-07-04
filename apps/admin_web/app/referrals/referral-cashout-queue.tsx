@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { MoreVertical } from 'lucide-react';
 
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -191,7 +191,7 @@ export function ReferralCashoutQueuePage({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
-          <div className="vuexy-booking-table-footer">
+          <AdminTableFooter>
             <span>
               Showing {startItem} to {endItem} of {summary.totalCount} entries
             </span>
@@ -203,7 +203,7 @@ export function ReferralCashoutQueuePage({
               pageLinkClassName="vuexy-booking-page-link"
               totalPages={totalPages}
             />
-          </div>
+          </AdminTableFooter>
       </AdminSection>
     </AdminPageTemplate>
   );

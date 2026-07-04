@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -146,9 +146,9 @@ export function PartnerOperationsListSection({
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+      <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerOperationsListFooterLabel(rows.length)}</span>
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

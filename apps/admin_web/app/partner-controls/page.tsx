@@ -22,7 +22,7 @@ import {
 import { readSearchParam } from '../../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
 import { ActionMenu } from '../../components/action-menu';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter } from '../../components/admin-data-table';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -815,7 +815,7 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-        <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <AdminTableFooter className="vuexy-partner-table-footer">
           <span>{partnerControlPagedListFooterLabel('report', visibleReports.length, loadPlan.reportsPage, loadPlan.listTake)}</span>
           <AdminRoundedPagination
             activePage={loadPlan.reportsPage}
@@ -825,7 +825,7 @@ export default async function PartnerControlsPage({
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={reportTotalPages}
           />
-        </div>
+        </AdminTableFooter>
       </AdminSection>
 
       <AdminSection
@@ -902,7 +902,7 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-        <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <AdminTableFooter className="vuexy-partner-table-footer">
           <span>{partnerControlPagedListFooterLabel('account control', visibleSanctions.length, loadPlan.sanctionsPage, loadPlan.listTake)}</span>
           <AdminRoundedPagination
             activePage={loadPlan.sanctionsPage}
@@ -912,7 +912,7 @@ export default async function PartnerControlsPage({
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={sanctionTotalPages}
           />
-        </div>
+        </AdminTableFooter>
       </AdminSection>
       </AdminPageTemplate>
     </>

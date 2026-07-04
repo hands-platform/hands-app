@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminCard } from '../../components/admin-surface';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -106,9 +106,9 @@ export function PartnerLegacyOperationsTableSection({
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+      <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerLegacyOperationsFooterLabel(providers.length)}</span>
-      </div>
+      </AdminTableFooter>
     </AdminCard>
   );
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -87,9 +87,9 @@ export function PartnerChecklistWorkQueueSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+      <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerChecklistQueueFooterLabel(queue.rows.length)}</span>
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

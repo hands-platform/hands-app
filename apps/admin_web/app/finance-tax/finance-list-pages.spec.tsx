@@ -344,6 +344,13 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
   });
 
+  it('uses the shared table footer atom for finance pagination controls', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-table-pagination-footer.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTableFooter');
+    expect(source).not.toContain('<div className="vuexy-booking-table-footer">');
+  });
+
   it('uses the shared AdminLinkCard surface for finance command cards', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
 

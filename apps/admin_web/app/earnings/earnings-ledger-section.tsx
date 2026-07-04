@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
@@ -179,7 +179,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -191,7 +191,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

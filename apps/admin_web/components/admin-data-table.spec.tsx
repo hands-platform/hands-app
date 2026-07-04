@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from './admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from './admin-data-table';
 
 describe('AdminDataTable', () => {
   it('renders stable table headers and provided rows', () => {
@@ -76,5 +76,17 @@ describe('AdminDataTable', () => {
 
     expect(wrapper.type).toBe('div');
     expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll vietnam-overview-table-wrap' });
+  });
+
+  it('renders a reusable Vuexy table footer shell', () => {
+    const footer = AdminTableFooter({
+      children: <span>Showing 1 to 10 of 32 entries</span>,
+      className: 'finance-table-footer',
+    });
+
+    expect(footer.type).toBe('div');
+    expect(footer.props).toMatchObject({
+      className: 'vuexy-booking-table-footer finance-table-footer',
+    });
   });
 });

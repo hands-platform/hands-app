@@ -13,8 +13,17 @@ type AdminTableScrollProps = {
   readonly className?: string;
 };
 
+type AdminTableFooterProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 export function AdminTableScroll({ children, className }: AdminTableScrollProps) {
   return <div className={joinClassNames('admin-table-scroll', className)}>{children}</div>;
+}
+
+export function AdminTableFooter({ children, className }: AdminTableFooterProps) {
+  return <div className={joinClassNames('vuexy-booking-table-footer', className)}>{children}</div>;
 }
 
 export function AdminDataTable({

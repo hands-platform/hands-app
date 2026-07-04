@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableFooter } from '../../components/admin-data-table';
 
 import { ActionMenu } from '../../components/action-menu';
 import {
@@ -244,7 +245,7 @@ export function CashSettlementOpenDebtTableSection({
           </tr>
         ))}
       </FinanceDataTable>
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -264,7 +265,7 @@ export function CashSettlementOpenDebtTableSection({
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

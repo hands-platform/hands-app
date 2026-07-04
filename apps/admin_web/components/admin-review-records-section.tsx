@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Eye, Star } from 'lucide-react';
 
-import { AdminDataTable, AdminTableScroll } from './admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminRoundedPagination } from './admin-rounded-pagination';
@@ -310,7 +310,7 @@ function ReviewRecordsPaginationFooter({
   readonly visibleTo: number;
 }) {
   return (
-    <div className="vuexy-booking-table-footer vuexy-review-footer">
+    <AdminTableFooter className="vuexy-review-footer">
       <span>
         Showing {visibleFrom} to {visibleTo} of {totalRows} entries
       </span>
@@ -322,7 +322,7 @@ function ReviewRecordsPaginationFooter({
         pageLinkClassName="vuexy-review-page-link"
         totalPages={totalPages}
       />
-    </div>
+    </AdminTableFooter>
   );
 }
 

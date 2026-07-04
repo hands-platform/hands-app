@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -74,7 +74,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
         </AdminDataTable>
       </AdminTableScroll>
 
-      <div className="vuexy-booking-table-footer vuexy-customer-table-footer">
+      <AdminTableFooter className="vuexy-customer-table-footer">
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -86,7 +86,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

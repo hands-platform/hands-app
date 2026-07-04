@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminCard } from '../../components/admin-surface';
 import { NotificationTableRowItem, type NotificationTableRow } from './notification-table-row';
@@ -33,7 +33,7 @@ export function NotificationsTableSection({
         </AdminDataTable>
       </AdminTableScroll>
       {pagination ? (
-        <div className="vuexy-booking-table-footer notification-table-footer">
+        <AdminTableFooter className="notification-table-footer">
           <span>
             Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
           </span>
@@ -45,7 +45,7 @@ export function NotificationsTableSection({
             pageLinkClassName="vuexy-booking-page-link"
             totalPages={pagination.totalPages}
           />
-        </div>
+        </AdminTableFooter>
       ) : null}
     </AdminCard>
   );

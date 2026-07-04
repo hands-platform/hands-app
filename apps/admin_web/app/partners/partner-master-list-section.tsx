@@ -1,4 +1,4 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -84,7 +84,7 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
           {rows.map((row) => renderPartnerMasterRow(row, mode))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+      <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerMasterListFooterLabel(pagination)}</span>
         <AdminRoundedPagination
           activePage={pagination.page}
@@ -94,7 +94,7 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -221,7 +221,7 @@ export function PartnerCustomerEvaluationsSection({
           </AdminDataTable>
         </AdminTableScroll>
 
-        <div className="vuexy-booking-table-footer vuexy-review-footer">
+        <AdminTableFooter className="vuexy-review-footer">
           <span>
             Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
           </span>
@@ -233,7 +233,7 @@ export function PartnerCustomerEvaluationsSection({
             pageLinkClassName="vuexy-review-page-link"
             totalPages={pagination.totalPages}
           />
-        </div>
+        </AdminTableFooter>
       </AdminFilterPanel>
     </>
   );

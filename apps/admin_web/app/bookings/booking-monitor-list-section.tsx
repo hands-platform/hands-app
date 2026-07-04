@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Eye, X } from 'lucide-react';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -375,7 +375,7 @@ function BookingMonitorTableGroup({
         </AdminDataTable>
       </AdminTableScroll>
 
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pageFrom} to {pageTo} of {group.rows.length} entries
         </span>
@@ -387,7 +387,7 @@ function BookingMonitorTableGroup({
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }

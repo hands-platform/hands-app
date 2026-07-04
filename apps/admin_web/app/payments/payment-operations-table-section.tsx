@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge } from '../../components/status-badge';
@@ -133,7 +133,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="vuexy-booking-table-footer">
+      <AdminTableFooter>
         <span>
           Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
         </span>
@@ -145,7 +145,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
           pageLinkClassName="vuexy-booking-page-link"
           totalPages={pagination.totalPages}
         />
-      </div>
+      </AdminTableFooter>
     </AdminFilterPanel>
   );
 }
