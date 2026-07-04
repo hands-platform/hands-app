@@ -2115,10 +2115,6 @@ a {
   gap: 18px;
 }
 
-.calendar-drawer-field {
-  width: 100%;
-}
-
 .calendar-drawer-switch {
   align-items: center;
   display: flex;
@@ -2177,10 +2173,6 @@ a {
 .calendar-drawer-switch .admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark {
   box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
-}
-
-.calendar-drawer-field-wide {
-  grid-column: 1 / -1;
 }
 
 .metric-card {
@@ -16776,7 +16768,6 @@ textarea:focus-visible {
     transform var(--admin-transition);
 }
 
-.calendar-drawer-field > span:first-child,
 .filter-grid label > span:first-child,
 .form-grid label > span:first-child,
 .ops-filter-grid label > span:first-child,
@@ -17292,12 +17283,6 @@ textarea:focus-visible {
 }
 
 /* Page-scoped controls keep the same Vuexy atom baseline. */
-.calendar-drawer-field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.calendar-drawer-field select,
-.calendar-drawer-field textarea,
 .chat-archive-page
   .form-grid
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17362,11 +17347,6 @@ textarea:focus-visible {
   line-height: var(--admin-input-line-height);
 }
 
-.calendar-drawer-field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.calendar-drawer-field select,
 .chat-archive-page
   .form-grid
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17417,7 +17397,6 @@ textarea:focus-visible {
   padding: var(--admin-input-padding-sm);
 }
 
-.calendar-drawer-field textarea,
 .chat-archive-page .form-grid textarea,
 .partners-page .partner-filter-card .form-grid textarea,
 .audit-log-page .form-grid textarea,
@@ -17428,27 +17407,6 @@ textarea:focus-visible {
 .coupon-edit-form textarea {
   min-height: 96px;
   padding: var(--admin-input-padding-md);
-}
-
-.calendar-drawer-field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']):hover:not(:disabled):not([readonly]),
-.calendar-drawer-field select:hover:not(:disabled),
-.calendar-drawer-field textarea:hover:not(:disabled):not([readonly]) {
-  border-color: var(--admin-input-hover-border);
-}
-
-.calendar-drawer-field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']):focus,
-.calendar-drawer-field select:focus,
-.calendar-drawer-field textarea:focus {
-  border-color: var(--admin-accent);
-  border-width: 2px;
-  box-shadow: var(--admin-primary-shadow-sm);
-  outline: 0;
 }
 
 .admin-form-search input,

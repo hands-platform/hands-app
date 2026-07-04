@@ -14,6 +14,7 @@ describe('calendar event drawer structure', () => {
     expect(drawerSource).toContain('DatePicker');
     expect(drawerSource).toContain('showTimeSelect={!draft.allDay}');
     expect(drawerSource).toContain('calendar-vuexy-datepicker-popper');
+    expect(drawerSource).toContain('admin-form-control-fluid calendar-datepicker-field');
     expect(drawerSource).toContain('Only ${draft.authorName} can update or delete this event.');
     expect(drawerSource).not.toContain('<input onChange={updateField');
     expect(drawerSource).not.toContain('<select onChange={updateField');
@@ -23,6 +24,7 @@ describe('calendar event drawer structure', () => {
     expect(drawerSource).not.toContain('<button className="button button-secondary"');
     expect(drawerSource).not.toContain('Category');
     expect(drawerSource).not.toContain('AdminFormSelect');
+    expect(drawerSource).not.toContain('calendar-drawer-field');
     expect(drawerSource).not.toContain("type={draft.allDay ? 'date' : 'datetime-local'}");
   });
 });

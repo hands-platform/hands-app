@@ -34,12 +34,13 @@ describe('CalendarEventDrawer', () => {
       />,
     );
 
-    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-drawer-field');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled admin-form-control-fluid');
     expect(markup).toContain(
-      'admin-form-textarea admin-form-control-labeled calendar-drawer-field calendar-drawer-field-wide',
+      'admin-form-textarea admin-form-control-labeled admin-form-control-fluid admin-grid-span-2',
     );
     expect(markup).toContain('admin-form-checkbox calendar-drawer-switch');
-    expect(markup).toContain('calendar-drawer-field calendar-datepicker-field');
+    expect(markup).toContain('admin-form-control-fluid calendar-datepicker-field');
+    expect(markup).not.toContain('calendar-drawer-field');
     expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('<div class="calendar-field"><span>Title</span><label class="admin-form-input');
     expect(markup).not.toContain('<div class="calendar-field"><span>Hashtags</span><label class="admin-form-input');

@@ -137,7 +137,7 @@ const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
 const rawTableFooterPattern = /<div\s+className=["'][^"']*\bvuexy-booking-table-footer\b[^"']*["']/;
 const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"']*["']/;
 const legacyPageFieldClassPattern =
-  /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
+  /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;
 
 function productionTsxFiles() {

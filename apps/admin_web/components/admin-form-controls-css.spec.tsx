@@ -217,7 +217,6 @@ describe('Admin form control CSS', () => {
   });
 
   it.each([
-    ['calendar drawer field', '.calendar-drawer-field select:focus,'],
     ['coupon forms', '.coupon-edit-form input:focus,'],
     ['operator notes', '.ops-note-form textarea:focus,'],
   ])('keeps %s focused inputs off the legacy double-ring treatment', (_label, selector) => {
@@ -229,6 +228,10 @@ describe('Admin form control CSS', () => {
     expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
     expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
     expect(focusBlock).not.toContain('var(--admin-focus-ring)');
+  });
+
+  it('keeps calendar drawer controls on shared Vuexy form atoms instead of page field wrappers', () => {
+    expect(globalsCss).not.toContain('.calendar-drawer-field');
   });
 
   it.each([
