@@ -147,6 +147,17 @@ describe('Admin form control CSS', () => {
     expect(dateFocusBlock).toContain('padding: 7px 41px 7px 11px');
   });
 
+  it('keeps standalone native fields from resizing on Vuexy focused border weight', () => {
+    const rootFocusIndex = globalsCss.indexOf(
+      ":root\n  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(\n    [type='hidden']\n  ):not([type='color']):focus,",
+    );
+    const rootFocusBlock = cssRuleBlockAt(rootFocusIndex);
+
+    expect(rootFocusIndex).toBeGreaterThan(-1);
+    expect(rootFocusBlock).toContain('border-width: 2px');
+    expect(rootFocusBlock).toContain('padding: var(--admin-input-padding-focused-sm)');
+  });
+
   it('animates placeholders like Vuexy CustomTextField on shared inputs', () => {
     const placeholderIndex = globalsCss.indexOf('.admin-form-input input::placeholder,');
     const placeholderBlock = cssRuleBlockAt(placeholderIndex);

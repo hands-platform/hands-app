@@ -17096,6 +17096,11 @@ textarea:focus-visible {
   border-width: 2px;
   box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
+  padding: var(--admin-input-padding-focused-sm);
+}
+
+:root textarea:focus {
+  padding: var(--admin-input-padding-focused-md);
 }
 
 :root input[type='number'] {
