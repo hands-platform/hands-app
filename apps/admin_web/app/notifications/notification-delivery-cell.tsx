@@ -1,5 +1,9 @@
 import { AdminDisclosure } from '../../components/admin-surface';
-import { PillClassBadge, PillClassBadgeLink } from '../../components/status-badge';
+import {
+  StatusBadge,
+  StatusBadgeLink,
+  statusBadgeToneFromPillClass,
+} from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
   readonly attemptedAtLabel: string;
@@ -40,7 +44,9 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
   return (
     <AdminDisclosure className="notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
-        <PillClassBadge pillClass={latest.statusClassName}>{latest.status}</PillClassBadge>{' '}
+        <StatusBadge tone={statusBadgeToneFromPillClass(latest.statusClassName)}>
+          {latest.status}
+        </StatusBadge>{' '}
         <strong>{attempts} attempts</strong>{' '}
         <span className="muted">
           / latest {latest.provider} / {latest.platformLabel} / {latest.attemptedAtLabel}
@@ -73,7 +79,9 @@ function NotificationDeliveryAttempt({
       <div>
         {sequenceLabel ? <strong>{sequenceLabel} / </strong> : null}
         <strong>{delivery.provider}</strong>{' '}
-        <PillClassBadge pillClass={delivery.statusClassName}>{delivery.status}</PillClassBadge>{' '}
+        <StatusBadge tone={statusBadgeToneFromPillClass(delivery.statusClassName)}>
+          {delivery.status}
+        </StatusBadge>{' '}
         <span className="muted">/ {delivery.platformLabel}</span>
       </div>
       <div className="muted admin-mt-4">
@@ -90,9 +98,9 @@ function NotificationDeliveryAttempt({
         <div className="muted admin-mt-4">Next {delivery.recoveryHintLabel}</div>
       ) : null}
       {delivery.enableDeviceHref ? (
-        <PillClassBadgeLink href={delivery.enableDeviceHref} pillClass="pill pill-warn admin-mt-6">
+        <StatusBadgeLink className="admin-mt-6" href={delivery.enableDeviceHref} tone="warning">
           Re-enable device
-        </PillClassBadgeLink>
+        </StatusBadgeLink>
       ) : null}
     </div>
   );

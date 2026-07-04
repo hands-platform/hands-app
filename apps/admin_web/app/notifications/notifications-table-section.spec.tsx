@@ -129,8 +129,10 @@ describe('NotificationsTableSection', () => {
   it('uses shared badge atoms for delivery status and recovery links', () => {
     const source = readFileSync('app/notifications/notification-delivery-cell.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toContain('<span className={latest.statusClassName}>{latest.status}</span>');
     expect(source).not.toContain('<span className={delivery.statusClassName}>{delivery.status}</span>');
