@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
@@ -50,6 +51,19 @@ describe('BookingMvpAuthorityContractSection', () => {
 });
 
 describe('BookingCommandBriefingSections', () => {
+  it('uses shared Vuexy badge atoms instead of raw command briefing pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}');
+    expect(source).not.toContain('actions={<span className="pill pill-info">Above-fold summary</span>}');
+    expect(source).not.toContain('actions={<span className="pill pill-info">{rows.length} shortcuts</span>}');
+    expect(source).not.toContain('actions={<span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>}');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
+    expect(source).not.toContain('actions={<span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>}');
+  });
+
   it('renders the booking detail header on the shared Vuexy page header surface', () => {
     const toolbar = BookingDetailToolbar({
       bookingId: 'booking-detail-1',

@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
 
@@ -95,7 +96,7 @@ export function BookingCommandDecisionStripSection({
 }: BookingCommandDecisionStripSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}
+      actions={<PillClassBadge pillClass={commandDecisionStrip.tone}>{commandDecisionStrip.status}</PillClassBadge>}
       className="admin-mb-16"
       description="Primary booking command and four-lane operator strip for address, matching, chat, and finance."
       id="booking-command-decision-strip"
@@ -203,7 +204,7 @@ export function BookingDetailToolbar({
 export function BookingOperatorFirstReadSection({ rows }: BookingOperatorFirstReadSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">Above-fold summary</span>}
+      actions={<StatusBadge tone="info">Above-fold summary</StatusBadge>}
       className="admin-mb-16"
       description="The first facts an operator checks before opening the full booking evidence record."
       id="booking-operator-first-read"
@@ -235,7 +236,7 @@ export type BookingMetricGridSectionProps = {
 export function BookingOperationsQuickRailSection({ rows }: BookingOperationsQuickRailSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{rows.length} shortcuts</span>}
+      actions={<StatusBadge tone="info">{rows.length} shortcuts</StatusBadge>}
       className="admin-mb-16"
       description="Fast jumps for one booking. This keeps operations centered on address evidence, marketplace participants, customer choice, retained chat, payment, wallet, fee, tax, location, and staff records."
       id="booking-operations-quick-rail"
@@ -255,7 +256,7 @@ export function BookingMatchingRuleSnapshotSection({
 }: BookingMatchingRuleSnapshotSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>}
+      actions={<PillClassBadge pillClass={matchingRuleSnapshot.tone}>{matchingRuleSnapshot.status}</PillClassBadge>}
       className="admin-mb-16"
       description="Current matching rule state and the linked policy actions for this booking."
       id="matching-rule-snapshot"
@@ -304,7 +305,7 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
                 <p className="muted">{row.scope}</p>
               </td>
               <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
+                <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
               </td>
               <td>{row.evidence}</td>
               <td>{row.operatorUse}</td>
@@ -367,7 +368,7 @@ export function BookingPriorityBriefingSection({
 }: BookingPriorityBriefingSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>}
+      actions={<PillClassBadge pillClass={operatorPriorityBriefing.tone}>{operatorPriorityBriefing.status}</PillClassBadge>}
       className="admin-mb-16"
       description="First-screen operator summary for handoff, chat, location, payment, and closeout. This shows factual state only, not customer or Partner judgment."
       id="booking-priority-briefing"
