@@ -17227,7 +17227,7 @@ textarea:focus-visible {
   border-color: var(--admin-accent);
   border-width: 2px;
   box-shadow: var(--admin-primary-shadow-sm);
-  padding-right: 41px;
+  padding-inline: 13px 41px;
 }
 
 .admin-form-input.admin-form-control-labeled:focus-within,

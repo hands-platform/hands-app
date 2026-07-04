@@ -139,10 +139,14 @@ describe('Admin form control CSS', () => {
     const compactFocusBlock = cssRuleBlockAt(compactFocusIndex);
     const labeledFocusIndex = globalsCss.indexOf('.admin-form-input.admin-form-control-labeled:focus-within,');
     const labeledFocusBlock = cssRuleBlockAt(labeledFocusIndex);
+    const compactDateFocusIndex = globalsCss.indexOf('.admin-form-date:focus-within,');
+    const compactDateFocusBlock = cssRuleBlockAt(compactDateFocusIndex);
     const dateFocusIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled:focus-within,');
     const dateFocusBlock = cssRuleBlockAt(dateFocusIndex);
 
     expect(compactFocusBlock).toContain('padding-inline: 13px');
+    expect(compactDateFocusBlock).toContain('padding-inline: 13px 41px');
+    expect(compactDateFocusBlock).not.toContain('padding-right: 41px');
     expect(labeledFocusBlock).toContain('padding: 7px 11px');
     expect(dateFocusBlock).toContain('padding: 7px 41px 7px 11px');
   });
