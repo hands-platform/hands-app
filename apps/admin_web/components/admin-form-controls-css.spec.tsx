@@ -41,6 +41,31 @@ describe('Admin form control CSS', () => {
     expect(inlineNavigationBlock).not.toContain('top: 8px');
   });
 
+  it('keeps calendar view tabs on the Vuexy pill TabList active treatment', () => {
+    const segmentedIndex = globalsCss.indexOf('.calendar-segmented-control {');
+    const segmentedBlock = cssRuleBlockAt(segmentedIndex);
+    const tabIndex = globalsCss.indexOf('.calendar-segmented-control button {');
+    const tabBlock = cssRuleBlockAt(tabIndex);
+    const activeIndex = globalsCss.indexOf('.calendar-segmented-control button.is-active {');
+    const activeBlock = cssRuleBlockAt(activeIndex);
+
+    expect(segmentedBlock).toContain('gap: 8px');
+    expect(segmentedBlock).not.toContain('overflow: hidden');
+    expect(tabBlock).toContain('background: transparent');
+    expect(tabBlock).not.toContain('background: var(--admin-primary-soft)');
+    expect(activeBlock).toContain('background: var(--admin-accent)');
+    expect(activeBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(activeBlock).toContain('color: var(--admin-inverse-text)');
+  });
+
+  it('limits calendar view tab hover treatment to inactive tabs', () => {
+    const inactiveHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:not(.is-active):hover,');
+    const legacyHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:hover,');
+
+    expect(inactiveHoverIndex).toBeGreaterThan(-1);
+    expect(legacyHoverIndex).toBe(-1);
+  });
+
   it('keeps the shared react-datepicker header spacing on the Vuexy template rhythm', () => {
     const headerTitleIndex = globalsCss.indexOf(
       '.calendar-vuexy-datepicker .react-datepicker__current-month,',

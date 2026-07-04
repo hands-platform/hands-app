@@ -1808,7 +1808,8 @@ a {
   border: 0;
   border-radius: var(--admin-radius);
   display: inline-flex;
-  overflow: hidden;
+  gap: 8px;
+  overflow: visible;
   padding: 0;
   white-space: nowrap;
 }
@@ -1836,9 +1837,9 @@ a {
 }
 
 .calendar-segmented-control button {
-  background: var(--admin-primary-soft);
-  border-radius: 0;
-  color: var(--admin-accent-strong);
+  background: transparent;
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
   min-height: 38px;
   padding: 0 22px;
 }
@@ -1854,15 +1855,15 @@ a {
 }
 
 .calendar-segmented-control button.is-active {
-  background: rgb(var(--admin-primary-channel) / 0.24);
-  box-shadow: none;
-  color: var(--admin-accent-strong);
+  background: var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
 }
 
-.calendar-segmented-control button:hover,
-.calendar-segmented-control button:focus,
-.calendar-segmented-control button:active {
-  background: rgb(var(--admin-primary-channel) / 0.24);
+.calendar-segmented-control button:not(.is-active):hover,
+.calendar-segmented-control button:not(.is-active):focus,
+.calendar-segmented-control button:not(.is-active):active {
+  background: var(--admin-primary-soft);
   box-shadow: none;
   color: var(--admin-accent-strong);
   outline: 0;
