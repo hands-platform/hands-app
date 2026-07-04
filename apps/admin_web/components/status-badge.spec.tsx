@@ -5,7 +5,6 @@ import {
   AdminSignal,
   StatusBadge,
   StatusBadgeLink,
-  pillClassBadgeClassName,
   statusBadgeClassName,
   statusBadgeToneFromPillClass,
 } from './status-badge';
@@ -36,14 +35,10 @@ describe('StatusBadge', () => {
     });
   });
 
-  it('normalizes existing pillClass values for gradual shared badge migration', () => {
-    expect(pillClassBadgeClassName('pill-danger')).toBe('pill pill-danger');
-    expect(pillClassBadgeClassName('pill pill-warn')).toBe('pill pill-warn');
-  });
-
   it('does not export legacy pill-class badge components', () => {
     const source = readFileSync('components/status-badge.tsx', 'utf8');
 
+    expect(source).not.toContain('export function pillClassBadgeClassName');
     expect(source).not.toContain('export function PillClassBadge');
     expect(source).not.toContain('export function PillClassBadgeLink');
     expect(source).not.toContain('type PillClassBadgeProps');

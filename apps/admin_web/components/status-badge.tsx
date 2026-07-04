@@ -44,10 +44,6 @@ export function statusBadgeClassName(tone: StatusBadgeTone) {
   return STATUS_BADGE_CLASS_BY_TONE[tone];
 }
 
-export function pillClassBadgeClassName(pillClass: string) {
-  return pillClass.startsWith('pill ') ? pillClass : `pill ${pillClass}`;
-}
-
 export function statusBadgeToneFromPillClass(pillClass: string): StatusBadgeTone {
   if (pillClass.includes('danger') || pillClass.includes('blocked')) {
     return 'danger';
