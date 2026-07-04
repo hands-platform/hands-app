@@ -14,6 +14,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -328,11 +329,15 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                   </td>
                   <td>{closing.settlementCount}</td>
                   <td>
-                    <strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>
+                    <strong>
+                      <MoneyText amount={closing.companyOutputVatTotal} currency={closing.currency} />
+                    </strong>
                     <div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>
                   </td>
                   <td>
-                    <strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>
+                    <strong>
+                      <MoneyText amount={closing.partnerWithholdingTotal} currency={closing.currency} />
+                    </strong>
                     <div className="muted">VAT {formatMoney(closing.partnerVatWithheldTotal, closing.currency)}</div>
                     <div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>
                   </td>

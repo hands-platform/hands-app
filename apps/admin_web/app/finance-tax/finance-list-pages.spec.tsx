@@ -470,6 +470,38 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className={`pill ${platformVatCategoryPill(row.category)}`}');
   });
 
+  it('uses shared money atoms for monthly tax closing tax cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>');
+    expect(source).not.toContain('<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>');
+  });
+
+  it('uses shared money atoms for partner withholding tax cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/partner-withholding-tax/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(row.partnerVatWithheldTotal, row.currency)}</strong>');
+    expect(source).not.toContain('<strong>{formatMoney(row.totalPartnerTaxWithheld, row.currency)}</strong>');
+  });
+
+  it('uses shared money atoms for payment fee total cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-fees/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain(
+      '<strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>',
+    );
+  });
+
+  it('uses shared money atoms for platform VAT total cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>');
+  });
+
   it.each([
     ['booking settlement audit', 'app/finance-tax/booking-settlement-audit/page.tsx', 'bookingSettlementAuditDetailHref(snapshot.id)'],
     ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', 'paymentClearingDetailHref(entry.id)'],

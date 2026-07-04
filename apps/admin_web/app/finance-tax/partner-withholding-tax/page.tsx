@@ -9,6 +9,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -189,11 +190,15 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
                 <td>{formatMoney(row.grossServiceRevenue, row.currency)}</td>
                 <td>{formatMoney(row.partnerPayoutTotal, row.currency)}</td>
                 <td>
-                  <strong>{formatMoney(row.partnerVatWithheldTotal, row.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={row.partnerVatWithheldTotal} currency={row.currency} />
+                  </strong>
                   <div className="muted">PIT {formatMoney(row.partnerPitWithheldTotal, row.currency)}</div>
                 </td>
                 <td>
-                  <strong>{formatMoney(row.totalPartnerTaxWithheld, row.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={row.totalPartnerTaxWithheld} currency={row.currency} />
+                  </strong>
                 </td>
               </tr>
             ))}

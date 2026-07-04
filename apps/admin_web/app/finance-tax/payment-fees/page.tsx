@@ -4,6 +4,7 @@ import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -179,7 +180,9 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
               <td>{Number(row.settlementCount ?? 0)}</td>
               <td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>
               <td>
-                <strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>
+                <strong>
+                  <MoneyText amount={Number(row.paymentProcessingFeeTotal ?? 0)} currency={currency} />
+                </strong>
               </td>
               <td>{formatFinancePercent(Number(row.paymentProcessingFeeTotal ?? 0), Number(row.customerPaymentAmountTotal ?? 0))}</td>
             </tr>

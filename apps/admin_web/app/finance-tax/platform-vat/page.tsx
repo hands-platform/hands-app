@@ -4,6 +4,7 @@ import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -129,7 +130,9 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
                 <td>{row.settlementCount}</td>
                 <td>{formatMoney(row.platformFeeGrossTotal, summary.currency)}</td>
                 <td>
-                  <strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={row.companyOutputVatTotal} currency={summary.currency} />
+                  </strong>
                 </td>
                 <td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>
               </tr>
