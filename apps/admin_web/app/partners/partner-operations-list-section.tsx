@@ -2,7 +2,12 @@ import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../compon
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminSignal, PillClassBadge, StatusBadge, type AdminSignalTone } from '../../components/status-badge';
+import {
+  AdminSignal,
+  StatusBadge,
+  statusBadgeToneFromPillClass,
+  type AdminSignalTone,
+} from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -67,17 +72,20 @@ export function PartnerOperationsListSection({
                 />
                 <div className="participant-list admin-mt-6">
                   <StatusBadge tone="info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</StatusBadge>
-                  <PillClassBadge pillClass={row.provider.blockedAt ? 'pill-danger' : 'pill-success'}>
+                  <StatusBadge tone={row.provider.blockedAt ? 'danger' : 'success'}>
                     {row.provider.blockedAt ? 'Account blocked' : 'Account open'}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </div>
               </td>
               <td>
                 <div className="participant-list">
                   {row.checklist.map((item) => (
-                    <PillClassBadge key={item.label} pillClass={partnerOperationPillClass(item.tone)}>
+                    <StatusBadge
+                      key={item.label}
+                      tone={statusBadgeToneFromPillClass(partnerOperationPillClass(item.tone))}
+                    >
                       {item.label}: {item.status}
-                    </PillClassBadge>
+                    </StatusBadge>
                   ))}
                 </div>
               </td>
@@ -95,9 +103,12 @@ export function PartnerOperationsListSection({
                 ) : null}
                 <div className="participant-list admin-mt-8">
                   {row.matchingFlow.map((item) => (
-                    <PillClassBadge key={item.label} pillClass={partnerOperationPillClass(item.tone)}>
+                    <StatusBadge
+                      key={item.label}
+                      tone={statusBadgeToneFromPillClass(partnerOperationPillClass(item.tone))}
+                    >
                       {item.label}: {item.status}
-                    </PillClassBadge>
+                    </StatusBadge>
                   ))}
                 </div>
                 <p className="muted admin-mt-8">{row.matchingFlowDetail}</p>
