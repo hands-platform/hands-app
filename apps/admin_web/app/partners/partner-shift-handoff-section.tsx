@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { PartnerCommandLane } from './partner-command-center';
 import {
@@ -50,15 +50,16 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
       </div>
       <div className="ops-task-grid admin-mt-14">
         {handoff.actions.map((item) => (
-          <Link
-            className={`ops-task-card ${partnerShiftCardClass(item.tone)}`}
+          <AdminActionCard
+            actionLabel={item.operatorAction}
+            className={partnerShiftCardClass(item.tone)}
+            detail={item.detail}
             href={item.href}
             key={item.title}
+            leading={<PillClassBadge pillClass={partnerShiftPillClass(item.tone)}>{item.scope}</PillClassBadge>}
+            title={item.title}
+            variant="ops-task"
           >
-            <PillClassBadge pillClass={partnerShiftPillClass(item.tone)}>{item.scope}</PillClassBadge>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
-            <small>{item.operatorAction}</small>
             <div className="participant-list admin-mt-10">
               {item.samples.length ? (
                 item.samples.map((sample) => (
@@ -70,7 +71,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
                 <StatusBadge tone="success">No immediate partner sample</StatusBadge>
               )}
             </div>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminSection>

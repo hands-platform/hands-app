@@ -11,6 +11,8 @@ describe('PartnerShiftHandoffSection', () => {
 
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<span className="pill pill-info">Next best partner move</span>');
     expect(source).not.toContain('<span className={`pill ${partnerShiftPillClass(item.tone)}`}>{item.scope}</span>');
     expect(source).not.toContain('<span className="pill" key={`${item.title}-${sample}`}>');
