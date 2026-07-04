@@ -70,6 +70,8 @@ describe('FinanceCloseoutEvidenceChecklistSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
   });
 });

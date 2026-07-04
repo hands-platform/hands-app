@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { FinanceCloseoutShiftActionMapSection } from './finance-closeout-shift-action-map-section';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -58,6 +60,16 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
 
     expect(markup).toContain('No shift close action is visible for this range.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('uses shared status badges for shift close action status', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-closeout/finance-closeout-shift-action-map-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
   });
 });
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { FinanceCloseoutEvidenceChecklistItem } from '../../lib/finance-closeout';
 
 type FinanceCloseoutEvidenceChecklistSectionProps = {
@@ -32,7 +32,11 @@ export function FinanceCloseoutEvidenceChecklistSection({
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                {item.status}
+              </StatusBadge>
+            }
             title={item.title}
             variant="ops-task"
           />
