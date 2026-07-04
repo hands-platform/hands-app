@@ -14,9 +14,11 @@ describe('calendar client structure', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
     expect(clientSource).toContain('AdminFormCheckbox');
+    expect(clientSource).toContain('PillClassBadge');
     expect(clientSource).toContain('buildCalendarTagFilters');
     expect(clientSource).toContain('selectedTags');
     expect(clientSource).toContain('calendar-filter-count');
+    expect(clientSource).not.toContain('<span className={`pill pill-${filter.tone}`}>#{filter.tag}</span>');
     expect(clientSource).not.toContain('title="Mini calendar"');
     expect(clientSource).not.toContain('description={formatMonthLabel(currentDate)}');
     expect(clientSource).not.toContain('<input\n                checked={selectedCategories.length === CALENDAR_CATEGORIES.length}');

@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { MetricCard } from '../../components/metric-card';
+import { PillClassBadge } from '../../components/status-badge';
 import {
   buildCalendarMetrics,
   buildCalendarTagFilters,
@@ -309,7 +310,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
                         )
                       }
                     >
-                      <span className={`pill pill-${filter.tone}`}>#{filter.tag}</span>
+                      <PillClassBadge pillClass={`pill-${filter.tone}`}>#{filter.tag}</PillClassBadge>
                       <span className="calendar-filter-count">({filter.count})</span>
                     </AdminFormCheckbox>
                   );
