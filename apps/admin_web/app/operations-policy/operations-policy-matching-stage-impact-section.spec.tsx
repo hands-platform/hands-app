@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
+const sectionSource = readFileSync(
+  new URL('./operations-policy-matching-stage-impact-section.tsx', import.meta.url),
+  'utf8',
+);
+
 describe('OperationsPolicyMatchingStageImpactSection', () => {
+  it('uses shared Vuexy badge atoms for scenario labels', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).not.toContain('PillClassBadge');
+  });
+
   it('renders matching stage scenarios and usage note', () => {
     const section = OperationsPolicyMatchingStageImpactSection({
       preview: {
