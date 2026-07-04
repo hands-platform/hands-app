@@ -57,8 +57,9 @@ describe('NotificationDeliveryOpsQueueSection', () => {
 
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<div className="ops-task-card"');
     expect(source).not.toContain('<span className={`pill ${items.length ?');
     expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.label}</span>');
@@ -75,7 +76,7 @@ function buildItems(): NotificationDeliveryOpsQueueItem[] {
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',
-      tone: 'pill-warn',
+      tone: 'warning',
     },
   ];
 }

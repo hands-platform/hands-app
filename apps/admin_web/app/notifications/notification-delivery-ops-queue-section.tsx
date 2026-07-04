@@ -1,5 +1,5 @@
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
 
 export type NotificationDeliveryOpsQueueItem = {
   readonly count: number;
@@ -7,7 +7,7 @@ export type NotificationDeliveryOpsQueueItem = {
   readonly href: string;
   readonly key: string;
   readonly label: string;
-  readonly tone: string;
+  readonly tone: StatusBadgeTone;
 };
 
 type NotificationDeliveryOpsQueueSectionProps = {
@@ -32,12 +32,12 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
             <AdminTaskCard
               detail={item.detail}
               key={item.key}
-              leading={<PillClassBadge pillClass={item.tone}>{item.label}</PillClassBadge>}
+              leading={<StatusBadge tone={item.tone}>{item.label}</StatusBadge>}
               title={item.count}
             >
-              <PillClassBadgeLink href={item.href} pillClass="pill-neutral">
+              <StatusBadgeLink href={item.href} tone="neutral">
                 Open queue
-              </PillClassBadgeLink>
+              </StatusBadgeLink>
             </AdminTaskCard>
           ))
         ) : (

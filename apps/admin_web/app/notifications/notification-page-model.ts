@@ -758,7 +758,7 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',
-      tone: 'pill-warn',
+      tone: 'warning',
     },
     {
       count: deliveryStats.disabledDevices,
@@ -766,7 +766,7 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=disabled-device',
       key: 'disabled-devices',
       label: 'Disabled devices',
-      tone: 'pill-warn',
+      tone: 'warning',
     },
     {
       count: deliveryStats.stalePushDeviceDeliveries,
@@ -774,7 +774,7 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=stale-device',
       key: 'stale-devices',
       label: 'Stale devices',
-      tone: 'pill-warn',
+      tone: 'warning',
     },
     {
       count: deliveryStats.skippedNotifications,
@@ -783,7 +783,7 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=skipped',
       key: 'skipped',
       label: 'Skipped',
-      tone: 'pill-info',
+      tone: 'info',
     },
     {
       count: deliveryStats.pendingNotifications,
@@ -791,7 +791,7 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=pending',
       key: 'pending',
       label: 'Pending',
-      tone: 'pill-neutral',
+      tone: 'neutral',
     },
   ];
 

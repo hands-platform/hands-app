@@ -68,7 +68,7 @@ describe('notification page model', () => {
         href: '/notifications?review=failed',
         key: 'failed',
         label: 'Failed sends',
-        tone: 'pill-warn',
+        tone: 'warning',
       },
       {
         count: 1,
@@ -77,7 +77,7 @@ describe('notification page model', () => {
         href: '/notifications?review=disabled-device',
         key: 'disabled-devices',
         label: 'Disabled devices',
-        tone: 'pill-warn',
+        tone: 'warning',
       },
       {
         count: 1,
@@ -86,7 +86,7 @@ describe('notification page model', () => {
         href: '/notifications?review=stale-device',
         key: 'stale-devices',
         label: 'Stale devices',
-        tone: 'pill-warn',
+        tone: 'warning',
       },
       {
         count: 1,
@@ -95,7 +95,7 @@ describe('notification page model', () => {
         href: '/notifications?review=skipped',
         key: 'skipped',
         label: 'Skipped',
-        tone: 'pill-info',
+        tone: 'info',
       },
       {
         count: 1,
@@ -103,7 +103,7 @@ describe('notification page model', () => {
         href: '/notifications?review=pending',
         key: 'pending',
         label: 'Pending',
-        tone: 'pill-neutral',
+        tone: 'neutral',
       },
     ]);
   });
