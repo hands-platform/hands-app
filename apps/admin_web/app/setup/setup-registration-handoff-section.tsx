@@ -1,5 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 type SetupRegistrationHandoffItem = {
   readonly id: string;
@@ -29,24 +29,24 @@ export function SetupRegistrationHandoffSection({
       statusTone="info"
       title="External registration handoff"
     >
-        {registrationPlan.map((item) => (
-          <a className="setup-backlog-item" href={`#${item.groupId}`} key={item.id}>
-            <span>{item.provider}</span>
-            <strong>{item.title}</strong>
-            <p className="muted">{item.detail}</p>
-            <div className="participant-list">
-              <PillClassBadge pillClass={item.statusClass}>{item.status}</PillClassBadge>
-              <StatusBadge tone="neutral">{item.owner}</StatusBadge>
-            </div>
-            <div className="participant-list admin-mt-8">
-              {item.env.map((name) => (
-                <StatusBadge key={`${item.id}-${name}`} tone="info">
-                  {name}
-                </StatusBadge>
-              ))}
-            </div>
-          </a>
-        ))}
+      {registrationPlan.map((item) => (
+        <a className="setup-backlog-item" href={`#${item.groupId}`} key={item.id}>
+          <span>{item.provider}</span>
+          <strong>{item.title}</strong>
+          <p className="muted">{item.detail}</p>
+          <div className="participant-list">
+            <StatusBadge tone={statusBadgeToneFromPillClass(item.statusClass)}>{item.status}</StatusBadge>
+            <StatusBadge tone="neutral">{item.owner}</StatusBadge>
+          </div>
+          <div className="participant-list admin-mt-8">
+            {item.env.map((name) => (
+              <StatusBadge key={`${item.id}-${name}`} tone="info">
+                {name}
+              </StatusBadge>
+            ))}
+          </div>
+        </a>
+      ))}
     </AdminSection>
   );
 }
