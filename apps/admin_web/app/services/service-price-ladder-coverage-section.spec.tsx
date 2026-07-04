@@ -1,0 +1,10 @@
+import { readFileSync } from 'node:fs';
+
+describe('ServicePriceLadderCoverageSection source', () => {
+  it('uses the shared Vuexy status badge atom for ladder coverage rows', () => {
+    const source = readFileSync('app/services/service-price-ladder-coverage-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}");
+  });
+});
