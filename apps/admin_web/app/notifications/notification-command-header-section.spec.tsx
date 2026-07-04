@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { NotificationCommandHeaderSection } from './notification-command-header-section';
 import { classNamesIn, hrefsIn, normalizedText } from './notification-section-test-utils';
 
@@ -21,5 +24,19 @@ describe('NotificationCommandHeaderSection', () => {
         'pill pill-neutral',
       ]),
     );
+  });
+
+  it('uses shared badge atoms for command header chips', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/notifications/notification-command-header-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<span className="pill pill-success">Current failures first</span>');
+    expect(source).not.toContain('<span className="pill pill-info">Delivery signal</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">Retry readiness</span>');
+    expect(source).not.toContain('<Link className="pill pill-neutral" href="/setup#notifications">');
   });
 });
