@@ -1,4 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { vi } from 'vitest';
 
 import type { AdminPaymentDetail } from '../../../lib/admin-api';
@@ -50,6 +52,16 @@ describe('PaymentDetailPage', () => {
     expect(markup).not.toContain('class="card admin-mb-16" id="chat-payment-evidence"');
     expect(markup).not.toContain('class="card" id="payment-audit-log"');
     expect(markup).not.toContain('class="table"><thead><tr><th>Time</th>');
+  });
+
+  it('uses shared badge atoms for payment detail evidence labels', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-warn">Chat</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{label}</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{key}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{formatDate(message.createdAt)}</span>');
   });
 });
 

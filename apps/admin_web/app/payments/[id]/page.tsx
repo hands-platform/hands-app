@@ -7,6 +7,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MetricCard } from '../../../components/metric-card';
+import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
   formatDateTime as formatDate,
@@ -209,7 +210,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
           ))}
           {messages.length === 0 ? (
             <div className="setup-stage-item">
-              <span className="pill pill-warn">Chat</span>
+              <StatusBadge tone="warning">Chat</StatusBadge>
               <div>
                 <AdminEmptyState
                   message="Check booking stage before money or outcome decisions."
@@ -247,7 +248,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
 function EvidenceRow({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
     <div className="setup-stage-item">
-      <span className="pill pill-info">{label}</span>
+      <StatusBadge tone="info">{label}</StatusBadge>
       <div>
         <strong>{value}</strong>
         <p className="muted">{helper}</p>
@@ -449,7 +450,7 @@ function PayloadDetails({ value }: { value: unknown }) {
       <div className="setup-stage-list">
         {keys.slice(0, 12).map((key) => (
           <div className="setup-stage-item" key={key}>
-            <span className="pill pill-neutral">{key}</span>
+            <StatusBadge tone="neutral">{key}</StatusBadge>
             <div>
               <strong>{redactPaymentPayloadValue(record[key], key)}</strong>
             </div>
@@ -493,7 +494,7 @@ function ChatEvidenceRow({ message }: { message: AdminChatMessage }) {
   const sender = message.sender?.fullName ?? message.sender?.phone ?? 'App user';
   return (
     <div className="setup-stage-item">
-      <span className="pill pill-info">{formatDate(message.createdAt)}</span>
+      <StatusBadge tone="info">{formatDate(message.createdAt)}</StatusBadge>
       <div>
         <strong>{sender}</strong>
         <p className="muted">{message.body}</p>
