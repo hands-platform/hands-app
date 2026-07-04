@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminActionCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type RefundDecisionChecklistItem = {
   readonly className: string;
@@ -40,7 +40,11 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                {item.status}
+              </StatusBadge>
+            }
             title={item.title}
             variant="ops-task"
           />

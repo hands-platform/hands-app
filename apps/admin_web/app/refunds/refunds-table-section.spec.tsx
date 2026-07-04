@@ -7,6 +7,8 @@ describe('RefundsTableSection', () => {
     const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('AdminRoundedPagination');
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });

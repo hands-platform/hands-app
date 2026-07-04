@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
   readonly action: string;
@@ -88,7 +88,9 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((item) => (
                       <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
-                        <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                        <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                          {item.status}
+                        </StatusBadge>
                         <div>
                           <strong>{item.action}</strong>
                           <p className="muted">{item.reason}</p>

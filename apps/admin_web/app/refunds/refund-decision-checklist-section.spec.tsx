@@ -49,6 +49,8 @@ describe('RefundDecisionChecklistSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className={`ops-task-card');
   });
 });
