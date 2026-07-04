@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type { PayoutPartnerFinanceQueueRow } from './payout-partner-finance-queue-model';
 
 type PayoutPartnerFinanceQueueSectionProps = {
@@ -40,7 +41,7 @@ export function PayoutPartnerFinanceQueueSection({
                 <strong>{row.amountLabel}</strong>
               </td>
               <td>
-                <span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>
+                <StatusBadge tone={badgeToneForQueueTone(row.tone)}>{row.title}</StatusBadge>
                 <p className="muted">{row.detail}</p>
               </td>
               <td>
@@ -68,8 +69,14 @@ function PayoutPartnerFinanceQueueEmptyState() {
   );
 }
 
-function pillClassForTone(tone: PayoutPartnerFinanceQueueRow['tone']) {
-  if (tone === 'danger') return 'pill-danger';
-  if (tone === 'success') return 'pill-success';
-  return 'pill-warn';
+function badgeToneForQueueTone(tone: PayoutPartnerFinanceQueueRow['tone']): StatusBadgeTone {
+  if (tone === 'danger') {
+    return 'danger';
+  }
+
+  if (tone === 'success') {
+    return 'success';
+  }
+
+  return 'warning';
 }

@@ -43,6 +43,13 @@ describe('PayoutPartnerFinanceQueueSection', () => {
     expect(sectionSource).toContain('AdminEmptyState');
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
+
+  it('uses the shared badge atom for finance signal tones', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('badgeToneForQueueTone');
+    expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>');
+    expect(sectionSource).not.toContain('function pillClassForTone');
+  });
 });
 
 function textContent(value: unknown): string {
