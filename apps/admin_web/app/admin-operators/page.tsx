@@ -5,7 +5,7 @@ import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../..
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime } from '../../lib/admin-format';
 import {
   createAdminOperator,
@@ -109,7 +109,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             <AdminCard className="admin-operator-permission-item" key={category.key}>
               <div>
                 <strong>{category.label}</strong>
-                <PillClassBadge pillClass="pill-neutral">{category.group}</PillClassBadge>
+                <StatusBadge tone="neutral">{category.group}</StatusBadge>
                 <p className="muted">{category.scope}</p>
               </div>
               <small>{category.defaultOwner}</small>
@@ -179,9 +179,9 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   <td>
                     <div className="participant-list">
                       {user.roles.map((role) => (
-                        <PillClassBadge pillClass={operatorRolePillClassName(role)} key={role}>
+                        <StatusBadge tone={statusBadgeToneFromPillClass(operatorRolePillClassName(role))} key={role}>
                           {role}
-                        </PillClassBadge>
+                        </StatusBadge>
                       ))}
                     </div>
                   </td>
@@ -192,14 +192,14 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   <td>
                     {isMasterAdmin ? (
                       <div className="admin-operator-master-access" role="note">
-                        <PillClassBadge pillClass="pill-primary">All categories</PillClassBadge>
+                        <StatusBadge tone="primary">All categories</StatusBadge>
                       </div>
                     ) : (
                       <div className="admin-operator-access-pills">
                         {operatorAccessLabels(user).map((label) => (
-                          <PillClassBadge pillClass="pill-info" key={`${user.id}:${label}`}>
+                          <StatusBadge tone="info" key={`${user.id}:${label}`}>
                             {label}
-                          </PillClassBadge>
+                          </StatusBadge>
                         ))}
                       </div>
                     )}

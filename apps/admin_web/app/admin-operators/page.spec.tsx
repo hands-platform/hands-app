@@ -156,7 +156,9 @@ describe('AdminOperatorsPage', () => {
 
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminFormCard');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<form action={createAdminOperator} className="admin-operator-control-card"');
     expect(source).not.toContain('<span className="pill pill-neutral">{category.group}</span>');
     expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');

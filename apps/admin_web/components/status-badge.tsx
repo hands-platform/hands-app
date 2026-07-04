@@ -5,6 +5,7 @@ const STATUS_BADGE_CLASS_BY_TONE = {
   danger: 'pill pill-danger',
   info: 'pill pill-info',
   neutral: 'pill pill-neutral',
+  primary: 'pill pill-primary',
   success: 'pill pill-success',
   warning: 'pill pill-warn',
 } as const;
@@ -73,6 +74,9 @@ export function statusBadgeToneFromPillClass(pillClass: string): StatusBadgeTone
   }
   if (pillClass.includes('info')) {
     return 'info';
+  }
+  if (pillClass.includes('primary')) {
+    return 'primary';
   }
   return 'neutral';
 }

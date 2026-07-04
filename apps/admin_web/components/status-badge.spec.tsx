@@ -17,6 +17,7 @@ describe('StatusBadge', () => {
     expect(statusBadgeClassName('danger')).toBe('pill pill-danger');
     expect(statusBadgeClassName('info')).toBe('pill pill-info');
     expect(statusBadgeClassName('neutral')).toBe('pill pill-neutral');
+    expect(statusBadgeClassName('primary')).toBe('pill pill-primary');
   });
 
   it('renders a stable span with optional title text', () => {
@@ -58,6 +59,7 @@ describe('StatusBadge', () => {
     expect(statusBadgeToneFromPillClass('pill-success')).toBe('success');
     expect(statusBadgeToneFromPillClass('pill-info')).toBe('info');
     expect(statusBadgeToneFromPillClass('pill-neutral')).toBe('neutral');
+    expect(statusBadgeToneFromPillClass('pill-primary')).toBe('primary');
     expect(statusBadgeToneFromPillClass('unknown')).toBe('neutral');
   });
 
