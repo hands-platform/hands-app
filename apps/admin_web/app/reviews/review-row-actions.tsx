@@ -10,6 +10,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminCard } from '../../components/admin-surface';
 import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
 
@@ -195,7 +196,7 @@ function ReviewEditDrawer({
         </div>
 
         <div className="calendar-drawer-body review-edit-drawer-body">
-          <section className="review-edit-original-card" aria-label="Original review">
+          <AdminCard ariaLabel="Original review" className="review-edit-original-card">
             <div className="review-edit-original-header">
               <div>
                 <span className="calendar-drawer-eyebrow">Original review</span>
@@ -213,14 +214,14 @@ function ReviewEditDrawer({
               </div>
             </div>
             <blockquote className="review-edit-original-copy">{editReview.commentLabel}</blockquote>
-          </section>
+          </AdminCard>
 
           <form action={moderateReview} className="calendar-form-grid review-edit-drawer-form">
             <input name="reviewId" type="hidden" value={editReview.reviewId} />
             <input name="status" type="hidden" value={editReview.status} />
             <input name="reportReason" type="hidden" value={editReview.reportReasonValue} />
             <input name="returnTo" type="hidden" value={returnTo} />
-            <section className="review-edit-form-card" aria-label="Revised review">
+            <AdminCard ariaLabel="Revised review" className="review-edit-form-card">
               <div className="review-edit-section-heading">
                 <span className="calendar-drawer-eyebrow">Replacement</span>
                 <strong>Edited review</strong>
@@ -240,7 +241,7 @@ function ReviewEditDrawer({
                 placeholder="Write the review copy that should be shown across the admin and app surfaces."
                 rows={7}
               />
-            </section>
+            </AdminCard>
             <div className="calendar-drawer-footer review-edit-drawer-footer">
               <AdminFormControlButton className="button-primary" type="submit">
                 <Save aria-hidden="true" size={16} />

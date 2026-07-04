@@ -4,11 +4,19 @@ import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } f
 import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
 
 describe('ReviewsTableSection', () => {
+  const reviewRowActionsSource = readFileSync(new URL('./review-row-actions.tsx', import.meta.url), 'utf8');
+
   it('uses the shared StatusBadge atom for active filter labels', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
+  });
+
+  it('uses shared Vuexy card atoms for review editor drawer cards', () => {
+    expect(reviewRowActionsSource).toContain('AdminCard');
+    expect(reviewRowActionsSource).not.toContain('<section className="review-edit-original-card"');
+    expect(reviewRowActionsSource).not.toContain('<section className="review-edit-form-card"');
   });
 
   it('renders the Vuexy customer review board with controls, rating, status, and action links', () => {
