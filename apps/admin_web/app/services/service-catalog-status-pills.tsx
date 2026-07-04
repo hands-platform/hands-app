@@ -1,4 +1,5 @@
 import type { AdminTaxPolicyVersion } from '../../lib/admin-api';
+import { StatusBadge } from '../../components/status-badge';
 
 type ServiceCatalogStatusPillsProps = {
   readonly activeServiceCount: number;
@@ -15,12 +16,12 @@ export function ServiceCatalogStatusPills({
 }: ServiceCatalogStatusPillsProps) {
   return (
     <>
-      <span className="pill pill-success">{serviceTypeCount} service type(s)</span>
-      <span className="pill pill-info">{activeServiceCount} active duration option(s)</span>
-      <span className="pill pill-info">{payoutRuleCount} payout rule(s)</span>
-      <span className={`pill ${activeTaxPolicy ? 'pill-success' : 'pill-warn'}`}>
+      <StatusBadge tone="success">{serviceTypeCount} service type(s)</StatusBadge>
+      <StatusBadge tone="info">{activeServiceCount} active duration option(s)</StatusBadge>
+      <StatusBadge tone="info">{payoutRuleCount} payout rule(s)</StatusBadge>
+      <StatusBadge tone={activeTaxPolicy ? 'success' : 'warning'}>
         {activeTaxPolicy ? `Tax: ${activeTaxPolicy.name}` : 'No active tax policy'}
-      </span>
+      </StatusBadge>
     </>
   );
 }
