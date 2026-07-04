@@ -20,6 +20,10 @@ vi.mock('./vietnam-overview-live-map', () => ({
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const mapClustersSource = readFileSync(
+  new URL('./vietnam-overview-map-clusters.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('VietnamOverviewPage', () => {
   beforeEach(() => {
@@ -56,6 +60,9 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminKpiCard');
+    expect(mapClustersSource).toContain('AdminCard');
+    expect(mapClustersSource).not.toContain('<article key={item.key} className={`vietnam-map-cluster-summary-card');
+    expect(mapClustersSource).not.toContain('<article className="vietnam-map-cluster-context-card');
     expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');
   });

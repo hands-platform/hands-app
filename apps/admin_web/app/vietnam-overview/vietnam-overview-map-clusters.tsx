@@ -9,6 +9,7 @@ import {
   type VietnamOverviewMetricDotKey,
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
+import { AdminCard } from '../../components/admin-surface';
 import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
 
 export type VietnamOverviewMapPointCluster = {
@@ -242,7 +243,7 @@ function ClusterDetailPanel({
 
       <div className="vietnam-map-cluster-summary-grid">
         {signalSummary.map((item) => (
-          <article key={item.key} className={`vietnam-map-cluster-summary-card is-${item.key}`}>
+          <AdminCard key={item.key} className={`vietnam-map-cluster-summary-card is-${item.key}`}>
             <span>
               <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
               {item.label}
@@ -251,29 +252,29 @@ function ClusterDetailPanel({
             <small>
               Latest {item.latestPoint ? formatDateTime(item.latestPoint.occurredAt) : 'pending'}
             </small>
-          </article>
+          </AdminCard>
         ))}
       </div>
 
       <div className="vietnam-map-cluster-context-grid" aria-label="Selected map signal context">
-        <article className="vietnam-map-cluster-context-card">
+        <AdminCard className="vietnam-map-cluster-context-card">
           <span>Region</span>
           <strong>{formatRegionCode(latestPoint.regionCode)}</strong>
           <small>Vietnam service area</small>
-        </article>
-        <article className="vietnam-map-cluster-context-card">
+        </AdminCard>
+        <AdminCard className="vietnam-map-cluster-context-card">
           <span>Source</span>
           <strong>{latestSignalSource.label}</strong>
           <small>{latestSignalSource.detail}</small>
-        </article>
-        <article className="vietnam-map-cluster-context-card is-wide">
+        </AdminCard>
+        <AdminCard className="vietnam-map-cluster-context-card is-wide">
           <span>Latest area</span>
           <strong>
             <MapPin size={13} aria-hidden="true" />
             {latestAddress}
           </strong>
           <small>Shown from stored operational coordinates only.</small>
-        </article>
+        </AdminCard>
       </div>
 
       {focusHref ? (

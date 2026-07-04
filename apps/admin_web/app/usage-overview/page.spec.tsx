@@ -43,6 +43,8 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('<article class="usage-overview-funnel-step');
     expect(markup).toContain('card admin-section usage-overview-segment-board-card');
     expect(markup).toContain('admin-section-body usage-overview-segment-board-grid');
+    expect(markup).toContain('card admin-card usage-overview-segment-board-item');
+    expect(markup).not.toContain('<article class="usage-overview-segment-board-item');
     expect(markup).toContain('card admin-section usage-overview-action-card');
     expect(markup).toContain('admin-section-body usage-overview-action-list');
     expect(markup).toContain('card admin-card usage-overview-action-item');
@@ -54,6 +56,13 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('card admin-section usage-overview-behavior-card');
     expect(markup).toContain('card admin-section usage-overview-insight-card');
     expect(markup).toContain('card admin-section usage-overview-ranking-card');
+    expect(pageSource).not.toContain('<article key={label} className={`usage-overview-segment-board-item');
+    expect(pageSource).not.toContain('<article key={row.platform} className="usage-overview-platform-row"');
+    expect(pageSource).not.toContain('<article key={row.id} className="usage-overview-discovery-row"');
+    expect(pageSource).not.toContain('<article key={row.id} className="usage-overview-service-row"');
+    expect(pageSource).not.toContain('<article key={row.hour} className="usage-overview-hour-row"');
+    expect(pageSource).not.toContain('<article key={row.regionCode} className="usage-overview-region-row"');
+    expect(pageSource).not.toContain('<article key={`${title}-${row.id}`} className="usage-overview-ranking-row"');
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');

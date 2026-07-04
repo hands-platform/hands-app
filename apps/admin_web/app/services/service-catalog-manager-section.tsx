@@ -85,7 +85,7 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
   const translations = readableTranslations(group.nameTranslations);
 
   return (
-    <article className="service-menu-card">
+    <AdminCard className="service-menu-card">
       <div className="service-menu-card-header">
         <div className="service-menu-title-cell">
           <span className="calendar-drawer-eyebrow">Service</span>
@@ -129,7 +129,7 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
           />
         ))}
       </div>
-    </article>
+    </AdminCard>
   );
 }
 

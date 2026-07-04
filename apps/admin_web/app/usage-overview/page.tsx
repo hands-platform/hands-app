@@ -416,7 +416,7 @@ function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOver
       title="Customer segments"
     >
       {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
-        <article key={label} className={`usage-overview-segment-board-item is-${tone}`}>
+        <AdminCard key={label} className={`usage-overview-segment-board-item is-${tone}`}>
           <span className="usage-overview-command-icon">
             <Icon size={17} aria-hidden="true" />
           </span>
@@ -426,7 +426,7 @@ function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOver
             <small>{detail}</small>
           </div>
           <em>{percent}</em>
-        </article>
+        </AdminCard>
       ))}
     </AdminSection>
   );
@@ -466,7 +466,7 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
           const widthPercent = Math.max(6, Math.round((row.sessionCount / maxSessions) * 100));
 
           return (
-            <article key={row.platform} className="usage-overview-platform-row">
+            <AdminCard key={row.platform} className="usage-overview-platform-row">
               <div className="usage-overview-platform-main">
                 <span className={`usage-overview-platform-dot is-${row.platform}`} aria-hidden="true" />
                 <div>
@@ -483,7 +483,7 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
-            </article>
+            </AdminCard>
           );
         })
       ) : (
@@ -512,7 +512,7 @@ function PartnerDiscoveryConversionCard({
     >
       {rows.length > 0 ? (
         rows.map((row) => (
-          <article key={row.id} className="usage-overview-discovery-row">
+          <AdminCard key={row.id} className="usage-overview-discovery-row">
             <span className="usage-overview-rank">#{row.rank}</span>
             <div className="usage-overview-name-cell">
               <span className="usage-overview-avatar">
@@ -542,7 +542,7 @@ function PartnerDiscoveryConversionCard({
               <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
             </div>
             <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
-          </article>
+          </AdminCard>
         ))
       ) : (
         <UsageOverviewEmptyState
@@ -592,7 +592,7 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
           const widthPercent = Math.max(6, Math.round((row.bookingCount / maxBookings) * 100));
 
           return (
-            <article key={row.id} className="usage-overview-service-row">
+            <AdminCard key={row.id} className="usage-overview-service-row">
               <div className="usage-overview-service-main">
                 <span className="usage-overview-rank">#{row.rank}</span>
                 <div>
@@ -617,7 +617,7 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
-            </article>
+            </AdminCard>
           );
         })
       ) : (
@@ -651,7 +651,7 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
           const widthPercent = Math.max(6, Math.round((row.totalActivityCount / maxActivity) * 100));
 
           return (
-            <article key={row.hour} className="usage-overview-hour-row">
+            <AdminCard key={row.hour} className="usage-overview-hour-row">
               <div>
                 <strong>{row.label}</strong>
                 <span>{formatNumber(row.totalActivityCount)} signals</span>
@@ -663,7 +663,7 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
                 <span>{formatNumber(row.customerSessionCount)} sessions</span>
                 <span>{formatNumber(row.bookingRequestCount)} requests</span>
               </div>
-            </article>
+            </AdminCard>
           );
         })
       ) : (
@@ -854,7 +854,7 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
           const widthPercent = Math.max(6, Math.round((activity / maxRegionActivity) * 100));
 
           return (
-            <article key={row.regionCode} className="usage-overview-region-row">
+            <AdminCard key={row.regionCode} className="usage-overview-region-row">
               <div className="vietnam-region-name">
                 <span>{row.shortName}</span>
                 <strong>{row.regionName}</strong>
@@ -876,7 +876,7 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
-            </article>
+            </AdminCard>
           );
         })
       ) : (
@@ -913,7 +913,7 @@ function UsageRankingCard({
     >
       {rows.length > 0 ? (
         rows.map((row) => (
-          <article key={`${title}-${row.id}`} className="usage-overview-ranking-row">
+          <AdminCard key={`${title}-${row.id}`} className="usage-overview-ranking-row">
             <span className="usage-overview-rank">#{row.rank}</span>
             <div className="usage-overview-name-cell">
               <span className="usage-overview-avatar">
@@ -929,7 +929,7 @@ function UsageRankingCard({
               <span>{valueHeading}</span>
             </div>
             <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
-          </article>
+          </AdminCard>
         ))
       ) : (
         <UsageOverviewEmptyState
