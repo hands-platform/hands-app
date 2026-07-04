@@ -1,3 +1,4 @@
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
@@ -18,17 +19,11 @@ export function PartnerDetailFullRecordIndexSection({
 }: PartnerDetailFullRecordIndexSectionProps) {
   return (
     <AdminCard className="admin-mb-16" id="partner-full-record-index">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner full record index</h2>
-          <p className="muted">
-            Factual partner record map for operators. Use these links to jump to identity, booking/chat,
-            payout, documents, app activity, agreements, and review history inside this partner detail
-            record.
-          </p>
-        </div>
-        <StatusBadge tone="info">{bookingRecordCount} booking record(s)</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={<StatusBadge tone="info">{bookingRecordCount} booking record(s)</StatusBadge>}
+        description="Factual partner record map for operators. Use these links to jump to identity, booking/chat, payout, documents, app activity, agreements, and review history inside this partner detail record."
+        title="Partner full record index"
+      />
       <div className="service-trace-summary admin-mt-12">
         <a href="#booking-chat-records">
           <span>Booking and chat</span>

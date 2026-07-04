@@ -1,3 +1,4 @@
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { PillClassBadgeLink, StatusBadge } from '../../../components/status-badge';
 
@@ -21,13 +22,11 @@ export function PartnerDetailConnectedRecordsSection({
 }: PartnerDetailConnectedRecordsSectionProps) {
   return (
     <AdminCard className="admin-mb-16" id={id}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <StatusBadge tone="info">{links.length} links</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={<StatusBadge tone="info">{links.length} links</StatusBadge>}
+        description={description}
+        title={title}
+      />
       <div className="service-trace-summary admin-mt-12">
         {links.map((record) => (
           <div key={record.label}>

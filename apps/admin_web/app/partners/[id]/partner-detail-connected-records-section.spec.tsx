@@ -11,7 +11,9 @@ describe('PartnerDetailConnectedRecordsSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('className="card admin-mb-16"');
+    expect(source).not.toContain('<div className="ops-section-header">');
   });
 
   it('renders connected record links with counts, detail, and tones', () => {

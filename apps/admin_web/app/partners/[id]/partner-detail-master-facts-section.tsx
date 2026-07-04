@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
@@ -16,16 +17,11 @@ type PartnerDetailMasterFactsSectionProps = {
 export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFactsSectionProps) {
   return (
     <AdminCard className="admin-mb-16" id="partner-master-facts">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner master facts</h2>
-          <p className="muted">
-            Single-page operating sheet for identity, verification, service, booking, revenue, tax,
-            location, review, and account facts.
-          </p>
-        </div>
-        <StatusBadge tone="info">{facts.length} field(s)</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={<StatusBadge tone="info">{facts.length} field(s)</StatusBadge>}
+        description="Single-page operating sheet for identity, verification, service, booking, revenue, tax, location, review, and account facts."
+        title="Partner master facts"
+      />
       <div className="service-trace-summary admin-mt-12">
         {facts.map((fact) => (
           <div key={fact.label}>

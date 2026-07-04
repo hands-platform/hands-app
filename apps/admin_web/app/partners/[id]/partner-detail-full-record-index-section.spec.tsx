@@ -5,7 +5,9 @@ describe('PartnerDetailFullRecordIndexSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-full-record-index-section.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('className="card admin-mb-16"');
+    expect(source).not.toContain('<div className="ops-section-header">');
   });
 
   it('uses a shared badge atom for the booking record count', () => {
