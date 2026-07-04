@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Eye, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminAvatarStatusDot,
@@ -9,6 +10,7 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -626,13 +628,25 @@ export function BookingPostMatchCancellationChatLayer({
         </div>
         <div className="booking-chat-message-list">
           {!chatState.loaded ? (
-            <div className="booking-chat-empty">Loading retained chat messages...</div>
+            <AdminLoadingState
+              className="booking-chat-empty"
+              message="Loading retained chat messages..."
+              title="Loading chat evidence"
+            />
           ) : chatState.error ? (
-            <div className="booking-chat-empty">{chatState.error}</div>
+            <AdminErrorState
+              className="booking-chat-empty"
+              message={chatState.error}
+              title="Unable to load chat evidence"
+            />
           ) : messages.length > 0 ? (
             messages.map((message) => <BookingChatMessageRow key={message.id} message={message} />)
           ) : (
-            <div className="booking-chat-empty">No retained chat messages for this booking.</div>
+            <AdminEmptyState
+              className="booking-chat-empty"
+              message="No retained chat messages for this booking."
+              title={null}
+            />
           )}
         </div>
       </div>

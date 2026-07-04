@@ -24,6 +24,17 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<span className="pill pill-warn">Address missing</span>');
   });
 
+  it('uses shared Vuexy state atoms for post-match chat loading, error, and empty copy', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminLoadingState');
+    expect(source).toContain('AdminErrorState');
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<div className="booking-chat-empty">Loading retained chat messages...</div>');
+    expect(source).not.toContain('<div className="booking-chat-empty">{chatState.error}</div>');
+    expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
+  });
+
   it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
       id: 'booking_123456789',
