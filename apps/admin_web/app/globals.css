@@ -16823,7 +16823,7 @@ textarea:focus-visible {
 .admin-form-select select,
 .admin-directory-filter-search input,
 .admin-directory-filter-select select,
-.vuexy-customer-number-field input,
+.vuexy-customer-number-field input {
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -17150,7 +17150,7 @@ textarea:focus-visible {
 .admin-form-select select,
 .admin-directory-filter-search input,
 .admin-directory-filter-select select,
-.vuexy-customer-number-field input,
+.vuexy-customer-number-field input {
   background: transparent;
   border: 0;
   box-shadow: none;
