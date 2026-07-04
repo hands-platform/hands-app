@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
@@ -28,12 +29,14 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
         <div className="detail-grid admin-mt-16">
           {providers.map((provider) => (
             <div key={provider.providerProfileId}>
-              <div className="ops-section-header">
-                <h3>{provider.providerName}</h3>
-                <PillClassBadge pillClass="pill-danger">
-                  {formatMoney(provider.debtAmount, provider.currency)}
-                </PillClassBadge>
-              </div>
+              <AdminSectionHeader
+                status={
+                  <PillClassBadge pillClass="pill-danger">
+                    {formatMoney(provider.debtAmount, provider.currency)}
+                  </PillClassBadge>
+                }
+                title={provider.providerName}
+              />
               <p className="muted">
                 {provider.rowCount} open cash debt row(s), {formatMoney(provider.platformFee, provider.currency)} HANDS
                 fee, {formatMoney(provider.taxAmount, provider.currency)} tax.

@@ -12,7 +12,9 @@ describe('CashSettlementProviderGroupsSection', () => {
     const section = CashSettlementProviderGroupsSection({ providers: [] });
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<p className="muted">No Partner has open cash settlement debt.</p>');
+    expect(source).not.toContain('<div className="ops-section-header">');
     expect(textContent(section)).toContain('No Partner has open cash settlement debt.');
     expect(classNamesIn(section)).toContain('empty-state');
   });
