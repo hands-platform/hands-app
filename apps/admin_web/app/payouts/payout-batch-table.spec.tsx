@@ -225,6 +225,12 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('row.withholdingAmountLabel');
     expect(source).not.toContain('{item.label}: {item.value}');
   });
+
+  it('allows action execution reasons to render shared money atoms', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
+
+    expect(source).toContain('readonly reason: ReactNode');
+  });
 });
 
 function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): PayoutBatchTableRow {

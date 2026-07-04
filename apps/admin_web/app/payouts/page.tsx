@@ -565,7 +565,7 @@ type PayoutBlockingReason = {
 type PayoutActionExecutionItem = {
   action: string;
   status: string;
-  reason: string;
+  reason: ReactNode;
   operatorRule: string;
   pillClass: string;
 };
@@ -1242,7 +1242,12 @@ function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutio
         earnings.length && (!withholdingAmount || withholdingLogs.length)
           ? `${earnings.length} earning row(s) and ${withholdingLogs.length} tax log(s) are attached.`
           : earnings.length
-            ? `${formatMoney(withholdingAmount, batch.currency)} withholding exists without a linked tax log.`
+            ? (
+                <>
+                  <MoneyText amount={withholdingAmount} currency={batch.currency} /> withholding exists without a
+                  linked tax log.
+                </>
+              )
             : 'This payout batch has no earning rows attached.',
       operatorRule:
         'Finance closeout should reconcile booking, earning, tax, wallet, and payout records together.',

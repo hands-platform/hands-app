@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
@@ -22,7 +24,7 @@ export type PayoutBatchActionExecutionItem = {
   readonly action: string;
   readonly operatorRule: string;
   readonly pillClass: string;
-  readonly reason: string;
+  readonly reason: ReactNode;
   readonly status: string;
 };
 

@@ -192,4 +192,10 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('${formatMoney(cashDebtAmount, currency)} partner cash-fee debt');
     expect(source).not.toContain('${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee');
   });
+
+  it('uses shared money atoms for payout action execution withholding amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).not.toContain('${formatMoney(withholdingAmount, batch.currency)} withholding exists');
+  });
 });
