@@ -17149,6 +17149,21 @@ textarea:focus-visible {
   transform: rotate(45deg);
 }
 
+.admin-form-search:has(input:disabled),
+.admin-form-date:has(input:disabled),
+.admin-form-input:has(input:disabled),
+.admin-form-input-date-picker:has(input:disabled),
+.admin-form-select:has(select:disabled),
+.vuexy-customer-number-field:has(input:disabled),
+.vuexy-customer-search:has(input:disabled),
+.vuexy-customer-select:has(select:disabled),
+.vuexy-partner-search:has(input:disabled),
+.vuexy-partner-select:has(select:disabled) {
+  background: var(--admin-action-hover);
+  color: var(--admin-disabled);
+  cursor: not-allowed;
+}
+
 .admin-form-search:hover,
 .admin-form-date:hover,
 .admin-form-input:hover,
@@ -17576,6 +17591,12 @@ textarea:focus-visible {
 .ops-note-textarea:hover,
 .referral-policy-textarea:hover {
   border-color: var(--admin-input-hover-border);
+}
+
+.admin-form-textarea textarea:disabled {
+  background: var(--admin-action-hover);
+  color: var(--admin-disabled);
+  cursor: not-allowed;
 }
 
 .admin-form-textarea textarea:focus,

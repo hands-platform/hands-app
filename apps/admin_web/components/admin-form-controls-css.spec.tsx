@@ -111,6 +111,21 @@ describe('Admin form control CSS', () => {
     expect(textareaLabelBlock).not.toContain('color: var(--admin-muted)');
   });
 
+  it('keeps disabled shared form atoms on the Vuexy disabled surface', () => {
+    const shellDisabledIndex = globalsCss.indexOf('.admin-form-search:has(input:disabled),');
+    const shellDisabledBlock = cssRuleBlockAt(shellDisabledIndex);
+    const textareaDisabledIndex = globalsCss.indexOf('.admin-form-textarea textarea:disabled');
+    const textareaDisabledBlock = cssRuleBlockAt(textareaDisabledIndex);
+
+    expect(shellDisabledIndex).toBeGreaterThan(-1);
+    expect(textareaDisabledIndex).toBeGreaterThan(-1);
+    expect(shellDisabledBlock).toContain('background: var(--admin-action-hover)');
+    expect(shellDisabledBlock).toContain('color: var(--admin-disabled)');
+    expect(shellDisabledBlock).toContain('cursor: not-allowed');
+    expect(textareaDisabledBlock).toContain('background: var(--admin-action-hover)');
+    expect(textareaDisabledBlock).toContain('color: var(--admin-disabled)');
+  });
+
   it('keeps shared textareas on the same Vuexy focus and placeholder motion as inputs', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-textarea textarea:focus,');
     const focusBlock = cssRuleBlockAt(focusIndex);
