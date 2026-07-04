@@ -332,16 +332,24 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <strong>
                       <MoneyText amount={closing.companyOutputVatTotal} currency={closing.currency} />
                     </strong>
-                    <div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>
+                    <div className="muted">
+                      Net <MoneyText amount={closing.platformFeeNetRevenueTotal} currency={closing.currency} />
+                    </div>
                   </td>
                   <td>
                     <strong>
                       <MoneyText amount={closing.partnerWithholdingTotal} currency={closing.currency} />
                     </strong>
-                    <div className="muted">VAT {formatMoney(closing.partnerVatWithheldTotal, closing.currency)}</div>
-                    <div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>
+                    <div className="muted">
+                      VAT <MoneyText amount={closing.partnerVatWithheldTotal} currency={closing.currency} />
+                    </div>
+                    <div className="muted">
+                      PIT <MoneyText amount={closing.partnerPitWithheldTotal} currency={closing.currency} />
+                    </div>
                   </td>
-                  <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
+                  <td>
+                    <MoneyText amount={closing.paymentProcessingFeeTotal} currency={closing.currency} />
+                  </td>
                   <td>
                     <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(closingRemittanceState.tone))}>
                       {closingRemittanceState.label}

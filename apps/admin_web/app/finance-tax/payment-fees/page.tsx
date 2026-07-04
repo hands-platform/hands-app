@@ -178,7 +178,9 @@ function PaymentFeeBreakdownTable<T extends Record<string, string | number>>({
                 <strong>{String(row[keyField])}</strong>
               </td>
               <td>{Number(row.settlementCount ?? 0)}</td>
-              <td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>
+              <td>
+                <MoneyText amount={Number(row.customerPaymentAmountTotal ?? 0)} currency={currency} />
+              </td>
               <td>
                 <strong>
                   <MoneyText amount={Number(row.paymentProcessingFeeTotal ?? 0)} currency={currency} />

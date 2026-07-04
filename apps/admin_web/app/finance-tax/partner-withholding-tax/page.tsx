@@ -187,13 +187,19 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
                 </td>
                 <td>{row.period}</td>
                 <td>{row.completedBookingCount}</td>
-                <td>{formatMoney(row.grossServiceRevenue, row.currency)}</td>
-                <td>{formatMoney(row.partnerPayoutTotal, row.currency)}</td>
+                <td>
+                  <MoneyText amount={row.grossServiceRevenue} currency={row.currency} />
+                </td>
+                <td>
+                  <MoneyText amount={row.partnerPayoutTotal} currency={row.currency} />
+                </td>
                 <td>
                   <strong>
                     <MoneyText amount={row.partnerVatWithheldTotal} currency={row.currency} />
                   </strong>
-                  <div className="muted">PIT {formatMoney(row.partnerPitWithheldTotal, row.currency)}</div>
+                  <div className="muted">
+                    PIT <MoneyText amount={row.partnerPitWithheldTotal} currency={row.currency} />
+                  </div>
                 </td>
                 <td>
                   <strong>

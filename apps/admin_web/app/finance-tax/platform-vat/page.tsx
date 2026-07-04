@@ -128,13 +128,17 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
                 </td>
                 <td>{formatBps(row.platformVatRateBps)}</td>
                 <td>{row.settlementCount}</td>
-                <td>{formatMoney(row.platformFeeGrossTotal, summary.currency)}</td>
+                <td>
+                  <MoneyText amount={row.platformFeeGrossTotal} currency={summary.currency} />
+                </td>
                 <td>
                   <strong>
                     <MoneyText amount={row.companyOutputVatTotal} currency={summary.currency} />
                   </strong>
                 </td>
-                <td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>
+                <td>
+                  <MoneyText amount={row.platformFeeNetRevenueTotal} currency={summary.currency} />
+                </td>
               </tr>
             ))}
           </FinanceDataTable>

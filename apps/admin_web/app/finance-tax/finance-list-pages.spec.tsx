@@ -476,13 +476,26 @@ describe('finance list pages', () => {
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">Net {formatMoney(closing.platformFeeNetRevenueTotal, closing.currency)}</div>',
+    );
+    expect(source).not.toContain(
+      '<div className="muted">VAT {formatMoney(closing.partnerVatWithheldTotal, closing.currency)}</div>',
+    );
+    expect(source).not.toContain(
+      '<div className="muted">PIT {formatMoney(closing.partnerPitWithheldTotal, closing.currency)}</div>',
+    );
+    expect(source).not.toContain('<td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>');
   });
 
   it('uses shared money atoms for partner withholding tax cells', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/partner-withholding-tax/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<td>{formatMoney(row.grossServiceRevenue, row.currency)}</td>');
+    expect(source).not.toContain('<td>{formatMoney(row.partnerPayoutTotal, row.currency)}</td>');
     expect(source).not.toContain('<strong>{formatMoney(row.partnerVatWithheldTotal, row.currency)}</strong>');
+    expect(source).not.toContain('<div className="muted">PIT {formatMoney(row.partnerPitWithheldTotal, row.currency)}</div>');
     expect(source).not.toContain('<strong>{formatMoney(row.totalPartnerTaxWithheld, row.currency)}</strong>');
   });
 
@@ -490,6 +503,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-fees/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<td>{formatMoney(Number(row.customerPaymentAmountTotal ?? 0), currency)}</td>');
     expect(source).not.toContain(
       '<strong>{formatMoney(Number(row.paymentProcessingFeeTotal ?? 0), currency)}</strong>',
     );
@@ -499,7 +513,9 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<td>{formatMoney(row.platformFeeGrossTotal, summary.currency)}</td>');
     expect(source).not.toContain('<strong>{formatMoney(row.companyOutputVatTotal, summary.currency)}</strong>');
+    expect(source).not.toContain('<td>{formatMoney(row.platformFeeNetRevenueTotal, summary.currency)}</td>');
   });
 
   it.each([
