@@ -1,7 +1,7 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormTextarea } from '../../../components/admin-form-controls';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -152,7 +152,9 @@ function BookingOutcomeReviewSection({
     <AdminSection
       actions={
         <div className="booking-outcome-review-actions">
-          <PillClassBadge pillClass={outcomeReview.tone}>{outcomeReview.status}</PillClassBadge>
+          <StatusBadge tone={statusBadgeToneFromPillClass(outcomeReview.tone)}>
+            {outcomeReview.status}
+          </StatusBadge>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
             <AdminFormControlLink className="button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
               {outcomeReview.primaryLabel}
@@ -197,9 +199,15 @@ function BookingOutcomePostMatchDecision({
   return (
     <AdminCard className="booking-outcome-decision-panel">
       <div className="booking-outcome-decision-copy">
-        <PillClassBadge pillClass={decision.resolutionTone}>{decision.resolutionLabel}</PillClassBadge>
-        <PillClassBadge pillClass={decision.feeTone}>{decision.feeLabel}</PillClassBadge>
-        <PillClassBadge pillClass={decision.timingTone}>{decision.timingLabel}</PillClassBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(decision.resolutionTone)}>
+          {decision.resolutionLabel}
+        </StatusBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(decision.feeTone)}>
+          {decision.feeLabel}
+        </StatusBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(decision.timingTone)}>
+          {decision.timingLabel}
+        </StatusBadge>
       </div>
       {decision.canResolve ? (
         <div className="booking-outcome-decision-actions">
@@ -236,7 +244,9 @@ function BookingChatRepairSection({
     <AdminSection
       actions={
         !chatRepair.canSubmit ? (
-          <PillClassBadge pillClass={chatRepair.tone}>{chatRepair.status}</PillClassBadge>
+          <StatusBadge tone={statusBadgeToneFromPillClass(chatRepair.tone)}>
+            {chatRepair.status}
+          </StatusBadge>
         ) : null
       }
       className="ops-command-center admin-mb-16"
@@ -262,9 +272,9 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={sameShiftCount > 0 ? 'pill-warn' : 'pill-success'}>
+        <StatusBadge tone={sameShiftCount > 0 ? 'warning' : 'success'}>
           {sameShiftCount} same-shift
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Next handling steps for this booking."
@@ -272,11 +282,15 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
     >
       <div className="dispatch-checklist">
         {dispatchSteps.map((step) => (
-          <AdminTaskCard
-            className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`}
-            key={step.title}
-            leading={<PillClassBadge pillClass={step.tone}>{step.priority}</PillClassBadge>}
-          >
+            <AdminTaskCard
+              className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`}
+              key={step.title}
+              leading={
+                <StatusBadge tone={statusBadgeToneFromPillClass(step.tone)}>
+                  {step.priority}
+                </StatusBadge>
+              }
+            >
             <h3>{step.title}</h3>
             <p>{step.detail}</p>
             <small>{step.owner}</small>
@@ -306,9 +320,9 @@ function BookingStructuredOpsStatusSection({
   return (
     <AdminSection
       actions={
-        <PillClassBadge pillClass={allDone ? 'pill-success' : 'pill-info'}>
+        <StatusBadge tone={allDone ? 'success' : 'info'}>
           {allDone ? 'All done' : `${visibleTasks.length} open / ${opsTaskCards.length}`}
-        </PillClassBadge>
+        </StatusBadge>
       }
       className="admin-mb-16"
       description="Open handling checkpoints for this booking."
@@ -321,7 +335,11 @@ function BookingStructuredOpsStatusSection({
               className={`ops-task-${task.status.toLowerCase()}`}
               detail={<span title={task.helper}>{compactOpsTaskHelper(task.helper)}</span>}
               key={task.type}
-              leading={<PillClassBadge pillClass={opsTaskTone(task.status)}>{task.status}</PillClassBadge>}
+              leading={
+                <StatusBadge tone={statusBadgeToneFromPillClass(opsTaskTone(task.status))}>
+                  {task.status}
+                </StatusBadge>
+              }
               title={task.label}
             >
               <small>{task.updatedBy}</small>
@@ -416,7 +434,11 @@ function BookingCompletedCloseoutSection({
 }) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={closeout.tone}>{closeout.label}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(closeout.tone)}>
+          {closeout.label}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="Confirm the final finance state for this completed booking."
       id="completed-closeout"
@@ -476,9 +498,9 @@ function BookingMatchingExpirySection({
           <AdminFormControlButton type="submit">Expire matching</AdminFormControlButton>
         </form>
       ) : (
-        <PillClassBadge pillClass={matchingExpiry.status === 'EXPIRED' ? 'pill-warn' : 'pill-neutral'}>
+        <StatusBadge tone={matchingExpiry.status === 'EXPIRED' ? 'warning' : 'neutral'}>
           {matchingExpiry.status === 'EXPIRED' ? 'Already expired' : 'Expiry not available for this status'}
-        </PillClassBadge>
+        </StatusBadge>
       )}
     </AdminSection>
   );
@@ -509,9 +531,9 @@ function BookingNoShowHandlingSection({
           <AdminFormControlButton type="submit">Mark no-show</AdminFormControlButton>
         </form>
       ) : (
-        <PillClassBadge pillClass={noShow.status === 'NO_SHOW' ? 'pill-danger' : 'pill-neutral'}>
+        <StatusBadge tone={noShow.status === 'NO_SHOW' ? 'danger' : 'neutral'}>
           {noShow.status === 'NO_SHOW' ? 'Already no-show' : 'No-show not available for this status'}
-        </PillClassBadge>
+        </StatusBadge>
       )}
     </AdminSection>
   );
@@ -530,7 +552,11 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
             className="ops-signal-card"
             detail={signal.helper}
             key={signal.label}
-            leading={<PillClassBadge pillClass={signal.tone}>{signal.label}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(signal.tone)}>
+                {signal.label}
+              </StatusBadge>
+            }
             value={signal.value}
           />
         ))}

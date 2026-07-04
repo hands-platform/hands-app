@@ -100,8 +100,8 @@ describe('BookingActionStatusSections', () => {
   it('uses shared Vuexy badge atoms instead of raw action status pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>');
     expect(source).not.toContain('<span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>');
     expect(source).not.toContain('actions={!chatRepair.canSubmit ? <span className={`pill ${chatRepair.tone}`}>{chatRepair.status}</span> : null}');
