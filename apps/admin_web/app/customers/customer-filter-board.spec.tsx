@@ -86,7 +86,7 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('booking-custom-date-grid vuexy-customer-custom-date-grid');
     expect(rendered).toContain('name="joinedFrom"');
     expect(rendered).toContain('name="joinedTo"');
-    expect(rendered).toContain('booking-date-apply-button');
+    expect(rendered).toContain('admin-form-control-button button button-primary booking-date-apply-button');
     expect(rendered).toContain('Apply dates');
   });
 });

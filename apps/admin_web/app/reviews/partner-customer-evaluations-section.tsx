@@ -108,9 +108,9 @@ export function PartnerCustomerEvaluationsSection({
               <input name="dateRange" type="hidden" value="custom" />
               <AdminFormDate defaultValue={filters.dateFrom} label="Date from" name="dateFrom" />
               <AdminFormDate defaultValue={filters.dateTo} label="Date to" name="dateTo" />
-              <button className="booking-date-apply-button" type="submit">
+              <AdminFormControlButton className="button button-primary booking-date-apply-button">
                 Apply dates
-              </button>
+              </AdminFormControlButton>
             </form>
           ) : null}
           <div

@@ -183,7 +183,9 @@ function CustomerDateButtonGroup({
             label={toLabel}
             name={toKey}
           />
-          <button className="booking-date-apply-button" type="submit">Apply dates</button>
+          <AdminFormControlButton className="button button-primary booking-date-apply-button">
+            Apply dates
+          </AdminFormControlButton>
         </div>
       )}
     </div>

@@ -157,7 +157,7 @@ describe('ReviewsTableSection', () => {
       expect.arrayContaining([
         'booking-custom-date-grid vuexy-review-custom-date-grid',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
-        'booking-date-apply-button',
+        'admin-form-control-button button button-primary booking-date-apply-button',
       ]),
     );
   });

@@ -1,4 +1,4 @@
-import { AdminFormDate } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormDate } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
 import type { BookingPageView } from './booking-page-params';
@@ -186,7 +186,9 @@ export function BookingMonitorFiltersSection({
               onChange={(event) => onCustomDateToChange(event.target.value)}
               value={customDateTo}
             />
-            <button className="booking-date-apply-button" type="submit">Apply dates</button>
+            <AdminFormControlButton className="button button-primary booking-date-apply-button">
+              Apply dates
+            </AdminFormControlButton>
           </form>
         )}
       </div>

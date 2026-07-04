@@ -63,6 +63,24 @@ describe('PartnerCustomerEvaluationsSection', () => {
       ]),
     );
   });
+
+  it('renders custom date apply controls through the shared Vuexy button atom', () => {
+    const section = PartnerCustomerEvaluationsSection({
+      filters: filters({
+        dateFrom: '2026-06-10',
+        dateRange: 'custom',
+        dateTo: '2026-06-17',
+      }),
+      pagination: pagination([]),
+      rows: [],
+      totalEvaluationCount: 0,
+    });
+
+    expect(normalizedText(section)).toContain('Apply dates');
+    expect(classNamesIn(section)).toContain(
+      'admin-form-control-button button button-primary booking-date-apply-button',
+    );
+  });
 });
 
 function buildRow(): PartnerCustomerEvaluationTableRow {

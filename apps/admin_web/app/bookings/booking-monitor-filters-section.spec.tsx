@@ -152,6 +152,7 @@ describe('BookingMonitorFiltersSection', () => {
     expect(markup).toContain('value="2026-06-01"');
     expect(markup).toContain('value="2026-06-19"');
     expect(rendered).toContain('Apply dates');
+    expect(markup).toContain('admin-form-control-button button button-primary booking-date-apply-button');
     expect(rendered).toContain('Showing 7 of 7');
   });
 
