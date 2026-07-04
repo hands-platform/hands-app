@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { Settings } from 'lucide-react';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -184,10 +184,10 @@ export default async function OperationsPolicyPage({
                 Seed operational policies from the API setup before editing live matching rules. Each policy
                 update will require a Change reason so operators can audit why the value changed.
               </p>
-              <Link className="button button-secondary" href="/setup">
+              <AdminFormControlLink className="button-secondary" href="/setup">
                 <Settings size={16} aria-hidden="true" />
                 Open setup checks
-              </Link>
+              </AdminFormControlLink>
             </div>
           ) : null}
         </div>
@@ -211,9 +211,9 @@ export default async function OperationsPolicyPage({
       ) : (
         <AdminSection
           actions={
-            <Link className="button button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
+            <AdminFormControlLink className="button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
               Load full diagnostics
-            </Link>
+            </AdminFormControlLink>
           }
           className="admin-mb-16"
           description="The default policy page keeps live editing and gate checks fast. Load full diagnostics only when reviewing simulation, audit trail, drilldown, and owner decision pressure."

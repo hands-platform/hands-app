@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { ExternalLink, Save } from 'lucide-react';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -82,10 +82,10 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             <strong>{relatedBookings.title}</strong>
             <p className="muted">{relatedBookings.helper}</p>
           </div>
-          <Link className="button button-secondary" href={relatedBookings.href}>
+          <AdminFormControlLink className="button-secondary" href={relatedBookings.href}>
             <ExternalLink size={16} aria-hidden="true" />
             Open records
-          </Link>
+          </AdminFormControlLink>
         </div>
         <div className="booking-radar admin-mt-12">
           {relatedBookings.rows.map((row) => (

@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { Users } from 'lucide-react';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
@@ -60,10 +60,10 @@ export function OperationsPolicyFinalPartnerChoiceSection({
             readiness follow-up.
           </p>
         </div>
-        <Link className="button button-secondary" href="/partners">
+        <AdminFormControlLink className="button-secondary" href="/partners">
           <Users size={16} aria-hidden="true" />
           Open Partner queue
-        </Link>
+        </AdminFormControlLink>
       </div>
       <div className="service-trace-summary admin-mt-12">
         {matrix.impact.map((item) => (

@@ -14,6 +14,11 @@ describe('OperationsPolicyForm', () => {
     expect(sectionSource).not.toContain('<span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>');
   });
 
+  it('uses the shared AdminFormControlLink atom for related booking actions', () => {
+    expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders policy status, related booking guidance, and save checks', () => {
     const setting = {
       category: 'Matching',

@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
@@ -77,10 +77,10 @@ export function OperationsPolicyBookingCreateGateSection({
               <td>{row.defaultValue}</td>
               <td>{row.operatorMeaning}</td>
               <td>
-                <Link className="button button-secondary policy-inline-action" href={row.href}>
+                <AdminFormControlLink className="button-secondary policy-inline-action" href={row.href}>
                   <ExternalLink size={14} aria-hidden="true" />
                   {row.evidence}
-                </Link>
+                </AdminFormControlLink>
               </td>
             </tr>
           ))}
@@ -91,10 +91,10 @@ export function OperationsPolicyBookingCreateGateSection({
           <h3>Recent blocked create attempts</h3>
           <p className="muted">Shows factual support evidence for failed booking creation and troubleshooting.</p>
         </div>
-        <Link className="button button-secondary" href="/bookings?view=blocked-create">
+        <AdminFormControlLink className="button-secondary" href="/bookings?view=blocked-create">
           <ExternalLink size={16} aria-hidden="true" />
           Open blocked-create queue
-        </Link>
+        </AdminFormControlLink>
       </div>
       {review.recentAttempts.length === 0 ? (
         <AdminEmptyState
@@ -114,10 +114,10 @@ export function OperationsPolicyBookingCreateGateSection({
                 Attempt {shortDisplayId(attempt.id)} - Recorded {formatDateTime(attempt.createdAt)}
               </small>
               <div className="actions admin-mt-10">
-                <Link className="button button-secondary" href={attempt.href}>
+                <AdminFormControlLink className="button-secondary" href={attempt.href}>
                   <ExternalLink size={16} aria-hidden="true" />
                   Open evidence
-                </Link>
+                </AdminFormControlLink>
               </div>
             </section>
           ))}

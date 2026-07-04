@@ -48,4 +48,9 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).not.toContain('<span className="pill pill-info">{decisionSettings.length} decision item(s)</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">{savedCount} saved override(s)</span>');
   });
+
+  it('uses the shared AdminFormControlLink atom for page-level actions', () => {
+    expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).not.toContain('<Link className="button button-secondary"');
+  });
 });

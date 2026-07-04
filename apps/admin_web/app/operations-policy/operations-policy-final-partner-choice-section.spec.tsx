@@ -1,7 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyFinalPartnerChoiceSection', () => {
+  it('uses the shared AdminFormControlLink atom for the partner queue action', () => {
+    const source = readFileSync(
+      'app/operations-policy/operations-policy-final-partner-choice-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders partner choice controls and impact link', () => {
     const section = OperationsPolicyFinalPartnerChoiceSection({
       matrix: {

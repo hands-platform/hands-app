@@ -10,6 +10,11 @@ const sectionSource = readFileSync(
 );
 
 describe('OperationsPolicyBookingCreateGateSection', () => {
+  it('uses the shared AdminFormControlLink atom for evidence actions', () => {
+    expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).not.toContain('<Link className="button button-secondary"');
+  });
+
   it('renders booking gate rows and recent blocked attempts', () => {
     const section = OperationsPolicyBookingCreateGateSection({
       review: {
