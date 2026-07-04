@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   RefundDecisionChecklistSection,
   type RefundDecisionChecklistItem,
@@ -37,6 +40,16 @@ describe('RefundDecisionChecklistSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
+
+  it('uses the shared Vuexy action card surface for checklist links', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/refunds/refund-decision-checklist-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('<Link className={`ops-task-card');
   });
 });
 
