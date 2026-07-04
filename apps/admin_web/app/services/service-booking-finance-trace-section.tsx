@@ -1,8 +1,8 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 
 type ServiceBookingFinanceTraceSummary = {
@@ -45,23 +45,33 @@ export function ServiceBookingFinanceTraceSection({
       <div className="service-trace-summary">
         <div>
           <span>Payment total</span>
-          <strong>{formatMoney(summary.paymentAmount, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.paymentAmount} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Partner net</span>
-          <strong>{formatMoney(summary.providerNetAmount, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.providerNetAmount} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Platform fee</span>
-          <strong>{formatMoney(summary.platformFeeAmount, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.platformFeeAmount} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Withholding</span>
-          <strong>{formatMoney(summary.withholdingAmount, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Wallet movement</span>
-          <strong>{formatMoney(summary.walletAmount, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.walletAmount} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Missing trace</span>
@@ -92,13 +102,20 @@ export function ServiceBookingFinanceTraceSection({
                   ) : null}
                 </td>
                 <td>
-                  <strong>{formatMoney(row.bookingService.price, row.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={row.bookingService.price} currency={row.currency} />
+                  </strong>
                   <p className="muted">Qty {row.bookingService.quantity}</p>
                 </td>
                 <td>
                   {row.booking?.payment ? (
                     <div className="service-matrix-cell">
-                      <strong>{formatMoney(row.booking.payment.amount, row.booking.payment.currency)}</strong>
+                      <strong>
+                        <MoneyText
+                          amount={row.booking.payment.amount}
+                          currency={row.booking.payment.currency}
+                        />
+                      </strong>
                       <small>
                         {row.booking.payment.method} / {row.booking.payment.status}
                       </small>
@@ -111,16 +128,31 @@ export function ServiceBookingFinanceTraceSection({
                   {row.booking?.earning ? (
                     <div className="service-matrix-cell">
                       <strong>
-                        {formatMoney(row.booking.earning.netAmount, row.booking.earning.currency)}
+                        <MoneyText
+                          amount={row.booking.earning.netAmount}
+                          currency={row.booking.earning.currency}
+                        />
                       </strong>
                       <small>
-                        Gross {formatMoney(row.booking.earning.grossAmount, row.booking.earning.currency)}
+                        Gross{' '}
+                        <MoneyText
+                          amount={row.booking.earning.grossAmount}
+                          currency={row.booking.earning.currency}
+                        />
                       </small>
                       <small>
-                        Fee {formatMoney(row.booking.earning.platformFee, row.booking.earning.currency)}
+                        Fee{' '}
+                        <MoneyText
+                          amount={row.booking.earning.platformFee}
+                          currency={row.booking.earning.currency}
+                        />
                       </small>
                       <small>
-                        Tax {formatMoney(row.booking.earning.withholdingAmount, row.booking.earning.currency)}
+                        Tax{' '}
+                        <MoneyText
+                          amount={row.booking.earning.withholdingAmount}
+                          currency={row.booking.earning.currency}
+                        />
                       </small>
                     </div>
                   ) : (
@@ -131,13 +163,19 @@ export function ServiceBookingFinanceTraceSection({
                   <div className="service-matrix-cell">
                     <small>{row.taxLogCount} tax log(s)</small>
                     <small>{row.platformFeeLogCount} fee log(s)</small>
-                    <small>Tax held {formatMoney(row.taxWithheldAmount, row.currency)}</small>
-                    <small>Platform fee {formatMoney(row.platformFeeAmount, row.currency)}</small>
+                    <small>
+                      Tax held <MoneyText amount={row.taxWithheldAmount} currency={row.currency} />
+                    </small>
+                    <small>
+                      Platform fee <MoneyText amount={row.platformFeeAmount} currency={row.currency} />
+                    </small>
                   </div>
                 </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <strong>{formatMoney(row.walletAmount, row.currency)}</strong>
+                    <strong>
+                      <MoneyText amount={row.walletAmount} currency={row.currency} />
+                    </strong>
                     <small>{row.walletEntryCount} wallet row(s)</small>
                   </div>
                 </td>

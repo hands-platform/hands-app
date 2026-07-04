@@ -20,6 +20,13 @@ describe('ServiceTypeCoverageBoardSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.statusLabel}</span>');
   });
 
+  it('uses shared money atoms for service type coverage amounts', () => {
+    const source = readFileSync('app/services/service-type-coverage-board-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders coverage summary, visible rows, and hidden row copy', () => {
     const section = ServiceTypeCoverageBoardSection({
       hiddenRowCount: 3,
@@ -41,6 +48,7 @@ describe('ServiceTypeCoverageBoardSection', () => {
     });
 
     const rendered = JSON.stringify(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
@@ -50,7 +58,7 @@ describe('ServiceTypeCoverageBoardSection', () => {
     expect(rendered).toContain('Service type coverage board');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('blocked');
-    expect(rendered).toContain('250.000 VND');
+    expect(markup).toContain('250.000 VND');
     expect(rendered).toContain('Showing first');
   });
 

@@ -17,6 +17,13 @@ describe('ServiceBookingFinanceTraceSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.traceTone}`}>{row.traceStatus}</span>');
   });
 
+  it('uses shared money atoms for service booking finance trace amounts', () => {
+    const source = readFileSync('app/services/service-booking-finance-trace-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders finance trace summary and booking rows', () => {
     const section = ServiceBookingFinanceTraceSection({
       rows: [traceRowFixture()],

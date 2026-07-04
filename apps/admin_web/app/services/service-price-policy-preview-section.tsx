@@ -1,8 +1,8 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import type {
   ServicePricePolicyPreviewRow,
   ServicePricePolicyScenario,
@@ -55,19 +55,27 @@ export function ServicePricePolicyPreviewSection({
         </div>
         <div>
           <span>Current commission</span>
-          <strong>{formatMoney(summary.currentCommission, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.currentCommission} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Customer + step</span>
-          <strong>{formatMoney(summary.customerStepCommission, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.customerStepCommission} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Partner + step</span>
-          <strong>{formatMoney(summary.providerStepCommission, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.providerStepCommission} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Both + step</span>
-          <strong>{formatMoney(summary.balancedStepCommission, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.balancedStepCommission} currency={summary.currency} />
+          </strong>
         </div>
         <div>
           <span>Missing base rule</span>
@@ -87,16 +95,26 @@ export function ServicePricePolicyPreviewSection({
                 <td>
                   <strong>{row.service.name}</strong>
                   <p className="muted">
-                    {row.service.durationMin} min / step {formatMoney(row.priceStep, row.currency)}
+                    {row.service.durationMin} min / step{' '}
+                    <MoneyText amount={row.priceStep} currency={row.currency} />
                   </p>
                 </td>
                 <td>
                   {row.baseRule ? (
                     <div className="service-matrix-cell">
-                      <strong>{formatMoney(row.baseRule.customerPrice, row.currency)}</strong>
-                      <small>Partner {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
+                      <strong>
+                        <MoneyText amount={row.baseRule.customerPrice} currency={row.currency} />
+                      </strong>
                       <small>
-                        Commission {formatMoney(row.currentFinance.actualCompanyCommission, row.currency)}
+                        Partner{' '}
+                        <MoneyText amount={row.baseRule.providerPayoutAmount} currency={row.currency} />
+                      </small>
+                      <small>
+                        Commission{' '}
+                        <MoneyText
+                          amount={row.currentFinance.actualCompanyCommission}
+                          currency={row.currency}
+                        />
                       </small>
                     </div>
                   ) : (
@@ -143,10 +161,19 @@ function ScenarioPreviewCell({ scenario }: { readonly scenario: ServicePricePoli
   return (
     <div className="service-matrix-cell">
       <StatusBadge tone={statusBadgeToneFromPillClass(scenario.tone)}>{scenario.status}</StatusBadge>
-      <strong>{formatMoney(scenario.customerPrice, scenario.currency)}</strong>
-      <small>Partner {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
-      <small>Commission {formatMoney(scenario.finance.actualCompanyCommission, scenario.currency)}</small>
-      <small>Tax {formatMoney(scenario.finance.withholdingAmount, scenario.currency)}</small>
+      <strong>
+        <MoneyText amount={scenario.customerPrice} currency={scenario.currency} />
+      </strong>
+      <small>
+        Partner <MoneyText amount={scenario.providerPayoutAmount} currency={scenario.currency} />
+      </small>
+      <small>
+        Commission{' '}
+        <MoneyText amount={scenario.finance.actualCompanyCommission} currency={scenario.currency} />
+      </small>
+      <small>
+        Tax <MoneyText amount={scenario.finance.withholdingAmount} currency={scenario.currency} />
+      </small>
     </div>
   );
 }

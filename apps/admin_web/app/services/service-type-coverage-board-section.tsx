@@ -1,8 +1,8 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 
 type ServiceTypeCoverageBoardSummary = {
@@ -74,7 +74,9 @@ export function ServiceTypeCoverageBoardSection({
         </div>
         <div>
           <span>Net company fee</span>
-          <strong>{formatMoney(summary.netCompanyFee, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.netCompanyFee} currency={summary.currency} />
+          </strong>
         </div>
       </div>
       {visibleRows.length ? (
@@ -124,9 +126,15 @@ export function ServiceTypeCoverageBoardSection({
                 </td>
                 <td>
                   <div className="service-matrix-cell">
-                    <strong>{formatMoney(row.netCompanyFee, row.currency)}</strong>
-                    <small>Customer min {formatMoney(row.customerMinimumTotal, row.currency)}</small>
-                    <small>Partner payout {formatMoney(row.partnerPayoutTotal, row.currency)}</small>
+                    <strong>
+                      <MoneyText amount={row.netCompanyFee} currency={row.currency} />
+                    </strong>
+                    <small>
+                      Customer min <MoneyText amount={row.customerMinimumTotal} currency={row.currency} />
+                    </small>
+                    <small>
+                      Partner payout <MoneyText amount={row.partnerPayoutTotal} currency={row.currency} />
+                    </small>
                   </div>
                 </td>
                 <td>

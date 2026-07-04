@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
 import { slugify } from '../../lib/service-catalog-filters';
 
@@ -53,15 +53,30 @@ export function ServicePayoutLedgerSection({
                   {row.service.durationMin} min / {row.service.serviceGroupKey ?? slugify(row.service.name)}
                 </p>
               </td>
-              <td>{formatMoney(row.service.basePrice, row.currency)}</td>
-              <td>{row.baseRule ? formatMoney(row.baseRule.providerPayoutAmount, row.currency) : '-'}</td>
-              <td>{row.baseRule ? formatMoney(row.finance.fee, row.currency) : '-'}</td>
+              <td>
+                <MoneyText amount={row.service.basePrice} currency={row.currency} />
+              </td>
+              <td>
+                {row.baseRule ? (
+                  <MoneyText amount={row.baseRule.providerPayoutAmount} currency={row.currency} />
+                ) : (
+                  '-'
+                )}
+              </td>
+              <td>{row.baseRule ? <MoneyText amount={row.finance.fee} currency={row.currency} /> : '-'}</td>
               <td>
                 {row.baseRule ? (
                   <div className="service-matrix-cell">
-                    <small>VAT {formatMoney(row.finance.vatAmount, row.currency)}</small>
-                    <small>Withholding {formatMoney(row.finance.withholdingAmount, row.currency)}</small>
-                    <small>Other {formatMoney(row.baseRule.otherCostAmount, row.currency)}</small>
+                    <small>
+                      VAT <MoneyText amount={row.finance.vatAmount} currency={row.currency} />
+                    </small>
+                    <small>
+                      Withholding{' '}
+                      <MoneyText amount={row.finance.withholdingAmount} currency={row.currency} />
+                    </small>
+                    <small>
+                      Other <MoneyText amount={row.baseRule.otherCostAmount} currency={row.currency} />
+                    </small>
                   </div>
                 ) : (
                   '-'
@@ -69,7 +84,11 @@ export function ServicePayoutLedgerSection({
               </td>
               <td>
                 <StatusBadge tone={statusBadgeToneFromPillClass(row.commissionTone)}>
-                  {row.baseRule ? formatMoney(row.finance.actualCompanyCommission, row.currency) : 'Missing rule'}
+                  {row.baseRule ? (
+                    <MoneyText amount={row.finance.actualCompanyCommission} currency={row.currency} />
+                  ) : (
+                    'Missing rule'
+                  )}
                 </StatusBadge>
               </td>
               <td>

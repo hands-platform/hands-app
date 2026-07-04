@@ -16,6 +16,13 @@ describe('ServicePayoutLedgerSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.actionTone}`}>{row.action}</span>');
   });
 
+  it('uses shared money atoms for payout ledger amounts', () => {
+    const source = readFileSync('app/services/service-payout-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders active option count, visible rows, and hidden row copy', () => {
     const section = ServicePayoutLedgerSection({
       activeServiceCount: 3,

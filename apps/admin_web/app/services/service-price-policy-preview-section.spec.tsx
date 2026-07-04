@@ -18,6 +18,13 @@ describe('ServicePricePolicyPreviewSection', () => {
     expect(source).not.toContain('<span className={`pill ${scenario.tone}`}>{scenario.status}</span>');
   });
 
+  it('uses shared money atoms for price policy preview amounts', () => {
+    const source = readFileSync('app/services/service-price-policy-preview-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders policy summary, visible preview rows, and hidden row copy', () => {
     const section = ServicePricePolicyPreviewSection({
       hiddenRowCount: 2,
