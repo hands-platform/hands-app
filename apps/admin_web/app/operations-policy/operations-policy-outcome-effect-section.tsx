@@ -1,6 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
 
@@ -62,7 +62,9 @@ export function OperationsPolicyOutcomeEffectSection({
                 <p className="muted">{row.avgParticipants} participant avg</p>
               </td>
               <td>
-                <PillClassBadge pillClass={row.outcomePill}>{row.outcomeLabel}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(row.outcomePill)}>
+                  {row.outcomeLabel}
+                </StatusBadge>
                 <p className="muted admin-mt-6">{row.outcomeDetail}</p>
               </td>
               <td>
@@ -79,7 +81,7 @@ export function OperationsPolicyOutcomeEffectSection({
             className={card.className}
             detail={card.detail}
             key={card.title}
-            leading={<PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>}
+            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.scope}</StatusBadge>}
             title={card.title}
           />
         ))}

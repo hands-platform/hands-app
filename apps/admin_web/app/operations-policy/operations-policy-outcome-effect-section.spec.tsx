@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
+const sectionSource = readFileSync(
+  new URL('./operations-policy-outcome-effect-section.tsx', import.meta.url),
+  'utf8',
+);
+
 describe('OperationsPolicyOutcomeEffectSection', () => {
+  it('uses shared Vuexy badge atoms for outcome labels', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).not.toContain('PillClassBadge');
+  });
+
   it('renders policy outcome rows and cards', () => {
     const section = OperationsPolicyOutcomeEffectSection({
       analysis: {
