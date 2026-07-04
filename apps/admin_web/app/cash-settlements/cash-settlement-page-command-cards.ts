@@ -1,7 +1,6 @@
 import { createElement, Fragment, type ReactNode } from 'react';
 
 import { MoneyText } from '../../components/money-text';
-import { formatMoney } from '../../lib/admin-format';
 import { cashSettlementRowAgeHours } from './cash-settlement-page-helpers';
 import type { CashSettlementProviderGroup, CashSettlementRow, CashSettlementSummary, CommandCard } from './cash-settlement-page-types';
 
@@ -19,10 +18,10 @@ export function buildCashSettlementExecutionDesk(
       action: 'Do not clear wallet debt until evidence is tied to the booking or earning row.',
       className: missingReferenceRows.length ? 'ops-task-pending' : 'ops-task-done',
       detail: missingReferenceRows.length
-        ? `${formatMoney(
-            missingReferenceRows.reduce((sum, row) => sum + row.debtAmount, 0),
-            summary.currency,
-          )} still needs a bank deposit reference or an approved admin offset memo.`
+        ? detailWithMoney(
+            moneyText(missingReferenceRows.reduce((sum, row) => sum + row.debtAmount, 0), summary.currency),
+            ' still needs a bank deposit reference or an approved admin offset memo.',
+          )
         : 'Visible rows already have settlement or wallet ledger references for finance review.',
       pillClass: missingReferenceRows.length ? 'pill-warn' : 'pill-success',
       status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Refs ready',
@@ -32,10 +31,11 @@ export function buildCashSettlementExecutionDesk(
       action: 'Contact highest debt first, then oldest debt. Record facts only; do not create a Partner label.',
       className: highestDebt ? 'ops-task-pending' : 'ops-task-done',
       detail: highestDebt
-        ? `${highestDebt.providerName} is first in the queue at ${formatMoney(
-            highestDebt.debtAmount,
-            highestDebt.currency,
-          )}, open since ${highestDebt.oldestOpenLabel}.`
+        ? detailWithMoney(
+            `${highestDebt.providerName} is first in the queue at `,
+            moneyText(highestDebt.debtAmount, highestDebt.currency),
+            `, open since ${highestDebt.oldestOpenLabel}.`,
+          )
         : 'There is no Partner cash-fee debt waiting for contact.',
       pillClass: highestDebt ? 'pill-warn' : 'pill-success',
       status: highestDebt ? 'Debt first' : 'No queue',
@@ -98,10 +98,11 @@ export function buildCommandCards(
         ? 'Collect Partner deposit or approve admin offset before final acceptance, service start, or payout release resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
-      detail: `${summary.rowCount} open cash settlement row(s), ${formatMoney(
-        summary.debtAmount,
-        summary.currency,
-      )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
+      detail: detailWithMoney(
+        `${summary.rowCount} open cash settlement row(s), `,
+        moneyText(summary.debtAmount, summary.currency),
+        ` total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
+      ),
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
       status: `${summary.providerCount} Partner(s)`,
       title: 'Marketplace-held wallets',
@@ -112,10 +113,7 @@ export function buildCommandCards(
         : 'Normal settlement queue priority.',
       className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
       detail: highDebtProviders.length
-        ? highDebtProviders
-            .slice(0, 2)
-            .map((provider) => `${provider.providerName}: ${formatMoney(provider.debtAmount, provider.currency)}`)
-            .join(' / ')
+        ? providerDebtDetails(highDebtProviders)
         : 'No Partner is above the high-debt review threshold.',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
       status: `${summary.highDebtProviderCount} HIGH`,
@@ -157,10 +155,10 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
     {
       action: cashRows.length ? 'Ask for company-fee deposit evidence or approve an admin offset.' : 'No visible row is tied to a cash payment.',
       className: cashRows.length ? 'ops-task-pending' : 'ops-task-done',
-      detail: `${formatMoney(
-        cashRows.reduce((sum, row) => sum + row.bookingAmount, 0),
-        summary.currency,
-      )} customer cash was collected outside the platform and needs HANDS fee reconciliation.`,
+      detail: detailWithMoney(
+        moneyText(cashRows.reduce((sum, row) => sum + row.bookingAmount, 0), summary.currency),
+        ' customer cash was collected outside the platform and needs HANDS fee reconciliation.',
+      ),
       pillClass: cashRows.length ? 'pill-warn' : 'pill-success',
       status: `${cashRows.length} ROW(S)`,
       title: 'Cash collected by Partner',
@@ -168,10 +166,10 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
     {
       action: 'This is the main reason final acceptance and service start are blocked while the wallet is negative.',
       className: rows.length ? 'ops-task-blocked' : 'ops-task-done',
-      detail: `${formatMoney(
-        rows.reduce((sum, row) => sum + row.platformFee, 0),
-        summary.currency,
-      )} HANDS fee remains open across visible rows.`,
+      detail: detailWithMoney(
+        moneyText(rows.reduce((sum, row) => sum + row.platformFee, 0), summary.currency),
+        ' HANDS fee remains open across visible rows.',
+      ),
       pillClass: rows.length ? 'pill-danger' : 'pill-success',
       status: `${feeOnlyRows.length} FEE ROW(S)`,
       title: 'Platform fee debt',
@@ -179,10 +177,10 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
     {
       action: taxRows.length ? 'Check tax policy version before approving an offset.' : 'No tax withholding is attached to visible rows.',
       className: taxRows.length ? 'ops-task-pending' : 'ops-task-done',
-      detail: `${formatMoney(
-        taxRows.reduce((sum, row) => sum + row.taxAmount, 0),
-        summary.currency,
-      )} tax withholding is included in the negative-wallet calculation.`,
+      detail: detailWithMoney(
+        moneyText(taxRows.reduce((sum, row) => sum + row.taxAmount, 0), summary.currency),
+        ' tax withholding is included in the negative-wallet calculation.',
+      ),
       pillClass: taxRows.length ? 'pill-info' : 'pill-success',
       status: `${taxRows.length} TAX ROW(S)`,
       title: 'Tax withholding part',
@@ -201,14 +199,24 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
       action: staleRows.length ? 'Prioritize Partner contact and evidence collection.' : 'Normal settlement cadence is enough.',
       className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
       detail: staleRows.length
-        ? `${formatMoney(
-            staleRows.reduce((sum, row) => sum + row.debtAmount, 0),
-            summary.currency,
-          )} has been open longer than the first finance follow-up window.`
+        ? detailWithMoney(
+            moneyText(staleRows.reduce((sum, row) => sum + row.debtAmount, 0), summary.currency),
+            ' has been open longer than the first finance follow-up window.',
+          )
         : 'No visible debt is older than 24 hours.',
       pillClass: staleRows.length ? 'pill-warn' : 'pill-success',
       status: `${staleRows.length} OVER 24H`,
       title: 'Aging follow-up',
     },
   ];
+}
+
+function providerDebtDetails(providers: readonly CashSettlementProviderGroup[]): ReactNode {
+  return detailWithMoney(
+    ...providers.slice(0, 2).flatMap((provider, index): ReactNode[] => [
+      index > 0 ? ' / ' : '',
+      `${provider.providerName}: `,
+      moneyText(provider.debtAmount, provider.currency),
+    ]),
+  );
 }

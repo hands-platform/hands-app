@@ -161,7 +161,7 @@ describe('CashSettlement board sections', () => {
     expect(typeSource).toContain("import type { ReactNode } from 'react';");
     expect(typeSource).toContain('detail: ReactNode;');
     expect(commandSource).toContain('MoneyText');
-    expect(commandSource).not.toContain('${formatMoney(summary.debtAmount, summary.currency)} must be settled');
+    expect(commandSource).not.toContain('formatMoney(');
   });
 });
 
