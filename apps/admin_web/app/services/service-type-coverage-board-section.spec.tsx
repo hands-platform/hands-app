@@ -8,8 +8,9 @@ describe('ServiceTypeCoverageBoardSection', () => {
   it('uses shared Vuexy badge atoms for service type coverage labels', () => {
     const source = readFileSync('app/services/service-type-coverage-board-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain("<span className={summary.blockedCount ? 'pill pill-danger' : 'pill pill-success'}>");
     expect(source).not.toContain("<span className={summary.warningCount ? 'pill pill-warn' : 'pill pill-success'}>");
     expect(source).not.toContain('<span className="pill pill-info">{summary.readyCount} ready</span>');

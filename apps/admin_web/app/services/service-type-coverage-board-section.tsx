@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 
@@ -130,7 +130,7 @@ export function ServiceTypeCoverageBoardSection({
                   </div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.tone}>{row.statusLabel}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.statusLabel}</StatusBadge>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>
