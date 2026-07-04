@@ -6,6 +6,7 @@ describe('Booking evidence sections', () => {
   it('uses shared Vuexy badge atoms instead of raw evidence pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-evidence-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminCard');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>');
@@ -17,6 +18,7 @@ describe('Booking evidence sections', () => {
     expect(source).not.toContain('<span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>');
     expect(source).not.toContain('<span className="pill pill-info">{decisionNotePresets.length} preset(s)</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{preset.label}</span>');
+    expect(source).not.toContain('<div className="booking-decision-preset-card"');
     expect(source).not.toContain('actions={<span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>}');
   });
 
@@ -140,7 +142,7 @@ describe('Booking evidence sections', () => {
         'booking-settlement-ledger-row is-evidence-record',
         'card admin-section admin-mb-16',
         'booking-decision-preset-list admin-mt-12',
-        'booking-decision-preset-card',
+        'card admin-card booking-decision-preset-card',
         'text-link',
         'pill pill-success',
       ]),

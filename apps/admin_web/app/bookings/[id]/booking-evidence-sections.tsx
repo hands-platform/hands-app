@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
@@ -249,7 +249,7 @@ export function BookingEvidenceSections({
           </div>
           <div className="booking-decision-preset-list admin-mt-12">
             {decisionNotePresets.map((preset) => (
-              <div className="booking-decision-preset-card" key={preset.id}>
+              <AdminCard className="booking-decision-preset-card" key={preset.id}>
                 <StatusBadge tone="neutral">{preset.label}</StatusBadge>
                 <div>
                   <strong>{preset.title}</strong>
@@ -260,7 +260,7 @@ export function BookingEvidenceSections({
                   <input type="hidden" name="preset" value={preset.preset} />
                   <AdminFormControlButton type="submit">Add note</AdminFormControlButton>
                 </form>
-              </div>
+              </AdminCard>
             ))}
           </div>
         </div>
