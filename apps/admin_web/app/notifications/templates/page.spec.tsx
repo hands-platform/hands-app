@@ -39,7 +39,9 @@ describe('NotificationTemplatesPage', () => {
   });
 
   it('uses the shared Vuexy notice card atom for template results', () => {
+    expect(pageSource).toContain('AdminCard');
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).not.toContain('className={`card admin-notice-card');
+    expect(pageSource).not.toContain('<section\n              className="notification-template-card"');
   });
 });

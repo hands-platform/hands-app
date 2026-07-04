@@ -9,7 +9,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { compactValue } from '../../../lib/admin-format';
 import { updateNotificationTemplate } from './actions';
@@ -81,7 +81,7 @@ export default async function NotificationTemplatesPage({
       >
         <div className="notification-template-grid">
           {templates.map((template) => (
-            <section
+            <AdminCard
               className="notification-template-card"
               id={`template-${template.key}`}
               key={template.key}
@@ -153,7 +153,7 @@ export default async function NotificationTemplatesPage({
                   );
                 })}
               </div>
-            </section>
+            </AdminCard>
           ))}
         </div>
       </AdminFilterPanel>
