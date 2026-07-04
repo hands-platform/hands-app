@@ -23,6 +23,7 @@ import {
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -392,7 +393,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         eyebrow="Operations"
         title="Customer operating picture"
         description="Above-fold decision support for the desk: what is live now, what is blocked, what evidence exists, and which linked records matter next."
-        status={<span className="pill pill-info">Operator flow</span>}
+        status={<StatusBadge tone="info">Operator flow</StatusBadge>}
       >
         <CustomerDetailOverviewShell
           avatarStatus={customerAvatarStatus}
@@ -426,14 +427,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <span
-              className={`pill ${
-                filteredBookingCreateGateAttempts.length > 0 ? 'pill-warn' : 'pill-neutral'
-              }`}
+            <PillClassBadge
+              pillClass={filteredBookingCreateGateAttempts.length > 0 ? 'pill-warn' : 'pill-neutral'}
             >
               {filteredBookingCreateGateAttempts.length} filtered
-            </span>
-            <span className="pill pill-neutral">{bookingCreateGateAttempts.length} total</span>
+            </PillClassBadge>
+            <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
             <Link className="text-link" href="/bookings?view=blocked-create">
               Open gate queue
             </Link>
@@ -459,9 +458,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   </Link>
                   <p className="muted">{attempt.detail}</p>
                   <div className="participant-list admin-mt-8">
-                    <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
-                    <span className="pill pill-neutral">{attempt.addressLabel}</span>
-                    <span className="pill pill-neutral">{attempt.distanceLabel}</span>
+                    <PillClassBadge pillClass={attempt.tone}>{attempt.gateLabel}</PillClassBadge>
+                    <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
+                    <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
                   </div>
                   <div className="participant-list admin-mt-8">
                     <Link className="text-link" href={attempt.bookingMonitorHref}>
@@ -484,9 +483,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
         id="customer-operator-command-queue"
         status={
-          <span className={`pill ${customerSupportPillClass(customerOperatorCommandQueue.tone)}`}>
+          <PillClassBadge pillClass={customerSupportPillClass(customerOperatorCommandQueue.tone)}>
             {customerOperatorCommandQueue.status}
-          </span>
+          </PillClassBadge>
         }
         title="Customer operator command queue"
       >
@@ -495,7 +494,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
                 <div>
-                  <span className={`pill ${customerSupportPillClass(command.tone)}`}>{command.label}</span>
+                  <PillClassBadge pillClass={customerSupportPillClass(command.tone)}>
+                    {command.label}
+                  </PillClassBadge>
                   <h3>{command.title}</h3>
                   <p className="muted">{command.detail}</p>
                   <small className="muted">Owner: {command.owner}</small>
@@ -510,11 +511,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{dateFilters.label}</span>
-            <span className="pill pill-neutral">
+            <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
+            <StatusBadge tone="neutral">
               {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}
-            </span>
-            <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
+            </StatusBadge>
+            <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
           </>
         }
         className="admin-mb-16"
@@ -581,7 +582,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         className="admin-mb-16"
         description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
-        status={<span className={`pill ${customerSupportPillClass(activityPlan.tone)}`}>{activityPlan.status}</span>}
+        status={
+          <PillClassBadge pillClass={customerSupportPillClass(activityPlan.tone)}>
+            {activityPlan.status}
+          </PillClassBadge>
+        }
         title="Customer activity action panel"
       >
         <div className="ops-task-note ops-task-pending admin-mt-14">
@@ -591,9 +596,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <p className="muted">{activityPlan.detail}</p>
               <div className="participant-list admin-mt-8">
                 {activityPlan.badges.map((badge) => (
-                  <span className={`pill ${customerSupportPillClass(badge.tone)}`} key={badge.label}>
+                  <PillClassBadge key={badge.label} pillClass={customerSupportPillClass(badge.tone)}>
                     {badge.label}
-                  </span>
+                  </PillClassBadge>
                 ))}
               </div>
             </div>
@@ -644,17 +649,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         eyebrow="Account"
         title="Customer account and balance"
         description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
-        status={<span className="pill pill-info">Profile and wallet</span>}
+        status={<StatusBadge tone="info">Profile and wallet</StatusBadge>}
       >
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{accountFacts.length} field(s)</span>
-            <span
-              className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}
+            <StatusBadge tone="info">{accountFacts.length} field(s)</StatusBadge>
+            <PillClassBadge
+              pillClass={pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}
             >
               {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
-            </span>
+            </PillClassBadge>
           </>
         }
         className="admin-mb-16"
@@ -676,8 +681,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
-            <span className="pill pill-neutral">{addresses.length} saved address(es)</span>
+            <StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>
+            <StatusBadge tone="neutral">{addresses.length} saved address(es)</StatusBadge>
             <Link className="text-link" href={customerWalletAdjustmentHref}>
               Review or create adjustment
             </Link>
@@ -695,7 +700,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 <h3>Payment ledger</h3>
                 <p className="muted">{wallet.operatorNote}</p>
               </div>
-              <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
+              <StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>
             </div>
             <div className="ops-row">
               <strong>Captured payments</strong>
@@ -724,7 +729,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 <h3>Saved addresses</h3>
                 <p className="muted">Profile addresses and map pins selected in the customer app.</p>
               </div>
-              <span className="pill pill-neutral">{addresses.length} row(s)</span>
+              <StatusBadge tone="neutral">{addresses.length} row(s)</StatusBadge>
             </div>
             {addresses.length > 0 ? (
               addresses.slice(0, 6).map((address) => (
@@ -749,7 +754,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         eyebrow="Records"
         title="Chat and audit record"
         description="Retained chat history, customer notification delivery, and audit trail in one archive block."
-        status={<span className="pill pill-info">Historical archive</span>}
+        status={<StatusBadge tone="info">Historical archive</StatusBadge>}
       >
       <AdminFilterPanel
         className="customer-chat-history-section"
@@ -803,8 +808,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <span className="pill pill-info">{filteredNotifications.length} notification row(s)</span>
-            <span className="pill pill-info">{filteredAuditLogs.length} audit log(s)</span>
+            <StatusBadge tone="info">{filteredNotifications.length} notification row(s)</StatusBadge>
+            <StatusBadge tone="info">{filteredAuditLogs.length} audit log(s)</StatusBadge>
           </>
         }
         description="Customer notification delivery and audit rows for support review."
@@ -817,7 +822,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <h3>Recent customer notifications</h3>
             <p className="muted">Delivery status for missed booking, payment, and chat updates.</p>
           </div>
-          <span className="pill pill-info">{filteredNotifications.length} rows</span>
+          <StatusBadge tone="info">{filteredNotifications.length} rows</StatusBadge>
         </div>
         <AdminTableScroll>
           <AdminDataTable
@@ -844,7 +849,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <h3>Customer audit trail</h3>
             <p className="muted">Recent operator notes and system actions attached to this customer.</p>
           </div>
-          <span className="pill pill-info">{filteredAuditLogs.length} logs</span>
+          <StatusBadge tone="info">{filteredAuditLogs.length} logs</StatusBadge>
         </div>
         <AdminTableScroll>
           <AdminDataTable

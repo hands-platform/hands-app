@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -15,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const customerDetailSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
 
 describe('CustomerDetailPage', () => {
   beforeEach(() => {
@@ -49,6 +51,14 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('class="card admin-section" id="notifications"');
     expect(markup).not.toContain('<button type="submit">Add address note</button>');
     expect(markup).toContain('class="admin-form-control-button" type="submit">Add address note</button>');
+  });
+
+  it('uses shared Vuexy status badge atoms instead of raw customer detail pill markup', () => {
+    expect(customerDetailSource).toContain("from '../../../components/status-badge'");
+    expect(customerDetailSource).toContain('StatusBadge');
+    expect(customerDetailSource).toContain('PillClassBadge');
+    expect(customerDetailSource).not.toContain('<span className="pill');
+    expect(customerDetailSource).not.toContain('<span className={`pill');
   });
 });
 
