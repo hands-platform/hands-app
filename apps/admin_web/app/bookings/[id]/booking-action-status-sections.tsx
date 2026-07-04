@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -151,7 +152,7 @@ function BookingOutcomeReviewSection({
     <AdminSection
       actions={
         <div className="booking-outcome-review-actions">
-          <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
+          <PillClassBadge pillClass={outcomeReview.tone}>{outcomeReview.status}</PillClassBadge>
           {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
             <Link className="button button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
               {outcomeReview.primaryLabel}
@@ -168,7 +169,7 @@ function BookingOutcomeReviewSection({
         {outcomeReview.rows.map((row) => (
           <a className="ops-task-card" href={row.href} key={row.label}>
             <div>
-              <span className={`pill ${row.tone}`}>{row.label}</span>
+              <PillClassBadge pillClass={row.tone}>{row.label}</PillClassBadge>
               <h3>{row.value}</h3>
               <p>{row.helper}</p>
             </div>
@@ -194,9 +195,9 @@ function BookingOutcomePostMatchDecision({
   return (
     <AdminCard className="booking-outcome-decision-panel">
       <div className="booking-outcome-decision-copy">
-        <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
-        <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
-        <span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>
+        <PillClassBadge pillClass={decision.resolutionTone}>{decision.resolutionLabel}</PillClassBadge>
+        <PillClassBadge pillClass={decision.feeTone}>{decision.feeLabel}</PillClassBadge>
+        <PillClassBadge pillClass={decision.timingTone}>{decision.timingLabel}</PillClassBadge>
       </div>
       {decision.canResolve ? (
         <div className="booking-outcome-decision-actions">
@@ -231,7 +232,11 @@ function BookingChatRepairSection({
 }) {
   return (
     <AdminSection
-      actions={!chatRepair.canSubmit ? <span className={`pill ${chatRepair.tone}`}>{chatRepair.status}</span> : null}
+      actions={
+        !chatRepair.canSubmit ? (
+          <PillClassBadge pillClass={chatRepair.tone}>{chatRepair.status}</PillClassBadge>
+        ) : null
+      }
       className="ops-command-center admin-mb-16"
       description="Create the retained booking chat room after a final Partner exists."
       id="chat-repair"
@@ -255,9 +260,9 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
   return (
     <AdminSection
       actions={
-        <span className={`pill ${sameShiftCount > 0 ? 'pill-warn' : 'pill-success'}`}>
+        <PillClassBadge pillClass={sameShiftCount > 0 ? 'pill-warn' : 'pill-success'}>
           {sameShiftCount} same-shift
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Next handling steps for this booking."
@@ -267,7 +272,7 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
         {dispatchSteps.map((step) => (
           <div className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`} key={step.title}>
             <div>
-              <span className={`pill ${step.tone}`}>{step.priority}</span>
+              <PillClassBadge pillClass={step.tone}>{step.priority}</PillClassBadge>
               <h3>{step.title}</h3>
               <p>{step.detail}</p>
               <small>{step.owner}</small>
@@ -298,9 +303,9 @@ function BookingStructuredOpsStatusSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${allDone ? 'pill-success' : 'pill-info'}`}>
+        <PillClassBadge pillClass={allDone ? 'pill-success' : 'pill-info'}>
           {allDone ? 'All done' : `${visibleTasks.length} open / ${opsTaskCards.length}`}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Open handling checkpoints for this booking."
@@ -311,7 +316,7 @@ function BookingStructuredOpsStatusSection({
           {visibleTasks.map((task) => (
             <div className={`ops-task-card ops-task-${task.status.toLowerCase()}`} key={task.type}>
               <div>
-                <span className={`pill ${opsTaskTone(task.status)}`}>{task.status}</span>
+                <PillClassBadge pillClass={opsTaskTone(task.status)}>{task.status}</PillClassBadge>
                 <h3>{task.label}</h3>
                 <p title={task.helper}>{compactOpsTaskHelper(task.helper)}</p>
                 <small>{task.updatedBy}</small>
@@ -367,7 +372,7 @@ function BookingOperatorNotesSection({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-info">{countLabel(recentNotes.length, 'note')}</span>}
+      actions={<StatusBadge tone="info">{countLabel(recentNotes.length, 'note')}</StatusBadge>}
       className="admin-mb-16"
       description="Keep short internal notes for the booking audit trail."
       id="operator-notes"
@@ -408,7 +413,7 @@ function BookingCompletedCloseoutSection({
 }) {
   return (
     <AdminSection
-      actions={<span className={`pill ${closeout.tone}`}>{closeout.label}</span>}
+      actions={<PillClassBadge pillClass={closeout.tone}>{closeout.label}</PillClassBadge>}
       className="admin-mb-16"
       description="Confirm the final finance state for this completed booking."
       id="completed-closeout"
@@ -467,9 +472,9 @@ function BookingMatchingExpirySection({
           <AdminFormControlButton type="submit">Expire matching</AdminFormControlButton>
         </form>
       ) : (
-        <span className={`pill ${matchingExpiry.status === 'EXPIRED' ? 'pill-warn' : 'pill-neutral'}`}>
+        <PillClassBadge pillClass={matchingExpiry.status === 'EXPIRED' ? 'pill-warn' : 'pill-neutral'}>
           {matchingExpiry.status === 'EXPIRED' ? 'Already expired' : 'Expiry not available for this status'}
-        </span>
+        </PillClassBadge>
       )}
     </AdminSection>
   );
@@ -500,9 +505,9 @@ function BookingNoShowHandlingSection({
           <AdminFormControlButton type="submit">Mark no-show</AdminFormControlButton>
         </form>
       ) : (
-        <span className={`pill ${noShow.status === 'NO_SHOW' ? 'pill-danger' : 'pill-neutral'}`}>
+        <PillClassBadge pillClass={noShow.status === 'NO_SHOW' ? 'pill-danger' : 'pill-neutral'}>
           {noShow.status === 'NO_SHOW' ? 'Already no-show' : 'No-show not available for this status'}
-        </span>
+        </PillClassBadge>
       )}
     </AdminSection>
   );
@@ -518,7 +523,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
       <div className="grid admin-mt-12">
         {liveSignals.map((signal) => (
           <div className="ops-signal-card" key={signal.label}>
-            <span className={`pill ${signal.tone}`}>{signal.label}</span>
+            <PillClassBadge pillClass={signal.tone}>{signal.label}</PillClassBadge>
             <strong>{signal.value}</strong>
             <p className="muted">{signal.helper}</p>
           </div>
