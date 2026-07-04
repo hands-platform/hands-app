@@ -9,7 +9,11 @@ describe('partner detail document and media sections', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<strong>No evidence found</strong>');
+    expect(source).not.toContain('<span className={`pill ${document.statusTone}`}>{document.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-success">{file.uploadStatus}</span>');
   });
 
   it('renders typed onboarding documents in a Vuexy table with dropdown review actions', () => {
