@@ -10,6 +10,8 @@ describe('BookingCloseoutSections', () => {
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('PillClassBadgeLink');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('<Link className={`ops-task-card');
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{connectedRecordLinks.length} links</span>');
     expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
