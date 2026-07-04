@@ -13,6 +13,7 @@ describe('BookingMonitorToolbarSection', () => {
     const markup = renderToStaticMarkup(section);
 
     expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-form-control-button button button-secondary');
     expect(rendered).toContain('Booking Monitor');
     expect(rendered).toContain('Live operational view for matching');
     expect(rendered).toContain('Pause live');

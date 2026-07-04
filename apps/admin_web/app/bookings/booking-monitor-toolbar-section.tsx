@@ -2,6 +2,7 @@
 
 import { Pause, Play } from 'lucide-react';
 
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 
 type BookingMonitorToolbarSectionProps = {
@@ -22,10 +23,10 @@ export function BookingMonitorToolbarSection({
   return (
     <AdminPageTemplate
       actions={
-        <button className="button button-secondary" type="button" onClick={onToggleLiveUpdates}>
+        <AdminFormControlButton className="button-secondary" type="button" onClick={onToggleLiveUpdates}>
           <LiveUpdatesIcon aria-hidden="true" size={16} />
           {liveUpdates ? 'Pause live' : 'Resume live'}
-        </button>
+        </AdminFormControlButton>
       }
       description={description}
       title={title}
