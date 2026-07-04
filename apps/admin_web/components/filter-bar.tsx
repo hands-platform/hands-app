@@ -8,7 +8,7 @@ import {
   AdminFormSearch,
 } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
-import { PillClassBadgeLink, statusBadgeClassName } from './status-badge';
+import { StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
 export type FilterBarOption = {
   readonly active?: boolean;
@@ -53,9 +53,9 @@ export function FilterBar({
         <AdminFormSearch defaultValue={defaultQuery} label={queryLabel} name={queryName} placeholder={placeholder} />
         <AdminFormControlButton type="submit">{submitLabel}</AdminFormControlButton>
         {resetHref ? (
-          <PillClassBadgeLink href={resetHref} pillClass="pill-neutral">
+          <StatusBadgeLink href={resetHref} tone="neutral">
             Clear
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         ) : null}
       </AdminFormGrid>
       <div className="participant-list filter-bar-options">

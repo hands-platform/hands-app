@@ -42,7 +42,9 @@ describe('FilterBar', () => {
   it('uses the shared badge link atom for reset actions', () => {
     const source = readFileSync(join(process.cwd(), 'components/filter-bar.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('pillClass');
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toContain('className="pill pill-neutral"');
   });
