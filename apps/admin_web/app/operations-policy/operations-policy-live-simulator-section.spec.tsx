@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
 import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyLiveSimulatorSection', () => {
+  it('uses shared Vuexy badge atoms for visible partner count labels', () => {
+    const source = readFileSync('app/operations-policy/operations-policy-live-simulator-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{simulation.partnerRows.length} shown</span>');
+  });
+
   it('renders the ready simulator state with partner links and checks', () => {
     const section = OperationsPolicyLiveSimulatorSection({
       simulation: {

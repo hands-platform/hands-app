@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyChangeImpactSection } from './operations-policy-change-impact-section';
 import { normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyChangeImpactSection', () => {
+  it('uses shared Vuexy badge atoms for snapshot summary labels', () => {
+    const source = readFileSync('app/operations-policy/operations-policy-change-impact-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{item.scope}</span>');
+  });
+
   it('renders policy change metrics, snapshots, rows, and cards', () => {
     const section = OperationsPolicyChangeImpactSection({
       dashboard: {

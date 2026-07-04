@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 import type { PolicyEnforcementTraceItem } from './policy-enforcement-trace';
 
@@ -20,7 +21,7 @@ export function OperationsPolicyEnforcementTraceSection({
       <div className="ops-task-grid admin-mt-14">
         {trace.map((item) => (
           <div className="ops-task-card ops-task-done" key={item.title}>
-            <span className="pill pill-success">{item.scope}</span>
+            <StatusBadge tone="success">{item.scope}</StatusBadge>
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <small>{`API touchpoint: ${item.api}`}</small>

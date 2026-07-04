@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
 type LivePolicySimulator = {
@@ -85,7 +85,7 @@ export function OperationsPolicyLiveSimulatorSection({
                 excluded from the dispatch count.
               </p>
             </div>
-            <span className="pill pill-info">{simulation.partnerRows.length} shown</span>
+            <StatusBadge tone="info">{simulation.partnerRows.length} shown</StatusBadge>
           </div>
           <div className="stack admin-mt-10">
             {simulation.partnerRows.map((partner) => (

@@ -1,5 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
@@ -42,7 +42,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
         ))}
         {visibleCards.length === 0 ? (
           <div className="ops-task-card ops-task-done">
-            <span className="pill pill-success">Aligned</span>
+            <StatusBadge tone="success">Aligned</StatusBadge>
             <h3>Recommended values are aligned</h3>
             <p>Current policy values match the recommended baseline for the loaded review set.</p>
             <small>Review this again before changing live matching or booking gates.</small>

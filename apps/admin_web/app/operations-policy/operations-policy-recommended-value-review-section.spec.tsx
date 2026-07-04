@@ -1,7 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyRecommendedValueReviewSection', () => {
+  it('uses shared Vuexy badge atoms for aligned fallback labels', () => {
+    const source = readFileSync(
+      'app/operations-policy/operations-policy-recommended-value-review-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-success">Aligned</span>');
+  });
+
   it('renders owner choice warning cards', () => {
     const section = OperationsPolicyRecommendedValueReviewSection({
       review: {

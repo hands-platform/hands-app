@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 export function OperationsPolicyAuthorityBaselineSection() {
   return (
@@ -11,7 +12,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
       title="MVP authority baseline"
     >
         <div className="ops-task-card ops-task-done">
-          <span className="pill pill-success">BookingAddressSnapshot</span>
+          <StatusBadge tone="success">BookingAddressSnapshot</StatusBadge>
           <h3>Address snapshot required</h3>
           <p>
             Every booking must keep an immutable service address snapshot before distance matching,
@@ -20,7 +21,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
           <small>Customers may browse globally; booking requires a confirmed Vietnam service address.</small>
         </div>
         <div className="ops-task-card ops-task-done">
-          <span className="pill pill-success">No auto assignment</span>
+          <StatusBadge tone="success">No auto assignment</StatusBadge>
           <h3>First-pick priority with fallback choice</h3>
           <p>
             The first-pick Partner can match first under API rules. If first-pick does not win, the customer
@@ -29,7 +30,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
           <small>Operators review evidence, but the platform does not automatically assign the partner.</small>
         </div>
         <div className="ops-task-card ops-task-done">
-          <span className="pill pill-info">10km marketplace</span>
+          <StatusBadge tone="info">10km marketplace</StatusBadge>
           <h3>Booking-address radius</h3>
           <p>
             Marketplace participation and alerts are based on the booking address, not the customer&apos;s
@@ -38,7 +39,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
           <small>The radius is admin-editable and defaults to 10km for Vietnam operations.</small>
         </div>
         <div className="ops-task-card ops-task-done">
-          <span className="pill pill-warn">Negative wallet gate</span>
+          <StatusBadge tone="warning">Negative wallet gate</StatusBadge>
           <h3>View demand, block finalization</h3>
           <p>
             A Partner with a negative wallet may see marketplace requests, but final acceptance, service

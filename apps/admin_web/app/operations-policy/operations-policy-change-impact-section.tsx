@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 import { MetricCard } from '../../components/metric-card';
-import { PillClassBadge } from '../../components/status-badge';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
 
@@ -37,7 +37,7 @@ export function OperationsPolicyChangeImpactSection({
       <div className="ops-task-grid admin-mt-14">
         {dashboard.snapshotSummary.map((item) => (
           <div className="ops-task-card ops-task-done admin-min-h-0" key={item.label}>
-            <span className="pill pill-info">{item.scope}</span>
+            <StatusBadge tone="info">{item.scope}</StatusBadge>
             <h3>{item.label}</h3>
             <p>{item.value}</p>
             <small>{item.helper}</small>

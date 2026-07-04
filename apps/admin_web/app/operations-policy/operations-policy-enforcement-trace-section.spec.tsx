@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
 import { classNamesIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyEnforcementTraceSection', () => {
+  it('uses shared Vuexy badge atoms for enforcement scope labels', () => {
+    const source = readFileSync('app/operations-policy/operations-policy-enforcement-trace-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-success">{item.scope}</span>');
+  });
+
   it('renders enforced lanes with API and server ownership', () => {
     const section = OperationsPolicyEnforcementTraceSection({
       trace: [
