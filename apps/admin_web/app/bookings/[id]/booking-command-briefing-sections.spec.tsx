@@ -54,8 +54,8 @@ describe('BookingCommandBriefingSections', () => {
   it('uses shared Vuexy badge atoms instead of raw command briefing pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}');
     expect(source).not.toContain('actions={<span className="pill pill-info">Above-fold summary</span>}');
     expect(source).not.toContain('actions={<span className="pill pill-info">{rows.length} shortcuts</span>}');

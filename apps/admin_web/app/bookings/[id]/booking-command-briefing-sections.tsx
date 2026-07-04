@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
 
@@ -96,7 +96,11 @@ export function BookingCommandDecisionStripSection({
 }: BookingCommandDecisionStripSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={commandDecisionStrip.tone}>{commandDecisionStrip.status}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(commandDecisionStrip.tone)}>
+          {commandDecisionStrip.status}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="Primary booking command and four-lane operator strip for address, matching, chat, and finance."
       id="booking-command-decision-strip"
@@ -256,7 +260,11 @@ export function BookingMatchingRuleSnapshotSection({
 }: BookingMatchingRuleSnapshotSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={matchingRuleSnapshot.tone}>{matchingRuleSnapshot.status}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(matchingRuleSnapshot.tone)}>
+          {matchingRuleSnapshot.status}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="Current matching rule state and the linked policy actions for this booking."
       id="matching-rule-snapshot"
@@ -305,7 +313,7 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
                 <p className="muted">{row.scope}</p>
               </td>
               <td>
-                <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               </td>
               <td>{row.evidence}</td>
               <td>{row.operatorUse}</td>
@@ -368,7 +376,11 @@ export function BookingPriorityBriefingSection({
 }: BookingPriorityBriefingSectionProps) {
   return (
     <AdminSection
-      actions={<PillClassBadge pillClass={operatorPriorityBriefing.tone}>{operatorPriorityBriefing.status}</PillClassBadge>}
+      actions={
+        <StatusBadge tone={statusBadgeToneFromPillClass(operatorPriorityBriefing.tone)}>
+          {operatorPriorityBriefing.status}
+        </StatusBadge>
+      }
       className="admin-mb-16"
       description="First-screen operator summary for handoff, chat, location, payment, and closeout. This shows factual state only, not customer or Partner judgment."
       id="booking-priority-briefing"
