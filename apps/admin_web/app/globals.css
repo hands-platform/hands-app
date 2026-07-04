@@ -2113,7 +2113,7 @@ a {
   display: flex;
   gap: 12px;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 24px;
 }
 
 .calendar-drawer-footer {
@@ -2141,7 +2141,7 @@ a {
 
 .calendar-drawer-body {
   overflow: auto;
-  padding: 20px 24px;
+  padding: 24px;
 }
 
 .calendar-readonly-notice {
@@ -16646,7 +16646,7 @@ textarea:focus-visible {
 }
 
 .review-edit-drawer-form .calendar-drawer-footer {
-  margin: 2px -24px -20px;
+  margin: 2px -24px -24px;
 }
 
 .review-edit-drawer-footer .button {
