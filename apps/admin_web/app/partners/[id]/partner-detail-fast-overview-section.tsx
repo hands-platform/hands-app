@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
 import { StatusBadgeLink } from '../../../components/status-badge';
@@ -52,9 +53,9 @@ export function PartnerDetailFastOverviewSection({
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/partners">
+          <AdminFormControlLink href="/partners">
             Back to partners
-          </Link>
+          </AdminFormControlLink>
           <Link className="text-link" href={fullHref}>
             Open full dossier
           </Link>

@@ -370,9 +370,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/customers">
+          <AdminFormControlLink href="/customers">
             Back to customers
-          </Link>
+          </AdminFormControlLink>
           {latestBooking?.id && (
             <Link className="text-link" href={`/bookings/${latestBooking.id}`}>
               Open latest booking

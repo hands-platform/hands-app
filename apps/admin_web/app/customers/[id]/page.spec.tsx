@@ -65,6 +65,11 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('<span className="pill');
     expect(customerDetailSource).not.toContain('<span className={`pill');
   });
+
+  it('uses the shared Vuexy form control link for button-style customer actions', () => {
+    expect(customerDetailSource).toContain('AdminFormControlLink');
+    expect(customerDetailSource).not.toContain('<Link className="button button-secondary"');
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

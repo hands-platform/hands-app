@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -21,6 +22,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const providerDetailSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('ProviderDetailPage data loading', () => {
   beforeEach(() => {
@@ -63,6 +65,11 @@ describe('ProviderDetailPage data loading', () => {
     expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('Partner One');
     expect(markup).toContain('All Partner chats');
+  });
+
+  it('uses the shared Vuexy form control link for button-style partner actions', () => {
+    expect(providerDetailSource).toContain('AdminFormControlLink');
+    expect(providerDetailSource).not.toContain('<Link className="button button-secondary"');
   });
 });
 

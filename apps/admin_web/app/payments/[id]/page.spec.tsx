@@ -63,6 +63,13 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">{key}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{formatDate(message.createdAt)}</span>');
   });
+
+  it('uses the shared Vuexy form control link for button-style payment actions', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
 });
 
 function paymentDetail(): AdminPaymentDetail {

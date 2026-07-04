@@ -4,7 +4,7 @@ import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MetricCard } from '../../../components/metric-card';
 import { StatusBadge } from '../../../components/status-badge';
@@ -82,9 +82,9 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/payments">
+          <AdminFormControlLink href="/payments">
             Back to payments
-          </Link>
+          </AdminFormControlLink>
           {booking?.id ? (
             <Link className="text-link" href={`/bookings/${booking.id}`}>
               Open booking

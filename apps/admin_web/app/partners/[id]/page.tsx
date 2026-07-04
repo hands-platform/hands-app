@@ -19,6 +19,7 @@ import {
 } from '../../../components/admin-review-records-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import {
   bookingLatestActivityAt,
@@ -783,9 +784,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/partners">
+          <AdminFormControlLink href="/partners">
             Back to partners
-          </Link>
+          </AdminFormControlLink>
           <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
             All Partner chats
           </Link>

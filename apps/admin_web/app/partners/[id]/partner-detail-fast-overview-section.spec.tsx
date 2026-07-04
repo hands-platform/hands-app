@@ -53,6 +53,13 @@ describe('PartnerDetailFastOverviewSection', () => {
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('<Link className="pill pill-info" href={link.href} key={link.href}>');
   });
+
+  it('uses the shared Vuexy form control link for button-style overview actions', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
 });
 
 function textContent(value: unknown): string {
