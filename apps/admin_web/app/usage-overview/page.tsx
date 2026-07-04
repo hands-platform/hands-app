@@ -28,6 +28,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import {
   formatCurrencyAmount as money,
   formatPercentLabel,
@@ -126,8 +127,8 @@ export default async function UsageOverviewPage({
     <AdminPageTemplate
       actions={
         <>
-          <span className="pill pill-success">Vietnam only</span>
-          <span className="pill pill-info">Generated {generatedAt}</span>
+          <StatusBadge tone="success">Vietnam only</StatusBadge>
+          <StatusBadge tone="info">Generated {generatedAt}</StatusBadge>
         </>
       }
       contentClassName="usage-overview-page"

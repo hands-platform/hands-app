@@ -53,6 +53,9 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('card admin-section usage-overview-insight-card');
     expect(markup).toContain('card admin-section usage-overview-ranking-card');
     expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
     expect(pageSource).not.toContain('empty-state usage-overview-empty-state');
     expect(pageSource).not.toContain('<div className="empty-state');
   });
