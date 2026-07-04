@@ -14,10 +14,13 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -653,26 +656,6 @@ function MarketingTable({
       }
       className="usage-overview-ranking-card marketing-table-card"
       description={description}
-      footer={
-        page ? (
-          <>
-            <span>
-              Showing {formatNumber(pageFrom)} to {formatNumber(pageTo)} of {formatNumber(totalRows)} entries
-            </span>
-            <AdminRoundedPagination
-              activePage={activePage}
-              ariaLabel={`${title} pagination`}
-              className="vuexy-booking-pagination"
-              hrefForPage={(nextPage) =>
-                marketingAnalyticsDimensionPageHref(filters, page.dimension, nextPage)
-              }
-              pageLinkClassName="vuexy-booking-page-link"
-              totalPages={totalPages}
-            />
-          </>
-        ) : null
-      }
-      footerClassName="vuexy-booking-table-footer marketing-table-pagination-footer"
       title={title}
     >
       <AdminTableScroll className="usage-overview-table-wrap">
@@ -710,9 +693,26 @@ function MarketingTable({
                 <td>{formatCurrency(row.platformFeeRevenue)}</td>
                 <td>{formatNullableMultiplier(row.conversionRates.roas)}</td>
               </tr>
-            ))}
+          ))}
         </AdminDataTable>
       </AdminTableScroll>
+      {page ? (
+        <AdminTablePaginationFooter
+          activePage={activePage}
+          ariaLabel={`${title} pagination`}
+          className="marketing-table-pagination-footer"
+          from={pageFrom}
+          hrefForPage={(nextPage) =>
+            marketingAnalyticsDimensionPageHref(filters, page.dimension, nextPage)
+          }
+          summaryLabel={`Showing ${formatNumber(pageFrom)} to ${formatNumber(pageTo)} of ${formatNumber(
+            totalRows,
+          )} entries`}
+          to={pageTo}
+          totalPages={totalPages}
+          totalRows={totalRows}
+        />
+      ) : null}
     </AdminSection>
   );
 }

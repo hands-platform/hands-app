@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('CouponsPage', () => {
   beforeEach(() => {
@@ -81,5 +83,12 @@ describe('CouponsPage', () => {
     expect(markup).toContain('role="status"');
     expect(markup).toContain('Coupon created');
     expect(markup).not.toContain('coupon-create-notice-success');
+  });
+
+  it('uses the shared table pagination footer for the coupon list', () => {
+    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).toContain('ariaLabel="Coupon list pagination"');
+    expect(pageSource).not.toContain('import { AdminRoundedPagination }');
+    expect(pageSource).not.toContain('<AdminRoundedPagination');
   });
 });

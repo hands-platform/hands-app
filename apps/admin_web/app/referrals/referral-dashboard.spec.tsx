@@ -279,7 +279,7 @@ describe('ReferralDashboard', () => {
     );
   });
 
-  it('renders rounded pagination for longer referral parent lists', () => {
+  it('renders shared table pagination for longer referral parent lists', () => {
     const longRows = Array.from({ length: 12 }, (_, index) =>
       referralParent({
         code: `REF${index}`,
@@ -300,12 +300,15 @@ describe('ReferralDashboard', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('aria-label="Referral parent pagination"');
+    expect(markup).toContain('class="vuexy-booking-table-footer referral-pagination"');
     expect(markup).toContain('class="vuexy-booking-pagination referral-pagination-buttons"');
     expect(markup).toContain('class="vuexy-booking-page-link is-active"');
     expect(markup).toContain('Page 2 of 2');
     expect(markup).toContain('Showing 11-12 of 12');
     expect(markup).toContain('href="/referrals/customers"');
-    expect(dashboardSource).toContain('AdminRoundedPagination');
+    expect(dashboardSource).toContain('AdminTablePaginationFooter');
+    expect(dashboardSource).not.toContain('import { AdminRoundedPagination }');
+    expect(dashboardSource).not.toContain('<AdminRoundedPagination');
     expect(dashboardSource).not.toContain('buildReferralPaginationPages');
   });
 

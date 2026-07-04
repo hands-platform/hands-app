@@ -11,7 +11,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 import {
   buildCouponDeleteConfirmation,
   buildCouponToggleConfirmation,
@@ -64,6 +64,14 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
   const usageSearchParams = couponUsageSearchParams(params);
   const couponListSearchParams = couponListSearchParamsWithoutPaging(params);
   const couponTotalPages = Math.max(1, Math.ceil(couponSummary.totalCount / COUPON_LIST_PAGE_SIZE));
+  const couponListFrom =
+    couponSummary.totalCount === 0 || couponModel.couponRows.length === 0
+      ? 0
+      : (couponPage - 1) * COUPON_LIST_PAGE_SIZE + 1;
+  const couponListTo =
+    couponSummary.totalCount === 0 || couponModel.couponRows.length === 0
+      ? 0
+      : Math.min(couponSummary.totalCount, couponSkip + couponModel.couponRows.length);
   const confirmation =
     confirmAction === 'toggle'
       ? buildCouponToggleConfirmation(couponModel.orderedCoupons, readSingleParam(params.couponId))
@@ -157,13 +165,15 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         usagePage={usagePage}
       />
       {couponTotalPages > 1 ? (
-        <AdminRoundedPagination
+        <AdminTablePaginationFooter
           activePage={couponPage}
           ariaLabel="Coupon list pagination"
-          className="vuexy-booking-pagination coupon-list-pagination"
+          className="coupon-list-pagination"
+          from={couponListFrom}
           hrefForPage={(page) => couponListHref(couponListSearchParams, page)}
-          pageLinkClassName="vuexy-booking-page-link"
+          to={couponListTo}
           totalPages={couponTotalPages}
+          totalRows={couponSummary.totalCount}
         />
       ) : null}
     </AdminPageTemplate>

@@ -133,6 +133,22 @@ describe('AdminDataTable', () => {
 
     expect(normalizeText(textContent(footer))).toContain('Showing 1 to 5 of 7 rooms');
   });
+
+  it('allows callers to override summary copy and append trailing context', () => {
+    const footer = AdminTablePaginationFooter({
+      activePage: 2,
+      ariaLabel: 'Referral parent pagination',
+      from: 11,
+      summaryLabel: 'Showing 11-12 of 12',
+      to: 12,
+      totalPages: 2,
+      totalRows: 12,
+      trailing: <span>Page 2 of 2</span>,
+    });
+
+    expect(normalizeText(textContent(footer))).toContain('Showing 11-12 of 12');
+    expect(normalizeText(textContent(footer))).toContain('Page 2 of 2');
+  });
 });
 
 function hrefsIn(value: unknown): string[] {

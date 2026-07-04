@@ -1,7 +1,11 @@
 import Link from 'next/link';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -15,7 +19,6 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -765,22 +768,23 @@ function ReferralParentPagination({
   }
 
   return (
-    <div className="referral-pagination">
-      <span className="referral-pagination-summary">
-        Showing {pagination.startItem}-{pagination.endItem} of {pagination.totalCount}
-      </span>
-      <AdminRoundedPagination
-        activePage={pagination.currentPage}
-        ariaLabel="Referral parent pagination"
-        className="vuexy-booking-pagination referral-pagination-buttons"
-        hrefForPage={(page) => buildReferralListHref(audience, filters, {}, page)}
-        pageLinkClassName="vuexy-booking-page-link"
-        totalPages={pagination.totalPages}
-      />
-      <span className="referral-pagination-page">
-        Page {pagination.currentPage} of {pagination.totalPages}
-      </span>
-    </div>
+    <AdminTablePaginationFooter
+      activePage={pagination.currentPage}
+      ariaLabel="Referral parent pagination"
+      className="referral-pagination"
+      from={pagination.startItem}
+      hrefForPage={(page) => buildReferralListHref(audience, filters, {}, page)}
+      paginationClassName="referral-pagination-buttons"
+      summaryLabel={`Showing ${pagination.startItem}-${pagination.endItem} of ${pagination.totalCount}`}
+      to={pagination.endItem}
+      totalPages={pagination.totalPages}
+      totalRows={pagination.totalCount}
+      trailing={
+        <span className="referral-pagination-page">
+          Page {pagination.currentPage} of {pagination.totalPages}
+        </span>
+      }
+    />
   );
 }
 

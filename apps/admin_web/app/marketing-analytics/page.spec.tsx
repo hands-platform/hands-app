@@ -125,4 +125,11 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">');
   });
+
+  it('uses the shared table pagination footer for breakdown tables', () => {
+    expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).toContain('ariaLabel={`${title} pagination`}');
+    expect(pageSource).not.toContain('import { AdminRoundedPagination }');
+    expect(pageSource).not.toContain('<AdminRoundedPagination');
+  });
 });

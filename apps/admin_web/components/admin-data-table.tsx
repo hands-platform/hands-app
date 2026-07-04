@@ -31,9 +31,11 @@ type AdminTablePaginationFooterProps = {
   readonly onPageChange?: (page: number) => void;
   readonly pageLinkClassName?: string;
   readonly paginationClassName?: string;
+  readonly summaryLabel?: ReactNode;
   readonly to: number;
   readonly totalPages: number;
   readonly totalRows: number;
+  readonly trailing?: ReactNode;
 };
 
 export function AdminTableScroll({ children, className }: AdminTableScrollProps) {
@@ -54,16 +56,22 @@ export function AdminTablePaginationFooter({
   onPageChange,
   pageLinkClassName = 'vuexy-booking-page-link',
   paginationClassName,
+  summaryLabel,
   to,
   totalPages,
   totalRows,
+  trailing,
 }: AdminTablePaginationFooterProps) {
   return AdminTableFooter({
     className,
     children: (
       <>
         <span>
-          Showing {from} to {to} of {totalRows} {itemLabel}
+          {summaryLabel ?? (
+            <>
+              Showing {from} to {to} of {totalRows} {itemLabel}
+            </>
+          )}
         </span>
         <AdminRoundedPagination
           activePage={activePage}
@@ -74,6 +82,7 @@ export function AdminTablePaginationFooter({
           pageLinkClassName={pageLinkClassName}
           totalPages={totalPages}
         />
+        {trailing}
       </>
     ),
   });
