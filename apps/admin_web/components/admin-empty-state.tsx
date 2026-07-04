@@ -20,12 +20,18 @@ export function AdminEmptyState({
     );
   }
 
-  return (
-    <>
-      {title === null ? null : <strong>{title}</strong>}
-      <p className="muted">{message}</p>
-    </>
-  );
+  const content = [
+    title === null ? null : <strong key="title">{title}</strong>,
+    <p className="muted" key="message">
+      {message}
+    </p>,
+  ];
+
+  if (className) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return <>{content}</>;
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {

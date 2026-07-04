@@ -39,6 +39,18 @@ describe('AdminEmptyState', () => {
     expect(emptyState.props.className).toBe('empty-state admin-mt-14');
   });
 
+  it('keeps custom spacing classes on unframed empty states when a page supplies them', () => {
+    const emptyState = AdminEmptyState({
+      className: 'admin-mt-8',
+      message: 'No partner files are retained for this profile.',
+    });
+
+    expect(emptyState.type).toBe('div');
+    expect(emptyState.props.className).toBe('admin-mt-8');
+    expect(emptyState.props.children[0].props.children).toBe('No records found');
+    expect(emptyState.props.children[1].props.children).toBe('No partner files are retained for this profile.');
+  });
+
   it('can render legacy sentence-only empty states without adding a title', () => {
     const emptyState = AdminEmptyState({
       framed: true,
