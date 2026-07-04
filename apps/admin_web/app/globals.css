@@ -2250,7 +2250,7 @@ a {
   align-items: flex-start;
   display: grid;
   gap: 14px;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
 }
 
 .metric-card-icon {
@@ -2259,9 +2259,9 @@ a {
   border-radius: var(--admin-radius);
   color: var(--admin-accent-strong);
   display: inline-flex;
-  height: 44px;
+  height: 42px;
   justify-content: center;
-  width: 44px;
+  width: 42px;
 }
 
 .metric-card-content {
