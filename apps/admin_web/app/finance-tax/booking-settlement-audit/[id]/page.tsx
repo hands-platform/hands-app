@@ -5,7 +5,8 @@ import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
-import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
+import { MoneyText } from '../../../../components/money-text';
+import { formatDateTime, shortId } from '../../../../lib/admin-format';
 import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
@@ -61,12 +62,12 @@ export default async function BookingSettlementAuditDetailPage({
         {
           helper: 'Customer amount captured or owed by payment method.',
           label: 'Customer paid',
-          value: formatMoney(snapshot.customerPaymentAmount, snapshot.currency),
+          value: <MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />,
         },
         {
           helper: 'Partner VAT/PIT withheld from this booking.',
           label: 'Withheld',
-          value: formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency),
+          value: <MoneyText amount={snapshot.partnerWithholdingTotal} currency={snapshot.currency} />,
         },
       ]}
       title="Booking Settlement Audit Detail"
@@ -130,10 +131,14 @@ export default async function BookingSettlementAuditDetailPage({
             {
               detail: snapshot.paymentMethod,
               label: 'Customer payment',
-              value: formatMoney(snapshot.customerPaymentAmount, snapshot.currency),
+              value: <MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />,
             },
             {
-              detail: `Delta ${formatMoney(allocationDelta, snapshot.currency)}`,
+              detail: (
+                <>
+                  Delta <MoneyText amount={allocationDelta} currency={snapshot.currency} />
+                </>
+              ),
               label: 'Settlement split',
               value: allocationDelta === 0 ? 'Balanced' : 'Review required',
             },
@@ -158,50 +163,50 @@ export default async function BookingSettlementAuditDetailPage({
 
       <FinanceTablePanel
         description="These values must stay immutable after posting. Refunds and closed-period changes should create reversal entries instead."
-        resultLabel={formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
+        resultLabel={<MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />}
         resultTone="info"
         title="Accounting amount breakdown"
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Customer payment"
-            value={formatMoney(snapshot.customerPaymentAmount, snapshot.currency)}
+            value={<MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner payout"
-            value={formatMoney(snapshot.partnerPayoutAmount, snapshot.currency)}
+            value={<MoneyText amount={snapshot.partnerPayoutAmount} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner taxable revenue"
-            value={formatMoney(snapshot.partnerTaxableRevenue, snapshot.currency)}
+            value={<MoneyText amount={snapshot.partnerTaxableRevenue} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner VAT"
-            value={formatMoney(snapshot.partnerVatAmount, snapshot.currency)}
+            value={<MoneyText amount={snapshot.partnerVatAmount} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner PIT"
-            value={formatMoney(snapshot.partnerPitAmount, snapshot.currency)}
+            value={<MoneyText amount={snapshot.partnerPitAmount} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Total partner withholding"
-            value={formatMoney(snapshot.partnerWithholdingTotal, snapshot.currency)}
+            value={<MoneyText amount={snapshot.partnerWithholdingTotal} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Platform fee gross"
-            value={formatMoney(snapshot.platformFeeGross, snapshot.currency)}
+            value={<MoneyText amount={snapshot.platformFeeGross} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Platform net revenue"
-            value={formatMoney(snapshot.platformFeeNetRevenue, snapshot.currency)}
+            value={<MoneyText amount={snapshot.platformFeeNetRevenue} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Company output VAT"
-            value={formatMoney(snapshot.companyOutputVat, snapshot.currency)}
+            value={<MoneyText amount={snapshot.companyOutputVat} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Payment processing fee"
-            value={formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}
+            value={<MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />}
           />
           <FinanceDetailInfoItem
             label="Allocation check"
@@ -209,7 +214,7 @@ export default async function BookingSettlementAuditDetailPage({
               <>
                 {allocationDelta === 0 ? 'Balanced' : 'Review required'}
                 <span className="muted admin-block">
-                  Delta {formatMoney(allocationDelta, snapshot.currency)}
+                  Delta <MoneyText amount={allocationDelta} currency={snapshot.currency} />
                 </span>
               </>
             }
@@ -219,7 +224,7 @@ export default async function BookingSettlementAuditDetailPage({
 
       <FinanceTablePanel
         description="Payment provider fee evidence is copied to the settlement snapshot so method-specific CARD, MOMO, or VNPAY rules can be audited later."
-        resultLabel={formatMoney(snapshot.paymentProcessingFee, snapshot.currency)}
+        resultLabel={<MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />}
         resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
         title="Payment fee policy evidence"
       >
@@ -247,10 +252,13 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem label="Funding source" value={coupon.fundingSource} />
           <FinanceDetailInfoItem label="Accounting treatment" value={coupon.accountingTreatment} />
           <FinanceDetailInfoItem label="Settlement base" value={coupon.settlementBasePolicy} />
-          <FinanceDetailInfoItem label="Discount" value={formatMoney(coupon.discountAmount, snapshot.currency)} />
+          <FinanceDetailInfoItem
+            label="Discount"
+            value={<MoneyText amount={coupon.discountAmount} currency={snapshot.currency} />}
+          />
           <FinanceDetailInfoItem
             label="Company expense"
-            value={formatMoney(coupon.companyExpense, snapshot.currency)}
+            value={<MoneyText amount={coupon.companyExpense} currency={snapshot.currency} />}
           />
         </FinanceDetailGrid>
       </FinanceTablePanel>
@@ -272,8 +280,8 @@ function SettlementJournalEvidence({ snapshot }: { readonly snapshot: AdminBooki
               {status}
             </Link>
             <span className="muted admin-block">
-              Debit {formatMoney(journal.totalDebit, snapshot.currency)} · Credit{' '}
-              {formatMoney(journal.totalCredit, snapshot.currency)}
+              Debit <MoneyText amount={journal.totalDebit} currency={snapshot.currency} /> · Credit{' '}
+              <MoneyText amount={journal.totalCredit} currency={snapshot.currency} />
             </span>
             <span className="muted admin-block">{journal.sourceKey}</span>
           </>
@@ -299,7 +307,7 @@ function PaymentClearingEvidence({ snapshot }: { readonly snapshot: AdminBooking
               {status}
             </Link>
             <span className="muted admin-block">
-              {clearing.type} · {formatMoney(clearing.amount, clearing.currency)}
+              {clearing.type} · <MoneyText amount={clearing.amount} currency={clearing.currency} />
             </span>
             <span className="muted admin-block">{clearing.sourceKey}</span>
           </>
@@ -439,7 +447,12 @@ function paymentFeeBasisLabel(
   if (recordedFee > 0 && paymentFee.rateBps === 0 && paymentFee.fixedAmount === 0) {
     return `${paymentFee.method} · legacy/manual fee evidence`;
   }
-  return `${paymentFee.method} · ${paymentFee.rateBps} bps + ${formatMoney(paymentFee.fixedAmount, currency)}`;
+  return (
+    <>
+      {paymentFee.method} · {paymentFee.rateBps} bps +{' '}
+      <MoneyText amount={paymentFee.fixedAmount} currency={currency} />
+    </>
+  );
 }
 
 function jsonRecord(value: unknown) {

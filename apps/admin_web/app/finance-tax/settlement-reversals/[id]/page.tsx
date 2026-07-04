@@ -5,7 +5,8 @@ import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
-import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { MoneyText } from '../../../../components/money-text';
+import { formatDateTime, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
 import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -81,12 +82,12 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
         {
           helper: 'Customer payment amount reversed by this record.',
           label: 'Customer reversal',
-          value: formatMoney(reversal.customerPaymentAmount, reversal.currency),
+          value: <MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />,
         },
         {
           helper: 'Partner payout amount reversed by this record.',
           label: 'Partner reversal',
-          value: formatMoney(reversal.partnerPayoutAmount, reversal.currency),
+          value: <MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />,
         },
       ]}
       title="Settlement Reversal Detail"
@@ -106,7 +107,11 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
               value: shortId(reversal.originalSettlementSnapshotId),
             },
             {
-              detail: `Delta ${formatMoney(allocationDelta, reversal.currency)}`,
+              detail: (
+                <>
+                  Delta <MoneyText amount={allocationDelta} currency={reversal.currency} />
+                </>
+              ),
               label: 'Reversal impact',
               value: allocationDelta === 0 ? 'Balanced' : 'Review required',
             },
@@ -177,7 +182,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem
             label="Receivable amount"
-            value={formatMoney(payoutRefundEvidence.receivableAmount, reversal.currency)}
+            value={<MoneyText amount={payoutRefundEvidence.receivableAmount} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Bank clearing check"
@@ -186,10 +191,10 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 <>
                   {bankClearing.label}
                   <span className="muted admin-block">
-                    Matched {formatMoney(bankClearing.matchedAmount, bankClearing.currency)}
+                    Matched <MoneyText amount={bankClearing.matchedAmount} currency={bankClearing.currency} />
                   </span>
                   <span className="muted admin-block">
-                    Remaining {formatMoney(bankClearing.remainingAmount, bankClearing.currency)}
+                    Remaining <MoneyText amount={bankClearing.remainingAmount} currency={bankClearing.currency} />
                   </span>
                   {bankClearing.latestActiveMatch ? (
                     <Link
@@ -237,44 +242,50 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
       <FinanceTablePanel
         description="Amounts below are the reversal entry values. They should offset the original posted settlement through journal and clearing evidence, not by editing the closed snapshot."
-        resultLabel={formatMoney(reversal.customerPaymentAmount, reversal.currency)}
+        resultLabel={<MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />}
         resultTone="warning"
         title="Reversal accounting impact"
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
             label="Customer payment reversal"
-            value={formatMoney(reversal.customerPaymentAmount, reversal.currency)}
+            value={<MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner payout reversal"
-            value={formatMoney(reversal.partnerPayoutAmount, reversal.currency)}
+            value={<MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Partner taxable revenue"
-            value={formatMoney(reversal.partnerTaxableRevenue, reversal.currency)}
+            value={<MoneyText amount={reversal.partnerTaxableRevenue} currency={reversal.currency} />}
           />
-          <FinanceDetailInfoItem label="Partner VAT" value={formatMoney(reversal.partnerVatAmount, reversal.currency)} />
-          <FinanceDetailInfoItem label="Partner PIT" value={formatMoney(reversal.partnerPitAmount, reversal.currency)} />
+          <FinanceDetailInfoItem
+            label="Partner VAT"
+            value={<MoneyText amount={reversal.partnerVatAmount} currency={reversal.currency} />}
+          />
+          <FinanceDetailInfoItem
+            label="Partner PIT"
+            value={<MoneyText amount={reversal.partnerPitAmount} currency={reversal.currency} />}
+          />
           <FinanceDetailInfoItem
             label="Total partner withholding"
-            value={formatMoney(reversal.partnerWithholdingTotal, reversal.currency)}
+            value={<MoneyText amount={reversal.partnerWithholdingTotal} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Platform fee gross"
-            value={formatMoney(reversal.platformFeeGross, reversal.currency)}
+            value={<MoneyText amount={reversal.platformFeeGross} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Platform net revenue"
-            value={formatMoney(reversal.platformFeeNetRevenue, reversal.currency)}
+            value={<MoneyText amount={reversal.platformFeeNetRevenue} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Company output VAT"
-            value={formatMoney(reversal.companyOutputVat, reversal.currency)}
+            value={<MoneyText amount={reversal.companyOutputVat} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Payment processing fee"
-            value={formatMoney(reversal.paymentProcessingFee, reversal.currency)}
+            value={<MoneyText amount={reversal.paymentProcessingFee} currency={reversal.currency} />}
           />
           <FinanceDetailInfoItem
             label="Reversal allocation check"
@@ -282,7 +293,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
               <>
                 {allocationDelta === 0 ? 'Balanced' : 'Review required'}
                 <span className="muted admin-block">
-                  Delta {formatMoney(allocationDelta, reversal.currency)}
+                  Delta <MoneyText amount={allocationDelta} currency={reversal.currency} />
                 </span>
               </>
             }
@@ -294,14 +305,14 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                 <>
                   {journalBalanceDelta === 0 ? 'Balanced' : 'Review required'}
                   <span className="muted admin-block">
-                    Debit {formatMoney(reversalJournal.totalDebit, reversal.currency)}
+                    Debit <MoneyText amount={reversalJournal.totalDebit} currency={reversal.currency} />
                   </span>
                   <span className="muted admin-block">
-                    Credit {formatMoney(reversalJournal.totalCredit, reversal.currency)}
+                    Credit <MoneyText amount={reversalJournal.totalCredit} currency={reversal.currency} />
                   </span>
                   {journalBalanceDelta ? (
                     <span className="muted admin-block">
-                      Delta {formatMoney(journalBalanceDelta, reversal.currency)}
+                      Delta <MoneyText amount={journalBalanceDelta} currency={reversal.currency} />
                     </span>
                   ) : null}
                 </>
