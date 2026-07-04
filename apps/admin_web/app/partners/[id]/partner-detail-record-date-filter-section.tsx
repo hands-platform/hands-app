@@ -7,6 +7,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminCard } from '../../../components/admin-surface';
+import { StatusBadge } from '../../../components/status-badge';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
 import { detailActivityTypeLabel } from '../../../lib/detail-activity-filter';
@@ -55,9 +56,9 @@ export function PartnerDetailRecordDateFilterSection({
           </p>
         </div>
         <div className="participant-list">
-          <span className="pill pill-info">{dateFilters.label}</span>
-          <span className="pill pill-neutral">{activityTypeLabel}</span>
-          <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
+          <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
+          <StatusBadge tone="neutral">{activityTypeLabel}</StatusBadge>
+          <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
         </div>
       </div>
       <form className="form-grid admin-mt-14" action={`/partners/${partnerId}`}>
