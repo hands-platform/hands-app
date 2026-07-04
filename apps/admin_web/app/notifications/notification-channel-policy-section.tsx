@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { Settings2 } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
@@ -42,10 +42,10 @@ export function NotificationChannelPolicySection({
   return (
     <AdminSection
       actions={
-        <Link className="button button-secondary" href="/operations-policy">
+        <AdminFormControlLink className="button-secondary" href="/operations-policy">
           <Settings2 aria-hidden="true" size={16} />
           Change alert policy
-        </Link>
+        </AdminFormControlLink>
       }
       className="soft-card admin-mb-16"
       description={

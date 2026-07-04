@@ -178,6 +178,16 @@ describe('NotificationChannelPolicySection', () => {
     expect(source).not.toContain('<Link className="pill pill-info" href="/setup#notifications">');
     expect(source).not.toContain('<span className="pill pill-warn">FCM smoke fallback</span>');
   });
+
+  it('uses the shared AdminFormControlLink atom for policy actions', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/notifications/notification-channel-policy-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<Link className="button button-secondary"');
+  });
 });
 
 function fcmSmokeReadiness(
