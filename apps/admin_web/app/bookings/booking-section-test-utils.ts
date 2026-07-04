@@ -129,6 +129,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminPageTemplate',
       'AdminPersonCell',
       'AdminSection',
+      'AdminTaskCard',
       'MetricCard',
     ].includes(component.name)
   ) {

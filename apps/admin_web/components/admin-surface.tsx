@@ -52,6 +52,8 @@ type AdminActionCardProps = {
   readonly variant?: 'default' | 'ops-task';
 };
 
+type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'variant'>;
+
 type AdminStateProps = {
   readonly action?: ReactNode;
   readonly className?: string;
@@ -179,6 +181,33 @@ export function AdminActionCard({
       {detail ? <p className="muted admin-mt-8">{detail}</p> : null}
       {children}
     </Link>
+  );
+}
+
+export function AdminTaskCard({
+  actionLabel,
+  children,
+  className,
+  detail,
+  signalClassName,
+  signalLabel,
+  title,
+  value,
+  valueClassName,
+}: AdminTaskCardProps) {
+  const hasTitle = title !== undefined && title !== null;
+  const hasValue = value !== undefined && value !== null;
+
+  return (
+    <div className={joinClassNames('ops-task-card', className)}>
+      {signalLabel ? <span className={joinClassNames('signal', signalClassName)}>{signalLabel}</span> : null}
+      {hasTitle ? <h3>{title}</h3> : null}
+      {hasTitle && detail ? <p>{detail}</p> : null}
+      {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
+      {!hasTitle && detail ? <p>{detail}</p> : null}
+      {children}
+      {actionLabel ? <small>{actionLabel}</small> : null}
+    </div>
   );
 }
 

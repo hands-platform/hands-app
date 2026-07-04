@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminActionCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -79,11 +79,12 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
           />
         ))}
         {marketplaceOperationsCards.length > 0 && visibleMarketplaceOperationsCards.length === 0 && (
-          <div className="ops-task-card">
-            <PillClassBadge pillClass="signal pill-success">Clear</PillClassBadge>
-            <strong className="ops-task-card-value">0</strong>
-            <p>No marketplace participant action is needed for the current filters.</p>
-          </div>
+          <AdminTaskCard
+            detail="No marketplace participant action is needed for the current filters."
+            signalClassName="pill-success"
+            signalLabel="Clear"
+            value="0"
+          />
         )}
       </div>
       {marketplaceLedgerRows.length === 0 ? (

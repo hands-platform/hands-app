@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -71,11 +71,12 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
           </AdminActionCard>
         ))}
         {visibleOperatingQueue.length === 0 && (
-          <div className="ops-task-card">
-            <span className="signal signal-ok">Clear</span>
-            <h3>No marketplace lane needs action</h3>
-            <p>First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.</p>
-          </div>
+          <AdminTaskCard
+            detail="First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear."
+            signalClassName="signal-ok"
+            signalLabel="Clear"
+            title="No marketplace lane needs action"
+          />
         )}
       </div>
     </AdminSection>

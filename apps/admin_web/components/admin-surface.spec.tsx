@@ -6,6 +6,7 @@ import {
   AdminLinkCard,
   AdminLoadingState,
   AdminSection,
+  AdminTaskCard,
 } from './admin-surface';
 
 describe('Admin surface components', () => {
@@ -135,6 +136,22 @@ describe('Admin surface components', () => {
     const children = card.props.children.filter(Boolean);
 
     expect(children.map((child: { type: unknown }) => child.type)).toEqual(['span', 'strong', 'p']);
+  });
+
+  it('renders a static Vuexy ops task card surface for non-clickable states', () => {
+    const card = AdminTaskCard({
+      detail: 'First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.',
+      signalClassName: 'signal-ok',
+      signalLabel: 'Clear',
+      title: 'No marketplace lane needs action',
+    });
+
+    expect(card.props.className).toBe('ops-task-card');
+    expect(card.props.children.filter(Boolean).map((child: { type: unknown }) => child.type)).toEqual([
+      'span',
+      'h3',
+      'p',
+    ]);
   });
 
   it('renders standard loading and error states with operational roles', () => {
