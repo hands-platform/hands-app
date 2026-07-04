@@ -31,6 +31,19 @@ describe('Admin workspace header CSS', () => {
     expect(toggleButtonBlock).not.toContain('height: 30px');
     expect(toggleButtonBlock).not.toContain('width: 30px');
   });
+
+  it('keeps workspace breadcrumbs on the Vuexy Breadcrumbs link rhythm', () => {
+    const breadcrumbLinkIndex = globalsCss.indexOf('.workspace-breadcrumb a {');
+    const breadcrumbLinkBlock = cssRuleBlockAt(breadcrumbLinkIndex);
+    const breadcrumbCurrentIndex = globalsCss.indexOf(".workspace-breadcrumb span[aria-current='page'] {");
+    const breadcrumbCurrentBlock = cssRuleBlockAt(breadcrumbCurrentIndex);
+
+    expect(breadcrumbLinkIndex).toBeGreaterThan(-1);
+    expect(breadcrumbLinkBlock).toContain('color: var(--admin-link)');
+    expect(breadcrumbLinkBlock).toContain('text-decoration: none');
+    expect(breadcrumbCurrentIndex).toBeGreaterThan(-1);
+    expect(breadcrumbCurrentBlock).toContain('color: var(--admin-text)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
