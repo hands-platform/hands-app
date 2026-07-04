@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import { bookingUnifiedDetail } from './booking-unified-detail';
@@ -6,6 +7,15 @@ import type { BookingFinalPartnerSummary } from './booking-final-partner-summary
 import type { bookingFinanceTrace } from './booking-finance-trace';
 
 describe('BookingUnifiedDetailSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw unified detail pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-unified-detail-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>}');
+    expect(source).not.toContain('<span className="pill pill-neutral">{countLabel(rows.length, \'field\')}</span>');
+  });
+
   it('renders one booking detail around customer, matched Partner, finance, and updates', () => {
     const unifiedDetail = bookingUnifiedDetail({
       addressLine: 'Cau Giay, Ha Noi',

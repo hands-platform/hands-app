@@ -5,6 +5,7 @@ import {
   adminPersonInitials,
 } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type {
   BookingUnifiedDetail,
   BookingUnifiedDetailCard,
@@ -20,7 +21,9 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
   return (
     <>
       <AdminSection
-        actions={<span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>}
+        actions={
+          <PillClassBadge pillClass={unifiedDetail.statusTone}>{unifiedDetail.statusLabel}</PillClassBadge>
+        }
         className="admin-mb-16 booking-unified-summary-card"
         description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."
         id="booking-unified-detail"
@@ -96,7 +99,7 @@ function BookingUnifiedRows({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-neutral">{countLabel(rows.length, 'field')}</span>}
+      actions={<StatusBadge tone="neutral">{countLabel(rows.length, 'field')}</StatusBadge>}
       className="admin-mb-16 booking-unified-detail-card"
       description={helper}
       id={id}
