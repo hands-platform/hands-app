@@ -1,6 +1,6 @@
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
-import { PillClassBadgeLink, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
@@ -33,9 +33,9 @@ export function PartnerDetailConnectedRecordsSection({
             <span>{record.label}</span>
             <strong>{record.value}</strong>
             <small>{record.detail}</small>
-            <PillClassBadgeLink href={record.href} pillClass={record.tone}>
+            <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
               Open
-            </PillClassBadgeLink>
+            </StatusBadgeLink>
           </div>
         ))}
       </div>

@@ -8,8 +8,8 @@ const sectionSource = readFileSync(
 
 describe('PartnerDetailDeviceSessionActivitySection', () => {
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
-    expect(sectionSource).toContain('PillClassBadge');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).toContain('AdminTaskCard');
     expect(sectionSource).not.toContain('className={`ops-task-card');
     expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>');
@@ -98,7 +98,6 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
-        'pill pill-blocked',
         'pill pill-info',
         'pill pill-warn',
         'action-menu',

@@ -8,7 +8,8 @@ const sectionSource = readFileSync(new URL('./partner-detail-booking-journey-sec
 
 describe('PartnerDetailBookingJourneySection', () => {
   it('uses the shared Vuexy badge atom for journey steps', () => {
-    expect(sectionSource).toContain('PillClassBadge');
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<span className={`pill ${step.tone}`}');
   });
 

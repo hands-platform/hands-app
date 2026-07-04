@@ -63,7 +63,7 @@ export function pillClassBadgeClassName(pillClass: string) {
 }
 
 export function statusBadgeToneFromPillClass(pillClass: string): StatusBadgeTone {
-  if (pillClass.includes('danger')) {
+  if (pillClass.includes('danger') || pillClass.includes('blocked')) {
     return 'danger';
   }
   if (pillClass.includes('warn') || pillClass.includes('pending')) {

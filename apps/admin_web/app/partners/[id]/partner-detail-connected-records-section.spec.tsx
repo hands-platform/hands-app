@@ -48,7 +48,8 @@ describe('PartnerDetailConnectedRecordsSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<span className="pill pill-info">{links.length} links</span>');
     expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
   });
