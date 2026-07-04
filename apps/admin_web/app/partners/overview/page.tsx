@@ -27,6 +27,7 @@ import {
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -90,8 +91,8 @@ export default async function PartnerOverviewPage({
     <AdminPageTemplate
       actions={
         <>
-          <span className="pill pill-success">Vietnam supply</span>
-          <span className="pill pill-info">Generated {generatedAt}</span>
+          <StatusBadge tone="success">Vietnam supply</StatusBadge>
+          <StatusBadge tone="info">Generated {generatedAt}</StatusBadge>
         </>
       }
       contentClassName="usage-overview-page partner-overview-page"
@@ -534,10 +535,10 @@ function SupplyAreaCard({
               <td>{formatNumber(row.failedRequests)}</td>
               <td>{row.matchingFailureRate}%</td>
               <td>
-                <span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>
+                <StatusBadge tone="info">{formatDurationSeconds(row.averageResponseSeconds)}</StatusBadge>
               </td>
               <td>
-                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
+                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.status}</PillClassBadge>
               </td>
             </tr>
           ))}
@@ -578,7 +579,7 @@ function SupplyServiceCard({
               <td>{row.completionRate}%</td>
               <td>{row.avgRating === null ? '-' : row.avgRating.toFixed(2)}</td>
               <td>
-                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>
+                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.status}</PillClassBadge>
               </td>
             </tr>
           ))}
@@ -823,7 +824,7 @@ function SelectionFrictionCard({
               <td>{row.selectionRate}% selected</td>
               <td>{row.rating ? `${row.rating.toFixed(1)} (${formatNumber(row.reviewCount)})` : '-'}</td>
               <td>
-                <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>
+                <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.mainReason}</PillClassBadge>
                 <small>{row.readinessFlags.join(' · ')}</small>
               </td>
               <td>
@@ -885,7 +886,7 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
         </small>
       </span>
       <span className="partner-overview-action-reason">
-        <span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>
+        <PillClassBadge pillClass={riskPillClass(row.riskLevel)}>{row.mainReason}</PillClassBadge>
         <small>{row.recommendedAction}</small>
       </span>
     </a>

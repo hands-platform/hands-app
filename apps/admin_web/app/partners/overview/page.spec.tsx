@@ -135,6 +135,13 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Review profile pricing and photos');
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('PillClassBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam supply</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{formatDurationSeconds(row.averageResponseSeconds)}</span>');
+    expect(pageSource).not.toContain('<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.status}</span>');
+    expect(pageSource).not.toContain('<span className={`pill ${riskPillClass(row.riskLevel)}`}>{row.mainReason}</span>');
   });
 
   it('omits empty aggregate grids while keeping actionable empty-state sections', async () => {
