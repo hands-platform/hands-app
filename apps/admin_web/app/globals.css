@@ -15136,9 +15136,7 @@ textarea:focus-visible {
   line-height: 1.2;
 }
 
-.referral-policy-input,
-.referral-policy-select,
-.referral-policy-textarea {
+.referral-policy-field > :is(.admin-form-input, .admin-form-select, .admin-form-textarea) {
   min-width: 0;
   width: 100%;
 }
@@ -17508,8 +17506,7 @@ textarea:focus-visible {
 
 .admin-form-textarea textarea,
 .ops-note-form textarea,
-.ops-note-textarea,
-.referral-policy-textarea {
+.ops-note-textarea {
   background: var(--admin-surface);
   border: 1px solid var(--admin-input-border);
   border-radius: var(--admin-input-radius-sm);
@@ -17527,8 +17524,7 @@ textarea:focus-visible {
 
 .admin-form-textarea textarea:hover,
 .ops-note-form textarea:hover,
-.ops-note-textarea:hover,
-.referral-policy-textarea:hover {
+.ops-note-textarea:hover {
   border-color: var(--admin-input-hover-border);
 }
 
@@ -17540,8 +17536,7 @@ textarea:focus-visible {
 
 .admin-form-textarea textarea:focus,
 .ops-note-form textarea:focus,
-.ops-note-textarea:focus,
-.referral-policy-textarea:focus {
+.ops-note-textarea:focus {
   border-color: var(--admin-accent);
   border-width: 2px;
   box-shadow: var(--admin-primary-shadow-sm);

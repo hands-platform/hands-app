@@ -469,7 +469,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Policy status</span>
           <AdminFormSelect
-            className="referral-policy-select"
             defaultValue={policy.enabled ? 'on' : 'off'}
             label="Policy status"
             name="enabledState"
@@ -483,7 +482,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
           <div className="referral-policy-field">
             <span className="referral-policy-field-label">Reward percent</span>
             <AdminFormInput
-              className="referral-policy-input"
               defaultValue={commissionPercentValue}
               label="Reward percent"
               min="0"
@@ -497,7 +495,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
           <div className="referral-policy-field">
             <span className="referral-policy-field-label">Fixed reward amount</span>
             <AdminFormInput
-              className="referral-policy-input"
               defaultValue={policy.fixedRewardAmount ?? ''}
               label="Fixed reward amount"
               min="0"
@@ -511,7 +508,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Total reward cap</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={policy.totalRewardCapAmount ?? ''}
             label="Total reward cap"
             min="0"
@@ -524,7 +520,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Max rewarded referrals</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={policy.maxRewardedReferrals ?? ''}
             label="Max rewarded referrals"
             min="0"
@@ -536,7 +531,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Max rewards per referred</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={policy.maxRewardsPerReferred ?? ''}
             label="Max rewards per referred"
             min="0"
@@ -548,7 +542,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Hold period days</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={policy.holdPeriodDays}
             label="Hold period days"
             min="0"
@@ -559,7 +552,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Platform fee VAT</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={platformFeeVatRateValue}
             label="Platform fee VAT"
             min="0"
@@ -572,7 +564,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field">
           <span className="referral-policy-field-label">Currency</span>
           <AdminFormInput
-            className="referral-policy-input"
             defaultValue={policy.currency}
             label="Currency"
             maxLength={8}
@@ -582,7 +573,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field referral-policy-field-full">
           <span className="referral-policy-field-label">Policy notes</span>
           <AdminFormTextarea
-            className="referral-policy-textarea"
             defaultValue={policy.notes ?? ''}
             label="Policy notes"
             name="notes"
@@ -593,7 +583,6 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
         <div className="referral-policy-field referral-policy-field-full">
           <span className="referral-policy-field-label">Update reason</span>
           <AdminFormInput
-            className="referral-policy-input"
             label="Update reason"
             name="reason"
             placeholder="Why this referral policy is being changed"
