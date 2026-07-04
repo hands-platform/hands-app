@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PayoutStatusLanesSection } from './payout-status-lanes-section';
 
 describe('PayoutStatusLanesSection', () => {
@@ -33,6 +36,7 @@ describe('PayoutStatusLanesSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
+        'ops-section-header admin-section-header',
       ]),
     );
   });
@@ -68,6 +72,13 @@ describe('PayoutStatusLanesSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-warn');
     expect(classNamesIn(section)).not.toContain('pill pill pill-warn');
+  });
+
+  it('keeps lane headers on the shared Vuexy section header atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminSectionHeader');
+    expect(source).not.toContain('<div className="ops-section-header">');
   });
 });
 
