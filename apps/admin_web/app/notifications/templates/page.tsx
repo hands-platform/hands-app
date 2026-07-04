@@ -4,6 +4,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -42,12 +43,8 @@ export default async function NotificationTemplatesPage({
     <AdminPageTemplate
       actions={
         <>
-          <a className="admin-form-control-link" href="/notifications">
-            Delivery board
-          </a>
-          <a className="admin-form-control-link" href="/notifications/push-send">
-            Push send
-          </a>
+          <AdminFormControlLink href="/notifications">Delivery board</AdminFormControlLink>
+          <AdminFormControlLink href="/notifications/push-send">Push send</AdminFormControlLink>
         </>
       }
       contentClassName="stack notification-template-page"

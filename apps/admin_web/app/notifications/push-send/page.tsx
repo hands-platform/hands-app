@@ -8,6 +8,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormSelect,
   AdminFormStaticValue,
@@ -138,12 +139,8 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
     <AdminPageTemplate
       actions={
         <>
-          <a className="admin-form-control-link" href="/notifications">
-            Delivery board
-          </a>
-          <a className="admin-form-control-link" href="/notifications/templates">
-            Templates
-          </a>
+          <AdminFormControlLink href="/notifications">Delivery board</AdminFormControlLink>
+          <AdminFormControlLink href="/notifications/templates">Templates</AdminFormControlLink>
         </>
       }
       contentClassName="stack notification-push-send-page"

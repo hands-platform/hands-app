@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
@@ -24,5 +25,14 @@ describe('NotificationTemplatesPage', () => {
     await NotificationTemplatesPage({ searchParams: Promise.resolve({}) });
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/notifications/templates?take=50', []);
+  });
+
+  it('renders page actions through the shared Vuexy link atom', async () => {
+    const page = await NotificationTemplatesPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('admin-form-control-link button button-secondary');
+    expect(markup).toContain('href="/notifications"');
+    expect(markup).toContain('href="/notifications/push-send"');
   });
 });

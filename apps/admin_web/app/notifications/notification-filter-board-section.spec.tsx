@@ -54,7 +54,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-form-control-link is-active',
+        'admin-form-control-link button button-secondary is-active',
         'pill pill-success',
         'pill pill-warn',
       ]),
@@ -83,7 +83,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-control-link is-active', 'pill pill-warn']),
+      expect.arrayContaining(['admin-form-control-link button button-secondary is-active', 'pill pill-warn']),
     );
   });
 

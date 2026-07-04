@@ -50,4 +50,13 @@ describe('PushSendPage', () => {
     expect(markup).toContain('Vietnamese');
     expect(markup).not.toContain('<div class="admin-form-input"><span>Language</span>');
   });
+
+  it('renders page actions through the shared Vuexy link atom', async () => {
+    const page = await PushSendPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('admin-form-control-link button button-secondary');
+    expect(markup).toContain('href="/notifications"');
+    expect(markup).toContain('href="/notifications/templates"');
+  });
 });
