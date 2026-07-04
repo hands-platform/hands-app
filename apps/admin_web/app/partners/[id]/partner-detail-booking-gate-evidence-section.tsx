@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -80,7 +80,9 @@ export function PartnerDetailBookingGateEvidenceSection({
           {visibleAttempts.map((attempt) => (
             <tr key={attempt.id}>
               <td>
-                <PillClassBadge pillClass={attempt.tone}>{attempt.gateLabel}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(attempt.tone)}>
+                  {attempt.gateLabel}
+                </StatusBadge>
               </td>
               <td>
                 <Link className="text-link" href={attempt.bookingMonitorHref}>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -102,7 +102,9 @@ export function PartnerDetailBookingGateDecisionSection({
                 <strong>{gate.label}</strong>
               </td>
               <td>
-                <PillClassBadge pillClass={bookingGatePillClass(gate)}>{bookingGateStatusLabel(gate)}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(bookingGatePillClass(gate))}>
+                  {bookingGateStatusLabel(gate)}
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{gate.detail}</p>

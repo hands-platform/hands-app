@@ -6,8 +6,8 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
   it('uses the shared Vuexy badge atoms for decision policy pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">First response window:');
     expect(source).not.toContain('<span className={`pill ${bookingGatePillClass(gate)}`}>');
   });

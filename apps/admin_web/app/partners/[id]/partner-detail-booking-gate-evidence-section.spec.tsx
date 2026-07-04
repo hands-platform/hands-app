@@ -6,8 +6,8 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
   it('uses the shared Vuexy badge atoms for gate evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{attempt.addressLabel}</span>');
   });

@@ -56,6 +56,7 @@ describe('StatusBadge', () => {
   it('maps legacy pill classes to tone-based badge atoms', () => {
     expect(statusBadgeToneFromPillClass('pill-danger')).toBe('danger');
     expect(statusBadgeToneFromPillClass('pill pill-warn')).toBe('warning');
+    expect(statusBadgeToneFromPillClass('pill-pending')).toBe('warning');
     expect(statusBadgeToneFromPillClass('pill-success')).toBe('success');
     expect(statusBadgeToneFromPillClass('pill-info')).toBe('info');
     expect(statusBadgeToneFromPillClass('pill-neutral')).toBe('neutral');
