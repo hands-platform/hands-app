@@ -22,6 +22,23 @@ describe('booking policy supply sections', () => {
     expect(source).not.toContain('<strong>No usable marketplace participant</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw policy supply pill spans', () => {
+    const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('actions={<span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>}');
+    expect(source).not.toContain('actions={<span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>}');
+    expect(source).not.toContain('<span className={`pill ${policySnapshot.decisionTone}`}>{policySnapshot.decisionStatus}</span>');
+    expect(source).not.toContain('<span className={`pill ${decision.pillClass}`}>{decision.status}</span>');
+    expect(source).not.toContain('actions={<span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>}');
+    expect(source).not.toContain('<span className={`pill ${marketplaceSupply.candidateCommand.tone}`}>');
+    expect(source).not.toContain("<span className={`pill ${marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>");
+    expect(source).not.toContain('<span className={`pill ${marketplaceSupply.decisionTone}`}>{marketplaceSupply.decisionStatus}</span>');
+    expect(source).not.toContain("<span className={`pill ${row.eligible ? 'pill-success' : 'pill-warn'}`}>");
+    expect(source).not.toContain('<span className={`pill ${badge.tone}`} key={badge.label} title={showDetailTitle ? badge.detail : undefined}>');
+    expect(source).not.toContain('<span className={`pill ${card.pillClass}`}>{card.status}</span>');
+  });
+
   it('renders marketplace Partner candidates with shared avatar person cells', () => {
     const marketplaceSupply = buildMarketplaceSupply();
 

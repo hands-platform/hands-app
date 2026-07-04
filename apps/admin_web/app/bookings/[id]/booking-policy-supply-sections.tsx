@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 type SummaryCard = {
@@ -128,7 +129,7 @@ type MarketplaceSupply = {
 export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnapshotSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>}
+      actions={<PillClassBadge pillClass={stageSnapshot.pillClass}>{stageSnapshot.stage}</PillClassBadge>}
       className="admin-mb-16"
       description="Current stage, blocking signal, and next operator action for this booking."
       id="alerts"
@@ -160,7 +161,7 @@ export function BookingCustomerWaitPanelSection({
 }: BookingCustomerWaitPanelSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>}
+      actions={<PillClassBadge pillClass={customerWaitPanel.signalTone}>{customerWaitPanel.signalStatus}</PillClassBadge>}
       className="admin-mb-16"
       description="Customer waiting signal, matching evidence, and the next action while assignment is unresolved."
       id="audit"
@@ -204,7 +205,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <span className={`pill ${policySnapshot.decisionTone}`}>{policySnapshot.decisionStatus}</span>
+            <PillClassBadge pillClass={policySnapshot.decisionTone}>{policySnapshot.decisionStatus}</PillClassBadge>
             <strong>{policySnapshot.decisionTitle}</strong>
             <p className="muted">{policySnapshot.decisionDetail}</p>
           </div>
@@ -216,7 +217,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
       <div className="ops-task-grid admin-mt-14">
         {policySnapshot.decisionCards.map((decision) => (
           <div className={`ops-task-card ${decision.className}`} key={decision.key}>
-            <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
+            <PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>
             <h3>{decision.label}</h3>
             <p>{decision.value}</p>
             <small title={decision.helper}>{compactPolicyDecisionHelper(decision.helper)}</small>
@@ -250,7 +251,7 @@ export function BookingAddressRadiusContractSection({
 }: BookingAddressRadiusContractSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>}
+      actions={<PillClassBadge pillClass={addressRadiusContract.tone}>{addressRadiusContract.status}</PillClassBadge>}
       className="admin-mb-16"
       description="The immutable booking address snapshot is the source of truth for 10km marketplace eligibility."
       id="address-radius-contract"
@@ -272,9 +273,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
   return (
     <AdminSection
       actions={
-        <span className={`pill ${marketplaceSupply.candidateCommand.tone}`}>
+        <PillClassBadge pillClass={marketplaceSupply.candidateCommand.tone}>
           {marketplaceSupply.candidateCommand.status}
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Usable Partner supply and operational blockers for this booking pin."
@@ -366,9 +367,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
   return (
     <AdminSection
       actions={
-        <span className={`pill ${marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
+        <PillClassBadge pillClass={marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}>
           {marketplaceSupply.eligibleCount} eligible
-        </span>
+        </PillClassBadge>
       }
       className="admin-mb-16"
       description="Full Partner supply rows for the booking pin, with eligibility and exclusion evidence."
@@ -379,7 +380,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
-            <span className={`pill ${marketplaceSupply.decisionTone}`}>{marketplaceSupply.decisionStatus}</span>
+            <PillClassBadge pillClass={marketplaceSupply.decisionTone}>
+              {marketplaceSupply.decisionStatus}
+            </PillClassBadge>
             <strong>{marketplaceSupply.decisionTitle}</strong>
             <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
@@ -404,9 +407,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
               <p className="muted">{row.detail}</p>
             </div>
             <div>
-              <span className={`pill ${row.eligible ? 'pill-success' : 'pill-warn'}`}>
+              <PillClassBadge pillClass={row.eligible ? 'pill-success' : 'pill-warn'}>
                 {row.eligible ? 'Can participate' : 'Excluded'}
-              </span>
+              </PillClassBadge>
               <div className="muted">{row.distance}</div>
             </div>
           </div>
@@ -468,9 +471,13 @@ function PillBadgeList({
   return (
     <div className="participant-list admin-mt-8">
       {badges.map((badge) => (
-        <span className={`pill ${badge.tone}`} key={badge.label} title={showDetailTitle ? badge.detail : undefined}>
+        <PillClassBadge
+          key={badge.label}
+          pillClass={badge.tone}
+          title={showDetailTitle ? badge.detail : undefined}
+        >
           {badge.label}
-        </span>
+        </PillClassBadge>
       ))}
     </div>
   );
@@ -481,7 +488,7 @@ function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
     <div className="ops-task-grid admin-mt-14">
       {cards.map((card) => (
         <div className={`ops-task-card ${card.className}`} key={card.title}>
-          <span className={`pill ${card.pillClass}`}>{card.status}</span>
+          <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
           <h3>{card.title}</h3>
           <p>{card.detail}</p>
           <small>{card.action}</small>
