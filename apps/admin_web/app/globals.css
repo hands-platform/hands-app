@@ -4050,7 +4050,7 @@ a.action-button-card:hover {
 
 .vuexy-booking-page-link:not(:disabled):hover {
   background: var(--admin-primary-soft);
-  color: #8f85f3;
+  color: var(--admin-accent-strong);
 }
 
 .ops-filter-actions {
@@ -16441,7 +16441,7 @@ textarea:focus-visible {
 
 .vuexy-review-page-link:not(.is-disabled):hover {
   background: var(--admin-primary-soft);
-  color: #8f85f3;
+  color: var(--admin-accent-strong);
 }
 
 .reviews-page .vuexy-review-filter-card {
