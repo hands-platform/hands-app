@@ -179,4 +179,15 @@ describe('EarningsPage', () => {
     expect(pageSource).toContain('StatusBadgeLink');
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
+
+  it('uses shared money atoms for summary KPI amounts', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain('value: formatMoney(summary.grossAmount, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.platformFee, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.withholdingAmount, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.netAmount, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.pendingNetAmount, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.availableNetAmount, summary.currency)');
+    expect(pageSource).not.toContain('value: formatMoney(summary.paidNetAmount, summary.currency)');
+  });
 });

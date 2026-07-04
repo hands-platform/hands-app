@@ -3,8 +3,8 @@ import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '.
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 import {
@@ -112,37 +112,37 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       metrics={[
         {
           label: 'Gross',
-          value: formatMoney(summary.grossAmount, summary.currency),
+          value: <MoneyText amount={summary.grossAmount} currency={summary.currency} />,
           helper: 'Customer charge represented by earning rows.',
         },
         {
           label: 'Platform fee',
-          value: formatMoney(summary.platformFee, summary.currency),
+          value: <MoneyText amount={summary.platformFee} currency={summary.currency} />,
           helper: 'HANDS fee before tax and closeout review.',
         },
         {
           label: 'Tax withheld',
-          value: formatMoney(summary.withholdingAmount, summary.currency),
+          value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
           helper: 'Tax amount captured from policy snapshots.',
         },
         {
           label: 'Partner net',
-          value: formatMoney(summary.netAmount, summary.currency),
+          value: <MoneyText amount={summary.netAmount} currency={summary.currency} />,
           helper: 'Net Partner earning after fees and tax.',
         },
         {
           label: 'Pending net',
-          value: formatMoney(summary.pendingNetAmount, summary.currency),
+          value: <MoneyText amount={summary.pendingNetAmount} currency={summary.currency} />,
           helper: 'Pending positive payout or cash debt.',
         },
         {
           label: 'Available net',
-          value: formatMoney(summary.availableNetAmount, summary.currency),
+          value: <MoneyText amount={summary.availableNetAmount} currency={summary.currency} />,
           helper: 'Eligible for payout batching.',
         },
         {
           label: 'Paid net',
-          value: formatMoney(summary.paidNetAmount, summary.currency),
+          value: <MoneyText amount={summary.paidNetAmount} currency={summary.currency} />,
           helper: 'Already settled earning total.',
         },
       ]}
