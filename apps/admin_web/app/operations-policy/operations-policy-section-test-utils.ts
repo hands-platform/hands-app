@@ -74,7 +74,6 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminSection',
       'AdminSectionHeader',
       'AdminTaskCard',
-      'PillClassBadge',
       'StatusBadge',
     ].includes(component.name)
   ) {
