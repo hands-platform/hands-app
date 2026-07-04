@@ -17,7 +17,7 @@ import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admi
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminAsideCard, AdminCard, AdminKpiCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   buildCalendarMetrics,
   buildCalendarTagFilters,
@@ -315,7 +315,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
                         )
                       }
                     >
-                      <PillClassBadge pillClass={`pill-${filter.tone}`}>#{filter.tag}</PillClassBadge>
+                      <StatusBadge tone={calendarFilterBadgeTone(filter.tone)}>#{filter.tag}</StatusBadge>
                       <span className="calendar-filter-count">({filter.count})</span>
                     </AdminFormCheckbox>
                   );
@@ -525,4 +525,8 @@ async function calendarEventRequest(path: string, init: RequestInit) {
   }
 
   return (await response.json()) as CalendarEventRecord;
+}
+
+function calendarFilterBadgeTone(tone: CalendarTagTone): StatusBadgeTone {
+  return tone === 'accent' ? 'primary' : tone;
 }

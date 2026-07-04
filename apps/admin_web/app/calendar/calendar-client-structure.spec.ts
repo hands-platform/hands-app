@@ -14,7 +14,9 @@ describe('calendar client structure', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
     expect(clientSource).toContain('AdminFormCheckbox');
-    expect(clientSource).toContain('PillClassBadge');
+    expect(clientSource).toContain('StatusBadge');
+    expect(clientSource).toContain('calendarFilterBadgeTone');
+    expect(clientSource).not.toContain('PillClassBadge');
     expect(clientSource).toContain('buildCalendarTagFilters');
     expect(clientSource).toContain('selectedTags');
     expect(clientSource).toContain('calendar-filter-count');
