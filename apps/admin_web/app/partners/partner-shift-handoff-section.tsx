@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { AdminSignal, PillClassBadge, StatusBadge, type AdminSignalTone } from '../../components/status-badge';
 import type { PartnerCommandLane } from './partner-command-center';
 import {
   partnerShiftCardClass,
@@ -18,7 +18,7 @@ type PartnerShiftHandoffSectionProps = {
 export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSectionProps) {
   return (
     <AdminSection
-      actions={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}
+      actions={<AdminSignal tone={partnerCommandSignalTone(handoff.tone)}>{handoff.label}</AdminSignal>}
       className="admin-mb-16 partner-shift-handoff-card"
       description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
       title="Partner shift handoff"
@@ -85,12 +85,12 @@ function partnerDashboardTone(tone: PartnerCommandLane['tone']) {
   return 'ok';
 }
 
-function partnerCommandToneClass(tone: PartnerCommandLane['tone']) {
+function partnerCommandSignalTone(tone: PartnerCommandLane['tone']): AdminSignalTone {
   if (tone === 'danger' || tone === 'warn') {
-    return 'signal-warn';
+    return 'warn';
   }
   if (tone === 'info') {
-    return 'signal-info';
+    return 'info';
   }
-  return 'signal-ok';
+  return 'ok';
 }
