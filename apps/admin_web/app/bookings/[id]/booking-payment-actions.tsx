@@ -1,5 +1,6 @@
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
-import { AdminBookingDetail } from '../../../lib/admin-api';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
 import { settleBookingCashDebt } from './actions';
 
@@ -37,9 +38,9 @@ export function BookingPaymentAction({
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="paymentId" value={paymentId} />
       <div>
-        <span className={`pill ${readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info')}`}>
+        <PillClassBadge pillClass={readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info')}>
           {readout?.status ?? (disabled ? 'Locked' : 'Available')}
-        </span>
+        </PillClassBadge>
         <strong>{label}</strong>
         <p className="muted">
           {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}
@@ -76,7 +77,7 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
       <input type="hidden" name="earningId" value={earning.id} />
       <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
       <div>
-        <span className="pill pill-danger">Settlement needed</span>
+        <StatusBadge tone="danger">Settlement needed</StatusBadge>
         <strong>Settle cash fee debt</strong>
         <p className="muted">
           Partner cash collection created a negative wallet fee. Confirm deposit or admin offset evidence.
