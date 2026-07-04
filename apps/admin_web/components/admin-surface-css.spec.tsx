@@ -36,6 +36,22 @@ describe('Admin surface CSS', () => {
     expect(stateIconBlock).not.toContain('height: 40px');
     expect(stateIconBlock).not.toContain('width: 40px');
   });
+
+  it('keeps framed empty states on the Vuexy raised surface rhythm', () => {
+    const emptyIndex = globalsCss.indexOf('.empty-state {');
+    const emptyBlock = cssRuleBlockAt(emptyIndex);
+
+    expect(emptyIndex).toBeGreaterThan(-1);
+    expect(emptyBlock).toContain('background: var(--admin-surface-raised)');
+    expect(emptyBlock).toContain('border: 1px solid var(--admin-border)');
+    expect(emptyBlock).toContain('box-shadow: var(--admin-shadow-xs)');
+    expect(emptyBlock).toContain('display: grid');
+    expect(emptyBlock).toContain('gap: 4px');
+    expect(emptyBlock).toContain('padding: 16px');
+    expect(emptyBlock).not.toContain('background: var(--admin-primary-soft)');
+    expect(emptyBlock).not.toContain('border: 1px dashed');
+    expect(emptyBlock).not.toContain('min-height: 92px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
