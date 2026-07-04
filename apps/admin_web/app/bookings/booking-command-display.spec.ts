@@ -1,6 +1,7 @@
 import {
   actionOrderLabel,
   bookingDashboardTone,
+  commandSignalTone,
   commandToneClass,
   commandToneLabel,
   commandToneWeight,
@@ -13,6 +14,11 @@ describe('booking command display helpers', () => {
     expect(commandToneClass('warn')).toBe('signal-warn');
     expect(commandToneClass('info')).toBe('signal-info');
     expect(commandToneClass('ok')).toBe('signal-ok');
+
+    expect(commandSignalTone('danger')).toBe('warn');
+    expect(commandSignalTone('warn')).toBe('warn');
+    expect(commandSignalTone('info')).toBe('info');
+    expect(commandSignalTone('ok')).toBe('ok');
 
     expect(stagePillClass('danger')).toBe('pill-danger');
     expect(stagePillClass('warn')).toBe('pill-warn');

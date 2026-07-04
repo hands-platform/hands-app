@@ -7,10 +7,10 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { AdminSignal, PillClassBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
-import { commandToneClass } from './booking-command-display';
+import { commandSignalTone } from './booking-command-display';
 import {
   bookingGateCount,
   bookingGateFilterOptions,
@@ -104,7 +104,7 @@ export function BookingMonitorBlockedCreateSection({
                 <strong>{item.label}</strong>
               </td>
               <td>
-                <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
+                <AdminSignal tone={commandSignalTone(item.tone)}>{item.status}</AdminSignal>
               </td>
               <td>
                 <PillClassBadge pillClass="pill-neutral">{item.count} attempt(s)</PillClassBadge>
@@ -169,9 +169,9 @@ export function BookingMonitorBlockedCreateSection({
                       <div className="muted">Created {formatDate(log.createdAt)}</div>
                     </td>
                     <td>
-                      <span className={`signal ${commandToneClass(evidence.tone)}`}>
+                      <AdminSignal tone={commandSignalTone(evidence.tone)}>
                         {evidence.reasonLabel}
-                      </span>
+                      </AdminSignal>
                       <div className="muted">{evidence.operatorAction}</div>
                     </td>
                     <td>

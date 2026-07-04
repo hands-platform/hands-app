@@ -27,6 +27,16 @@ export function commandToneClass(tone: BookingCommandTone) {
   return 'signal-ok';
 }
 
+export function commandSignalTone(tone: BookingCommandTone) {
+  if (tone === 'danger' || tone === 'warn') {
+    return 'warn';
+  }
+  if (tone === 'info') {
+    return 'info';
+  }
+  return 'ok';
+}
+
 export function bookingDashboardTone(tone: BookingCommandTone) {
   if (tone === 'danger') {
     return 'danger';
