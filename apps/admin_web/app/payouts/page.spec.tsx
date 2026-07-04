@@ -178,4 +178,11 @@ describe('PayoutsPage', () => {
 
     expect(source).not.toContain('detail: formatMoney(');
   });
+
+  it('uses shared money atoms for payout money flow check amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).not.toContain('Batch net versus service evidence gap: ${formatMoney');
+    expect(source).not.toContain('${formatMoney(cashDebtEvidence, currency)} negative wallet amount');
+  });
 });

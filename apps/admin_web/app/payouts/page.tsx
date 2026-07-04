@@ -702,7 +702,11 @@ function buildPayoutMoneyFlowChecks(
     {
       title: 'Batch net reconciliation',
       status: netGap > 0 ? 'CHECK' : 'MATCHED',
-      detail: `Batch net versus service evidence gap: ${formatMoney(netGap, currency)}.`,
+      detail: (
+        <>
+          Batch net versus service evidence gap: <MoneyText amount={netGap} currency={currency} />.
+        </>
+      ),
       action:
         netGap > 0
           ? 'Review batch composition before marking bank transfer complete.'
@@ -726,7 +730,12 @@ function buildPayoutMoneyFlowChecks(
       title: 'Cash debt exclusion',
       status: cashDebtEvidence > 0 ? 'CHECK' : 'CLEAR',
       detail: cashDebtEvidence
-        ? `${formatMoney(cashDebtEvidence, currency)} negative wallet amount appears in payout evidence.`
+        ? (
+            <>
+              <MoneyText amount={cashDebtEvidence} currency={currency} /> negative wallet amount appears in payout
+              evidence.
+            </>
+          )
         : 'No negative wallet amount is represented in payout evidence.',
       action: cashDebtEvidence
         ? 'Remove or settle cash debt before transfer.'

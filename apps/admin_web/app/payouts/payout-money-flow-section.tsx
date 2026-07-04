@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
@@ -15,7 +16,7 @@ export type PayoutMoneyFlowCard = {
 export type PayoutMoneyFlowCheck = {
   readonly action: string;
   readonly className: string;
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly pillClass: string;
   readonly status: string;
   readonly title: string;

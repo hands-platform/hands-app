@@ -86,6 +86,13 @@ describe('PayoutMoneyFlowSection', () => {
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('<strong>{formatMoney(card.amount, currency)}</strong>');
   });
+
+  it('allows money flow check details to render shared money atoms', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-money-flow-section.tsx'), 'utf8');
+
+    expect(source).toContain('ReactNode');
+    expect(source).toContain('readonly detail: ReactNode');
+  });
 });
 
 function textContent(value: unknown): string {
