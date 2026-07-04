@@ -118,6 +118,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           { href: '/finance-closeout?range=30d', label: 'Last 30 days', range: '30d' },
         ].map((option) => (
           <PillClassBadgeLink
+            ariaCurrent={option.range === filters.range ? 'page' : undefined}
             href={option.href}
             key={option.range}
             pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}

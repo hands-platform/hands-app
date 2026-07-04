@@ -15,6 +15,7 @@ describe('CashSettlementFilterSection', () => {
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('pill pill-info');
     expect(markup).toContain('pill pill-neutral');
+    expect(markup).toContain('aria-current="page"');
     expect(markup).not.toContain('<input aria-label="Search cash settlement queue"');
     expect(markup).not.toContain('filter-pill');
   });

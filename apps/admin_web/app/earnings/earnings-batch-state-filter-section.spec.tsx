@@ -48,6 +48,7 @@ describe('EarningsBatchStateFilterSection', () => {
         'pill pill-neutral',
       ]),
     );
+    expect(ariaCurrentValuesIn(section)).toContain('page');
   });
 });
 
@@ -96,6 +97,21 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function ariaCurrentValuesIn(value: unknown): unknown[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(ariaCurrentValuesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const ariaCurrent = props?.['aria-current'] ? [props['aria-current']] : [];
+  return [...ariaCurrent, ...ariaCurrentValuesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

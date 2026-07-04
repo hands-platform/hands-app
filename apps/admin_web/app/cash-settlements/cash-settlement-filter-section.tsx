@@ -53,6 +53,7 @@ export function CashSettlementFilterSection({
           { label: 'Last 30 days', range: '30d' },
         ] as const).map((option) => (
           <PillClassBadgeLink
+            ariaCurrent={option.range === filters.range ? 'page' : undefined}
             href={cashSettlementHref({
               range: option.range,
               pageSize: filters.pageSize,
@@ -97,6 +98,7 @@ export function CashSettlementFilterSection({
       <div className="filter-row admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
           <PillClassBadgeLink
+            ariaCurrent={option.value === filters.queue ? 'page' : undefined}
             href={cashSettlementHref({ range: filters.range, pageSize: filters.pageSize, queue: option.value, q: filters.q })}
             key={option.value}
             pillClass={option.value === filters.queue ? 'pill-info' : 'pill-neutral'}

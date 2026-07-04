@@ -34,6 +34,7 @@ export function EarningsBatchStateFilterSection({
       <div className="filter-row admin-mt-12">
         {cards.map((card) => (
           <PillClassBadgeLink
+            ariaCurrent={card.state === activeState ? 'page' : undefined}
             href={card.href}
             key={card.state}
             pillClass={activeBatchStateFilterClassName(card.state, activeState)}
