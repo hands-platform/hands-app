@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -36,9 +36,9 @@ export function PartnerFilesCell({
           <div key={file.id} className="provider-file-row">
             <div className="participant-list admin-mb-6">
               <StatusBadge tone="info">{file.purpose ?? 'Partner verification'}</StatusBadge>
-              <PillClassBadge pillClass={file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'}>
+              <StatusBadge tone={file.uploadStatus === 'UPLOADED' ? 'success' : 'warning'}>
                 {file.uploadStatus ?? 'PENDING'}
-              </PillClassBadge>
+              </StatusBadge>
             </div>
             <p className="muted">
               {file.contentType}
@@ -85,9 +85,9 @@ function PartnerPublicMediaQueue({
         <div key={file.id} className="provider-file-row">
           <div className="participant-list admin-mb-6">
             <StatusBadge tone="info">{file.purpose}</StatusBadge>
-            <PillClassBadge pillClass={publicMediaReviewPillClass(file.reviewStatus)}>
+            <StatusBadge tone={statusBadgeToneFromPillClass(publicMediaReviewPillClass(file.reviewStatus))}>
               {file.reviewStatus ?? 'PENDING_REVIEW'}
-            </PillClassBadge>
+            </StatusBadge>
           </div>
           <p className="muted admin-mb-6">
             {file.contentType}
