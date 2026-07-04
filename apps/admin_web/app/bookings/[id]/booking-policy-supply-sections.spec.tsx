@@ -22,6 +22,14 @@ describe('booking policy supply sections', () => {
     expect(source).not.toContain('<strong>No usable marketplace participant</strong>');
   });
 
+  it('uses shared Vuexy task cards for policy decision and supply cards', () => {
+    const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('className={`ops-task-card ${decision.className}`');
+    expect(source).not.toContain('className={`ops-task-card ${card.className}`');
+  });
+
   it('uses shared Vuexy badge atoms instead of raw policy supply pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 

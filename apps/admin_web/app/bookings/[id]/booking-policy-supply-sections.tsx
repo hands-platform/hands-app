@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -216,12 +216,15 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
       </div>
       <div className="ops-task-grid admin-mt-14">
         {policySnapshot.decisionCards.map((decision) => (
-          <div className={`ops-task-card ${decision.className}`} key={decision.key}>
-            <PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>
-            <h3>{decision.label}</h3>
-            <p>{decision.value}</p>
+          <AdminTaskCard
+            className={decision.className}
+            detail={decision.value}
+            key={decision.key}
+            leading={<PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>}
+            title={decision.label}
+          >
             <small title={decision.helper}>{compactPolicyDecisionHelper(decision.helper)}</small>
-          </div>
+          </AdminTaskCard>
         ))}
       </div>
     </AdminSection>
@@ -487,12 +490,15 @@ function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
   return (
     <div className="ops-task-grid admin-mt-14">
       {cards.map((card) => (
-        <div className={`ops-task-card ${card.className}`} key={card.title}>
-          <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
-          <h3>{card.title}</h3>
-          <p>{card.detail}</p>
+        <AdminTaskCard
+          className={card.className}
+          detail={card.detail}
+          key={card.title}
+          leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+          title={card.title}
+        >
           <small>{card.action}</small>
-        </div>
+        </AdminTaskCard>
       ))}
     </div>
   );
