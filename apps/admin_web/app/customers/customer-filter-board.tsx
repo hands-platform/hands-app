@@ -7,7 +7,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import { buildCustomerListHref, type CustomerFilters } from './customer-filters';
 
 type CustomerFilterBoardProps = {
@@ -36,9 +36,9 @@ export function CustomerFilterBoard({
           {activeFilters.length > 0 ? (
             <>
               {activeFilters.map((filter) => (
-                <PillClassBadge pillClass="pill-warn" key={filter}>
+                <StatusBadge key={filter} tone="warning">
                   {filter}
-                </PillClassBadge>
+                </StatusBadge>
               ))}
             </>
           ) : (
