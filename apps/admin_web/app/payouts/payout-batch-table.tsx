@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
-import { PillClassBadge } from '../../components/status-badge';
+import { PillClassBadge, StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -102,7 +102,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.partnerPhone}</div>
             {row.payoutHold ? (
               <div className="admin-mt-6">
-                <span className="pill pill-danger">Payout hold</span>
+                <StatusBadge tone="danger">Payout hold</StatusBadge>
               </div>
             ) : null}
           </td>
@@ -125,7 +125,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                   </PillClassBadge>
                 ))
               ) : (
-                <span className="pill pill-success">Clear</span>
+                <StatusBadge tone="success">Clear</StatusBadge>
               )}
             </div>
             <div className="muted admin-mt-6">
@@ -141,18 +141,18 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.earningsHint}</div>
             <div className="participant-list admin-mt-8">
               {row.serviceEvidencePills.map((item) => (
-                <span className="pill pill-info" key={`${row.id}-${item.key}`}>
+                <StatusBadge key={`${row.id}-${item.key}`} tone="info">
                   {item.label}: {item.value}
-                </span>
+                </StatusBadge>
               ))}
             </div>
           </td>
           <td>
             <div className="participant-list">
               {row.checklist.map((item) => (
-                <span className={item.ok ? 'pill pill-success' : 'pill pill-warn'} key={item.label} title={item.detail}>
+                <StatusBadge key={item.label} title={item.detail} tone={item.ok ? 'success' : 'warning'}>
                   {item.label}
-                </span>
+                </StatusBadge>
               ))}
             </div>
             <div className="muted admin-mt-6">
@@ -200,12 +200,12 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="actions admin-mt-8">
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
               {row.payoutHold ? (
-                <a className="pill pill-danger" href={row.partnerChecksHref}>
+                <StatusBadgeLink href={row.partnerChecksHref} tone="danger">
                   Open partner checks
-                </a>
+                </StatusBadgeLink>
               ) : null}
               {row.paidBlockedByReleaseCheck ? (
-                <span className="pill pill-warn">Resolve blockers before paid</span>
+                <StatusBadge tone="warning">Resolve blockers before paid</StatusBadge>
               ) : null}
               {row.statusLabel === 'Paid' || row.statusLabel === 'Cancelled' ? (
                 <span className="muted">No status action</span>

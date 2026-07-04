@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 
 describe('PayoutBatchTable', () => {
@@ -197,6 +200,19 @@ describe('PayoutBatchTable', () => {
     expect(classNames).toContain('pill pill-danger');
     expect(classNames).not.toContain('pill pill pill-warn');
     expect(classNames).not.toContain('pill pill pill-danger');
+  });
+
+  it('uses shared badge atoms for fixed payout table badges and links', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<span className="pill pill-danger">Payout hold</span>');
+    expect(source).not.toContain('<span className="pill pill-success">Clear</span>');
+    expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${item.key}`}>');
+    expect(source).not.toContain("<span className={item.ok ? 'pill pill-success' : 'pill pill-warn'}");
+    expect(source).not.toContain('<a className="pill pill-danger" href={row.partnerChecksHref}>');
+    expect(source).not.toContain('<span className="pill pill-warn">Resolve blockers before paid</span>');
   });
 });
 
