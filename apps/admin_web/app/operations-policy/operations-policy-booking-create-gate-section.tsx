@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
@@ -86,16 +87,17 @@ export function OperationsPolicyBookingCreateGateSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="ops-section-header admin-mt-18">
-        <div>
-          <h3>Recent blocked create attempts</h3>
-          <p className="muted">Shows factual support evidence for failed booking creation and troubleshooting.</p>
-        </div>
-        <AdminFormControlLink className="button-secondary" href="/bookings?view=blocked-create">
-          <ExternalLink size={16} aria-hidden="true" />
-          Open blocked-create queue
-        </AdminFormControlLink>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=blocked-create">
+            <ExternalLink size={16} aria-hidden="true" />
+            Open blocked-create queue
+          </AdminFormControlLink>
+        )}
+        className="admin-mt-18"
+        description="Shows factual support evidence for failed booking creation and troubleshooting."
+        title="Recent blocked create attempts"
+      />
       {review.recentAttempts.length === 0 ? (
         <AdminEmptyState
           className="admin-mt-12"

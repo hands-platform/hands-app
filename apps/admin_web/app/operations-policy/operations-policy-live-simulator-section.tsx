@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -78,16 +79,11 @@ export function OperationsPolicyLiveSimulatorSection({
           </div>
         </div>
         <div className="ops-task-note">
-          <div className="ops-section-header">
-            <div>
-              <h3>Eligible Partner preview</h3>
-              <p className="muted">
-                Top nearby online Partners inside the current marketplace radius. Stale locations are
-                excluded from the dispatch count.
-              </p>
-            </div>
-            <StatusBadge tone="info">{simulation.partnerRows.length} shown</StatusBadge>
-          </div>
+          <AdminSectionHeader
+            actions={<StatusBadge tone="info">{simulation.partnerRows.length} shown</StatusBadge>}
+            description="Top nearby online Partners inside the current marketplace radius. Stale locations are excluded from the dispatch count."
+            title="Eligible Partner preview"
+          />
           <div className="stack admin-mt-10">
             {simulation.partnerRows.map((partner) => (
               <div className="ops-row" key={partner.id}>

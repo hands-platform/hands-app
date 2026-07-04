@@ -72,6 +72,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminFormControlLink',
       'AdminLinkCard',
       'AdminSection',
+      'AdminSectionHeader',
       'AdminTaskCard',
       'PillClassBadge',
       'StatusBadge',

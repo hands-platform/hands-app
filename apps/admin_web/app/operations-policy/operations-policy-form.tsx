@@ -7,6 +7,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard, AdminLinkCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
@@ -38,15 +39,15 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
     >
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="valueType" value={valueType} />
-      <div className="ops-section-header">
-        <div>
-          <h3>{displayOperationalWording(setting.label)}</h3>
-          <p className="muted">{displayOperationalWording(setting.description)}</p>
-        </div>
-        <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
-          {setting.enforced ? 'Enforced' : 'Planning'}
-        </StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
+            {setting.enforced ? 'Enforced' : 'Planning'}
+          </StatusBadge>
+        )}
+        description={displayOperationalWording(setting.description)}
+        title={displayOperationalWording(setting.label)}
+      />
       <div className="service-trace-summary">
         <div>
           <span>Current</span>

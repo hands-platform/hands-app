@@ -9,6 +9,11 @@ const sectionSource = readFileSync(
 );
 
 describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
+  it('uses the shared Vuexy section header atom for decision pressure', () => {
+    expect(sectionSource).toContain('AdminSectionHeader');
+    expect(sectionSource).not.toContain('<div className="ops-section-header">');
+  });
+
   it('renders owner pressure, backlog choices, and review links', () => {
     const section = OperationsPolicyOwnerDecisionBacklogSection({
       pressure: {

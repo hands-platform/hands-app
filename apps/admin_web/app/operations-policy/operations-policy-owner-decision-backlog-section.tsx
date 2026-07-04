@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -24,18 +25,15 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
       title="Owner decision backlog"
     >
       <div className="ops-task-note admin-mt-14">
-        <div className="ops-section-header">
-          <div>
-            <h3>Current decision pressure</h3>
-            <p className="muted">
-              Data-driven records that tell the owner which policy choice deserves attention first. This
-              keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence.
-            </p>
-          </div>
-          <PillClassBadge pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
-            {pressure.alertCount} active record(s)
-          </PillClassBadge>
-        </div>
+        <AdminSectionHeader
+          actions={(
+            <PillClassBadge pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
+              {pressure.alertCount} active record(s)
+            </PillClassBadge>
+          )}
+          description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."
+          title="Current decision pressure"
+        />
         <div className="service-trace-summary admin-mt-12">
           {pressure.summary.map((item) => (
             <div key={item.label}>

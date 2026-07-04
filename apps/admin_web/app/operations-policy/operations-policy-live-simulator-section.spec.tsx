@@ -7,7 +7,9 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
   it('uses shared Vuexy badge atoms for visible partner count labels', () => {
     const source = readFileSync('app/operations-policy/operations-policy-live-simulator-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<span className="pill pill-info">{simulation.partnerRows.length} shown</span>');
   });
 

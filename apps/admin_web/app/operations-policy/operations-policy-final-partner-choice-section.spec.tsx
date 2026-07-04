@@ -10,7 +10,9 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 

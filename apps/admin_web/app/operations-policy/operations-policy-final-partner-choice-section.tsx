@@ -1,5 +1,6 @@
 import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
@@ -53,20 +54,17 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           />
         ))}
       </div>
-      <div className="ops-section-header admin-mt-18">
-        <div>
-          <h3>Current partner acceptance impact</h3>
-          <p className="muted">
-            Applies the policy posture to the current Partner snapshot so operators can see who can pass
-            marketplace and payout gates, who needs account or identity follow-up, and who only needs
-            readiness follow-up.
-          </p>
-        </div>
-        <AdminFormControlLink className="button-secondary" href="/partners">
-          <Users size={16} aria-hidden="true" />
-          Open Partner queue
-        </AdminFormControlLink>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <AdminFormControlLink className="button-secondary" href="/partners">
+            <Users size={16} aria-hidden="true" />
+            Open Partner queue
+          </AdminFormControlLink>
+        )}
+        className="admin-mt-18"
+        description="Applies the policy posture to the current Partner snapshot so operators can see who can pass marketplace and payout gates, who needs account or identity follow-up, and who only needs readiness follow-up."
+        title="Current partner acceptance impact"
+      />
       <div className="service-trace-summary admin-mt-12">
         {matrix.impact.map((item) => (
           <div key={item.label}>
