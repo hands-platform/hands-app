@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 
@@ -33,20 +34,20 @@ export function PartnerDetailOpsCommandCenterSection({
 }: PartnerDetailOpsCommandCenterSectionProps) {
   return (
     <AdminCard className="admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner ops command center</h2>
-          <p className="muted">
-            One-page operating view for dispatch, payout, reports, and the next admin action.
-          </p>
-        </div>
-        <StatusBadge tone={summary.ready ? 'success' : 'warning'}>
-          {summary.ready ? 'Operational' : 'Needs operator attention'}
-        </StatusBadge>
-        <Link className="text-link" href="/operations-policy">
-          Location freshness: {locationFreshnessMinutes}m
-        </Link>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <>
+            <StatusBadge tone={summary.ready ? 'success' : 'warning'}>
+              {summary.ready ? 'Operational' : 'Needs operator attention'}
+            </StatusBadge>
+            <Link className="text-link" href="/operations-policy">
+              Location freshness: {locationFreshnessMinutes}m
+            </Link>
+          </>
+        )}
+        description="One-page operating view for dispatch, payout, reports, and the next admin action."
+        title="Partner ops command center"
+      />
       <div className="ops-task-grid">
         {summary.cards.map((card) => (
           <AdminTaskCard

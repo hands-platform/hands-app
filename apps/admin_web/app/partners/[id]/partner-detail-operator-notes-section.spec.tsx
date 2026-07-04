@@ -7,7 +7,9 @@ describe('PartnerDetailOperatorNotesSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-notes-section.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<div className="card ops-note-panel admin-mb-16"');
     expect(source).not.toContain('<span className="pill pill-info">{totalCount} note(s)</span>');
   });

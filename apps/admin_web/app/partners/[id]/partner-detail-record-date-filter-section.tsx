@@ -6,6 +6,7 @@ import {
   AdminFormDate,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
@@ -47,20 +48,17 @@ export function PartnerDetailRecordDateFilterSection({
 
   return (
     <AdminCard className="admin-mb-16" id="record-date-filter">
-      <div className="ops-section-header">
-        <div>
-          <h2>Record date filter</h2>
-          <p className="muted">
-            Narrow booking, chat, app, location, payout, and verification records without changing partner
-            data.
-          </p>
-        </div>
-        <div className="participant-list">
-          <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
-          <StatusBadge tone="neutral">{activityTypeLabel}</StatusBadge>
-          <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
-        </div>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <div className="participant-list">
+            <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
+            <StatusBadge tone="neutral">{activityTypeLabel}</StatusBadge>
+            <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
+          </div>
+        )}
+        description="Narrow booking, chat, app, location, payout, and verification records without changing partner data."
+        title="Record date filter"
+      />
       <form className="form-grid admin-mt-14" action={`/partners/${partnerId}`}>
         <AdminFormSelect
           className="partner-detail-filter-select"

@@ -6,6 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { addProviderOpsNote } from '../actions';
@@ -49,16 +50,11 @@ export function PartnerDetailOperatorNotesSection({
 }: PartnerDetailOperatorNotesSectionProps) {
   return (
     <AdminCard className="ops-note-panel admin-mb-16" id="partner-operator-notes">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner operator notes</h2>
-          <p className="muted">
-            Manual handoff notes for partner operations. Use this for factual contact, onboarding,
-            settlement, service setup, and dispatch context that should appear in the audit log.
-          </p>
-        </div>
-        <StatusBadge tone="info">{totalCount} note(s)</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={<StatusBadge tone="info">{totalCount} note(s)</StatusBadge>}
+        description="Manual handoff notes for partner operations. Use this for factual contact, onboarding, settlement, service setup, and dispatch context that should appear in the audit log."
+        title="Partner operator notes"
+      />
       <div className="ops-note-history">
         {notes.length ? (
           notes.map((note) => (

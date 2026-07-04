@@ -13,6 +13,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import {
   createProviderReport,
@@ -134,17 +135,15 @@ export function PartnerDetailReportsControlsSection({
         </div>
       </form>
       <AdminTaskCard className="ops-task-pending admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h3>Manual account control</h3>
-            <p className="muted">
-              Use this for immediate operating controls when a report is not yet required.
-            </p>
-          </div>
-          <StatusBadge tone={payoutHold ? 'danger' : 'success'}>
-            {payoutHold ? 'Payout locked' : 'No payout hold'}
-          </StatusBadge>
-        </div>
+        <AdminSectionHeader
+          actions={(
+            <StatusBadge tone={payoutHold ? 'danger' : 'success'}>
+              {payoutHold ? 'Payout locked' : 'No payout hold'}
+            </StatusBadge>
+          )}
+          description="Use this for immediate operating controls when a report is not yet required."
+          title="Manual account control"
+        />
         <div className="admin-mb-12">
           <AdminTableScroll>
             <AdminDataTable
