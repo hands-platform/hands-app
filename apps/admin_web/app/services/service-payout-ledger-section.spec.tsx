@@ -8,8 +8,9 @@ describe('ServicePayoutLedgerSection', () => {
   it('uses shared Vuexy badge atoms for ledger status labels', () => {
     const source = readFileSync('app/services/service-payout-ledger-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.commissionTone}`}>');
     expect(source).not.toContain("<span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>");
     expect(source).not.toContain('<span className={`pill ${row.actionTone}`}>{row.action}</span>');
