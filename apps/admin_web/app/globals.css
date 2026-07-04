@@ -2553,7 +2553,6 @@ a.action-button-card:hover {
   margin: 0;
 }
 
-.field,
 .filter-grid label,
 .form-grid label,
 .ops-filter-grid label {
@@ -10720,27 +10719,6 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.operations-policy-page .field select,
-.operations-policy-page .field input,
-.operations-policy-page .field textarea {
-  background: var(--admin-surface);
-  border-color: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: var(--admin-shadow-xs);
-  color: var(--admin-text);
-  max-width: 100%;
-  min-width: 0;
-}
-
-.operations-policy-page .field select:focus,
-.operations-policy-page .field input:focus,
-.operations-policy-page .field textarea:focus {
-  border-color: rgb(var(--admin-primary-channel) / 0.56);
-  box-shadow:
-    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
-    var(--admin-shadow-xs);
-  outline: none;
-}
-
 .dashboard-page {
   display: grid;
   gap: 20px;
@@ -14122,9 +14100,6 @@ textarea {
   width: 100%;
 }
 
-.field input,
-.field select,
-.field textarea,
 .filter-grid input,
 .filter-grid select,
 .filter-grid textarea,
@@ -16861,7 +16836,6 @@ textarea:focus-visible {
 }
 
 .calendar-drawer-field > span:first-child,
-.field > span:first-child,
 .filter-grid label > span:first-child,
 .form-grid label > span:first-child,
 .ops-filter-grid label > span:first-child,
@@ -17406,13 +17380,6 @@ textarea:focus-visible {
   ):not([type='color']),
 .audit-log-page .form-grid select,
 .audit-log-page .form-grid textarea,
-.operations-policy-page
-  .field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.operations-policy-page .field select,
-.operations-policy-page .field textarea,
 .operations-handoff-page
   .ops-note-form
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17479,12 +17446,6 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']),
 .audit-log-page .form-grid select,
-.operations-policy-page
-  .field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']),
-.operations-policy-page .field select,
 .operations-handoff-page
   .ops-note-form
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17520,7 +17481,6 @@ textarea:focus-visible {
 .chat-archive-page .form-grid textarea,
 .partners-page .partner-filter-card .form-grid textarea,
 .audit-log-page .form-grid textarea,
-.operations-policy-page .field textarea,
 .operations-handoff-page .ops-note-form textarea,
 .marketing-spend-form textarea,
 .marketing-analytics-campaign-form textarea,
@@ -17535,14 +17495,7 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']):hover:not(:disabled):not([readonly]),
 .calendar-drawer-field select:hover:not(:disabled),
-.calendar-drawer-field textarea:hover:not(:disabled):not([readonly]),
-.operations-policy-page
-  .field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']):hover:not(:disabled):not([readonly]),
-.operations-policy-page .field select:hover:not(:disabled),
-.operations-policy-page .field textarea:hover:not(:disabled):not([readonly]) {
+.calendar-drawer-field textarea:hover:not(:disabled):not([readonly]) {
   border-color: var(--admin-input-hover-border);
 }
 
@@ -17551,14 +17504,7 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']):focus,
 .calendar-drawer-field select:focus,
-.calendar-drawer-field textarea:focus,
-.operations-policy-page
-  .field
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
-    [type='hidden']
-  ):not([type='color']):focus,
-.operations-policy-page .field select:focus,
-.operations-policy-page .field textarea:focus {
+.calendar-drawer-field textarea:focus {
   border-color: var(--admin-accent);
   border-width: 2px;
   box-shadow: var(--admin-primary-shadow-sm);
