@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type {
   ServicePricePolicyPreviewRow,
@@ -98,7 +99,7 @@ export function ServicePricePolicyPreviewSection({
                       </small>
                     </div>
                   ) : (
-                    <span className="pill pill-danger">Missing base payout</span>
+                    <StatusBadge tone="danger">Missing base payout</StatusBadge>
                   )}
                 </td>
                 <td>
@@ -111,7 +112,7 @@ export function ServicePricePolicyPreviewSection({
                   <ScenarioPreviewCell scenario={row.balancedStepScenario} />
                 </td>
                 <td>
-                  <span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>
+                  <PillClassBadge pillClass={row.checkTone}>{row.checkLabel}</PillClassBadge>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>
@@ -133,12 +134,12 @@ export function ServicePricePolicyPreviewSection({
 
 function ScenarioPreviewCell({ scenario }: { readonly scenario: ServicePricePolicyScenario | null }) {
   if (!scenario) {
-    return <span className="pill pill-danger">No base rule</span>;
+    return <StatusBadge tone="danger">No base rule</StatusBadge>;
   }
 
   return (
     <div className="service-matrix-cell">
-      <span className={`pill ${scenario.tone}`}>{scenario.status}</span>
+      <PillClassBadge pillClass={scenario.tone}>{scenario.status}</PillClassBadge>
       <strong>{formatMoney(scenario.customerPrice, scenario.currency)}</strong>
       <small>Partner {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
       <small>Commission {formatMoney(scenario.finance.actualCompanyCommission, scenario.currency)}</small>

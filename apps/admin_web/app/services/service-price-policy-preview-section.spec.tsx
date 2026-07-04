@@ -1,8 +1,21 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminServiceCatalogItem, AdminServicePayoutRule } from '../../lib/admin-api';
 import type { ServicePricePolicyPreviewRow } from '../../lib/service-price-policy-preview-rows';
 import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
 
 describe('ServicePricePolicyPreviewSection', () => {
+  it('uses shared Vuexy badge atoms for price policy status labels', () => {
+    const source = readFileSync('app/services/service-price-policy-preview-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-danger">Missing base payout</span>');
+    expect(source).not.toContain('<span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>');
+    expect(source).not.toContain('return <span className="pill pill-danger">No base rule</span>;');
+    expect(source).not.toContain('<span className={`pill ${scenario.tone}`}>{scenario.status}</span>');
+  });
+
   it('renders policy summary, visible preview rows, and hidden row copy', () => {
     const section = ServicePricePolicyPreviewSection({
       hiddenRowCount: 2,
