@@ -36,12 +36,14 @@ describe('AdminPageTemplate', () => {
       description: 'Reusable section title for command boards and tables.',
       status: <span className="pill pill-success">Ready</span>,
       title: 'Command board',
+      titleId: 'command-board-title',
     });
 
     expect(header.type).toBe('div');
     expect(header.props).toMatchObject({
       className: 'ops-section-header admin-section-header admin-mt-16',
     });
+    expect(header.props.children[0].props.children[0].props.id).toBe('command-board-title');
     expect(header.props.children).toHaveLength(2);
   });
 });

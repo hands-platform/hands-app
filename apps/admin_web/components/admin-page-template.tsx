@@ -28,6 +28,7 @@ type AdminSectionHeaderProps = {
   readonly description?: ReactNode;
   readonly status?: ReactNode;
   readonly title: string;
+  readonly titleId?: string;
 };
 
 export function AdminPageTemplate({
@@ -69,11 +70,18 @@ export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
   );
 }
 
-export function AdminSectionHeader({ actions, className, description, status, title }: AdminSectionHeaderProps) {
+export function AdminSectionHeader({
+  actions,
+  className,
+  description,
+  status,
+  title,
+  titleId,
+}: AdminSectionHeaderProps) {
   return (
     <div className={joinClassNames('ops-section-header admin-section-header', className)}>
       <div>
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         {description ? <p className="muted">{description}</p> : null}
       </div>
       {actions || status ? (

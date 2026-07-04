@@ -3,6 +3,7 @@ import { Eye, Star } from 'lucide-react';
 
 import { AdminDataTable, AdminTableFooter, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
+import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminRoundedPagination } from './admin-rounded-pagination';
 import { StatusBadge } from './status-badge';
@@ -77,13 +78,13 @@ export function AdminReviewRecordsSection({
     >
       <div className="admin-review-records-grid">
         <section aria-labelledby={`${id}-customer-reviews-title`} className="admin-review-records-block">
-          <div className="ops-section-header admin-review-records-heading">
-            <div>
-              <h3 id={`${id}-customer-reviews-title`}>Customer reviews</h3>
-              <p className="muted">Customer-facing review content. Moderation stays on the Reviews page.</p>
-            </div>
-            <StatusBadge tone="neutral">{customerRows.length} review(s)</StatusBadge>
-          </div>
+          <AdminSectionHeader
+            className="admin-review-records-heading"
+            description="Customer-facing review content. Moderation stays on the Reviews page."
+            status={<StatusBadge tone="neutral">{customerRows.length} review(s)</StatusBadge>}
+            title="Customer reviews"
+            titleId={`${id}-customer-reviews-title`}
+          />
           <AdminTableScroll>
             <AdminDataTable
               className="vuexy-booking-table vuexy-review-table"
@@ -129,13 +130,13 @@ export function AdminReviewRecordsSection({
         </section>
 
         <section aria-labelledby={`${id}-partner-evaluations-title`} className="admin-review-records-block">
-          <div className="ops-section-header admin-review-records-heading">
-            <div>
-              <h3 id={`${id}-partner-evaluations-title`}>Partner evaluations</h3>
-              <p className="muted">Read-only internal records. These do not publish to the customer app.</p>
-            </div>
-            <StatusBadge tone="neutral">{partnerRows.length} evaluation(s)</StatusBadge>
-          </div>
+          <AdminSectionHeader
+            className="admin-review-records-heading"
+            description="Read-only internal records. These do not publish to the customer app."
+            status={<StatusBadge tone="neutral">{partnerRows.length} evaluation(s)</StatusBadge>}
+            title="Partner evaluations"
+            titleId={`${id}-partner-evaluations-title`}
+          />
           <AdminTableScroll>
             <AdminDataTable
               className="vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table"
