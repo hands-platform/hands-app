@@ -40,6 +40,40 @@ describe('Admin form control CSS', () => {
     expect(inlineNavigationBlock).toContain('top: 12px');
     expect(inlineNavigationBlock).not.toContain('top: 8px');
   });
+
+  it('matches Vuexy text field focus weight on shared form controls', () => {
+    const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('border-width: 2px');
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+  });
+
+  it('keeps Vuexy focused input padding compensation so controls do not resize', () => {
+    const compactFocusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
+    const compactFocusBlock = cssRuleBlockAt(compactFocusIndex);
+    const labeledFocusIndex = globalsCss.indexOf('.admin-form-input.admin-form-control-labeled:focus-within,');
+    const labeledFocusBlock = cssRuleBlockAt(labeledFocusIndex);
+    const dateFocusIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled:focus-within,');
+    const dateFocusBlock = cssRuleBlockAt(dateFocusIndex);
+
+    expect(compactFocusBlock).toContain('padding-inline: 13px');
+    expect(labeledFocusBlock).toContain('padding: 7px 11px');
+    expect(dateFocusBlock).toContain('padding: 7px 41px 7px 11px');
+  });
+
+  it('animates placeholders like Vuexy CustomTextField on shared inputs', () => {
+    const placeholderIndex = globalsCss.indexOf('.admin-form-input input::placeholder,');
+    const placeholderBlock = cssRuleBlockAt(placeholderIndex);
+    const focusedPlaceholderIndex = globalsCss.indexOf('.admin-form-input:focus-within input::placeholder,');
+    const focusedPlaceholderBlock = cssRuleBlockAt(focusedPlaceholderIndex);
+
+    expect(placeholderBlock).toContain('transition:');
+    expect(placeholderBlock).toContain('transform var(--admin-transition)');
+    expect(focusedPlaceholderBlock).toContain('transform: translateX(4px)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

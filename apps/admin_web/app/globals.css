@@ -14872,6 +14872,17 @@ textarea:focus-visible {
 .vuexy-customer-search input::placeholder,
 .vuexy-partner-search input::placeholder {
   color: var(--admin-disabled);
+  transition:
+    opacity var(--admin-transition),
+    transform var(--admin-transition);
+}
+
+.admin-form-input:focus-within input::placeholder,
+.admin-form-search:focus-within input::placeholder,
+.vuexy-customer-number-field:focus-within input::placeholder,
+.vuexy-customer-search:focus-within input::placeholder,
+.vuexy-partner-search:focus-within input::placeholder {
+  transform: translateX(4px);
 }
 
 .admin-form-select,
@@ -17145,7 +17156,6 @@ textarea:focus-visible {
 }
 
 .admin-form-search:focus-within,
-.admin-form-date:focus-within,
 .admin-form-input:focus-within,
 .admin-form-select:focus-within,
 .vuexy-customer-number-field:focus-within,
@@ -17154,9 +17164,28 @@ textarea:focus-visible {
 .vuexy-partner-search:focus-within,
 .vuexy-partner-select:focus-within {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
+  padding-inline: 13px;
+}
+
+.admin-form-date:focus-within,
+.admin-form-input-date-picker:focus-within {
+  border-color: var(--admin-accent);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
+  padding-right: 41px;
+}
+
+.admin-form-input.admin-form-control-labeled:focus-within,
+.admin-form-select.admin-form-control-labeled:focus-within,
+.admin-form-static-value.admin-form-control-labeled:focus-within {
+  padding: 7px 11px;
+}
+
+.admin-form-date.admin-form-control-labeled:focus-within,
+.admin-form-input-date-picker.admin-form-control-labeled:focus-within {
+  padding: 7px 41px 7px 11px;
 }
 
 .admin-form-select,
