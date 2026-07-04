@@ -74,7 +74,8 @@ describe('FinanceApproversPage', () => {
   it('uses the shared status badge for role chips', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain(
       "<span className={`pill ${role === FINANCE_APPROVER_ROLE ? 'pill-success' : 'pill-neutral'}`} key={role}>",
     );

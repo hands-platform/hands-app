@@ -340,14 +340,16 @@ describe('finance list pages', () => {
   it('uses shared badge atoms for payment clearing status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
   });
 
   it('uses the shared table footer atom for finance pagination controls', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-table-pagination-footer.tsx'), 'utf8');
 
-    expect(source).toContain('AdminTableFooter');
+    expect(source).toContain('AdminTablePaginationFooter');
     expect(source).not.toContain('<div className="vuexy-booking-table-footer">');
   });
 
@@ -370,21 +372,36 @@ describe('finance list pages', () => {
   it('uses shared badge atoms for bank reconciliation status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(transaction.status)}`}');
   });
 
   it('uses shared badge atoms for general ledger status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(batch.status)}`}');
+  });
+
+  it('uses shared badge atoms for booking settlement audit status pills', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className={`pill ${statusPill(snapshot.taxStatus)}`}');
   });
 
   it('uses shared badge atoms for settlement reversal status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(reversal.taxStatus)}`}');
     expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
   });
@@ -392,14 +409,17 @@ describe('finance list pages', () => {
   it('uses shared badge atoms for coupon finance review pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/coupon-finance/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain("className={`pill ${coupon.reviewFlag ? 'pill-warn' : 'pill-success'}`}");
   });
 
   it('uses shared badge atoms for platform VAT category pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${platformVatCategoryPill(row.category)}`}');
   });
 
@@ -422,10 +442,12 @@ describe('finance list pages', () => {
     ['partner withholding tax CSV', 'app/finance-tax/partner-withholding-tax/page.tsx'],
     ['payment fees CSV', 'app/finance-tax/payment-fees/page.tsx'],
     ['platform VAT CSV', 'app/finance-tax/platform-vat/page.tsx'],
-  ] as const)('uses shared PillClassBadgeLink for %s downloads', (_name, sourcePath) => {
+  ] as const)('uses shared StatusBadgeLink for %s downloads', (_name, sourcePath) => {
     const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
 
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('pillClass=');
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toMatch(/<a\s+className="pill [^"]+"\s+download/s);
     expect(source).not.toMatch(/className="pill pill-success"/);

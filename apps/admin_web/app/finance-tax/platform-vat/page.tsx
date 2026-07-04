@@ -4,7 +4,7 @@ import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -48,13 +48,13 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             withholdingFilters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-platform-vat-${filters.period}.csv`}
             href={csvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export company VAT CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Company output VAT from HANDS platform fee. Customer payment amount is not company revenue."
@@ -121,9 +121,9 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             {summary.rateBreakdown.map((row) => (
               <tr key={`${row.category}-${row.platformVatRateBps}`}>
                 <td>
-                  <PillClassBadge pillClass={platformVatCategoryPill(row.category)}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(platformVatCategoryPill(row.category))}>
                     {row.category}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>{formatBps(row.platformVatRateBps)}</td>
                 <td>{row.settlementCount}</td>

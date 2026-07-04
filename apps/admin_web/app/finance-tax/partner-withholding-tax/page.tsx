@@ -9,7 +9,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -67,13 +67,13 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             withholdingFilters: filters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-partner-withholding-tax-${filters.period}.csv`}
             href={csvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export partner tax CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."

@@ -6,7 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -222,7 +222,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 </div>
               </td>
               <td>
-                <PillClassBadge pillClass={financeJournalBatchStatusPill(batch.status)}>{batch.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(financeJournalBatchStatusPill(batch.status))}>
+                  {batch.status}
+                </StatusBadge>
                 {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
               </td>
               <td>

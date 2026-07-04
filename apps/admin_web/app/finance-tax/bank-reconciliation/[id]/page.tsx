@@ -22,7 +22,7 @@ import {
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
-import { PillClassBadge } from '../../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -242,9 +242,9 @@ export default async function BankReconciliationDetailPage({
                   <strong>Recommended payment clearing match</strong>
                   <span>Use this first when the bank row belongs to a customer payment or booking settlement clearing entry.</span>
                 </div>
-                <PillClassBadge pillClass={paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}>
+                <StatusBadge tone={paymentClearingOptions.length > 0 ? 'success' : 'warning'}>
                   {paymentClearingOptions.length} candidate(s)
-                </PillClassBadge>
+                </StatusBadge>
               </div>
               <AdminFormGrid action={createBankReconciliationMatchAction} className="compact-form">
                 <input name="bankTransactionId" type="hidden" value={transaction.id} />
@@ -409,9 +409,9 @@ export default async function BankReconciliationDetailPage({
                   <strong>{formatMoney(match.amount, match.currency)}</strong>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={financeBankReconciliationStatusPill(match.status)}>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(financeBankReconciliationStatusPill(match.status))}>
                     {match.status}
-                  </PillClassBadge>
+                  </StatusBadge>
                 </td>
                 <td>
                   <ReconciliationAuditTrail metadata={match.metadata} />

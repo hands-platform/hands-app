@@ -8,7 +8,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -231,9 +231,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   </td>
                   <td>
                     <div className="admin-table-substack">
-                      <PillClassBadge pillClass={financeEvidenceTonePill(evidenceState.tone)}>
+                      <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(evidenceState.tone))}>
                         {evidenceState.label}
-                      </PillClassBadge>
+                      </StatusBadge>
                       <div className="muted">{evidenceState.detail}</div>
                       <Link className="text-link" href={bookingSettlementReversalDetailHref(reversal.id)}>
                         Open reversal <span className="muted">{shortId(reversal.id)}</span>
@@ -246,9 +246,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     </div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={financeSettlementReversalTaxStatusPill(reversal.taxStatus)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(financeSettlementReversalTaxStatusPill(reversal.taxStatus))}>
                       {reversal.taxStatus}
-                    </PillClassBadge>
+                    </StatusBadge>
                     <div className="muted admin-mt-8">{reversal.settlementStatus}</div>
                     <div className="muted">{reversal.reason ?? 'Payment refund'}</div>
                   </td>

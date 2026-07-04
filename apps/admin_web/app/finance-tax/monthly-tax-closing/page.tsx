@@ -14,7 +14,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -89,27 +89,27 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             withholdingFilters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-monthly-tax-closing-${filters.period}-summary.csv`}
             href={summaryCsvHref}
-            pillClass="pill-info"
+            tone="info"
           >
             Export summary CSV
-          </PillClassBadgeLink>
-          <PillClassBadgeLink
+          </StatusBadgeLink>
+          <StatusBadgeLink
             download={`hands-monthly-tax-closing-${filters.period}-rows.csv`}
             href={closingRowsCsvHref}
-            pillClass="pill-info"
+            tone="info"
           >
             Export rows CSV
-          </PillClassBadgeLink>
-          <PillClassBadgeLink
+          </StatusBadgeLink>
+          <StatusBadgeLink
             download={`hands-accounting-journal-${filters.period}.csv`}
             href={accountingJournalCsvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export accounting journal CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Monthly platform VAT, Partner VAT/PIT withholding, payment fee, and booking settlement reconciliation preview."
@@ -322,9 +322,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <div className="muted">{closing.currency}</div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={financeMonthlyTaxClosingStatusPill(closing.status)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(financeMonthlyTaxClosingStatusPill(closing.status))}>
                       {closing.status}
-                    </PillClassBadge>
+                    </StatusBadge>
                   </td>
                   <td>{closing.settlementCount}</td>
                   <td>
@@ -338,9 +338,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                   </td>
                   <td>{formatMoney(closing.paymentProcessingFeeTotal, closing.currency)}</td>
                   <td>
-                    <PillClassBadge pillClass={financeEvidenceTonePill(closingRemittanceState.tone)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(closingRemittanceState.tone))}>
                       {closingRemittanceState.label}
-                    </PillClassBadge>
+                    </StatusBadge>
                     <div className="muted admin-mt-8">Declared {formatDateTime(closing.declaredAt)}</div>
                     <div className="muted">Paid {formatDateTime(closing.paidAt)}</div>
                     <div className="muted">Closed {formatDateTime(closing.closedAt)}</div>

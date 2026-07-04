@@ -6,7 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -196,7 +196,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
               </td>
               <td>
-                <PillClassBadge pillClass={financePaymentClearingStatusPill(entry.status)}>{entry.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(financePaymentClearingStatusPill(entry.status))}>
+                  {entry.status}
+                </StatusBadge>
               </td>
               <td>
                 <ActionMenu

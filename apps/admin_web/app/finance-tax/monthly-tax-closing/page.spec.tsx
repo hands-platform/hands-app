@@ -26,7 +26,9 @@ describe('MonthlyTaxClosingPage', () => {
   it('uses shared badge atoms for stored closing status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${closingStatusPill(closing.status)}`}');
     expect(source).not.toContain('className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}');
   });
@@ -34,7 +36,9 @@ describe('MonthlyTaxClosingPage', () => {
   it('uses shared Vuexy badge link atoms for monthly tax export actions', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
-    expect(source).toContain('PillClassBadgeLink');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('pillClass=');
     expect(source).not.toContain('<AdminFormControlLink');
     expect(source).not.toContain('className="pill pill-info"');
     expect(source).not.toContain('className="pill pill-success"');

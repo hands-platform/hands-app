@@ -944,16 +944,21 @@ describe('finance detail pages', () => {
       'utf8',
     );
 
-    expect(paymentClearingSource).toContain('PillClassBadge');
+    expect(paymentClearingSource).toContain('StatusBadge');
+    expect(paymentClearingSource).toContain('statusBadgeToneFromPillClass');
+    expect(paymentClearingSource).not.toContain('PillClassBadge');
     expect(paymentClearingSource).not.toContain('className={`pill ${bankStatusPill(match.status)}`}');
 
-    expect(bankReconciliationSource).toContain('PillClassBadge');
+    expect(bankReconciliationSource).toContain('StatusBadge');
+    expect(bankReconciliationSource).toContain('statusBadgeToneFromPillClass');
+    expect(bankReconciliationSource).not.toContain('PillClassBadge');
     expect(bankReconciliationSource).not.toContain('className={`pill ${statusPill(match.status)}`}');
     expect(bankReconciliationSource).not.toContain(
       "className={`pill ${paymentClearingOptions.length > 0 ? 'pill-success' : 'pill-warn'}`}",
     );
 
-    expect(generalLedgerSource).toContain('PillClassBadge');
+    expect(generalLedgerSource).toContain('StatusBadge');
+    expect(generalLedgerSource).not.toContain('PillClassBadge');
     expect(generalLedgerSource).not.toContain(
       "className={`pill ${entry.side === 'DEBIT' ? 'pill-info' : 'pill-success'}`}",
     );

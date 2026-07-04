@@ -4,7 +4,7 @@ import type { AdminPaymentFeeSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadgeLink } from '../../../components/status-badge';
 import { formatMoney } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
@@ -49,13 +49,13 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
             withholdingFilters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-payment-fees-${filters.period}.csv`}
             href={csvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export payment fee CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Payment processing fees are tracked separately from Partner VAT/PIT and company output VAT."

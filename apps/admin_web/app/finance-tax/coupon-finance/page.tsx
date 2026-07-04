@@ -7,7 +7,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -62,13 +62,13 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
             withholdingFilters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-coupon-finance-${filters.range}-${filters.review}.csv`}
             href={csvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export visible CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Company-funded coupon expense and coupon settlement policy snapshots from immutable booking settlements."
@@ -221,9 +221,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     <div className="muted">Company expense {formatMoney(coupon.companyExpense, snapshot.currency)}</div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={coupon.reviewFlag ? 'pill-warn' : 'pill-success'}>
+                    <StatusBadge tone={coupon.reviewFlag ? 'warning' : 'success'}>
                       {coupon.reviewFlag ?? 'Snapshot OK'}
-                    </PillClassBadge>
+                    </StatusBadge>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.taxStatus}</div>
                   </td>

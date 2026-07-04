@@ -9,7 +9,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { PillClassBadge, PillClassBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -70,13 +70,13 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             withholdingFilters,
           })}
         >
-          <PillClassBadgeLink
+          <StatusBadgeLink
             download={`hands-booking-settlement-audit-${filters.range}-${filters.review}.csv`}
             href={csvHref}
-            pillClass="pill-success"
+            tone="success"
           >
             Export settlement CSV
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
       description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
@@ -242,9 +242,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     <div className="muted">VAT {formatMoney(snapshot.companyOutputVat, snapshot.currency)}</div>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={financeTaxCloseoutStatusPill(snapshot.taxStatus)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(financeTaxCloseoutStatusPill(snapshot.taxStatus))}>
                       {snapshot.taxStatus}
-                    </PillClassBadge>
+                    </StatusBadge>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
