@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
@@ -74,12 +74,14 @@ export function OperationsPolicyOutcomeEffectSection({
       </AdminTableScroll>
       <div className="ops-task-grid admin-mt-14">
         {analysis.cards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>
-            <h3>{card.title}</h3>
-            <p>{card.detail}</p>
-            <small>{card.operatorAction}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.operatorAction}
+            className={card.className}
+            detail={card.detail}
+            key={card.title}
+            leading={<PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>}
+            title={card.title}
+          />
         ))}
       </div>
     </AdminSection>

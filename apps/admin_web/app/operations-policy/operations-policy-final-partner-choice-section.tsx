@@ -1,6 +1,6 @@
 import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
@@ -43,12 +43,14 @@ export function OperationsPolicyFinalPartnerChoiceSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {matrix.cards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
-            <h3>{card.title}</h3>
-            <p>{card.detail}</p>
-            <small>{card.operatorAction}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.operatorAction}
+            className={card.className}
+            detail={card.detail}
+            key={card.title}
+            leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+            title={card.title}
+          />
         ))}
       </div>
       <div className="ops-section-header admin-mt-18">

@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { MetricCard } from '../../components/metric-card';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -36,12 +36,14 @@ export function OperationsPolicyChangeImpactSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {dashboard.snapshotSummary.map((item) => (
-          <div className="ops-task-card ops-task-done admin-min-h-0" key={item.label}>
-            <StatusBadge tone="info">{item.scope}</StatusBadge>
-            <h3>{item.label}</h3>
-            <p>{item.value}</p>
-            <small>{item.helper}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={item.helper}
+            className="ops-task-done admin-min-h-0"
+            detail={item.value}
+            key={item.label}
+            leading={<StatusBadge tone="info">{item.scope}</StatusBadge>}
+            title={item.label}
+          />
         ))}
       </div>
       <AdminTableScroll>
@@ -68,12 +70,14 @@ export function OperationsPolicyChangeImpactSection({
       </AdminTableScroll>
       <div className="ops-task-grid admin-mt-14">
         {dashboard.cards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>
-            <h3>{card.title}</h3>
-            <p>{card.detail}</p>
-            <small>{card.operatorAction}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.operatorAction}
+            className={card.className}
+            detail={card.detail}
+            key={card.title}
+            leading={<PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>}
+            title={card.title}
+          />
         ))}
       </div>
     </AdminSection>

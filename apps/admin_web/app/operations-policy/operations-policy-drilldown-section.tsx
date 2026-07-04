@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
@@ -54,12 +54,12 @@ export function OperationsPolicyDrilldownSection({ drilldown }: OperationsPolicy
 
 function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView }) {
   return (
-    <div className={`ops-task-card admin-min-h-0 ${list.className}`}>
-      <div>
-        <PillClassBadge pillClass={list.pillClass}>{list.rows.length} item(s)</PillClassBadge>
-        <h3>{list.title}</h3>
-        <p>{list.helper}</p>
-      </div>
+    <AdminTaskCard
+      className={`admin-min-h-0 ${list.className}`}
+      detail={list.helper}
+      leading={<PillClassBadge pillClass={list.pillClass}>{list.rows.length} item(s)</PillClassBadge>}
+      title={list.title}
+    >
       {list.rows.length ? (
         <div className="ops-task-breakdown">
           {list.rows.map((row) => (
@@ -85,6 +85,6 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
           <p className="muted admin-m-0">{list.emptyText}</p>
         </div>
       )}
-    </div>
+    </AdminTaskCard>
   );
 }

@@ -1,4 +1,4 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export function OperationsPolicyAuthorityBaselineSection() {
@@ -11,42 +11,50 @@ export function OperationsPolicyAuthorityBaselineSection() {
       statusTone="success"
       title="MVP authority baseline"
     >
-        <div className="ops-task-card ops-task-done">
-          <StatusBadge tone="success">BookingAddressSnapshot</StatusBadge>
-          <h3>Address snapshot required</h3>
+        <AdminTaskCard
+          actionLabel="Customers may browse globally; booking requires a confirmed Vietnam service address."
+          className="ops-task-done"
+          leading={<StatusBadge tone="success">BookingAddressSnapshot</StatusBadge>}
+          title="Address snapshot required"
+        >
           <p>
             Every booking must keep an immutable service address snapshot before distance matching,
             marketplace participation, payment evidence, and dispute review.
           </p>
-          <small>Customers may browse globally; booking requires a confirmed Vietnam service address.</small>
-        </div>
-        <div className="ops-task-card ops-task-done">
-          <StatusBadge tone="success">No auto assignment</StatusBadge>
-          <h3>First-pick priority with fallback choice</h3>
+        </AdminTaskCard>
+        <AdminTaskCard
+          actionLabel="Operators review evidence, but the platform does not automatically assign the partner."
+          className="ops-task-done"
+          leading={<StatusBadge tone="success">No auto assignment</StatusBadge>}
+          title="First-pick priority with fallback choice"
+        >
           <p>
             The first-pick Partner can match first under API rules. If first-pick does not win, the customer
             chooses from eligible participating Partners.
           </p>
-          <small>Operators review evidence, but the platform does not automatically assign the partner.</small>
-        </div>
-        <div className="ops-task-card ops-task-done">
-          <StatusBadge tone="info">10km marketplace</StatusBadge>
-          <h3>Booking-address radius</h3>
+        </AdminTaskCard>
+        <AdminTaskCard
+          actionLabel="The radius is admin-editable and defaults to 10km for Vietnam operations."
+          className="ops-task-done"
+          leading={<StatusBadge tone="info">10km marketplace</StatusBadge>}
+          title="Booking-address radius"
+        >
           <p>
             Marketplace participation and alerts are based on the booking address, not the customer&apos;s
             browsing location or current country.
           </p>
-          <small>The radius is admin-editable and defaults to 10km for Vietnam operations.</small>
-        </div>
-        <div className="ops-task-card ops-task-done">
-          <StatusBadge tone="warning">Negative wallet gate</StatusBadge>
-          <h3>View demand, block finalization</h3>
+        </AdminTaskCard>
+        <AdminTaskCard
+          actionLabel="Direct first-pick response and already-matched service flow stay separate from this gate."
+          className="ops-task-done"
+          leading={<StatusBadge tone="warning">Negative wallet gate</StatusBadge>}
+          title="View demand, block finalization"
+        >
           <p>
             A Partner with a negative wallet may see marketplace requests, but final acceptance, service
             start, and payout release wait until the unpaid platform fee is settled or cleared by finance.
           </p>
-          <small>Direct first-pick response and already-matched service flow stay separate from this gate.</small>
-        </div>
+        </AdminTaskCard>
     </AdminSection>
   );
 }

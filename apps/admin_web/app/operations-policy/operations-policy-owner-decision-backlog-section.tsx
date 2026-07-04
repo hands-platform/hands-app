@@ -1,7 +1,6 @@
 import { ExternalLink } from 'lucide-react';
-import Link from 'next/link';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
@@ -48,22 +47,29 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
         </div>
         <div className="ops-task-grid admin-mt-14">
           {pressure.cards.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <small>{item.operatorAction}</small>
-            </Link>
+            <AdminActionCard
+              actionLabel={item.operatorAction}
+              className={item.className}
+              detail={item.detail}
+              href={item.href}
+              key={item.title}
+              leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+              title={item.title}
+              variant="ops-task"
+            />
           ))}
         </div>
       </div>
       <div className="ops-task-grid admin-mt-14">
         {backlog.map((item) => (
-          <div className={`ops-task-card ${item.className}`} key={item.title}>
-            <PillClassBadge pillClass={item.pillClass}>{item.owner}</PillClassBadge>
-            <h3>{item.title}</h3>
-            <p>{item.question}</p>
-            <small>{item.evidence}</small>
+          <AdminTaskCard
+            actionLabel={item.evidence}
+            className={item.className}
+            detail={item.question}
+            key={item.title}
+            leading={<PillClassBadge pillClass={item.pillClass}>{item.owner}</PillClassBadge>}
+            title={item.title}
+          >
             <div className="booking-radar admin-mt-12">
               {item.options.map((option) => (
                 <AdminCard className="insight-card" key={option.label}>
@@ -82,7 +88,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
                 Review data
               </AdminFormControlLink>
             </div>
-          </div>
+          </AdminTaskCard>
         ))}
       </div>
     </AdminSection>

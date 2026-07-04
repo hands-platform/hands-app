@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
@@ -36,24 +35,27 @@ export function OperationsPolicyActionGateChecklistSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((item) => (
-          <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-            <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
+          <AdminActionCard
+            actionLabel={item.operatorAction}
+            className={item.className}
+            detail={item.detail}
+            href={item.href}
+            key={item.title}
+            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            title={item.title}
+            variant="ops-task"
+          >
             <small>Current: {item.current}</small>
-            <small>{item.operatorAction}</small>
-          </Link>
+          </AdminActionCard>
         ))}
         {visibleCards.length === 0 ? (
-          <div className="ops-task-card ops-task-done">
-            <StatusBadge tone="success">Clear</StatusBadge>
-            <h3>Action gate policies are aligned</h3>
-            <p>
-              Booking, cash, payout, first-pick, and no-show evidence gates follow the recommended
-              baseline.
-            </p>
-            <small>Keep using booking detail evidence before irreversible operator decisions.</small>
-          </div>
+          <AdminTaskCard
+            actionLabel="Keep using booking detail evidence before irreversible operator decisions."
+            className="ops-task-done"
+            detail="Booking, cash, payout, first-pick, and no-show evidence gates follow the recommended baseline."
+            leading={<StatusBadge tone="success">Clear</StatusBadge>}
+            title="Action gate policies are aligned"
+          />
         ) : null}
       </div>
     </AdminSection>

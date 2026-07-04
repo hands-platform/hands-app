@@ -66,11 +66,13 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
     typeof component === 'function' &&
     [
       'AdminCard',
+      'AdminActionCard',
       'AdminDataTable',
       'AdminEmptyState',
       'AdminFormControlLink',
       'AdminLinkCard',
       'AdminSection',
+      'AdminTaskCard',
       'PillClassBadge',
       'StatusBadge',
     ].includes(component.name)

@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
@@ -117,12 +117,14 @@ export function OperationsPolicyLiveSimulatorSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {simulation.checks.map((check) => (
-          <div className={`ops-task-card ${check.className}`} key={check.title}>
-            <PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>
-            <h3>{check.title}</h3>
-            <p>{check.detail}</p>
-            <small>{check.operatorAction}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={check.operatorAction}
+            className={check.className}
+            detail={check.detail}
+            key={check.title}
+            leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+            title={check.title}
+          />
         ))}
       </div>
     </AdminSection>

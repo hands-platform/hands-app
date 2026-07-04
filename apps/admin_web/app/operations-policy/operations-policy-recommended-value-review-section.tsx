@@ -1,4 +1,4 @@
-import { AdminSection } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
@@ -33,20 +33,23 @@ export function OperationsPolicyRecommendedValueReviewSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.key}>
-            <PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>
-            <h3>{card.label}</h3>
-            <p>{card.detail}</p>
-            <small>{card.operatorAction}</small>
-          </div>
+          <AdminTaskCard
+            actionLabel={card.operatorAction}
+            className={card.className}
+            detail={card.detail}
+            key={card.key}
+            leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+            title={card.label}
+          />
         ))}
         {visibleCards.length === 0 ? (
-          <div className="ops-task-card ops-task-done">
-            <StatusBadge tone="success">Aligned</StatusBadge>
-            <h3>Recommended values are aligned</h3>
-            <p>Current policy values match the recommended baseline for the loaded review set.</p>
-            <small>Review this again before changing live matching or booking gates.</small>
-          </div>
+          <AdminTaskCard
+            actionLabel="Review this again before changing live matching or booking gates."
+            className="ops-task-done"
+            detail="Current policy values match the recommended baseline for the loaded review set."
+            leading={<StatusBadge tone="success">Aligned</StatusBadge>}
+            title="Recommended values are aligned"
+          />
         ) : null}
       </div>
     </AdminSection>
