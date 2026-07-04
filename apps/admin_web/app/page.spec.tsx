@@ -326,6 +326,12 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('<Link\n                          className={`pill');
   });
 
+  it('uses shared Vuexy form control links for dashboard button-style actions', () => {
+    expect(dashboardSource).toContain('AdminFormControlLink');
+    expect(dashboardSource).not.toContain('<Link className="button button-secondary"');
+    expect(dashboardSource).not.toContain('className="button button-secondary"');
+  });
+
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],

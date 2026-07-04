@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
+import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate } from '../components/admin-page-template';
 import { AdminSection } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
@@ -703,43 +704,43 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     <AdminPageTemplate
       actions={
         <>
-          <Link className="button button-secondary" href="/bookings">
+          <AdminFormControlLink href="/bookings">
             <CalendarClock size={16} aria-hidden="true" />
             Booking monitor
-          </Link>
-          <Link className="button button-secondary" href="/operations-policy">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/operations-policy">
             <Settings2 size={16} aria-hidden="true" />
             Operations policy
-          </Link>
-          <Link className="button button-secondary" href="/app-sessions">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/app-sessions">
             <Activity size={16} aria-hidden="true" />
             App sessions
-          </Link>
+          </AdminFormControlLink>
           <Link className="text-link" href="/cash-settlements">
             Cash settlements
           </Link>
           <Link className="text-link" href="/payments">
             Payments
           </Link>
-          <Link className="button button-secondary" href="/partners">
+          <AdminFormControlLink href="/partners">
             <HeartHandshake size={16} aria-hidden="true" />
             Partner review
-          </Link>
-          <Link className="button button-secondary" href="/partner-controls">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/partner-controls">
             <ShieldCheck size={16} aria-hidden="true" />
             Partner controls
-          </Link>
+          </AdminFormControlLink>
           <Link className="text-link" href="/tax-policy">
             Tax policy
           </Link>
-          <Link className="button button-secondary" href="/setup">
+          <AdminFormControlLink href="/setup">
             <ClipboardCheck size={16} aria-hidden="true" />
             Setup
-          </Link>
-          <Link className="button button-secondary" href="/audit-log">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/audit-log">
             <FileClock size={16} aria-hidden="true" />
             Audit log
-          </Link>
+          </AdminFormControlLink>
         </>
       }
       contentClassName="dashboard-page"
@@ -748,10 +749,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     >
       <AdminSection
         actions={
-          <Link className="button button-secondary" href="/bookings">
+          <AdminFormControlLink href="/bookings">
             <CalendarClock size={16} aria-hidden="true" />
             Open booking monitor
-          </Link>
+          </AdminFormControlLink>
         }
         className="admin-mt-20"
         description="Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply, payment holds, and cash debt in one operator scan."
@@ -768,18 +769,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </div>
         <div className="actions admin-mt-12">
-          <Link className="button button-secondary" href="/bookings?view=matching">
+          <AdminFormControlLink href="/bookings?view=matching">
             <BellRing size={16} aria-hidden="true" />
             Matching wait
-          </Link>
-          <Link className="button button-secondary" href="/bookings?view=no-show">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/bookings?view=no-show">
             <BookOpenCheck size={16} aria-hidden="true" />
             No-show evidence
-          </Link>
-          <Link className="button button-secondary" href="/app-sessions?role=CUSTOMER&state=live">
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/app-sessions?role=CUSTOMER&state=live">
             <Activity size={16} aria-hidden="true" />
             Live customers
-          </Link>
+          </AdminFormControlLink>
           <Link className="text-link" href="/cash-settlements">
             Cash settlement gate
           </Link>
@@ -788,10 +789,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <AdminSection
         actions={
-          <Link className="button button-secondary" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
+          <AdminFormControlLink href={operationsCommandBoard[0]?.href ?? '/bookings'}>
             <BellRing size={16} aria-hidden="true" />
             Open first action
-          </Link>
+          </AdminFormControlLink>
         }
         className="admin-mt-20"
         description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat handoff, settlement gates, notifications, and setup."
@@ -1119,10 +1120,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <Link className="button button-secondary" href="/operations-policy">
+              <AdminFormControlLink href="/operations-policy">
                 <Settings2 size={16} aria-hidden="true" />
                 Review policy cohorts
-              </Link>
+              </AdminFormControlLink>
             }
             className="admin-mt-20"
             description="First-screen readout of whether current matching policy is producing acceptable outcomes. Deeper cohort analysis stays in Operations Policy."
@@ -1168,13 +1169,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <strong>{fullDashboardData.shiftBriefing.headline}</strong>
                   <p className="muted">{fullDashboardData.shiftBriefing.detail}</p>
                 </div>
-                <Link
-                  className="button button-secondary"
-                  href={fullDashboardData.shiftBriefing.primaryAction.href}
-                >
+                <AdminFormControlLink href={fullDashboardData.shiftBriefing.primaryAction.href}>
                   <BellRing size={16} aria-hidden="true" />
                   {fullDashboardData.shiftBriefing.primaryAction.label}
-                </Link>
+                </AdminFormControlLink>
               </div>
             </div>
             <div className="service-trace-summary admin-mt-14">
@@ -1253,14 +1251,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminSection
             actions={
               <div className="participant-list">
-                <Link className="button button-secondary" href="/bookings?view=matching">
+                <AdminFormControlLink href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
                   Open matching timeline
-                </Link>
-                <Link className="button button-secondary" href="/operations-policy">
+                </AdminFormControlLink>
+                <AdminFormControlLink href="/operations-policy">
                   <Settings2 size={16} aria-hidden="true" />
                   Simulate policy
-                </Link>
+                </AdminFormControlLink>
               </div>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-matching-card"
@@ -1346,10 +1344,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <Link className="button button-secondary" href="/operations-policy">
+              <AdminFormControlLink href="/operations-policy">
                 <Settings2 size={16} aria-hidden="true" />
                 Change policy
-              </Link>
+              </AdminFormControlLink>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-policy-card"
             description="Live dispatch rules and owner decisions currently guiding matching, marketplace participation, cancellation, no-show, and Partner alerts."
@@ -1432,10 +1430,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         behavior.
                       </p>
                     </div>
-                    <Link className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
+                    <AdminFormControlLink href="/audit-log?bucket=Operations%2FPolicy">
                       <FileClock size={16} aria-hidden="true" />
                       Policy audit
-                    </Link>
+                    </AdminFormControlLink>
                   </div>
                   <div className="stack admin-mt-10">
                     {fullDashboardData.policySummary.recentChanges.slice(0, 4).map((change) => (
@@ -1483,24 +1481,24 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <section className="detail-grid admin-mt-20">
             <AdminSection
               actions={
-                <Link className="button button-secondary" href="/bookings?view=attention">
+                <AdminFormControlLink href="/bookings?view=attention">
                   <BellRing size={16} aria-hidden="true" />
                   Attention bookings
-                </Link>
+                </AdminFormControlLink>
               }
               description="Dispatch exceptions for the selected dashboard date range that should be checked before they become customer complaints."
               id="dashboard-booking-attention-cockpit"
               title="Booking attention cockpit"
             >
               <div className="participant-list admin-mt-8">
-                <Link className="button button-secondary" href="/bookings?view=matching">
+                <AdminFormControlLink href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
                   Matching ops
-                </Link>
-                <Link className="button button-secondary" href="/bookings?view=attention">
+                </AdminFormControlLink>
+                <AdminFormControlLink href="/bookings?view=attention">
                   <BellRing size={16} aria-hidden="true" />
                   Attention bookings
-                </Link>
+                </AdminFormControlLink>
               </div>
               <div className="service-trace-summary">
                 <div>
@@ -2232,9 +2230,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ) : (
         <AdminSection
           actions={
-            <Link className="button button-secondary" href={buildDashboardDetailsHref('all', params)}>
+            <AdminFormControlLink href={buildDashboardDetailsHref('all', params)}>
               Load full dashboard
-            </Link>
+            </AdminFormControlLink>
           }
           className="admin-mt-20"
           description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, partner readiness, queue, setup, flow health, and finance detail sections."
