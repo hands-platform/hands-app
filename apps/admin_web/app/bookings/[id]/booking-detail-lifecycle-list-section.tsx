@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminBasicTimeline, AdminSection, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
@@ -52,41 +52,24 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
       title="Booking lifecycle timeline"
     >
 
-      <div className="vuexy-basic-timeline admin-mt-16">
-        {timelineItems.map((item, index) => (
-          <article className="vuexy-basic-timeline-item" key={item.groupKey}>
-            <div className="vuexy-basic-timeline-separator" aria-hidden="true">
-              <span className={`vuexy-basic-timeline-dot is-${item.tone}`} />
-              {index < timelineItems.length - 1 && <span className="vuexy-basic-timeline-connector" />}
-            </div>
-            <div className="vuexy-basic-timeline-content">
-              <div className="vuexy-basic-timeline-title-row">
-                <div>
-                  <StatusBadge tone={timelineStatusBadgeTone(item.tone)}>{item.statusLabel}</StatusBadge>
-                  <h3>{item.title}</h3>
-                </div>
-                <time>{item.timeLabel}</time>
-              </div>
-              <p className="muted">{item.detail}</p>
-              <div className="vuexy-basic-timeline-meta">
-                {item.meta.map((meta) => (
-                  <div
-                    aria-label={`${meta.label}: ${meta.value}`}
-                    className="vuexy-basic-timeline-meta-item"
-                    key={meta.label}
-                  >
-                    <span>{meta.label}</span>
-                    {' '}
-                    <strong>{meta.value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
+      <AdminBasicTimeline className="admin-mt-16" items={bookingLifecycleBasicTimelineItems(timelineItems)} />
     </AdminSection>
   );
+}
+
+function bookingLifecycleBasicTimelineItems(
+  items: readonly BookingDetailLifecycleTimelineItem[],
+): readonly AdminBasicTimelineItem[] {
+  return items.map((item) => ({
+    detail: item.detail,
+    id: item.groupKey,
+    meta: item.meta,
+    statusLabel: item.statusLabel,
+    statusTone: timelineStatusBadgeTone(item.tone),
+    time: item.timeLabel,
+    title: item.title,
+    tone: item.tone,
+  }));
 }
 
 export function bookingDetailLifecycleTimelineItems(

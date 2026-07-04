@@ -1,6 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminBasicTimeline, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -177,33 +178,27 @@ function BankReviewTimeline({ items }: { readonly items: readonly PartnerBankRev
   return (
     <div className="admin-mt-16">
       <h3>Bank review timeline</h3>
-      <div className="vuexy-basic-timeline partner-bank-review-timeline admin-mt-16">
-        {items.map((item, index) => (
-          <article className="vuexy-basic-timeline-item" key={item.id}>
-            <div className="vuexy-basic-timeline-separator" aria-hidden="true">
-              <span className={`vuexy-basic-timeline-dot is-${item.tone}`} />
-              {index < items.length - 1 ? <span className="vuexy-basic-timeline-connector" /> : null}
-            </div>
-            <div className="vuexy-basic-timeline-content">
-              <div className="vuexy-basic-timeline-title-row">
-                <h3>{item.title}</h3>
-                <time>{item.atLabel}</time>
-              </div>
-              <p>{item.detail}</p>
-              {item.actorLabel ? (
-                <div className="vuexy-basic-timeline-meta is-compact">
-                  <div className="vuexy-basic-timeline-meta-item">
-                    <span>Actor</span>
-                    <strong>{item.actorLabel}</strong>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </article>
-        ))}
-      </div>
+      <AdminBasicTimeline
+        className="partner-bank-review-timeline admin-mt-16"
+        compactMeta
+        items={partnerBankReviewBasicTimelineItems(items)}
+      />
     </div>
   );
+}
+
+function partnerBankReviewBasicTimelineItems(
+  items: readonly PartnerBankReviewTimelineItem[],
+): readonly AdminBasicTimelineItem[] {
+  return items.map((item) => ({
+    detail: item.detail,
+    detailClassName: null,
+    id: item.id,
+    meta: item.actorLabel ? [{ label: 'Actor', value: item.actorLabel }] : undefined,
+    time: item.atLabel,
+    title: item.title,
+    tone: item.tone,
+  }));
 }
 
 function FinanceEvidenceEmptyState({

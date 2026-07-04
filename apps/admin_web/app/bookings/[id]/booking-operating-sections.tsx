@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminBasicTimeline, AdminSection, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDate } from './booking-formatters';
 
@@ -382,48 +382,34 @@ function operatingTimelinePillTone(tone: OperatingTimelineTone) {
 
 function BookingVuexyTimelineList({ items }: { readonly items: readonly BookingVuexyTimelineItem[] }) {
   return (
-    <div className="vuexy-basic-timeline booking-operating-timeline-list admin-mt-16">
-      {items.map((item, index) => {
-        const tone = item.tone ?? operatingTimelineTone(item);
-        const meta = item.meta ?? [
-          { label: 'Type', value: item.type },
-          { label: 'State', value: item.status },
-        ];
-
-        return (
-          <article className="vuexy-basic-timeline-item" key={item.id}>
-            <div className="vuexy-basic-timeline-separator" aria-hidden="true">
-              <span className={`vuexy-basic-timeline-dot is-${tone}`} />
-              {index < items.length - 1 && <span className="vuexy-basic-timeline-connector" />}
-            </div>
-            <div className="vuexy-basic-timeline-content">
-              <div className="vuexy-basic-timeline-title-row">
-                 <div>
-                   <StatusBadge tone={statusBadgeToneFromPillClass(operatingTimelinePillTone(tone))}>
-                     {item.status}
-                   </StatusBadge>
-                   <h3>{item.title}</h3>
-                </div>
-                <time>{item.at ? formatDate(item.at) : item.status}</time>
-              </div>
-              <p className="muted">{item.detail}</p>
-              <div className="vuexy-basic-timeline-meta is-compact">
-                {meta.map((metaItem) => (
-                  <div
-                    aria-label={`${metaItem.label}: ${metaItem.value}`}
-                    className="vuexy-basic-timeline-meta-item"
-                    key={metaItem.label}
-                  >
-                    <span>{metaItem.label}</span> <strong>{metaItem.value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </article>
-        );
-      })}
-    </div>
+    <AdminBasicTimeline
+      className="booking-operating-timeline-list admin-mt-16"
+      compactMeta
+      items={bookingOperatingBasicTimelineItems(items)}
+    />
   );
+}
+
+function bookingOperatingBasicTimelineItems(
+  items: readonly BookingVuexyTimelineItem[],
+): readonly AdminBasicTimelineItem[] {
+  return items.map((item) => {
+    const tone = item.tone ?? operatingTimelineTone(item);
+
+    return {
+      detail: item.detail,
+      id: item.id,
+      meta: item.meta ?? [
+        { label: 'Type', value: item.type },
+        { label: 'State', value: item.status },
+      ],
+      statusLabel: item.status,
+      statusTone: statusBadgeToneFromPillClass(operatingTimelinePillTone(tone)),
+      time: item.at ? formatDate(item.at) : item.status,
+      title: item.title,
+      tone,
+    };
+  });
 }
 
 export function BookingHandoffChecklistSection({

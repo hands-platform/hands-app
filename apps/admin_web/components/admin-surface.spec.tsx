@@ -4,6 +4,7 @@ import {
   AdminActionCard,
   AdminActionFormCard,
   AdminAsideCard,
+  AdminBasicTimeline,
   AdminCard,
   AdminDisclosure,
   AdminDialogCard,
@@ -291,6 +292,57 @@ describe('Admin surface components', () => {
       'h3',
       'p',
     ]);
+  });
+
+  it('renders reusable Vuexy basic timeline markup with dot, connector, status, time, and meta rows', () => {
+    const timeline = AdminBasicTimeline({
+      className: 'booking-operating-timeline-list admin-mt-16',
+      compactMeta: true,
+      items: [
+        {
+          detail: 'Partner accepted the booking request.',
+          id: 'match-accepted',
+          meta: [
+            { label: 'Type', value: 'MATCH' },
+            { label: 'State', value: 'ACCEPTED' },
+          ],
+          statusLabel: 'ACCEPTED',
+          statusTone: 'success',
+          time: '15 Jul 2026, 10:30',
+          title: 'Partner matched',
+          tone: 'success',
+        },
+        {
+          detail: 'Customer chat room retained.',
+          id: 'chat-retained',
+          title: 'Chat archive',
+          tone: 'info',
+          value: '2 retained messages',
+        },
+      ],
+    });
+
+    expect(timeline.props.className).toBe(
+      'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+    );
+    const firstItem = timeline.props.children[0];
+    const secondItem = timeline.props.children[1];
+
+    expect(firstItem.type).toBe('div');
+    expect(firstItem.props.className).toBe('vuexy-basic-timeline-item');
+    expect(firstItem.props.children[0].props.children[0].props.className).toBe(
+      'vuexy-basic-timeline-dot is-success',
+    );
+    expect(firstItem.props.children[0].props.children[1].props.className).toBe(
+      'vuexy-basic-timeline-connector',
+    );
+    expect(firstItem.props.children[1].props.children[0].props.children[0].props.children[0].props.tone).toBe(
+      'success',
+    );
+    expect(firstItem.props.children[1].props.children[2].props.className).toBe(
+      'vuexy-basic-timeline-meta is-compact',
+    );
+    expect(secondItem.props.children[0].props.children.filter(Boolean)).toHaveLength(1);
   });
 
   it('renders standard loading and error states with operational roles', () => {

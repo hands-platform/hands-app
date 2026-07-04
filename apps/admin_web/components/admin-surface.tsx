@@ -89,6 +89,32 @@ type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'var
   readonly leading?: ReactNode;
 };
 
+type AdminBasicTimelineTone = 'danger' | 'info' | 'primary' | 'success' | 'warning';
+
+export type AdminBasicTimelineMeta = {
+  readonly label: string;
+  readonly value: ReactNode;
+};
+
+export type AdminBasicTimelineItem = {
+  readonly detail?: ReactNode;
+  readonly detailClassName?: string | null;
+  readonly id: string;
+  readonly meta?: readonly AdminBasicTimelineMeta[];
+  readonly statusLabel?: ReactNode;
+  readonly statusTone?: StatusBadgeTone;
+  readonly time?: ReactNode;
+  readonly title: ReactNode;
+  readonly tone: AdminBasicTimelineTone;
+  readonly value?: ReactNode;
+};
+
+type AdminBasicTimelineProps = {
+  readonly className?: string;
+  readonly compactMeta?: boolean;
+  readonly items: readonly AdminBasicTimelineItem[];
+};
+
 type AdminStateProps = {
   readonly action?: ReactNode;
   readonly className?: string;
@@ -389,6 +415,55 @@ export function AdminTaskCard({
   );
 }
 
+export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasicTimelineProps) {
+  return (
+    <div className={joinClassNames('vuexy-basic-timeline', className)}>
+      {items.map((item, index) => (
+        <div className="vuexy-basic-timeline-item" key={item.id}>
+          <div className="vuexy-basic-timeline-separator" aria-hidden="true">
+            <span className={`vuexy-basic-timeline-dot is-${item.tone}`} />
+            {index < items.length - 1 ? <span className="vuexy-basic-timeline-connector" /> : null}
+          </div>
+          <div className="vuexy-basic-timeline-content">
+            <div className="vuexy-basic-timeline-title-row">
+              <div>
+                {item.statusLabel ? (
+                  <StatusBadge tone={item.statusTone ?? 'info'}>{item.statusLabel}</StatusBadge>
+                ) : null}
+                <h3>{item.title}</h3>
+                {item.value ? <strong>{item.value}</strong> : null}
+              </div>
+              {item.time ? <time>{item.time}</time> : null}
+            </div>
+            {item.detail ? (
+              <p className={item.detailClassName === null ? undefined : item.detailClassName ?? 'muted'}>
+                {item.detail}
+              </p>
+            ) : null}
+            {item.meta?.length ? (
+              <div className={joinClassNames('vuexy-basic-timeline-meta', compactMeta ? 'is-compact' : undefined)}>
+                {item.meta.map((metaItem) => {
+                  const ariaValue = timelineMetaAriaValue(metaItem.value);
+
+                  return (
+                    <div
+                      aria-label={ariaValue ? `${metaItem.label}: ${ariaValue}` : undefined}
+                      className="vuexy-basic-timeline-meta-item"
+                      key={metaItem.label}
+                    >
+                      <span>{metaItem.label}</span> <strong>{metaItem.value}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AdminLoadingState({
   action,
   className,
@@ -443,4 +518,12 @@ function renderAdminSurfaceSignal(className: string | undefined, children: React
     className,
     tone: adminSignalToneFromClassName(className),
   });
+}
+
+function timelineMetaAriaValue(value: ReactNode) {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  return undefined;
 }
