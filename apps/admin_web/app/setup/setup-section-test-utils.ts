@@ -2,6 +2,7 @@ type RenderableComponent = (props: Record<string, unknown>) => unknown;
 
 const DEFAULT_RENDERABLE_COMPONENTS = new Set([
   'AdminSection',
+  'AdminFormControlLink',
   'AdminMetricGrid',
   'AdminSectionHeader',
   'CommandCopyRow',

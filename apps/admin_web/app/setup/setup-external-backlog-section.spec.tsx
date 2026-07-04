@@ -33,6 +33,7 @@ describe('SetupExternalBacklogSection', () => {
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(hrefsIn(section)).toContain('#notifications');
     expect(classNamesIn(section)).toContain('command-copy-row');
+    expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary setup-card-action');
   });
 
   it('renders a clear state when there are no backlog items', () => {
@@ -80,5 +81,6 @@ describe('SetupExternalBacklogSection', () => {
     expect(rendered).not.toContain('MOMO_ACCESS_KEY');
     expect(rendered).toContain('1 more setup item is hidden from the default view.');
     expect(hrefsIn(section)).toContain('/setup?details=all');
+    expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary setup-card-action');
   });
 });

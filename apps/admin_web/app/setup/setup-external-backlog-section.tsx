@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 
@@ -41,10 +42,10 @@ export function SetupExternalBacklogSection({
             <span>{item.groupTitle}</span>
             <strong>{item.name}</strong>
             <p className="muted">{item.reason}</p>
-            <a className="button button-secondary setup-card-action" href={`#${item.groupId}`}>
+            <AdminFormControlLink className="button-secondary setup-card-action" href={`#${item.groupId}`}>
               <ArrowRight size={16} aria-hidden="true" />
               Open setup group
-            </a>
+            </AdminFormControlLink>
             {item.commands && item.commands.length > 0 && (
               <div className="setup-command-list admin-mt-8">
                 {item.commands.slice(0, 2).map((command) => (
@@ -64,10 +65,10 @@ export function SetupExternalBacklogSection({
             <p className="muted">
               Open full setup details only when actively working the external checklist.
             </p>
-            <a className="button button-secondary setup-card-action" href="/setup?details=all">
+            <AdminFormControlLink className="button-secondary setup-card-action" href="/setup?details=all">
               <ArrowRight size={16} aria-hidden="true" />
               Show all setup details
-            </a>
+            </AdminFormControlLink>
           </div>
         ) : null}
         {backlog.length === 0 && (
