@@ -96,5 +96,7 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     expect(markup).toContain('Booking alert trace');
     expect(markup).toContain('Finance command center');
     expect(markup).toContain('Service pricing snapshot');
+    expect(markup).toContain('No active attention checks. Continue normal monitoring from the timeline.');
+    expect(markup).toContain('class="empty-state');
   });
 });

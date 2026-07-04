@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
@@ -382,7 +383,7 @@ function BookingOperatorNotesSection({
         {recentNotes.length > 0 ? (
           recentNotes.map((note) => <p key={note}>{note}</p>)
         ) : (
-          <p className="muted">No internal notes yet.</p>
+          <AdminEmptyState framed message="No internal notes yet." />
         )}
       </div>
       <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">

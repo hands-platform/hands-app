@@ -187,6 +187,7 @@ describe('BookingRecordDetailSections', () => {
   it('renders empty participant and handoff states', () => {
     const markup = renderSections({
       finalPartnerId: null,
+      locationTrailRows: [],
       participantLedger: {
         ...participantLedger,
         rows: [],
@@ -195,6 +196,9 @@ describe('BookingRecordDetailSections', () => {
 
     expect(markup).toContain('Partner record link pending');
     expect(markup).toContain('No Partner participation has been recorded for this booking yet.');
+    expect(markup).toContain('No chat evidence snapshot linked to this booking yet.');
+    expect(markup).toContain('No Partner location snapshots linked to this booking yet.');
+    expect(markup.match(/class="empty-state/g) ?? []).toHaveLength(3);
   });
 
   it('renders post-match cancellation chat evidence inside the booking transcript', () => {

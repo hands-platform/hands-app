@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
@@ -249,7 +250,9 @@ export function BookingRecordDetailSections({
               ))}
             </div>
           )}
-          {chatEvidenceRows.length === 0 && <p className="muted">No chat evidence snapshot linked to this booking yet.</p>}
+          {chatEvidenceRows.length === 0 && (
+            <AdminEmptyState framed message="No chat evidence snapshot linked to this booking yet." />
+          )}
         </AdminSection>
 
         <AdminSection
@@ -275,9 +278,7 @@ export function BookingRecordDetailSections({
               </div>
             ))}
             {locationTrailRows.length === 0 && (
-              <p className="muted booking-location-evidence-empty">
-                No Partner location snapshots linked to this booking yet.
-              </p>
+              <AdminEmptyState framed message="No Partner location snapshots linked to this booking yet." />
             )}
           </div>
         </AdminSection>
@@ -373,7 +374,7 @@ function ParticipantLifecycleLedger({ rows }: ParticipantLifecycleLedgerProps) {
 
 function ParticipantRows({ rows }: ParticipantRowsProps) {
   if (rows.length === 0) {
-    return <p className="muted admin-mt-10">No Partner participation has been recorded for this booking yet.</p>;
+    return <AdminEmptyState framed message="No Partner participation has been recorded for this booking yet." />;
   }
 
   return (

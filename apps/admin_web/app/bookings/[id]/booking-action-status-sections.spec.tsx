@@ -342,6 +342,8 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Use one short note per action or decision.');
     expect(markup).toContain('card admin-card booking-action-note-panel');
     expect(markup).toContain('class="ops-note-history"');
+    expect(markup).toContain('No internal notes yet.');
+    expect(markup).toContain('class="empty-state');
     expect(markup).toContain('name="note"');
     expect(markup).toContain('Add note');
     expect(markup).not.toContain('Operator note full editor');

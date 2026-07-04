@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSection } from '../../../components/admin-surface';
 import { MetricCard } from '../../../components/metric-card';
 import { PillClassBadge } from '../../../components/status-badge';
@@ -268,7 +269,11 @@ export function BookingAttentionChecksSection({
           ))}
         </div>
       ) : (
-        <p className="muted">No active attention checks. Continue normal monitoring from the timeline.</p>
+        <AdminEmptyState
+          framed
+          message="No active attention checks. Continue normal monitoring from the timeline."
+          title={null}
+        />
       )}
     </AdminSection>
   );
