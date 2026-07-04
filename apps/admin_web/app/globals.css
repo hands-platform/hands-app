@@ -11786,7 +11786,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.service-menu-dialog-form .calendar-field-wide,
+.service-menu-dialog-form .service-menu-dialog-field-wide,
 .service-menu-duration-form-row,
 .service-menu-dialog-footer {
   grid-column: 1 / -1;
@@ -11824,12 +11824,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.service-menu-dialog .calendar-field {
-  color: var(--admin-muted);
-  display: grid;
-  font-size: 12px;
-  font-weight: 700;
-  gap: 6px;
+.service-menu-dialog-field {
+  min-width: 0;
 }
 
 .service-menu-dialog input,

@@ -270,28 +270,27 @@ function ServiceIdentityFields({ group }: { readonly group?: ServiceCatalogGroup
       {group ? <input name="serviceGroupKey" type="hidden" value={group.key} /> : null}
       <div className="service-menu-name-grid">
         {SERVICE_TRANSLATION_FIELDS.map((field) => (
-          <div className="calendar-field" key={field.key}>
-            <span>{field.label}</span>
-            <AdminFormInput
-              defaultValue={translations[field.key] ?? (field.key === 'en' ? group?.label : '')}
-              label={field.label}
-              name={field.name}
-              placeholder={field.placeholder}
-              required={field.key === 'en'}
-            />
-          </div>
+          <AdminFormInput
+            className="service-menu-dialog-field"
+            defaultValue={translations[field.key] ?? (field.key === 'en' ? group?.label : '')}
+            key={field.key}
+            label={field.label}
+            labelVisibility="visible"
+            name={field.name}
+            placeholder={field.placeholder}
+            required={field.key === 'en'}
+          />
         ))}
       </div>
-      <div className="calendar-field calendar-field-wide">
-        <span>Description</span>
-        <AdminFormTextarea
-          defaultValue={firstService?.description ?? ''}
-          label="Description"
-          name="description"
-          placeholder="Short copy shown in mobile service selection"
-          rows={3}
-        />
-      </div>
+      <AdminFormTextarea
+        className="service-menu-dialog-field service-menu-dialog-field-wide"
+        defaultValue={firstService?.description ?? ''}
+        label="Description"
+        labelVisibility="visible"
+        name="description"
+        placeholder="Short copy shown in mobile service selection"
+        rows={3}
+      />
     </>
   );
 }
@@ -314,30 +313,28 @@ function DurationInputRow({
       <div aria-hidden="true" className="service-menu-duration-option-cell">
         {duration} min option
       </div>
-      <div className="calendar-field">
-        <span>Base price</span>
-        <AdminFormInput
-          defaultValue={service?.basePrice ?? ''}
-          label={`${duration} min base price`}
-          min="100000"
-          name={`basePrice${duration}`}
-          placeholder="500000"
-          step="100000"
-          type="number"
-        />
-      </div>
-      <div className="calendar-field">
-        <span>Partner payout</span>
-        <AdminFormInput
-          defaultValue={payoutRule?.providerPayoutAmount ?? ''}
-          label={`${duration} min partner payout`}
-          min="0"
-          name={`providerPayoutAmount${duration}`}
-          placeholder="350000"
-          step="100000"
-          type="number"
-        />
-      </div>
+      <AdminFormInput
+        className="service-menu-dialog-field"
+        defaultValue={service?.basePrice ?? ''}
+        label="Base price"
+        labelVisibility="visible"
+        min="100000"
+        name={`basePrice${duration}`}
+        placeholder="500000"
+        step="100000"
+        type="number"
+      />
+      <AdminFormInput
+        className="service-menu-dialog-field"
+        defaultValue={payoutRule?.providerPayoutAmount ?? ''}
+        label="Partner payout"
+        labelVisibility="visible"
+        min="0"
+        name={`providerPayoutAmount${duration}`}
+        placeholder="350000"
+        step="100000"
+        type="number"
+      />
       <AdminFormCheckbox
         className="service-menu-enabled-toggle"
         defaultChecked={service?.active ?? Boolean(service)}
