@@ -4,11 +4,10 @@ import type { ReactNode } from 'react';
 import { AdminFilterPanel } from './admin-filter-panel';
 import {
   AdminFormControlButton,
-  AdminFormControlLink,
   AdminFormSearch,
 } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
-import { statusBadgeClassName } from './status-badge';
+import { PillClassBadgeLink, statusBadgeClassName } from './status-badge';
 
 export type FilterBarOption = {
   readonly active?: boolean;
@@ -53,9 +52,9 @@ export function FilterBar({
         <AdminFormSearch defaultValue={defaultQuery} label={queryLabel} name={queryName} placeholder={placeholder} />
         <AdminFormControlButton type="submit">{submitLabel}</AdminFormControlButton>
         {resetHref ? (
-          <AdminFormControlLink className="pill pill-neutral" href={resetHref}>
+          <PillClassBadgeLink href={resetHref} pillClass="pill-neutral">
             Clear
-          </AdminFormControlLink>
+          </PillClassBadgeLink>
         ) : null}
       </form>
       <div className="participant-list filter-bar-options">

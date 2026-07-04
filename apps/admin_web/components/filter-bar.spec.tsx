@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { FilterBar, filterBarOptionClassName } from './filter-bar';
 import { AdminFilterPanel } from './admin-filter-panel';
 
@@ -32,5 +35,13 @@ describe('FilterBar', () => {
     });
     expect(filterBar.props.children[0].props.className).toBe('form-grid compact-form');
     expect(filterBar.props.children[1].props.className).toBe('participant-list filter-bar-options');
+  });
+
+  it('uses the shared badge link atom for reset actions', () => {
+    const source = readFileSync(join(process.cwd(), 'components/filter-bar.tsx'), 'utf8');
+
+    expect(source).toContain('PillClassBadgeLink');
+    expect(source).not.toContain('AdminFormControlLink');
+    expect(source).not.toContain('className="pill pill-neutral"');
   });
 });
