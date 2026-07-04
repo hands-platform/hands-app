@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -38,7 +39,7 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
           ))}
         </div>
       ) : (
-        <p className="muted">No visible session issue in the latest heartbeat snapshot.</p>
+        <AdminEmptyState framed message="No visible session issue in the latest heartbeat snapshot." />
       )}
     </AdminSection>
   );

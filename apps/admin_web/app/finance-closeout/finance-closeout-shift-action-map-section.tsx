@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutShiftActionMapItem } from '../../lib/finance-closeout';
@@ -33,7 +34,7 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
           </Link>
         ))
       ) : (
-        <p className="muted">No shift close action is visible for this range.</p>
+        <AdminEmptyState framed message="No shift close action is visible for this range." />
       )}
     </AdminSection>
   );

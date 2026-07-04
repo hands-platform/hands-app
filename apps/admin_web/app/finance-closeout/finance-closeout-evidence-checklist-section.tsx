@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { FinanceCloseoutEvidenceChecklistItem } from '../../lib/finance-closeout';
@@ -35,7 +36,7 @@ export function FinanceCloseoutEvidenceChecklistSection({
           </Link>
         ))
       ) : (
-        <p className="muted">No finance closeout evidence item is visible for this range.</p>
+        <AdminEmptyState framed message="No finance closeout evidence item is visible for this range." />
       )}
     </AdminSection>
   );

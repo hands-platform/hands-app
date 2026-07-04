@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { formatMoney } from '../../lib/admin-format';
@@ -75,7 +76,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
           ))}
         </div>
       ) : (
-        <p className="muted">No Partner has unpaid earnings in the current admin result window.</p>
+        <AdminEmptyState framed message="No Partner has unpaid earnings in the current admin result window." />
       )}
     </AdminFilterPanel>
   );

@@ -54,8 +54,10 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
 
   it('renders an empty state when no shift close action is visible', () => {
     const section = FinanceCloseoutShiftActionMapSection({ items: [] });
+    const markup = renderToStaticMarkup(section);
 
-    expect(textContent(section)).toContain('No shift close action is visible for this range.');
+    expect(markup).toContain('No shift close action is visible for this range.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

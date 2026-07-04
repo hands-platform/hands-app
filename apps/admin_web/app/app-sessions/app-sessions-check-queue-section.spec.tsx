@@ -38,6 +38,7 @@ describe('AppSessionsCheckQueueSection', () => {
     expect(rendered).toContain('No session check');
     expect(rendered).toContain('No visible session issue in the latest heartbeat snapshot.');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 
   it('uses the shared StatusBadge atom for the check queue status', () => {

@@ -55,8 +55,10 @@ describe('FinanceCloseoutEvidenceChecklistSection', () => {
 
   it('renders an empty state when no evidence checklist item is visible', () => {
     const section = FinanceCloseoutEvidenceChecklistSection({ items: [] });
+    const markup = renderToStaticMarkup(section);
 
-    expect(textContent(section)).toContain('No finance closeout evidence item is visible for this range.');
+    expect(markup).toContain('No finance closeout evidence item is visible for this range.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 

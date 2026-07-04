@@ -42,6 +42,7 @@ describe('EarningsPartnerPayoutQueueSection', () => {
     const section = EarningsPartnerPayoutQueueSection({ groups: [] });
 
     expect(textContent(section)).toContain('No Partner has unpaid earnings in the current admin result window.');
+    expect(classNamesIn(section)).toContain('empty-state');
   });
 });
 

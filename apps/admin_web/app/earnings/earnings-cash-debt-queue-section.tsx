@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { formatMoney } from '../../lib/admin-format';
@@ -120,7 +121,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
           ))}
         </div>
       ) : (
-        <p className="muted">No Partner has unsettled cash fee debt in the current admin result window.</p>
+        <AdminEmptyState framed message="No Partner has unsettled cash fee debt in the current admin result window." />
       )}
     </AdminFilterPanel>
   );

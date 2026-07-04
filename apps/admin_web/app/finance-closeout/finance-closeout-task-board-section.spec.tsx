@@ -56,8 +56,10 @@ describe('FinanceCloseoutTaskBoardSection', () => {
 
   it('renders an empty state when there are no closeout tasks', () => {
     const section = FinanceCloseoutTaskBoardSection({ tasks: [] });
+    const markup = renderToStaticMarkup(section);
 
-    expect(textContent(section)).toContain('No finance closeout task is visible for this range.');
+    expect(markup).toContain('No finance closeout task is visible for this range.');
+    expect(markup).toContain('class="empty-state');
   });
 });
 
