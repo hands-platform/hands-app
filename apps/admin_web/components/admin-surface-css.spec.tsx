@@ -52,6 +52,27 @@ describe('Admin surface CSS', () => {
     expect(emptyBlock).not.toContain('border: 1px dashed');
     expect(emptyBlock).not.toContain('min-height: 92px');
   });
+
+  it('keeps shared disclosures on the Vuexy Accordion rhythm', () => {
+    const disclosureIndex = globalsCss.indexOf('.admin-disclosure {');
+    const disclosureBlock = cssRuleBlockAt(disclosureIndex);
+    const openIndex = globalsCss.indexOf('.admin-disclosure[open] {');
+    const openBlock = cssRuleBlockAt(openIndex);
+    const summaryIndex = globalsCss.indexOf('.admin-disclosure > summary {');
+    const summaryBlock = cssRuleBlockAt(summaryIndex);
+
+    expect(disclosureIndex).toBeGreaterThan(-1);
+    expect(disclosureBlock).toContain('box-shadow: var(--admin-shadow-xs)');
+    expect(openIndex).toBeGreaterThan(-1);
+    expect(openBlock).toContain('box-shadow: var(--admin-shadow-md)');
+    expect(summaryIndex).toBeGreaterThan(-1);
+    expect(summaryBlock).toContain('align-items: center');
+    expect(summaryBlock).toContain('color: var(--admin-text)');
+    expect(summaryBlock).toContain('display: flex');
+    expect(summaryBlock).toContain('gap: 8px');
+    expect(summaryBlock).toContain('min-height: 46px');
+    expect(summaryBlock).toContain('padding: 12px 20px 12px 24px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

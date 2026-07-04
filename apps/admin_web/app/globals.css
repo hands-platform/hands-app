@@ -2327,13 +2327,25 @@ a {
   background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   min-width: 0;
   overflow: hidden;
 }
 
+.admin-disclosure[open] {
+  box-shadow: var(--admin-shadow-md);
+}
+
 .admin-disclosure > summary {
+  align-items: center;
+  color: var(--admin-text);
   cursor: pointer;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
   list-style: none;
+  min-height: 46px;
+  padding: 12px 20px 12px 24px;
 }
 
 .admin-disclosure > summary::-webkit-details-marker {
