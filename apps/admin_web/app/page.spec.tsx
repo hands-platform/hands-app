@@ -318,10 +318,10 @@ describe('DashboardPage', () => {
     expect(dashboardSource).toContain("from '../components/status-badge'");
     expect(dashboardSource).toContain('AdminSectionHeader');
     expect(dashboardSource).toContain('StatusBadge');
-    expect(dashboardSource).toContain('PillClassBadge');
+    expect(dashboardSource).toContain('statusBadgeToneFromPillClass');
+    expect(dashboardSource).not.toContain('PillClassBadge');
     expect(dashboardSource).toContain('AdminSignal');
     expect(dashboardSource).toContain('StatusBadgeLink');
-    expect(dashboardSource).toContain('PillClassBadgeLink');
     expect(dashboardSource).not.toContain('<span className="pill');
     expect(dashboardSource).not.toContain('<span className={`pill');
     expect(dashboardSource).not.toContain('<span className={`signal');

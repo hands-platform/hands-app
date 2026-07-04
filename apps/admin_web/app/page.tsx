@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   Activity,
   BellRing,
@@ -18,11 +19,10 @@ import { AdminActionCard, AdminSection, AdminTaskCard } from '../components/admi
 import { InfoRow } from '../components/info-row';
 import {
   AdminSignal,
-  PillClassBadge,
-  PillClassBadgeLink,
   StatusBadge,
   StatusBadgeLink,
   adminSignalToneFromClassName,
+  statusBadgeToneFromPillClass,
 } from '../components/status-badge';
 import {
   AdminAuditLog,
@@ -96,6 +96,32 @@ const activeBookingStatuses = new Set([
   'ARRIVED',
   'IN_SERVICE',
 ]);
+
+function DashboardStatusBadge({
+  children,
+  pillClass,
+}: {
+  readonly children: ReactNode;
+  readonly pillClass: string;
+}) {
+  return <StatusBadge tone={statusBadgeToneFromPillClass(pillClass)}>{children}</StatusBadge>;
+}
+
+function DashboardStatusBadgeLink({
+  children,
+  href,
+  pillClass,
+}: {
+  readonly children: ReactNode;
+  readonly href: string;
+  readonly pillClass: string;
+}) {
+  return (
+    <StatusBadgeLink href={href} tone={statusBadgeToneFromPillClass(pillClass)}>
+      {children}
+    </StatusBadgeLink>
+  );
+}
 
 // Authority marker for static guard: Online partners.
 
@@ -810,7 +836,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               leading={
                 <>
                   <small>{item.owner}</small>
-                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
+                  <DashboardStatusBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</DashboardStatusBadge>
                 </>
               }
               title={item.lane}
@@ -1015,7 +1041,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               leading={
                 <>
                   <small>{item.owner}</small>
-                  <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</PillClassBadge>
+                  <DashboardStatusBadge pillClass={dashboardTonePillClass(item.tone)}>{item.status}</DashboardStatusBadge>
                 </>
               }
               title={item.lane}
@@ -1114,9 +1140,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       <small>
                         {item.owner} / {item.lane}
                       </small>
-                      <PillClassBadge pillClass={dashboardTonePillClass(item.tone)}>
+                      <DashboardStatusBadge pillClass={dashboardTonePillClass(item.tone)}>
                         {item.status}
-                      </PillClassBadge>
+                      </DashboardStatusBadge>
                     </>
                   }
                   title={item.title}
@@ -1164,7 +1190,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail={card.detail}
                   href={card.href}
                   key={card.title}
-                  leading={<PillClassBadge pillClass={card.pillClass}>{card.scope}</PillClassBadge>}
+                  leading={<DashboardStatusBadge pillClass={card.pillClass}>{card.scope}</DashboardStatusBadge>}
                   title={card.title}
                   variant="ops-task"
                 />
@@ -1273,7 +1299,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   leading={
                     <>
                       <small>Step {index + 1}</small>
-                      <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                      <DashboardStatusBadge pillClass={item.pillClass}>{item.status}</DashboardStatusBadge>
                     </>
                   }
                   title={item.title}
@@ -1314,9 +1340,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <div className="ops-task-note">
                 <AdminSectionHeader
                   actions={(
-                    <PillClassBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
+                    <DashboardStatusBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
                       {matchingControl.openRows.length} shown
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                   )}
                   description="Bookings that may require dispatch intervention before the customer cancels or the timer expires."
                   title="Open matching queue"
@@ -1330,13 +1356,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         </Link>
                         <p className="muted">{row.detail}</p>
                         <div className="participant-list admin-mt-8">
-                          <PillClassBadge pillClass={row.customerPillClass}>{row.customerState}</PillClassBadge>
-                          <PillClassBadge pillClass={row.backupPillClass}>{row.backupState}</PillClassBadge>
-                          <PillClassBadge pillClass={row.supplyPillClass}>{row.supplyState}</PillClassBadge>
+                          <DashboardStatusBadge pillClass={row.customerPillClass}>{row.customerState}</DashboardStatusBadge>
+                          <DashboardStatusBadge pillClass={row.backupPillClass}>{row.backupState}</DashboardStatusBadge>
+                          <DashboardStatusBadge pillClass={row.supplyPillClass}>{row.supplyState}</DashboardStatusBadge>
                         </div>
                         <p className="muted admin-mt-6">Next: {row.nextAction}</p>
                       </div>
-                      <PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>
+                      <DashboardStatusBadge pillClass={row.pillClass}>{row.status}</DashboardStatusBadge>
                     </div>
                   ))}
                   {matchingControl.openRows.length === 0 ? (
@@ -1351,9 +1377,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <div className="ops-task-note">
                 <AdminSectionHeader
                   actions={(
-                    <PillClassBadge pillClass={matchingControl.healthPillClass}>
+                    <DashboardStatusBadge pillClass={matchingControl.healthPillClass}>
                       {matchingControl.healthLabel}
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                   )}
                   description="The most likely reason matching will feel slow before operators touch a booking."
                   title="Supply and policy checks"
@@ -1364,7 +1390,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       className={check.className}
                       detail={check.detail}
                       key={check.title}
-                      leading={<PillClassBadge pillClass={check.pillClass}>{check.status}</PillClassBadge>}
+                      leading={<DashboardStatusBadge pillClass={check.pillClass}>{check.status}</DashboardStatusBadge>}
                       title={check.title}
                     >
                       <small>{check.operatorAction}</small>
@@ -1425,13 +1451,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         These owner choices are currently different from the recommended operating baseline.
                       </p>
                     </div>
-                    <PillClassBadge
+                    <DashboardStatusBadge
                       pillClass={
                         fullDashboardData.policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'
                       }
                     >
                       {fullDashboardData.policySummary.activeOverrideCount} override(s)
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                   </div>
                   <div className="stack admin-mt-10">
                     {fullDashboardData.policySummary.activeOverrides.slice(0, 4).map((override) => (
@@ -1477,12 +1503,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             {change.current} changed {change.changedAtLabel}
                           </p>
                         </div>
-                        <PillClassBadgeLink
+                        <DashboardStatusBadgeLink
                           href={change.href}
                           pillClass={change.enforced ? 'pill-success' : 'pill-warn'}
                         >
                           {change.enforced ? 'Live' : 'Planning'}
-                        </PillClassBadgeLink>
+                        </DashboardStatusBadgeLink>
                       </div>
                     ))}
                     {fullDashboardData.policySummary.recentChanges.length === 0 ? (
@@ -1504,7 +1530,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail={decision.current}
                   href={decision.href}
                   key={decision.key}
-                  leading={<PillClassBadge pillClass={decision.pillClass}>{decision.status}</PillClassBadge>}
+                  leading={<DashboardStatusBadge pillClass={decision.pillClass}>{decision.status}</DashboardStatusBadge>}
                   title={decision.label}
                   variant="ops-task"
                 >
@@ -1627,9 +1653,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                             {item.pending} pending
                           </p>
                         </div>
-                        <PillClassBadge pillClass={item.checkCount ? 'pill-warn' : 'pill-info'}>
+                        <DashboardStatusBadge pillClass={item.checkCount ? 'pill-warn' : 'pill-info'}>
                           {item.count} payment(s)
-                        </PillClassBadge>
+                        </DashboardStatusBadge>
                       </div>
                     ))}
                     {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
@@ -1773,9 +1799,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         {item.active} active / {item.completed} completed / {item.cancelled} cancelled
                       </p>
                     </div>
-                    <PillClassBadge pillClass={item.total ? 'pill-info' : 'pill-neutral'}>
+                    <DashboardStatusBadge pillClass={item.total ? 'pill-info' : 'pill-neutral'}>
                       {item.total}
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                   </div>
                 ))}
               </div>
@@ -1800,9 +1826,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                         {item.active} active / {item.completed} completed / {item.cancelled} cancelled
                       </p>
                     </div>
-                    <PillClassBadge pillClass={item.noShowSignal ? 'pill-warn' : 'pill-info'}>
+                    <DashboardStatusBadge pillClass={item.noShowSignal ? 'pill-warn' : 'pill-info'}>
                       {item.total} booking(s)
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                   </div>
                 ))}
                 {fullDashboardData.regionalDemand.length === 0 && (
@@ -2000,7 +2026,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail={step.detail}
                   href={step.href}
                   key={step.id}
-                  leading={<PillClassBadge pillClass={step.pillClass}>Step {step.step}</PillClassBadge>}
+                  leading={<DashboardStatusBadge pillClass={step.pillClass}>Step {step.step}</DashboardStatusBadge>}
                   title={step.title}
                   variant="ops-task"
                 >
@@ -2034,9 +2060,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <div className="ops-task-note admin-mt-14">
                 <div className="ops-row">
                   <div>
-                    <PillClassBadge pillClass={fullDashboardData.topCommandSignal.pillClass}>
+                    <DashboardStatusBadge pillClass={fullDashboardData.topCommandSignal.pillClass}>
                       First move
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                     <strong>{fullDashboardData.topCommandSignal.title}</strong>
                     <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
                   </div>
@@ -2054,7 +2080,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   detail={signal.detail}
                   href={signal.href}
                   key={signal.title}
-                  leading={<PillClassBadge pillClass={signal.pillClass}>{signal.status}</PillClassBadge>}
+                  leading={<DashboardStatusBadge pillClass={signal.pillClass}>{signal.status}</DashboardStatusBadge>}
                   title={signal.title}
                   variant="ops-task"
                 >
@@ -2129,7 +2155,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               {fullDashboardData.queueSummary.first && (
                 <div className="ops-task-note admin-mt-14">
                   <div>
-                    <PillClassBadge
+                    <DashboardStatusBadge
                       pillClass={
                         fullDashboardData.queueSummary.first.severity === 'high'
                           ? 'pill-danger'
@@ -2137,7 +2163,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       }
                     >
                       First action
-                    </PillClassBadge>
+                    </DashboardStatusBadge>
                     <h3>{fullDashboardData.queueSummary.first.label}</h3>
                     <p>{fullDashboardData.queueSummary.first.recommendedAction}</p>
                     <p className="muted">
@@ -2310,9 +2336,9 @@ function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks
         {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
       </div>
       <div className="actions">
-        <PillClassBadge pillClass={check.status === 'READY' ? 'pill-success' : 'pill-warn'}>
+        <DashboardStatusBadge pillClass={check.status === 'READY' ? 'pill-success' : 'pill-warn'}>
           {check.status}
-        </PillClassBadge>
+        </DashboardStatusBadge>
         <Link className="text-link" href={href}>
           Related page
         </Link>
