@@ -34,6 +34,7 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).toContain('AdminTaskCard');
     expect(source).not.toContain('className={`ops-task-card ${finalGateReason.className}`');
     expect(source).not.toContain('<a className={`ops-task-card ${row.className}`');
+    expect(source).not.toContain('<div className="action-button-card ops-task-blocked"');
   });
 
   it('renders command queue and action availability table with shared table styling', () => {

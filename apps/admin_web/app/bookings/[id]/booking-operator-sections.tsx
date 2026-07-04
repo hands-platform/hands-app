@@ -284,14 +284,16 @@ export function BookingOpsCommandCenter({
             )}
           </>
         ) : (
-          <div className="action-button-card ops-task-blocked">
-            <StatusBadge tone="neutral">Locked</StatusBadge>
+          <AdminTaskCard
+            actionLabel="Payment buttons appear after a booking payment row exists."
+            className="action-button-card ops-task-blocked"
+            leading={<StatusBadge tone="neutral">Locked</StatusBadge>}
+          >
             <AdminEmptyState
               message="No payment record is linked to this booking yet."
               title="No payment action available"
             />
-            <small>Payment buttons appear after a booking payment row exists.</small>
-          </div>
+          </AdminTaskCard>
         )}
       </div>
     </AdminSection>
