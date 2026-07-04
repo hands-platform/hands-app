@@ -41,6 +41,28 @@ describe('Admin form control CSS', () => {
     expect(inlineNavigationBlock).not.toContain('top: 8px');
   });
 
+  it('keeps the shared react-datepicker header spacing on the Vuexy template rhythm', () => {
+    const headerTitleIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__current-month,',
+    );
+    const headerTitleBlock = cssRuleBlockAt(headerTitleIndex);
+
+    expect(headerTitleIndex).toBeGreaterThan(-1);
+    expect(headerTitleBlock).toContain('padding: 12px 16px 18px');
+    expect(headerTitleBlock).not.toContain('padding: 12px 16px;');
+  });
+
+  it('keeps today dates on Vuexy normal font weight instead of local bold emphasis', () => {
+    const todayIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__day--today:not(.react-datepicker__day--selected)',
+    );
+    const todayBlock = cssRuleBlockAt(todayIndex);
+
+    expect(todayIndex).toBeGreaterThan(-1);
+    expect(todayBlock).toContain('font-weight: 400');
+    expect(todayBlock).not.toContain('font-weight: 500');
+  });
+
   it('matches Vuexy text field focus weight on shared form controls', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const focusBlock = cssRuleBlockAt(focusIndex);
