@@ -1,9 +1,23 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerKycReviewBoardSection,
   type PartnerKycReviewBoardSectionBoard,
 } from './partner-kyc-review-board-section';
 
 describe('PartnerKycReviewBoardSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw KYC board pill spans', () => {
+    const source = readFileSync('app/partners/partner-kyc-review-board-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${board.openCount > 0 ? \'pill-warn\' : \'pill-success\'}`}>');
+    expect(source).not.toContain('<span className="pill pill-success">{board.readyToApprove} ready to approve</span>');
+    expect(source).not.toContain('<span className="pill pill-danger">{board.blockedByDocuments} blocked by docs</span>');
+    expect(source).not.toContain('<span className="pill" key={sample}>');
+    expect(source).not.toContain('<span className="pill pill-success">No immediate queue</span>');
+  });
+
   it('renders KYC summary counts, review cards, and playbook steps', () => {
     const section = PartnerKycReviewBoardSection({
       board: buildBoard(),

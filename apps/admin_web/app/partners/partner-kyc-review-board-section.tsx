@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 
 type PartnerKycReviewTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -41,11 +42,11 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
     <AdminSection
       actions={
         <>
-          <span className={`pill ${board.openCount > 0 ? 'pill-warn' : 'pill-success'}`}>
+          <PillClassBadge pillClass={board.openCount > 0 ? 'pill-warn' : 'pill-success'}>
             {board.openCount} KYC item(s)
-          </span>
-          <span className="pill pill-success">{board.readyToApprove} ready to approve</span>
-          <span className="pill pill-danger">{board.blockedByDocuments} blocked by docs</span>
+          </PillClassBadge>
+          <StatusBadge tone="success">{board.readyToApprove} ready to approve</StatusBadge>
+          <StatusBadge tone="danger">{board.blockedByDocuments} blocked by docs</StatusBadge>
         </>
       }
       className="admin-mb-16 partner-kyc-review-board-card"
@@ -69,12 +70,12 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
             <div className="participant-list admin-mt-10">
               {card.samples.length > 0 ? (
                 card.samples.map((sample) => (
-                  <span className="pill" key={sample}>
+                  <StatusBadge key={sample} tone="neutral">
                     {sample}
-                  </span>
+                  </StatusBadge>
                 ))
               ) : (
-                <span className="pill pill-success">No immediate queue</span>
+                <StatusBadge tone="success">No immediate queue</StatusBadge>
               )}
             </div>
           </AdminActionCard>
