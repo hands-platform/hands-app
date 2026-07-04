@@ -177,8 +177,9 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('card admin-section finance-overview-priority-board');
     expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card finance-overview-priority-card');
-    expect(markup).toContain('card admin-card finance-overview-control-card');
-    expect(pageSource).not.toContain('<a className={`card admin-card finance-overview-control-card');
+    expect(markup).toContain('card admin-card usage-overview-command-card finance-overview-control-card');
+    expect(pageSource).toContain('AdminOverviewCommandCard');
+    expect(pageSource).not.toContain('<AdminLinkCard className={`finance-overview-control-card');
     expect(markup).toContain('Core Finance KPI');
     expect(markup).toContain('6 signals');
     expect(markup).toContain('card admin-section finance-overview-kpi-section');
@@ -188,6 +189,7 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain(
       '<article className={`card admin-card usage-overview-command-card',
     );
+    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${kpi.tone}`');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-command-card is-');
     expect(markup).toContain('card admin-card finance-overview-principle-card');
     expect(markup).toContain('Revenue separation');

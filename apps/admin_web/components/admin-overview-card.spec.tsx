@@ -36,4 +36,21 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).not.toContain('<small>');
     expect(markup).toContain('<a href="/customers">Open list</a>');
   });
+
+  it('renders a link card when an href is provided', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandCard
+        className="is-warning"
+        detail="Open the bounded evidence list"
+        href="/finance-tax/payment-clearing"
+        icon={<svg aria-hidden="true" />}
+        label="Payment clearing"
+        value="3"
+      />,
+    );
+
+    expect(markup).toContain('class="card admin-card usage-overview-command-card is-warning"');
+    expect(markup).toContain('href="/finance-tax/payment-clearing"');
+    expect(markup).toContain('<strong>3</strong>');
+  });
 });

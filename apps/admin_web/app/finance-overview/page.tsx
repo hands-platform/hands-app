@@ -15,6 +15,7 @@ import type {
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
+import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -207,43 +208,30 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
   const Icon = financeControlMetricIcons[metric.label] ?? ShieldCheck;
 
   return (
-    <AdminLinkCard className={`finance-overview-control-card is-${metric.tone}`} href={metric.href}>
-      <span className="usage-overview-command-icon">
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{metric.label}</span>
-        <strong>{metric.value}</strong>
-        <small>{metric.detail}</small>
-      </div>
-    </AdminLinkCard>
+    <AdminOverviewCommandCard
+      className={`finance-overview-control-card is-${metric.tone}`}
+      detail={metric.detail}
+      href={metric.href}
+      icon={<Icon size={18} aria-hidden="true" />}
+      label={metric.label}
+      value={metric.value}
+    />
   );
 }
 
 function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
   const Icon = financeKpiIcons[kpi.label] ?? CircleDollarSign;
-  const body = (
-    <>
-      <span className="usage-overview-command-icon">
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{kpi.label}</span>
-        <strong>{kpi.value}</strong>
-        <small>{kpi.detail}</small>
-      </div>
-    </>
+
+  return (
+    <AdminOverviewCommandCard
+      className={`is-${kpi.tone}`}
+      detail={kpi.detail}
+      href={kpi.href}
+      icon={<Icon size={18} aria-hidden="true" />}
+      label={kpi.label}
+      value={kpi.value}
+    />
   );
-
-  if (kpi.href) {
-    return (
-      <AdminLinkCard className={`usage-overview-command-card is-${kpi.tone}`} href={kpi.href}>
-        {body}
-      </AdminLinkCard>
-    );
-  }
-
-  return <AdminCard className={`usage-overview-command-card is-${kpi.tone}`}>{body}</AdminCard>;
 }
 
 function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOverviewSection }) {
