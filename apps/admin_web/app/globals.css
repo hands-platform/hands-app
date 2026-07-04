@@ -1368,8 +1368,8 @@ a {
   padding-inline: 0;
 }
 
-.calendar-field .react-datepicker-wrapper,
-.calendar-field .react-datepicker__input-container {
+.calendar-datepicker-field .react-datepicker-wrapper,
+.calendar-datepicker-field .react-datepicker__input-container {
   display: block;
   width: 100%;
 }
@@ -2142,101 +2142,71 @@ a {
   gap: 18px;
 }
 
-.calendar-field {
-  display: grid;
-  gap: 8px;
+.calendar-drawer-field {
+  width: 100%;
 }
 
-.calendar-field span {
-  color: var(--admin-muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.calendar-field input,
-.calendar-field select,
-.calendar-field textarea {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-input-border);
-  border-radius: var(--admin-radius);
-  color: var(--admin-text);
-  font: inherit;
-  min-height: var(--admin-control-height);
-  padding: 10px 12px;
-  transition:
-    border-color var(--admin-transition),
-    box-shadow var(--admin-transition),
-    background var(--admin-transition);
-}
-
-.calendar-field input:focus,
-.calendar-field select:focus,
-.calendar-field textarea:focus {
-  border-color: var(--admin-accent);
-  border-width: 2px;
-  box-shadow: var(--admin-primary-shadow-sm);
-  outline: 0;
-}
-
-.calendar-field textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-.calendar-field-toggle {
+.calendar-drawer-switch {
   align-items: center;
-  background: var(--admin-surface-soft);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  grid-template-columns: 1fr auto;
-  min-height: 46px;
-  padding: 10px 12px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 38px;
+  width: 100%;
 }
 
-.calendar-field-toggle input {
-  appearance: none;
+.calendar-drawer-switch .admin-form-checkbox-label {
+  min-width: 0;
+  order: 1;
+}
+
+.calendar-drawer-switch .admin-form-checkbox-mark {
   background: rgb(var(--admin-main-channel) / 0.18);
   border: 0;
   border-radius: 999px;
-  cursor: pointer;
-  height: 22px;
-  min-height: 22px;
-  min-width: 40px;
-  padding: 0;
+  block-size: 22px;
+  flex: 0 0 40px;
+  inline-size: 40px;
+  order: 2;
   position: relative;
   transition:
     background var(--admin-transition),
     box-shadow var(--admin-transition);
-  width: 40px;
 }
 
-.calendar-field-toggle input::before {
+.calendar-drawer-switch .admin-form-checkbox-mark::after {
   background: var(--admin-inverse-text);
+  border: 0;
   border-radius: 999px;
   box-shadow: var(--admin-shadow-xs);
   content: '';
-  height: 18px;
+  block-size: 18px;
+  inline-size: 18px;
   left: 2px;
+  margin: 0;
+  opacity: 1;
   position: absolute;
   top: 2px;
+  transform: none;
   transition: transform var(--admin-transition);
-  width: 18px;
 }
 
-.calendar-field-toggle input:checked {
+.calendar-drawer-switch .admin-form-checkbox-input:checked + .admin-form-checkbox-mark {
   background: var(--admin-accent);
+  border: 0;
 }
 
-.calendar-field-toggle input:checked::before {
+.calendar-drawer-switch .admin-form-checkbox-input:checked + .admin-form-checkbox-mark::after {
+  opacity: 1;
   transform: translateX(18px);
 }
 
-.calendar-field-toggle input:focus-visible {
+.calendar-drawer-switch .admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark {
   box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
 }
 
-.calendar-field-wide {
+.calendar-drawer-field-wide {
   grid-column: 1 / -1;
 }
 
@@ -17059,7 +17029,7 @@ textarea:focus-visible {
     transform var(--admin-transition);
 }
 
-.calendar-field > span:first-child,
+.calendar-drawer-field > span:first-child,
 .field > span:first-child,
 .filter-grid label > span:first-child,
 .form-grid label > span:first-child,
@@ -17577,12 +17547,12 @@ textarea:focus-visible {
 }
 
 /* Page-scoped controls keep the same Vuexy atom baseline. */
-.calendar-field
+.calendar-drawer-field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']),
-.calendar-field select,
-.calendar-field textarea,
+.calendar-drawer-field select,
+.calendar-drawer-field textarea,
 .chat-archive-page
   .form-grid
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17666,11 +17636,11 @@ textarea:focus-visible {
   line-height: var(--admin-input-line-height);
 }
 
-.calendar-field
+.calendar-drawer-field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']),
-.calendar-field select,
+.calendar-drawer-field select,
 .chat-archive-page
   .form-grid
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17737,7 +17707,7 @@ textarea:focus-visible {
   padding: var(--admin-input-padding-sm);
 }
 
-.calendar-field textarea,
+.calendar-drawer-field textarea,
 .chat-archive-page .form-grid textarea,
 .partners-page .partner-filter-card .form-grid textarea,
 .audit-log-page .form-grid textarea,
@@ -17753,12 +17723,12 @@ textarea:focus-visible {
   padding: var(--admin-input-padding-md);
 }
 
-.calendar-field
+.calendar-drawer-field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']):hover:not(:disabled):not([readonly]),
-.calendar-field select:hover:not(:disabled),
-.calendar-field textarea:hover:not(:disabled):not([readonly]),
+.calendar-drawer-field select:hover:not(:disabled),
+.calendar-drawer-field textarea:hover:not(:disabled):not([readonly]),
 .operations-policy-page
   .field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
@@ -17769,12 +17739,12 @@ textarea:focus-visible {
   border-color: var(--admin-input-hover-border);
 }
 
-.calendar-field
+.calendar-drawer-field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']):focus,
-.calendar-field select:focus,
-.calendar-field textarea:focus,
+.calendar-drawer-field select:focus,
+.calendar-drawer-field textarea:focus,
 .operations-policy-page
   .field
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(

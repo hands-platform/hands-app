@@ -121,7 +121,7 @@ export function CalendarEventDrawer({
           ) : null}
           <div className="calendar-form-grid">
             <AdminFormInput
-              className="calendar-field"
+              className="calendar-drawer-field"
               disabled={!canEdit}
               label="Title"
               labelVisibility="visible"
@@ -132,7 +132,7 @@ export function CalendarEventDrawer({
             />
 
             <AdminFormInput
-              className="calendar-field"
+              className="calendar-drawer-field"
               disabled={!canEdit}
               label="Hashtags"
               labelVisibility="visible"
@@ -162,7 +162,7 @@ export function CalendarEventDrawer({
               startDate={toDateValue(draft.start)}
               endDate={toDateValue(draft.end)}
               timeIntervals={30}
-              wrapperClassName="calendar-field"
+              wrapperClassName="calendar-drawer-field calendar-datepicker-field"
             />
 
             <DatePicker
@@ -186,12 +186,12 @@ export function CalendarEventDrawer({
               showTimeSelect={!draft.allDay}
               startDate={toDateValue(draft.start)}
               timeIntervals={30}
-              wrapperClassName="calendar-field"
+              wrapperClassName="calendar-drawer-field calendar-datepicker-field"
             />
 
             <AdminFormCheckbox
               checked={draft.allDay}
-              className="calendar-field calendar-field-toggle"
+              className="calendar-drawer-switch"
               disabled={!canEdit}
               label="All day"
               onChange={updateField('allDay')}
@@ -200,7 +200,7 @@ export function CalendarEventDrawer({
             </AdminFormCheckbox>
 
             <AdminFormInput
-              className="calendar-field"
+              className="calendar-drawer-field"
               disabled={!canEdit}
               label="Location"
               labelVisibility="visible"
@@ -211,7 +211,7 @@ export function CalendarEventDrawer({
             />
 
             <AdminFormInput
-              className="calendar-field"
+              className="calendar-drawer-field"
               disabled={!canEdit}
               label="Link"
               labelVisibility="visible"
@@ -222,7 +222,7 @@ export function CalendarEventDrawer({
             />
 
             <AdminFormTextarea
-              className="calendar-field calendar-field-wide"
+              className="calendar-drawer-field calendar-drawer-field-wide"
               disabled={!canEdit}
               label="Notes"
               labelVisibility="visible"

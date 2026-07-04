@@ -66,8 +66,9 @@ describe('audit log page model', () => {
     expect(markup).toContain('>11<');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled calendar-field');
-    expect(markup).toContain('admin-form-select admin-form-control-labeled calendar-field');
+    expect(markup).toContain('admin-form-input admin-form-control-labeled admin-directory-filter-search');
+    expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
+    expect(markup).not.toContain('calendar-field');
     expect(markup).toContain('admin-form-control-button button button-primary');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('Operational trail');

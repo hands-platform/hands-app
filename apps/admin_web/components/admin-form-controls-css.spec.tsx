@@ -28,10 +28,10 @@ describe('Admin form control CSS', () => {
   });
 
   it('styles shared checkboxes through the Vuexy mark layer instead of the browser default control', () => {
-    const baseIndex = globalsCss.indexOf('.admin-form-checkbox {');
-    const inputIndex = globalsCss.indexOf('.admin-form-checkbox-input');
-    const markIndex = globalsCss.indexOf('.admin-form-checkbox-mark');
-    const checkedIndex = globalsCss.indexOf('.admin-form-checkbox-input:checked + .admin-form-checkbox-mark');
+    const baseIndex = globalsCss.indexOf('\n.admin-form-checkbox {');
+    const inputIndex = globalsCss.indexOf('\n.admin-form-checkbox-input {');
+    const markIndex = globalsCss.indexOf('\n.admin-form-checkbox-mark {');
+    const checkedIndex = globalsCss.indexOf('\n.admin-form-checkbox-input:checked + .admin-form-checkbox-mark {');
 
     expect(baseIndex).toBeGreaterThan(-1);
     expect(inputIndex).toBeGreaterThan(baseIndex);
@@ -217,7 +217,7 @@ describe('Admin form control CSS', () => {
   });
 
   it.each([
-    ['calendar field', '.calendar-field input:focus,'],
+    ['calendar drawer field', '.calendar-drawer-field select:focus,'],
     ['coupon forms', '.coupon-edit-form input:focus,'],
     ['operator notes', '.ops-note-form textarea:focus,'],
   ])('keeps %s focused inputs off the legacy double-ring treatment', (_label, selector) => {
@@ -262,7 +262,7 @@ describe('Admin form control CSS', () => {
   });
 
   it.each([
-    ['calendar toggle', '.calendar-field-toggle input:focus-visible'],
+    ['calendar drawer switch', '.calendar-drawer-switch .admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark'],
     ['service duration toggle', ".service-menu-dialog .service-menu-enabled-toggle input[type='checkbox']:focus-visible"],
     ['shared checkbox mark', '.admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark'],
   ])('keeps %s focus visible states on Vuexy primary shadow only', (_label, selector) => {
