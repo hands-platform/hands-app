@@ -1,7 +1,6 @@
-import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormTextarea } from '../../../components/admin-form-controls';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminActionCard, AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
@@ -168,13 +167,15 @@ function BookingOutcomeReviewSection({
     >
       <div className="ops-task-grid">
         {outcomeReview.rows.map((row) => (
-          <a className="ops-task-card" href={row.href} key={row.label}>
-            <div>
-              <PillClassBadge pillClass={row.tone}>{row.label}</PillClassBadge>
-              <h3>{row.value}</h3>
-              <p>{row.helper}</p>
-            </div>
-          </a>
+          <AdminActionCard
+            detail={row.helper}
+            href={row.href}
+            key={row.label}
+            signalClassName={outcomeSignalClass(row.tone)}
+            signalLabel={row.label}
+            title={row.value}
+            variant="ops-task"
+          />
         ))}
       </div>
       {outcomeReview.postMatchDecision.visible ? (
@@ -542,4 +543,14 @@ function opsTaskTone(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function outcomeSignalClass(pillClass: string) {
+  if (pillClass.includes('success')) {
+    return 'signal-ok';
+  }
+  if (pillClass.includes('warn') || pillClass.includes('danger')) {
+    return 'signal-warn';
+  }
+  return 'signal-info';
 }

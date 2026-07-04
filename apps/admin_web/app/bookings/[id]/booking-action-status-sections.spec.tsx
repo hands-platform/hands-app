@@ -81,7 +81,9 @@ describe('BookingActionStatusSections', () => {
   it('uses shared Vuexy admin card surfaces for action panels', () => {
     const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminCard');
+    expect(source).not.toContain('<a className="ops-task-card"');
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
     expect(source).not.toContain('className="card admin-card booking-action-note-panel"');
   });
