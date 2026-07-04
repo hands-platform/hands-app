@@ -31,6 +31,13 @@ type AdminFormCardProps = AdminCardProps & {
   readonly method?: 'get' | 'post';
 };
 
+type AdminActionFormCardProps = {
+  readonly action: string | ((formData: FormData) => void | Promise<void>);
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly method?: 'get' | 'post';
+};
+
 type AdminDialogCardProps = AdminCardProps & {
   readonly ariaDescribedBy: string;
   readonly loading?: boolean;
@@ -193,6 +200,19 @@ export function AdminFormCard({
       id={id}
       method={method}
     >
+      {children}
+    </form>
+  );
+}
+
+export function AdminActionFormCard({
+  action,
+  children,
+  className,
+  method,
+}: AdminActionFormCardProps) {
+  return (
+    <form action={action} className={joinClassNames('action-button-card', className)} method={method}>
       {children}
     </form>
   );

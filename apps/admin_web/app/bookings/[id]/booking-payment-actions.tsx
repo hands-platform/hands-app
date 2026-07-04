@@ -1,4 +1,5 @@
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminActionFormCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
@@ -34,7 +35,7 @@ export function BookingPaymentAction({
   requiresApproval?: boolean;
 }) {
   return (
-    <form action={action} className={`action-button-card ${readout?.className ?? ''}`}>
+    <AdminActionFormCard action={action} className={readout?.className}>
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="paymentId" value={paymentId} />
       <div>
@@ -58,7 +59,7 @@ export function BookingPaymentAction({
         {label}
       </AdminFormControlButton>
       <small>{ruleHint ?? readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
-    </form>
+    </AdminActionFormCard>
   );
 }
 
@@ -72,7 +73,7 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
   const debtAmount = formatMoney(Math.abs(earning.netAmount), earning.currency);
 
   return (
-    <form action={settleBookingCashDebt} className="action-button-card ops-task-blocked">
+    <AdminActionFormCard action={settleBookingCashDebt} className="ops-task-blocked">
       <input type="hidden" name="bookingId" value={booking.id} />
       <input type="hidden" name="earningId" value={earning.id} />
       <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
@@ -96,6 +97,6 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
         placeholder={`Partner deposited ${debtAmount}`}
       />
       <AdminFormControlButton type="submit">Settle cash debt</AdminFormControlButton>
-    </form>
+    </AdminActionFormCard>
   );
 }

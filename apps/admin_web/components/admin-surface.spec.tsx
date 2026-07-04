@@ -1,5 +1,6 @@
 import {
   AdminActionCard,
+  AdminActionFormCard,
   AdminAsideCard,
   AdminCard,
   AdminDisclosure,
@@ -161,6 +162,20 @@ describe('Admin surface components', () => {
       className: 'card admin-card policy-form',
       id: 'policy-form',
       method: 'post',
+    });
+  });
+
+  it('renders a reusable Vuexy action form card surface for operational writes', () => {
+    const form = AdminActionFormCard({
+      action: '/admin/bookings/capture',
+      children: <button type="submit">Capture</button>,
+      className: 'ops-task-blocked',
+    });
+
+    expect(form.type).toBe('form');
+    expect(form.props).toMatchObject({
+      action: '/admin/bookings/capture',
+      className: 'action-button-card ops-task-blocked',
     });
   });
 
