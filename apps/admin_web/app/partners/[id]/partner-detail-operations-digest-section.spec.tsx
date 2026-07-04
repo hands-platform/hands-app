@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDetailOperationsDigestSection,
   type PartnerOperationsDigestRow,
 } from './partner-detail-operations-digest-section';
 
 describe('PartnerDetailOperationsDigestSection', () => {
+  it('uses the shared Vuexy badge atom for digest evidence pills', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${row.tone}`}');
+  });
+
   it('renders digest lanes with evidence, links, and latest dates', () => {
     const section = PartnerDetailOperationsDigestSection({
       description: 'One-screen factual digest for partner operations.',
@@ -32,7 +41,7 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#identity', '#chat']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
