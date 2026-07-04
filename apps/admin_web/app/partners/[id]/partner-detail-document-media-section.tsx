@@ -3,7 +3,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -84,7 +84,9 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
                 />
               </td>
               <td>
-                <PillClassBadge pillClass={document.statusTone}>{document.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(document.statusTone)}>
+                  {document.status}
+                </StatusBadge>
               </td>
               <td>
                 <ActionMenu
@@ -135,7 +137,9 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
                 <StatusBadge tone="success">{file.uploadStatus}</StatusBadge>
               </td>
               <td>
-                <PillClassBadge pillClass={file.reviewStatusTone}>{file.reviewStatus}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(file.reviewStatusTone)}>
+                  {file.reviewStatus}
+                </StatusBadge>
                 {file.reviewedLabel ? <p className="muted">Reviewed {file.reviewedLabel}</p> : null}
                 {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
               </td>

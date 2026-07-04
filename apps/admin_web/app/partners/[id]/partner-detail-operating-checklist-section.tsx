@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -56,13 +56,17 @@ export function PartnerDetailOperatingChecklistSection({
                   <strong>{item.area}</strong>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={pillClassForTone(item.tone)}>{item.status}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(item.tone))}>
+                    {item.status}
+                  </StatusBadge>
                 </td>
                 <td>
                   <p className="muted">{item.detail}</p>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={pillClassForTone(item.tone)}>{item.nextAction}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(item.tone))}>
+                    {item.nextAction}
+                  </StatusBadge>
                 </td>
                 <td>
                   <Link className="text-link" href={item.href}>

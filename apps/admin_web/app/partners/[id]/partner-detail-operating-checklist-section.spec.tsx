@@ -6,7 +6,8 @@ describe('PartnerDetailOperatingChecklistSection', () => {
   it('uses the shared Vuexy badge atom for checklist status pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(item.tone)}`}>{item.status}</span>');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(item.tone)}`}>{item.nextAction}</span>');
   });
@@ -56,8 +57,8 @@ describe('PartnerDetailOperatingChecklistSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
-        'pill pill-blocked',
-        'pill pill-done',
+        'pill pill-danger',
+        'pill pill-success',
         'text-link',
       ]),
     );

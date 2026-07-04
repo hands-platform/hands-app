@@ -3,11 +3,8 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { PillClassBadge } from '../../../components/status-badge';
-import type {
-  PartnerFinanceFollowUpRow,
-  PartnerFinanceFollowUpTone,
-} from './partner-detail-finance-follow-up-model';
+import { StatusBadge } from '../../../components/status-badge';
+import type { PartnerFinanceFollowUpRow } from './partner-detail-finance-follow-up-model';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -42,7 +39,7 @@ export function PartnerDetailFinanceFollowUpSection({
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <PillClassBadge pillClass={pillClassForTone(row.tone)}>{row.title}</PillClassBadge>
+                <StatusBadge tone={row.tone}>{row.title}</StatusBadge>
                 <p className="muted">{row.detail}</p>
               </td>
               <td>
@@ -72,10 +69,4 @@ function PartnerFinanceFollowUpEmptyState() {
       message="No bank correction, negative wallet, manual deposit, or withdrawal follow-up is active."
     />
   );
-}
-
-function pillClassForTone(tone: PartnerFinanceFollowUpTone) {
-  if (tone === 'danger') return 'pill-danger';
-  if (tone === 'success') return 'pill-success';
-  return 'pill-warn';
 }

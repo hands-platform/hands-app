@@ -69,7 +69,7 @@ export function statusBadgeToneFromPillClass(pillClass: string): StatusBadgeTone
   if (pillClass.includes('warn') || pillClass.includes('pending')) {
     return 'warning';
   }
-  if (pillClass.includes('success')) {
+  if (pillClass.includes('success') || pillClass.includes('done')) {
     return 'success';
   }
   if (pillClass.includes('info')) {
