@@ -14,7 +14,10 @@ describe('partner detail profile and location sections', () => {
     );
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<strong>No profile evidence found</strong>');
+    expect(source).not.toContain('<span className="pill pill-success">ACCEPTED</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral" key={snapshot.id}>');
   });
 
   it('renders the basic profile as a compact evidence table', () => {

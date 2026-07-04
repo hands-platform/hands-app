@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -111,7 +112,7 @@ export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreeme
                 <strong>{agreement.label}</strong>
               </td>
               <td>
-                <span className="pill pill-success">ACCEPTED</span>
+                <StatusBadge tone="success">ACCEPTED</StatusBadge>
               </td>
             </tr>
           ))}
@@ -224,9 +225,9 @@ export function PartnerDetailLocationActivityCard({
               {snapshots.length ? (
                 <div className="participant-list">
                   {snapshots.map((snapshot) => (
-                    <span className="pill pill-neutral" key={snapshot.id}>
+                    <StatusBadge key={snapshot.id} tone="neutral">
                       {snapshot.label}
-                    </span>
+                    </StatusBadge>
                   ))}
                 </div>
               ) : (
