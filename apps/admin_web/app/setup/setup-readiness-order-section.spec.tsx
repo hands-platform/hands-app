@@ -8,7 +8,8 @@ describe('SetupReadinessOrderSection', () => {
     const source = readFileSync(new URL('./setup-readiness-order-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-warn">BLOCKED</span>');
     expect(source).not.toContain('<span className={`pill ${isCurrentStage ?');
     expect(source).not.toContain('<span className="pill pill-neutral">Secret-safe</span>');
