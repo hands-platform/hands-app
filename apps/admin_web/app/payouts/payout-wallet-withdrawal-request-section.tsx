@@ -10,6 +10,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
+import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import { formatDateTime, formatMoney, shortRecordId } from '../../lib/admin-format';
 import type {
   AdminProviderWalletWithdrawalRequest,
@@ -102,9 +103,7 @@ export function PayoutWalletWithdrawalRequestSection({
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <span className={`pill ${statusPillClass(request.status)}`}>
-                  {statusLabel(request.status)}
-                </span>
+                <StatusBadge tone={statusBadgeTone(request.status)}>{statusLabel(request.status)}</StatusBadge>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
@@ -210,7 +209,7 @@ function WithdrawalRequestActions({
   if (request.status === 'NEEDS_BANK_CORRECTION') {
     return (
       <div className="admin-inline-action-stack">
-        <span className="pill pill-warn">Waiting for partner bank correction</span>
+        <StatusBadge tone="warning">Waiting for partner bank correction</StatusBadge>
         <p className="muted">
           Partner must update bank details in the Partner app before finance can approve this withdrawal.
         </p>
@@ -221,7 +220,7 @@ function WithdrawalRequestActions({
     <div className="admin-inline-action-stack">
       {request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
         <>
-          <span className="pill pill-warn">Finance review required before payout</span>
+          <StatusBadge tone="warning">Finance review required before payout</StatusBadge>
           <p className="muted">Resolve the review flag before moving this request to a bank payout run.</p>
         </>
       ) : null}
@@ -259,7 +258,7 @@ function WithdrawalRequestActions({
       ) : null}
 
       {request.status === 'BANK_TRANSFER_PENDING' ? (
-        <span className="pill pill-info">Manual bank transfer pending</span>
+        <StatusBadge tone="info">Manual bank transfer pending</StatusBadge>
       ) : null}
 
       {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (
@@ -377,24 +376,24 @@ function statusLabel(status: AdminProviderWalletWithdrawalRequest['status']) {
     .join(' ');
 }
 
-function statusPillClass(status: AdminProviderWalletWithdrawalRequest['status']) {
+function statusBadgeTone(status: AdminProviderWalletWithdrawalRequest['status']): StatusBadgeTone {
   switch (status) {
     case 'PAID':
-      return 'pill-success';
+      return 'success';
     case 'APPROVED':
     case 'BANK_TRANSFER_PENDING':
-      return 'pill-info';
+      return 'info';
     case 'NEEDS_BANK_CORRECTION':
     case 'REVIEW_REQUIRED':
     case 'HOLD':
-      return 'pill-warn';
+      return 'warning';
     case 'REJECTED':
     case 'CANCELLED':
     case 'FAILED':
     case 'REVERSED':
-      return 'pill-danger';
+      return 'danger';
     default:
-      return 'pill-neutral';
+      return 'neutral';
   }
 }
 
