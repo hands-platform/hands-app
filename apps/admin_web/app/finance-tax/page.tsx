@@ -13,7 +13,7 @@ import type {
 import { adminGet } from '../../lib/admin-api';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { formatMoney } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
 import { readSearchParam } from '../../lib/date-range';
 import { FinanceListCommandBoard, FinanceListCommandCard } from './finance-list-command-card';
 import { FinanceStageList } from './finance-stage-list';
@@ -28,7 +28,6 @@ import {
   buildPartnerWithholdingTaxSummaryApiHref,
   buildProviderWalletWithdrawalRequestSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
-  buildTaxFinanceMetrics,
   buildFinanceOperationsPriorityLinks,
   buildFinanceOperationsSummaryFilters,
   buildFinancePayoutPriorityLinks,
@@ -133,7 +132,52 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         />
       }
       description="Tax, fee, VAT, PIT, payment fee, and immutable booking settlement snapshot control view."
-      metrics={buildTaxFinanceMetrics(settlementSummary, withholdingSummary)}
+      metrics={[
+        {
+          helper: 'Immutable booking settlement snapshots matching the active queue.',
+          href: '/finance-tax/booking-settlement-audit',
+          label: 'Snapshot rows',
+          value: settlementSummary.count,
+        },
+        {
+          helper: 'Snapshot rows still waiting for declaration, payment, or closeout.',
+          href: '/finance-tax/booking-settlement-audit?review=open',
+          label: 'Open tax rows',
+          value: settlementSummary.openTaxCount,
+        },
+        {
+          helper: 'Customer payment amount captured by settlement snapshots.',
+          label: 'Customer paid',
+          value: <MoneyText amount={settlementSummary.customerPaymentAmount} currency={currency} />,
+        },
+        {
+          helper: 'Partner payout amount before monthly payout execution.',
+          label: 'Partner payout',
+          value: <MoneyText amount={settlementSummary.partnerPayoutAmount} currency={currency} />,
+        },
+        {
+          helper: 'VAT plus PIT withheld for the selected monthly tax period.',
+          href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
+          label: 'Partner tax withheld',
+          value: <MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency || currency} />,
+        },
+        {
+          helper: 'Output VAT component from HANDS platform fee snapshots.',
+          label: 'Company VAT',
+          value: <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />,
+        },
+        {
+          helper: 'Payment processing fee cost recorded on settlement snapshots.',
+          label: 'Payment fees',
+          value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
+        },
+        {
+          helper: 'Partners with taxable settlement rows in the selected period.',
+          href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
+          label: 'Partners with revenue',
+          value: withholdingSummary.partnerCountWithRevenue,
+        },
+      ]}
       title="Tax Overview"
     >
       <FinanceListCommandBoard ariaLabel="Tax command board">
@@ -151,7 +195,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           icon={ReceiptText}
           label="Platform VAT"
           tone={settlementSummary.companyOutputVat > 0 ? 'warning' : 'neutral'}
-          value={formatMoney(settlementSummary.companyOutputVat, currency)}
+          value={<MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />}
         />
         <FinanceListCommandCard
           detail="Partner VAT/PIT withholding payable for the active monthly period."
@@ -159,7 +203,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           icon={Landmark}
           label="Partner withholding"
           tone={withholdingSummary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
-          value={formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency)}
+          value={<MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency} />}
         />
         <FinanceListCommandCard
           detail="Monthly tax closing state and formula readiness."
@@ -198,14 +242,19 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             {
               helper: (
                 <>
-                  Company net fee is {formatMoney(settlementSummary.platformFeeNetRevenue, currency)} before
-                  payment processing cost of {formatMoney(settlementSummary.paymentProcessingFee, currency)}.
+                  Company net fee is{' '}
+                  <MoneyText amount={settlementSummary.platformFeeNetRevenue} currency={currency} /> before payment
+                  processing cost of <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />.
                 </>
               ),
               key: 'snapshot-totals',
               label: 'Finance uses snapshot totals',
               signal: '3',
-              value: `${formatMoney(settlementSummary.companyOutputVat, currency)} VAT`,
+              value: (
+                <>
+                  <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} /> VAT
+                </>
+              ),
             },
           ]}
         />
@@ -262,23 +311,25 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                   key: 'customer-discount',
                   label: 'Customer discount',
                   signal: 'DISC',
-                  value: formatMoney(couponFinanceSummary.couponDiscountAmount, couponFinanceSummary.currency),
+                  value: <MoneyText amount={couponFinanceSummary.couponDiscountAmount} currency={couponFinanceSummary.currency} />,
                 },
                 {
                   helper: 'Actual customer payment after coupon discount. This feeds clearing and is not platform revenue.',
                   key: 'customer-paid',
                   label: 'Customer paid amount',
                   signal: 'PAID',
-                  value: formatMoney(couponFinanceSummary.customerPaidAmount, couponFinanceSummary.currency),
+                  value: <MoneyText amount={couponFinanceSummary.customerPaidAmount} currency={couponFinanceSummary.currency} />,
                 },
                 {
                   helper: 'Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.',
                   key: 'settlement-base',
                   label: 'Settlement base',
                   signal: 'BASE',
-                  value: formatMoney(
-                    couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount,
-                    couponFinanceSummary.currency,
+                  value: (
+                    <MoneyText
+                      amount={couponFinanceSummary.settlementBaseAmount || couponFinanceSummary.bookingServiceAmount}
+                      currency={couponFinanceSummary.currency}
+                    />
                   ),
                 },
                 {
@@ -286,7 +337,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                   key: 'company-coupon-expense',
                   label: 'Company coupon expense',
                   signal: 'EXP',
-                  value: formatMoney(couponFinanceSummary.companyCouponExpense, couponFinanceSummary.currency),
+                  value: <MoneyText amount={couponFinanceSummary.companyCouponExpense} currency={couponFinanceSummary.currency} />,
                 },
                 {
                   helper: 'Rows where coupon metadata needs finance review before closing.',
@@ -300,9 +351,11 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                   key: 'reversed-coupon-amount',
                   label: 'Reversed coupon amount',
                   signal: 'REV',
-                  value: formatMoney(
-                    couponFinanceSummary.reversedCouponDiscountAmount,
-                    couponFinanceSummary.currency,
+                  value: (
+                    <MoneyText
+                      amount={couponFinanceSummary.reversedCouponDiscountAmount}
+                      currency={couponFinanceSummary.currency}
+                    />
                   ),
                 },
               ]}
@@ -395,7 +448,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               key: 'partner-withholding-tax',
               label: 'Partner Withholding Tax',
               signal: 'TAX',
-              value: formatMoney(withholdingSummary.totalPartnerTaxWithheld, withholdingSummary.currency),
+              value: <MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency} />,
             },
             {
               helper: 'Preview platform VAT, Partner withholding, payment fee, cash debt, and reconciliation deltas.',
@@ -411,7 +464,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               key: 'platform-vat',
               label: 'Platform VAT',
               signal: 'VAT',
-              value: formatMoney(settlementSummary.companyOutputVat, currency),
+              value: <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />,
             },
             {
               helper: 'Review processing fee totals by method, payer, and treatment.',
@@ -419,7 +472,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               key: 'payment-fees',
               label: 'Payment Fees',
               signal: 'FEE',
-              value: formatMoney(settlementSummary.paymentProcessingFee, currency),
+              value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
             },
             {
               helper: 'Configure versioned tax rules. Historical settlement snapshots keep their own tax values.',

@@ -58,6 +58,20 @@ describe('FinanceTaxPage', () => {
     expect(source).not.toContain('<Link className="pill pill-info" href="/finance-tax?view=full">');
   });
 
+  it('uses shared money atoms for overview finance amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
+  it('uses shared money atoms for bank match evidence amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-bank-match-evidence.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('loads optional coupon and payout summaries only in full view', async () => {
     const page = await FinanceTaxPage({
       searchParams: Promise.resolve({ range: 'today', view: 'full' }),

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { formatMoney, shortId } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
+import { shortId } from '../../lib/admin-format';
 import { bankReconciliationDetailHref, generalLedgerDetailHref, paymentClearingDetailHref } from './tax-settlement-page-model';
 
 type FinanceBankMatchEvidenceMatch = {
@@ -64,7 +65,7 @@ export function FinanceBankMatchEvidence({
           ) : null}
           {showAmount ? (
             <div className="muted">
-              {formatMoney(match.amount, match.currency)} · {match.status}
+              <MoneyText amount={match.amount} currency={match.currency} /> · {match.status}
             </div>
           ) : (
             <span className="muted">{match.status}</span>
