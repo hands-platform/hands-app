@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type {
   ServicePricePolicyPreviewRow,
@@ -113,7 +113,9 @@ export function ServicePricePolicyPreviewSection({
                   <ScenarioPreviewCell scenario={row.balancedStepScenario} />
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.checkTone}>{row.checkLabel}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.checkTone)}>
+                    {row.checkLabel}
+                  </StatusBadge>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>
@@ -140,7 +142,7 @@ function ScenarioPreviewCell({ scenario }: { readonly scenario: ServicePricePoli
 
   return (
     <div className="service-matrix-cell">
-      <PillClassBadge pillClass={scenario.tone}>{scenario.status}</PillClassBadge>
+      <StatusBadge tone={statusBadgeToneFromPillClass(scenario.tone)}>{scenario.status}</StatusBadge>
       <strong>{formatMoney(scenario.customerPrice, scenario.currency)}</strong>
       <small>Partner {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
       <small>Commission {formatMoney(scenario.finance.actualCompanyCommission, scenario.currency)}</small>

@@ -9,8 +9,9 @@ describe('ServicePricePolicyPreviewSection', () => {
   it('uses shared Vuexy badge atoms for price policy status labels', () => {
     const source = readFileSync('app/services/service-price-policy-preview-section.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-danger">Missing base payout</span>');
     expect(source).not.toContain('<span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>');
     expect(source).not.toContain('return <span className="pill pill-danger">No base rule</span>;');
