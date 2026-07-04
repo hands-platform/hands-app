@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerCommandCenterSection,
   type PartnerCommandCenterSectionLane,
 } from './partner-command-center-section';
 
 describe('PartnerCommandCenterSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw command center pill spans', () => {
+    const source = readFileSync('app/partners/partner-command-center-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className="pill pill-info">Daily control view</span>}');
+    expect(source).not.toContain('<span className="pill" key={item.label}>');
+  });
+
   it('renders partner command lanes with metrics and status', () => {
     const section = PartnerCommandCenterSection({
       lanes: buildLanes(),

@@ -1,4 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 
 export type PartnerCommandCenterSectionTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -18,7 +19,7 @@ type PartnerCommandCenterSectionProps = {
 export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSectionProps) {
   return (
     <AdminSection
-      actions={<span className="pill pill-info">Daily control view</span>}
+      actions={<StatusBadge tone="info">Daily control view</StatusBadge>}
       className="admin-mb-16 partner-command-center-card"
       description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
       title="Partner command center"
@@ -36,9 +37,9 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
           >
             <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
-                <span className="pill" key={item.label}>
+                <StatusBadge key={item.label} tone="neutral">
                   {item.label}: {item.value}
-                </span>
+                </StatusBadge>
               ))}
             </div>
           </AdminActionCard>
