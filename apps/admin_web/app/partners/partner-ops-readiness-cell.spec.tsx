@@ -12,6 +12,21 @@ describe('PartnerOpsReadinessCell', () => {
     expect(source).not.toContain('className="card admin-mt-10 admin-p-12"');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw ops readiness pill spans', () => {
+    const source = readFileSync('app/partners/partner-ops-readiness-cell.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${partnerListActionPillClass(action.tone)}`}>{action.status}</span>');
+    expect(source).not.toContain('className={`pill ${partnerOpsBadgePillClass(badge.tone)}`}');
+    expect(source).not.toContain('<span className="pill pill-success">No blocking issues</span>');
+    expect(source).not.toContain('<span className={`pill ${issue.severity === \'high\' ? \'pill-danger\' : \'pill-warn\'}`} key={issue.label}>');
+    expect(source).not.toContain('<span className="pill pill-info">+{issues.length - 5} more</span>');
+    expect(source).not.toContain('<span className={`pill ${eligibility.eligible ? \'pill-success\' : \'pill-warn\'}`}>');
+    expect(source).not.toContain('<span className="pill pill-info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</span>');
+    expect(source).not.toContain('className={`pill ${blocker.severity === \'hard\' ? \'pill-danger\' : \'pill-warn\'}`}');
+  });
+
   it('renders next action, readiness badges, issue pills, action hint, eligibility, and open report link', () => {
     const cell = PartnerOpsReadinessCell({
       actionHint: 'Partner is ready for direct requests and marketplace matching.',

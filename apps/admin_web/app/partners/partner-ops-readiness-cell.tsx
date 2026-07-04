@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminCard } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { ProviderListAction } from './partner-list-actions';
 import { partnerListActionPillClass } from './partner-list-actions';
@@ -63,7 +64,7 @@ function PartnerNextActionSummary({ action }: { readonly action: ProviderListAct
   return (
     <div className="admin-mb-10">
       <div className="participant-list admin-mb-6">
-        <span className={`pill ${partnerListActionPillClass(action.tone)}`}>{action.status}</span>
+        <PillClassBadge pillClass={partnerListActionPillClass(action.tone)}>{action.status}</PillClassBadge>
       </div>
       <p className="muted admin-mb-4">
         {action.detail}
@@ -79,13 +80,13 @@ function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsB
   return (
     <div className="participant-list admin-mb-8">
       {badges.map((badge) => (
-        <span
-          className={`pill ${partnerOpsBadgePillClass(badge.tone)}`}
+        <PillClassBadge
           key={badge.label}
+          pillClass={partnerOpsBadgePillClass(badge.tone)}
           title={badge.detail}
         >
           {badge.label}
-        </span>
+        </PillClassBadge>
       ))}
     </div>
   );
@@ -95,7 +96,7 @@ function PartnerIssuePills({ issues }: { readonly issues: readonly PartnerOpsRea
   if (!issues.length) {
     return (
       <div className="participant-list admin-mb-8">
-        <span className="pill pill-success">No blocking issues</span>
+        <StatusBadge tone="success">No blocking issues</StatusBadge>
       </div>
     );
   }
@@ -103,11 +104,11 @@ function PartnerIssuePills({ issues }: { readonly issues: readonly PartnerOpsRea
   return (
     <div className="participant-list admin-mb-8">
       {issues.slice(0, 5).map((issue) => (
-        <span className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`} key={issue.label}>
+        <PillClassBadge key={issue.label} pillClass={issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}>
           {issue.label}
-        </span>
+        </PillClassBadge>
       ))}
-      {issues.length > 5 ? <span className="pill pill-info">+{issues.length - 5} more</span> : null}
+      {issues.length > 5 ? <StatusBadge tone="info">+{issues.length - 5} more</StatusBadge> : null}
     </div>
   );
 }
@@ -126,24 +127,21 @@ function PartnerBackupEligibilityCard({
           <strong>Marketplace participation eligibility</strong>
           <p className="muted">{eligibility.detail}</p>
         </div>
-        <span className={`pill ${eligibility.eligible ? 'pill-success' : 'pill-warn'}`}>
+        <PillClassBadge pillClass={eligibility.eligible ? 'pill-success' : 'pill-warn'}>
           {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
-        </span>
+        </PillClassBadge>
       </div>
       <div className="participant-list admin-mt-8">
-        <span className="pill pill-info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</span>
-        <span className="pill pill-info">First window: {opsPolicy.responseWindowMinutes}m</span>
-        <span className="pill pill-info">Location: {opsPolicy.staleLocationMinutes}m fresh</span>
+        <StatusBadge tone="info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</StatusBadge>
+        <StatusBadge tone="info">First window: {opsPolicy.responseWindowMinutes}m</StatusBadge>
+        <StatusBadge tone="info">Location: {opsPolicy.staleLocationMinutes}m fresh</StatusBadge>
       </div>
       {eligibility.blockers.length ? (
         <div className="participant-list admin-mt-8">
           {eligibility.blockers.map((blocker) => (
-            <span
-              className={`pill ${blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}`}
-              key={blocker.label}
-            >
+            <PillClassBadge key={blocker.label} pillClass={blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}>
               {blocker.label}
-            </span>
+            </PillClassBadge>
           ))}
         </div>
       ) : null}
