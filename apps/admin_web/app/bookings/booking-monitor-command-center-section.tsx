@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
 
 export type BookingMonitorCommandCenterLane = {
@@ -37,9 +37,9 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
           >
             <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
-                <PillClassBadge pillClass="pill" key={item.label}>
+                <StatusBadge tone="neutral" key={item.label}>
                   {item.label}: {item.value}
-                </PillClassBadge>
+                </StatusBadge>
               ))}
             </div>
           </AdminActionCard>
