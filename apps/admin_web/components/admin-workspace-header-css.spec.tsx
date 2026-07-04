@@ -44,6 +44,24 @@ describe('Admin workspace header CSS', () => {
     expect(breadcrumbCurrentIndex).toBeGreaterThan(-1);
     expect(breadcrumbCurrentBlock).toContain('color: var(--admin-text)');
   });
+
+  it('keeps topbar dropdowns aligned with the Vuexy Menu popover rhythm', () => {
+    const dropdownIndex = globalsCss.indexOf('.topbar-dropdown {');
+    const dropdownBlock = cssRuleBlockAt(dropdownIndex);
+    const linkIndex = globalsCss.indexOf('.topbar-dropdown-link,\n.topbar-empty {');
+    const linkBlock = cssRuleBlockAt(linkIndex);
+
+    expect(dropdownIndex).toBeGreaterThan(-1);
+    expect(dropdownBlock).toContain('box-shadow: var(--admin-shadow-lg)');
+    expect(dropdownBlock).toContain('padding: 8px 0');
+    expect(dropdownBlock).toContain('top: calc(100% + 4px)');
+    expect(dropdownBlock).not.toContain('padding: 10px');
+    expect(dropdownBlock).not.toContain('top: calc(100% + 10px)');
+    expect(linkIndex).toBeGreaterThan(-1);
+    expect(linkBlock).toContain('gap: 4px');
+    expect(linkBlock).toContain('margin-inline: 16px');
+    expect(linkBlock).toContain('padding: 10px 16px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

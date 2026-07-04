@@ -750,13 +750,13 @@ a {
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-lg);
   display: grid;
-  gap: 8px;
+  gap: 4px;
   max-height: min(440px, calc(100vh - 120px));
   overflow: auto;
-  padding: 10px;
+  padding: 8px 0;
   position: absolute;
   right: 0;
-  top: calc(100% + 10px);
+  top: calc(100% + 4px);
   width: 340px;
   z-index: 50;
 }
@@ -778,6 +778,7 @@ a {
   display: grid;
   gap: 8px;
   grid-template-columns: 18px minmax(0, 1fr);
+  margin-inline: 16px;
   min-height: 40px;
   padding: 0 10px;
 }
@@ -799,7 +800,7 @@ a {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 600;
-  padding: 4px 6px 2px;
+  padding: 8px 16px 4px;
 }
 
 .topbar-dropdown-list {
@@ -811,9 +812,10 @@ a {
 .topbar-empty {
   border-radius: var(--admin-radius);
   display: grid;
-  gap: 2px;
+  gap: 4px;
+  margin-inline: 16px;
   min-height: 48px;
-  padding: 8px 10px;
+  padding: 10px 16px;
 }
 
 .topbar-dropdown-link:hover {
