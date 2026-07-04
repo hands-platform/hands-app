@@ -10,8 +10,10 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain("<span className={openCount ? 'pill pill-warn' : 'pill pill-success'}>");
     expect(source).not.toContain('<span className={item.badgeClass}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');

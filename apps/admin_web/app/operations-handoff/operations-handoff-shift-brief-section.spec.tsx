@@ -7,7 +7,9 @@ describe('OperationsHandoffShiftBriefSection', () => {
   it('uses shared Vuexy badge atoms for the factual queue label', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-shift-brief-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('actions={<span className="pill pill-info">Factual queue</span>}');
   });
 

@@ -7,8 +7,10 @@ describe('OperationsHandoffFinanceActionSection', () => {
   it('uses shared Vuexy badge atoms for finance action labels', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-finance-action-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
   });

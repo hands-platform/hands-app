@@ -7,8 +7,10 @@ describe('OperationsHandoffImmediateActionSection', () => {
   it('uses shared Vuexy badge atoms for immediate action labels', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-immediate-action-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className="pill pill-info">{visibleActions.length} action lane(s)</span>');
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
     expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
