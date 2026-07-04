@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailBookingEvidenceBundlesSection } from './partner-detail-booking-evidence-bundles-section';
 
 describe('PartnerDetailBookingEvidenceBundlesSection', () => {
+  it('uses the shared Vuexy badge atom for booking status', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
+  });
+
   it('renders booking evidence bundles with shared table styling and links', () => {
     const section = PartnerDetailBookingEvidenceBundlesSection({
       rows: [
@@ -42,7 +51,7 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -64,7 +73,7 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     expect(rendered).toContain('No partner booking bundle matched this date filter.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
