@@ -7,8 +7,10 @@ describe('BookingMonitorMatchingEscalationSection', () => {
   it('uses shared Vuexy badge atoms for policy defaults, metrics, and evidence tags', () => {
     const source = readFileSync('app/bookings/booking-monitor-matching-escalation-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-14">');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
     expect(source).not.toContain('<span className="pill" key={`${lane.title}-${metricItem.label}`}>');
     expect(source).not.toContain('<span className="pill" key={`${step.stage}-${metricItem.label}`}>');

@@ -1,3 +1,4 @@
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
@@ -33,15 +34,11 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
       description="Participant evidence for first-pick, marketplace, declined, and final-choice rows."
       title="Marketplace participant ledger"
     >
-      <div className="ops-section-header">
-        <div>
-          <h3>Marketplace operating queue</h3>
-          <p className="muted">
-            Only marketplace lanes with current operator work are shown here.
-          </p>
-        </div>
-        <StatusBadge tone="info">No auto assignment</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        description="Only marketplace lanes with current operator work are shown here."
+        status={<StatusBadge tone="info">No auto assignment</StatusBadge>}
+        title="Marketplace operating queue"
+      />
       <div className="ops-task-grid admin-mt-12">
         {visibleOperatingQueue.map((item) => (
           <AdminActionCard

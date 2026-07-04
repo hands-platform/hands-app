@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
@@ -92,16 +93,12 @@ export function BookingMonitorMatchingEscalationSection({
       description="Only lanes with current dispatch work are shown here."
       title="Matching escalation board"
     >
-      <div className="ops-section-header admin-mt-14">
-        <div>
-          <h3>Applied operations policy</h3>
-          <p className="muted">
-            Live Admin policy values used as the default when a booking does not carry its own saved matching
-            snapshot.
-          </p>
-        </div>
-        <StatusBadge tone="info">Live policy default</StatusBadge>
-      </div>
+      <AdminSectionHeader
+        className="admin-mt-14"
+        description="Live Admin policy values used as the default when a booking does not carry its own saved matching snapshot."
+        status={<StatusBadge tone="info">Live policy default</StatusBadge>}
+        title="Applied operations policy"
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table admin-mt-12"
