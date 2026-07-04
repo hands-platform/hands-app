@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminReviewRecordsSection,
@@ -739,7 +740,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 </div>
               ))
             ) : (
-              <p className="muted">No saved address yet.</p>
+              <AdminEmptyState framed message="No saved address yet." title={null} />
             )}
           </div>
         </div>
@@ -779,7 +780,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               />
             ))
           ) : (
-            <p className="muted">No chat rooms matched this date filter.</p>
+            <AdminEmptyState framed message="No chat rooms matched this date filter." title={null} />
           )}
         </div>
         <div className="vuexy-booking-table-footer customer-chat-history-footer">

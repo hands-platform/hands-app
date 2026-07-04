@@ -53,6 +53,9 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain(
       'class="admin-form-control-button button button-primary" type="submit">Add address note</button>',
     );
+    expect(markup).toContain('No saved address yet.');
+    expect(markup).toContain('No chat rooms matched this date filter.');
+    expect(markup).toContain('class="empty-state');
   });
 
   it('uses shared Vuexy status badge atoms instead of raw customer detail pill markup', () => {
