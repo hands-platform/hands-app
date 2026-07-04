@@ -9,7 +9,8 @@ describe('ServiceBookingFinanceTraceSection', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<p className="muted">No recent booking service rows were found');
     expect(source).not.toContain('<span className="pill pill-warn">No payment</span>');
     expect(source).not.toContain('<span className="pill pill-warn">No earning</span>');

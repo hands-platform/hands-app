@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 
@@ -142,7 +142,9 @@ export function ServiceBookingFinanceTraceSection({
                   </div>
                 </td>
                 <td>
-                  <PillClassBadge pillClass={row.traceTone}>{row.traceStatus}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.traceTone)}>
+                    {row.traceStatus}
+                  </StatusBadge>
                 </td>
               </tr>
             ))}
