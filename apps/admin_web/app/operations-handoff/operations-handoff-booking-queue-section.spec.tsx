@@ -8,7 +8,9 @@ describe('OperationsHandoffBookingQueueSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-booking-queue-section.tsx', 'utf8');
 
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('AdminTableScroll');
     expect(source).not.toContain('<Link className="button button-secondary"');
+    expect(source).not.toContain('<div className="admin-table-scroll">');
   });
 
   it('renders booking handoff rows and monitor links', () => {
@@ -56,7 +58,6 @@ describe('OperationsHandoffBookingQueueSection', () => {
       expect.arrayContaining([
         'admin-avatar-status-dot is-working',
         'card admin-section admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
-        'admin-table-scroll',
         'table-link',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-person',

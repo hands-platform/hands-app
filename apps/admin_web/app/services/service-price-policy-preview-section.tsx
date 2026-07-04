@@ -1,4 +1,4 @@
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
@@ -75,7 +75,7 @@ export function ServicePricePolicyPreviewSection({
         </div>
       </div>
       {rows.length ? (
-        <div className="admin-table-scroll">
+        <AdminTableScroll>
           <AdminDataTable
             className="service-trace"
             emptyMessage={null}
@@ -119,7 +119,7 @@ export function ServicePricePolicyPreviewSection({
               </tr>
             ))}
           </AdminDataTable>
-        </div>
+        </AdminTableScroll>
       ) : (
         <AdminEmptyState framed message="No active service option is available for price policy preview." />
       )}

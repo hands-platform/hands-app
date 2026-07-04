@@ -1,4 +1,4 @@
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
@@ -41,7 +41,7 @@ export function ServiceDurationPricingMatrixSection({
       statusTone="info"
       title="Duration pricing matrix"
     >
-      <div className="admin-table-scroll">
+      <AdminTableScroll>
         <AdminDataTable
           className="service-matrix"
           emptyMessage={null}
@@ -97,7 +97,7 @@ export function ServiceDurationPricingMatrixSection({
             );
           })}
         </AdminDataTable>
-      </div>
+      </AdminTableScroll>
       {hiddenGroupCount ? (
         <p className="muted">
           Showing first {visibleGroups.length} of {totalGroupCount} service type(s) to keep the operations

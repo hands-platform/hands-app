@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 import { formatMoney, shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
@@ -39,7 +39,7 @@ export function OperationsHandoffFinanceCloseoutSection({
       description="Cash debt, payout evidence, and chat records that an operator should not lose at handoff."
       title="Finance and chat closeout"
     >
-      <div className="admin-table-scroll">
+      <AdminTableScroll>
         <AdminDataTable
           emptyMessage="No finance rows need handoff."
           headers={FINANCE_CLOSEOUT_HEADERS}
@@ -67,7 +67,7 @@ export function OperationsHandoffFinanceCloseoutSection({
             </tr>
           ))}
         </AdminDataTable>
-      </div>
+      </AdminTableScroll>
     </AdminSection>
   );
 }

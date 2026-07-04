@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
 
 describe('OperationsHandoffFinanceCloseoutSection', () => {
+  it('uses the shared AdminTableScroll atom for finance closeout rows', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-finance-closeout-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTableScroll');
+    expect(source).not.toContain('<div className="admin-table-scroll">');
+  });
+
   it('renders finance rows and closeout links', () => {
     const section = OperationsHandoffFinanceCloseoutSection({
       rows: [
@@ -39,7 +48,6 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section operations-handoff-finance-closeout-card',
-        'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

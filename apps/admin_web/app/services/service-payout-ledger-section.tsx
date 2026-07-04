@@ -1,4 +1,4 @@
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
@@ -38,7 +38,7 @@ export function ServicePayoutLedgerSection({
       statusTone="info"
       title="Service payout ledger"
     >
-      <div className="admin-table-scroll">
+      <AdminTableScroll>
         <AdminDataTable
           className="service-ledger"
           emptyMessage={null}
@@ -86,7 +86,7 @@ export function ServicePayoutLedgerSection({
             </tr>
           ))}
         </AdminDataTable>
-      </div>
+      </AdminTableScroll>
       {hiddenRowCount ? (
         <p className="muted">
           Showing first {visibleRows.length} of {rows.length} active option(s). Full finance totals still

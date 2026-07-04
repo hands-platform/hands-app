@@ -1,4 +1,4 @@
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
@@ -78,7 +78,7 @@ export function ServiceTypeCoverageBoardSection({
         </div>
       </div>
       {visibleRows.length ? (
-        <div className="admin-table-scroll">
+        <AdminTableScroll>
           <AdminDataTable
             className="service-trace"
             emptyMessage={null}
@@ -136,7 +136,7 @@ export function ServiceTypeCoverageBoardSection({
               </tr>
             ))}
           </AdminDataTable>
-        </div>
+        </AdminTableScroll>
       ) : (
         <AdminEmptyState framed message="No service type matches the current catalog search." />
       )}

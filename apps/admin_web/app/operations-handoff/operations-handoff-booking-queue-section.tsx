@@ -1,5 +1,5 @@
 import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSection } from '../../components/admin-surface';
@@ -41,7 +41,7 @@ export function OperationsHandoffBookingQueueSection({
       description="Open and recently changed bookings with payment, chat, Partner, and next action."
       title="Booking handoff queue"
     >
-      <div className="admin-table-scroll">
+      <AdminTableScroll>
         <AdminDataTable
           emptyMessage="No active booking handoff rows."
           headers={BOOKING_HANDOFF_QUEUE_HEADERS}
@@ -95,7 +95,7 @@ export function OperationsHandoffBookingQueueSection({
             </tr>
           ))}
         </AdminDataTable>
-      </div>
+      </AdminTableScroll>
     </AdminSection>
   );
 }

@@ -8,8 +8,10 @@ describe('OperationsHandoffActivityStreamSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-activity-stream-section.tsx', 'utf8');
 
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('AdminTableScroll');
     expect(source).not.toContain('<Link className="button button-secondary"');
     expect(source).not.toContain('<a\n            className="button button-secondary"');
+    expect(source).not.toContain('<div className="admin-table-scroll">');
   });
 
   it('renders activity stream rows and export links', () => {
@@ -46,7 +48,6 @@ describe('OperationsHandoffActivityStreamSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 operations-handoff-activity-stream-card',
-        'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );

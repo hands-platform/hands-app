@@ -1,5 +1,5 @@
 import { Download, ExternalLink, FileClock, MessageSquare } from 'lucide-react';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
@@ -42,7 +42,7 @@ export function OperationsHandoffActivityStreamSection({
       description="Recent booking movement, chat archive messages, operator notes, notification failures, and finance rows in one chronological trail."
       title="Unified activity stream"
     >
-      <div className="admin-table-scroll">
+      <AdminTableScroll>
         <AdminDataTable
           emptyMessage="No recent activity stream rows."
           headers={ACTIVITY_STREAM_HEADERS}
@@ -71,7 +71,7 @@ export function OperationsHandoffActivityStreamSection({
             </tr>
           ))}
         </AdminDataTable>
-      </div>
+      </AdminTableScroll>
     </AdminSection>
   );
 }

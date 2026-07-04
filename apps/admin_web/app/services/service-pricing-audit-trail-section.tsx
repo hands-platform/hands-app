@@ -1,5 +1,5 @@
 import { FileClock } from 'lucide-react';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
@@ -38,7 +38,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
       title="Recent pricing audit trail"
     >
       {rows.length ? (
-        <div className="admin-table-scroll">
+        <AdminTableScroll>
           <AdminDataTable
             className="service-trace"
             emptyMessage={null}
@@ -78,7 +78,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
               </tr>
             ))}
           </AdminDataTable>
-        </div>
+        </AdminTableScroll>
       ) : (
         <AdminEmptyState framed message="No recent service pricing audit event has been recorded yet." />
       )}
