@@ -1,6 +1,5 @@
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { RoleBadge } from '../../components/role-badge';
 import { PillClassBadge } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -80,19 +79,15 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="App session pagination"
-          className="vuexy-booking-pagination"
-          hrefForPage={pagination.hrefForPage}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="App session pagination"
+        from={pagination.from}
+        hrefForPage={pagination.hrefForPage}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </>
   );
 }

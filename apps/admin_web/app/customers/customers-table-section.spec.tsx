@@ -11,6 +11,14 @@ describe('CustomersTableSection', () => {
     expect(source).not.toContain('<strong>No customers found</strong>');
   });
 
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),

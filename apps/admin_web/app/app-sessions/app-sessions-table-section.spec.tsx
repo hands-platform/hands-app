@@ -4,6 +4,14 @@ import { join } from 'node:path';
 import { AppSessionsTableSection, type AppSessionTableRow } from './app-sessions-table-section';
 
 describe('AppSessionsTableSection', () => {
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-table-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders session rows with device and Partner links', () => {
     const section = AppSessionsTableSection({
       emptyMessage: 'No app sessions loaded.',

@@ -17,6 +17,14 @@ describe('NotificationsTableSection', () => {
     expect(source).not.toContain('className="card admin-section vuexy-booking-table-card vuexy-booking-table-group notification-table-shell"');
   });
 
+  it('reuses the shared Admin table pagination footer atom', () => {
+    const source = readFileSync('app/notifications/notifications-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('AdminRoundedPagination');
+    expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+  });
+
   it('renders notification delivery evidence and action links', () => {
     const section = NotificationsTableSection({
       emptyMessage: 'No notifications loaded.',

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminTableFooter } from '../../components/admin-data-table';
+import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
 import { ActionMenu } from '../../components/action-menu';
 import {
@@ -9,7 +9,6 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { PillClassBadge } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { recordPartnerBankDeposit } from './actions';
@@ -245,27 +244,23 @@ export function CashSettlementOpenDebtTableSection({
           </tr>
         ))}
       </FinanceDataTable>
-      <AdminTableFooter>
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Cash settlement debt pages"
-          className="vuexy-booking-pagination"
-          hrefForPage={(page) =>
-            cashSettlementHref({
-              page,
-              pageSize: filters.pageSize,
-              q: filters.q,
-              queue: filters.queue,
-              range: filters.range,
-            })
-          }
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Cash settlement debt pages"
+        from={pagination.from}
+        hrefForPage={(page) =>
+          cashSettlementHref({
+            page,
+            pageSize: filters.pageSize,
+            q: filters.q,
+            queue: filters.queue,
+            range: filters.range,
+          })
+        }
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }

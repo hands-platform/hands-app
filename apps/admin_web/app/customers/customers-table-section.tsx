@@ -1,8 +1,7 @@
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { CustomerFilters } from './customer-filters';
 import { buildCustomerListHref } from './customer-filters';
 import type { CustomerPagination } from './customer-list-model';
@@ -74,19 +73,16 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
         </AdminDataTable>
       </AdminTableScroll>
 
-      <AdminTableFooter className="vuexy-customer-table-footer">
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <AdminRoundedPagination
-          activePage={pagination.page}
-          ariaLabel="Customer directory pages"
-          className="vuexy-booking-pagination"
-          hrefForPage={(page) => buildCustomerListHref(filters, { page })}
-          pageLinkClassName="vuexy-booking-page-link"
-          totalPages={pagination.totalPages}
-        />
-      </AdminTableFooter>
+      <AdminTablePaginationFooter
+        activePage={pagination.page}
+        ariaLabel="Customer directory pages"
+        className="vuexy-customer-table-footer"
+        from={pagination.from}
+        hrefForPage={(page) => buildCustomerListHref(filters, { page })}
+        to={pagination.to}
+        totalPages={pagination.totalPages}
+        totalRows={pagination.totalRows}
+      />
     </AdminFilterPanel>
   );
 }
