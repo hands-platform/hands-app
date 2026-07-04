@@ -8,7 +8,7 @@ describe('BookingMonitorNextActionsSection', () => {
     const source = readFileSync('app/bookings/booking-monitor-next-actions-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('actions={<span className="pill pill-warn">{nextActions.length} action(s)</span>}');
     expect(source).not.toContain('<span className="pill">{item.booking.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.owner}</span>');

@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -56,14 +56,14 @@ export function BookingMonitorNextActionsSection({
               {getCustomerLabel(item.booking)} / {marketplaceDisplayText(getProviderLabel(item.booking))}
             </p>
             <div className="participant-list admin-mt-10">
-              <PillClassBadge pillClass="pill-neutral">{item.booking.status}</PillClassBadge>
-              <PillClassBadge pillClass="pill-neutral">{item.owner}</PillClassBadge>
-              <PillClassBadge pillClass="pill-neutral">{actionOrderLabel(item.priority)}</PillClassBadge>
-              <PillClassBadge pillClass="pill-neutral">{bookingAgeLabel(item.booking, nowMs)}</PillClassBadge>
+              <StatusBadge tone="neutral">{item.booking.status}</StatusBadge>
+              <StatusBadge tone="neutral">{item.owner}</StatusBadge>
+              <StatusBadge tone="neutral">{actionOrderLabel(item.priority)}</StatusBadge>
+              <StatusBadge tone="neutral">{bookingAgeLabel(item.booking, nowMs)}</StatusBadge>
               {item.tags.map((tag) => (
-                <PillClassBadge pillClass="pill-neutral" key={tag}>
+                <StatusBadge tone="neutral" key={tag}>
                   {tag}
-                </PillClassBadge>
+                </StatusBadge>
               ))}
             </div>
           </AdminActionCard>
