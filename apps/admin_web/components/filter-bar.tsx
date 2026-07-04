@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFilterPanel } from './admin-filter-panel';
@@ -30,10 +29,14 @@ type FilterBarProps = {
 };
 
 export function filterBarOptionClassName(option: Pick<FilterBarOption, 'active' | 'tone'>) {
+  return statusBadgeClassName(filterBarOptionTone(option));
+}
+
+function filterBarOptionTone(option: Pick<FilterBarOption, 'active' | 'tone'>): StatusBadgeTone {
   if (option.active) {
-    return statusBadgeClassName('warning');
+    return 'warning';
   }
-  return statusBadgeClassName(option.tone ?? 'neutral');
+  return option.tone ?? 'neutral';
 }
 
 export function FilterBar({
@@ -60,9 +63,9 @@ export function FilterBar({
       </AdminFormGrid>
       <div className="participant-list filter-bar-options">
         {options.map((option) => (
-          <Link className={filterBarOptionClassName(option)} href={option.href} key={option.href}>
+          <StatusBadgeLink href={option.href} key={option.href} tone={filterBarOptionTone(option)}>
             {option.label}
-          </Link>
+          </StatusBadgeLink>
         ))}
       </div>
     </AdminFilterPanel>

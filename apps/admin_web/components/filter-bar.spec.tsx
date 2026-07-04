@@ -43,6 +43,8 @@ describe('FilterBar', () => {
     const source = readFileSync(join(process.cwd(), 'components/filter-bar.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain("import Link from 'next/link'");
+    expect(source).not.toContain('<Link className={filterBarOptionClassName(option)}');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('pillClass');
     expect(source).not.toContain('AdminFormControlLink');
