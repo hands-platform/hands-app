@@ -235,7 +235,7 @@ function WithdrawalRequestActions({
             placeholder={request.status === 'REQUESTED' ? 'Approval note' : 'Review resolution note'}
             type="text"
           />
-          <AdminFormControlButton className="btn btn-sm btn-primary" type="submit">
+          <AdminFormControlButton className="button button-sm button-primary" type="submit">
             {request.status === 'REQUESTED' ? 'Approve' : 'Clear review'}
           </AdminFormControlButton>
         </form>
@@ -251,7 +251,7 @@ function WithdrawalRequestActions({
             placeholder="Bank payout run note"
             type="text"
           />
-          <AdminFormControlButton className="btn btn-sm btn-info" type="submit">
+          <AdminFormControlButton className="button button-sm button-info" type="submit">
             Bank pending
           </AdminFormControlButton>
         </form>
@@ -291,7 +291,7 @@ function WithdrawalRequestActions({
             required
             type="text"
           />
-          <AdminFormControlButton className="btn btn-sm btn-success" type="submit">
+          <AdminFormControlButton className="button button-sm button-success" type="submit">
             Mark paid
           </AdminFormControlButton>
         </form>
@@ -308,7 +308,7 @@ function WithdrawalRequestActions({
             required
             type="text"
           />
-          <AdminFormControlButton className="btn btn-sm btn-outline" type="submit">
+          <AdminFormControlButton className="button button-sm button-outline" type="submit">
             Request correction
           </AdminFormControlButton>
         </form>
@@ -328,7 +328,7 @@ function WithdrawalRequestActions({
             placeholder="Reject note"
             type="text"
           />
-          <AdminFormControlButton className="btn btn-sm btn-danger" type="submit">
+          <AdminFormControlButton className="button button-sm button-danger" type="submit">
             Reject
           </AdminFormControlButton>
         </form>

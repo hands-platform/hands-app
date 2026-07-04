@@ -193,7 +193,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                 placeholder="Bank ref"
               />
               <AdminFormInput defaultValue={row.notes} label="Transfer notes" name="notes" placeholder="Notes" />
-              <AdminFormControlButton className="btn btn-primary" type="submit">
+              <AdminFormControlButton className="button button-primary" type="submit">
                 Save
               </AdminFormControlButton>
             </form>

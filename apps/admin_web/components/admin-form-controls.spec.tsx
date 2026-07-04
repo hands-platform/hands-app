@@ -286,6 +286,23 @@ describe('Admin form controls', () => {
       type: 'submit',
     });
   });
+
+  it('normalizes legacy button classes into the shared Vuexy button contract', () => {
+    const link = AdminFormControlLink({
+      children: 'Open payouts',
+      className: 'btn btn-outline admin-inline-action',
+      href: '/payouts',
+    });
+    const button = AdminFormControlButton({
+      children: 'Approve',
+      className: 'btn btn-sm btn-primary payout-action',
+    });
+
+    expect(link.props.className).toBe('admin-form-control-link button button-outline admin-inline-action');
+    expect(button.props.className).toBe(
+      'admin-form-control-button button button-sm button-primary payout-action',
+    );
+  });
 });
 
 function textContent(value: unknown): string {

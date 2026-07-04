@@ -47,11 +47,11 @@ describe('EarningsCashDebtQueueSection', () => {
     expect(rendered).toContain('Cr Partner withholding tax payable 20.000 VND');
     expect(rendered).toContain('Review fee settlement');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+      expect.arrayContaining(['admin-form-input', 'admin-form-control-button button button-primary']),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
     expect(hrefsIn(section)).toContain('/bookings/booking-1');

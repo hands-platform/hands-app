@@ -111,7 +111,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                     placeholder="Deposit ref or offset memo"
                   />
                   <input type="hidden" name="settlementNotes" value={item.settlementNotes} />
-                  <AdminFormControlButton className="btn btn-primary" type="submit">
+                  <AdminFormControlButton className="button button-primary" type="submit">
                     Review fee settlement
                   </AdminFormControlButton>
                 </form>

@@ -72,9 +72,9 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'admin-form-input',
-        'admin-form-control-button btn btn-sm btn-primary',
-        'admin-form-control-button btn btn-sm btn-outline',
-        'admin-form-control-button btn btn-sm btn-danger',
+        'admin-form-control-button button button-sm button-primary',
+        'admin-form-control-button button button-sm button-outline',
+        'admin-form-control-button button button-sm button-danger',
       ]),
     );
   });

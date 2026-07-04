@@ -29,10 +29,10 @@ describe('EarningsPartnerPayoutQueueSection', () => {
     expect(rendered).toContain('Partner One');
     expect(rendered).toContain('900.000 VND');
     expect(rendered).toContain('Review payout batch');
-    expect(classNamesIn(section)).toContain('admin-form-control-button btn btn-primary');
+    expect(classNamesIn(section)).toContain('admin-form-control-button button button-primary');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
       ]),
     );
     expect(hrefsIn(section)).toContain('/partners/partner-1');

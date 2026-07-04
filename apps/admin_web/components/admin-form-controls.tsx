@@ -412,7 +412,7 @@ export function AdminFormControlLink({
   return (
     <a
       aria-current={ariaCurrent}
-      className={joinClassNames('admin-form-control-link', className)}
+      className={joinClassNames('admin-form-control-link', normalizeButtonClassNames(className))}
       download={download}
       href={href}
       title={title}
@@ -431,7 +431,7 @@ export function AdminFormControlButton({
 }: AdminFormControlButtonProps) {
   return (
     <button
-      className={joinClassNames('admin-form-control-button', className)}
+      className={joinClassNames('admin-form-control-button', normalizeButtonClassNames(className))}
       disabled={disabled}
       onClick={onClick}
       type={type}
@@ -444,6 +444,32 @@ export function AdminFormControlButton({
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
 }
+
+function normalizeButtonClassNames(className: string | undefined) {
+  if (!className) {
+    return undefined;
+  }
+
+  const normalized = className.split(/\s+/).reduce<string[]>((tokens, token) => {
+    const mappedToken = legacyButtonClassMap[token] ?? token;
+    if (mappedToken && !tokens.includes(mappedToken)) {
+      tokens.push(mappedToken);
+    }
+    return tokens;
+  }, []);
+
+  return normalized.join(' ');
+}
+
+const legacyButtonClassMap: Record<string, string> = {
+  btn: 'button',
+  'btn-danger': 'button-danger',
+  'btn-info': 'button-info',
+  'btn-outline': 'button-outline',
+  'btn-primary': 'button-primary',
+  'btn-sm': 'button-sm',
+  'btn-success': 'button-success',
+};
 
 function labelClassName(visibility: AdminFormLabelVisibility) {
   return visibility === 'visible' ? 'admin-form-label' : 'sr-only';

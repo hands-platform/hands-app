@@ -63,7 +63,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={group.providerProfileId} />
                     <input type="hidden" name="transferRef" value={group.transferRef} />
-                    <AdminFormControlButton className="btn btn-primary" type="submit">
+                    <AdminFormControlButton className="button button-primary" type="submit">
                       Review payout batch
                     </AdminFormControlButton>
                   </form>

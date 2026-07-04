@@ -91,7 +91,7 @@ describe('PayoutBatchTable', () => {
       expect.arrayContaining([
         'table vuexy-data-table vuexy-booking-table',
         'admin-form-input',
-        'admin-form-control-button btn btn-primary',
+        'admin-form-control-button button button-primary',
       ]),
     );
   });

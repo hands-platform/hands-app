@@ -75,7 +75,7 @@ describe('EarningsLedgerSection', () => {
     expect(rendered).toContain('Review fee settlement');
     expect(rendered).toContain('Review payout batch');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-input', 'admin-form-control-button btn btn-primary']),
+      expect.arrayContaining(['admin-form-input', 'admin-form-control-button button button-primary']),
     );
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(classNamesIn(section)).toEqual(

@@ -51,9 +51,9 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
         'admin-form-input',
-        'admin-form-control-button btn btn-sm btn-primary',
-        'admin-form-control-button btn btn-sm btn-outline',
-        'admin-form-control-button btn btn-sm btn-danger',
+        'admin-form-control-button button button-sm button-primary',
+        'admin-form-control-button button button-sm button-outline',
+        'admin-form-control-button button button-sm button-danger',
       ]),
     );
   });

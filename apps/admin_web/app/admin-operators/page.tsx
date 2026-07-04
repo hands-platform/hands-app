@@ -89,7 +89,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             </div>
             <CategoryCheckboxGrid defaults={['BOOKINGS_REALTIME', 'CUSTOMERS_DIRECTORY', 'PARTNERS_DIRECTORY', 'NOTIFICATIONS_PUSH']} />
             <AdminFormInput label="Reason" name="reason" placeholder="Access request reason" />
-            <AdminFormControlButton className="btn btn-primary" type="submit">
+            <AdminFormControlButton className="button button-primary" type="submit">
               Add operator
             </AdminFormControlButton>
           </form>
