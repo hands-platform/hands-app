@@ -7,7 +7,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
+import { AdminCard, AdminFormCard, AdminLinkCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -31,9 +31,9 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
   const relatedBookings = policyRelatedBookingRecords(setting.key, bookings);
 
   return (
-    <form
+    <AdminFormCard
       action={updateOperationalPolicy}
-      className="card admin-m-0"
+      className="admin-m-0"
       id={operationalPolicyAnchor(setting.key)}
     >
       <input type="hidden" name="key" value={setting.key} />
@@ -186,7 +186,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       ) : (
         <p className="muted admin-mt-10">Using default until an admin override is saved.</p>
       )}
-    </form>
+    </AdminFormCard>
   );
 }
 

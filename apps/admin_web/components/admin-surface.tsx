@@ -22,6 +22,11 @@ type AdminDisclosureCardProps = AdminCardProps & {
   readonly open?: boolean;
 };
 
+type AdminFormCardProps = AdminCardProps & {
+  readonly action?: string | ((formData: FormData) => void | Promise<void>);
+  readonly method?: 'get' | 'post';
+};
+
 type AdminLinkCardProps = AdminCardProps & {
   readonly href: string;
   readonly htmlTitle?: string;
@@ -124,6 +129,29 @@ export function AdminDisclosureCard({
     >
       {children}
     </details>
+  );
+}
+
+export function AdminFormCard({
+  action,
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+  method,
+}: AdminFormCardProps) {
+  return (
+    <form
+      action={action}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card', className)}
+      id={id}
+      method={method}
+    >
+      {children}
+    </form>
   );
 }
 

@@ -3,6 +3,7 @@ import {
   AdminCard,
   AdminDisclosureCard,
   AdminErrorState,
+  AdminFormCard,
   AdminKpiCard,
   AdminLinkCard,
   AdminLoadingState,
@@ -111,6 +112,24 @@ describe('Admin surface components', () => {
       className: 'card admin-card admin-disclosure chat-transcript-room',
       id: 'chat-room-1',
       open: true,
+    });
+  });
+
+  it('renders a reusable Vuexy form card surface', () => {
+    const form = AdminFormCard({
+      action: '/admin/save',
+      children: <input name="name" />,
+      className: 'policy-form',
+      id: 'policy-form',
+      method: 'post',
+    });
+
+    expect(form.type).toBe('form');
+    expect(form.props).toMatchObject({
+      action: '/admin/save',
+      className: 'card admin-card policy-form',
+      id: 'policy-form',
+      method: 'post',
     });
   });
 

@@ -39,8 +39,9 @@ describe('OperationsPolicyForm', () => {
 
     const section = OperationsPolicyForm({ setting, bookings: [] as AdminBooking[] });
     const rendered = normalizedTextContent(section);
+    const resolvedSection = resolveElement(section);
 
-    expect(section.type).toBe('form');
+    expect(readRecord(resolvedSection)?.type).toBe('form');
     expect(rendered).toContain('Preferred accept mode');
     expect(rendered).toContain('Enforced');
     expect(rendered).toContain('Customer fallback-choice records');
@@ -66,6 +67,9 @@ describe('OperationsPolicyForm', () => {
     const section = OperationsPolicyForm({ setting, bookings: [] as AdminBooking[] });
     const classNames = classNamesIn(section);
 
+    expect(sectionSource).toContain('AdminFormCard');
+    expect(sectionSource).not.toContain('className="card admin-m-0"');
+    expect(classNames).toContain('card admin-card admin-m-0');
     expect(classNames).toContain('admin-form-input');
     expect(classNames).toContain('admin-form-textarea');
     expect(classNames).toContain('card admin-card insight-card');
