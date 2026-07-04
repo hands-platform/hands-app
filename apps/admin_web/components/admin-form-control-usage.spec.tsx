@@ -89,6 +89,14 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps legacy page field class names out of production form atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => legacyPageFieldClassPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -102,6 +110,8 @@ const rawInlineNoticePattern =
 const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
 const rawTableFooterPattern = /<div\s+className=["'][^"']*\bvuexy-booking-table-footer\b[^"']*["']/;
 const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"']*["']/;
+const legacyPageFieldClassPattern =
+  /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 
 function productionTsxFiles() {
   return ['app', 'components']
