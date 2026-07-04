@@ -4,6 +4,7 @@ import {
   AdminAttentionBadge,
   AdminSignal,
   StatusBadge,
+  StatusBadgeButton,
   StatusBadgeLink,
   statusBadgeClassName,
   statusBadgeToneFromPillClass,
@@ -21,6 +22,7 @@ describe('StatusBadge', () => {
 
   it('renders a stable span with optional title text', () => {
     const badge = StatusBadge({
+      ariaDisabled: true,
       children: 'Ready',
       className: 'vietnam-map-cluster-panel-badge',
       tone: 'success',
@@ -29,6 +31,7 @@ describe('StatusBadge', () => {
 
     expect(badge.type).toBe('span');
     expect(badge.props).toMatchObject({
+      'aria-disabled': true,
       className: 'pill pill-success vietnam-map-cluster-panel-badge',
       title: 'Ready for review',
       children: 'Ready',
@@ -71,6 +74,25 @@ describe('StatusBadge', () => {
       href: '/partners/partner-1',
       title: 'Open partner record',
       children: 'Open',
+    });
+  });
+
+  it('renders tone-based badge buttons for Vuexy pill actions', () => {
+    const button = StatusBadgeButton({
+      children: 'Confirm',
+      disabled: true,
+      title: 'Confirm action',
+      tone: 'danger',
+      type: 'submit',
+    });
+
+    expect(button.type).toBe('button');
+    expect(button.props).toMatchObject({
+      className: 'pill pill-danger',
+      disabled: true,
+      title: 'Confirm action',
+      type: 'submit',
+      children: 'Confirm',
     });
   });
 

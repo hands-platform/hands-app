@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 
 import type { StatusBadgeTone } from './status-badge';
-import { statusBadgeClassName } from './status-badge';
+import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
 type FormAction = string | ((formData: FormData) => void | Promise<void>);
 
@@ -47,10 +47,11 @@ type ActionMenuProps = {
 };
 
 export function actionMenuItemClassName(item: Pick<ActionMenuBaseItem, 'disabled' | 'tone'>) {
-  if (item.disabled) {
-    return statusBadgeClassName('neutral');
-  }
-  return statusBadgeClassName(item.tone ?? 'info');
+  return statusBadgeClassName(actionMenuItemTone(item));
+}
+
+function actionMenuItemTone(item: Pick<ActionMenuBaseItem, 'disabled' | 'tone'>): StatusBadgeTone {
+  return item.disabled ? 'neutral' : (item.tone ?? 'info');
 }
 
 export function ActionMenu({
@@ -181,16 +182,20 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
   if (item.kind === 'link') {
     if (item.disabled) {
       return (
-        <span aria-disabled="true" className={actionMenuItemClassName(item)} title={readActionMenuTitle(item.description)}>
+        <StatusBadge
+          ariaDisabled
+          title={readActionMenuTitle(item.description)}
+          tone={actionMenuItemTone(item)}
+        >
           {item.label}
-        </span>
+        </StatusBadge>
       );
     }
 
     return (
-      <Link className={actionMenuItemClassName(item)} href={item.href} title={readActionMenuTitle(item.description)}>
+      <StatusBadgeLink href={item.href} title={readActionMenuTitle(item.description)} tone={actionMenuItemTone(item)}>
         {item.label}
-      </Link>
+      </StatusBadgeLink>
     );
   }
 
@@ -199,9 +204,14 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
       {item.hiddenInputs?.map((input) => (
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}
-      <button className={actionMenuItemClassName(item)} disabled={item.disabled} title={readActionMenuTitle(item.description)} type="submit">
+      <StatusBadgeButton
+        disabled={item.disabled}
+        title={readActionMenuTitle(item.description)}
+        tone={actionMenuItemTone(item)}
+        type="submit"
+      >
         {item.label}
-      </button>
+      </StatusBadgeButton>
     </form>
   );
 }

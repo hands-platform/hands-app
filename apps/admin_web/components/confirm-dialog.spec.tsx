@@ -71,7 +71,13 @@ describe('ConfirmDialog', () => {
   it('uses the shared Vuexy dialog card surface', () => {
     expect(source).toContain('AdminDialogCard');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeButton');
+    expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('className="card admin-dialog-card"');
+    expect(source).not.toContain('actions={<span className={statusBadgeClassName(tone)}>Review</span>}');
+    expect(source).not.toContain('<Link className={statusBadgeClassName');
+    expect(source).not.toContain('<button\\n            className={confirmDialogButtonClassName');
     expect(source).not.toContain('<div className="ops-section-header"');
   });
 
@@ -100,11 +106,12 @@ describe('ConfirmDialog', () => {
     expect(form.props.className).toBe('confirm-dialog-form');
     expect(form.props.action).toBe('/partners/partner-1/delete');
     expect(button.props).toMatchObject({
-      className: 'pill pill-neutral',
       disabled: true,
+      tone: 'neutral',
       type: 'submit',
     });
     expect(button.props.children).toBe('Deleting...');
+    expect(renderToStaticMarkup(dialog)).toContain('class="pill pill-neutral"');
   });
 
   it('renders optional text inputs inside the confirm form', () => {

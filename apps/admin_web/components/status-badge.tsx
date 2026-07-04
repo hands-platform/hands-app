@@ -14,6 +14,7 @@ export type StatusBadgeTone = keyof typeof STATUS_BADGE_CLASS_BY_TONE;
 export type AdminSignalTone = 'info' | 'ok' | 'warn';
 
 type StatusBadgeProps = {
+  readonly ariaDisabled?: boolean;
   readonly children: ReactNode;
   readonly className?: string;
   readonly tone: StatusBadgeTone;
@@ -38,6 +39,11 @@ type StatusBadgeLinkProps = StatusBadgeProps & {
   readonly ariaLabel?: string;
   readonly download?: string;
   readonly href: string;
+};
+
+type StatusBadgeButtonProps = StatusBadgeProps & {
+  readonly disabled?: boolean;
+  readonly type?: 'button' | 'reset' | 'submit';
 };
 
 export function statusBadgeClassName(tone: StatusBadgeTone) {
@@ -85,9 +91,13 @@ function mergeBadgeClassName(baseClassName: string, className?: string) {
   ).join(' ');
 }
 
-export function StatusBadge({ children, className, tone, title }: StatusBadgeProps) {
+export function StatusBadge({ ariaDisabled, children, className, tone, title }: StatusBadgeProps) {
   return (
-    <span className={mergeBadgeClassName(statusBadgeClassName(tone), className)} title={title}>
+    <span
+      aria-disabled={ariaDisabled}
+      className={mergeBadgeClassName(statusBadgeClassName(tone), className)}
+      title={title}
+    >
       {children}
     </span>
   );
@@ -130,5 +140,25 @@ export function StatusBadgeLink({
     >
       {children}
     </Link>
+  );
+}
+
+export function StatusBadgeButton({
+  children,
+  className,
+  disabled,
+  title,
+  tone,
+  type = 'button',
+}: StatusBadgeButtonProps) {
+  return (
+    <button
+      className={mergeBadgeClassName(statusBadgeClassName(tone), className)}
+      disabled={disabled}
+      title={title}
+      type={type}
+    >
+      {children}
+    </button>
   );
 }

@@ -1,11 +1,10 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFormInput } from './admin-form-controls';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminDialogCard } from './admin-surface';
 import type { StatusBadgeTone } from './status-badge';
-import { statusBadgeClassName } from './status-badge';
+import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
 type FormAction = string | ((formData: FormData) => void | Promise<void>);
 
@@ -102,7 +101,7 @@ export function ConfirmDialog({
     loading,
     children: [
       <AdminSectionHeader
-        actions={<span className={statusBadgeClassName(tone)}>Review</span>}
+        actions={<StatusBadge tone={tone}>Review</StatusBadge>}
         description={description}
         descriptionId={descriptionId}
         key="header"
@@ -128,26 +127,26 @@ export function ConfirmDialog({
               required={input.required}
             />
           ))}
-          <button
-            className={confirmDialogButtonClassName(tone, { disabled, loading })}
+          <StatusBadgeButton
             disabled={confirmState.disabled}
+            tone={disabled || loading ? 'neutral' : tone}
             type="submit"
           >
             {confirmState.label}
-          </button>
+          </StatusBadgeButton>
         </form>
-        <Link className={statusBadgeClassName('neutral')} href={cancelHref}>
+        <StatusBadgeLink href={cancelHref} tone="neutral">
           {cancelLabel}
-        </Link>
+        </StatusBadgeLink>
         {supportingLinks.map((link) => (
-          <Link
-            className={statusBadgeClassName('info')}
+          <StatusBadgeLink
             href={link.href}
             key={link.href}
+            tone="info"
             title={link.description}
           >
             {link.label}
-          </Link>
+          </StatusBadgeLink>
         ))}
       </div>,
     ],

@@ -1,10 +1,21 @@
+import { readFileSync } from 'node:fs';
+
 import { ActionMenu, ActionMenuDropdownSurface, actionMenuItemClassName, readActionMenuTitle } from './action-menu';
+
+const source = readFileSync('components/action-menu.tsx', 'utf8');
 
 describe('ActionMenu', () => {
   it('maps disabled and danger actions to stable pill classes', () => {
     expect(actionMenuItemClassName({ disabled: true, tone: 'danger' })).toBe('pill pill-neutral');
     expect(actionMenuItemClassName({ tone: 'danger' })).toBe('pill pill-danger');
     expect(actionMenuItemClassName({})).toBe('pill pill-info');
+  });
+
+  it('renders pill-list actions through shared status badge atoms', () => {
+    expect(source).toContain('StatusBadgeButton');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<Link className={actionMenuItemClassName(item)}');
+    expect(source).not.toContain('<button className={actionMenuItemClassName(item)}');
   });
 
   it('uses string descriptions as native titles only', () => {
