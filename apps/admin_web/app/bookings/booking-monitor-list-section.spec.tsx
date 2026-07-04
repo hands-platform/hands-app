@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBooking } from '../../lib/admin-api';
 import { normalizedText } from './booking-section-test-utils';
@@ -10,6 +11,19 @@ import {
 const KOREAN_VIETNAM_COUNTRY = '\uBCB0\uD2B8\uB0A8';
 
 describe('BookingMonitorListSection', () => {
+  it('uses shared Vuexy badge atoms instead of raw booking monitor pill spans', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{evidenceLabel}</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">{senderRole}</span>');
+    expect(source).not.toContain('<span className={`pill ${closureState.tone}`}>{closureState.label}</span>');
+    expect(source).not.toContain('<span className={`pill ${cancellationReviewSignal.tone}`}>');
+    expect(source).not.toContain('<span className={`pill ${reason.tone}`} key={reason.label} title={reason.title}>');
+    expect(source).not.toContain('<span className="pill pill-warn">Address missing</span>');
+  });
+
   it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
       id: 'booking_123456789',
@@ -260,7 +274,7 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('<div class="muted">12 Jun 2026, 10:00</div>');
     expect(
       markup.split(
-        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
       ).length - 1,
     ).toBe(5);
     expect(markup).not.toContain('vuexy-booking-table-groups');
@@ -360,7 +374,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).not.toContain('Cancelled Customer');
     expect(
       markup.split(
-        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
       ).length - 1,
     ).toBe(2);
   });

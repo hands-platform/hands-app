@@ -9,6 +9,7 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -595,7 +596,7 @@ export function BookingPostMatchCancellationChatLayer({
       >
         <div className="booking-chat-dialog-header">
           <div>
-            <span className="pill pill-info">{evidenceLabel}</span>
+            <StatusBadge tone="info">{evidenceLabel}</StatusBadge>
             <h3 id={`booking-chat-layer-title-${booking.id}`}>
               {bookingCustomerLabel(booking)} / {providerTableLabel(booking.selectedProvider)}
             </h3>
@@ -647,7 +648,7 @@ function BookingChatMessageRow({ message }: { readonly message: BookingChatMessa
     <article className="booking-chat-message">
       <div className="booking-chat-message-meta">
         <strong>{senderName}</strong>
-        <span className="pill pill-neutral">{senderRole}</span>
+        <StatusBadge tone="neutral">{senderRole}</StatusBadge>
         <time>{formatBookingDate(message.createdAt)}</time>
       </div>
       <p>{message.body || 'No message body retained.'}</p>
@@ -683,11 +684,11 @@ function BookingStateChangedCell({
       {closureState && (
         <div className="vuexy-booking-closure-evidence">
           <div className="vuexy-booking-closure-pills">
-            <span className={`pill ${closureState.tone}`}>{closureState.label}</span>
+            <PillClassBadge pillClass={closureState.tone}>{closureState.label}</PillClassBadge>
             {cancellationReviewSignal && (
-              <span className={`pill ${cancellationReviewSignal.tone}`}>
+              <PillClassBadge pillClass={cancellationReviewSignal.tone}>
                 {cancellationReviewSignal.label}
-              </span>
+              </PillClassBadge>
             )}
           </div>
           <div className="muted">{closureState.detail}</div>
@@ -696,9 +697,9 @@ function BookingStateChangedCell({
       {reviewReasonPills.length > 0 && (
         <div className="vuexy-booking-review-reasons" aria-label="Cancellation review reasons">
           {reviewReasonPills.map((reason) => (
-            <span className={`pill ${reason.tone}`} key={reason.label} title={reason.title}>
+            <PillClassBadge key={reason.label} pillClass={reason.tone} title={reason.title}>
               {reason.label}
-            </span>
+            </PillClassBadge>
           ))}
         </div>
       )}
@@ -773,7 +774,7 @@ function BookingAddressCell({
       fullLabel={address.fullLabel}
       shortLabel={address.shortLabel}
     >
-      {address.tone === 'pill-warn' && <span className="pill pill-warn">Address missing</span>}
+      {address.tone === 'pill-warn' && <StatusBadge tone="warning">Address missing</StatusBadge>}
     </BookingCompactCell>
   );
 }
