@@ -17,8 +17,10 @@ describe('Booking operating sections', () => {
   it('uses shared Vuexy badge atoms instead of raw operating pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-operating-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<span className={`pill ${marketplaceWalletEvidence.tone}`}>');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{operatingLedger.length} record areas</span>');

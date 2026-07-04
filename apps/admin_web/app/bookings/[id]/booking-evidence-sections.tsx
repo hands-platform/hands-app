@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton } from '../../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
@@ -237,16 +238,11 @@ export function BookingEvidenceSections({
           ))}
         </div>
         <div className="ops-task-note admin-mt-14">
-          <div className="ops-section-header">
-            <div>
-              <strong>Decision note presets</strong>
-              <p className="muted">
-                Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout
-                handling. Use these before changing booking outcomes.
-              </p>
-            </div>
-            <StatusBadge tone="info">{decisionNotePresets.length} preset(s)</StatusBadge>
-          </div>
+          <AdminSectionHeader
+            actions={<StatusBadge tone="info">{decisionNotePresets.length} preset(s)</StatusBadge>}
+            description="Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout handling. Use these before changing booking outcomes."
+            title="Decision note presets"
+          />
           <div className="booking-decision-preset-list admin-mt-12">
             {decisionNotePresets.map((preset) => (
               <AdminCard className="booking-decision-preset-card" key={preset.id}>

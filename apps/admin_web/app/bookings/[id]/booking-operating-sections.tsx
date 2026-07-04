@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { formatDate } from './booking-formatters';
@@ -229,19 +230,17 @@ export function BookingCloseoutReadinessSection({
         {closeoutReadiness.helper}
       </p>
       <div className="ops-task-note admin-mt-14">
-        <div className="ops-section-header">
-          <div>
-            <strong>Closeout focus</strong>
-            <p className="muted">
-              Only items that still need admin attention are shown here.
-            </p>
-          </div>
-          <PillClassBadge pillClass={closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}>
-            {closeoutReadiness.openItems.length > 0
-              ? `${closeoutReadiness.openItems.length} open`
-              : 'No exceptions'}
-          </PillClassBadge>
-        </div>
+        <AdminSectionHeader
+          actions={(
+            <PillClassBadge pillClass={closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}>
+              {closeoutReadiness.openItems.length > 0
+                ? `${closeoutReadiness.openItems.length} open`
+                : 'No exceptions'}
+            </PillClassBadge>
+          )}
+          description="Only items that still need admin attention are shown here."
+          title="Closeout focus"
+        />
         {closeoutReadiness.openItems.length > 0 ? (
           <div className="setup-stage-list admin-mt-12">
             {closeoutReadiness.openItems.map((item) => (

@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
@@ -206,15 +207,11 @@ export function BookingOpsCommandCenter({
         </div>
       </div>
       <div className="ops-task-note admin-mt-14">
-        <div className="ops-section-header">
-          <div>
-            <strong>Action evidence gate</strong>
-            <p className="muted">
-              Evidence status for the manual action buttons below.
-            </p>
-          </div>
-          <PillClassBadge pillClass={actionEvidenceGate.tone}>{actionEvidenceGate.status}</PillClassBadge>
-        </div>
+        <AdminSectionHeader
+          actions={<PillClassBadge pillClass={actionEvidenceGate.tone}>{actionEvidenceGate.status}</PillClassBadge>}
+          description="Evidence status for the manual action buttons below."
+          title="Action evidence gate"
+        />
         <div className="ops-task-grid admin-mt-12">
           {actionEvidenceGate.rows.map((row) => (
             <AdminActionCard
