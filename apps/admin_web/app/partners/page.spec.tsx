@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -19,6 +20,13 @@ const mockedAdminGet = vi.mocked(adminGet);
 describe('ProvidersPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+  });
+
+  it('uses the shared Vuexy badge atom for the active sort summary', () => {
+    const source = readFileSync('app/partners/page.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}');
   });
 
   it('renders bounded server partner rows without applying a second local search filter', async () => {

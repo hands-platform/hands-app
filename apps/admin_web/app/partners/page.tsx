@@ -5,6 +5,7 @@ import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -310,7 +311,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       {deepPartnerOps ? (
         <>
           <AdminSection
-            actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}
+            actions={<StatusBadge tone="info">{partnerSortLabel(filters.sort)}</StatusBadge>}
             className="admin-mb-16 partner-current-filter-summary-card"
             description="A factual snapshot of the partner rows currently loaded on this page before export, review, dispatch checks, or account follow-up."
             title="Current filter summary"
