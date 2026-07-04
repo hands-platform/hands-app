@@ -8,6 +8,8 @@ describe('OperationsPolicyAuditTrailSection', () => {
     const source = readFileSync('app/operations-policy/operations-policy-audit-trail-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain("<span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>");
   });
 
@@ -43,6 +45,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(rendered).toContain('Ops Admin');
     expect(rendered).toContain('Live behavior');
     expect(rendered).toContain('New bookings use the latest enforced setting.');
+    expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary');
     expect(classNamesIn(section)).toContain('table vuexy-data-table vuexy-booking-table service-trace');
     expect(hrefsIn(section)).toContain('/audit-log?bucket=Operations%2FPolicy');
   });

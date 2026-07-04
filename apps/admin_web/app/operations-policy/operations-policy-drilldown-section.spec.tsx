@@ -1,8 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 
 import { OperationsPolicyDrilldownSection } from './operations-policy-drilldown-section';
 
 describe('OperationsPolicyDrilldownSection', () => {
+  it('uses shared Vuexy link atoms for drill-down actions', () => {
+    const source = readFileSync('app/operations-policy/operations-policy-drilldown-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlLink');
+    expect(source).not.toContain('<a className="button button-secondary policy-inline-action"');
+  });
+
   it('renders drill-down lists with record links and empty guidance', () => {
     const section = OperationsPolicyDrilldownSection({
       drilldown: {
@@ -49,6 +57,9 @@ describe('OperationsPolicyDrilldownSection', () => {
     expect(rendered).toContain('Saved policy drift records');
     expect(rendered).toContain('No saved policy drift is currently loaded.');
     expect(rendered).toContain('/bookings/booking-1');
+    expect(classNamesIn(section)).toContain(
+      'admin-form-control-link button button-secondary policy-inline-action',
+    );
   });
 
   it('does not duplicate the base pill class for list and row pill badges', () => {

@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
@@ -24,10 +25,10 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
   return (
     <AdminSection
       actions={
-        <a className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
+        <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
           <ExternalLink size={16} aria-hidden="true" />
           Open policy audit
-        </a>
+        </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
       className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
