@@ -304,6 +304,14 @@ describe('DashboardPage', () => {
     expect(dashboardSource).toContain('AdminEmptyState');
     expect(dashboardSource).not.toContain('<strong>No same-shift queue item is visible.</strong>');
     expect(dashboardSource).not.toContain('<strong>No Partner blocker is currently visible.</strong>');
+    expect(dashboardSource).not.toContain('<p className="muted">No open matching booking is waiting right now.</p>');
+    expect(dashboardSource).not.toContain('<p className="muted">No policy setting was changed in the last 7 days.</p>');
+    expect(dashboardSource).not.toContain('<p className="muted">No service demand loaded yet.</p>');
+    expect(dashboardSource).not.toContain('<p className="muted">No payment method data loaded yet.</p>');
+    expect(dashboardSource).not.toContain('<p className="muted">No booking address data loaded yet.</p>');
+    expect(dashboardSource).not.toContain(
+      '<p className="muted">No active operational issues detected from the current local data.</p>',
+    );
   });
 
   it('uses shared Vuexy status badge atoms instead of raw dashboard pill markup', () => {

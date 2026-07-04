@@ -1310,7 +1310,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     </div>
                   ))}
                   {matchingControl.openRows.length === 0 ? (
-                    <p className="muted">No open matching booking is waiting right now.</p>
+                    <AdminEmptyState
+                      framed
+                      message="No open matching booking is waiting right now."
+                      title={null}
+                    />
                   ) : null}
                 </div>
               </div>
@@ -1451,7 +1455,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </div>
                     ))}
                     {fullDashboardData.policySummary.recentChanges.length === 0 ? (
-                      <p className="muted">No policy setting was changed in the last 7 days.</p>
+                      <AdminEmptyState
+                        framed
+                        message="No policy setting was changed in the last 7 days."
+                        title={null}
+                      />
                     ) : null}
                   </div>
                 </div>
@@ -1569,7 +1577,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </div>
                     ))}
                     {fullDashboardData.bookingDeepDive.serviceDemand.length === 0 ? (
-                      <p className="muted">No service demand loaded yet.</p>
+                      <AdminEmptyState framed message="No service demand loaded yet." title={null} />
                     ) : null}
                   </div>
                 </div>
@@ -1591,7 +1599,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </div>
                     ))}
                     {fullDashboardData.bookingDeepDive.paymentMix.length === 0 ? (
-                      <p className="muted">No payment method data loaded yet.</p>
+                      <AdminEmptyState framed message="No payment method data loaded yet." title={null} />
                     ) : null}
                   </div>
                 </div>
@@ -1764,7 +1772,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 ))}
                 {fullDashboardData.regionalDemand.length === 0 && (
-                  <p className="muted">No booking address data loaded yet.</p>
+                  <AdminEmptyState framed message="No booking address data loaded yet." title={null} />
                 )}
               </div>
             </AdminSection>
@@ -2121,7 +2129,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </Link>
                 ))}
                 {queue.length === 0 && (
-                  <p className="muted">No active operational issues detected from the current local data.</p>
+                  <AdminEmptyState
+                    framed
+                    message="No active operational issues detected from the current local data."
+                    title={null}
+                  />
                 )}
               </div>
             </AdminSection>
