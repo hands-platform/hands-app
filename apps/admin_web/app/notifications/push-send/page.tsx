@@ -16,7 +16,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
-import { AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
@@ -247,7 +247,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         </form>
 
         {preview ? (
-          <section className="notification-push-preview-card">
+          <AdminCard className="notification-push-preview-card">
             <div className="notification-push-preview-summary">
               <div>
                 <span className="muted">Audience filter</span>
@@ -300,7 +300,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
                 Send push
               </AdminFormControlButton>
             </form>
-          </section>
+          </AdminCard>
         ) : null}
       </AdminFilterPanel>
 

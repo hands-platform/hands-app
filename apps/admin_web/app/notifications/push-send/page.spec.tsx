@@ -67,6 +67,11 @@ describe('PushSendPage', () => {
     expect(pageSource).not.toContain('className={`card admin-notice-card');
   });
 
+  it('uses the shared Vuexy card atom for push preview results', () => {
+    expect(pageSource).toContain('AdminCard');
+    expect(pageSource).not.toContain('<section className="notification-push-preview-card">');
+  });
+
   it('uses the shared rounded pagination page-link class for recent campaigns', () => {
     expect(pageSource).toContain('pageLinkClassName="vuexy-booking-page-link"');
     expect(pageSource).not.toContain('pageLinkClassName="vuexy-booking-pagination-link"');
