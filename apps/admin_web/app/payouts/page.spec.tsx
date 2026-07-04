@@ -157,4 +157,12 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<span className={`pill ${signal.pillClass}`}>{signal.status}</span>');
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
   });
+
+  it('uses shared money atoms for payout summary KPI amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('value: formatMoney(summary.totalNetAmount, summary.currency)');
+    expect(source).not.toContain('value: formatMoney(summary.withholdingAmount, summary.currency)');
+  });
 });

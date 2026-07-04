@@ -13,6 +13,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
@@ -130,12 +131,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         { label: 'Settled', value: summary.settled, helper: 'Paid payout batches.' },
         {
           label: 'Total net',
-          value: formatMoney(summary.totalNetAmount, summary.currency),
+          value: <MoneyText amount={summary.totalNetAmount} currency={summary.currency} />,
           helper: 'Partner net in visible batches.',
         },
         {
           label: 'Withheld tax',
-          value: formatMoney(summary.withholdingAmount, summary.currency),
+          value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
           helper: 'Tax logs attached to payout batches.',
         },
       ]}
