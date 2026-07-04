@@ -21,6 +21,7 @@ import {
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminDisclosure } from '../../../../components/admin-surface';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
@@ -302,7 +303,7 @@ export default async function BankReconciliationDetailPage({
               </AdminFormGrid>
             </div>
 
-            <details className="admin-disclosure finance-reconciliation-import-disclosure admin-mt-16">
+            <AdminDisclosure className="finance-reconciliation-import-disclosure admin-mt-16">
               <summary>
                 <span>Advanced source match</span>
                 <small>Use only for journal, withdrawal, or payout evidence that is not in payment clearing.</small>
@@ -360,7 +361,7 @@ export default async function BankReconciliationDetailPage({
                   <span className="muted">Requires explicit source id and approver evidence.</span>
                 </div>
               </AdminFormGrid>
-            </details>
+            </AdminDisclosure>
           </div>
         ) : (
           <p className="muted admin-mt-8">

@@ -11,7 +11,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { AdminCard, AdminDisclosureCard } from '../../components/admin-surface';
+import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
@@ -153,7 +153,7 @@ function CouponManagementCard({
         </Link>
       </div>
 
-      <AdminDisclosureCard className="coupon-section-disclosure">
+      <AdminDisclosure className="coupon-section-disclosure">
         <summary>Edit coupon</summary>
         <form action={updateAction} className="coupon-edit-form">
           <input name="couponId" type="hidden" value={row.id} />
@@ -183,9 +183,9 @@ function CouponManagementCard({
             Save
           </AdminFormControlButton>
         </form>
-      </AdminDisclosureCard>
+      </AdminDisclosure>
 
-      <AdminDisclosureCard className="coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>
+      <AdminDisclosure className="coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>
         <summary>Booking usage</summary>
         <CouponUsageBookingTable
           hrefForPage={(page) => usageHrefForPage(row.id, page)}
@@ -193,7 +193,7 @@ function CouponManagementCard({
           rows={row.usageBookings}
           totalCount={row.usageBookingCount}
         />
-      </AdminDisclosureCard>
+      </AdminDisclosure>
     </AdminCard>
   );
 }

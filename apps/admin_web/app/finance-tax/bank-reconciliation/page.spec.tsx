@@ -57,7 +57,8 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('Bank import form');
     expect(markup).toContain('Bank account');
     expect(markup).toContain('Operations VND - VCB - ****0001 - VND');
-    expect(markup).toContain(
+    expect(markup).toContain('<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">');
+    expect(markup).not.toContain(
       '<details class="card admin-card admin-disclosure finance-reconciliation-import-disclosure" open="">',
     );
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
@@ -84,8 +85,6 @@ describe('BankReconciliationPage', () => {
 
     expect(markup).toContain('finance-reconciliation-import-disclosure');
     expect(markup).toContain('Bank import form');
-    expect(markup).not.toContain(
-      '<details class="card admin-card admin-disclosure finance-reconciliation-import-disclosure" open="">',
-    );
+    expect(markup).not.toContain('<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">');
   });
 });

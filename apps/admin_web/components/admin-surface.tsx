@@ -22,6 +22,10 @@ type AdminDisclosureCardProps = AdminCardProps & {
   readonly open?: boolean;
 };
 
+type AdminDisclosureProps = AdminCardProps & {
+  readonly open?: boolean;
+};
+
 type AdminFormCardProps = AdminCardProps & {
   readonly action?: string | ((formData: FormData) => void | Promise<void>);
   readonly method?: 'get' | 'post';
@@ -142,6 +146,27 @@ export function AdminDisclosureCard({
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('card admin-card admin-disclosure', className)}
+      id={id}
+      open={open}
+    >
+      {children}
+    </details>
+  );
+}
+
+export function AdminDisclosure({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+  open,
+}: AdminDisclosureProps) {
+  return (
+    <details
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('admin-disclosure', className)}
       id={id}
       open={open}
     >
