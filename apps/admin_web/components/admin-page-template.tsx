@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { MetricCard } from './metric-card';
+import { AdminKpiCard } from './admin-surface';
 
 export type AdminPageMetric = {
   readonly helper: string;
@@ -56,7 +56,7 @@ export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
   return (
     <section className="admin-metric-grid">
       {metrics.map((metric) => (
-        <MetricCard
+        <AdminKpiCard
           helper={metric.helper}
           href={metric.href}
           key={metric.label}
