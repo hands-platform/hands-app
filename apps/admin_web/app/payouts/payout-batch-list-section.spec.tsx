@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PayoutBatchListSection } from './payout-batch-list-section';
 
 describe('PayoutBatchListSection', () => {
@@ -59,10 +62,21 @@ describe('PayoutBatchListSection', () => {
     expect(hrefsIn(section)).toContain('/payouts?page=3');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );
+  });
+
+  it('uses shared badge atoms for payout batch toolbar shortcuts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-list-section.tsx'), 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('<span className="pill pill-success">Newest active first</span>');
+    expect(source).not.toContain('<span className="pill pill-info">Payout record</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">Reconciliation</span>');
+    expect(source).not.toContain('<a className="pill" href="/earnings">');
   });
 });
 

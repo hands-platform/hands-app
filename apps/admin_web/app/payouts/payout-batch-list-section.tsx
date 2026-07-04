@@ -2,6 +2,7 @@ import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { PayoutServerPagination } from './payouts-page-model';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -28,12 +29,12 @@ export function PayoutBatchListSection({
       title="Payout batch list"
     >
       <div className="participant-list admin-mb-12">
-        <span className="pill pill-success">Newest active first</span>
-        <span className="pill pill-info">Payout record</span>
-        <span className="pill pill-warn">Reconciliation</span>
-        <a className="pill" href="/earnings">
+        <StatusBadge tone="success">Newest active first</StatusBadge>
+        <StatusBadge tone="info">Payout record</StatusBadge>
+        <StatusBadge tone="warning">Reconciliation</StatusBadge>
+        <StatusBadgeLink href="/earnings" tone="neutral">
           Review earnings
-        </a>
+        </StatusBadgeLink>
       </div>
 
       <AdminTableScroll>
