@@ -318,6 +318,7 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
       <label
         className={joinClassNames(
           'admin-form-input',
+          'admin-form-date-picker',
           'admin-form-input-date-picker',
           'admin-form-control-labeled',
           className,
@@ -589,6 +590,6 @@ function visibleLabelClass(visibility: AdminFormLabelVisibility) {
 
 function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {
   return type === 'date' || type === 'datetime-local' || type === 'month' || type === 'time'
-    ? 'admin-form-input-date-picker'
+    ? 'admin-form-date-picker admin-form-input-date-picker'
     : undefined;
 }

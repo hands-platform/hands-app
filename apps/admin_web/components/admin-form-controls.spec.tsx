@@ -187,7 +187,7 @@ describe('Admin form controls', () => {
     });
 
     expect(input.props.className).toBe(
-      'admin-form-input admin-form-input-date-picker admin-form-control-labeled',
+      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
     );
     expect(input.props.children[1].props.type).toBe('datetime-local');
 
@@ -199,7 +199,7 @@ describe('Admin form controls', () => {
     });
 
     expect(monthInput.props.className).toBe(
-      'admin-form-input admin-form-input-date-picker admin-form-control-labeled',
+      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
     );
     expect(monthInput.props.children[1].props.type).toBe('month');
   });
@@ -232,7 +232,7 @@ describe('Admin form controls', () => {
     );
 
     expect(markup).toContain(
-      'class="admin-form-input admin-form-input-date-picker admin-form-control-labeled"',
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled"',
     );
     expect(markup).toContain('class="admin-form-label">Starts');
     expect(markup).toContain('aria-label="Starts"');
