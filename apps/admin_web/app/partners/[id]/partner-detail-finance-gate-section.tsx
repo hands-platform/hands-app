@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
+import { PillClassBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -90,12 +90,12 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <EvidenceLine label="Updated" value={bank.updatedAtLabel} />
               </td>
               <td>
-                <span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>{bank.status}</span>
+                <PillClassBadge pillClass={financeEvidenceStatusTone(bank.status)}>{bank.status}</PillClassBadge>
                 {bank.reviewStateLabel ? (
                   <div className="admin-mt-8">
-                    <span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>
+                    <PillClassBadge pillClass={financeEvidenceStatusTone(bank.status)}>
                       {bank.reviewStateLabel}
-                    </span>
+                    </PillClassBadge>
                     {bank.reviewStateDetail ? <p className="muted">{bank.reviewStateDetail}</p> : null}
                   </div>
                 ) : null}
@@ -147,9 +147,9 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
                 <EvidenceLine label="Rejection reason" value={taxProfile.rejectionReason} />
               </td>
               <td>
-                <span className={`pill ${financeEvidenceStatusTone(taxProfile.status)}`}>
+                <PillClassBadge pillClass={financeEvidenceStatusTone(taxProfile.status)}>
                   {taxProfile.status}
-                </span>
+                </PillClassBadge>
               </td>
               <td>
                 <ActionMenu actions={taxProfile.reviewActions} label="Tax profile optional actions" variant="dropdown" />

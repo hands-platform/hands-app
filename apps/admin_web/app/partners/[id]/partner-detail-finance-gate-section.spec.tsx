@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDetailBankPayoutGateCard,
   PartnerDetailTaxProfileCard,
 } from './partner-detail-finance-gate-section';
 
 describe('partner detail finance gate sections', () => {
+  it('uses the shared Vuexy badge atom for finance evidence status pills', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-finance-gate-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>');
+    expect(source).not.toContain('<span className={`pill ${financeEvidenceStatusTone(taxProfile.status)}`}>');
+  });
+
   it('renders bank payout evidence in a Vuexy table with dropdown actions', () => {
     const section = PartnerDetailBankPayoutGateCard({
       bank: {
@@ -35,7 +45,7 @@ describe('partner detail finance gate sections', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-bank']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -55,7 +65,7 @@ describe('partner detail finance gate sections', () => {
     expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
