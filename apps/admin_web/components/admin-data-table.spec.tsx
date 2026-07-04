@@ -1,4 +1,9 @@
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from './admin-data-table';
+import {
+  AdminDataTable,
+  AdminTableFooter,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from './admin-data-table';
 
 describe('AdminDataTable', () => {
   it('renders stable table headers and provided rows', () => {
@@ -93,4 +98,89 @@ describe('AdminDataTable', () => {
       className: 'vuexy-booking-table-footer finance-table-footer',
     });
   });
+
+  it('renders a reusable Vuexy pagination footer for server-backed tables', () => {
+    const footer = AdminTablePaginationFooter({
+      activePage: 2,
+      ariaLabel: 'Finance ledger pagination',
+      from: 11,
+      hrefForPage: (page) => `/finance-tax/general-ledger?page=${page}`,
+      to: 20,
+      totalPages: 5,
+      totalRows: 42,
+    });
+
+    expect(footer.props.className).toBe('vuexy-booking-table-footer');
+    expect(normalizeText(textContent(footer))).toContain('Showing 11 to 20 of 42 entries');
+    expect(classNamesIn(footer)).toEqual(
+      expect.arrayContaining(['vuexy-booking-pagination', 'vuexy-booking-page-link is-active']),
+    );
+    expect(hrefsIn(footer)).toEqual(
+      expect.arrayContaining(['/finance-tax/general-ledger?page=1', '/finance-tax/general-ledger?page=2']),
+    );
+  });
 });
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/gu, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
