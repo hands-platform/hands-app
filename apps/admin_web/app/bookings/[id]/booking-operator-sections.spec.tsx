@@ -16,8 +16,8 @@ describe('BookingOperatorQueueSections', () => {
     const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
 
     expect(source).toContain('AdminSectionHeader');
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('actions={<span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>}');
     expect(source).not.toContain('<span className="pill pill-info">');

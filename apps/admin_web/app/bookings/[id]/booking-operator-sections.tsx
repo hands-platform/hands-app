@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
   captureBookingPayment,
@@ -101,7 +101,11 @@ export function BookingOperatorQueueSections({
   return (
     <>
       <AdminSection
-        actions={<PillClassBadge pillClass={operatorCommandQueue.tone}>{operatorCommandQueue.status}</PillClassBadge>}
+        actions={
+          <StatusBadge tone={statusBadgeToneFromPillClass(operatorCommandQueue.tone)}>
+            {operatorCommandQueue.status}
+          </StatusBadge>
+        }
         className="admin-mb-16"
         description="Same-shift actions queued for operator handling."
         id="operator-command-queue"
@@ -153,7 +157,7 @@ export function BookingOperatorQueueSections({
               <tr key={row.action}>
                 <td>{row.action}</td>
                 <td>
-                  <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+                  <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
                 </td>
                 <td>{row.evidence}</td>
                 <td>{row.operatorRule}</td>
@@ -183,9 +187,9 @@ export function BookingOpsCommandCenter({
       actions={
         <>
           {badges.map((badge) => (
-            <PillClassBadge key={badge.label} pillClass={badge.tone}>
+            <StatusBadge key={badge.label} tone={statusBadgeToneFromPillClass(badge.tone)}>
               {badge.label}
-            </PillClassBadge>
+            </StatusBadge>
           ))}
         </>
       }
@@ -199,7 +203,11 @@ export function BookingOpsCommandCenter({
           <AdminTaskCard
             className={finalGateReason.className}
             detail={finalGateReason.detail}
-            leading={<PillClassBadge pillClass={finalGateReason.pillClass}>Booking gate reason</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(finalGateReason.pillClass)}>
+                Booking gate reason
+              </StatusBadge>
+            }
             title={finalGateReason.title}
           >
             <small>{finalGateReason.operatorRule}</small>
@@ -208,7 +216,11 @@ export function BookingOpsCommandCenter({
       </div>
       <div className="ops-task-note admin-mt-14">
         <AdminSectionHeader
-          actions={<PillClassBadge pillClass={actionEvidenceGate.tone}>{actionEvidenceGate.status}</PillClassBadge>}
+          actions={
+            <StatusBadge tone={statusBadgeToneFromPillClass(actionEvidenceGate.tone)}>
+              {actionEvidenceGate.status}
+            </StatusBadge>
+          }
           description="Evidence status for the manual action buttons below."
           title="Action evidence gate"
         />
@@ -219,7 +231,7 @@ export function BookingOpsCommandCenter({
               detail={row.evidence}
               href={row.href}
               key={row.action}
-              leading={<PillClassBadge pillClass={row.pillClass}>{row.status}</PillClassBadge>}
+              leading={<StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.status}</StatusBadge>}
               title={row.action}
               variant="ops-task"
             >
