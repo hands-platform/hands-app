@@ -268,6 +268,7 @@ describe('Admin form controls', () => {
 
   it('renders link and button controls with the shared Vuexy shell and custom hooks', () => {
     const link = AdminFormControlLink({
+      'aria-label': 'Export filtered customer rows',
       'aria-current': 'page',
       children: 'Export',
       className: 'customer-export',
@@ -287,6 +288,7 @@ describe('Admin form controls', () => {
       title: 'Export customers',
     });
     expect(link.props['aria-current']).toBe('page');
+    expect(link.props['aria-label']).toBe('Export filtered customer rows');
     expect(button.props).toMatchObject({
       className: 'admin-form-control-button button button-primary customer-apply',
       type: 'submit',

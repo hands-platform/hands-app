@@ -119,7 +119,7 @@ type AdminFormControlLinkProps = {
   readonly children: ReactNode;
   readonly className?: string;
   readonly href: string;
-} & Pick<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-current' | 'download' | 'title'>;
+} & Pick<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-current' | 'aria-label' | 'download' | 'title'>;
 
 type AdminFormControlButtonProps = {
   readonly children: ReactNode;
@@ -408,6 +408,7 @@ export function AdminFormCheckbox({
 }
 
 export function AdminFormControlLink({
+  'aria-label': ariaLabel,
   'aria-current': ariaCurrent,
   children,
   className,
@@ -418,6 +419,7 @@ export function AdminFormControlLink({
   return (
     <a
       aria-current={ariaCurrent}
+      aria-label={ariaLabel}
       className={joinClassNames('admin-form-control-link', normalizeButtonClassNames(className, 'button button-secondary'))}
       download={download}
       href={href}

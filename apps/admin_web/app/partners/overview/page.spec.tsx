@@ -67,9 +67,12 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
+    expect(pageSource).toContain('AdminFormControlLink');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );
+    expect(pageSource).not.toContain('<a aria-label={`${row.recommendedAction} for ${row.partnerName}`}');
+    expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
     expect(markup).toContain('admin-section-body partner-overview-selection-body');
     expect(markup).toContain('aria-label="Remove Risk filter High"');

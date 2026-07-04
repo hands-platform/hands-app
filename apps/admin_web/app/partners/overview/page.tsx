@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
@@ -698,13 +699,13 @@ function PartnerRiskTable({
             <td>{formatNumber(row.noShowReports)}</td>
             {showWallet ? <td>{formatMoney(row.walletBalance)}</td> : null}
             <td>
-              <a
+              <AdminFormControlLink
                 aria-label={`${row.recommendedAction} for ${row.partnerName}`}
-                className="button button-secondary partner-overview-risk-action"
+                className="partner-overview-risk-action"
                 href={row.href}
               >
                 {row.recommendedAction}
-              </a>
+              </AdminFormControlLink>
             </td>
           </tr>
         ))}
@@ -829,13 +830,13 @@ function SelectionFrictionCard({
                 <small>{row.readinessFlags.join(' · ')}</small>
               </td>
               <td>
-                <a
+                <AdminFormControlLink
                   aria-label={`${row.recommendedAction} for ${row.partnerName}`}
-                  className="button button-secondary partner-overview-risk-action"
+                  className="partner-overview-risk-action"
                   href={row.href}
                 >
                   {row.recommendedAction}
-                </a>
+                </AdminFormControlLink>
               </td>
             </tr>
           ))}
@@ -853,10 +854,10 @@ function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionLis
           <h3>{list.title}</h3>
           <small>{formatNumber(list.totalCount)} Partners</small>
         </div>
-        <a aria-label={`Open ${list.title}`} className="button button-secondary" href={list.viewAllHref}>
+        <AdminFormControlLink aria-label={`Open ${list.title}`} href={list.viewAllHref}>
           Open
           <ChevronRight size={14} aria-hidden="true" />
-        </a>
+        </AdminFormControlLink>
       </div>
       <div className="partner-overview-action-rows">
         {list.rows.length > 0 ? (
