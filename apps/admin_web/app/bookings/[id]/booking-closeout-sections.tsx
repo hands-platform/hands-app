@@ -1,7 +1,11 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminSection } from '../../../components/admin-surface';
-import { PillClassBadge, PillClassBadgeLink, StatusBadge } from '../../../components/status-badge';
+import {
+  StatusBadge,
+  StatusBadgeLink,
+  statusBadgeToneFromPillClass,
+} from '../../../components/status-badge';
 
 type CloseoutChecklistItem = {
   title: string;
@@ -56,7 +60,11 @@ export function BookingCloseoutSections({
               detail={item.detail}
               href={item.href}
               key={item.title}
-              leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+              leading={
+                <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                  {item.status}
+                </StatusBadge>
+              }
               title={item.title}
               variant="ops-task"
             />
@@ -77,9 +85,9 @@ export function BookingCloseoutSections({
               <span>{record.label}</span>
               <strong>{record.value}</strong>
               <small>{record.detail}</small>
-              <PillClassBadgeLink href={record.href} pillClass={record.tone}>
+              <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
                 Open
-              </PillClassBadgeLink>
+              </StatusBadgeLink>
             </div>
           ))}
         </div>
