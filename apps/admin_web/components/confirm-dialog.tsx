@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFormInput } from './admin-form-controls';
+import { AdminDialogCard } from './admin-surface';
 import type { StatusBadgeTone } from './status-badge';
 import { statusBadgeClassName } from './status-badge';
 
@@ -93,15 +94,13 @@ export function ConfirmDialog({
   const descriptionId = `${id}-description`;
   const confirmState = confirmDialogButtonState({ confirmLabel, disabled, loading, loadingLabel });
 
-  return (
-    <section
-      aria-busy={loading || undefined}
-      aria-describedby={descriptionId}
-      aria-labelledby={titleId}
-      className="card admin-dialog-card"
-      role="alertdialog"
-    >
-      <div className="ops-section-header">
+  return AdminDialogCard({
+    ariaDescribedBy: descriptionId,
+    ariaLabelledBy: titleId,
+    className: 'admin-dialog-card',
+    loading,
+    children: [
+      <div className="ops-section-header" key="header">
         <div>
           <h2 id={titleId}>{title}</h2>
           <p className="muted" id={descriptionId}>
@@ -109,8 +108,8 @@ export function ConfirmDialog({
           </p>
         </div>
         <span className={statusBadgeClassName(tone)}>Review</span>
-      </div>
-      <div className="actions confirm-dialog-actions">
+      </div>,
+      <div className="actions confirm-dialog-actions" key="actions">
         <form action={action} className="confirm-dialog-form">
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
@@ -150,7 +149,7 @@ export function ConfirmDialog({
             {link.label}
           </Link>
         ))}
-      </div>
-    </section>
-  );
+      </div>,
+    ],
+  });
 }

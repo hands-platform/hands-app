@@ -27,6 +27,11 @@ type AdminFormCardProps = AdminCardProps & {
   readonly method?: 'get' | 'post';
 };
 
+type AdminDialogCardProps = AdminCardProps & {
+  readonly ariaDescribedBy: string;
+  readonly loading?: boolean;
+};
+
 type AdminLinkCardProps = AdminCardProps & {
   readonly href: string;
   readonly htmlTitle?: string;
@@ -165,6 +170,28 @@ export function AdminFormCard({
     >
       {children}
     </form>
+  );
+}
+
+export function AdminDialogCard({
+  ariaDescribedBy,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+  loading,
+}: AdminDialogCardProps) {
+  return (
+    <section
+      aria-busy={loading || undefined}
+      aria-describedby={ariaDescribedBy}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card', className)}
+      id={id}
+      role="alertdialog"
+    >
+      {children}
+    </section>
   );
 }
 

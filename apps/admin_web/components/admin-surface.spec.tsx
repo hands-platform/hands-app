@@ -2,6 +2,7 @@ import {
   AdminActionCard,
   AdminAsideCard,
   AdminCard,
+  AdminDialogCard,
   AdminDisclosureCard,
   AdminErrorState,
   AdminFormCard,
@@ -145,6 +146,25 @@ describe('Admin surface components', () => {
       className: 'card admin-card policy-form',
       id: 'policy-form',
       method: 'post',
+    });
+  });
+
+  it('renders a reusable Vuexy dialog card surface with alertdialog semantics', () => {
+    const dialog = AdminDialogCard({
+      ariaDescribedBy: 'confirm-description',
+      ariaLabelledBy: 'confirm-title',
+      children: <p>Confirm</p>,
+      className: 'admin-dialog-card',
+      loading: true,
+    });
+
+    expect(dialog.type).toBe('section');
+    expect(dialog.props).toMatchObject({
+      'aria-busy': true,
+      'aria-describedby': 'confirm-description',
+      'aria-labelledby': 'confirm-title',
+      className: 'card admin-card admin-dialog-card',
+      role: 'alertdialog',
     });
   });
 

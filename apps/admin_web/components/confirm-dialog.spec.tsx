@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { ConfirmDialog, confirmDialogButtonClassName, confirmDialogButtonState } from './confirm-dialog';
+
+const source = readFileSync('components/confirm-dialog.tsx', 'utf8');
 
 describe('ConfirmDialog', () => {
   it('maps confirm tone to stable pill classes', () => {
@@ -51,7 +54,7 @@ describe('ConfirmDialog', () => {
     expect(dialog.props).toMatchObject({
       'aria-describedby': 'booking-cancel-description',
       'aria-labelledby': 'booking-cancel-title',
-      className: 'card admin-dialog-card',
+      className: 'card admin-card admin-dialog-card',
       role: 'alertdialog',
     });
     expect(dialog.props.children).toHaveLength(2);
@@ -59,6 +62,11 @@ describe('ConfirmDialog', () => {
       href: '/audit-log?q=booking-1',
       title: 'Open the audit trail before confirming.',
     });
+  });
+
+  it('uses the shared Vuexy dialog card surface', () => {
+    expect(source).toContain('AdminDialogCard');
+    expect(source).not.toContain('className="card admin-dialog-card"');
   });
 
   it('disables the confirm action while loading without changing the form action', () => {
