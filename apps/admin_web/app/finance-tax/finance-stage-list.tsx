@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminSignal } from '../../components/status-badge';
+
 export type FinanceStageListItem = {
   readonly helper: ReactNode;
   readonly href?: string;
@@ -16,7 +18,7 @@ export function FinanceStageList({ items }: { readonly items: readonly FinanceSt
       {items.map((item) => {
         const content = (
           <>
-            <span>{item.signal}</span>
+            <AdminSignal tone="info">{item.signal}</AdminSignal>
             <div>
               <strong>{item.label}</strong>
               <p className="muted">{item.helper}</p>
