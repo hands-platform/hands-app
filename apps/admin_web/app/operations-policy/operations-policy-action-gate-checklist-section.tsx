@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
 type OperationsPolicyActionGateChecklistSectionProps = {
@@ -41,7 +41,9 @@ export function OperationsPolicyActionGateChecklistSection({
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>
+            }
             title={item.title}
             variant="ops-task"
           >
