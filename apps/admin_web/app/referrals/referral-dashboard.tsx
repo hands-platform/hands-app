@@ -14,6 +14,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { StatusBadge } from '../../components/status-badge';
 import {
   type AdminCustomerReferralParent,
@@ -783,45 +784,23 @@ function ReferralParentPagination({
     return null;
   }
 
-  const pageNumbers = buildReferralPaginationPages(pagination.currentPage, pagination.totalPages);
-  const previousPage = Math.max(1, pagination.currentPage - 1);
-  const nextPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
-
   return (
-    <nav className="referral-pagination" aria-label="Referral parent pagination">
+    <div className="referral-pagination">
       <span className="referral-pagination-summary">
         Showing {pagination.startItem}-{pagination.endItem} of {pagination.totalCount}
       </span>
-      <div className="booking-date-filter-buttons referral-pagination-buttons">
-        <Link
-          aria-disabled={pagination.currentPage === 1}
-          className={pagination.currentPage === 1 ? 'is-disabled' : undefined}
-          href={buildReferralListHref(audience, filters, {}, previousPage)}
-        >
-          Previous
-        </Link>
-        {pageNumbers.map((page) => (
-          <Link
-            key={page}
-            aria-current={page === pagination.currentPage ? 'page' : undefined}
-            className={page === pagination.currentPage ? 'is-active' : undefined}
-            href={buildReferralListHref(audience, filters, {}, page)}
-          >
-            {page}
-          </Link>
-        ))}
-        <Link
-          aria-disabled={pagination.currentPage === pagination.totalPages}
-          className={pagination.currentPage === pagination.totalPages ? 'is-disabled' : undefined}
-          href={buildReferralListHref(audience, filters, {}, nextPage)}
-        >
-          Next
-        </Link>
-      </div>
+      <AdminRoundedPagination
+        activePage={pagination.currentPage}
+        ariaLabel="Referral parent pagination"
+        className="vuexy-booking-pagination referral-pagination-buttons"
+        hrefForPage={(page) => buildReferralListHref(audience, filters, {}, page)}
+        pageLinkClassName="vuexy-booking-page-link"
+        totalPages={pagination.totalPages}
+      />
       <span className="referral-pagination-page">
         Page {pagination.currentPage} of {pagination.totalPages}
       </span>
-    </nav>
+    </div>
   );
 }
 
@@ -1309,12 +1288,6 @@ function appendReferralParentApiFilterParams(params: URLSearchParams, filters: R
   if (filters.q) params.set('q', filters.q);
   if (filters.status !== 'all') params.set('status', filters.status);
   if (filters.reward !== 'all') params.set('reward', filters.reward);
-}
-
-function buildReferralPaginationPages(currentPage: number, totalPages: number) {
-  const pageCount = Math.min(totalPages, 5);
-  const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - pageCount + 1));
-  return Array.from({ length: pageCount }, (_, index) => startPage + index);
 }
 
 function referralAudienceLabel(audience: ReferralAudienceSlug) {

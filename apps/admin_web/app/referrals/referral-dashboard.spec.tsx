@@ -293,9 +293,13 @@ describe('ReferralDashboard', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('aria-label="Referral parent pagination"');
+    expect(markup).toContain('class="vuexy-booking-pagination referral-pagination-buttons"');
+    expect(markup).toContain('class="vuexy-booking-page-link is-active"');
     expect(markup).toContain('Page 2 of 2');
     expect(markup).toContain('Showing 11-12 of 12');
     expect(markup).toContain('href="/referrals/customers"');
+    expect(dashboardSource).toContain('AdminRoundedPagination');
+    expect(dashboardSource).not.toContain('buildReferralPaginationPages');
   });
 
   it('renders server-paginated referral parent rows without slicing the loaded page again', () => {
