@@ -56,18 +56,19 @@ describe('PayoutBatchTable', () => {
           readinessSummary: 'Check transfer ref before advancing.',
           serviceEvidencePills: [
             {
+              amount: 700000,
+              currency: 'VND',
               key: 'service-1',
               label: 'Foot Massage',
-              value: '700.000 VND',
             },
           ],
           shortId: 'batch-123',
           statusLabel: 'Draft',
-          totalAmountLabel: '900.000 VND',
+          totalAmount: 900000,
           transferRef: '',
           taxLogCount: 1,
           updatedLabel: 'Updated just now',
-          withholdingAmountLabel: '50.000 VND',
+          withholdingAmount: 50000,
           opsHint: 'Review before processing.',
           opsSignal: 'Review',
           opsSignalClassName: 'signal signal-warn',
@@ -215,6 +216,15 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('<a className="pill pill-danger" href={row.partnerChecksHref}>');
     expect(source).not.toContain('<span className="pill pill-warn">Resolve blockers before paid</span>');
   });
+
+  it('uses the shared money atom for payout batch amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('row.totalAmountLabel');
+    expect(source).not.toContain('row.withholdingAmountLabel');
+    expect(source).not.toContain('{item.label}: {item.value}');
+  });
 });
 
 function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): PayoutBatchTableRow {
@@ -224,6 +234,7 @@ function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): Payo
     blockingActionSummary: 'No blockers.',
     blockingReasons: [],
     checklist: [],
+    currency: 'VND',
     earningCount: 0,
     earningsHint: '0/0 linked to this batch',
     id: 'batch-123456',
@@ -240,11 +251,11 @@ function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): Payo
     serviceEvidencePills: [],
     shortId: 'batch-123',
     statusLabel: 'Draft',
-    totalAmountLabel: '0 VND',
+    totalAmount: 0,
     transferRef: '',
     taxLogCount: 0,
     updatedLabel: 'Updated just now',
-    withholdingAmountLabel: '0 VND',
+    withholdingAmount: 0,
     opsHint: 'Review before processing.',
     opsSignal: 'Review',
     opsSignalClassName: 'signal signal-warn',

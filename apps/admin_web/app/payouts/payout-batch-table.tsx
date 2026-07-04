@@ -1,6 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -26,9 +27,10 @@ export type PayoutBatchActionExecutionItem = {
 };
 
 export type PayoutBatchServiceEvidencePill = {
+  readonly amount: number;
+  readonly currency: string;
   readonly key: string;
   readonly label: string;
-  readonly value: string;
 };
 
 export type PayoutBatchTableRow = {
@@ -37,6 +39,7 @@ export type PayoutBatchTableRow = {
   readonly blockingActionSummary: string;
   readonly blockingReasons: readonly PayoutBatchBlockingReason[];
   readonly checklist: readonly PayoutBatchChecklistItem[];
+  readonly currency: string;
   readonly earningCount: number;
   readonly earningsHint: string;
   readonly id: string;
@@ -57,10 +60,10 @@ export type PayoutBatchTableRow = {
   readonly shortId: string;
   readonly statusLabel: string;
   readonly taxLogCount: number;
-  readonly totalAmountLabel: string;
+  readonly totalAmount: number;
   readonly transferRef: string;
   readonly updatedLabel: string;
-  readonly withholdingAmountLabel: string;
+  readonly withholdingAmount: number;
 };
 
 type PayoutBatchTableProps = {
@@ -146,7 +149,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="participant-list admin-mt-8">
               {row.serviceEvidencePills.map((item) => (
                 <StatusBadge key={`${row.id}-${item.key}`} tone="info">
-                  {item.label}: {item.value}
+                  {item.label}: <MoneyText amount={item.amount} currency={item.currency} />
                 </StatusBadge>
               ))}
             </div>
@@ -163,9 +166,13 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               {row.readinessSummary}
             </div>
           </td>
-          <td>{row.totalAmountLabel}</td>
           <td>
-            <div>{row.withholdingAmountLabel}</div>
+            <MoneyText amount={row.totalAmount} currency={row.currency} />
+          </td>
+          <td>
+            <div>
+              <MoneyText amount={row.withholdingAmount} currency={row.currency} />
+            </div>
             <div className="muted">{row.taxLogCount} tax log(s)</div>
           </td>
           <td>

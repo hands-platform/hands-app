@@ -383,9 +383,10 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
       serviceEvidencePills: batchServiceEvidence(batch)
         .slice(0, 3)
         .map((item) => ({
+          amount: item.netAmount,
+          currency: item.currency,
           key: item.key,
           label: item.label,
-          value: formatMoney(item.netAmount, item.currency),
         })),
       checklist: payoutChecklist(batch).map((item) => ({
         detail: item.detail,
@@ -393,8 +394,9 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
         ok: item.ok,
       })),
       readinessSummary: payoutReadinessSummary(batch),
-      totalAmountLabel: formatMoney(batch.totalNetAmount, batch.currency),
-      withholdingAmountLabel: formatMoney(batchWithholdingAmount(batch), batch.currency),
+      currency: batch.currency,
+      totalAmount: batch.totalNetAmount,
+      withholdingAmount: batchWithholdingAmount(batch),
       taxLogCount: batch.withholdingLogs?.length ?? 0,
       paidAtLabel: formatDateTime(batch.paidAt, '-'),
       paidAtRelativeLabel: batch.paidAt
