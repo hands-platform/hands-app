@@ -453,10 +453,12 @@ export default async function VietnamOverviewPage({
               );
             })}
             {topRealtimeRegionRows.length === 0 ? (
-              <div className="vietnam-realtime-empty">
-                <ShieldCheck size={18} aria-hidden="true" />
-                <span>No realtime regional load yet</span>
-              </div>
+              <AdminEmptyState
+                className="vietnam-realtime-empty"
+                framed
+                message="Live regional load appears when current map dots are available."
+                title="No realtime regional load yet"
+              />
             ) : null}
           </AdminSection>
         </div>

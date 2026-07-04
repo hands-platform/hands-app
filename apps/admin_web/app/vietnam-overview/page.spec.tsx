@@ -61,8 +61,10 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminKpiCard');
     expect(mapClustersSource).toContain('AdminCard');
+    expect(markup).toContain('empty-state vietnam-realtime-empty');
     expect(mapClustersSource).not.toContain('<article key={item.key} className={`vietnam-map-cluster-summary-card');
     expect(mapClustersSource).not.toContain('<article className="vietnam-map-cluster-context-card');
+    expect(pageSource).not.toContain('<div className="vietnam-realtime-empty">');
     expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');
   });
