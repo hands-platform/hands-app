@@ -3,6 +3,7 @@ import { formatMoney } from '../../lib/admin-format';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -20,17 +21,15 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
 
   return (
     <AdminCard className="service-impact-card">
-      <div className="ops-section-header">
-        <div>
-          <h3>Partner price impact</h3>
-          <p className="muted">
-            Shows which Partner prices are visible in the customer app for this exact duration option.
-          </p>
-        </div>
-        <StatusBadge tone={impact.hiddenCount ? 'warning' : 'success'}>
-          {impact.visibleCount} visible / {impact.hiddenCount} hidden
-        </StatusBadge>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <StatusBadge tone={impact.hiddenCount ? 'warning' : 'success'}>
+            {impact.visibleCount} visible / {impact.hiddenCount} hidden
+          </StatusBadge>
+        )}
+        description="Shows which Partner prices are visible in the customer app for this exact duration option."
+        title="Partner price impact"
+      />
       <div className="participant-list">
         <StatusBadge tone="info">{impact.rows.length} loaded row(s)</StatusBadge>
         <StatusBadge tone={impact.unsupportedCount ? 'warning' : 'success'}>

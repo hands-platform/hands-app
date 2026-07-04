@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
 import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -122,15 +123,15 @@ function PartnerBackupEligibilityCard({
 }) {
   return (
     <AdminCard className="admin-mt-10 admin-p-12">
-      <div className="ops-section-header">
-        <div>
-          <strong>Marketplace participation eligibility</strong>
-          <p className="muted">{eligibility.detail}</p>
-        </div>
-        <PillClassBadge pillClass={eligibility.eligible ? 'pill-success' : 'pill-warn'}>
-          {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
-        </PillClassBadge>
-      </div>
+      <AdminSectionHeader
+        actions={(
+          <PillClassBadge pillClass={eligibility.eligible ? 'pill-success' : 'pill-warn'}>
+            {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
+          </PillClassBadge>
+        )}
+        description={eligibility.detail}
+        title="Marketplace participation eligibility"
+      />
       <div className="participant-list admin-mt-8">
         <StatusBadge tone="info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</StatusBadge>
         <StatusBadge tone="info">First window: {opsPolicy.responseWindowMinutes}m</StatusBadge>

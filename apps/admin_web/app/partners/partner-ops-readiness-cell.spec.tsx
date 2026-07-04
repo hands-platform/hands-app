@@ -9,7 +9,9 @@ describe('PartnerOpsReadinessCell', () => {
     const source = readFileSync('app/partners/partner-ops-readiness-cell.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('className="card admin-mt-10 admin-p-12"');
+    expect(source).not.toContain('<div className="ops-section-header">');
   });
 
   it('uses shared Vuexy badge atoms instead of raw ops readiness pill spans', () => {
