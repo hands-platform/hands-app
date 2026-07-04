@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
@@ -66,12 +67,12 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   return (
     <AdminPageTemplate
       actions={
-        <Link
-          className="button button-secondary"
+        <AdminFormControlLink
+          className="button-secondary"
           href={bookingSettlementReversalHref({ page: 1, range: '30d', review: 'all', take: 25 })}
         >
           Back to reversals
-        </Link>
+        </AdminFormControlLink>
       }
       description="Single closed-period settlement reversal record with refund, journal, clearing, and original settlement evidence."
       metrics={[

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
@@ -44,9 +45,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   return (
     <AdminPageTemplate
       actions={
-        <Link className="button button-secondary" href={generalLedgerHref({ page: 1, range: '30d', review: 'posted', take: 25 })}>
+        <AdminFormControlLink className="button-secondary" href={generalLedgerHref({ page: 1, range: '30d', review: 'posted', take: 25 })}>
           Back to ledger
-        </Link>
+        </AdminFormControlLink>
       }
       description="Entry-level accounting evidence for a single finance source record. Lists stay light; this page loads journal entries only when opened."
       metrics={[

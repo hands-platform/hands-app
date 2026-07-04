@@ -14,6 +14,7 @@ import {
 } from '../../../../lib/admin-api';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -97,9 +98,9 @@ export default async function BankReconciliationDetailPage({
   return (
     <AdminPageTemplate
       actions={
-        <Link className="button button-secondary" href={bankReconciliationHref({ page: 1, range: '30d', review: 'unmatched', take: 25 })}>
+        <AdminFormControlLink className="button-secondary" href={bankReconciliationHref({ page: 1, range: '30d', review: 'unmatched', take: 25 })}>
           Back to bank reconciliation
-        </Link>
+        </AdminFormControlLink>
       }
       description="Bank transaction evidence for manual reconciliation against payment clearing, journal, withdrawal, and payout records."
       metrics={[

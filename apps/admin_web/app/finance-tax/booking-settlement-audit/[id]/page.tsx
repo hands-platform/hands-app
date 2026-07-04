@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
 import { financePersonName } from '../../finance-participant-label';
@@ -46,12 +47,12 @@ export default async function BookingSettlementAuditDetailPage({
   return (
     <AdminPageTemplate
       actions={
-        <Link
-          className="button button-secondary"
+        <AdminFormControlLink
+          className="button-secondary"
           href={bookingSettlementAuditHref({ page: 1, range: '30d', review: 'open', take: 25 })}
         >
           Back to audit
-        </Link>
+        </AdminFormControlLink>
       }
       description="Single immutable booking settlement snapshot for finance, tax, payment fee, coupon, and payout audit evidence."
       metrics={[

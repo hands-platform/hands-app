@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
+import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { PillClassBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../../lib/admin-format';
@@ -52,9 +53,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   return (
     <AdminPageTemplate
       actions={
-        <Link className="button button-secondary" href={paymentClearingHref({ page: 1, range: '30d', review: 'open', take: 25 })}>
+        <AdminFormControlLink className="button-secondary" href={paymentClearingHref({ page: 1, range: '30d', review: 'open', take: 25 })}>
           Back to clearing
-        </Link>
+        </AdminFormControlLink>
       }
       description="Evidence for one booking payment clearing row. Open this only when finance needs source, settlement, or bank matching detail."
       metrics={[
