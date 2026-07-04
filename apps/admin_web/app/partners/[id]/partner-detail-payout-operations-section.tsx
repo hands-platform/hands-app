@@ -5,7 +5,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminTaskCard } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -90,7 +90,11 @@ export function PartnerDetailPayoutOperationsSection({
             className={cardClassForTone(card.tone)}
             detail={card.detail}
             key={card.title}
-            leading={<PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>}
+            leading={
+              <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(card.tone))}>
+                {card.status}
+              </StatusBadge>
+            }
             title={card.title}
           />
         ))}
@@ -249,7 +253,9 @@ export function PartnerDetailPayoutOperationsSection({
                     <strong>{batch.totalNetLabel}</strong>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={payoutBatchPill(batch.status)}>{batch.status}</PillClassBadge>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(payoutBatchPill(batch.status))}>
+                      {batch.status}
+                    </StatusBadge>
                   </td>
                   <td>
                     <span className="muted">{batch.createdLine}</span>

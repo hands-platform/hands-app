@@ -7,7 +7,7 @@ import {
   AdminFormInput,
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
-import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
 import { formatCurrency, formatDate, shortRecordId } from './partner-detail-format';
@@ -64,9 +64,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <PillClassBadge pillClass={statusPillClass(request.status)}>
+                <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(request.status))}>
                   {statusLabel(request.status)}
-                </PillClassBadge>
+                </StatusBadge>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
