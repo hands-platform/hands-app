@@ -124,6 +124,8 @@ describe('AdminOperatorsPage', () => {
     expect(markup).not.toContain('Master Admin has full access automatically.');
     expect(markup).not.toContain('No category setup is required while this role is active.');
     expect(markup).toContain('Category permissions');
+    expect(markup).toContain('card admin-card admin-operator-permission-item');
+    expect(markup).not.toContain('<article class="admin-operator-permission-item');
     expect(markup).toContain('Bookings');
     expect(markup).toContain('Realtime bookings');
     expect(markup).toContain('Booking cancellations');
@@ -151,6 +153,7 @@ describe('AdminOperatorsPage', () => {
   it('uses shared badge atoms for operator role and category chips', () => {
     const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
 
+    expect(source).toContain('AdminCard');
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-neutral">{category.group}</span>');
     expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');

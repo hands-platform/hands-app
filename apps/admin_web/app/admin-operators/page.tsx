@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime } from '../../lib/admin-format';
 import {
@@ -105,14 +106,14 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
       >
         <div className="admin-operator-permission-grid">
           {adminOperatorPermissionCategoryDefinitions.map((category) => (
-            <article className="admin-operator-permission-item" key={category.key}>
+            <AdminCard className="admin-operator-permission-item" key={category.key}>
               <div>
                 <strong>{category.label}</strong>
                 <PillClassBadge pillClass="pill-neutral">{category.group}</PillClassBadge>
                 <p className="muted">{category.scope}</p>
               </div>
               <small>{category.defaultOwner}</small>
-            </article>
+            </AdminCard>
           ))}
         </div>
       </AdminFilterPanel>
