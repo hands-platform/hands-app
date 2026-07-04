@@ -18,6 +18,19 @@ describe('Admin workspace header CSS', () => {
     expect(hoverBlock).toContain('background: var(--admin-action-hover)');
     expect(hoverBlock).not.toContain('background: var(--admin-sidebar-hover)');
   });
+
+  it('keeps theme mode buttons aligned with Vuexy medium IconButton sizing', () => {
+    const toggleButtonIndex = globalsCss.indexOf('.theme-toggle-button {');
+    const toggleButtonBlock = cssRuleBlockAt(toggleButtonIndex);
+
+    expect(toggleButtonIndex).toBeGreaterThan(-1);
+    expect(toggleButtonBlock).toContain('height: 38px');
+    expect(toggleButtonBlock).toContain('min-height: 38px');
+    expect(toggleButtonBlock).toContain('width: 38px');
+    expect(toggleButtonBlock).toContain('font-size: 1.375rem');
+    expect(toggleButtonBlock).not.toContain('height: 30px');
+    expect(toggleButtonBlock).not.toContain('width: 30px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

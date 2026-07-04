@@ -874,11 +874,12 @@ a {
   box-shadow: none;
   color: var(--admin-muted);
   display: inline-flex;
-  height: 30px;
+  font-size: 1.375rem;
+  height: 38px;
   justify-content: center;
-  min-height: 30px;
+  min-height: 38px;
   padding: 0;
-  width: 30px;
+  width: 38px;
 }
 
 .theme-toggle-button:hover {
