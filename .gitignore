@@ -27,3 +27,4 @@ ios/Pods/
 **/android/key.properties
 **/*.jks
 **/*.keystore
+design/figma/*.fig
