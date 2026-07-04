@@ -57,6 +57,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps literal pill chips inside shared Vuexy status badge atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/status-badge.tsx')
+      .filter((filePath) => rawLiteralPillSpanPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps react-datepicker instances on the shared Vuexy calendar skin', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => readFileSync(filePath, 'utf8').includes('<DatePicker'))
@@ -74,6 +83,7 @@ const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
 const rawInlineNoticePattern =
   /className=["'][^"']*(?:admin-form-error|form-error|calendar-readonly-alert|admin-auth-error)[^"']*["']/;
 const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
+const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"']*["']/;
 
 function productionTsxFiles() {
   return ['app', 'components']
