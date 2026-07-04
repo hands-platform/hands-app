@@ -7,6 +7,11 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./partner-detail-booking-journey-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailBookingJourneySection', () => {
+  it('uses the shared Vuexy badge atom for journey steps', () => {
+    expect(sectionSource).toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<span className={`pill ${step.tone}`}');
+  });
+
   it('renders booking journey rows with booking, step, and related links', () => {
     const section = PartnerDetailBookingJourneySection({
       description: 'Booking-by-booking factual journey.',

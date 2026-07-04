@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -79,9 +80,9 @@ export function PartnerDetailBookingJourneySection({
                 <td>
                   <div className="participant-list">
                     {row.steps.map((step) => (
-                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
+                      <PillClassBadge key={`${row.id}-${step.label}`} pillClass={step.tone}>
                         {step.label}: {step.value}
-                      </span>
+                      </PillClassBadge>
                     ))}
                   </div>
                 </td>
