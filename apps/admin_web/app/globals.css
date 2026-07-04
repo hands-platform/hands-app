@@ -16469,15 +16469,6 @@ textarea:focus-visible {
   gap: 16px;
 }
 
-.review-edit-form-field {
-  min-width: 0;
-  width: 100%;
-}
-
-.review-edit-form-field-wide {
-  grid-column: 1 / -1;
-}
-
 .review-edit-drawer-form .calendar-drawer-footer {
   margin: 2px -24px -24px;
 }

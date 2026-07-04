@@ -228,7 +228,7 @@ function ReviewEditDrawer({
                 <strong>Edited review</strong>
               </div>
               <AdminFormSelect
-                className="review-edit-form-field"
+                className="admin-form-control-fluid"
                 defaultValue={String(editReview.rating)}
                 label="Revised rating"
                 labelVisibility="visible"
@@ -236,7 +236,7 @@ function ReviewEditDrawer({
                 options={reviewRatingOptions}
               />
               <AdminFormTextarea
-                className="review-edit-form-field review-edit-form-field-wide"
+                className="admin-form-control-fluid admin-grid-span-2"
                 defaultValue={editReview.commentValue}
                 label="Revised review content"
                 labelVisibility="visible"
