@@ -9,7 +9,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard, AdminLinkCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -95,9 +95,12 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
               <p className="muted">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
-                  <PillClassBadge pillClass={pill.className} key={`${row.id}-${pill.label}`}>
+                  <StatusBadge
+                    tone={statusBadgeToneFromPillClass(pill.className)}
+                    key={`${row.id}-${pill.label}`}
+                  >
                     {pill.label}
-                  </PillClassBadge>
+                  </StatusBadge>
                 ))}
               </div>
             </AdminLinkCard>
