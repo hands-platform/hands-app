@@ -1,7 +1,7 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminDisclosure } from '../../components/admin-surface';
-import { StatusBadge } from '../../components/status-badge';
+import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 import type { PaymentConfirmationAction } from './payment-action-confirmation';
@@ -117,24 +117,24 @@ function paymentActionMenuItems(payment: AdminPayment) {
 
 function paymentOpsSignal(payment: AdminPayment) {
   if (paymentCallbackNeedsReview(payment)) {
-    return <span className="signal signal-warn">Callback check</span>;
+    return <AdminSignal tone="warn">Callback check</AdminSignal>;
   }
   if (paymentCashDebtNeedsSettlement(payment)) {
-    return <span className="signal signal-warn">Cash fee debt</span>;
+    return <AdminSignal tone="warn">Cash fee debt</AdminSignal>;
   }
   if (payment.status === 'AUTHORIZED') {
-    return <span className="signal signal-warn">Capture after service</span>;
+    return <AdminSignal tone="warn">Capture after service</AdminSignal>;
   }
   if (payment.method === 'CASH' && payment.status === 'PENDING') {
-    return <span className="signal signal-info">Cash collection</span>;
+    return <AdminSignal tone="info">Cash collection</AdminSignal>;
   }
   if (payment.status === 'REFUNDED') {
-    return <span className="signal signal-warn">Refund in motion</span>;
+    return <AdminSignal tone="warn">Refund in motion</AdminSignal>;
   }
   if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
-    return <span className="signal signal-ok">Settled</span>;
+    return <AdminSignal tone="ok">Settled</AdminSignal>;
   }
-  return <span className="signal signal-info">Monitor payment</span>;
+  return <AdminSignal tone="info">Monitor payment</AdminSignal>;
 }
 
 function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }) {

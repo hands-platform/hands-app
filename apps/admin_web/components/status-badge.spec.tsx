@@ -1,5 +1,6 @@
 import {
   AdminAttentionBadge,
+  AdminSignal,
   PillClassBadge,
   PillClassBadgeLink,
   StatusBadge,
@@ -125,6 +126,22 @@ describe('StatusBadge', () => {
       className: 'topbar-attention-badge',
       title: 'Operation alerts',
       children: 7,
+    });
+  });
+
+  it('renders compact operational signal chips from a shared Vuexy atom', () => {
+    const signal = AdminSignal({
+      children: 'Cash fee debt',
+      className: 'payment-ops-signal',
+      tone: 'warn',
+      title: 'Needs settlement',
+    });
+
+    expect(signal.type).toBe('span');
+    expect(signal.props).toMatchObject({
+      className: 'signal signal-warn payment-ops-signal',
+      title: 'Needs settlement',
+      children: 'Cash fee debt',
     });
   });
 });

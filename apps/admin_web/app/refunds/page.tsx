@@ -1,5 +1,6 @@
 import { AdminRefund, AdminRefundSummary, adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSignal } from '../../components/status-badge';
 import { shortId } from '../../lib/admin-format';
 import {
   AdminDateRange,
@@ -448,12 +449,12 @@ function emptyRefundMessage(review: string) {
 
 function refundOpsSignal(refund: AdminRefund) {
   if (refund.status === 'REQUESTED') {
-    return <span className="signal signal-warn">Customer refund requested</span>;
+    return <AdminSignal tone="warn">Customer refund requested</AdminSignal>;
   }
   if (refund.status === 'COMPLETED' || refund.booking?.status === 'REFUNDED') {
-    return <span className="signal signal-ok">Refund settled</span>;
+    return <AdminSignal tone="ok">Refund settled</AdminSignal>;
   }
-  return <span className="signal signal-info">Review refund</span>;
+  return <AdminSignal tone="info">Review refund</AdminSignal>;
 }
 
 function refundOpsHint(refund: AdminRefund) {

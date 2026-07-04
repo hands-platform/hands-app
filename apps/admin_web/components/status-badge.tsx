@@ -10,6 +10,7 @@ const STATUS_BADGE_CLASS_BY_TONE = {
 } as const;
 
 export type StatusBadgeTone = keyof typeof STATUS_BADGE_CLASS_BY_TONE;
+export type AdminSignalTone = 'info' | 'ok' | 'warn';
 
 type StatusBadgeProps = {
   readonly children: ReactNode;
@@ -29,6 +30,13 @@ type AdminAttentionBadgeProps = {
   readonly children: ReactNode;
   readonly className?: string;
   readonly title?: string;
+};
+
+type AdminSignalProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly title?: string;
+  readonly tone: AdminSignalTone;
 };
 
 type StatusBadgeLinkProps = StatusBadgeProps & {
@@ -76,6 +84,14 @@ export function PillClassBadge({ children, className, pillClass, title }: PillCl
 export function AdminAttentionBadge({ children, className, title }: AdminAttentionBadgeProps) {
   return (
     <span className={mergeBadgeClassName('topbar-attention-badge', className)} title={title}>
+      {children}
+    </span>
+  );
+}
+
+export function AdminSignal({ children, className, title, tone }: AdminSignalProps) {
+  return (
+    <span className={mergeBadgeClassName(`signal signal-${tone}`, className)} title={title}>
       {children}
     </span>
   );

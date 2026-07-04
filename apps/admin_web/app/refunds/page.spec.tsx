@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -49,6 +50,15 @@ describe('RefundsPage', () => {
       '/admin/refunds/summary?range=today&review=open',
       expect.objectContaining({ totalCount: 0 }),
     );
+  });
+
+  it('uses the shared operational signal atom for refund ops hints', () => {
+    const source = readFileSync('app/refunds/page.tsx', 'utf8');
+
+    expect(source).toContain('AdminSignal');
+    expect(source).not.toContain('<span className="signal signal-warn">Customer refund requested</span>');
+    expect(source).not.toContain('<span className="signal signal-ok">Refund settled</span>');
+    expect(source).not.toContain('<span className="signal signal-info">Review refund</span>');
   });
 
   it('renders bounded server refund rows without applying a second local filter', async () => {
