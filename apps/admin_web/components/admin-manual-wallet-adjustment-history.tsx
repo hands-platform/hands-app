@@ -4,6 +4,7 @@ import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
 import { formatDateTime, formatMoney } from '../lib/admin-format';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
+import { MoneyText } from './money-text';
 import { StatusBadge } from './status-badge';
 
 const MANUAL_WALLET_ADJUSTMENT_HISTORY_HEADERS = [
@@ -65,8 +66,12 @@ export function AdminManualWalletAdjustmentHistory({
                 <p className="muted admin-mt-6">{row.adjustmentType}</p>
               </td>
               <td>
-                <strong>{formatMoney(row.amount, row.currency)}</strong>
-                <p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>
+                <strong>
+                  <MoneyText amount={row.amount} currency={row.currency} />
+                </strong>
+                <p className="muted">
+                  Delta <MoneyText amount={row.walletDelta} currency={row.currency} />
+                </p>
               </td>
               <td>
                 <strong>{row.approvalId ?? 'Missing approval'}</strong>

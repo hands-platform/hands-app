@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
 import { AdminManualWalletAdjustmentHistory } from './admin-manual-wallet-adjustment-history';
+
+const componentSource = readFileSync('components/admin-manual-wallet-adjustment-history.tsx', 'utf8');
 
 describe('AdminManualWalletAdjustmentHistory', () => {
   it('renders bounded manual wallet adjustment rows with accounting context', () => {
@@ -41,8 +44,12 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-123');
+    expect(markup).toContain('money-text money-text-positive');
     expect(markup).toContain('50.000 VND');
     expect(markup).toContain('250.000 VND');
     expect(markup).toContain('/wallet-adjustments?ownerType=PARTNER&amp;ownerId=provider-1');
+    expect(componentSource).toContain('MoneyText');
+    expect(componentSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
+    expect(componentSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
   });
 });

@@ -304,6 +304,9 @@ describe('WalletAdjustmentsPage', () => {
 
   it('uses the shared FinanceDataTable shell for wallet ledger tables', () => {
     expect(pageSource).toContain('FinanceDataTable');
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
+    expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
     expect(pageSource).not.toContain('AdminTableScroll');
     expect(pageSource).not.toContain('className="vuexy-booking-table"');
   });

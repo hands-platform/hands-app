@@ -10,6 +10,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type {
   AdminManualWalletAdjustmentDirection,
@@ -227,8 +228,12 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 <p className="muted admin-mt-6">{row.adjustmentType}</p>
               </td>
               <td>
-                <strong>{formatMoney(row.amount, row.currency)}</strong>
-                <p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>
+                <strong>
+                  <MoneyText amount={row.amount} currency={row.currency} />
+                </strong>
+                <p className="muted">
+                  Delta <MoneyText amount={row.walletDelta} currency={row.currency} />
+                </p>
               </td>
               <td>
                 <strong>{row.approvalId ?? 'Missing approval'}</strong>
