@@ -1,7 +1,23 @@
+import { readFileSync } from 'node:fs';
+
 import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffReadinessChecklistSection } from './operations-handoff-readiness-checklist-section';
 
 describe('OperationsHandoffReadinessChecklistSection', () => {
+  it('uses shared Vuexy badge atoms for readiness checklist labels', () => {
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-readiness-checklist-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("<span className={openCount ? 'pill pill-warn' : 'pill pill-success'}>");
+    expect(source).not.toContain('<span className={item.badgeClass}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
+    expect(source).not.toContain('<span className={item.badgeClass}>{item.owner}</span>');
+  });
+
   it('renders open checklist items and review count', () => {
     const section = OperationsHandoffReadinessChecklistSection({
       openCount: 1,

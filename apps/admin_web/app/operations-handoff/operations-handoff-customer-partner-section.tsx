@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Briefcase, Users } from 'lucide-react';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
@@ -36,7 +37,7 @@ export function OperationsHandoffCustomerPartnerSection({
           <div className="stack">
             {visibleCustomers.map((customer) => (
               <Link className="ops-signal-card" href={`/customers/${customer.id}`} key={customer.id}>
-                <span className="pill pill-success">{customer.completedCount} completed</span>
+                <StatusBadge tone="success">{customer.completedCount} completed</StatusBadge>
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar"
                   avatarStatus={customer.avatarStatus}
@@ -65,7 +66,7 @@ export function OperationsHandoffCustomerPartnerSection({
           <div className="stack">
             {visiblePartners.map((partner) => (
               <Link className="ops-signal-card" href={`/partners/${partner.id}`} key={partner.id}>
-                <span className={partner.className}>{partner.status}</span>
+                <PillClassBadge pillClass={partner.className}>{partner.status}</PillClassBadge>
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar is-partner"
                   avatarStatus={partner.avatarStatus}

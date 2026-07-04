@@ -1,7 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffImmediateActionSection } from './operations-handoff-immediate-action-section';
 
 describe('OperationsHandoffImmediateActionSection', () => {
+  it('uses shared Vuexy badge atoms for immediate action labels', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-immediate-action-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{visibleActions.length} action lane(s)</span>');
+    expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
+    expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
+  });
+
   it('renders immediate action lanes', () => {
     const section = OperationsHandoffImmediateActionSection({
       actions: [

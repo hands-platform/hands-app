@@ -1,7 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffFinanceActionSection } from './operations-handoff-finance-action-section';
 
 describe('OperationsHandoffFinanceActionSection', () => {
+  it('uses shared Vuexy badge atoms for finance action labels', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-finance-action-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
+    expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
+  });
+
   it('renders finance handoff action rows and closeout link', () => {
     const section = OperationsHandoffFinanceActionSection({
       actions: [

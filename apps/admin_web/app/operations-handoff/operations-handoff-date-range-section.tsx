@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CalendarDays } from 'lucide-react';
 
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
 
@@ -20,7 +21,7 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
   return (
     <AdminSection
       actions={
-        <span className="pill pill-info">{dateRangeLabel(range)}</span>
+        <StatusBadge tone="info">{dateRangeLabel(range)}</StatusBadge>
       }
       className="admin-mt-16 admin-mb-16 operations-handoff-date-range-card"
       description="Live booking counters stay current. Operator notes and the unified activity stream are filtered by the selected record window."

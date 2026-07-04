@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { buildShiftBriefItems } from './operations-handoff-shift-brief';
 
 type OperationsHandoffShiftBriefSectionProps = {
@@ -30,7 +31,7 @@ export function OperationsHandoffShiftBriefSection({
 
   return (
     <AdminSection
-      actions={<span className="pill pill-info">Factual queue</span>}
+      actions={<StatusBadge tone="info">Factual queue</StatusBadge>}
       description="Recommended opening order for the next operator."
       title="Shift brief"
     >

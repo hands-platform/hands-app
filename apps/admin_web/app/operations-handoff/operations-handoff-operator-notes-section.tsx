@@ -6,6 +6,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { formatRelativeTime } from '../../lib/admin-format';
 import { addOperationsHandoffNote } from './actions';
 import type { OperatorNoteRow } from './operations-handoff-operator-notes';
@@ -90,7 +91,7 @@ export function OperationsHandoffOperatorNotesSection({
       <div className="stack">
         {notes.slice(0, 8).map((note) => (
           <Link className="ops-signal-card" href={note.href} key={note.id}>
-            <span className="pill pill-info">{note.area}</span>
+            <StatusBadge tone="info">{note.area}</StatusBadge>
             <strong>{note.note}</strong>
             <small>
               {note.actor} / {relativeTime(note.createdAt)}

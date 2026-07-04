@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
 
 describe('OperationsHandoffShiftBriefSection', () => {
+  it('uses shared Vuexy badge atoms for the factual queue label', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-shift-brief-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('actions={<span className="pill pill-info">Factual queue</span>}');
+  });
+
   it('renders shift brief cards from count props', () => {
     const section = OperationsHandoffShiftBriefSection({
       activeBookingCount: 4,

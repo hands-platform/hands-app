@@ -1,7 +1,21 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffCustomerPartnerSection } from './operations-handoff-customer-partner-section';
 
 describe('OperationsHandoffCustomerPartnerSection', () => {
+  it('uses shared Vuexy badge atoms for Customer and Partner labels', () => {
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-customer-partner-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-success">{customer.completedCount} completed</span>');
+    expect(source).not.toContain('<span className={partner.className}>{partner.status}</span>');
+  });
+
   it('renders Customer and Partner handoff cards with links', () => {
     const section = OperationsHandoffCustomerPartnerSection({
       customers: [

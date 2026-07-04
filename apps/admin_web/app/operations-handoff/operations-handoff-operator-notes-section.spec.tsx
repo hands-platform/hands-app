@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffOperatorNotesSection } from './operations-handoff-operator-notes-section';
 
 describe('OperationsHandoffOperatorNotesSection', () => {
+  it('uses shared Vuexy badge atoms for operator note labels', () => {
+    const source = readFileSync('app/operations-handoff/operations-handoff-operator-notes-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">{note.area}</span>');
+  });
+
   it('renders the note form, latest notes, and audit links', () => {
     const section = OperationsHandoffOperatorNotesSection({
       notes: [

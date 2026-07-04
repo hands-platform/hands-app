@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { ImmediateActionQueueRow } from './operations-handoff-immediate-actions';
 
 type OperationsHandoffImmediateActionSectionProps = {
@@ -18,7 +19,7 @@ export function OperationsHandoffImmediateActionSection({
   return (
     <AdminSection
       actions={
-        <span className="pill pill-info">{visibleActions.length} action lane(s)</span>
+        <StatusBadge tone="info">{visibleActions.length} action lane(s)</StatusBadge>
       }
       className="admin-mb-16 operations-handoff-immediate-action-card"
       description="Ordered by operational state only: live booking stage, chat availability, cash settlement, notification delivery, and written handoff notes."
@@ -31,8 +32,8 @@ export function OperationsHandoffImmediateActionSection({
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <div className="participant-list">
-              <span className="pill">{item.countLabel}</span>
-              <span className={item.statusClass}>{item.status}</span>
+              <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+              <PillClassBadge pillClass={item.statusClass}>{item.status}</PillClassBadge>
             </div>
             <small>{item.nextAction}</small>
           </Link>
