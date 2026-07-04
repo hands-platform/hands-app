@@ -1,3 +1,6 @@
+import { createElement, Fragment, type ReactNode } from 'react';
+
+import { MoneyText } from '../../components/money-text';
 import { formatMoney } from '../../lib/admin-format';
 import { cashSettlementRowAgeHours } from './cash-settlement-page-helpers';
 import type { CashSettlementProviderGroup, CashSettlementRow, CashSettlementSummary, CommandCard } from './cash-settlement-page-types';
@@ -52,7 +55,10 @@ export function buildCashSettlementExecutionDesk(
       action: 'Payout release stays separate from customer booking history and customer wallet state.',
       className: summary.debtAmount > 0 ? 'ops-task-blocked' : 'ops-task-done',
       detail: summary.debtAmount > 0
-        ? `${formatMoney(summary.debtAmount, summary.currency)} must be settled before payout release.`
+        ? detailWithMoney(
+            moneyText(summary.debtAmount, summary.currency),
+            ' must be settled before payout release.',
+          )
         : 'Cash-fee debt is clear; payout release follows the weekly, monthly, or admin-selected batch rule.',
       pillClass: summary.debtAmount > 0 ? 'pill-danger' : 'pill-success',
       status: summary.debtAmount > 0 ? 'Hold release' : 'Batch ready',
@@ -69,6 +75,14 @@ export function buildCashSettlementExecutionDesk(
       title: 'Cash evidence coverage',
     },
   ];
+}
+
+function detailWithMoney(...children: ReactNode[]): ReactNode {
+  return createElement(Fragment, null, ...children);
+}
+
+function moneyText(amount: number, currency: string): ReactNode {
+  return createElement(MoneyText, { amount, currency });
 }
 
 export function buildCommandCards(

@@ -150,6 +150,19 @@ describe('CashSettlement board sections', () => {
     expect(source).toContain('AdminActionCard');
     expect(source).not.toContain('className={`ops-task-card');
   });
+
+  it('allows cash settlement command card details to render shared money atoms', () => {
+    const typeSource = readFileSync(join(process.cwd(), 'app/cash-settlements/cash-settlement-page-types.ts'), 'utf8');
+    const commandSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-page-command-cards.ts'),
+      'utf8',
+    );
+
+    expect(typeSource).toContain("import type { ReactNode } from 'react';");
+    expect(typeSource).toContain('detail: ReactNode;');
+    expect(commandSource).toContain('MoneyText');
+    expect(commandSource).not.toContain('${formatMoney(summary.debtAmount, summary.currency)} must be settled');
+  });
 });
 
 function groupedTableCardClassNamesIn(classNames: readonly string[]) {

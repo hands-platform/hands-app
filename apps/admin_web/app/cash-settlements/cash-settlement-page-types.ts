@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { AdminEarning } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
 
@@ -38,7 +40,7 @@ export type CashSettlementProviderGroup = {
 export type CommandCard = {
   title: string;
   status: string;
-  detail: string;
+  detail: ReactNode;
   action: string;
   className: string;
   pillClass: string;
