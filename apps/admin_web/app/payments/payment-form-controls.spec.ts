@@ -24,5 +24,10 @@ describe('payment cash debt form controls', () => {
     expect(detailPageSource).not.toContain('<strong>No retained messages</strong>');
     expect(detailPageSource).not.toContain('<button type="submit">Settle cash fee debt</button>');
     expect(presenterSource).not.toContain('<button type="submit">Settle cash debt</button>');
+    expect(presenterSource).toContain('StatusBadge');
+    expect(presenterSource).not.toContain('<span className="pill pill-neutral">No callback</span>');
+    expect(presenterSource).not.toContain('<span className={`pill ${callbackPill}`}>{callbackLabel}</span>');
+    expect(presenterSource).not.toContain('<span className="pill pill-info">Received</span>');
+    expect(presenterSource).not.toContain('<span className="pill pill-neutral">Gateway</span>');
   });
 });

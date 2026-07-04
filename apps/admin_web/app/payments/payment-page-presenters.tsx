@@ -1,5 +1,6 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 import type { PaymentConfirmationAction } from './payment-action-confirmation';
@@ -140,7 +141,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
   if (!callback.receivedAt) {
     return (
       <div className="ops-task-note admin-mt-8">
-        <span className="pill pill-neutral">No callback</span>
+        <StatusBadge tone="neutral">No callback</StatusBadge>
         <p className="muted admin-mt-6">
           No gateway callback has been stored yet.
         </p>
@@ -148,22 +149,21 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
     );
   }
 
-  const callbackPill = callback.verified ? 'pill-success' : 'pill-warn';
   const callbackLabel = callback.verified ? 'Verified callback' : 'Review callback';
 
   return (
     <div className="ops-task-note admin-mt-8">
-      <span className={`pill ${callbackPill}`}>{callbackLabel}</span>
+      <StatusBadge tone={callback.verified ? 'success' : 'warning'}>{callbackLabel}</StatusBadge>
       <div className="setup-stage-list admin-mt-8">
         <div className="setup-stage-item">
-          <span className="pill pill-info">Received</span>
+          <StatusBadge tone="info">Received</StatusBadge>
           <div>
             <strong>{formatDateTime(callback.receivedAt)}</strong>
             <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
           </div>
         </div>
         <div className="setup-stage-item">
-          <span className="pill pill-neutral">Gateway</span>
+          <StatusBadge tone="neutral">Gateway</StatusBadge>
           <div>
             <strong>{callback.providerStatus ?? 'No status code'}</strong>
             <p className="muted">
