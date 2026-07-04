@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const partnerControlsSource = readFileSync('app/partner-controls/page.tsx', 'utf8');
 
 describe('PartnerControlsPage', () => {
   beforeEach(() => {
@@ -46,5 +48,13 @@ describe('PartnerControlsPage', () => {
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-create-report"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-reports"');
     expect(markup).toContain('class="card admin-section" id="partner-control-account-controls"');
+  });
+
+  it('uses shared Vuexy status badge atoms instead of raw partner control pill markup', () => {
+    expect(partnerControlsSource).toContain("from '../../components/status-badge'");
+    expect(partnerControlsSource).toContain('StatusBadge');
+    expect(partnerControlsSource).toContain('PillClassBadge');
+    expect(partnerControlsSource).not.toContain('<span className="pill');
+    expect(partnerControlsSource).not.toContain('<span className={`pill');
   });
 });
