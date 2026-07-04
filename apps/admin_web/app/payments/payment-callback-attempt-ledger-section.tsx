@@ -72,14 +72,14 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             <td>
               <div className="setup-stage-list">
                 <div className="setup-stage-item">
-                  <span className="pill pill-info">Signature</span>
+                  <PillClassBadge pillClass="pill pill-info">Signature</PillClassBadge>
                   <div>
                     <strong>{row.signatureLabel}</strong>
                     <p className="muted">Mode: {row.verificationMode}</p>
                   </div>
                 </div>
                 <div className="setup-stage-item">
-                  <span className="pill pill-neutral">Gateway</span>
+                  <PillClassBadge pillClass="pill pill-neutral">Gateway</PillClassBadge>
                   <div>
                     <strong>{row.providerStatus}</strong>
                     <p className="muted">Amount: {row.amountLabel}</p>

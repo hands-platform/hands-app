@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { PaymentCallbackAttemptLedgerSection } from './payment-callback-attempt-ledger-section';
 
 describe('PaymentCallbackAttemptLedgerSection', () => {
@@ -33,7 +36,7 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'table vuexy-data-table vuexy-booking-table',
       ]),
     );
@@ -70,6 +73,17 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
 
     expect(classNamesIn(section)).toContain('pill pill-success');
     expect(classNamesIn(section)).not.toContain('pill pill pill-success');
+  });
+
+  it('uses shared badge atoms for callback evidence labels', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/payments/payment-callback-attempt-ledger-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="pill pill-info">Signature</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">Gateway</span>');
   });
 });
 
