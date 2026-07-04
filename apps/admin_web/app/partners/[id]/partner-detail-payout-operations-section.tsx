@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import type { StatusBadgeTone } from '../../../components/status-badge';
+import { PillClassBadge, StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -85,7 +85,7 @@ export function PartnerDetailPayoutOperationsSection({
         {operations.cards.map((card) => (
           <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
             <div>
-              <span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>
+              <PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>
               <h3>{card.title}</h3>
               <p className="muted">{card.detail}</p>
             </div>
@@ -104,7 +104,7 @@ export function PartnerDetailPayoutOperationsSection({
             >
               <tr>
                 <td>
-                  <span className="pill pill-danger">HELD</span>
+                  <StatusBadge tone="danger">HELD</StatusBadge>
                   <p>
                     <strong>Active payout hold</strong>
                   </p>
@@ -139,7 +139,7 @@ export function PartnerDetailPayoutOperationsSection({
               {operations.blockers.map((blocker) => (
                 <tr key={blocker}>
                   <td>
-                    <span className="pill pill-warn">GATE</span>
+                    <StatusBadge tone="warning">GATE</StatusBadge>
                     <p>
                       <strong>Payout blocker</strong>
                     </p>
@@ -243,7 +243,7 @@ export function PartnerDetailPayoutOperationsSection({
                     <strong>{batch.totalNetLabel}</strong>
                   </td>
                   <td>
-                    <span className={`pill ${payoutBatchPill(batch.status)}`}>{batch.status}</span>
+                    <PillClassBadge pillClass={payoutBatchPill(batch.status)}>{batch.status}</PillClassBadge>
                   </td>
                   <td>
                     <span className="muted">{batch.createdLine}</span>

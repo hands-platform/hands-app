@@ -1,6 +1,19 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailPayoutOperationsSection } from './partner-detail-payout-operations-section';
 
 describe('PartnerDetailPayoutOperationsSection', () => {
+  it('uses shared Vuexy badge atoms for payout operation statuses', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>');
+    expect(source).not.toContain('<span className="pill pill-danger">HELD</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">GATE</span>');
+    expect(source).not.toContain('<span className={`pill ${payoutBatchPill(batch.status)}`}>{batch.status}</span>');
+  });
+
   it('renders payout holds, blockers, earnings, and payout batches as Vuexy tables', () => {
     const section = PartnerDetailPayoutOperationsSection({
       cardClassForTone: (tone) => `card-${tone}`,
@@ -73,7 +86,7 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -108,7 +121,7 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(rendered).toContain('No payout batch has been created for this partner yet.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
