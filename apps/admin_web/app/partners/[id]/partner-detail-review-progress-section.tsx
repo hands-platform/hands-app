@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminCard } from '../../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
 import {
   PartnerDetailVuexyTableFooter,
@@ -156,7 +156,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
                 </p>
               </td>
               <td>
-                <PillClassBadge pillClass={row.tone}>{row.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               </td>
               <td>
                 <p className="muted">{row.detail}</p>
@@ -238,7 +238,9 @@ export function PartnerDetailReviewControlPanelSection({
               <span>{label}</span>
               <strong>{item?.title ?? fallback}</strong>
             </div>
-            {item ? <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge> : null}
+            {item ? (
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.tone)}>{item.status}</StatusBadge>
+            ) : null}
             <p className="muted">{item?.detail ?? fallback}</p>
             {item?.href ? (
               <Link className="text-link" href={item.href}>
@@ -264,7 +266,7 @@ export function PartnerDetailReviewControlPanelSection({
                 </p>
               </td>
               <td>
-                <PillClassBadge pillClass={item.tone}>{item.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(item.tone)}>{item.status}</StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -309,7 +311,9 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
                 <strong>{item.level}</strong>
               </td>
               <td>
-                <PillClassBadge pillClass={levelPathPill(item)}>{item.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(levelPathPill(item))}>
+                  {item.status}
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.detail}</p>
@@ -356,7 +360,9 @@ export function PartnerDetailResubmissionGuidanceSection({
                 <strong>{item.target}</strong>
               </td>
               <td>
-                <PillClassBadge pillClass={resubmissionPill(item.status)}>{item.status}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(resubmissionPill(item.status))}>
+                  {item.status}
+                </StatusBadge>
               </td>
               <td>
                 <p className="muted">{item.reason}</p>
@@ -403,9 +409,9 @@ export function PartnerDetailReviewHistorySection({
                 <strong>{row.title}</strong>
               </td>
               <td>
-                <PillClassBadge pillClass={reviewHistoryPill(row.statusLabel)}>
+                <StatusBadge tone={statusBadgeToneFromPillClass(reviewHistoryPill(row.statusLabel))}>
                   {row.statusLabel}
-                </PillClassBadge>
+                </StatusBadge>
               </td>
               <td>
                 <span className="muted">{row.atLabel}</span>
