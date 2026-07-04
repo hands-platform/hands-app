@@ -13,6 +13,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps shared form control button callers from passing the base button class twice', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => hasRedundantSharedButtonBaseClass(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps native calendar input types inside shared Vuexy form atoms', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
@@ -87,6 +96,8 @@ describe('Admin form control usage', () => {
 
 const legacyToneButtonClassNamePattern =
   /className="[^"]*\bbutton\s+button-(?:danger|info|outline|primary|secondary|success)\b/;
+const sharedFormButtonClassNamePattern =
+  /<AdminFormControl(?:Button|Link)\b[^>]*className=(["'])(?<className>.*?)\1/gs;
 const nativeCalendarInputTypePattern = /<input\b[^>]*\btype=["'](?:date|datetime-local|month|time)["']/;
 const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
 const rawInlineNoticePattern =
@@ -105,6 +116,16 @@ function usesVuexyDatePickerSkin(source: string) {
   const datePickerCount = source.match(/<DatePicker\b/g)?.length ?? 0;
   const vuexySkinCount = source.match(/calendarClassName="[^"]*\bcalendar-vuexy-datepicker\b/g)?.length ?? 0;
   return datePickerCount === vuexySkinCount;
+}
+
+function hasRedundantSharedButtonBaseClass(source: string) {
+  for (const match of source.matchAll(sharedFormButtonClassNamePattern)) {
+    const className = match.groups?.className ?? '';
+    if (className.split(/\s+/).includes('button')) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function listTsxFiles(directory: string): string[] {
