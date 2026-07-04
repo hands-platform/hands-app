@@ -54,6 +54,8 @@ describe('CompanyBankAccountsPage', () => {
     expect(markup).toContain('pill pill-neutral');
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
+    expect(markup).toContain('class="admin-form-control-link button button-outline"');
+    expect(markup).not.toContain('<a class="button button-outline"');
     expect(markup).not.toContain('class="form-input"');
   });
 });

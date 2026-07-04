@@ -1,8 +1,7 @@
-import Link from 'next/link';
-
 import type { AdminCompanyBankAccount } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { formatWholeNumber } from '../../../lib/admin-format';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { FinanceDataTable } from '../finance-data-table';
@@ -16,9 +15,9 @@ export default async function CompanyBankAccountsPage() {
   return (
     <AdminPageTemplate
       actions={
-        <Link className="button button-outline" href="/finance-tax/bank-reconciliation">
+        <AdminFormControlLink className="button button-outline" href="/finance-tax/bank-reconciliation">
           Open bank reconciliation
-        </Link>
+        </AdminFormControlLink>
       }
       description="Read-only operating view for company settlement bank accounts used by manual transaction import and reconciliation evidence."
       metrics={[
