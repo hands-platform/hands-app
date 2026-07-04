@@ -5,6 +5,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { StatusBadge } from '../../../components/status-badge';
 import { addProviderOpsNote } from '../actions';
 
 const PARTNER_NOTE_PRESET_OPTIONS = [
@@ -54,7 +55,7 @@ export function PartnerDetailOperatorNotesSection({
             settlement, service setup, and dispatch context that should appear in the audit log.
           </p>
         </div>
-        <span className="pill pill-info">{totalCount} note(s)</span>
+        <StatusBadge tone="info">{totalCount} note(s)</StatusBadge>
       </div>
       <div className="ops-note-history">
         {notes.length ? (
