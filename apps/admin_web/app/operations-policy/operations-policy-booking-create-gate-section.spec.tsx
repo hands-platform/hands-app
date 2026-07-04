@@ -13,6 +13,9 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
   it('uses the shared AdminFormControlLink atom for evidence actions', () => {
     expect(sectionSource).toContain('AdminSectionHeader');
     expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(sectionSource).not.toContain('<Link className="button button-secondary"');
   });

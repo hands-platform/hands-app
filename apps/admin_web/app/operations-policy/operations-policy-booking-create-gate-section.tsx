@@ -4,7 +4,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
 type BookingCreateGateReview = {
@@ -72,7 +72,7 @@ export function OperationsPolicyBookingCreateGateSection({
           {review.rows.map((row) => (
             <tr key={row.key}>
               <td>
-                <PillClassBadge pillClass={row.pillClass}>{row.gate}</PillClassBadge>
+                <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.gate}</StatusBadge>
               </td>
               <td>{row.current}</td>
               <td>{row.defaultValue}</td>
@@ -109,7 +109,9 @@ export function OperationsPolicyBookingCreateGateSection({
         <div className="ops-task-grid admin-mt-14">
           {review.recentAttempts.map((attempt) => (
             <section className="operations-policy-blocked-attempt-section" key={attempt.id}>
-              <PillClassBadge pillClass={attempt.pillClass}>{attempt.reason}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(attempt.pillClass)}>
+                {attempt.reason}
+              </StatusBadge>
               <h3>Blocked booking create attempt</h3>
               <p>{attempt.detail}</p>
               <small>
