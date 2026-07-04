@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { NotificationChannelPolicySection } from './notification-channel-policy-section';
 import { classNamesIn, hrefsIn, normalizedText } from './notification-section-test-utils';
 import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
@@ -156,6 +159,24 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('Newer Customer android device device-new is disabled');
     expect(rendered).toContain('Credential issue: check setup.');
     expect(rendered).toContain('Disabled tokens');
+  });
+
+  it('uses shared badge atoms for channel policy pills and diagnosis links', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/notifications/notification-channel-policy-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('fcmSmokeReadinessTone');
+    expect(source).not.toContain('<span className="pill pill-info">Partner alerts {partnerAlertCount}</span>');
+    expect(source).not.toContain('<span className="pill pill-success">In-app {inAppDeliveries}</span>');
+    expect(source).not.toContain('<span className="pill pill-info">Partner booking alerts</span>');
+    expect(source).not.toContain('<span className="pill pill-success">In-app route</span>');
+    expect(source).not.toContain('<Link className="pill pill-neutral" href="/notifications?diagnostics=full">');
+    expect(source).not.toContain('<Link className="pill pill-info" href="/setup#notifications">');
+    expect(source).not.toContain('<span className="pill pill-warn">FCM smoke fallback</span>');
   });
 });
 
