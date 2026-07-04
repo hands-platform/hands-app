@@ -1,8 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminServiceCatalogItem, AdminServicePayoutRule } from '../../lib/admin-api';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
 import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
 
 describe('ServicePayoutLedgerSection', () => {
+  it('uses shared Vuexy badge atoms for ledger status labels', () => {
+    const source = readFileSync('app/services/service-payout-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className={`pill ${row.commissionTone}`}>');
+    expect(source).not.toContain("<span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>");
+    expect(source).not.toContain('<span className={`pill ${row.actionTone}`}>{row.action}</span>');
+  });
+
   it('renders active option count, visible rows, and hidden row copy', () => {
     const section = ServicePayoutLedgerSection({
       activeServiceCount: 3,

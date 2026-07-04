@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
 import { slugify } from '../../lib/service-catalog-filters';
@@ -67,20 +68,20 @@ export function ServicePayoutLedgerSection({
                 )}
               </td>
               <td>
-                <span className={`pill ${row.commissionTone}`}>
+                <PillClassBadge pillClass={row.commissionTone}>
                   {row.baseRule ? formatMoney(row.finance.actualCompanyCommission, row.currency) : 'Missing rule'}
-                </span>
+                </PillClassBadge>
               </td>
               <td>
                 <div className="service-matrix-cell">
-                  <span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>
+                  <StatusBadge tone={row.hiddenProviders ? 'warning' : 'success'}>
                     {row.visibleProviders} visible / {row.hiddenProviders} hidden
-                  </span>
+                  </StatusBadge>
                   <small>{row.totalProviderRows} Partner price row(s)</small>
                 </div>
               </td>
               <td>
-                <span className={`pill ${row.actionTone}`}>{row.action}</span>
+                <PillClassBadge pillClass={row.actionTone}>{row.action}</PillClassBadge>
               </td>
             </tr>
           ))}
