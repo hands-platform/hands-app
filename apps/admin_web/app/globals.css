@@ -10864,15 +10864,6 @@ a.action-button-card:hover {
   grid-template-columns: repeat(2, minmax(180px, 1fr));
 }
 
-.tax-policy-page .tax-policy-form-field {
-  min-width: 0;
-  width: 100%;
-}
-
-.tax-policy-page .tax-policy-form-field.full-span {
-  grid-column: 1 / -1;
-}
-
 .tax-policy-page .setup-stage-item {
   grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
 }
