@@ -15,7 +15,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   createProviderReport,
   createProviderSanction,
@@ -226,14 +226,14 @@ export function PartnerDetailReportsControlsSection({
                     ) : null}
                   </td>
                   <td>
-                    <PillClassBadge pillClass={reportSeverityPill(report.severity)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(reportSeverityPill(report.severity))}>
                       {report.severity}
-                    </PillClassBadge>
+                    </StatusBadge>
                   </td>
                   <td>
-                    <PillClassBadge pillClass={reportStatusPill(report.status)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(reportStatusPill(report.status))}>
                       {report.status}
-                    </PillClassBadge>
+                    </StatusBadge>
                   </td>
                   <td>
                     {report.bookingHref && report.bookingLabel ? (
@@ -270,9 +270,9 @@ export function PartnerDetailReportsControlsSection({
                     {control.reportLine ? <p className="muted">{control.reportLine}</p> : null}
                   </td>
                   <td>
-                    <PillClassBadge pillClass={controlStatusPill(control.status)}>
+                    <StatusBadge tone={statusBadgeToneFromPillClass(controlStatusPill(control.status))}>
                       {control.status}
-                    </PillClassBadge>
+                    </StatusBadge>
                   </td>
                   <td>
                     <span className="muted">{control.timeline}</span>
