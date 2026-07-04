@@ -147,6 +147,16 @@ describe('Admin form control CSS', () => {
     expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
     expect(focusBlock).not.toContain('var(--admin-focus-ring)');
   });
+
+  it('keeps global focus-visible treatment on the Vuexy primary shadow', () => {
+    const focusIndex = globalsCss.indexOf('a:focus-visible,');
+    const focusBlock = cssRuleBlockAt(focusIndex);
+
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(focusBlock).toContain('box-shadow: var(--admin-primary-shadow-sm)');
+    expect(focusBlock).not.toContain('0 0 0 1px var(--admin-accent)');
+    expect(focusBlock).not.toContain('var(--admin-focus-ring)');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

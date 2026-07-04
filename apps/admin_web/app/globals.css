@@ -14384,9 +14384,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   border-color: var(--admin-accent);
-  box-shadow:
-    0 0 0 1px var(--admin-accent),
-    var(--admin-focus-ring);
+  box-shadow: var(--admin-primary-shadow-sm);
   outline: 0;
   outline-offset: 2px;
 }
