@@ -3,6 +3,7 @@ import { formatMoney } from '../../lib/admin-format';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 type ServiceProviderPriceImpactProps = {
@@ -18,7 +19,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
   });
 
   return (
-    <div className="service-impact-card">
+    <AdminCard className="service-impact-card">
       <div className="ops-section-header">
         <div>
           <h3>Partner price impact</h3>
@@ -71,6 +72,6 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
       ) : (
         <AdminEmptyState framed message="No Partner has configured a price for this duration yet." />
       )}
-    </div>
+    </AdminCard>
   );
 }
