@@ -2,14 +2,14 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { AdminSignal, PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
 import type { BookingMatchingEscalationLane } from '../../lib/booking-matching-escalation-board';
 import type { BookingMatchingEscalationRow } from '../../lib/booking-matching-escalation-rows';
 import type { BookingMatchingFlowStep } from '../../lib/booking-matching-flow-timeline';
-import { commandToneClass, commandToneLabel } from './booking-command-display';
+import { commandSignalTone, commandToneLabel } from './booking-command-display';
 import { bookingServiceOptionLabel } from './booking-service-labels';
 
 export type BookingMonitorDispatchPartnerShortcut = {
@@ -136,9 +136,9 @@ export function BookingMonitorMatchingEscalationSection({
                   <div className="muted">{lane.detail}</div>
                 </td>
                 <td>
-                  <span className={`signal ${commandToneClass(lane.tone)}`}>
+                  <AdminSignal tone={commandSignalTone(lane.tone)}>
                     {commandToneLabel(lane.tone)}
-                  </span>
+                  </AdminSignal>
                   <div className="muted">{lane.status}</div>
                 </td>
                 <td>
@@ -192,9 +192,9 @@ export function BookingMonitorMatchingEscalationSection({
                   <div className="muted">{step.detail}</div>
                 </td>
                 <td>
-                  <span className={`signal ${commandToneClass(step.tone)}`}>
+                  <AdminSignal tone={commandSignalTone(step.tone)}>
                     {commandToneLabel(step.tone)}
-                  </span>
+                  </AdminSignal>
                   <div className="muted">{step.status}</div>
                 </td>
                 <td>
@@ -286,9 +286,9 @@ export function BookingMonitorMatchingEscalationSection({
                     <div className="muted">{item.detail}</div>
                   </td>
                   <td>
-                    <span className={`signal ${commandToneClass(item.tone)}`}>
+                    <AdminSignal tone={commandSignalTone(item.tone)}>
                       {commandToneLabel(item.tone)}
-                    </span>
+                    </AdminSignal>
                   </td>
                   <td>{item.operatorAction}</td>
                   <td>
