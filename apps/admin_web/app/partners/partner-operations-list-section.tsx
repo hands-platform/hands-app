@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -42,8 +43,8 @@ export function PartnerOperationsListSection({
       title="Partner operations list"
     >
       <div className="participant-list admin-mb-12">
-        <span className="pill pill-success">{directReadyCount} can receive direct requests</span>
-        <span className="pill pill-warn">{settlementWarningCount} settlement warning</span>
+        <StatusBadge tone="success">{directReadyCount} can receive direct requests</StatusBadge>
+        <StatusBadge tone="warning">{settlementWarningCount} settlement warning</StatusBadge>
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -65,18 +66,18 @@ export function PartnerOperationsListSection({
                   linkClassName="table-link"
                 />
                 <div className="participant-list admin-mt-6">
-                  <span className="pill pill-info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</span>
-                  <span className={`pill ${row.provider.blockedAt ? 'pill-danger' : 'pill-success'}`}>
+                  <StatusBadge tone="info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</StatusBadge>
+                  <PillClassBadge pillClass={row.provider.blockedAt ? 'pill-danger' : 'pill-success'}>
                     {row.provider.blockedAt ? 'Account blocked' : 'Account open'}
-                  </span>
+                  </PillClassBadge>
                 </div>
               </td>
               <td>
                 <div className="participant-list">
                   {row.checklist.map((item) => (
-                    <span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>
+                    <PillClassBadge key={item.label} pillClass={partnerOperationPillClass(item.tone)}>
                       {item.label}: {item.status}
-                    </span>
+                    </PillClassBadge>
                   ))}
                 </div>
               </td>
@@ -94,9 +95,9 @@ export function PartnerOperationsListSection({
                 ) : null}
                 <div className="participant-list admin-mt-8">
                   {row.matchingFlow.map((item) => (
-                    <span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>
+                    <PillClassBadge key={item.label} pillClass={partnerOperationPillClass(item.tone)}>
                       {item.label}: {item.status}
-                    </span>
+                    </PillClassBadge>
                   ))}
                 </div>
                 <p className="muted admin-mt-8">{row.matchingFlowDetail}</p>

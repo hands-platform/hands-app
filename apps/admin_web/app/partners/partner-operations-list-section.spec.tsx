@@ -12,6 +12,18 @@ describe('PartnerOperationsListSection', () => {
     expect(source).not.toContain('<strong>No partners found</strong>');
   });
 
+  it('uses shared Vuexy badge atoms instead of raw operations list pill spans', () => {
+    const source = readFileSync('app/partners/partner-operations-list-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-success">{directReadyCount} can receive direct requests</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">{settlementWarningCount} settlement warning</span>');
+    expect(source).not.toContain('<span className="pill pill-info">{row.provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');
+    expect(source).not.toContain('<span className={`pill ${row.provider.blockedAt ? \'pill-danger\' : \'pill-success\'}`}>');
+    expect(source).not.toContain('<span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>');
+  });
+
   it('renders operations rows with approval, booking access, wallet, and app check facts', () => {
     const section = PartnerOperationsListSection({
       directReadyCount: 1,
