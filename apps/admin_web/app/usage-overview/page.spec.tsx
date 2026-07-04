@@ -64,7 +64,9 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<article key={row.regionCode} className="usage-overview-region-row"');
     expect(pageSource).not.toContain('<article key={`${title}-${row.id}`} className="usage-overview-ranking-row"');
     expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
     expect(pageSource).not.toContain('empty-state usage-overview-empty-state');

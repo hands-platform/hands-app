@@ -75,6 +75,9 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');
     expect(markup).toContain('admin-section-body partner-overview-selection-body');
+    expect(pageSource).toContain('AdminOverviewCommandCard');
+    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
+    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${segment.tone}`}');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
     expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
     expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');

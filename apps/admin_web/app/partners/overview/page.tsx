@@ -26,6 +26,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminOverviewCommandCard } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -338,16 +339,13 @@ function PartnerKpiCard({
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
 
   return (
-    <AdminCard className={`usage-overview-command-card is-${tone}`}>
-      <div className="usage-overview-command-icon">
-        <Icon size={20} aria-hidden="true" />
-      </div>
-      <div>
-        <span>{kpi.label}</span>
-        <strong>{formatKpiValue(kpi)}</strong>
-        <small>{kpi.detail}</small>
-      </div>
-    </AdminCard>
+    <AdminOverviewCommandCard
+      className={`is-${tone}`}
+      detail={kpi.detail}
+      icon={<Icon size={20} aria-hidden="true" />}
+      label={kpi.label}
+      value={formatKpiValue(kpi)}
+    />
   );
 }
 
@@ -899,17 +897,15 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
   const Icon = partnerSegmentIcons[segment.key] ?? Activity;
 
   return (
-    <AdminCard className={`usage-overview-command-card is-${segment.tone}`}>
-      <div className="usage-overview-command-icon">
-        <Icon size={20} aria-hidden="true" />
-      </div>
-      <div>
-        <span>{segment.label}</span>
-        <strong>{formatNumber(segment.count)}</strong>
-        <small>{segment.explanation}</small>
-        <a href={segment.href}>{segment.recommendedAction}</a>
-      </div>
-    </AdminCard>
+    <AdminOverviewCommandCard
+      className={`is-${segment.tone}`}
+      detail={segment.explanation}
+      icon={<Icon size={20} aria-hidden="true" />}
+      label={segment.label}
+      value={formatNumber(segment.count)}
+    >
+      <a href={segment.href}>{segment.recommendedAction}</a>
+    </AdminOverviewCommandCard>
   );
 }
 

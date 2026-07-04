@@ -26,6 +26,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -708,16 +709,13 @@ function UsageCommandCard({
   readonly value: string;
 }) {
   return (
-    <AdminCard className={`usage-overview-command-card is-${tone}`}>
-      <span className="usage-overview-command-icon">
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </div>
-    </AdminCard>
+    <AdminOverviewCommandCard
+      className={`is-${tone}`}
+      detail={detail}
+      icon={<Icon size={18} aria-hidden="true" />}
+      label={label}
+      value={value}
+    />
   );
 }
 
