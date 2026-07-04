@@ -15,6 +15,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
@@ -259,9 +260,9 @@ function OperationsHandoffFullDetailsLink({ range }: { readonly range: string })
   return (
     <AdminSection
       actions={
-        <a className="button button-secondary" href={`/operations-handoff?${query.toString()}`}>
+        <AdminFormControlLink className="button-secondary" href={`/operations-handoff?${query.toString()}`}>
           Load full handoff details
-        </a>
+        </AdminFormControlLink>
       }
       className="admin-mb-16 operations-handoff-full-details-card"
       description="Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and finance closeout rows are loaded only when an operator opens full handoff details."

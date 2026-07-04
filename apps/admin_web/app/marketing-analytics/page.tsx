@@ -22,6 +22,7 @@ import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormDate,
   AdminFormInput,
   AdminFormSelect,
@@ -528,9 +529,9 @@ function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof norm
         message="This keeps Marketing Analytics light until an operator requests the list data."
         title="Dimension rows are not loaded by default."
       />
-      <a className="button button-primary" href={`${href}${joiner}breakdowns=1`}>
+      <AdminFormControlLink className="button-primary" href={`${href}${joiner}breakdowns=1`}>
         Load breakdown tables
-      </a>
+      </AdminFormControlLink>
     </AdminSection>
   );
 }
