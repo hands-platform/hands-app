@@ -57,7 +57,9 @@ describe('RefundCommandBoardSection', () => {
   it('uses shared badge atoms for command board status labels', () => {
     const source = readFileSync(join(process.cwd(), 'app/refunds/refund-command-board-section.tsx'), 'utf8');
 
+    expect(source).toContain('AdminActionCard');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className="pill">{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.refunds.length} case(s)</span>');
   });

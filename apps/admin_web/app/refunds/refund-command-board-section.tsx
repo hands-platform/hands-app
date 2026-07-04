@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminActionCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type RefundCommandTone = 'warn' | 'info' | 'ok';
@@ -39,10 +38,16 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
     >
       <div className="ops-task-grid">
         {items.map((item) => (
-          <Link className="ops-task-card" href={item.href} key={item.title}>
-            <span className={`signal ${refundToneClass(item.tone)}`}>{refundToneLabel(item.tone)}</span>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
+          <AdminActionCard
+            actionLabel={item.operatorAction}
+            detail={item.detail}
+            href={item.href}
+            key={item.title}
+            signalClassName={refundToneClass(item.tone)}
+            signalLabel={refundToneLabel(item.tone)}
+            title={item.title}
+            variant="ops-task"
+          >
             <div className="participant-list">
               <StatusBadge tone={refundStatusBadgeTone(item.tone)}>{item.status}</StatusBadge>
               <StatusBadge tone="neutral">{item.refunds.length} case(s)</StatusBadge>
@@ -56,8 +61,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
                 ))}
               </div>
             ) : null}
-            <small>{item.operatorAction}</small>
-          </Link>
+          </AdminActionCard>
         ))}
       </div>
     </AdminFilterPanel>
