@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -186,9 +187,13 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 <div className="muted">{shortId(entry.sourceKey)}</div>
               </td>
               <td>
-                <strong>{formatMoney(entry.amount, entry.currency)}</strong>
+                <strong>
+                  <MoneyText amount={entry.amount} currency={entry.currency} />
+                </strong>
                 {entry.payment ? (
-                  <div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>
+                  <div className="muted">
+                    Payment <MoneyText amount={entry.payment.amount} currency={entry.payment.currency} />
+                  </div>
                 ) : null}
               </td>
               <td>

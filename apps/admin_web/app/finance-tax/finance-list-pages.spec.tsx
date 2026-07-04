@@ -299,6 +299,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Evidence amount');
       expect(markup).toContain('Needs evidence');
       expect(markup).toContain('Bank matches 0');
+      expect(markup).toContain('money-text money-text-positive');
     }
 
     if (_name === 'booking settlement audit') {
@@ -344,6 +345,16 @@ describe('finance list pages', () => {
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
+  });
+
+  it('uses shared money atoms for payment clearing amount cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
+    expect(source).not.toContain(
+      '<div className="muted">Payment {formatMoney(entry.payment.amount, entry.payment.currency)}</div>',
+    );
   });
 
   it('uses the shared table footer atom for finance pagination controls', () => {
