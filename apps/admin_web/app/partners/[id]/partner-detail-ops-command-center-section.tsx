@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminCard } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -39,9 +40,9 @@ export function PartnerDetailOpsCommandCenterSection({
             One-page operating view for dispatch, payout, reports, and the next admin action.
           </p>
         </div>
-        <span className={`pill ${summary.ready ? 'pill-success' : 'pill-warn'}`}>
+        <StatusBadge tone={summary.ready ? 'success' : 'warning'}>
           {summary.ready ? 'Operational' : 'Needs operator attention'}
-        </span>
+        </StatusBadge>
         <Link className="text-link" href="/operations-policy">
           Location freshness: {locationFreshnessMinutes}m
         </Link>
@@ -50,7 +51,7 @@ export function PartnerDetailOpsCommandCenterSection({
         {summary.cards.map((card) => (
           <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
             <div>
-              <span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>
+              <PillClassBadge pillClass={pillClassForTone(card.tone)}>{card.status}</PillClassBadge>
               <h3>{card.title}</h3>
               <p className="muted">{card.detail}</p>
             </div>
