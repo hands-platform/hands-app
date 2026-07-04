@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
 import type { OwnerDecisionPressure } from './owner-decision-pressure';
@@ -27,9 +27,11 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
       <div className="ops-task-note admin-mt-14">
         <AdminSectionHeader
           actions={(
-            <PillClassBadge pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
+            <StatusBadge
+              tone={statusBadgeToneFromPillClass(pressure.alertCount ? 'pill-warn' : 'pill-success')}
+            >
               {pressure.alertCount} active record(s)
-            </PillClassBadge>
+            </StatusBadge>
           )}
           description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."
           title="Current decision pressure"
@@ -51,7 +53,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
               detail={item.detail}
               href={item.href}
               key={item.title}
-              leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+              leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>}
               title={item.title}
               variant="ops-task"
             />
@@ -65,7 +67,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             className={item.className}
             detail={item.question}
             key={item.title}
-            leading={<PillClassBadge pillClass={item.pillClass}>{item.owner}</PillClassBadge>}
+            leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.owner}</StatusBadge>}
             title={item.title}
           >
             <div className="booking-radar admin-mt-12">
