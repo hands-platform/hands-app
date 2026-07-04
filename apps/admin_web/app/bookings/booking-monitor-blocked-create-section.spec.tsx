@@ -122,7 +122,8 @@ describe('BookingMonitorBlockedCreateSection', () => {
     );
 
     expect(source).toContain('AdminSignal');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(evidence.tone)}`}>');
     expect(source).not.toContain('<span className="pill">{item.count} attempt(s)</span>');

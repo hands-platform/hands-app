@@ -7,7 +7,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
-import { AdminSignal, PillClassBadge } from '../../components/status-badge';
+import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandSignalTone } from './booking-command-display';
@@ -107,7 +107,7 @@ export function BookingMonitorBlockedCreateSection({
                 <AdminSignal tone={commandSignalTone(item.tone)}>{item.status}</AdminSignal>
               </td>
               <td>
-                <PillClassBadge pillClass="pill-neutral">{item.count} attempt(s)</PillClassBadge>
+                <StatusBadge tone="neutral">{item.count} attempt(s)</StatusBadge>
               </td>
               <td>
                 <span className="muted">{item.latestAge}</span>
@@ -189,10 +189,10 @@ export function BookingMonitorBlockedCreateSection({
                     </td>
                     <td>
                       <div className="stack">
-                        <PillClassBadge pillClass="pill-neutral">{evidence.customerDistanceLabel}</PillClassBadge>
-                        <PillClassBadge pillClass="pill-neutral">
+                        <StatusBadge tone="neutral">{evidence.customerDistanceLabel}</StatusBadge>
+                        <StatusBadge tone="neutral">
                           {evidence.preferredPartnerDistanceLabel}
-                        </PillClassBadge>
+                        </StatusBadge>
                       </div>
                     </td>
                     <td>
