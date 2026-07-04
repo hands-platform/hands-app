@@ -315,7 +315,9 @@ describe('finance list pages', () => {
       expect(markup).toContain('Ledger command board');
       expect(markup).toContain('Debit/Credit delta');
       expect(markup).toContain('Balanced');
-      expect(markup).toContain('Delta 0 VND');
+      expect(markup).toContain('Delta');
+      expect(markup).toContain('money-text money-text-zero');
+      expect(markup).toContain('money-text money-text-positive');
     }
 
     if (_name === 'bank reconciliation') {
@@ -404,6 +406,14 @@ describe('finance list pages', () => {
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(batch.status)}`}');
+  });
+
+  it('uses shared money atoms for general ledger debit and credit cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>');
+    expect(source).not.toContain('<div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>');
   });
 
   it('uses shared badge atoms for booking settlement audit status pills', () => {

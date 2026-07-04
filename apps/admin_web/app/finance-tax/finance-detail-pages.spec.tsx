@@ -987,6 +987,16 @@ describe('finance detail pages', () => {
     expect(source).not.toContain('<strong>{formatMoney(match.amount, match.currency)}</strong>');
   });
 
+  it('uses shared money atoms for general ledger detail entry amounts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/general-ledger/[id]/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
+  });
+
   it.each([
     ['booking settlement audit detail', 'app/finance-tax/booking-settlement-audit/[id]/page.tsx'],
     ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],

@@ -5,6 +5,7 @@ import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-ap
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge } from '../../../../components/status-badge';
 import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
@@ -225,7 +226,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                   <div className="muted">{entry.accountName}</div>
                 </td>
                 <td>
-                  <strong>{formatMoney(entry.amount, entry.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={entry.amount} currency={entry.currency} />
+                  </strong>
                   <div className="muted">{formatDateTime(entry.createdAt)}</div>
                 </td>
                 <td>{entry.memo ?? '-'}</td>

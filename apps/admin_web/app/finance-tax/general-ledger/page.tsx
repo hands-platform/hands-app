@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDateTime, formatMoney, shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
@@ -215,10 +216,18 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 <div className="muted">{formatDateTime(batch.postedAt)}</div>
               </td>
               <td>
-                <strong>{formatMoney(batch.totalDebit, batch.currency)}</strong>
-                <div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>
+                <strong>
+                  <MoneyText amount={batch.totalDebit} currency={batch.currency} />
+                </strong>
                 <div className="muted">
-                  Delta {formatMoney(Math.abs(batch.totalDebit - batch.totalCredit), batch.currency)}
+                  Credit <MoneyText amount={batch.totalCredit} currency={batch.currency} />
+                </div>
+                <div className="muted">
+                  Delta{' '}
+                  <MoneyText
+                    amount={Math.abs(batch.totalDebit - batch.totalCredit)}
+                    currency={batch.currency}
+                  />
                 </div>
               </td>
               <td>
