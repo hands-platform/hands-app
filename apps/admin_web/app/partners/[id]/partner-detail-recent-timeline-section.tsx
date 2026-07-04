@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { StatusBadge } from '../../../components/status-badge';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
@@ -56,7 +57,7 @@ export function PartnerDetailRecentTimelineSection({
             {visibleRecords.map((record, index) => (
               <tr key={`recent-${record.type}-${record.id}-${record.at}-${index}`}>
                 <td>
-                  <span className="pill pill-info">{record.type}</span>
+                  <StatusBadge tone="info">{record.type}</StatusBadge>
                 </td>
                 <td>
                   <Link className="text-link" href={record.href}>

@@ -4,6 +4,11 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./partner-detail-recent-timeline-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailRecentTimelineSection', () => {
+  it('uses the shared Vuexy badge atom for timeline event type', () => {
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('<span className="pill pill-info">{record.type}</span>');
+  });
+
   it('renders recent partner timeline records with links and formatted dates', () => {
     const section = PartnerDetailRecentTimelineSection({
       formatDate: (value) => `formatted ${value}`,
