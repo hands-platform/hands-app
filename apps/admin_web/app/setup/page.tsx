@@ -1,4 +1,5 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadgeLink } from '../../components/status-badge';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
@@ -55,7 +56,11 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
   const setupGroupDetails = showSetupDetails ? buildSetupGroupDetails(readiness, setupOrder) : [];
 
   return (
-    <div className="setup-page">
+    <AdminPageTemplate
+      contentClassName="setup-page"
+      description="External accounts, credentials, and readiness checks for production-like HANDS operations."
+      title="Setup"
+    >
       <SetupOverviewSection
         readinessOk={readiness.ok}
         readinessUnavailable={readinessUnavailable}
@@ -91,7 +96,7 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
       ) : (
         <SetupGroupDetailSummaryLink groupCount={setupOrder.length} />
       )}
-    </div>
+    </AdminPageTemplate>
   );
 }
 
