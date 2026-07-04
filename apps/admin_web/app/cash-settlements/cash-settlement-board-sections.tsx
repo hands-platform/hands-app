@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
@@ -45,18 +46,16 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
         </Link>
       </div>
       <CommandCardGrid cards={executionDesk} />
-      <div className="ops-section-header admin-mt-16">
-        <div>
-          <h3>Settlement priority board</h3>
-          <p className="muted">
-            Sort order is amount first, then age. Confirm bank deposit evidence or a documented admin offset
-            before pressing the settlement action on a row.
-          </p>
-        </div>
-        <Link className="text-link" href="/cash-settlements?queue=high-debt">
-          High debt queue
-        </Link>
-      </div>
+      <AdminSectionHeader
+        actions={
+          <Link className="text-link" href="/cash-settlements?queue=high-debt">
+            High debt queue
+          </Link>
+        }
+        className="admin-mt-16"
+        description="Sort order is amount first, then age. Confirm bank deposit evidence or a documented admin offset before pressing the settlement action on a row."
+        title="Settlement priority board"
+      />
       <CashSettlementPriorityBoardSection rows={priorityBoardRows} />
     </AdminFilterPanel>
   );
@@ -76,16 +75,12 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
           Wallet policy
         </Link>
       </div>
-      <div className="ops-section-header admin-mt-14">
-        <div>
-          <h3>Applied operations policy</h3>
-          <p className="muted">
-            Live Admin policy values used by finance before clearing Partner cash-fee debt and reopening final
-            acceptance, service start, and payout release.
-          </p>
-        </div>
-        <PillClassBadge pillClass="pill-info">Live policy default</PillClassBadge>
-      </div>
+      <AdminSectionHeader
+        className="admin-mt-14"
+        description="Live Admin policy values used by finance before clearing Partner cash-fee debt and reopening final acceptance, service start, and payout release."
+        status={<PillClassBadge pillClass="pill-info">Live policy default</PillClassBadge>}
+        title="Applied operations policy"
+      />
       <div className="service-trace-summary admin-mt-12">
         {appliedPolicyCards.map((card) => (
           <div key={card.label}>

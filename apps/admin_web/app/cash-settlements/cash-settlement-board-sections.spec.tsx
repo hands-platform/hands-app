@@ -132,7 +132,10 @@ describe('CashSettlement board sections', () => {
     );
 
     expect(source).toContain('PillClassBadge');
+    expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-14">');
+    expect(source).not.toContain('<div className="ops-section-header admin-mt-16">');
   });
 
   it('keeps cash settlement task cards on shared Vuexy surfaces', () => {

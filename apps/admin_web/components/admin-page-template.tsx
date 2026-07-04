@@ -24,6 +24,7 @@ type AdminMetricGridProps = {
 
 type AdminSectionHeaderProps = {
   readonly actions?: ReactNode;
+  readonly className?: string;
   readonly description?: ReactNode;
   readonly status?: ReactNode;
   readonly title: string;
@@ -68,9 +69,9 @@ export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
   );
 }
 
-export function AdminSectionHeader({ actions, description, status, title }: AdminSectionHeaderProps) {
+export function AdminSectionHeader({ actions, className, description, status, title }: AdminSectionHeaderProps) {
   return (
-    <div className="ops-section-header admin-section-header">
+    <div className={joinClassNames('ops-section-header admin-section-header', className)}>
       <div>
         <h2>{title}</h2>
         {description ? <p className="muted">{description}</p> : null}
@@ -83,4 +84,8 @@ export function AdminSectionHeader({ actions, description, status, title }: Admi
       ) : null}
     </div>
   );
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
 }

@@ -32,6 +32,7 @@ describe('AdminPageTemplate', () => {
   it('renders a reusable admin section header with status and actions', () => {
     const header = AdminSectionHeader({
       actions: <a href="/operations-policy">Open policy</a>,
+      className: 'admin-mt-16',
       description: 'Reusable section title for command boards and tables.',
       status: <span className="pill pill-success">Ready</span>,
       title: 'Command board',
@@ -39,7 +40,7 @@ describe('AdminPageTemplate', () => {
 
     expect(header.type).toBe('div');
     expect(header.props).toMatchObject({
-      className: 'ops-section-header admin-section-header',
+      className: 'ops-section-header admin-section-header admin-mt-16',
     });
     expect(header.props.children).toHaveLength(2);
   });
