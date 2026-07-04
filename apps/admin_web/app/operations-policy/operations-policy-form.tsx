@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -42,9 +43,9 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           <h3>{displayOperationalWording(setting.label)}</h3>
           <p className="muted">{displayOperationalWording(setting.description)}</p>
         </div>
-        <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
+        <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
           {setting.enforced ? 'Enforced' : 'Planning'}
-        </span>
+        </StatusBadge>
       </div>
       <div className="service-trace-summary">
         <div>
@@ -70,9 +71,9 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             <strong>{impact.title}</strong>
             <p className="muted">{impact.detail}</p>
           </div>
-          <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
+          <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
             {setting.enforced ? 'Live behavior' : 'Decision log'}
-          </span>
+          </StatusBadge>
         </div>
       </div>
       <div className="ops-task-note admin-mt-12">
@@ -93,9 +94,9 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
               <p className="muted">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
-                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
+                  <PillClassBadge pillClass={pill.className} key={`${row.id}-${pill.label}`}>
                     {pill.label}
-                  </span>
+                  </PillClassBadge>
                 ))}
               </div>
             </AdminLinkCard>

@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyAuditTrailSection } from './operations-policy-audit-trail-section';
 import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyAuditTrailSection', () => {
+  it('uses shared Vuexy badge atoms for audit enforced labels', () => {
+    const source = readFileSync('app/operations-policy/operations-policy-audit-trail-section.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("<span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>");
+  });
+
   it('renders policy audit rows and audit link', () => {
     const section = OperationsPolicyAuditTrailSection({
       rows: [

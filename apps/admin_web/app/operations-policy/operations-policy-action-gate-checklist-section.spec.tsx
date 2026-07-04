@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsPolicyActionGateChecklistSection } from './operations-policy-action-gate-checklist-section';
 import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
 describe('OperationsPolicyActionGateChecklistSection', () => {
+  it('uses shared Vuexy badge atoms for checklist status labels', () => {
+    const source = readFileSync(
+      'app/operations-policy/operations-policy-action-gate-checklist-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain("<span className={`pill ${allRecommended ? 'pill-success' : 'pill-warn'}`}>");
+    expect(source).not.toContain('<span className="pill pill-success">Clear</span>');
+  });
+
   it('renders policy checklist summary and action cards', () => {
     const section = OperationsPolicyActionGateChecklistSection({
       checklist: {

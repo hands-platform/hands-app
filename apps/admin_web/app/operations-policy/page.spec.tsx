@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('OperationsPolicyPage', () => {
   beforeEach(() => {
@@ -38,5 +40,12 @@ describe('OperationsPolicyPage', () => {
     expect(markup).not.toContain(
       '<section class="card admin-mb-16"><div class="ops-section-header"><div><h2>Operator decisions',
     );
+  });
+
+  it('uses shared Vuexy badge atoms for page header counters', () => {
+    expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).not.toContain('<span className="pill pill-success">{matchingSettings.length} enforced policy</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{decisionSettings.length} decision item(s)</span>');
+    expect(pageSource).not.toContain('<span className="pill pill-info">{savedCount} saved override(s)</span>');
   });
 });

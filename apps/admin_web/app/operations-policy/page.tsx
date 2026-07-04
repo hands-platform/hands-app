@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Settings } from 'lucide-react';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -121,9 +122,9 @@ export default async function OperationsPolicyPage({
     <AdminPageTemplate
       actions={
         <>
-          <span className="pill pill-success">{matchingSettings.length} enforced policy</span>
-          <span className="pill pill-info">{decisionSettings.length} decision item(s)</span>
-          <span className="pill pill-info">{savedCount} saved override(s)</span>
+          <StatusBadge tone="success">{matchingSettings.length} enforced policy</StatusBadge>
+          <StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>
+          <StatusBadge tone="info">{savedCount} saved override(s)</StatusBadge>
         </>
       }
       contentClassName="operations-policy-page"

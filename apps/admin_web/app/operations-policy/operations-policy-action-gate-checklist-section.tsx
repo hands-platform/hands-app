@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminSection } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { PillClassBadge, StatusBadge } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
 type OperationsPolicyActionGateChecklistSectionProps = {
@@ -19,9 +19,9 @@ export function OperationsPolicyActionGateChecklistSection({
       description="These admin-editable policies explain which evidence operators should check before booking capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed closeout actions."
       id="action-gate-policy-checklist"
       status={
-        <span className={`pill ${allRecommended ? 'pill-success' : 'pill-warn'}`}>
+        <StatusBadge tone={allRecommended ? 'success' : 'warning'}>
           {checklist.alignedCount}/{checklist.totalCount} recommended
-        </span>
+        </StatusBadge>
       }
       title="Action gate policy checklist"
     >
@@ -46,7 +46,7 @@ export function OperationsPolicyActionGateChecklistSection({
         ))}
         {visibleCards.length === 0 ? (
           <div className="ops-task-card ops-task-done">
-            <span className="pill pill-success">Clear</span>
+            <StatusBadge tone="success">Clear</StatusBadge>
             <h3>Action gate policies are aligned</h3>
             <p>
               Booking, cash, payout, first-pick, and no-show evidence gates follow the recommended

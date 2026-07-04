@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { PolicyAuditRow } from './policy-audit-rows';
 
@@ -60,9 +61,9 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
                   <p className="admin-m-0">{displayOperationalWording(row.reason)}</p>
                 </td>
                 <td>
-                  <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>
+                  <StatusBadge tone={row.enforced ? 'success' : 'warning'}>
                     {row.enforced ? 'Live behavior' : 'Decision log'}
-                  </span>
+                  </StatusBadge>
                   <p className="muted admin-mt-6">{row.effect}</p>
                 </td>
               </tr>

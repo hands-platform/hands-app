@@ -7,6 +7,13 @@ import { OperationsPolicyForm } from './operations-policy-form';
 const sectionSource = readFileSync(new URL('./operations-policy-form.tsx', import.meta.url), 'utf8');
 
 describe('OperationsPolicyForm', () => {
+  it('uses shared Vuexy badge atoms for policy form status labels', () => {
+    expect(sectionSource).toContain('PillClassBadge');
+    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain("<span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>");
+    expect(sectionSource).not.toContain('<span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>');
+  });
+
   it('renders policy status, related booking guidance, and save checks', () => {
     const setting = {
       category: 'Matching',
