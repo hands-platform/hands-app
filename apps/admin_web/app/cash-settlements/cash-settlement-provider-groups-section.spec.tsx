@@ -24,13 +24,35 @@ describe('CashSettlementProviderGroupsSection', () => {
       join(process.cwd(), 'app/cash-settlements/cash-settlement-provider-groups-section.tsx'),
       'utf8',
     );
+    const section = CashSettlementProviderGroupsSection({
+      providers: [
+        {
+          companyCouponOffset: 0,
+          currency: 'VND',
+          debtAmount: 170000,
+          oldestOpenLabel: '3 days open',
+          oldestOpenMs: 259200000,
+          platformFee: 150000,
+          providerName: 'Partner One',
+          providerProfileId: 'partner-1',
+          rowCount: 2,
+          settlementReference: 'CS-001',
+          taxAmount: 20000,
+        },
+      ],
+    });
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('pillClass');
     expect(source).toContain('ActionMenu');
     expect(source).not.toContain('<span className="pill pill-danger">');
     expect(source).not.toContain('<span className="pill pill-warn">');
     expect(source).not.toContain('<span className="pill pill-info">');
     expect(source).not.toContain('<Link className="pill" href');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'pill pill-info']),
+    );
   });
 
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {

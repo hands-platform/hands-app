@@ -9,7 +9,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { recordPartnerBankDeposit } from './actions';
 import { cashSettlementHref } from './cash-settlement-page-filters';
@@ -94,7 +94,7 @@ export function CashSettlementOpenDebtTableSection({
                   actions={[{ href: row.partnerHref, kind: 'link', label: 'Partner', tone: 'info' }]}
                   label={`${row.providerName} partner actions`}
                 />
-                <PillClassBadge pillClass="pill-danger">Final acceptance blocked</PillClassBadge>
+                <StatusBadge tone="danger">Final acceptance blocked</StatusBadge>
               </div>
             </td>
             <td>
@@ -149,7 +149,7 @@ export function CashSettlementOpenDebtTableSection({
                   <div className="setup-stage-list admin-mt-8">
                     {row.actionRows.map((item) => (
                       <div className="setup-stage-item" key={`${row.earningId}-${item.action}`}>
-                        <PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>
+                        <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>
                         <div>
                           <strong>{item.action}</strong>
                           <p className="muted">{item.reason}</p>

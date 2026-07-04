@@ -29,6 +29,10 @@ describe('CashSettlementPriorityBoardSection', () => {
   });
 
   it('renders priority rows with booking links and evidence requirements', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-priority-board-section.tsx'),
+      'utf8',
+    );
     const section = CashSettlementPriorityBoardSection({
       rows: [buildRow()],
     });
@@ -40,6 +44,9 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(rendered).toContain('500.000 VND');
     expect(rendered).toContain('Confirm bank deposit reference');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll admin-mt-12',

@@ -5,7 +5,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { PillClassBadgeLink } from '../../components/status-badge';
+import { StatusBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
   cashSettlementHref,
@@ -52,7 +52,7 @@ export function CashSettlementFilterSection({
           { label: 'Last 7 days', range: '7d' },
           { label: 'Last 30 days', range: '30d' },
         ] as const).map((option) => (
-          <PillClassBadgeLink
+          <StatusBadgeLink
             ariaCurrent={option.range === filters.range ? 'page' : undefined}
             href={cashSettlementHref({
               range: option.range,
@@ -61,10 +61,10 @@ export function CashSettlementFilterSection({
               q: filters.q,
             })}
             key={option.range}
-            pillClass={option.range === filters.range ? 'pill-info' : 'pill-neutral'}
+            tone={option.range === filters.range ? 'info' : 'neutral'}
           >
             {option.label}
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         ))}
       </div>
       <form className="inline-form admin-mt-12" action="/cash-settlements">
@@ -97,14 +97,14 @@ export function CashSettlementFilterSection({
       </form>
       <div className="filter-row admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
-          <PillClassBadgeLink
+          <StatusBadgeLink
             ariaCurrent={option.value === filters.queue ? 'page' : undefined}
             href={cashSettlementHref({ range: filters.range, pageSize: filters.pageSize, queue: option.value, q: filters.q })}
             key={option.value}
-            pillClass={option.value === filters.queue ? 'pill-info' : 'pill-neutral'}
+            tone={option.value === filters.queue ? 'info' : 'neutral'}
           >
             {option.label}
-          </PillClassBadgeLink>
+          </StatusBadgeLink>
         ))}
       </div>
       <p className="muted admin-mt-10">

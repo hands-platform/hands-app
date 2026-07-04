@@ -3,7 +3,7 @@ import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
 
@@ -31,9 +31,9 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
             <div key={provider.providerProfileId}>
               <AdminSectionHeader
                 status={
-                  <PillClassBadge pillClass="pill-danger">
+                  <StatusBadge tone="danger">
                     {formatMoney(provider.debtAmount, provider.currency)}
-                  </PillClassBadge>
+                  </StatusBadge>
                 }
                 title={provider.providerName}
               />
@@ -53,8 +53,8 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                   ]}
                   label={`${provider.providerName} partner actions`}
                 />
-                <PillClassBadge pillClass="pill-warn">Suggested ref {provider.settlementReference}</PillClassBadge>
-                <PillClassBadge pillClass="pill-info">{provider.oldestOpenLabel}</PillClassBadge>
+                <StatusBadge tone="warning">Suggested ref {provider.settlementReference}</StatusBadge>
+                <StatusBadge tone="info">{provider.oldestOpenLabel}</StatusBadge>
               </div>
             </div>
           ))}

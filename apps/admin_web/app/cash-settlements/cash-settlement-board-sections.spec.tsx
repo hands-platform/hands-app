@@ -131,7 +131,9 @@ describe('CashSettlement board sections', () => {
       'utf8',
     );
 
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');
     expect(source).not.toContain('<div className="ops-section-header admin-mt-14">');

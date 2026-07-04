@@ -1,5 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 
 export type CashSettlementPriorityBoardRow = {
@@ -50,7 +50,7 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
       {rows.map((row) => (
         <tr key={`${row.bookingHref}-${row.priority}`}>
           <td>
-            <PillClassBadge pillClass={row.pillClass}>{row.priority}</PillClassBadge>
+            <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.priority}</StatusBadge>
             <div className="muted">{row.ageLabel}</div>
           </td>
           <td>

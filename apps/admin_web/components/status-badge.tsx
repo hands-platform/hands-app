@@ -61,6 +61,22 @@ export function pillClassBadgeClassName(pillClass: string) {
   return pillClass.startsWith('pill ') ? pillClass : `pill ${pillClass}`;
 }
 
+export function statusBadgeToneFromPillClass(pillClass: string): StatusBadgeTone {
+  if (pillClass.includes('danger')) {
+    return 'danger';
+  }
+  if (pillClass.includes('warn')) {
+    return 'warning';
+  }
+  if (pillClass.includes('success')) {
+    return 'success';
+  }
+  if (pillClass.includes('info')) {
+    return 'info';
+  }
+  return 'neutral';
+}
+
 export function adminSignalToneFromClassName(className?: string): AdminSignalTone {
   if (className?.includes('warn') || className?.includes('danger')) {
     return 'warn';

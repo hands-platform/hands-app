@@ -22,6 +22,9 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).not.toContain('AdminRoundedPagination');
     expect(source).not.toContain('className="vuexy-booking-table"');
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-danger">Final acceptance blocked</span>');
     expect(source).not.toContain('<Link className="pill" href={row.partnerHref}>');
   });

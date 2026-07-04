@@ -1,14 +1,23 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { CashSettlementFilterSection } from './cash-settlement-filter-section';
 import type { CashSettlementFilters } from './cash-settlement-page-types';
 
 describe('CashSettlementFilterSection', () => {
   it('keeps the search and queue filters on shared AdminForm atoms', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-filter-section.tsx'),
+      'utf8',
+    );
     const markup = renderToStaticMarkup(
       <CashSettlementFilterSection filters={filters()} totalRowCount={12} visibleRowCount={10} />,
     );
 
+    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('pillClass');
     expect(markup).toContain('Cash settlement date range');
     expect(markup).toContain('admin-form-search');
     expect(markup).toContain('admin-form-select');

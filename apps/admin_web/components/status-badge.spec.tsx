@@ -7,6 +7,7 @@ import {
   StatusBadgeLink,
   pillClassBadgeClassName,
   statusBadgeClassName,
+  statusBadgeToneFromPillClass,
 } from './status-badge';
 
 describe('StatusBadge', () => {
@@ -49,6 +50,15 @@ describe('StatusBadge', () => {
       className: 'pill pill-danger vietnam-map-cluster-panel-badge is-region',
       children: 'High debt',
     });
+  });
+
+  it('maps legacy pill classes to tone-based badge atoms', () => {
+    expect(statusBadgeToneFromPillClass('pill-danger')).toBe('danger');
+    expect(statusBadgeToneFromPillClass('pill pill-warn')).toBe('warning');
+    expect(statusBadgeToneFromPillClass('pill-success')).toBe('success');
+    expect(statusBadgeToneFromPillClass('pill-info')).toBe('info');
+    expect(statusBadgeToneFromPillClass('pill-neutral')).toBe('neutral');
+    expect(statusBadgeToneFromPillClass('unknown')).toBe('neutral');
   });
 
   it('renders tone-based badge links for Vuexy pill navigation', () => {

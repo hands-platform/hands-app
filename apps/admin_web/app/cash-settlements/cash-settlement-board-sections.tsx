@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
-import { PillClassBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
 import type {
@@ -78,7 +78,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
       <AdminSectionHeader
         className="admin-mt-14"
         description="Live Admin policy values used by finance before clearing Partner cash-fee debt and reopening final acceptance, service start, and payout release."
-        status={<PillClassBadge pillClass="pill-info">Live policy default</PillClassBadge>}
+        status={<StatusBadge tone="info">Live policy default</StatusBadge>}
         title="Applied operations policy"
       />
       <div className="service-trace-summary admin-mt-12">
@@ -126,7 +126,7 @@ export function CashSettlementWorkflowSections({
         <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
             <div className="setup-stage-item" key={step.title}>
-              <PillClassBadge pillClass={step.pillClass}>{step.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(step.pillClass)}>{step.status}</StatusBadge>
               <div>
                 <strong>{step.title}</strong>
                 <p className="muted">{step.detail}</p>
@@ -201,7 +201,7 @@ function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) 
           className={card.className}
           detail={card.detail}
           key={card.title}
-          leading={<PillClassBadge pillClass={card.pillClass}>{card.status}</PillClassBadge>}
+          leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
           title={card.title}
         />
       ))}
@@ -243,7 +243,7 @@ function LinkedCardSection({
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<PillClassBadge pillClass={item.pillClass}>{item.status}</PillClassBadge>}
+            leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>}
             title={item.title}
             variant="ops-task"
           />
