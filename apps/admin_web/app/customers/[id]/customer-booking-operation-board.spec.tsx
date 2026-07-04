@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+
 import {
   CustomerBookingOperationBoard,
   type CustomerBookingOperationGroup,
   type CustomerBookingOperationMetric,
 } from './customer-booking-operation-board';
+
+const boardSource = readFileSync('app/customers/[id]/customer-booking-operation-board.tsx', 'utf8');
 
 describe('CustomerBookingOperationBoard', () => {
   it('renders booking situation metrics and Partner avatar rows', () => {
@@ -29,7 +33,7 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).not.toContain('View');
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',
+        'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section admin-section',
         'card admin-section admin-mb-16 customer-booking-operation-summary-card',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-pagination',
@@ -39,6 +43,14 @@ describe('CustomerBookingOperationBoard', () => {
       ]),
     );
     expect(classNamesIn(board)).not.toContain('admin-table-scroll');
+  });
+
+  it('uses shared Vuexy status badge atoms instead of raw operation board pill markup', () => {
+    expect(boardSource).toContain("from '../../../components/status-badge'");
+    expect(boardSource).toContain('StatusBadge');
+    expect(boardSource).toContain('PillClassBadge');
+    expect(boardSource).not.toContain('<span className="pill');
+    expect(boardSource).not.toContain('<span className={`pill');
   });
 });
 

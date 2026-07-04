@@ -5,6 +5,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import { AdminSection } from '../../../components/admin-surface';
+import { PillClassBadge, StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerBookingOperationMetric = {
@@ -168,12 +169,12 @@ function CustomerBookingOperationSection({
               />
             </td>
             <td>
-              <span className="pill pill-neutral">{row.paymentTypeLabel}</span>
+              <StatusBadge tone="neutral">{row.paymentTypeLabel}</StatusBadge>
               <p className="muted">{row.paymentDetailLabel}</p>
             </td>
             <td>{row.addressLabel}</td>
             <td>
-              <span className={`pill ${row.stateTone}`}>{row.stateLabel}</span>
+              <PillClassBadge pillClass={row.stateTone}>{row.stateLabel}</PillClassBadge>
               <p className="muted">{row.stateDetail}</p>
             </td>
           </tr>
