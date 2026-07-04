@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
-import { formatDateTime, formatMoney } from '../lib/admin-format';
+import { formatDateTime } from '../lib/admin-format';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminFilterPanel } from './admin-filter-panel';
 import { MoneyText } from './money-text';
@@ -78,7 +78,7 @@ export function AdminManualWalletAdjustmentHistory({
                 <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
               </td>
               <td>
-                <strong>{formatBalanceChange(row)}</strong>
+                <strong>{renderBalanceChange(row)}</strong>
                 <p className="muted">{walletImpactLabel(row)}</p>
               </td>
               <td>{row.reason ?? 'No reason stored'}</td>
@@ -90,19 +90,21 @@ export function AdminManualWalletAdjustmentHistory({
   );
 }
 
-function formatBalanceChange(row: AdminManualWalletAdjustmentRow) {
+function renderBalanceChange(row: AdminManualWalletAdjustmentRow) {
   if (row.beforeBalance === undefined || row.beforeBalance === null) {
-    return formatMoney(row.afterBalance, row.currency);
+    return <MoneyText amount={row.afterBalance} currency={row.currency} />;
   }
 
   if (row.afterBalance === undefined || row.afterBalance === null) {
-    return formatMoney(row.beforeBalance, row.currency);
+    return <MoneyText amount={row.beforeBalance} currency={row.currency} />;
   }
 
-  return `${formatMoney(row.beforeBalance, row.currency)} -> ${formatMoney(
-    row.afterBalance,
-    row.currency,
-  )}`;
+  return (
+    <>
+      <MoneyText amount={row.beforeBalance} currency={row.currency} /> -&gt;{' '}
+      <MoneyText amount={row.afterBalance} currency={row.currency} />
+    </>
+  );
 }
 
 function walletImpactLabel(row: AdminManualWalletAdjustmentRow) {

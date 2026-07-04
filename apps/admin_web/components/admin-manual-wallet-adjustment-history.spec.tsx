@@ -45,6 +45,7 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-123');
     expect(markup).toContain('money-text money-text-positive');
+    expect(markup.match(/<span class="money-text/g)).toHaveLength(4);
     expect(markup).toContain('50.000 VND');
     expect(markup).toContain('250.000 VND');
     expect(markup).toContain('/wallet-adjustments?ownerType=PARTNER&amp;ownerId=provider-1');
