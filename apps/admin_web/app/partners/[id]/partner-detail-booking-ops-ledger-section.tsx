@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -61,7 +62,7 @@ export function PartnerDetailBookingOpsLedgerSection({
               <td>
                 <strong>{row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
-                <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
+                <PillClassBadge pillClass={statusPillClass(row.status)}>{row.status}</PillClassBadge>
               </td>
               <td>{row.relation}</td>
               <td>

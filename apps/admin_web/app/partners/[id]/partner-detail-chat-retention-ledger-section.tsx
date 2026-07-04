@@ -5,6 +5,7 @@ import type {
 } from './partner-detail-chat-retention-model';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { PillClassBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -73,7 +74,7 @@ export function PartnerDetailChatRetentionLedgerSection({
               <td>
                 <strong>{row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
-                <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
+                <PillClassBadge pillClass={statusPillClass(row.status)}>{row.status}</PillClassBadge>
               </td>
               <td>
                 <strong>{row.relation}</strong>

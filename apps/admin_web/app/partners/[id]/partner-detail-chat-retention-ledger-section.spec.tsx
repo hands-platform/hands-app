@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDetailChatRetentionLedgerSection,
   type PartnerChatRetentionRow,
@@ -5,6 +7,13 @@ import {
 } from './partner-detail-chat-retention-ledger-section';
 
 describe('PartnerDetailChatRetentionLedgerSection', () => {
+  it('uses the shared Vuexy badge atom for booking status', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('PillClassBadge');
+    expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
+  });
+
   it('renders chat retention summary, row evidence, and archive links', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
@@ -30,7 +39,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
@@ -60,7 +69,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(rendered).toContain('No Partner chat retention row matched this date filter.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'muted admin-mt-12',
