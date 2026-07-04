@@ -351,6 +351,13 @@ describe('finance list pages', () => {
     expect(source).not.toContain('<div className="vuexy-booking-table-footer">');
   });
 
+  it('keeps the finance table wrapper from re-passing the base Vuexy table class', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-data-table.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDataTable');
+    expect(source).not.toContain('className="vuexy-booking-table"');
+  });
+
   it('uses the shared AdminLinkCard surface for finance command cards', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
 

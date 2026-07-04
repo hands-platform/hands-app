@@ -9,7 +9,7 @@ type FinanceDataTableProps = Omit<ComponentProps<typeof AdminDataTable>, 'classN
 export function FinanceDataTable({ scrollClassName, ...props }: FinanceDataTableProps) {
   return (
     <AdminTableScroll className={scrollClassName}>
-      <AdminDataTable className="vuexy-booking-table" {...props} />
+      <AdminDataTable {...props} />
     </AdminTableScroll>
   );
 }
