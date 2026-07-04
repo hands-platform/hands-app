@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminCard } from '../../components/admin-surface';
+import { AdminCard, AdminFormCard } from '../../components/admin-surface';
 import { PillClassBadge } from '../../components/status-badge';
 import { formatDateTime } from '../../lib/admin-format';
 import {
@@ -73,10 +73,10 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
         title="Master admin control"
       >
         <div className="admin-operator-control-grid">
-          <form action={createAdminOperator} className="admin-operator-control-card" aria-label="Add operator">
+          <AdminFormCard action={createAdminOperator} className="admin-operator-control-card" ariaLabel="Add operator">
             <div>
               <h3>Add operator</h3>
-            <p className="muted">Creates a new operator login and grants Admin Web access by email.</p>
+              <p className="muted">Creates a new operator login and grants Admin Web access by email.</p>
             </div>
             <AdminFormInput label="Operator email" name="email" placeholder="operator@hands.vn" required type="email" />
             <AdminFormInput label="Temporary password" name="password" placeholder="Set initial password" required type="password" />
@@ -93,7 +93,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             <AdminFormControlButton className="button-primary" type="submit">
               Add operator
             </AdminFormControlButton>
-          </form>
+          </AdminFormCard>
         </div>
       </AdminFilterPanel>
 

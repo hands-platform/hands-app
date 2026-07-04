@@ -2656,13 +2656,9 @@ a.action-button-card:hover {
 }
 
 .admin-operator-control-card {
-  background: var(--admin-action-hover);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
   display: grid;
   gap: 12px;
   min-width: 0;
-  padding: 16px;
 }
 
 .admin-operator-control-card h3,
