@@ -17,4 +17,11 @@ describe('ServiceProviderPriceImpact source', () => {
     expect(source).not.toContain("className={impact.inactiveOrBlockedCount ? 'pill pill-neutral' : 'pill pill-success'}");
     expect(source).not.toContain('<p className="muted">No Partner has configured a price for this duration yet.</p>');
   });
+
+  it('uses shared money atoms for partner price impact amounts', () => {
+    const source = readFileSync('app/services/service-provider-price-impact.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
 });

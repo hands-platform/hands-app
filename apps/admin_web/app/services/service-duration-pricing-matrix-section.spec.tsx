@@ -13,6 +13,13 @@ describe('ServiceDurationPricingMatrixSection', () => {
     expect(source).not.toContain("className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}");
   });
 
+  it('uses shared money atoms for duration matrix amounts', () => {
+    const source = readFileSync('app/services/service-duration-pricing-matrix-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
+
   it('renders the standard duration matrix, policy state, and hidden group copy', () => {
     const section = ServiceDurationPricingMatrixSection({
       activeTaxPolicy: undefined,

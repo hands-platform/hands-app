@@ -1,8 +1,8 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule as basePayoutRule } from '../../lib/service-base-payout-rule';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceDurationMatrix } from '../../lib/service-duration-matrix';
@@ -77,19 +77,23 @@ export function ServiceDurationPricingMatrixSection({
                     <small>{matrix.payoutRuleCount} payout rule(s)</small>
                     <small>
                       Customer minimum total{' '}
-                      {formatMoney(matrix.totals.customerMinimum, matrix.totals.currency)}
+                      <MoneyText amount={matrix.totals.customerMinimum} currency={matrix.totals.currency} />
                     </small>
                     <small>
-                      Partner payout total {formatMoney(matrix.totals.providerPayout, matrix.totals.currency)}
+                      Partner payout total{' '}
+                      <MoneyText amount={matrix.totals.providerPayout} currency={matrix.totals.currency} />
                     </small>
                     <small>
-                      Gross HANDS fee total {formatMoney(matrix.totals.grossFee, matrix.totals.currency)}
+                      Gross HANDS fee total{' '}
+                      <MoneyText amount={matrix.totals.grossFee} currency={matrix.totals.currency} />
                     </small>
                     <small>
-                      Tax / cost total {formatMoney(matrix.totals.taxAndCost, matrix.totals.currency)}
+                      Tax / cost total{' '}
+                      <MoneyText amount={matrix.totals.taxAndCost} currency={matrix.totals.currency} />
                     </small>
                     <small>
-                      Net company fee total {formatMoney(matrix.totals.netCompanyFee, matrix.totals.currency)}
+                      Net company fee total{' '}
+                      <MoneyText amount={matrix.totals.netCompanyFee} currency={matrix.totals.currency} />
                     </small>
                   </div>
                 </td>
@@ -139,23 +143,35 @@ function ServiceDurationCell({ cell }: { readonly cell: DurationMatrixCell }) {
   return (
     <td>
       <div className="service-matrix-cell">
-        <strong>Customer {formatMoney(cell.service.basePrice, cellCurrency)}</strong>
+        <strong>
+          Customer <MoneyText amount={cell.service.basePrice} currency={cellCurrency} />
+        </strong>
         <StatusBadge tone={cell.baseRule ? 'success' : 'danger'}>
           {cell.baseRule ? 'Payout ready' : 'Payout missing'}
         </StatusBadge>
         <small>
           Partner{' '}
-          {cell.baseRule
-            ? formatMoney(cell.baseRule.providerPayoutAmount, cell.baseRule.currency)
-            : 'not set'}
+          {cell.baseRule ? (
+            <MoneyText amount={cell.baseRule.providerPayoutAmount} currency={cell.baseRule.currency} />
+          ) : (
+            'not set'
+          )}
         </small>
-        <small>Gross HANDS fee {cell.baseRule ? formatMoney(cell.finance.fee, cellCurrency) : '-'}</small>
         <small>
-          VAT / withholding / cost {cell.baseRule ? formatMoney(cellTaxAndCost, cellCurrency) : '-'}
+          Gross HANDS fee{' '}
+          {cell.baseRule ? <MoneyText amount={cell.finance.fee} currency={cellCurrency} /> : '-'}
+        </small>
+        <small>
+          VAT / withholding / cost{' '}
+          {cell.baseRule ? <MoneyText amount={cellTaxAndCost} currency={cellCurrency} /> : '-'}
         </small>
         <small>
           Net company fee{' '}
-          {cell.baseRule ? formatMoney(cell.finance.actualCompanyCommission, cellCurrency) : '-'}
+          {cell.baseRule ? (
+            <MoneyText amount={cell.finance.actualCompanyCommission} currency={cellCurrency} />
+          ) : (
+            '-'
+          )}
         </small>
       </div>
     </td>

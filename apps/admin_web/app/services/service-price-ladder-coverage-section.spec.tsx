@@ -7,4 +7,11 @@ describe('ServicePriceLadderCoverageSection source', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain("className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}");
   });
+
+  it('uses shared money atoms for price ladder amounts', () => {
+    const source = readFileSync('app/services/service-price-ladder-coverage-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+  });
 });

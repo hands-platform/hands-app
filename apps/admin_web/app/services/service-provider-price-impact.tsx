@@ -1,10 +1,10 @@
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
 type ServiceProviderPriceImpactProps = {
@@ -50,17 +50,21 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
               <div>
                 <strong>{row.providerName}</strong>
                 <p className="muted">
-                  Customer {formatMoney(row.price, row.currency)} / Partner{' '}
-                  {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
+                  Customer <MoneyText amount={row.price} currency={row.currency} /> / Partner{' '}
+                  {row.rule ? (
+                    <MoneyText amount={row.rule.providerPayoutAmount} currency={row.currency} />
+                  ) : (
+                    'not configured'
+                  )}
                 </p>
                 <p className="muted">{row.reason}</p>
                 {row.rule ? (
                   <p className="muted">
                     Commission projection:{' '}
-                    {formatMoney(
-                      servicePayoutFinance(service, row.rule, activeTaxPolicy).actualCompanyCommission,
-                      row.currency,
-                    )}
+                    <MoneyText
+                      amount={servicePayoutFinance(service, row.rule, activeTaxPolicy).actualCompanyCommission}
+                      currency={row.currency}
+                    />
                   </p>
                 ) : null}
               </div>

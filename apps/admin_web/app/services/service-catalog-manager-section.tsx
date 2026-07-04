@@ -11,9 +11,9 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 import { serviceBasePayoutRule } from '../../lib/service-base-payout-rule';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { createServiceDurationSet, saveServiceDurationMenu } from './actions';
@@ -163,11 +163,15 @@ function ServiceDurationPanel({
       <dl>
         <div>
           <dt>Base</dt>
-          <dd>{formatMoney(service.basePrice)}</dd>
+          <dd>
+            <MoneyText amount={service.basePrice} />
+          </dd>
         </div>
         <div>
           <dt>Partner</dt>
-          <dd>{formatMoney(payoutRule?.providerPayoutAmount)}</dd>
+          <dd>
+            <MoneyText amount={payoutRule?.providerPayoutAmount} />
+          </dd>
         </div>
       </dl>
     </AdminCard>

@@ -14,6 +14,11 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).not.toContain("<span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>");
   });
 
+  it('uses shared money atoms for service catalog duration prices', () => {
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).not.toContain('formatMoney(');
+  });
+
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {
     const section = ServiceCatalogManagerSection({
       dialogMode: 'new',
