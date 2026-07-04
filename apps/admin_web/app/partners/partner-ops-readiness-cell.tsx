@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { ProviderListAction } from './partner-list-actions';
 import { partnerListActionPillClass } from './partner-list-actions';
@@ -65,7 +65,9 @@ function PartnerNextActionSummary({ action }: { readonly action: ProviderListAct
   return (
     <div className="admin-mb-10">
       <div className="participant-list admin-mb-6">
-        <PillClassBadge pillClass={partnerListActionPillClass(action.tone)}>{action.status}</PillClassBadge>
+        <StatusBadge tone={statusBadgeToneFromPillClass(partnerListActionPillClass(action.tone))}>
+          {action.status}
+        </StatusBadge>
       </div>
       <p className="muted admin-mb-4">
         {action.detail}
@@ -81,13 +83,13 @@ function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsB
   return (
     <div className="participant-list admin-mb-8">
       {badges.map((badge) => (
-        <PillClassBadge
+        <StatusBadge
           key={badge.label}
-          pillClass={partnerOpsBadgePillClass(badge.tone)}
+          tone={statusBadgeToneFromPillClass(partnerOpsBadgePillClass(badge.tone))}
           title={badge.detail}
         >
           {badge.label}
-        </PillClassBadge>
+        </StatusBadge>
       ))}
     </div>
   );
@@ -105,9 +107,9 @@ function PartnerIssuePills({ issues }: { readonly issues: readonly PartnerOpsRea
   return (
     <div className="participant-list admin-mb-8">
       {issues.slice(0, 5).map((issue) => (
-        <PillClassBadge key={issue.label} pillClass={issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}>
+        <StatusBadge key={issue.label} tone={issue.severity === 'high' ? 'danger' : 'warning'}>
           {issue.label}
-        </PillClassBadge>
+        </StatusBadge>
       ))}
       {issues.length > 5 ? <StatusBadge tone="info">+{issues.length - 5} more</StatusBadge> : null}
     </div>
@@ -125,9 +127,9 @@ function PartnerBackupEligibilityCard({
     <AdminCard className="admin-mt-10 admin-p-12">
       <AdminSectionHeader
         actions={(
-          <PillClassBadge pillClass={eligibility.eligible ? 'pill-success' : 'pill-warn'}>
+          <StatusBadge tone={eligibility.eligible ? 'success' : 'warning'}>
             {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
-          </PillClassBadge>
+          </StatusBadge>
         )}
         description={eligibility.detail}
         title="Marketplace participation eligibility"
@@ -140,9 +142,9 @@ function PartnerBackupEligibilityCard({
       {eligibility.blockers.length ? (
         <div className="participant-list admin-mt-8">
           {eligibility.blockers.map((blocker) => (
-            <PillClassBadge key={blocker.label} pillClass={blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}>
+            <StatusBadge key={blocker.label} tone={blocker.severity === 'hard' ? 'danger' : 'warning'}>
               {blocker.label}
-            </PillClassBadge>
+            </StatusBadge>
           ))}
         </div>
       ) : null}

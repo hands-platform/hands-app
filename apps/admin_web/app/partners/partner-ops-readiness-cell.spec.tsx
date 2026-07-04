@@ -17,8 +17,8 @@ describe('PartnerOpsReadinessCell', () => {
   it('uses shared Vuexy badge atoms instead of raw ops readiness pill spans', () => {
     const source = readFileSync('app/partners/partner-ops-readiness-cell.tsx', 'utf8');
 
-    expect(source).toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${partnerListActionPillClass(action.tone)}`}>{action.status}</span>');
     expect(source).not.toContain('className={`pill ${partnerOpsBadgePillClass(badge.tone)}`}');
     expect(source).not.toContain('<span className="pill pill-success">No blocking issues</span>');
