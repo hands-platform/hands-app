@@ -14926,6 +14926,91 @@ textarea:focus-visible {
   background: var(--admin-action-hover);
 }
 
+.admin-form-control-button.button-primary,
+.admin-form-control-link.button-primary {
+  background: var(--admin-accent);
+  border: 1px solid var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
+}
+
+.admin-form-control-button.button-primary:hover,
+.admin-form-control-link.button-primary:hover {
+  background: var(--admin-accent-strong);
+  border-color: var(--admin-accent-strong);
+}
+
+.admin-form-control-button.button-secondary,
+.admin-form-control-link.button-secondary {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+
+.admin-form-control-button.button-secondary:hover,
+.admin-form-control-link.button-secondary:hover {
+  background: var(--admin-action-hover);
+}
+
+.admin-form-control-button.button-danger,
+.admin-form-control-link.button-danger {
+  background: color-mix(in srgb, var(--admin-danger) 10%, var(--admin-surface));
+  border: 1px solid color-mix(in srgb, var(--admin-danger) 36%, var(--admin-border));
+  color: var(--admin-danger);
+}
+
+.admin-form-control-button.button-danger:hover,
+.admin-form-control-link.button-danger:hover {
+  background: color-mix(in srgb, var(--admin-danger) 16%, var(--admin-surface));
+  border-color: var(--admin-danger);
+}
+
+.admin-form-control-button.button-success,
+.admin-form-control-link.button-success {
+  background: color-mix(in srgb, var(--admin-success) 12%, var(--admin-surface));
+  border: 1px solid color-mix(in srgb, var(--admin-success) 42%, var(--admin-border));
+  color: var(--admin-success);
+}
+
+.admin-form-control-button.button-success:hover,
+.admin-form-control-link.button-success:hover {
+  background: color-mix(in srgb, var(--admin-success) 18%, var(--admin-surface));
+  border-color: var(--admin-success);
+}
+
+.admin-form-control-button.button-info,
+.admin-form-control-link.button-info {
+  background: color-mix(in srgb, var(--admin-info) 12%, var(--admin-surface));
+  border: 1px solid color-mix(in srgb, var(--admin-info) 42%, var(--admin-border));
+  color: var(--admin-info);
+}
+
+.admin-form-control-button.button-info:hover,
+.admin-form-control-link.button-info:hover {
+  background: color-mix(in srgb, var(--admin-info) 18%, var(--admin-surface));
+  border-color: var(--admin-info);
+}
+
+.admin-form-control-button.button-outline,
+.admin-form-control-link.button-outline {
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+
+.admin-form-control-button.button-outline:hover,
+.admin-form-control-link.button-outline:hover {
+  background: var(--admin-action-hover);
+  border-color: color-mix(in srgb, var(--admin-accent) 34%, var(--admin-border));
+}
+
+.admin-form-control-button.button-sm,
+.admin-form-control-link.button-sm {
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
 .vuexy-customer-button.is-ghost,
 .vuexy-partner-button.is-ghost,
 .customer-detail-action-link {

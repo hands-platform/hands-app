@@ -303,6 +303,19 @@ describe('Admin form controls', () => {
       'admin-form-control-button button button-sm button-primary payout-action',
     );
   });
+
+  it('applies default Vuexy button tones when no class is supplied', () => {
+    const link = AdminFormControlLink({
+      children: 'Reset filters',
+      href: '/customers',
+    });
+    const button = AdminFormControlButton({
+      children: 'Save changes',
+    });
+
+    expect(link.props.className).toBe('admin-form-control-link button button-secondary');
+    expect(button.props.className).toBe('admin-form-control-button button button-primary');
+  });
 });
 
 function textContent(value: unknown): string {

@@ -412,7 +412,7 @@ export function AdminFormControlLink({
   return (
     <a
       aria-current={ariaCurrent}
-      className={joinClassNames('admin-form-control-link', normalizeButtonClassNames(className))}
+      className={joinClassNames('admin-form-control-link', normalizeButtonClassNames(className, 'button button-secondary'))}
       download={download}
       href={href}
       title={title}
@@ -431,7 +431,7 @@ export function AdminFormControlButton({
 }: AdminFormControlButtonProps) {
   return (
     <button
-      className={joinClassNames('admin-form-control-button', normalizeButtonClassNames(className))}
+      className={joinClassNames('admin-form-control-button', normalizeButtonClassNames(className, 'button button-primary'))}
       disabled={disabled}
       onClick={onClick}
       type={type}
@@ -445,9 +445,9 @@ function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
 }
 
-function normalizeButtonClassNames(className: string | undefined) {
+function normalizeButtonClassNames(className: string | undefined, defaultClassName: string) {
   if (!className) {
-    return undefined;
+    return defaultClassName;
   }
 
   const normalized = className.split(/\s+/).reduce<string[]>((tokens, token) => {

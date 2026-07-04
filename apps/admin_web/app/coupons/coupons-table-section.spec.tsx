@@ -38,7 +38,7 @@ describe('CouponsTableSection', () => {
       expect.arrayContaining(['card', 'admin-card', 'coupon-management-section']),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button']),
+      expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button', 'button-primary']),
     );
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
     expect(classNamesIn(section)).not.toContain('coupon-management-card');

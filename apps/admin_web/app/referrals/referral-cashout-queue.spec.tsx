@@ -118,7 +118,7 @@ describe('Referral cashout queue', () => {
       'card admin-section booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
     );
     expect(markup).not.toContain('admin-filter-panel-eyebrow">Queue');
-    expect(markup).toContain('class="admin-form-control-button button" type="submit">Apply filters');
+    expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Apply filters');
     expect(markup).toContain('Cashout approved');
     expect(markup).toContain('Parent Partner');
     expect(markup).toContain('Referred Partner');

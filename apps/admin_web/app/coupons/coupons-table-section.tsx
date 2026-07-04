@@ -181,7 +181,7 @@ function CouponManagementCard({
           >
             <span>Active</span>
           </AdminFormCheckbox>
-          <AdminFormControlButton className="button" type="submit">
+          <AdminFormControlButton className="button button-primary" type="submit">
             Save
           </AdminFormControlButton>
         </form>
