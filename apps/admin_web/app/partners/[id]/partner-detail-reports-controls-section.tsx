@@ -93,7 +93,6 @@ export function PartnerDetailReportsControlsSection({
       <AdminFormGrid action={createProviderReport} className="admin-mb-16">
         <input type="hidden" name="providerProfileId" value={providerId} />
         <AdminFormInput
-          className="partner-report-form-field"
           label="Category"
           labelVisibility="visible"
           name="category"
@@ -101,7 +100,6 @@ export function PartnerDetailReportsControlsSection({
           required
         />
         <AdminFormSelect
-          className="partner-report-form-field"
           defaultValue="MEDIUM"
           label="Severity"
           labelVisibility="visible"
@@ -109,7 +107,6 @@ export function PartnerDetailReportsControlsSection({
           options={reportSeverityOptions}
         />
         <AdminFormSelect
-          className="partner-report-form-field"
           defaultValue="ADMIN"
           label="Source"
           labelVisibility="visible"
@@ -117,7 +114,7 @@ export function PartnerDetailReportsControlsSection({
           options={reportSourceOptions}
         />
         <AdminFormInput
-          className="partner-report-form-field full-span"
+          className="full-span"
           label="Summary"
           labelVisibility="visible"
           name="summary"
@@ -125,7 +122,7 @@ export function PartnerDetailReportsControlsSection({
           required
         />
         <AdminFormTextarea
-          className="partner-report-form-field full-span"
+          className="full-span"
           label="Details"
           labelVisibility="visible"
           name="details"
@@ -179,7 +176,6 @@ export function PartnerDetailReportsControlsSection({
         <AdminFormGrid action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
           <AdminFormSelect
-            className="partner-report-form-field"
             defaultValue="PAYOUT_HOLD"
             label="Control type"
             labelVisibility="visible"
@@ -187,13 +183,12 @@ export function PartnerDetailReportsControlsSection({
             options={accountControlTypeOptions}
           />
           <AdminFormDateTime
-            className="partner-report-form-field"
             label="Expires at"
             labelVisibility="visible"
             name="expiresAt"
           />
           <AdminFormInput
-            className="partner-report-form-field full-span"
+            className="full-span"
             label="Reason"
             labelVisibility="visible"
             maxLength={500}
@@ -336,7 +331,6 @@ function PartnerReportCommandPanel({
           <AdminFormGrid action={updateProviderReport} className="compact-form partner-report-command-form">
             <input type="hidden" name="providerProfileId" value={providerId} />
             <AdminFormSelect
-              className="partner-report-form-field"
               defaultValue={firstReport.id}
               label="Report"
               labelVisibility="visible"
@@ -344,7 +338,6 @@ function PartnerReportCommandPanel({
               options={reportSelectOptions(reports)}
             />
             <AdminFormSelect
-              className="partner-report-form-field"
               defaultValue={firstReport.status}
               label="Report status"
               labelVisibility="visible"
@@ -352,7 +345,6 @@ function PartnerReportCommandPanel({
               options={reportStatusOptions}
             />
             <AdminFormSelect
-              className="partner-report-form-field"
               defaultValue={firstReport.severity}
               label="Report severity"
               labelVisibility="visible"
@@ -360,7 +352,7 @@ function PartnerReportCommandPanel({
               options={reportSeverityOptions}
             />
             <AdminFormInput
-              className="partner-report-form-field full-span"
+              className="full-span"
               label="Resolution note"
               labelVisibility="visible"
               name="resolutionNote"
@@ -373,7 +365,6 @@ function PartnerReportCommandPanel({
           <AdminFormGrid action={createProviderSanction} className="compact-form partner-report-command-form">
             <input type="hidden" name="providerProfileId" value={providerId} />
             <AdminFormSelect
-              className="partner-report-form-field"
               defaultValue={firstReport.id}
               label="Linked report"
               labelVisibility="visible"
@@ -381,7 +372,6 @@ function PartnerReportCommandPanel({
               options={reportSelectOptions(reports)}
             />
             <AdminFormSelect
-              className="partner-report-form-field"
               defaultValue={firstReport.defaultControlType}
               label="Control type"
               labelVisibility="visible"
@@ -389,7 +379,7 @@ function PartnerReportCommandPanel({
               options={accountControlTypeOptions}
             />
             <AdminFormInput
-              className="partner-report-form-field full-span"
+              className="full-span"
               label="Control reason"
               labelVisibility="visible"
               maxLength={500}
