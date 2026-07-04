@@ -707,15 +707,16 @@ a {
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  height: 36px;
+  font-size: 1.375rem;
+  height: 38px;
   justify-content: center;
   padding: 0;
-  width: 36px;
+  width: 38px;
 }
 
 .topbar-search:hover,
 .topbar-icon-chip:hover {
-  background: var(--admin-sidebar-hover);
+  background: var(--admin-action-hover);
   border-color: rgb(var(--admin-primary-channel) / 0.26);
   color: var(--admin-accent-strong);
 }
