@@ -289,7 +289,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Open detail');
     }
     expect(markup).toContain(detailHref);
-    expect(markup).toContain('card finance-list-command-card is-');
+    expect(markup).toContain('card admin-card finance-list-command-card is-');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(markup).toContain('vuexy-booking-table-footer');
 
@@ -342,6 +342,13 @@ describe('finance list pages', () => {
 
     expect(source).toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
+  });
+
+  it('uses the shared AdminLinkCard surface for finance command cards', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
+
+    expect(source).toContain('AdminLinkCard');
+    expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
   });
 
   it('uses shared badge atoms for bank reconciliation status pills', () => {
