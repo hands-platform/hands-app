@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
@@ -53,5 +54,15 @@ describe('BookingDetailPage data loading', () => {
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'CANCELLED' } as never)).toBe(false);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'OPEN_MATCHING' } as never)).toBe(true);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'IN_SERVICE' } as never)).toBe(true);
+  });
+
+  it('uses shared Vuexy badge atoms for advanced booking record headings', () => {
+    const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<span className="pill pill-info">Evidence</span>');
+    expect(source).not.toContain('<span className="pill pill-success">Dispatch</span>');
+    expect(source).not.toContain('<span className="pill pill-warn">History</span>');
+    expect(source).not.toContain('<span className="pill pill-neutral">Settlement</span>');
   });
 });

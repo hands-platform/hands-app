@@ -141,6 +141,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
+import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -816,7 +817,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           {sectionVisibility.showEvidenceDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
-                <span className="pill pill-info">Evidence</span>
+                <StatusBadge tone="info">Evidence</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Decision and closeout evidence</strong>
                   <small>Chat, evidence packet, closeout links, and operator queue.</small>
@@ -833,7 +834,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           {sectionVisibility.showDispatchDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
-                <span className="pill pill-success">Dispatch</span>
+                <StatusBadge tone="success">Dispatch</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Matching policy and supply checks</strong>
                   <small>Stage, radius, wait, supply, and Partner candidate rules.</small>
@@ -852,7 +853,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           {sectionVisibility.showHistoryDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
-                <span className="pill pill-warn">History</span>
+                <StatusBadge tone="warning">History</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Operating movement and audit trail</strong>
                   <small>Movement ledger, notifications, audit rows, and activity export.</small>
@@ -874,7 +875,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           {sectionVisibility.showSettlementDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
-                <span className="pill pill-neutral">Settlement</span>
+                <StatusBadge tone="neutral">Settlement</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Wallet, payout, pricing, and full records</strong>
                   <small>Wallet evidence, payout eligibility, pricing, and raw record detail.</small>
