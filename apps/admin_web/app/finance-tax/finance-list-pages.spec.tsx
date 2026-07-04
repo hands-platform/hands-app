@@ -289,7 +289,7 @@ describe('finance list pages', () => {
       expect(markup).toContain('Open detail');
     }
     expect(markup).toContain(detailHref);
-    expect(markup).toContain('card admin-card finance-list-command-card is-');
+    expect(markup).toContain('card admin-card usage-overview-command-card finance-list-command-card is-');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(markup).toContain('vuexy-booking-table-footer');
 
@@ -358,10 +358,12 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className="vuexy-booking-table"');
   });
 
-  it('uses the shared AdminLinkCard surface for finance command cards', () => {
+  it('uses the shared overview command card surface for finance command cards', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
 
-    expect(source).toContain('AdminLinkCard');
+    expect(source).toContain('AdminOverviewCommandCard');
+    expect(source).not.toContain('AdminLinkCard');
+    expect(source).not.toContain('usage-overview-command-icon');
     expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
   });
 

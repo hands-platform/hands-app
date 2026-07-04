@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { AdminLinkCard } from '../../components/admin-surface';
+import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
 
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
@@ -35,16 +35,14 @@ export function FinanceListCommandCard({
   readonly value: string;
 }) {
   return (
-    <AdminLinkCard className={`finance-list-command-card is-${tone}`} href={href}>
-      <span className="usage-overview-command-icon">
-        <Icon size={18} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </div>
-    </AdminLinkCard>
+    <AdminOverviewCommandCard
+      className={`finance-list-command-card is-${tone}`}
+      detail={detail}
+      href={href}
+      icon={<Icon size={18} aria-hidden="true" />}
+      label={label}
+      value={value}
+    />
   );
 }
 
