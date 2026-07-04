@@ -6,6 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { addProviderOpsNote } from '../actions';
 
@@ -47,7 +48,7 @@ export function PartnerDetailOperatorNotesSection({
   totalCount,
 }: PartnerDetailOperatorNotesSectionProps) {
   return (
-    <div className="card ops-note-panel admin-mb-16" id="partner-operator-notes">
+    <AdminCard className="ops-note-panel admin-mb-16" id="partner-operator-notes">
       <div className="ops-section-header">
         <div>
           <h2>Partner operator notes</h2>
@@ -95,6 +96,6 @@ export function PartnerDetailOperatorNotesSection({
           Save partner operation note
         </AdminFormControlButton>
       </form>
-    </div>
+    </AdminCard>
   );
 }

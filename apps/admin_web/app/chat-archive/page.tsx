@@ -16,7 +16,7 @@ import {
 } from '../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -488,7 +488,8 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       >
         <div className="setup-stage-list admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
-            <details className="card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"
+            <AdminDisclosureCard
+              className="chat-transcript-room admin-chat-transcript-disclosure"
               id={chatRoomDomId(room.roomId)}
               key={`${room.roomId}-messages`}
               open={rooms.length === 1}
@@ -513,7 +514,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                 subtitle={`${room.partnerName} / ${room.serviceLabel}`}
                 title={room.customerName}
               />
-            </details>
+            </AdminDisclosureCard>
           ))}
         </div>
       </AdminSection>

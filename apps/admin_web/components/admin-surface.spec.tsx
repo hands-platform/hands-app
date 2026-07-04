@@ -1,6 +1,7 @@
 import {
   AdminActionCard,
   AdminCard,
+  AdminDisclosureCard,
   AdminErrorState,
   AdminKpiCard,
   AdminLinkCard,
@@ -94,6 +95,22 @@ describe('Admin surface components', () => {
     expect(notice.props).toMatchObject({
       className: 'card admin-card admin-notice-card admin-mb-16 admin-notice-success',
       role: 'status',
+    });
+  });
+
+  it('renders a reusable Vuexy disclosure card surface', () => {
+    const disclosure = AdminDisclosureCard({
+      children: <summary>Open record</summary>,
+      className: 'chat-transcript-room',
+      id: 'chat-room-1',
+      open: true,
+    });
+
+    expect(disclosure.type).toBe('details');
+    expect(disclosure.props).toMatchObject({
+      className: 'card admin-card admin-disclosure chat-transcript-room',
+      id: 'chat-room-1',
+      open: true,
     });
   });
 

@@ -6,7 +6,9 @@ describe('PartnerDetailOperatorNotesSection', () => {
   it('uses the shared Vuexy badge atom for note count', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-notes-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminCard');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="card ops-note-panel admin-mb-16"');
     expect(source).not.toContain('<span className="pill pill-info">{totalCount} note(s)</span>');
   });
 
@@ -32,7 +34,9 @@ describe('PartnerDetailOperatorNotesSection', () => {
     expect(rendered).toContain('Quick note preset');
     expect(rendered).toContain('Partner operation note');
     expect(rendered).toContain('Save partner operation note');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['card ops-note-panel admin-mb-16', 'pill pill-info']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['card admin-card ops-note-panel admin-mb-16', 'pill pill-info']),
+    );
   });
 
   it('renders empty partner operation notes with the shared Vuexy empty state', () => {

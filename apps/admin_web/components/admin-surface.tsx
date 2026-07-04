@@ -18,6 +18,10 @@ type AdminNoticeCardProps = AdminCardProps & {
   readonly role?: 'alert' | 'status';
 };
 
+type AdminDisclosureCardProps = AdminCardProps & {
+  readonly open?: boolean;
+};
+
 type AdminLinkCardProps = AdminCardProps & {
   readonly href: string;
   readonly htmlTitle?: string;
@@ -99,6 +103,27 @@ export function AdminNoticeCard({
     >
       {children}
     </section>
+  );
+}
+
+export function AdminDisclosureCard({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+  open,
+}: AdminDisclosureCardProps) {
+  return (
+    <details
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('card admin-card admin-disclosure', className)}
+      id={id}
+      open={open}
+    >
+      {children}
+    </details>
   );
 }
 

@@ -62,7 +62,7 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-section');
     expect(markup).toContain('Chat integrity repair queue');
     expect(markup).toContain('Chat evidence index');
-    expect(markup).toContain('class="card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
+    expect(markup).toContain('class="card admin-card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
     expect(markup).toContain(
       'class="card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
     );
@@ -124,8 +124,10 @@ describe('ChatArchivePage', () => {
 
   it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {
     expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).toContain('AdminDisclosureCard');
     expect(pageSource).not.toContain('<Link className="button button-secondary"');
     expect(pageSource).not.toContain('className="button button-secondary chat-inline-action"');
+    expect(pageSource).not.toContain('<details className="card admin-disclosure');
   });
 
   it('keeps visible chat status chips on shared badge atoms', () => {
