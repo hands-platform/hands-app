@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { FinanceHandoffActionRow } from './operations-handoff-finance-actions';
 
 type OperationsHandoffFinanceActionSectionProps = {
@@ -34,7 +34,7 @@ export function OperationsHandoffFinanceActionSection({
             variant="ops-task"
           >
             <div className="participant-list">
-              <PillClassBadge pillClass={item.statusClass}>{item.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.statusClass)}>{item.status}</StatusBadge>
               <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
             </div>
           </AdminActionCard>

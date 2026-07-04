@@ -11,7 +11,8 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
-    expect(source).toContain('PillClassBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain("<span className={openCount ? 'pill pill-warn' : 'pill pill-success'}>");

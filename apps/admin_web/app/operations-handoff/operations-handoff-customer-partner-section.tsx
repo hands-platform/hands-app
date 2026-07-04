@@ -2,7 +2,7 @@ import { Briefcase, Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
@@ -75,7 +75,9 @@ export function OperationsHandoffCustomerPartnerSection({
                 className="ops-signal-card"
                 href={`/partners/${partner.id}`}
                 key={partner.id}
-                leading={<PillClassBadge pillClass={partner.className}>{partner.status}</PillClassBadge>}
+                leading={
+                  <StatusBadge tone={statusBadgeToneFromPillClass(partner.className)}>{partner.status}</StatusBadge>
+                }
                 variant="ops-task"
               >
                 <AdminPersonCell

@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { PillClassBadge, StatusBadge } from '../../components/status-badge';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ImmediateActionQueueRow } from './operations-handoff-immediate-actions';
 
 type OperationsHandoffImmediateActionSectionProps = {
@@ -38,7 +38,7 @@ export function OperationsHandoffImmediateActionSection({
           >
             <div className="participant-list">
               <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-              <PillClassBadge pillClass={item.statusClass}>{item.status}</PillClassBadge>
+              <StatusBadge tone={statusBadgeToneFromPillClass(item.statusClass)}>{item.status}</StatusBadge>
             </div>
           </AdminActionCard>
         ))}
