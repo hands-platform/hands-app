@@ -21,6 +21,11 @@ type AdminTableFooterProps = {
   readonly className?: string;
 };
 
+type AdminBoundedTableFooterProps = {
+  readonly className?: string;
+  readonly rowCount: number;
+};
+
 type AdminTablePaginationFooterProps = {
   readonly activePage: number;
   readonly ariaLabel: string;
@@ -44,6 +49,18 @@ export function AdminTableScroll({ children, className }: AdminTableScrollProps)
 
 export function AdminTableFooter({ children, className }: AdminTableFooterProps) {
   return <div className={joinClassNames('vuexy-booking-table-footer', className)}>{children}</div>;
+}
+
+export function AdminBoundedTableFooter({ className, rowCount }: AdminBoundedTableFooterProps) {
+  return AdminTableFooter({
+    className,
+    children: <span>{adminBoundedTableFooterLabel(rowCount)}</span>,
+  });
+}
+
+export function adminBoundedTableFooterLabel(rowCount: number) {
+  if (rowCount <= 0) return 'Showing 0 entries';
+  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 export function AdminTablePaginationFooter({

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTableCard } from '../../components/admin-table-panel';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -106,16 +106,9 @@ export function PartnerLegacyOperationsTableSection({
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter className="vuexy-partner-table-footer">
-        <span>{partnerLegacyOperationsFooterLabel(providers.length)}</span>
-      </AdminTableFooter>
+      <AdminBoundedTableFooter className="vuexy-partner-table-footer" rowCount={providers.length} />
     </AdminTableCard>
   );
-}
-
-function partnerLegacyOperationsFooterLabel(rowCount: number) {
-  if (rowCount <= 0) return 'Showing 0 entries';
-  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function partnerLegacyAvatarStatus(provider: AdminProvider) {

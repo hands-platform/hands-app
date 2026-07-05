@@ -1,3 +1,4 @@
+import { AdminBoundedTableFooter } from '../../../components/admin-data-table';
 import {
   adminTableGroupClassName,
   adminTablePanelChromeClassName,
@@ -19,14 +20,8 @@ type PartnerDetailVuexyTableFooterProps = {
 export function PartnerDetailVuexyTableFooter({
   rowCount,
 }: PartnerDetailVuexyTableFooterProps) {
-  return (
-    <div className={partnerDetailReviewFooterClassName}>
-      <span>{partnerDetailVuexyTableFooterLabel(rowCount)}</span>
-    </div>
-  );
-}
-
-function partnerDetailVuexyTableFooterLabel(rowCount: number) {
-  if (rowCount <= 0) return 'Showing 0 entries';
-  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
+  return AdminBoundedTableFooter({
+    className: partnerDetailReviewFooterClassName,
+    rowCount,
+  });
 }

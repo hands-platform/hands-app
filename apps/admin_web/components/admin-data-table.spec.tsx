@@ -1,8 +1,10 @@
 import {
+  AdminBoundedTableFooter,
   AdminDataTable,
   AdminTableFooter,
   AdminTablePaginationFooter,
   AdminTableScroll,
+  adminBoundedTableFooterLabel,
 } from './admin-data-table';
 
 describe('AdminDataTable', () => {
@@ -97,6 +99,17 @@ describe('AdminDataTable', () => {
     expect(footer.props).toMatchObject({
       className: 'vuexy-booking-table-footer finance-table-footer',
     });
+  });
+
+  it('renders a reusable bounded Vuexy table footer for fully loaded short lists', () => {
+    const footer = AdminBoundedTableFooter({
+      className: 'vuexy-partner-table-footer',
+      rowCount: 3,
+    });
+
+    expect(footer.props.className).toBe('vuexy-booking-table-footer vuexy-partner-table-footer');
+    expect(normalizeText(textContent(footer))).toBe('Showing 1 to 3 of 3 entries');
+    expect(adminBoundedTableFooterLabel(0)).toBe('Showing 0 entries');
   });
 
   it('renders a reusable Vuexy pagination footer for server-backed tables', () => {

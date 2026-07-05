@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -89,16 +89,9 @@ export function PartnerChecklistWorkQueueSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <AdminTableFooter className="vuexy-partner-table-footer">
-        <span>{partnerChecklistQueueFooterLabel(queue.rows.length)}</span>
-      </AdminTableFooter>
+      <AdminBoundedTableFooter className="vuexy-partner-table-footer" rowCount={queue.rows.length} />
     </AdminTablePanel>
   );
-}
-
-function partnerChecklistQueueFooterLabel(rowCount: number) {
-  if (rowCount <= 0) return 'Showing 0 entries';
-  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function partnerChecklistAvatarStatus(provider: AdminProvider) {
