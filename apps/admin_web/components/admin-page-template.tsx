@@ -60,14 +60,14 @@ export function AdminPageTemplate({
 export function AdminMetricGrid({ ariaLabel, className, metrics }: AdminMetricGridProps) {
   return (
     <section aria-label={ariaLabel} className={joinClassNames('admin-metric-grid', className)}>
-      {metrics.map((metric) => (
+      {metrics.map((metric, index) => (
         <AdminKpiCard
           className={metric.className}
           helper={metric.helper}
           href={metric.href}
           icon={metric.icon}
           iconSize={metric.iconSize}
-          key={metric.label}
+          key={`${metric.label}-${index}`}
           label={metric.label}
           value={metric.value}
         />

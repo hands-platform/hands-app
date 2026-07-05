@@ -40,6 +40,17 @@ describe('AdminPageTemplate', () => {
     expect(grid.props.children[1].props.className).toContain('is-success');
   });
 
+  it('keeps duplicate metric labels on unique React keys during overview migrations', () => {
+    const grid = AdminMetricGrid({
+      metrics: [
+        { helper: 'Open booking queue.', label: 'Open', value: 4 },
+        { helper: 'Open finance queue.', label: 'Open', value: 2 },
+      ],
+    });
+
+    expect(grid.props.children.map((child: { key: string }) => child.key)).toEqual(['Open-0', 'Open-1']);
+  });
+
   it('renders a reusable admin section header with status and actions', () => {
     const header = AdminSectionHeader({
       actions: <a href="/operations-policy">Open policy</a>,
