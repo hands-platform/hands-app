@@ -2542,7 +2542,11 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Gender / birth',
-      value: `${provider.gender ?? 'Not saved'} / ${formatDate(provider.dateOfBirth)}`,
+      value: (
+        <>
+          {provider.gender ?? 'Not saved'} / <DateTimeText fallback="Missing" value={provider.dateOfBirth} />
+        </>
+      ),
       helper: 'Basic partner profile field',
     },
     {
@@ -2552,8 +2556,14 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Joined / recent access',
-      value: formatDate(provider.user?.createdAt),
-      helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app session recorded',
+      value: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />,
+      helper: latestAccessAt ? (
+        <>
+          Recent app access <DateTimeText fallback="No app session recorded" value={latestAccessAt} />
+        </>
+      ) : (
+        'No app session recorded'
+      ),
     },
     {
       label: 'Current state',
