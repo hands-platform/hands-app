@@ -2,6 +2,7 @@ import type { AdminAuditLog, AdminUser } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
@@ -206,7 +207,10 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   </td>
                   <td>
                     <div className="admin-operator-action-stack">
-                      <form action={updateAdminOperatorAccess} className="admin-operator-inline-form">
+                      <AdminInlineActionForm
+                        action={updateAdminOperatorAccess}
+                        className="admin-operator-inline-form"
+                      >
                         <input name="userId" type="hidden" value={user.id} />
                         <div className="admin-operator-permission-toggle-row" aria-label={`${user.id} roles`}>
                           {adminOperatorAssignableRoleFields.map((role) => (
@@ -232,14 +236,17 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                             Save permissions
                           </AdminFormControlButton>
                         </div>
-                      </form>
-                      <form action={revokeAdminOperatorAccess} className="admin-operator-inline-delete-form">
+                      </AdminInlineActionForm>
+                      <AdminInlineActionForm
+                        action={revokeAdminOperatorAccess}
+                        className="admin-operator-inline-delete-form"
+                      >
                         <input name="userId" type="hidden" value={user.id} />
                         <input name="reason" type="hidden" value="Master Admin row action" />
                         <AdminFormControlButton className="button-danger admin-inline-action" type="submit">
                           Delete operator
                         </AdminFormControlButton>
-                      </form>
+                      </AdminInlineActionForm>
                     </div>
                   </td>
                 </tr>

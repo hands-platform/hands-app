@@ -249,6 +249,21 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps operator permission row forms inside the shared Vuexy inline action atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-inline-action-form.tsx')
+      .filter((filePath) => {
+        const source = readFileSync(filePath, 'utf8');
+        return (
+          hasRawFormClassToken(source, 'admin-operator-inline-form') ||
+          hasRawFormClassToken(source, 'admin-operator-inline-delete-form')
+        );
+      })
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
