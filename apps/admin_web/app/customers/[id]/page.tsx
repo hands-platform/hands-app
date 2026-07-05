@@ -14,6 +14,7 @@ import {
 } from '../../../components/admin-review-records-section';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { MoneyText } from '../../../components/money-text';
+import { DateTimeText } from '../../../components/date-time-text';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -487,7 +488,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     </Link>
                   </div>
                 </div>
-                <small>{formatDate(attempt.at)}</small>
+                <small>
+                  <DateTimeText value={attempt.at} />
+                </small>
               </div>
             ))}
           </div>
@@ -852,7 +855,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <p className="muted">{displayMarketplaceText(notification.body)}</p>
                 </td>
                 <td>{displayMarketplaceText(notification.type)}</td>
-                <td>{formatDate(notification.createdAt)}</td>
+                <td>
+                  <DateTimeText value={notification.createdAt} />
+                </td>
                 <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
               </tr>
             ))}
@@ -875,7 +880,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <tr key={log.id}>
                 <td>{log.action}</td>
                 <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
-                <td>{formatDate(log.createdAt)}</td>
+                <td>
+                  <DateTimeText value={log.createdAt} />
+                </td>
                 <td>
                   <code>{compactJson(log.metadata)}</code>
                 </td>

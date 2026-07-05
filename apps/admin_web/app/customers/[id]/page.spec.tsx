@@ -88,6 +88,13 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('createdLabel: formatDate(message.createdAt)');
   });
 
+  it('uses the shared DateTimeText atom for visible customer detail table timestamps', () => {
+    expect(customerDetailSource).toContain("from '../../../components/date-time-text'");
+    expect(customerDetailSource).not.toContain('<small>{formatDate(attempt.at)}</small>');
+    expect(customerDetailSource).not.toContain('<td>{formatDate(notification.createdAt)}</td>');
+    expect(customerDetailSource).not.toContain('<td>{formatDate(log.createdAt)}</td>');
+  });
+
   it('uses the shared table pagination footer for customer chat history', () => {
     expect(customerDetailSource).toContain('AdminTablePaginationFooter');
     expect(customerDetailSource).toContain('className="customer-chat-history-footer"');
