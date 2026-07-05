@@ -12,6 +12,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type {
@@ -195,8 +196,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         <AdjustmentPolicyChecklist />
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         description={
           formState.ownerId
             ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
@@ -261,7 +261,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           totalPages={historyPagination.totalPages}
           totalRows={historyPagination.totalRows}
         />
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
       <AdminFilterPanel
         className="admin-mt-16"
@@ -318,8 +318,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       </AdminFilterPanel>
 
       {preview ? (
-        <AdminFilterPanel
-          className="admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        <AdminTablePanel
           description="Debit and credit legs are shown as an operator preview. No booking revenue or company VAT is created here."
           footer={
             <CreateAdjustmentForm
@@ -352,7 +351,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               </tr>
             ))}
           </FinanceDataTable>
-        </AdminFilterPanel>
+        </AdminTablePanel>
       ) : null}
     </AdminPageTemplate>
   );

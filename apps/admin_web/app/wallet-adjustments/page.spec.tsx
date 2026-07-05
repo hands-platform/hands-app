@@ -131,7 +131,9 @@ describe('WalletAdjustmentsPage', () => {
       null,
     );
     expect(markup).toContain('Accounting preview');
-    expect(markup).toContain('card admin-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group');
+    expect(markup).toContain(
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(markup).toContain('Partner Bonus Expense');
     expect(markup).toContain('Partner Wallet Liability');
     expect(markup).toContain('No bank/cash movement');
@@ -305,6 +307,13 @@ describe('WalletAdjustmentsPage', () => {
   it('uses the shared FinanceDataTable shell for wallet ledger tables', () => {
     expect(pageSource).toContain('FinanceDataTable');
     expect(pageSource).toContain('MoneyText');
+    expect(pageSource).toContain('AdminTablePanel');
+    expect(pageSource).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
+    expect(pageSource).not.toContain(
+      'className="admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
     expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
     expect(pageSource).not.toContain('<td>{formatMoney(entry.amount, currency)}</td>');
