@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
@@ -21,9 +21,9 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
       title="Partner wallet debt groups"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/partner-controls">
+        <AdminTextLink href="/partner-controls">
           Partner controls
-        </Link>
+        </AdminTextLink>
       </div>
       {providers.length ? (
         <AdminDetailGrid className="admin-mt-16">

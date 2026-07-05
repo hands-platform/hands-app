@@ -133,6 +133,10 @@ describe('CashSettlement board sections', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
     expect(source).toContain('AdminTablePanel');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
@@ -13,6 +12,7 @@ import {
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
@@ -80,9 +80,9 @@ export function CashSettlementOpenDebtTableSection({
       title="Open cash fee debt rows"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/payments?review=cash-debt">
+        <AdminTextLink href="/payments?review=cash-debt">
           Payment debt view
-        </Link>
+        </AdminTextLink>
       </div>
       <FinanceDataTable
         emptyMessage="No cash fee debt is waiting for settlement."
@@ -103,9 +103,9 @@ export function CashSettlementOpenDebtTableSection({
               </div>
             </td>
             <td>
-              <Link className="text-link" href={row.bookingHref}>
+              <AdminTextLink href={row.bookingHref}>
                 {row.bookingLabel}
-              </Link>
+              </AdminTextLink>
               <div className="muted">{row.createdAtLabel}</div>
               <div className="muted">{row.serviceLabel}</div>
             </td>

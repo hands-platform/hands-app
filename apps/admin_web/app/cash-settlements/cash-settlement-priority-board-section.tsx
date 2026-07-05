@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
@@ -60,9 +61,9 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
           <td>
             <strong>{row.providerName}</strong>
             <div>
-              <a className="text-link" href={row.bookingHref}>
+              <AdminTextLink href={row.bookingHref}>
                 {row.bookingLabel}
-              </a>
+              </AdminTextLink>
             </div>
             <div className="muted">{row.providerPhone}</div>
           </td>

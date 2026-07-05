@@ -45,6 +45,10 @@ describe('CashSettlementProviderGroupsSection', () => {
     });
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('pillClass');
     expect(source).toContain('ActionMenu');

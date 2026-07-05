@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   AdminFormControlButton,
   AdminFormGrid,
@@ -7,6 +6,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
@@ -39,9 +39,9 @@ export function CashSettlementFilterSection({
         </>
       }
       footer={
-        <Link className="text-link" href="/finance-closeout">
+        <AdminTextLink href="/finance-closeout">
           Open finance closeout
-        </Link>
+        </AdminTextLink>
       }
       resultLabel={`${visibleRowCount} of ${totalRowCount}`}
       resultTone="success"
@@ -93,9 +93,9 @@ export function CashSettlementFilterSection({
         <AdminFormControlButton className="button-primary" type="submit">
           Apply
         </AdminFormControlButton>
-        <Link className="text-link" href="/cash-settlements">
+        <AdminTextLink href="/cash-settlements">
           Clear
-        </Link>
+        </AdminTextLink>
       </AdminFormGrid>
       <AdminFilterChipGroup ariaLabel="Cash settlement queue" className="admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (

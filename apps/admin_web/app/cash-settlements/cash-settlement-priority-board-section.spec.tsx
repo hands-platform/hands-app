@@ -14,6 +14,10 @@ describe('CashSettlementPriorityBoardSection', () => {
     );
 
     expect(source).toContain('FinanceDataTable');
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('<a className="text-link"');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('AdminDataTable');
     expect(source).not.toContain('className="vuexy-booking-table"');
   });

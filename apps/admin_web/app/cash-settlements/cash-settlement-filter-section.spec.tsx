@@ -15,7 +15,11 @@ describe('CashSettlementFilterSection', () => {
       <CashSettlementFilterSection filters={filters()} totalRowCount={12} visibleRowCount={10} />,
     );
 
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('pillClass');
     expect(markup).toContain('Cash settlement date range');

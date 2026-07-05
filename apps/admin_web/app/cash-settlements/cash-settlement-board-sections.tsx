@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
@@ -40,16 +40,16 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
       title="Cash settlement execution desk"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
+        <AdminTextLink href="/audit-log?bucket=Finance%2FCloseout">
           Audit evidence
-        </Link>
+        </AdminTextLink>
       </div>
       <CommandCardGrid cards={executionDesk} />
       <AdminSectionHeader
         actions={
-          <Link className="text-link" href="/cash-settlements?queue=high-debt">
+          <AdminTextLink href="/cash-settlements?queue=high-debt">
             High debt queue
-          </Link>
+          </AdminTextLink>
         }
         className="admin-mt-16"
         description="Sort order is amount first, then age. Confirm bank deposit evidence or a documented admin offset before pressing the settlement action on a row."
@@ -69,9 +69,9 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
       title="Cash fee operating rules"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/operations-policy?review=wallet">
+        <AdminTextLink href="/operations-policy?review=wallet">
           Wallet policy
-        </Link>
+        </AdminTextLink>
       </div>
       <AdminSectionHeader
         className="admin-mt-14"
@@ -116,9 +116,9 @@ export function CashSettlementWorkflowSections({
         title="Cash fee settlement workflow"
       >
         <div className="participant-list admin-mb-12">
-          <Link className="text-link" href="/partner-controls?review=cash-debt">
+          <AdminTextLink href="/partner-controls?review=cash-debt">
             Open Partner controls
-          </Link>
+          </AdminTextLink>
         </div>
         <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
@@ -179,9 +179,9 @@ function CommandCardSection({
       title={title}
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href={href}>
+        <AdminTextLink href={href}>
           {linkLabel}
-        </Link>
+        </AdminTextLink>
       </div>
       <CommandCardGrid cards={cards} />
     </AdminTablePanel>
@@ -226,9 +226,9 @@ function LinkedCardSection({
       title={title}
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href={href}>
+        <AdminTextLink href={href}>
           {linkLabel}
-        </Link>
+        </AdminTextLink>
       </div>
       <div className="ops-task-grid">
         {items.map((item) => (
