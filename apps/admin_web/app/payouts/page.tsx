@@ -17,7 +17,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
+import { formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -1168,12 +1168,24 @@ function buildPayoutReleaseBlockerRows(
       pillClass: reason.pillClass,
     })),
     currency: item.batch.currency,
-    detail: item.reason.detail,
+    detail: payoutReleaseBlockerDetail(item.reason, item.batch),
     id: item.batch.id,
     label: item.reason.label,
     providerLabel: item.providerLabel,
     severity: item.severity,
   }));
+}
+
+function payoutReleaseBlockerDetail(reason: PayoutBlockingReason, batch: AdminPayoutBatch): ReactNode {
+  if (reason.label === 'Tax log missing') {
+    return (
+      <>
+        Withholding exists (<MoneyText amount={batchWithholdingAmount(batch)} currency={batch.currency} />) but no
+        tax log is linked.
+      </>
+    );
+  }
+  return reason.detail;
 }
 
 function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutionItem[] {
@@ -1477,7 +1489,7 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
   if (withholdingAmount > 0 && !withholdingLogs.length) {
     reasons.push({
       label: 'Tax log missing',
-      detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`,
+      detail: 'Withholding exists but no tax log is linked.',
       action: 'Create or repair withholding logs before reconciliation.',
       pillClass: 'pill-warn',
     });
@@ -1700,8 +1712,8 @@ function payoutChecklist(batch: AdminPayoutBatch) {
         withholdingAmount <= 0
           ? 'No withholding amount is recorded for this batch.'
           : withholdingLogs.length
-            ? `${withholdingLogs.length} withholding log(s), ${formatMoney(withholdingAmount, batch.currency)} total.`
-            : `Withholding amount exists (${formatMoney(withholdingAmount, batch.currency)}) but no withholding log is linked.`,
+            ? `${withholdingLogs.length} withholding log(s) are linked.`
+            : 'Withholding amount exists but no withholding log is linked.',
     },
     {
       label: batch.transferRef ? 'Bank ref' : batch.status === 'PAID' ? 'No ref' : 'Ref later',

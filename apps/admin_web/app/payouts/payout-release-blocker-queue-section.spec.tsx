@@ -18,6 +18,7 @@ describe('PayoutReleaseBlockerQueueSection', () => {
     const source = readFileSync('app/payouts/payout-release-blocker-queue-section.tsx', 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('readonly detail: ReactNode;');
     expect(source).not.toContain('formatMoney(');
   });
 

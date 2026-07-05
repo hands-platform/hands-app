@@ -199,6 +199,9 @@ describe('PayoutsPage', () => {
   it('uses shared money atoms for payout action execution withholding amounts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
+    expect(source).toContain('function payoutReleaseBlockerDetail');
+    expect(source).toContain('<MoneyText amount={batchWithholdingAmount(batch)} currency={batch.currency} />');
     expect(source).not.toContain('${formatMoney(withholdingAmount, batch.currency)} withholding exists');
+    expect(source).not.toContain('detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`');
   });
 });

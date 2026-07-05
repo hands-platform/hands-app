@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
@@ -13,7 +15,7 @@ export type PayoutReleaseBlockerQueueItem = {
   readonly amount: number;
   readonly blockingReasons: readonly PayoutReleaseBlockerReason[];
   readonly currency: string;
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly id: string;
   readonly label: string;
   readonly providerLabel: string;
