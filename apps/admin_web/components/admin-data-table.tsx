@@ -118,8 +118,8 @@ export function AdminDataTable({
     <table className={tableClassName}>
       <thead>
         <tr>
-          {headers.map((header) => (
-            <th key={header}>{header}</th>
+          {headers.map((header, index) => (
+            <th key={`${header}-${index}`}>{header}</th>
           ))}
         </tr>
       </thead>

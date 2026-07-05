@@ -79,6 +79,18 @@ describe('AdminDataTable', () => {
     });
   });
 
+  it('keeps duplicate visible header labels on unique React keys', () => {
+    const table = AdminDataTable({
+      children: null,
+      emptyMessage: null,
+      headers: ['Status', 'Status'],
+      rowCount: 0,
+    });
+    const headerCells = table.props.children[0].props.children.props.children;
+
+    expect(headerCells.map((cell: { key: string }) => cell.key)).toEqual(['Status-0', 'Status-1']);
+  });
+
   it('renders a reusable scroll wrapper for wide admin tables', () => {
     const wrapper = AdminTableScroll({
       children: <table className="table" />,
