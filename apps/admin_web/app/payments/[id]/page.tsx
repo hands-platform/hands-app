@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -10,6 +11,7 @@ import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-pa
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { DateTimeText } from '../../../components/date-time-text';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -118,7 +120,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         metrics={[
           { label: 'Payment status', value: payment.status, helper: paymentStatusHint(payment) },
           { label: 'Method', value: payment.method, helper: gatewayReferenceLabel(payment) },
-          { label: 'Amount', value: money(payment.amount, payment.currency), helper: serviceLabel },
+          { label: 'Amount', value: paymentMoney(payment.amount, payment.currency), helper: serviceLabel },
           { label: 'Booking', value: booking?.status ?? 'Not linked', helper: bookingAddress },
           {
             label: 'Callbacks',
@@ -197,15 +199,15 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         <AdminTablePanel
           description="Money movement facts for gross, HANDS fee, withholding, partner net, earning state, and refund rows."
           id="money-ledger"
-          resultLabel={money(payment.amount, payment.currency)}
+          resultLabel={paymentMoney(payment.amount, payment.currency)}
           resultTone={cashDebt ? 'warning' : 'info'}
           title="Money ledger"
         >
           <div className="setup-stage-list">
-            <EvidenceRow label="Gross" value={money(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
-            <EvidenceRow label="HANDS fee" value={money(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
-            <EvidenceRow label="Withholding" value={money(earning?.withholdingAmount, earning?.currency ?? payment.currency)} helper="Tax withholding saved by current policy." />
-            <EvidenceRow label="Partner net" value={money(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before final acceptance, service start, or payout release.' : 'Net amount is not blocking final acceptance, service start, or payout release.'} />
+            <EvidenceRow label="Gross" value={paymentMoney(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
+            <EvidenceRow label="HANDS fee" value={paymentMoney(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
+            <EvidenceRow label="Withholding" value={paymentMoney(earning?.withholdingAmount, earning?.currency ?? payment.currency)} helper="Tax withholding saved by current policy." />
+            <EvidenceRow label="Partner net" value={paymentMoney(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before final acceptance, service start, or payout release.' : 'Net amount is not blocking final acceptance, service start, or payout release.'} />
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
@@ -259,7 +261,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
   );
 }
 
-function EvidenceRow({ label, value, helper }: { label: string; value: string; helper: string }) {
+function EvidenceRow({ label, value, helper }: { label: string; value: ReactNode; helper: ReactNode }) {
   return (
     <div className="setup-stage-item">
       <StatusBadge tone="info">{label}</StatusBadge>
@@ -310,6 +312,10 @@ function paymentDetailActionMenuItems(payment: AdminPaymentDetail) {
       tone: 'danger' as const,
     },
   ];
+}
+
+function paymentMoney(amount?: number | null, currency = 'VND') {
+  return <MoneyText amount={amount} currency={currency} />;
 }
 
 function paymentDetailActionConfirmHref(paymentId: string, action: PaymentConfirmationAction) {

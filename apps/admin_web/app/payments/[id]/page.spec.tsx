@@ -81,6 +81,17 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<td>{formatDate(row.createdAt)}</td>');
   });
 
+  it('uses the shared MoneyText atom for visible payment ledger amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).toContain('paymentMoney');
+    expect(source).not.toContain("value={money(earning?.grossAmount ?? payment.amount, payment.currency)}");
+    expect(source).not.toContain("value={money(earning?.platformFee, earning?.currency ?? payment.currency)}");
+    expect(source).not.toContain("value={money(earning?.withholdingAmount, earning?.currency ?? payment.currency)}");
+    expect(source).not.toContain("value={money(earning?.netAmount, earning?.currency ?? payment.currency)}");
+  });
+
   it('uses the shared Vuexy form control link for button-style payment actions', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
 
