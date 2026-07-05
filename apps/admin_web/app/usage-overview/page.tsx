@@ -26,7 +26,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
@@ -157,7 +157,7 @@ export default async function UsageOverviewPage({
         />
       </AdminSection>
 
-      <section className="usage-overview-command-grid" aria-label="Usage command summary">
+      <AdminOverviewCommandGrid ariaLabel="Usage command summary">
         {usageHealthCards.map(({ label, value, detail, icon: Icon, tone }) => (
           <UsageCommandCard
             key={label}
@@ -168,7 +168,7 @@ export default async function UsageOverviewPage({
             value={value}
           />
         ))}
-      </section>
+      </AdminOverviewCommandGrid>
 
       <AdminSection
         bodyClassName="usage-overview-funnel-steps"

@@ -65,6 +65,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<article key={`${title}-${row.id}`} className="usage-overview-ranking-row"');
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminOverviewCommandCard');
+    expect(pageSource).toContain('AdminOverviewCommandGrid');
+    expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('formatDateTime,');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');

@@ -72,6 +72,8 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).toContain('AdminOverviewCommandGrid');
+    expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );

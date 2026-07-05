@@ -27,7 +27,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminOverviewCommandCard } from '../../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
@@ -194,11 +194,11 @@ export default async function PartnerOverviewPage({
       </AdminSection>
 
       {overview.summaryKpis.length > 0 ? (
-        <section className="usage-overview-command-grid" aria-label="Partner supply summary">
+        <AdminOverviewCommandGrid ariaLabel="Partner supply summary">
           {overview.summaryKpis.map((kpi, index) => (
             <PartnerKpiCard key={kpi.key} icon={summaryIcons[index % summaryIcons.length]} kpi={kpi} />
           ))}
-        </section>
+        </AdminOverviewCommandGrid>
       ) : null}
 
       <OperatingStatusBoard cards={overview.operatingStatus.cards} />
