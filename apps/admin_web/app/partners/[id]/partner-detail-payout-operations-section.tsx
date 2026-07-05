@@ -217,7 +217,7 @@ export function PartnerDetailPayoutOperationsSection({
                     {earning.settlementRef ? (
                       <span className="muted">Settlement ref {earning.settlementRef}</span>
                     ) : (
-                      <span className="muted">No settlement ref</span>
+                      <AdminInlineFallback>No settlement ref</AdminInlineFallback>
                     )}
                     {earning.settlementNotes ? <p className="muted">{earning.settlementNotes}</p> : null}
                   </td>
@@ -229,7 +229,7 @@ export function PartnerDetailPayoutOperationsSection({
                         </p>
                       ))
                     ) : (
-                      <span className="muted">No wallet adjustment</span>
+                      <AdminInlineFallback>No wallet adjustment</AdminInlineFallback>
                     )}
                   </td>
                   <td>

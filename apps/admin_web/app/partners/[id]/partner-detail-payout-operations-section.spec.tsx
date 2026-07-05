@@ -30,6 +30,8 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(source).not.toContain('<span className={`pill ${payoutBatchPill(batch.status)}`}>{batch.status}</span>');
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain("<p className=\"muted\">{operations.hold.reason ?? 'No hold reason recorded.'}</p>");
+    expect(source).not.toContain('<span className="muted">No settlement ref</span>');
+    expect(source).not.toContain('<span className="muted">No wallet adjustment</span>');
   });
 
   it('uses the shared date time atom for payout hold timing', () => {
