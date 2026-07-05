@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
@@ -17,7 +18,6 @@ import {
   type AdminReferralReward,
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
 import {
   isReferralRewardBlocked,
   isReferralRewardClosed,
@@ -74,6 +74,11 @@ type ReferralAttribution =
 type ReferralRewardActionForm = {
   readonly action: (formData: FormData) => Promise<void> | void;
   readonly label: string;
+};
+
+type ReferralRewardEvidenceItem = {
+  readonly id: string;
+  readonly node: ReactNode;
 };
 
 export function referralParentDetailHref(audience: ReferralAudienceSlug, id: string) {
@@ -685,8 +690,8 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
         <summary>Decision evidence</summary>
         <div className="participant-list referral-reward-decision-evidence">
           {evidenceItems.map((item) => (
-            <span className="muted" key={item}>
-              {item}
+            <span className="muted" key={item.id}>
+              {item.node}
             </span>
           ))}
         </div>
@@ -754,37 +759,70 @@ function referralRewardDecisionSummary(reward: AdminReferralReward) {
   }
 
   if (reward.availableAt) {
-    return `Available ${formatDateTime(reward.availableAt)}`;
+    return (
+      <>
+        Available <DateTimeText value={reward.availableAt} />
+      </>
+    );
   }
 
   return null;
 }
 
 function referralRewardDecisionEvidence(reward: AdminReferralReward) {
-  const evidenceItems = [
-    reward.walletLedgerReference ? `Ledger ${reward.walletLedgerReference}` : 'No wallet ledger yet',
+  const evidenceItems: ReferralRewardEvidenceItem[] = [
+    {
+      id: 'wallet-ledger',
+      node: reward.walletLedgerReference ? `Ledger ${reward.walletLedgerReference}` : 'No wallet ledger yet',
+    },
   ];
 
   if (reward.qualifyingBookingId) {
-    evidenceItems.push(`Booking ${reward.qualifyingBookingId}`);
+    evidenceItems.push({
+      id: 'qualifying-booking',
+      node: `Booking ${reward.qualifyingBookingId}`,
+    });
   }
 
   if (reward.availableAt) {
-    evidenceItems.push(`Available ${formatDateTime(reward.availableAt)}`);
+    evidenceItems.push({
+      id: 'available-at',
+      node: (
+        <>
+          Available <DateTimeText value={reward.availableAt} />
+        </>
+      ),
+    });
   }
 
   if (reward.latestDecision) {
     const decisionLabel = referralRewardDecisionLabel(reward.latestDecision.action);
     const actorLabel = userLabel(reward.latestDecision.actor, 'Unknown admin');
-    evidenceItems.push(`Latest decision ${decisionLabel} by ${actorLabel}`);
+    evidenceItems.push({
+      id: 'latest-decision',
+      node: `Latest decision ${decisionLabel} by ${actorLabel}`,
+    });
     if (reward.latestDecision.reason) {
-      evidenceItems.push(`Reason ${reward.latestDecision.reason}`);
+      evidenceItems.push({
+        id: 'latest-decision-reason',
+        node: `Reason ${reward.latestDecision.reason}`,
+      });
     }
-    evidenceItems.push(`Decision time ${formatDateTime(reward.latestDecision.createdAt)}`);
+    evidenceItems.push({
+      id: 'latest-decision-at',
+      node: (
+        <>
+          Decision time <DateTimeText value={reward.latestDecision.createdAt} />
+        </>
+      ),
+    });
   }
 
   if (!reward.walletLedgerReference && referralRewardRequiresOperatorReason(reward)) {
-    evidenceItems.push('Operator reason required for next action');
+    evidenceItems.push({
+      id: 'operator-reason-required',
+      node: 'Operator reason required for next action',
+    });
   }
 
   return evidenceItems;
