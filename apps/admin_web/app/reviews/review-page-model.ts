@@ -101,7 +101,7 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     bookingRequestTimeLabel: reviewBookingRequestTimeLabel(review),
     commentLabel: review.comment?.trim() || 'No written review',
     commentValue: review.comment?.trim() ?? '',
-    createdAtLabel: formatReviewDate(review.createdAt),
+    createdAt: review.createdAt ?? null,
     customerHref: review.customerProfile?.id
       ? `/customers/${review.customerProfile.id}`
       : review.customerProfileId
@@ -141,7 +141,7 @@ export function buildPartnerCustomerReviewTableRows(
     bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
     bookingRequestTimeLabel: partnerCustomerReviewRequestTimeLabel(review),
     commentLabel: review.comment?.trim() || 'No written evaluation',
-    createdAtLabel: formatReviewDate(review.createdAt),
+    createdAt: review.createdAt ?? null,
     customerAvatarStatus: partnerCustomerReviewCustomerAvatarStatus(review),
     customerHref: review.customerProfile?.id
       ? `/customers/${review.customerProfile.id}`

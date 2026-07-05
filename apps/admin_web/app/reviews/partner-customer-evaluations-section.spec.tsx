@@ -35,6 +35,19 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
+  it('uses the shared date time atom for evaluation submitted timestamps', () => {
+    const source = readFileSync(
+      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
+      'utf8',
+    );
+    const modelSource = readFileSync(new URL('./review-page-model.ts', import.meta.url), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('Evaluation submitted {row.createdAtLabel}');
+    expect(modelSource).not.toContain('createdAtLabel: formatReviewDate(review.createdAt)');
+  });
+
   it('renders partner-written customer evaluations as a text-only review board', () => {
     const section = PartnerCustomerEvaluationsSection({
       filters: filters(),
@@ -107,7 +120,7 @@ function buildRow(): PartnerCustomerEvaluationTableRow {
     bookingLabel: 'booking',
     bookingRequestTimeLabel: '19 Jun 2026, 14:40',
     commentLabel: 'Customer arrived prepared and confirmed closeout in chat.',
-    createdAtLabel: '23 Feb 2026, 16:12',
+    createdAt: '2026-02-23T09:12:00.000Z',
     customerAvatarStatus: 'offline',
     customerHref: '/customers/customer-1',
     customerInitials: 'CO',

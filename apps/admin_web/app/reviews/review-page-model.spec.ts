@@ -196,7 +196,7 @@ describe('review page model', () => {
       statusLabel: 'Reported',
     });
     expect(rows[0]?.bookingRequestTimeLabel).toContain('16 Jun 2026');
-    expect(rows[0]?.createdAtLabel).toBe('16 Jun 2026, 16:08');
+    expect(rows[0]?.createdAt).toBe('2026-06-16T09:08:00.000Z');
     expect(rows[0]?.actions.map((action) => (action.kind === 'link' ? action.href : ''))).toEqual([
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=PUBLISHED',
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=HIDDEN&reportReason=Held+by+admin',
@@ -225,6 +225,7 @@ describe('review page model', () => {
       bookingLabel: 'booking-',
       bookingRequestTimeLabel: expect.stringContaining('19 Jun 2026'),
       commentLabel: 'Customer was ready at the service address and confirmed the finish time in chat.',
+      createdAt: '2026-06-19T09:10:00.000Z',
       customerHref: '/customers/customer-1',
       customerInitials: 'CH',
       customerLabel: 'Customer Hoa',

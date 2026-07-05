@@ -28,6 +28,16 @@ describe('ReviewsTableSection', () => {
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
+  it('uses the shared date time atom for review submitted timestamps', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+    const modelSource = readFileSync(new URL('./review-page-model.ts', import.meta.url), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('Review submitted {row.createdAtLabel}');
+    expect(modelSource).not.toContain('createdAtLabel: formatReviewDate(review.createdAt)');
+  });
+
   it('uses shared Vuexy card atoms for review editor drawer cards', () => {
     expect(reviewRowActionsSource).toContain('AdminCard');
     expect(reviewRowActionsSource).toContain('admin-form-control-fluid');
@@ -240,7 +250,7 @@ function buildRow(): ReviewTableRow {
     bookingRequestTimeLabel: '19 Jun 2026, 14:40',
     commentLabel: 'The service arrived late but recovered well.',
     commentValue: 'The service arrived late but recovered well.',
-    createdAtLabel: '23 Feb 2026, 16:08',
+    createdAt: '2026-02-23T09:08:00.000Z',
     customerHref: '/customers/customer-1',
     customerInitials: 'CO',
     customerAvatarStatus: 'offline',

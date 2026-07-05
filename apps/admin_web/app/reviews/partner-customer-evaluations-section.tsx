@@ -18,6 +18,7 @@ import {
   AdminFormShell,
 } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
@@ -32,7 +33,7 @@ export type PartnerCustomerEvaluationTableRow = {
   readonly bookingLabel: string;
   readonly bookingRequestTimeLabel: string;
   readonly commentLabel: string;
-  readonly createdAtLabel: string;
+  readonly createdAt: string | null;
   readonly customerAvatarStatus: AdminAvatarStatus;
   readonly customerHref: string | null;
   readonly customerInitials: string;
@@ -178,7 +179,7 @@ export function PartnerCustomerEvaluationsSection({
                   </div>
                   <div className="muted">{row.bookingRequestTimeLabel}</div>
                   <div className="muted vuexy-review-submitted-line">
-                    Evaluation submitted {row.createdAtLabel}
+                    Evaluation submitted <DateTimeText fallback="No date" value={row.createdAt} />
                   </div>
                 </td>
                 <td>
