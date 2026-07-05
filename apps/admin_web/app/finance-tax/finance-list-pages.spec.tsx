@@ -464,6 +464,18 @@ describe('finance list pages', () => {
     expect(source).not.toContain('<strong>{formatMoney(transaction.amount, transaction.currency)}</strong>');
   });
 
+  it('uses shared inline fallback atoms for bank reconciliation missing relationship cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<div className="muted">{transaction.bankAccount?.bankName ?? \'-\'}</div>');
+    expect(source).not.toContain(
+      "{transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '-'}",
+    );
+    expect(source).not.toContain('<strong>{transaction.counterpartyName ?? \'-\'}</strong>');
+    expect(source).not.toContain('<div className="muted">{transaction.description ?? \'-\'}</div>');
+  });
+
   it('uses shared badge atoms for general ledger status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
 

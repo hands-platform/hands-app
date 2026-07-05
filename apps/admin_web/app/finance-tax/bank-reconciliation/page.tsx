@@ -10,6 +10,7 @@ import type {
 import { adminGet, adminPostOrThrow } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import {
   AdminFormControlButton,
   AdminFormActionRow,
@@ -282,14 +283,28 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
               </td>
               <td>
                 <strong>{transaction.bankAccount?.name ?? 'Unknown account'}</strong>
-                <div className="muted">{transaction.bankAccount?.bankName ?? '-'}</div>
-                <div className="muted">
-                  {transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '-'}
-                </div>
+                {transaction.bankAccount?.bankName ? (
+                  <div className="muted">{transaction.bankAccount.bankName}</div>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No bank name</AdminInlineFallback>
+                )}
+                {bankAccountNumberLabel(transaction) ? (
+                  <div className="muted">{bankAccountNumberLabel(transaction)}</div>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No account number</AdminInlineFallback>
+                )}
               </td>
               <td>
-                <strong>{transaction.counterpartyName ?? '-'}</strong>
-                <div className="muted">{transaction.description ?? '-'}</div>
+                {transaction.counterpartyName ? (
+                  <strong>{transaction.counterpartyName}</strong>
+                ) : (
+                  <AdminInlineFallback>No counterparty</AdminInlineFallback>
+                )}
+                {transaction.description ? (
+                  <div className="muted">{transaction.description}</div>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No description</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <strong>
@@ -389,6 +404,10 @@ function formDateTimeToIso(value: FormDataEntryValue | null) {
 function companyBankAccountOptionLabel(account: AdminCompanyBankAccount) {
   const masked = account.accountNumberMasked ?? (account.accountNumberLast4 ? `****${account.accountNumberLast4}` : '');
   return [account.name, account.bankName, masked, account.currency].filter(Boolean).join(' - ');
+}
+
+function bankAccountNumberLabel(transaction: AdminCompanyBankTransaction) {
+  return transaction.bankAccount?.accountNumberMasked ?? transaction.bankAccount?.accountNumberLast4 ?? '';
 }
 
 function isBankTransactionType(value: string) {
