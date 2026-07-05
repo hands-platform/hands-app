@@ -8,6 +8,15 @@ type AdminOverviewCommandGridProps = {
   readonly className?: string;
 };
 
+type AdminOverviewGridProps = {
+  readonly ariaLabel: string;
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly variant: AdminOverviewGridVariant;
+};
+
+type AdminOverviewGridVariant = 'behavior' | 'command' | 'content' | 'insight' | 'segment';
+
 type AdminOverviewCommandCardProps = {
   readonly ariaLabel?: string;
   readonly children?: ReactNode;
@@ -23,7 +32,15 @@ type AdminOverviewCommandCardProps = {
 
 export function AdminOverviewCommandGrid({ ariaLabel, children, className }: AdminOverviewCommandGridProps) {
   return (
-    <section className={joinClassNames('usage-overview-command-grid', className)} aria-label={ariaLabel}>
+    <AdminOverviewGrid ariaLabel={ariaLabel} className={className} variant="command">
+      {children}
+    </AdminOverviewGrid>
+  );
+}
+
+export function AdminOverviewGrid({ ariaLabel, children, className, variant }: AdminOverviewGridProps) {
+  return (
+    <section className={joinClassNames(adminOverviewGridClassNames[variant], className)} aria-label={ariaLabel}>
       {children}
     </section>
   );
@@ -73,3 +90,11 @@ export function AdminOverviewCommandCard({
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
 }
+
+const adminOverviewGridClassNames: Record<AdminOverviewGridVariant, string> = {
+  behavior: 'usage-overview-behavior-grid',
+  command: 'usage-overview-command-grid',
+  content: 'usage-overview-grid',
+  insight: 'usage-overview-insight-grid',
+  segment: 'usage-overview-segment-grid',
+};

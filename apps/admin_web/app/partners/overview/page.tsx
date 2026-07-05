@@ -27,7 +27,7 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
@@ -205,10 +205,10 @@ export default async function PartnerOverviewPage({
 
       <PartnerPriorityBoard filters={filters} overview={overview} range={range} />
 
-      <section className="usage-overview-insight-grid partner-overview-supply-grid" aria-label="Supply health">
+      <AdminOverviewGrid ariaLabel="Supply health" className="partner-overview-supply-grid" variant="insight">
         <SupplyAreaCard rows={overview.supplyHealth.areas} rangeLabel={overview.rangeLabel} />
         <SupplyServiceCard rows={overview.supplyHealth.services} rangeLabel={overview.rangeLabel} />
-      </section>
+      </AdminOverviewGrid>
 
       <AdminSection
         bodyClassName="partner-overview-funnel-steps"
@@ -223,21 +223,21 @@ export default async function PartnerOverviewPage({
       </AdminSection>
 
       {overview.activityRetention.cards.length > 0 ? (
-        <section className="usage-overview-segment-grid" aria-label="Partner activity and retention">
+        <AdminOverviewGrid ariaLabel="Partner activity and retention" variant="segment">
           {overview.activityRetention.cards.map((kpi, index) => (
             <PartnerKpiCard key={kpi.key} icon={activityIcons[index % activityIcons.length]} kpi={kpi} />
           ))}
-        </section>
+        </AdminOverviewGrid>
       ) : null}
 
-      <section className="usage-overview-insight-grid partner-overview-quality-grid" aria-label="Partner quality and finance">
+      <AdminOverviewGrid ariaLabel="Partner quality and finance" className="partner-overview-quality-grid" variant="insight">
         <QualityRiskCard kpis={overview.bookingQuality.kpis} rows={overview.bookingQuality.riskPartners} />
         <WalletRiskCard
           kpis={overview.financeWalletRisk.kpis}
           policyNote={overview.financeWalletRisk.policyNote}
           rows={overview.financeWalletRisk.negativeWalletPartners}
         />
-      </section>
+      </AdminOverviewGrid>
 
       <SelectionFrictionCard
         filters={filters}
@@ -260,11 +260,11 @@ export default async function PartnerOverviewPage({
       </AdminSection>
 
       {overview.segments.length > 0 ? (
-        <section className="usage-overview-segment-grid" aria-label="Partner segments">
+        <AdminOverviewGrid ariaLabel="Partner segments" variant="segment">
           {overview.segments.map((segment) => (
             <PartnerSegmentCard key={segment.key} segment={segment} />
           ))}
-        </section>
+        </AdminOverviewGrid>
       ) : null}
 
       {overview.dataNotes.length > 0 ? (

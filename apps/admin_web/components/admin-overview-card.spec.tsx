@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from './admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
   it('renders the shared Vuexy overview command grid shell', () => {
@@ -15,6 +15,24 @@ describe('AdminOverviewCommandCard', () => {
     );
     expect(markup).toContain('aria-label="Finance command board"');
     expect(markup).toContain('<span>Card slot</span>');
+  });
+
+  it('renders shared overview grid variants for segment and insight layouts', () => {
+    const segmentMarkup = renderToStaticMarkup(
+      <AdminOverviewGrid ariaLabel="Customer segments" variant="segment">
+        <span>Segment slot</span>
+      </AdminOverviewGrid>,
+    );
+    const insightMarkup = renderToStaticMarkup(
+      <AdminOverviewGrid ariaLabel="Partner quality" className="partner-overview-quality-grid" variant="insight">
+        <span>Insight slot</span>
+      </AdminOverviewGrid>,
+    );
+
+    expect(segmentMarkup).toContain('class="usage-overview-segment-grid"');
+    expect(segmentMarkup).toContain('aria-label="Customer segments"');
+    expect(insightMarkup).toContain('class="usage-overview-insight-grid partner-overview-quality-grid"');
+    expect(insightMarkup).toContain('aria-label="Partner quality"');
   });
 
   it('renders the shared Vuexy overview command card structure', () => {

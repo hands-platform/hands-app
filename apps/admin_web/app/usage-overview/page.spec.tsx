@@ -66,7 +66,11 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).toContain('AdminOverviewCommandGrid');
+    expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-insight-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-behavior-grid"');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('formatDateTime,');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');

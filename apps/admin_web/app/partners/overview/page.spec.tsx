@@ -73,7 +73,10 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('AdminFormControlLink');
     expect(pageSource).toContain('AdminOverviewCommandGrid');
+    expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-insight-grid');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );

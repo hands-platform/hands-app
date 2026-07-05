@@ -26,7 +26,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
@@ -194,7 +194,7 @@ export default async function UsageOverviewPage({
         ))}
       </AdminSection>
 
-      <section className="usage-overview-segment-grid" aria-label="Customer usage segments">
+      <AdminOverviewGrid ariaLabel="Customer usage segments" variant="segment">
         {usageSegmentCards.map(({ label, value, detail, icon: Icon, tone }) => (
           <UsageCommandCard
             key={label}
@@ -205,9 +205,9 @@ export default async function UsageOverviewPage({
             value={value}
           />
         ))}
-      </section>
+      </AdminOverviewGrid>
 
-      <section className="usage-overview-insight-grid" aria-label="Customers overview">
+      <AdminOverviewGrid ariaLabel="Customers overview" variant="insight">
         <UsageInsightCard
           title="Customer lifecycle"
           description="Account, activity, first booking, repeat, and churn-risk counts from stored records."
@@ -249,12 +249,12 @@ export default async function UsageOverviewPage({
           refundAmount={overview.paymentAndCoupon.refundAmount}
           rows={overview.paymentAndCoupon.paymentMethodMix}
         />
-      </section>
+      </AdminOverviewGrid>
 
-      <section className="usage-overview-behavior-grid" aria-label="Customer behavior patterns">
+      <AdminOverviewGrid ariaLabel="Customer behavior patterns" variant="behavior">
         <PopularServicesCard rows={overview.behavior.popularServices} />
         <HourlyActivityCard rows={overview.behavior.hourlyActivity} />
-      </section>
+      </AdminOverviewGrid>
 
       <PlatformUsageCard rows={overview.platformUsage} />
 
