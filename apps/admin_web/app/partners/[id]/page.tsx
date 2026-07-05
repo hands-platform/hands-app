@@ -908,7 +908,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           providerId={provider.id}
           totalCount={partnerOpsNotes.length}
         />
-        <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
+        <PartnerDetailRecentTimelineSection records={partnerRecentTimelineRecords} />
         <PartnerDetailConnectedRecordsSection
           description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
           id="partner-connected-operations-records"

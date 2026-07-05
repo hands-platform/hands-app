@@ -6,12 +6,14 @@ const sectionSource = readFileSync(new URL('./partner-detail-recent-timeline-sec
 describe('PartnerDetailRecentTimelineSection', () => {
   it('uses the shared Vuexy badge atom for timeline event type', () => {
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('<span className="pill pill-info">{record.type}</span>');
+    expect(sectionSource).not.toContain('readonly formatDate: (value: string) => string;');
+    expect(sectionSource).not.toContain('{formatDate(record.at)}');
   });
 
   it('renders recent partner timeline records with links and formatted dates', () => {
     const section = PartnerDetailRecentTimelineSection({
-      formatDate: (value) => `formatted ${value}`,
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',
@@ -36,7 +38,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('BOOKING');
     expect(rendered).toContain('First-pick accepted');
     expect(rendered).toContain('Partner accepted a first-pick request.');
-    expect(rendered).toContain('formatted 2026-06-01T10:00:00.000Z');
+    expect(rendered).toContain('1 Jun 2026, 17:00');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#app-activity', '#booking-chat-records']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -53,7 +55,6 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('renders an empty state when no records match the filters', () => {
     const section = PartnerDetailRecentTimelineSection({
-      formatDate: (value) => value,
       records: [],
     });
 
@@ -75,7 +76,6 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('normalizes internal provider wording in timeline titles and details', () => {
     const section = PartnerDetailRecentTimelineSection({
-      formatDate: (value) => value,
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',
@@ -99,7 +99,6 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
   it('humanizes internal action slugs in timeline titles', () => {
     const section = PartnerDetailRecentTimelineSection({
-      formatDate: (value) => value,
       records: [
         {
           at: '2026-06-01T10:00:00.000Z',

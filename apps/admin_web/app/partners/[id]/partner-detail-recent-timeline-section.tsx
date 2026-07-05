@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -21,14 +22,12 @@ export type PartnerDetailRecentTimelineRecord = {
 };
 
 type PartnerDetailRecentTimelineSectionProps = {
-  readonly formatDate: (value: string) => string;
   readonly records: readonly PartnerDetailRecentTimelineRecord[];
 };
 
 const recentTimelineHeaders = ['Type', 'Event', 'Detail', 'Latest'];
 
 export function PartnerDetailRecentTimelineSection({
-  formatDate,
   records,
 }: PartnerDetailRecentTimelineSectionProps) {
   const visibleRecords = records.slice(0, 8);
@@ -68,7 +67,9 @@ export function PartnerDetailRecentTimelineSection({
                   <p className="muted">{marketplaceDisplayText(record.detail)}</p>
                 </td>
                 <td>
-                  <small>{formatDate(record.at)}</small>
+                  <small>
+                    <DateTimeText fallback="Missing" value={record.at} />
+                  </small>
                 </td>
               </tr>
             ))}
